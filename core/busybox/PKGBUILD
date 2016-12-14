@@ -1,0 +1,65 @@
+# Maintainer: Егор Михайлов <xeneloid@yandex.ru>
+
+pkgname=glibc
+pkgver=2.24
+pkgrel=1
+pkgdesc="The C library used in the GNU system"
+arch=('x86_64')
+url="https://www.gnu.org/software/libc/"
+license=('GPL')
+groups=('base')
+depends=()
+makedepends=()
+optdepends=()
+source=('http://ftp.gnu.org/gnu/glibc/glibc-2.24.tar.xz')
+md5sums=('SKIP')
+
+build() {
+        cd "$srcdir/$pkgname-$pkgver"
+        mkdir -v build
+        cd       build
+
+        ../configure --prefix=/usr          \
+             --enable-kernel=2.6.32 \
+             --enable-obsolete-rpc
+        make
+}
+
+package() {
+        cd "$srcdir/$pkgname-$pkgver"
+touch $pkgdir/etc/ld.so.conf
+        
+make DESTDIR=$pkgdir install
+        
+cp -v ../nscd/nscd.conf $pkgdir/etc/nscd.conf
+mkdir -pv /$pkgdirvar/cache/nscd
+        
+mkdir -pv $pkgdir/usr/lib/locale
+        
+make DESTDIR=$pkgdir localedata/install-locales
+        
+cat > $pkgdir/etc/nsswitch.conf << "EOF"
+
+passwd: files
+group: files
+shadow: files
+
+hosts: files dns
+networks: files
+
+protocols: files
+services: files
+ethers: files
+rpc: files
+
+EOF
+
+cat > $pkgdir/etc/ld.so.conf << "EOF"
+/usr/local/lib
+/opt/lib
+include /etc/ld.so.conf.d/*.conf
+
+EOF
+
+mkdir -pv $pkgdir/etc/ld.so.conf.d
+}
