@@ -1,0 +1,46 @@
+# Maintainer: Egor Mikhailov <xeneloid@yandex.ru>
+
+pkgname=glibc
+pkgver=2.24
+pkgrel=1
+pkgdesc="The C library used in the GNU system"
+arch=('x86_64')
+url="http://www.gnu.org/software/libc/"
+license=('GPL')
+groups=('core')
+depends=('linux' 'tzdata')
+makedepends=()
+optdepends=()
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
+"nsswitch.conf"
+"ld.so.conf")
+md5sums=('SKIP'
+'SKIP'
+'SKIP')
+
+build() {
+        cd "$srcdir/$pkgname-$pkgver"
+
+	mkdir -v glibc-build
+	cd       glibc-build
+    
+	../configure --prefix=/usr          \
+             --enable-kernel=2.6.32 
+	make
+}
+
+package() {
+        cd "$srcdir/$pkgname-$pkgver"
+    touch $pkgdir/etc/ld.so.cache
+    
+	make DESTDIR="$pkgdir" install
+
+	cp -v ../nscd/nscd.conf $pkgdir/etc/nscd.conf
+	mkdir -pv $pkgdir/var/cache/nscd
+
+	cp -r $srcdir/ld.so.conf $pkgdir/etc/
+    cp -r $srcdir/nsswitch.conf $pkgdir/etc/
+	
+	mkdir -pv $pkgdir/usr/lib/locale
+	make DESTDIR="$pkgdir"	localedata/install-locales
+}
