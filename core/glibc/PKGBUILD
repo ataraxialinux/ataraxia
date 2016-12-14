@@ -8,7 +8,7 @@ arch=('x86_64')
 url="http://www.gnu.org/software/libc/"
 license=('GPL')
 groups=('core')
-depends=('linux' 'tzdata')
+depends=('linux-api-headers' 'tzdata')
 makedepends=()
 optdepends=()
 source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
@@ -31,7 +31,7 @@ build() {
 
 package() {
         cd "$srcdir/$pkgname-$pkgver"
-    touch $pkgdir/etc/ld.so.cache
+    	touch $pkgdir/etc/ld.so.cache
     
 	make DESTDIR="$pkgdir" install
 
@@ -39,7 +39,7 @@ package() {
 	mkdir -pv $pkgdir/var/cache/nscd
 
 	cp -r $srcdir/ld.so.conf $pkgdir/etc/
-    cp -r $srcdir/nsswitch.conf $pkgdir/etc/
+    	cp -r $srcdir/nsswitch.conf $pkgdir/etc/
 	
 	mkdir -pv $pkgdir/usr/lib/locale
 	make DESTDIR="$pkgdir"	localedata/install-locales
