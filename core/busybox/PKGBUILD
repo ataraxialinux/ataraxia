@@ -1,23 +1,26 @@
 # Maintainer: Egor Mikhailov <xeneloid@yandex.ru>
 
-pkgname=
-pkgver=
+pkgname=busybox
+pkgver=1.25.1
 pkgrel=1
-pkgdesc=""
-arch=()
-url=""
-license=()
-groups=()
+pkgdesc="BusyBox: The Swiss Army Knife of Embedded Linux"
+arch=('x86_64')
+url="https://www.busybox.net/"
+license=('GPL')
+groups=('core')
 depends=()
 makedepends=()
 optdepends=()
-source=()
-md5sums=()
+source=("https://www.busybox.net/downloads/$pkgname-$pkgver.tar.bz2")
+md5sums=('SKIP')
 
 build() {
         cd "$srcdir/$pkgname-$pkgver"
+        make oldconfig
+        make
 }
 
 package() {
         cd "$srcdir/$pkgname-$pkgver"
+        make DESTDIR="$pkgdir" install
 }
