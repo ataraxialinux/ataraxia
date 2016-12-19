@@ -11,12 +11,8 @@ groups=('core')
 depends=('linux-api-headers' 'tzdata')
 makedepends=()
 optdepends=()
-source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
-"nsswitch.conf"
-"ld.so.conf")
-md5sums=('SKIP'
-'SKIP'
-'SKIP')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('SKIP')
 
 build() {
         cd "$srcdir/$pkgname-$pkgver"
@@ -32,14 +28,14 @@ make
 
 package() {
         cd "$srcdir/$pkgname-$pkgver"
-touch $pkgdir/etc/ld.so.conf
+touch "$pkgdir/etc/ld.so.conf"
 make DESTDIR="$pkgdir" install
-cp -v ../nscd/nscd.conf $pkgdir/etc/nscd.conf
-mkdir -pv $pkgdir/var/cache/nscd
-mkdir -pv /usr/lib/locale
+cp -v ../nscd/nscd.conf "$pkgdir/etc/nscd.conf"
+mkdir -pv "$pkgdir/var/cache/nscd"
+mkdir -pv "$pkgdir/usr/lib/locale"
 make DESTDIR="$pkgdir" localedata/install-locales
 
-cat > $pkgdir/etc/nsswitch.conf << "EOF"
+cat > "$pkgdir/etc/nsswitch.conf" << "EOF"
 
 passwd: files
 group: files
@@ -55,12 +51,13 @@ rpc: files
 
 EOF
 
-cat > $pkgdir/etc/ld.so.conf << "EOF"
+cat > "$pkgdir/etc/ld.so.conf" << "EOF"
 /usr/local/lib
 /opt/lib
 include /etc/ld.so.conf.d/*.conf
 
 EOF
 
-mkdir -pv $pkgdir/etc/ld.so.conf.d
+mkdir -pv "$pkgdir/etc/ld.so.conf.d"
 }
+
