@@ -135,6 +135,7 @@ build_zlib() {
     cd zlib-1.2.11
     ./configure \
         ${default_configure} \
+	--shared \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -328,8 +329,8 @@ build_grub() {
     cd grub-2.02
     ./configure \
         ${default_configure} \
-        --disable-efiemu \
-        --disable-werror \
+	--with-platform=pc,efi \
+	--disable-werror \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -373,7 +374,8 @@ build_eudev() {
 		--enable-manpages \
 		--disable-hwdb \
 		--enable-kmod \
-		--exec-prefix=/
+		--exec-prefix=/ \
+		CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
