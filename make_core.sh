@@ -407,6 +407,10 @@ strip_fs() {
     find ${pkgdir} -type f -name ".packlist" -delete 2>/dev/null
 }
 
+make_slax_module() {
+    echo "Avaliable soon!"
+}
+
 just_prepare
 prepare_filesystem
 build_linux
@@ -431,5 +435,6 @@ build_eudev
 build_openrc
 etc_install
 strip_fs
+make_slax_module
 
 exit 0
