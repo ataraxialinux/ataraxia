@@ -122,7 +122,7 @@ build_bc() {
         --localstatedir=/var \
         --infodir=/usr/share/info \
         --mandir=/usr/share/man \
-        --libdir=/usr/lib
+        --libdir=/usr/lib \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -167,13 +167,13 @@ build_e2fsprogs() {
     ./configure \
         ${default_configure} \
         --enable-elf-shlibs \
-		--enable-symlink-install \
-		--disable-fsck \
-		--disable-uuidd \
-		--disable-libuuid \
-		--disable-libblkid \
-		--disable-tls \
-		--disable-nls \
+	--enable-symlink-install \
+	--disable-fsck \
+	--disable-uuidd \
+	--disable-libuuid \
+	--disable-libblkid \
+	--disable-tls \
+	--disable-nls \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install install-libs -j $NUM_JOBS
@@ -187,9 +187,9 @@ build_sqlite() {
     ./configure \
         ${default_configure} \
         --enable-threadsafe \
-		--disable-static \
-		--enable-readline \
-		--enable-dynamic-extensions \
+	--disable-static \
+	--enable-readline \
+	--enable-dynamic-extensions \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
