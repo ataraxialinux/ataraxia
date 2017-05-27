@@ -2,6 +2,12 @@
 #
 # Build minimal Janus Linux filesystem.
 
+product_name="Janus Linux"
+product_version="0.1"
+product_id="janus"
+product_bug_url=""
+product_url=""
+
 JOB_FACTOR=1
 NUM_CORES=$(grep ^processor /proc/cpuinfo | wc -l)
 NUM_JOBS=$((NUM_CORES * JOB_FACTOR))
@@ -9,7 +15,7 @@ NUM_JOBS=$((NUM_CORES * JOB_FACTOR))
 srcdir=$(pwd)/work/sources
 pkgdir=$(pwd)/work/rootfs
 isodir=$(pwd)/work/rootcd
-stuffdir=$(pwd)/work/stuff
+stuffdir=$(pwd)/stuff
 
 buildhost="$(uname -p)-janus-linux-gnu"
 xflags="-g0 -Os -s -fno-stack-protector -U_FORTIFY_SOURCE"
@@ -25,39 +31,39 @@ just_prepare() {
 }
 
 prepare_filesystem() {
-    install -d ${pkgdir}/bin
-    install -d ${pkgdir}/sbin
-    install -d ${pkgdir}/boot
-    install -d ${pkgdir}/dev
-    install -d ${pkgdir}/dev/{pts,shm}
-    install -d ${pkgdir}/proc
-    install -d ${pkgdir}/sys
-    install -d ${pkgdir}/etc
-    install -d ${pkgdir}/mnt
-    install -d ${pkgdir}/run
-    install -d ${pkgdir}/lib
-    install -d ${pkgdir}/opt
-    install -d ${pkgdir}/usr
-    install -d ${pkgdir}/usr/{bin,include,lib,sbin,share,src}
-    install -d -p ${pkgdir}/usr/share/{man,info}
-    ln -s ../var ${pkgdir}/usr/var
-    install -d ${pkgdir}/var
-    install -d ${pkgdir}/var/cache
-    install -d ${pkgdir}/var/lib
-    install -d ${pkgdir}/var/log
-    install -d ${pkgdir}/var/log/old
-    install -d ${pkgdir}/var/run
-    install -d ${pkgdir}/var/spool
-    install -d ${pkgdir}/var/ftp
-    install -d ${pkgdir}/var/www
-    install -d ${pkgdir}/var/empty
-    ln -s spool/mail ${pkgdir}/var/mail
-    install -d ${pkgdir}/home
-    install -d -m 1777 ${pkgdir}/tmp
-    install -d -m 0750 ${pkgdir}/root
-    install -d -m 1777 ${pkgdir}/var/lock
-    install -d -m 1777 ${pkgdir}/var/spool/mail
-    install -d -m 1777 ${pkgdir}/var/tmp
+    cd ${pkgdir}
+
+    for _d in boot dev etc/skel home usr var run/lock; do
+            install -d -m755 ${_d}
+    done
+
+    for _d in bin include lib share/misc src; do
+        install -d -m755 usr/${_d}
+    done
+    
+    for _d in $(seq 8); do
+        install -d -m755 usr/share/man/man${_d}
+    done
+
+    install -d -m555 proc
+    install -d -m555 sys
+    install -d -m0750 root
+    install -d -m1777 tmp
+
+    install -d var/{cache/man,lib,log}
+    install -d -m1777 var/{tmp,spool/{,mail,uucp}}
+    ln -s spool/mail var/mail
+    ln -s ../run var/run
+
+    ln -s /proc/mounts etc/mtab
+    
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells vconsole.conf adduser.conf busybox.conf; do
+            install -m644 ${stuffdir}/${f} etc/
+    done
+    
+    for f in gshadow shadow ; do
+        install -m600 ${stuffdir}/${f} etc/
+    done
 }
 
 build_linux() {
@@ -378,9 +384,18 @@ build_systemd() {
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
-etc_install() {
-    echo "Avaliable soon!"
-}
+cat >${pkgdir}/etc/os-release<<EOF
+NAME="${product_name}"
+ID=${product_id}
+VERSION_ID=${product_version}
+PRETTY_NAME="${product_name} ${product_version}"
+HOME_URL="${product_url}"
+BUG_REPORT_URL="${product_bug_url}"
+EOF
+
+cat >${pkgdir}/etc/issue<<EOF
+${product_name} ${product_version} \r \l
+EOF
 
 strip_fs() {
     echo "!Striping filesystem!"
@@ -418,7 +433,6 @@ build_bash
 build_grub
 build_util_linux
 build_systemd
-etc_install
 strip_fs
 
 exit 0
