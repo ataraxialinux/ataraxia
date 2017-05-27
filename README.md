@@ -3,4 +3,4 @@
 
 ![Screenshot](https://raw.githubusercontent.com/protonesso/janus/master/screenshot.png)
 
-# Developed by Egor Mikhailov (protonesso)
+Contributors: ![Contributors](https://github.com/protonesso/janus/graphs/contributors)
