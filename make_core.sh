@@ -397,6 +397,21 @@ build_systemd() {
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
+build_tzdata() {
+    cd ${srcdir}
+    wget https://www.iana.org/time-zones/repository/releases/tzdata2017b.tar.gz
+    wget https://www.iana.org/time-zones/repository/releases/tzcode2017b.tar.gz
+    tar -xf tzdata2017b.tar.gz
+    tar -xf tzcode2017b.tar.gz
+    make -j1 install \
+        CFLAGS="${xflags}" \
+        DESTDIR=${pkgdir} \
+        TOPDIR=/usr \
+        TZDIR=/usr/share/zoneinfo \
+        ETCDIR=/usr/sbin \
+        MANDIR=/usr/share/man
+}
+
 strip_fs() {
     echo "!Striping filesystem!"
 	for dir in ${pkgdir}/bin ${pkgdir}/sbin ${pkgdir}/usr/bin ${pkgdir}/usr/sbin ${pkgdir}/usr/games
@@ -411,21 +426,6 @@ strip_fs() {
     find ${pkgdir} -type f -name "*.pyo" -delete 2>/dev/null
     find ${pkgdir} -type f -name "perllocal.pod" -delete 2>/dev/null
     find ${pkgdir} -type f -name ".packlist" -delete 2>/dev/null
-}
-
-build_tzdata() {
-    cd ${srcdir}
-    wget https://www.iana.org/time-zones/repository/releases/tzdata2017b.tar.gz
-    wget https://www.iana.org/time-zones/repository/releases/tzcode2017b.tar.gz
-    tar -xf tzdata2017b.tar.gz
-    tar -xf tzcode2017b.tar.gz
-    make -j1 install \
-        CFLAGS="${xflags}" \
-        DESTDIR=${pkgdir} \
-        TOPDIR=/usr \
-        TZDIR=/usr/share/zoneinfo \
-        ETCDIR=/usr/sbin \
-        MANDIR=/usr/share/man
 }
 
 just_prepare
