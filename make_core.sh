@@ -57,7 +57,7 @@ prepare_filesystem() {
 
     ln -s /proc/mounts etc/mtab
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf; do
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols; do
             install -m644 ${stuffdir}/${f} etc/
     done
     
@@ -413,6 +413,21 @@ strip_fs() {
     find ${pkgdir} -type f -name ".packlist" -delete 2>/dev/null
 }
 
+build_tzdata() {
+    cd ${srcdir}
+    wget https://www.iana.org/time-zones/repository/releases/tzdata2017b.tar.gz
+    wget https://www.iana.org/time-zones/repository/releases/tzcode2017b.tar.gz
+    tar -xf tzdata2017b.tar.gz
+    tar -xf tzcode2017b.tar.gz
+    make -j1 install \
+        CFLAGS="${xflags}" \
+        DESTDIR=${pkgdir} \
+        TOPDIR=/usr \
+        TZDIR=/usr/share/zoneinfo \
+        ETCDIR=/usr/sbin \
+        MANDIR=/usr/share/man
+}
+
 just_prepare
 prepare_filesystem
 build_linux
@@ -433,6 +448,7 @@ build_bash
 build_grub
 build_util_linux
 build_systemd
+build_tzdata
 strip_fs
 
 exit 0
