@@ -2,5 +2,3 @@
  Janus Linux is distro made from scratch. It uses busybox and musl. Can be cross-compiled. Module structure. Uses Linux-Libre.
 
 ![Screenshot](https://raw.githubusercontent.com/protonesso/janus/master/screenshot.png)
-
-Contributors: ![Contributors](https://github.com/protonesso/janus/graphs/contributors)
