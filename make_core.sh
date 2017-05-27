@@ -351,38 +351,29 @@ build_util_linux() {
         --enable-write \
         --with-btrfs \
         --without-python \
-        --without-systemd \
         --without-readline \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
-build_eudev() {
+build_systemd() {
     cd ${srcdir}
-    wget http://dev.gentoo.org/~blueness/eudev/eudev-3.2.2.tar.gz
-    tar -xf eudev-3.2.2.tar.gz
-    cd eudev-3.2.2
+    wget https://github.com/systemd/systemd/archive/v233.tar.gz
+    tar -xf systemd-233.tar.gz
+    cd systemd-233
     ./configure \
-		${default_configure} \
-		--with-rootprefix= \
-		--with-rootrundir=/run \
-		--with-rootlibexecdir=/lib/udev \
-		--enable-split-usr \
-		--enable-manpages \
-		--disable-hwdb \
-		--enable-kmod \
-		--exec-prefix=/ \
-		CFLAGS="${xflags}"
-    make -j $NUM_JOBS
-    make DESTDIR=${pkgdir} install -j $NUM_JOBS
-}
-
-build_openrc() {
-    cd ${srcdir}
-    wget https://github.com/OpenRC/openrc/archive/0.26.2.tar.gz
-    tar -xf openrc-0.26.2.tar.gz
-    cd openrc-0.26.2
+        ${default_configure} \
+        --config-cache           \
+        --with-rootprefix=       \
+        --with-rootlibdir=/lib   \
+        --enable-split-usr       \
+        --disable-firstboot      \
+        --disable-ldconfig       \
+        --disable-sysusers       \
+        --without-python         \
+        --with-default-dnssec=no \
+        CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -426,8 +417,7 @@ build_nano
 build_bash
 build_grub
 build_util_linux
-build_eudev
-build_openrc
+build_systemd
 etc_install
 strip_fs
 
