@@ -18,6 +18,8 @@ default_configure="--build="${buildhost}" --prefix=/usr --sysconfdir=/etc --sbin
 kernelhost="janus"
 kernelver="4.11.3"
 
+grub_platform="pc,efi"
+
 just_prepare() {
     mkdir -p ${srcdir} ${pkgdir} ${isodir} ${stuffdir}
 }
@@ -117,12 +119,8 @@ build_bc() {
     cd bc-1.07.1
     ./configure \
         --prefix=/usr \
-        --sysconfdir=/etc \
-        --sbindir=/sbin \
-        --localstatedir=/var \
         --infodir=/usr/share/info \
         --mandir=/usr/share/man \
-        --libdir=/usr/lib \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -135,7 +133,7 @@ build_zlib() {
     cd zlib-1.2.11
     ./configure \
         ${default_configure} \
-	--shared \
+        --shared \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -168,13 +166,13 @@ build_e2fsprogs() {
     ./configure \
         ${default_configure} \
         --enable-elf-shlibs \
-	--enable-symlink-install \
-	--disable-fsck \
-	--disable-uuidd \
-	--disable-libuuid \
-	--disable-libblkid \
-	--disable-tls \
-	--disable-nls \
+		--enable-symlink-install \
+		--disable-fsck \
+		--disable-uuidd \
+		--disable-libuuid \
+		--disable-libblkid \
+		--disable-tls \
+		--disable-nls \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install install-libs -j $NUM_JOBS
@@ -188,9 +186,9 @@ build_sqlite() {
     ./configure \
         ${default_configure} \
         --enable-threadsafe \
-	--disable-static \
-	--enable-readline \
-	--enable-dynamic-extensions \
+		--disable-static \
+		--enable-readline \
+		--enable-dynamic-extensions \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -329,8 +327,8 @@ build_grub() {
     cd grub-2.02
     ./configure \
         ${default_configure} \
-	--with-platform=pc,efi \
-	--disable-werror \
+        --with-platform=${grub_platform} \
+        --disable-werror \
         CFLAGS="${xflags}"
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -409,10 +407,6 @@ strip_fs() {
     find ${pkgdir} -type f -name ".packlist" -delete 2>/dev/null
 }
 
-make_slax_module() {
-    echo "Avaliable soon!"
-}
-
 just_prepare
 prepare_filesystem
 build_linux
@@ -429,7 +423,6 @@ build_kmod
 build_ncurses
 build_readline
 build_nano
-build_util_linux
 build_bash
 build_grub
 build_util_linux
@@ -437,6 +430,5 @@ build_eudev
 build_openrc
 etc_install
 strip_fs
-make_slax_module
 
 exit 0
