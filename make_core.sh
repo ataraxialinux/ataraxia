@@ -33,7 +33,7 @@ just_prepare() {
 prepare_filesystem() {
     cd ${pkgdir}
 
-    for _d in boot dev etc/skel home usr var run/lock; do
+    for _d in boot bin dev etc/skel home sbin usr var run/lock; do
             install -d -m755 ${_d}
     done
 
@@ -57,13 +57,26 @@ prepare_filesystem() {
 
     ln -s /proc/mounts etc/mtab
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells vconsole.conf adduser.conf busybox.conf; do
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf; do
             install -m644 ${stuffdir}/${f} etc/
     done
     
     for f in gshadow shadow ; do
         install -m600 ${stuffdir}/${f} etc/
     done
+    
+cat >${pkgdir}/etc/os-release<<EOF
+NAME="${product_name}"
+ID=${product_id}
+VERSION_ID=${product_version}
+PRETTY_NAME="${product_name} ${product_version}"
+HOME_URL="${product_url}"
+BUG_REPORT_URL="${product_bug_url}"
+EOF
+
+cat >${pkgdir}/etc/issue<<EOF
+${product_name} ${product_version} \r \l
+EOF
 }
 
 build_linux() {
@@ -383,19 +396,6 @@ build_systemd() {
     make -j $NUM_JOBS
     make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
-
-cat >${pkgdir}/etc/os-release<<EOF
-NAME="${product_name}"
-ID=${product_id}
-VERSION_ID=${product_version}
-PRETTY_NAME="${product_name} ${product_version}"
-HOME_URL="${product_url}"
-BUG_REPORT_URL="${product_bug_url}"
-EOF
-
-cat >${pkgdir}/etc/issue<<EOF
-${product_name} ${product_version} \r \l
-EOF
 
 strip_fs() {
     echo "!Striping filesystem!"
