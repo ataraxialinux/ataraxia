@@ -5,8 +5,8 @@
 product_name="Janus Linux"
 product_version="0.1"
 product_id="janus"
-product_bug_url=""
-product_url=""
+product_bug_url="https://github.com/protonesso/janus/issues"
+product_url="januslinux.github.io"
 
 JOB_FACTOR=1
 NUM_CORES=$(grep ^processor /proc/cpuinfo | wc -l)
