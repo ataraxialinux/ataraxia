@@ -118,6 +118,7 @@ build_linux() {
 	make -j $NUM_JOBS
 	make INSTALL_MOD_PATH=${pkgdir} modules_install -j $NUM_JOBS
 	make INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install -j $NUM_JOBS
+	cp arch/x86/boot/bzImage ${isodir}/bzImage
 }
 
 build_musl(){
@@ -178,6 +179,38 @@ strip_fs() {
 	find ${pkgdir} -type f -name "*.pyo" -delete 2>/dev/null
 	find ${pkgdir} -type f -name "perllocal.pod" -delete 2>/dev/null
 	find ${pkgdir} -type f -name ".packlist" -delete 2>/dev/null
+}
+
+make_iso() {
+	cd ${pkgdir}
+	find . | cpio -R root:root -H newc -o | xz -9 --check=none > ${isodir}/rootfs.gz
+	
+	cd ${isodir}
+	cp ${srcdir}/syslinux-6.03/bios/core/isolinux.bin ${isodir}/isolinux.bin
+	cp ${srcdir}/syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 ${isodir}/ldlinux.c32
+	
+	mkdir -p ${isodir}/efi/boot
+cat << CEOF > ${isodir}/efi/boot/startup.nsh
+echo -off
+echo ${product_name} is starting...
+\\bzImage initrd=\\rootfs.gz
+CEOF
+	
+	echo 'default bzImage initrd=rootfs.gz vga=ask' > ${isodir}/isolinux.cfg
+	
+	genisoimage \
+  		-J \
+  		-r \
+  		-o ../${product_name}-${product_version}.iso \
+  		-b isolinux.bin \
+  		-c boot.cat \
+  		-input-charset UTF-8 \
+  		-no-emul-boot \
+  		-boot-load-size 4 \
+  		-boot-info-table \
+  		${isodir}/
+		
+${product_name}-${product_version}.iso
 }
 
 just_prepare
