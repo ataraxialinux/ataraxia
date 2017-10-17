@@ -16,14 +16,20 @@ pkgdir=$(pwd)/work/rootfs
 isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
-xflags="-g0 -Os -s -fno-stack-protector -U_FORTIFY_SOURCE"
+xflags=""
+xldflags=""
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
 kernelver="4.13.7"
 
 just_prepare() {
-    mkdir -p ${srcdir} ${pkgdir} ${isodir} ${stuffdir}
+	rm -rf ${srcdir} ${pkgdir} ${isodir}
+	mkdir -p ${srcdir} ${pkgdir} ${isodir} ${stuffdir}
+	
+	export CFLAGS="$xflags"
+	export CXXLAGS="$CFLAGS"
+	export LDFLAGS="$xlflags"
 }
 
 prepare_filesystem() {
@@ -130,8 +136,12 @@ build_busybox() {
 	tar -xf busybox-1.27.2.tar.bz2
 	cd busybox-1.27.2
 	make distclean -j $NUM_JOBS
-	make defconfig -j $NUM_JOBS
+	make menuconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
 	make -j $NUM_JOBS
 	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
 	mkdir ${pkgdir}/usr/share/udhcpc
