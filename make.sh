@@ -1,6 +1,5 @@
-#!/bin/bash
+#!/bin/bash -e
 #
-# Build minimal Janus Linux filesystem.
 
 product_name="Janus Linux"
 product_version="0.1"
@@ -34,7 +33,7 @@ prepare_filesystem() {
             install -d -m755 ${_d}
     done
 
-    for _d in bin include lib share/misc src; do
+    for _d in bin include lib share/misc sbin; do
         install -d -m755 usr/${_d}
     done
     
@@ -42,7 +41,7 @@ prepare_filesystem() {
         install -d -m755 usr/share/man/man${_d}
     done
     
-    for _d in bin include lib share/misc src; do
+    for _d in bin lib sbin; do
         install -d -m755 janus/${_d}
     done
 
@@ -114,7 +113,7 @@ build_busybox() {
 	cd busybox-1.27.2
 	make distclean -j $NUM_JOBS
 	make defconfig -j $NUM_JOBS
-	sed -i "s/.*CONFIG_INETD.*/CONFIG_INETD=n/" .config
+	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
 	make EXTRA_CFLAGS="${xflags}" -j $NUM_JOBS
 	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
 }
