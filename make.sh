@@ -71,7 +71,7 @@ prepare_filesystem() {
             install -m644 ${stuffdir}/${f} etc/
     done
     
-    for f in gshadow shadow ; do
+    for f in shadow ; do
         install -m600 ${stuffdir}/${f} etc/
     done
     
@@ -154,8 +154,18 @@ build_busybox() {
 	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
 }
 
+build_iana_etc() {
+	cd ${srcdir}
+	wget http://sethwklein.net/iana-etc-2.30.tar.bz2
+	tar -xf iana-etc-2.30.tar.bz2
+	cd iana-etc-2.30.tar.bz2
+	make get
+	make STRIP=yes
+	make DESTDIR=${pkgdir} install
+}
+
 strip_fs() {
-    echo "!Striping filesystem!"
+	echo "!Striping filesystem!"
 	for dir in ${pkgdir}/bin ${pkgdir}/sbin ${pkgdir}/usr/bin ${pkgdir}/usr/sbin ${pkgdir}/usr/games
 	do
 		if [ -d "$dir" ]; then
@@ -175,6 +185,7 @@ prepare_filesystem
 build_linux
 build_musl
 build_busybox
+build_iana_etc
 strip_fs
 make_iso
 
