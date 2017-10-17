@@ -51,8 +51,6 @@ fi
 mount -a
 mount -o remount,rw /
 
-hostname -F /etc/hostname
-
 touch /var/log/wtmp
 touch /var/log/messages
 chmod 0664 /var/run/utmp
@@ -60,7 +58,17 @@ chmod 0664 /var/log/wtmp
 chmod 0660 /var/log/messages
 rm -rf /tmp/*
 
-ifconfig lo up 127.0.0.1
+hostname -F /etc/hostname
+
+for DEVICE in /sys/class/net/* ; do
+	ip link set \${DEVICE##*/} up
+	if [ \${DEVICE##*/} != "lo" ]; then
+		udhcpc -b -S -i \${DEVICE##*/} -s /etc/rc.d/rc.dhcp >/dev/null 2>&1
+	fi
+done
+
+dmesg >/var/log/dmesg
+syslogd -D -f /etc/syslog.conf
 
 clear
 
