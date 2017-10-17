@@ -1,22 +1,15 @@
-#
-# /etc/profile
+# /etc/profile: system-wide .profile file for the Bourne shells
 
-#Set our umask
+PATH="/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/janus/bin:/janus/sbin"
+LD_LIBRARY_PATH="/usr/lib:/usr/lib64:/lib64:/lib"
+
+if [ "`id -u`" -eq 0 ]; then
+	PS1='\e[1m\u@\h:\w\#\e[m '
+else
+	PS1='\e[1m\u@\h:\w\$\e[m '
+fi
+
+DISPLAY=:0.0
+
+export PATH LD_LIBRARY_PATH PS1 DISPLAY ignoreeof
 umask 022
-
-# Set our default path
-PATH="/usr/bin"
-export PATH
-
-# Load profiles from /etc/profile.d
-if test -d /etc/profile.d/; then
-	for profile in /etc/profile.d/*.sh; do
-		test -r "$profile" && . "$profile"
-	done
-	unset profile
-fi
-
-# Source global bash config
-if test "$PS1" && test "$BASH" && test -r /etc/bash.bashrc; then
-	. /etc/bash.bashrc
-fi
