@@ -67,7 +67,7 @@ prepare_filesystem() {
 
     ln -s /proc/mounts etc/mtab
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols rc.conf mdev.conf inittab; do
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols mdev.conf inittab hostname; do
             install -m644 ${stuffdir}/${f} etc/
     done
     
