@@ -67,7 +67,7 @@ prepare_filesystem() {
 
     ln -s /proc/mounts etc/mtab
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname; do
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf; do
             install -m644 ${stuffdir}/${f} etc/
     done
     
@@ -159,9 +159,9 @@ build_iana_etc() {
 	wget http://sethwklein.net/iana-etc-2.30.tar.bz2
 	tar -xf iana-etc-2.30.tar.bz2
 	cd iana-etc-2.30.tar.bz2
-	make get
-	make STRIP=yes
-	make DESTDIR=${pkgdir} install
+	make get -j $NUM_JOBS
+	make STRIP=yes -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
 strip_fs() {
