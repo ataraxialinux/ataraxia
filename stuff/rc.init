@@ -1,1 +1,67 @@
 #!/bin/sh
+
+PATH="/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/janus/bin:/janus/sbin"
+LD_LIBRARY_PATH="/usr/lib:/lib:/janus/lib"
+
+export PATH LD_LIBRARY_PATH
+
+C_GREEN='\e[1;32m'
+C_CLEAR='\e[m'
+
+msgone() {
+  echo -ne " ${C_GREEN}*${C_CLEAR} ${@}"
+}
+
+msgtwo() {
+  echo -e " ${C_GREEN}*${C_CLEAR} ${@}"
+}
+
+msgone Janus Linux is starting...
+
+mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p /dev/pts /dev/shm
+mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+
+mdev -s
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+
+hwclock --hctosys --utc
+
+if [ -x /sbin/fsck ]; then
+	echo "Starting fsck for local filesystems."
+	fsck -A -C -R -T -t nonfs,nosmbfs
+	if [ "$?" -gt 2 ]; then
+		echo "WARNING: Errors found while checking filesystems."
+		echo "You can login as root now, the system will reboot after logout."
+		sulogin
+		reboot
+	elif [ "$?" = "2" ]; then
+		echo "NOTICE: System needs to be rebooted now."
+		sleep 1
+		reboot
+	else
+		echo -n "Checking local filesystems: "
+	fi
+fi
+
+mount -a
+mount -o remount,rw /
+
+hostname -F /etc/hostname
+
+touch /var/log/wtmp
+touch /var/log/messages
+chmod 0664 /var/run/utmp
+chmod 0664 /var/log/wtmp
+chmod 0660 /var/log/messages
+rm -rf /tmp/*
+
+ifconfig lo up 127.0.0.1
+
+clear
+
+msgone Welcome to your box...
