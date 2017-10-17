@@ -19,7 +19,7 @@ stuffdir=$(pwd)/stuff
 
 buildhost="$(uname -p)-janus-linux-gnu"
 xflags="-g0 -Os -s -fno-stack-protector -U_FORTIFY_SOURCE"
-default_configure="--build="${buildhost}" --prefix=/usr --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var --infodir=/usr/share/info --mandir=/usr/share/man --libdir=/usr/lib"
+default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
 kernelver="4.11.3"
