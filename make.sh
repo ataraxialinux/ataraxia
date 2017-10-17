@@ -67,12 +67,17 @@ prepare_filesystem() {
 
     ln -s /proc/mounts etc/mtab
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols rc.conf; do
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols rc.conf mdev.conf inittab; do
             install -m644 ${stuffdir}/${f} etc/
     done
     
     for f in gshadow shadow ; do
         install -m600 ${stuffdir}/${f} etc/
+    done
+    
+    for f in rc.init rc.shutdown ; do
+        install -m600 ${stuffdir}/${f} etc/rc.d/
+	chmod +x etc/rc.d/${f}
     done
     
 cat >${pkgdir}/etc/os-release<<EOF
