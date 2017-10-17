@@ -29,7 +29,7 @@ just_prepare() {
 prepare_filesystem() {
     cd ${pkgdir}
 
-    for _d in boot bin dev etc/skel home sbin usr var run/lock janus; do
+    for _d in boot bin dev etc home sbin usr var run/lock janus; do
             install -d -m755 ${_d}
     done
 
@@ -44,6 +44,10 @@ prepare_filesystem() {
     for _d in bin lib sbin; do
         install -d -m755 janus/${_d}
     done
+    
+    for _d in skel rc.d; do
+        install -d -m755 etc/${_d}
+    done
 
     install -d -m555 proc
     install -d -m555 sys
@@ -57,7 +61,7 @@ prepare_filesystem() {
 
     ln -s /proc/mounts etc/mtab
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols; do
+    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf services protocols rc.conf; do
             install -m644 ${stuffdir}/${f} etc/
     done
     
@@ -87,7 +91,6 @@ build_linux() {
 	make mrproper -j $NUM_JOBS
 	make menuconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"${kernelhost}\"/" .config
-	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
 	echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> .config
 	echo "CONFIG_OVERLAY_FS_INDEX=y" >> .config
 	sed -i "s/.*\\(CONFIG_KERNEL_.*\\)=y/\\#\\ \\1 is not set/" .config  
@@ -106,18 +109,6 @@ build_linux() {
 	make INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install -j $NUM_JOBS
 }
 
-build_busybox() {
-	cd ${srcdir}
-	wget http://busybox.net/downloads/busybox-1.27.2.tar.bz2
-	tar -xf busybox-1.27.2.tar.bz2
-	cd busybox-1.27.2
-	make distclean -j $NUM_JOBS
-	make defconfig -j $NUM_JOBS
-	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
-	make EXTRA_CFLAGS="${xflags}" -j $NUM_JOBS
-	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
-}
-
 build_musl(){
 	cd ${srcdir}
 	wget http://www.musl-libc.org/releases/musl-1.1.16.tar.gz
@@ -131,6 +122,21 @@ build_musl(){
 		--enable-optimize=size
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_busybox() {
+	cd ${srcdir}
+	wget http://busybox.net/downloads/busybox-1.27.2.tar.bz2
+	tar -xf busybox-1.27.2.tar.bz2
+	cd busybox-1.27.2
+	make distclean -j $NUM_JOBS
+	make defconfig -j $NUM_JOBS
+	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
+	make -j $NUM_JOBS
+	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
+	mkdir ${pkgdir}/usr/share/udhcpc
+	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
+	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
 }
 
 strip_fs() {
