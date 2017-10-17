@@ -75,7 +75,7 @@ prepare_filesystem() {
         install -m600 ${stuffdir}/${f} etc/
     done
     
-    for f in rc.init rc.shutdown ; do
+    for f in rc.init rc.shutdown rc.dhcp; do
         install -m600 ${stuffdir}/${f} etc/rc.d/
 	chmod +x etc/rc.d/${f}
     done
