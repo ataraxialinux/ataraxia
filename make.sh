@@ -17,7 +17,6 @@ isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
-xldflags="-Wl,-static"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
@@ -29,7 +28,6 @@ just_prepare() {
 	
 	export CFLAGS="$xflags"
 	export CXXLAGS="$CFLAGS"
-	export LDFLAGS="$xlflags"
 }
 
 prepare_filesystem() {
