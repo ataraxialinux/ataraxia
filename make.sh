@@ -14,7 +14,7 @@ pkgdir=$(pwd)/work/rootfs
 isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
-xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration -fPIC -D_GNU_SOURCE"
+xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
 xldflags="-Wl,-static"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
@@ -393,6 +393,19 @@ build_libarchive() {
 	sed -i 's@ -qq@@' libarchive/archive_read_support_filter_xz.c
 	sed -i 's@xz -d@unxz@' libarchive/archive_read_support_filter_xz.c
 	sed -i 's@lzma -d@unlzma@' libarchive/archive_read_support_filter_xz.c
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_less() {
+	cd ${srcdir}
+	wget http://www.greenwoodsoftware.com/less/less-487.tar.gz
+	tar -xf less-487.tar.gz
+	cd less-487
 	./configure \
 		${default_configure} \
 		--enable-static \
