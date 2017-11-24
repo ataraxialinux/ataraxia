@@ -14,8 +14,8 @@ pkgdir=$(pwd)/work/rootfs
 isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
-xflags=""
-xldflags=""
+xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration -fPIC -D_GNU_SOURCE"
+xldflags="-Wl,-static"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
@@ -341,6 +341,66 @@ build_libz() {
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
+build_file() {
+	cd ${srcdir}
+	wget ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
+	tar -xf file-5.32.tar.gz
+	cd file-5.32
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_extlinux() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
+	tar -xf syslinux-6.03.tar.xz
+	cd syslinux-6.03
+	sed -i '/#define statfs/d;/#undef statfs/d' libinstaller/linuxioctl.h
+	make -C libinstaller
+	make -C extlinux OPTFLAGS="$xflags" LDFLAGS="$xldflags"
+	make -C linux OPTFLAGS="$xflags" LDFLAGS="$xldflags"
+	cp extlinux/extlinux $R/bin
+	cp linux/syslinux $R/bin
+	mkdir -p $R/lib/syslinux
+	cp mbr/*mbr.bin $R/lib/syslinux
+}
+
+build_sudo() {
+	cd ${srcdir}
+	wget https://www.sudo.ws/dist/sudo-1.8.21p2.tar.gz
+	tar -xf sudo-1.8.21p2.tar.gz
+	cd sudo-1.8.21p2
+	sed -i "/<config.h>/s@.*@&\n\n#include <sys/types.h>@" \
+		src/preserve_fds.c
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_libarchive() {
+	cd ${srcdir}
+	wget http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz
+	tar -xf libarchive-3.3.2.tar.gz
+	cd libarchive-3.3.2
+	sed -i 's@HAVE_LCHMOD@&_DISABLE@' libarchive/archive_write_disk_posix.c
+	sed -i 's@ -qq@@' libarchive/archive_read_support_filter_xz.c
+	sed -i 's@xz -d@unxz@' libarchive/archive_read_support_filter_xz.c
+	sed -i 's@lzma -d@unlzma@' libarchive/archive_read_support_filter_xz.c
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
 make_iso() {
 	cd ${pkgdir}
 	find . | cpio -H newc -o | gzip -9 > ${isodir}/rootfs.gz
@@ -377,6 +437,21 @@ build_linux
 build_musl
 build_busybox
 build_iana_etc
+build_libz
+build_file
+build_curses
+build_e2fsprogs
+build_util_linux
+build_kbd
+build_htop
+build_nano
+build_sudo
+build_wolfssl
+build_ntpd
+build_curl
+build_links
+build_libarchive
+build_extlinux
 make_iso
 
 exit 0
