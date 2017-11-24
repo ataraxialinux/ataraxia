@@ -1,8 +1,6 @@
 #!/bin/bash
 #
 
-set -e
-
 product_name="Janus Linux"
 product_version="0.1"
 product_id="janus"
@@ -17,6 +15,7 @@ isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
+xldflags="-static"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
@@ -28,6 +27,7 @@ just_prepare() {
 	
 	export CFLAGS="$xflags"
 	export CXXLAGS="$CFLAGS"
+	export LDFLAGS="$xldflags"
 }
 
 prepare_filesystem() {
@@ -233,8 +233,8 @@ build_curses() {
 	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
 	tar -xf netbsd-curses-0.2.1.tar.xz
 	cd netbsd-curses-0.2.1
-	make PREFIX=${pkgdir}/usr all-static
-	make PREFIX=${pkgdir}/usr install-static
+	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" PREFIX=${pkgdir}/usr all-static
+	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" PREFIX=${pkgdir}/usr install-static
 }
 
 build_e2fsprogs() {
