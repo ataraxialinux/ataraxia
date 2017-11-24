@@ -7,9 +7,7 @@ product_id="janus"
 product_bug_url="https://github.com/protonesso/janus/issues"
 product_url="januslinux.github.io"
 
-JOB_FACTOR=1
-NUM_CORES=$(grep ^processor /proc/cpuinfo | wc -l)
-NUM_JOBS=$((NUM_CORES * JOB_FACTOR))
+NUM_JOBS=$(expr $(nproc) + 1)
 
 srcdir=$(pwd)/work/sources
 pkgdir=$(pwd)/work/rootfs
