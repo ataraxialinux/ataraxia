@@ -21,7 +21,7 @@ xldflags=""
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
-kernelver="4.13.7"
+kernelver="4.14.1"
 
 just_prepare() {
 	rm -rf ${srcdir} ${pkgdir} ${isodir}
@@ -123,9 +123,9 @@ build_linux() {
 
 build_musl(){
 	cd ${srcdir}
-	wget http://www.musl-libc.org/releases/musl-1.1.16.tar.gz
-	tar -xf musl-1.1.16.tar.gz
-	cd musl-1.1.16
+	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
 	./configure \
 		${default_configure} \
 		--syslibdir=/lib \
@@ -144,10 +144,6 @@ build_busybox() {
 	make distclean -j $NUM_JOBS
 	make menuconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
-	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
-	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
 	make -j $NUM_JOBS
 	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
 	mkdir ${pkgdir}/usr/share/udhcpc
@@ -196,7 +192,7 @@ echo ${product_name} is starting...
 \\bzImage initrd=\\rootfs.gz
 CEOF
 	
-	echo 'default bzImage initrd=rootfs.gz vga=ask' > ${isodir}/isolinux.cfg
+	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
 	
 	genisoimage \
   		-J \
@@ -210,7 +206,7 @@ CEOF
   		-boot-info-table \
   		${isodir}/
 		
-${product_name}-${product_version}.iso
+	isohybrid -u ../${product_name}-${product_version}.iso
 }
 
 just_prepare
