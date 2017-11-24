@@ -401,6 +401,15 @@ build_libarchive() {
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
+build_mksh() {
+	cd ${srcdir}
+	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
+	tar -xf mksh-R56b.tgz
+	cd mksh
+	CC="gcc -static" sh Build.sh -r
+	install -D -m 755 mksh $pkgdir/bin/mksh
+}
+
 build_less() {
 	cd ${srcdir}
 	wget http://www.greenwoodsoftware.com/less/less-487.tar.gz
@@ -449,6 +458,7 @@ prepare_filesystem
 build_linux
 build_musl
 build_busybox
+build_mksh
 build_iana_etc
 build_libz
 build_file
@@ -459,6 +469,7 @@ build_kbd
 build_htop
 build_nano
 build_sudo
+build_less
 build_wolfssl
 build_ntpd
 build_curl
