@@ -57,7 +57,7 @@ prepare_filesystem() {
     ln -sf bin sbin
     
     cd ${pkgdir}
-    ln -sf usr/bin sbin
+    ln -sf usr/bin bin
     ln -sf usr/bin sbin
     ln -sf usr/lib lib
 
