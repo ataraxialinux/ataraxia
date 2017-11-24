@@ -19,7 +19,7 @@ xldflags=""
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 
 kernelhost="janus"
-kernelver="4.14.1"
+kernelver="4.14.2"
 
 just_prepare() {
 	rm -rf ${srcdir} ${pkgdir} ${isodir}
@@ -33,11 +33,11 @@ just_prepare() {
 prepare_filesystem() {
     cd ${pkgdir}
 
-    for _d in boot bin dev etc home sbin usr var run/lock janus; do
+    for _d in boot dev etc home usr var run/lock janus; do
             install -d -m755 ${_d}
     done
 
-    for _d in bin include lib share/misc sbin; do
+    for _d in bin include lib share/misc; do
         install -d -m755 usr/${_d}
     done
     
@@ -52,6 +52,14 @@ prepare_filesystem() {
     for _d in skel rc.d; do
         install -d -m755 etc/${_d}
     done
+    
+    cd ${pkgdir}/usr
+    ln -sf bin sbin
+    
+    cd ${pkgdir}
+    ln -sf usr/bin sbin
+    ln -sf usr/bin sbin
+    ln -sf usr/lib lib
 
     install -d -m555 proc
     install -d -m555 sys
@@ -94,22 +102,23 @@ EOF
 
 build_linux() {
 	cd ${srcdir}
-	wget http://linux-libre.fsfla.org/pub/linux-libre/releases/${kernelver}-gnu/linux-libre-${kernelver}-gnu.tar.xz
-	tar -xf linux-libre-${kernelver}-gnu.tar.xz
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
+	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
 	make mrproper -j $NUM_JOBS
-	make menuconfig -j $NUM_JOBS
+	make defconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"${kernelhost}\"/" .config
+	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
 	echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> .config
 	echo "CONFIG_OVERLAY_FS_INDEX=y" >> .config
-	sed -i "s/.*\\(CONFIG_KERNEL_.*\\)=y/\\#\\ \\1 is not set/" .config  
+	sed -i "s/.*\\(CONFIG_KERNEL_.*\\)=y/\\#\\ \\1 is not set/" .config
 	sed -i "s/.*CONFIG_KERNEL_XZ.*/CONFIG_KERNEL_XZ=y/" .config
 	sed -i "s/.*CONFIG_FB_VESA.*/CONFIG_FB_VESA=y/" .config
 	sed -i "s/.*CONFIG_LOGO_LINUX_CLUT224.*/CONFIG_LOGO_LINUX_CLUT224=y/" .config
 	sed -i "s/^CONFIG_DEBUG_KERNEL.*/\\# CONFIG_DEBUG_KERNEL is not set/" .config
 	sed -i "s/.*CONFIG_EFI_STUB.*/CONFIG_EFI_STUB=y/" .config
 	echo "CONFIG_APPLE_PROPERTIES=n" >> .config
-	rep -q "CONFIG_X86_32=y" .config
+	grep -q "CONFIG_X86_32=y" .config
 	if [ $? = 1 ] ; then
 		echo "CONFIG_EFI_MIXED=y" >> .config
 	fi
@@ -140,7 +149,7 @@ build_busybox() {
 	tar -xf busybox-1.27.2.tar.bz2
 	cd busybox-1.27.2
 	make distclean -j $NUM_JOBS
-	make menuconfig -j $NUM_JOBS
+	make defconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
 	make -j $NUM_JOBS
 	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
@@ -153,31 +162,188 @@ build_iana_etc() {
 	cd ${srcdir}
 	wget http://sethwklein.net/iana-etc-2.30.tar.bz2
 	tar -xf iana-etc-2.30.tar.bz2
-	cd iana-etc-2.30.tar.bz2
+	cd iana-etc-2.30
 	make get -j $NUM_JOBS
 	make STRIP=yes -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
-strip_fs() {
-	echo "!Striping filesystem!"
-	for dir in ${pkgdir}/bin ${pkgdir}/sbin ${pkgdir}/usr/bin ${pkgdir}/usr/sbin ${pkgdir}/usr/games
-	do
-		if [ -d "$dir" ]; then
-			find $dir -type f -exec strip -s '{}' 2>/dev/null \;
-		fi
-	done
-	find ${pkgdir} -name "*.so*" -exec $STRIP -s '{}' 2>/dev/null \;
-	find ${pkgdir} -name "*.a" -exec $STRIP --strip-debug '{}' 2>/dev/null \;
-	find ${pkgdir} -type f -name "*.pyc" -delete 2>/dev/null
-	find ${pkgdir} -type f -name "*.pyo" -delete 2>/dev/null
-	find ${pkgdir} -type f -name "perllocal.pod" -delete 2>/dev/null
-	find ${pkgdir} -type f -name ".packlist" -delete 2>/dev/null
+build_nano() {
+	cd ${srcdir}
+	wget https://www.nano-editor.org/dist/v2.9/nano-2.9.0.tar.xz
+	tar -xf nano-2.9.0.tar.xz
+	cd nano-2.9.0
+	./configure \
+		${default_configure} \
+		--disable-shared \
+		--enable-static
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_ntpd() {
+	cd ${srcdir}
+	wget https://fastly.cdn.openbsd.org/pub/OpenBSD/OpenNTPD/openntpd-6.2p3.tar.gz
+	tar -xf openntpd-6.2p3.tar.gz
+	cd openntpd-6.2p3
+	./configure \
+		${default_configure} \
+		--disable-shared \
+		--enable-static \
+		--with-privsep-user=ntp
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_links() {
+	cd ${srcdir}
+	wget http://links.twibright.com/download/links-2.14.tar.gz
+	tar -xf links-2.14.tar.gz
+	cd links-2.14
+	./configure \
+		${default_configure} \
+		--disable-shared \
+		--disable-graphics \
+		--enable-static \
+		--enable-utf8 \
+		--with-ipv6 \
+		--with-ssl \
+		--disable-graphics \
+		--without-x \
+		--without-zlib
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_htop() {
+	cd ${srcdir}
+	wget http://hisham.hm/htop/releases/2.0.2/htop-2.0.2.tar.gz
+	tar -xf htop-2.0.2.tar.gz
+	cd htop-2.0.2
+	./configure \
+		${default_configure} \
+		--disable-shared \
+		--enable-static
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_curses() {
+	cd ${srcdir}
+	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
+	tar -xf netbsd-curses-0.2.1.tar.xz
+	cd netbsd-curses-0.2.1
+	make PREFIX=${pkgdir}/usr all-static
+	make PREFIX=${pkgdir}/usr install-static
+}
+
+build_e2fsprogs() {
+	cd ${srcdir}
+	wget http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.7/e2fsprogs-1.43.7.tar.gz
+	tar -xf e2fsprogs-1.43.7.tar.gz
+	cd e2fsprogs-1.43.7
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--enable-elf-shlibs \
+		--enable-symlink-install \
+		--disable-fsck \
+		--disable-uuidd \
+		--disable-libuuid \
+		--disable-libblkid \
+		--disable-tls \
+		--disable-nls \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install install-libs -j $NUM_JOBS
+}
+
+
+build_util_linux() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.tar.xz
+	tar -xf util-linux-2.31.tar.xz
+	cd util-linux-2.31
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--enable-raw \
+		--disable-uuidd \
+		--disable-nls \
+		--disable-tls \
+		--disable-kill \
+		--disable-login \
+		--disable-last \
+		--disable-sulogin \
+		--disable-su \
+		--disable-pylibmount \
+		--without-python \
+		--without-systemd \
+		--without-systemdsystemunitdi \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_wolfssl() {
+	cd ${srcdir}
+	wget https://github.com/wolfSSL/wolfssl/archive/v3.12.2-stable.tar.gz
+	tar -xf v3.12.2-stable.tar.gz
+	cd wolfssl-3.12.2-stable
+	./autogen.sh
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--enable-all \
+		--enable-sslv3 \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_curl() {
+	cd ${srcdir}
+	wget https://curl.haxx.se/download/curl-7.56.1.tar.xz
+	tar -xf curl-7.56.1.tar.xz
+	cd curl-7.56.1
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_kbd() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
+	tar -xf kbd-2.0.4.tar.xz
+	cd kbd-2.0.4
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared \
+		--disable-vlock
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+}
+
+build_libz() {
+	cd ${srcdir}
+	wget https://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
+	tar -xf libz-1.2.8.2015.12.26.tar.gz
+	cd libz-1.2.8.2015.12.26
+	./configure \
+		${default_configure} \
+		--enable-static \
+		--disable-shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
 
 make_iso() {
 	cd ${pkgdir}
-	find . | cpio -R root:root -H newc -o | xz -9 --check=none > ${isodir}/rootfs.gz
+	find . | cpio -H newc -o | gzip -9 > ${isodir}/rootfs.gz
 	
 	cd ${isodir}
 	cp ${srcdir}/syslinux-6.03/bios/core/isolinux.bin ${isodir}/isolinux.bin
@@ -193,9 +359,7 @@ CEOF
 	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
 	
 	genisoimage \
-  		-J \
-  		-r \
-  		-o ../${product_name}-${product_version}.iso \
+  		-J -r -o ../${product_name}-${product_version}.iso \
   		-b isolinux.bin \
   		-c boot.cat \
   		-input-charset UTF-8 \
@@ -213,7 +377,6 @@ build_linux
 build_musl
 build_busybox
 build_iana_etc
-strip_fs
 make_iso
 
 exit 0
