@@ -1,5 +1,7 @@
-#!/bin/bash -e
+#!/bin/bash
 #
+
+set -e
 
 product_name="Janus Linux"
 product_version="0.1"
