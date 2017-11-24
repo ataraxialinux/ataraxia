@@ -233,8 +233,8 @@ build_curses() {
 	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
 	tar -xf netbsd-curses-0.2.1.tar.xz
 	cd netbsd-curses-0.2.1
-	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" PREFIX=${pkgdir}/usr all-static
-	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" PREFIX=${pkgdir}/usr install-static
+	make CFLAGS="-O2" LDFLAGS="-static" PREFIX=${pkgdir}/usr all-static
+	make CFLAGS="-O2" LDFLAGS="-static" PREFIX=${pkgdir}/usr install-static
 }
 
 build_e2fsprogs() {
