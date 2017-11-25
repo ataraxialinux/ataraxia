@@ -18,16 +18,19 @@ stuffdir=$(pwd)/stuff
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
 default_cross_configure="--build=$XTARGET --host=$XTARGET --target=$XTARGET"
+default_musl_configure="--build=$XTARGET_MUSL --host=$XTARGET_MUSL --target=$XTARGET_MUSL"
 
 kernelhost="janus"
 kernelver="4.14.2"
 
 just_prepare() {
 	rm -rf ${srcdir} ${tooldir} ${pkgdir} ${isodir}
-	mkdir -p ${srcdir} ${tooldir} ${pkgdir} ${isodir} ${stuffdir}
+	mkdir -p ${srcdir} ${tooldir} ${pkgdir} ${isodir}
 	
 	export CFLAGS="$xflags"
 	export CXXLAGS="$CFLAGS"
+
+	export PATH="${tooldir}/bin:$PATH"
 }
 
 prepare_cross() {
@@ -36,16 +39,20 @@ prepare_cross() {
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=i686
 			export XTARGET=$XCPU-pc-linux-musl
+			export XTARGET_MUSL=i386-pc-linux-musl
 			export KARCH=i386
 			;;
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=x86_64
 			export XTARGET=$XCPU-pc-linux-musl
+			export XTARGET_MUSL=$XCPU-pc-linux-musl
 			export KARCH=x86_64
 			;;
 		*)
 			echo "XARCH isn't set!"
+			echo "Please run: XARCH=[supported architecture] sh make.sh"
+			echo "Supported architectures: i686, x86_64"
 			exit 0
 	esac
 }
@@ -92,21 +99,21 @@ prepare_filesystem() {
     ln -s ../run var/run
 
     ln -s /proc/mounts etc/mtab
+
+	for f in fstab group hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf; do
+		install -m644 ${stuffdir}/${f} etc/
+	done
+
+	for f in shadow ; do
+		install -m600 ${stuffdir}/${f} etc/
+	done
+
+	for f in rc.init rc.shutdown rc.dhcp rc.local; do
+		install -m600 ${stuffdir}/${f} etc/rc.d/
+		chmod +x etc/rc.d/${f}
+	done
     
-    for f in fstab group host.conf hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf; do
-            install -m644 ${stuffdir}/${f} etc/
-    done
-    
-    for f in shadow ; do
-        install -m600 ${stuffdir}/${f} etc/
-    done
-    
-    for f in rc.init rc.shutdown rc.dhcp rc.local; do
-        install -m600 ${stuffdir}/${f} etc/rc.d/
-	chmod +x etc/rc.d/${f}
-    done
-    
-cat >${pkgdir}/etc/os-release<<EOF
+	cat >${pkgdir}/etc/os-release<<EOF
 NAME="${product_name}"
 ID=${product_id}
 VERSION_ID=${product_version}
@@ -115,20 +122,129 @@ HOME_URL="${product_url}"
 BUG_REPORT_URL="${product_bug_url}"
 EOF
 
-cat >${pkgdir}/etc/issue<<EOF
+	cat >${pkgdir}/etc/issue<<EOF
 ${product_name} ${product_version} \r \l
 EOF
 }
 
 build_toolchain() {
+	cd {tooldir}
+	ln -sfv . usr
+
 	cd ${srcdir}
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
 	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
+	make mrproper
+	make ARCH=$KARCH INSTALL_HDR_PATH=${tooldir} headers_install
+
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir -v ../binutils-build
+	cd ../binutils-build
+	../binutils-2.29.1/configure \
+		--prefix=${tooldir} \
+		--target=$XTARGET \
+		--with-sysroot=${tooldir} \
+		--disable-nls \
+		--disable-multilib
+	make configure-host -j $NUM_JOBS
+	make -j $NUM_JOBS
+	make install
+
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
+	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+	tar -xf gcc-7.2.0.tar.xz
+	cd gcc-7.2.0
+	tar xf ../mpfr-3.1.6.tar.xz
+	mv -v mpfr-3.1.6 mpfr
+	tar xf ../gmp-6.1.2.tar.xz
+	mv gmp-6.1.2 gmp
+	tar xf ../mpc-1.0.3.tar.gz
+	mv mpc-1.0.3 mpc
+	mkdir ../gcc-build
+	cd ../gcc-build
+	../gcc-7.2.0/configure \
+		--prefix=${tooldir} \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=${tooldir} \
+		--with-arch=$XCPU \
+		--with-newlib \
+		--without-headers \
+		--disable-nls  \
+		--disable-shared \
+		--disable-decimal-float \
+		--disable-libgomp \
+		--disable-libmudflap \
+		--disable-libssp \
+		--disable-libatomic \
+		--disable-libquadmath \
+		--disable-threads \
+		--disable-multilib \
+		--enable-languages=c
+	make all-gcc all-target-libgcc -j $NUM_JOBS
+	make install-gcc install-target-libgcc
+
+	cd ${srcdir}
+	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
+	./configure CROSS_COMPILE=$XTARGET- \
+		--prefix=/ \
+		--target=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${tooldir} install
+
+	cd ${srcdir}
+	rm -rf gcc-7.2.0
+	tar -xf gcc-7.2.0.tar.xz
+	cd gcc-7.2.0
+	tar xf ../mpfr-3.1.6.tar.xz
+	mv -v mpfr-3.1.6 mpfr
+	tar xf ../gmp-6.1.2.tar.xz
+	mv gmp-6.1.2 gmp
+	tar xf ../mpc-1.0.3.tar.gz
+	mv mpc-1.0.3 mpc
+	mkdir ../gcc-build
+	cd ../gcc-build
+	../gcc-7.2.0/configure \
+		--prefix=${tooldir} \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=${tooldir} \
+		--with-arch=$XCPU \
+		--enable-languages=c \
+		--enable-c99 \
+		--enable-long-long \
+		--disable-libmudflap \
+		--disable-multilib \
+		--disable-nls
+	make -j $NUM_JOBS
+	make install
+}
+
+toolchain_variables() {
+	export CC="$XTARGET-gcc --sysroot=${pkgdir}"
+	export CXX="$XTARGET-g++ --sysroot=${pkgdir}"
+	export AR="$XTARGET-ar"
+	export AS="$XTARGET-as"
+	export LD="$XTARGET-ld --sysroot=${pkgdir}"
+	export RANLIB="$XTARGET-ranlib"
+	export READELF="$XTARGET-readelf"
+	export STRIP="$XTARGET-strip"
 }
 
 build_linux() {
 	cd ${srcdir}
+	rm -rf linux-${kernelver}*
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
 	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
@@ -155,18 +271,23 @@ build_linux() {
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install
 }
 
+build_libgcc() {
+	cp -a ${tooldir}/lib/libgcc_s.so.1 ${pkgdir}/lib/
+}
+
 build_musl(){
 	cd ${srcdir}
+	rm -rf musl*
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
-		${default_cross_configure} \
+		${default_musl_configure} \
 		${default_configure} \
 		--syslibdir=/lib \
 		--enable-optimize=size
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_busybox() {
@@ -182,7 +303,7 @@ build_busybox() {
 	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
-	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install
 	mkdir ${pkgdir}/usr/share/udhcpc
 	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
 	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
@@ -195,7 +316,7 @@ build_iana_etc() {
 	cd iana-etc-2.30
 	make get -j $NUM_JOBS
 	make STRIP=yes -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_nano() {
@@ -207,7 +328,7 @@ build_nano() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_ntpd() {
@@ -220,7 +341,7 @@ build_ntpd() {
 		${default_configure} \
 		--with-privsep-user=ntp
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_links() {
@@ -238,7 +359,7 @@ build_links() {
 		--without-x \
 		--without-zlib
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_htop() {
@@ -250,7 +371,7 @@ build_htop() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_curses() {
@@ -258,7 +379,7 @@ build_curses() {
 	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
 	tar -xf netbsd-curses-0.2.1.tar.xz
 	cd netbsd-curses-0.2.1
-	make PREFIX=${pkgdir}/usr
+	make -j $NUM_JOBS
 	make PREFIX=${pkgdir}/usr install
 }
 
@@ -279,7 +400,7 @@ build_e2fsprogs() {
 		--disable-tls \
 		--disable-nls
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install install-libs -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install install-libs
 }
 
 
@@ -307,7 +428,7 @@ build_util_linux() {
 		--without-systemd \
 		--without-systemdsystemunitdi
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_wolfssl() {
@@ -322,7 +443,7 @@ build_wolfssl() {
 		--enable-all \
 		--enable-sslv3
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_curl() {
@@ -334,7 +455,7 @@ build_curl() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_kbd() {
@@ -347,7 +468,7 @@ build_kbd() {
 		${default_configure} \
 		--disable-vlock
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_libz() {
@@ -359,7 +480,7 @@ build_libz() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_file() {
@@ -371,22 +492,7 @@ build_file() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
-}
-
-build_extlinux() {
-	cd ${srcdir}
-	wget https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
-	tar -xf syslinux-6.03.tar.xz
-	cd syslinux-6.03
-	sed -i '/#define statfs/d;/#undef statfs/d' libinstaller/linuxioctl.h
-	make -C libinstaller
-	make -C extlinux OPTFLAGS="$xflags" LDFLAGS="$xldflags"
-	make -C linux OPTFLAGS="$xflags" LDFLAGS="$xldflags"
-	cp extlinux/extlinux $R/bin
-	cp linux/syslinux $R/bin
-	mkdir -p $R/lib/syslinux
-	cp mbr/*mbr.bin $R/lib/syslinux
+	make DESTDIR=${pkgdir} install
 }
 
 build_sudo() {
@@ -400,7 +506,7 @@ build_sudo() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_libarchive() {
@@ -416,7 +522,7 @@ build_libarchive() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_mksh() {
@@ -437,7 +543,7 @@ build_less() {
 		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 make_iso() {
@@ -473,8 +579,9 @@ CEOF
 just_prepare
 prepare_cross
 build_toolchain
+toolchain_variables
 prepare_filesystem
-build_linux
+build_libgcc
 build_musl
 build_busybox
 build_mksh
@@ -494,7 +601,7 @@ build_ntpd
 build_curl
 build_links
 build_libarchive
-build_extlinux
+build_linux
 make_iso
 
 exit 0
