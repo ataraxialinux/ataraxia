@@ -69,7 +69,7 @@ prepare_filesystem() {
 	install -d -m 0750 ${pkgdir}/root
 	install -d -m 1777 ${pkgdir}/{var/,}tmp
 	mkdir -p ${pkgdir}/usr/{bin,include,lib/{firmware,modules},share}
-	mkdir -pv ${pkgdir}/usr/local/{bin,include,lib,sbin,share}
+	mkdir -p ${pkgdir}/usr/local/{bin,include,lib,sbin,share}
 
 	cd ${pkgdir}/usr
 	ln -sf bin sbin
@@ -547,7 +547,7 @@ build_mksh() {
 	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
 	tar -xf mksh-R56b.tgz
 	cd mksh
-	Build.sh -r
+	./Build.sh -r
 	install -D -m 755 mksh $pkgdir/bin/mksh
 }
 
