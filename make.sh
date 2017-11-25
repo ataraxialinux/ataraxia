@@ -212,6 +212,7 @@ build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
+	rm -rf ../gcc-build
 	mkdir ../gcc-build
 	cd ../gcc-build
 	../gcc-7.2.0/configure \
