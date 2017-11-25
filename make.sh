@@ -547,7 +547,7 @@ build_mksh() {
 	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
 	tar -xf mksh-R56b.tgz
 	cd mksh
-	./Build.sh -r
+	sh Build.sh -r
 	install -D -m 755 mksh $pkgdir/bin/mksh
 }
 
