@@ -10,24 +10,44 @@ product_url="januslinux.github.io"
 NUM_JOBS=$(expr $(nproc) + 1)
 
 srcdir=$(pwd)/work/sources
+tooldir=$(pwd)/work/tools
 pkgdir=$(pwd)/work/rootfs
 isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
-xldflags="-static"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
+default_cross_configure="--build=$XTARGET --host=$XTARGET --target=$XTARGET"
 
 kernelhost="janus"
 kernelver="4.14.2"
 
 just_prepare() {
-	rm -rf ${srcdir} ${pkgdir} ${isodir}
-	mkdir -p ${srcdir} ${pkgdir} ${isodir} ${stuffdir}
+	rm -rf ${srcdir} ${tooldir} ${pkgdir} ${isodir}
+	mkdir -p ${srcdir} ${tooldir} ${pkgdir} ${isodir} ${stuffdir}
 	
 	export CFLAGS="$xflags"
 	export CXXLAGS="$CFLAGS"
-	export LDFLAGS="$xldflags"
+}
+
+prepare_cross() {
+	case $XARCH in
+		i686)
+			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
+			export XCPU=i686
+			export XTARGET=$XCPU-pc-linux-musl
+			export KARCH=i386
+			;;
+		x86_64)
+			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
+			export XCPU=x86_64
+			export XTARGET=$XCPU-pc-linux-musl
+			export KARCH=x86_64
+			;;
+		*)
+			echo "XARCH isn't set!"
+			exit 0
+	esac
 }
 
 prepare_filesystem() {
@@ -100,13 +120,20 @@ ${product_name} ${product_version} \r \l
 EOF
 }
 
+build_toolchain() {
+	cd ${srcdir}
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
+	tar -xf linux-${kernelver}.tar.xz
+	cd linux-${kernelver}
+}
+
 build_linux() {
 	cd ${srcdir}
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
 	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
-	make mrproper -j $NUM_JOBS
-	make defconfig -j $NUM_JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- mrproper -j $NUM_JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- defconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"${kernelhost}\"/" .config
 	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
 	echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> .config
@@ -122,10 +149,10 @@ build_linux() {
 	if [ $? = 1 ] ; then
 		echo "CONFIG_EFI_MIXED=y" >> .config
 	fi
-	make -j $NUM_JOBS
-	make INSTALL_MOD_PATH=${pkgdir} modules_install -j $NUM_JOBS
-	make INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install -j $NUM_JOBS
-	cp arch/x86/boot/bzImage ${isodir}/bzImage
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_HDR_PATH=${pkgdir}/usr headers_install
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=${pkgdir} modules_install
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install
 }
 
 build_musl(){
@@ -134,6 +161,7 @@ build_musl(){
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
+		${default_cross_configure} \
 		${default_configure} \
 		--syslibdir=/lib \
 		--enable-optimize=size
@@ -146,10 +174,15 @@ build_busybox() {
 	wget http://busybox.net/downloads/busybox-1.27.2.tar.bz2
 	tar -xf busybox-1.27.2.tar.bz2
 	cd busybox-1.27.2
-	make distclean -j $NUM_JOBS
-	make defconfig -j $NUM_JOBS
-	make -j $NUM_JOBS
-	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- defconfig -j $NUM_JOBS
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
 	mkdir ${pkgdir}/usr/share/udhcpc
 	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
 	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
@@ -171,6 +204,7 @@ build_nano() {
 	tar -xf nano-2.9.0.tar.xz
 	cd nano-2.9.0
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -182,7 +216,8 @@ build_ntpd() {
 	tar -xf openntpd-6.2p3.tar.gz
 	cd openntpd-6.2p3
 	./configure \
-		${default_configure}
+		${default_cross_configure} \
+		${default_configure} \
 		--with-privsep-user=ntp
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -194,6 +229,7 @@ build_links() {
 	tar -xf links-2.14.tar.gz
 	cd links-2.14
 	./configure \
+		${default_cross_configure} \
 		${default_configure} \
 		--disable-graphics \
 		--enable-utf8 \
@@ -211,6 +247,7 @@ build_htop() {
 	tar -xf htop-2.0.2.tar.gz
 	cd htop-2.0.2
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -231,6 +268,7 @@ build_e2fsprogs() {
 	tar -xf e2fsprogs-1.43.7.tar.gz
 	cd e2fsprogs-1.43.7
 	./configure \
+		${default_cross_configure} \
 		${default_configure} \
 		--enable-elf-shlibs \
 		--enable-symlink-install \
@@ -251,6 +289,7 @@ build_util_linux() {
 	tar -xf util-linux-2.31.tar.xz
 	cd util-linux-2.31
 	./configure \
+		${default_cross_configure} \
 		${default_configure} \
 		--enable-raw \
 		--disable-uuidd \
@@ -262,6 +301,8 @@ build_util_linux() {
 		--disable-sulogin \
 		--disable-su \
 		--disable-pylibmount \
+		--disable-makeinstall-chown \
+		--disable-makeinstall-setuid \
 		--without-python \
 		--without-systemd \
 		--without-systemdsystemunitdi
@@ -276,6 +317,7 @@ build_wolfssl() {
 	cd wolfssl-3.12.2-stable
 	./autogen.sh
 	./configure \
+		${default_cross_configure} \
 		${default_configure} \
 		--enable-all \
 		--enable-sslv3
@@ -289,6 +331,7 @@ build_curl() {
 	tar -xf curl-7.56.1.tar.xz
 	cd curl-7.56.1
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -300,6 +343,7 @@ build_kbd() {
 	tar -xf kbd-2.0.4.tar.xz
 	cd kbd-2.0.4
 	./configure \
+		${default_cross_configure} \
 		${default_configure} \
 		--disable-vlock
 	make -j $NUM_JOBS
@@ -312,6 +356,7 @@ build_libz() {
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -323,6 +368,7 @@ build_file() {
 	tar -xf file-5.32.tar.gz
 	cd file-5.32
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -351,6 +397,7 @@ build_sudo() {
 	sed -i "/<config.h>/s@.*@&\n\n#include <sys/types.h>@" \
 		src/preserve_fds.c
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -366,6 +413,7 @@ build_libarchive() {
 	sed -i 's@xz -d@unxz@' libarchive/archive_read_support_filter_xz.c
 	sed -i 's@lzma -d@unlzma@' libarchive/archive_read_support_filter_xz.c
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -386,6 +434,7 @@ build_less() {
 	tar -xf less-487.tar.gz
 	cd less-487
 	./configure \
+		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -422,6 +471,8 @@ CEOF
 }
 
 just_prepare
+prepare_cross
+build_toolchain
 prepare_filesystem
 build_linux
 build_musl
