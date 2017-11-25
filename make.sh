@@ -1,6 +1,8 @@
 #!/bin/bash
 #
 
+set -e
+
 product_name="Janus Linux"
 product_version="0.1"
 product_id="janus"
@@ -44,7 +46,7 @@ prepare_cross() {
 			;;
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
-			export XCPU=x86_64
+			export XCPU=nocona
 			export XTARGET=$XCPU-pc-linux-musl
 			export XTARGET_MUSL=$XCPU-pc-linux-musl
 			export KARCH=x86_64
