@@ -373,8 +373,8 @@ build_curses() {
 	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
 	tar -xf netbsd-curses-0.2.1.tar.xz
 	cd netbsd-curses-0.2.1
-	make -j $NUM_JOBS
-	make PREFIX=${pkgdir}/usr install
+	make PREFIX=/usr DESTDIR=${pkgdir} -j $NUM_JOBS
+	make PREFIX=/usr DESTDIR=${pkgdir} install
 }
 
 build_e2fsprogs() {
