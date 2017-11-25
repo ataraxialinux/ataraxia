@@ -96,7 +96,7 @@ prepare_filesystem() {
 		install -m644 ${stuffdir}/${f} etc/
 	done
 
-	for f in shadow ; do
+	for f in shadow gshadow; do
 		install -m600 ${stuffdir}/${f} etc/
 	done
 
