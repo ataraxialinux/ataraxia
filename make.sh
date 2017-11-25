@@ -63,7 +63,7 @@ prepare_cross() {
 }
 
 prepare_filesystem() {
-	mkdir -p ${pkgdir}/{boot,dev,etc,home}
+	mkdir -p ${pkgdir}/{boot,dev,etc/{rc.d,skel},home}
 	mkdir -p ${pkgdir}/{mnt,opt,proc,srv,sys}
 	mkdir -p ${pkgdir}/var/{cache,lib,local,lock,log,opt,run,spool}
 	install -d -m 0750 ${pkgdir}/root
