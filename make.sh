@@ -63,47 +63,34 @@ prepare_cross() {
 }
 
 prepare_filesystem() {
-    cd ${pkgdir}
+	mkdir -p ${pkgdir}/{boot,dev,etc,home}
+	mkdir -p ${pkgdir}/{mnt,opt,proc,srv,sys}
+	mkdir -p ${pkgdir}/var/{cache,lib,local,lock,log,opt,run,spool}
+	install -d -m 0750 ${pkgdir}/root
+	install -d -m 1777 ${pkgdir}/{var/,}tmp
+	mkdir -p ${pkgdir}/usr/{bin,include,lib/{firmware,modules},share}
+	mkdir -pv ${pkgdir}/usr/local/{bin,include,lib,sbin,share}
+	
+	cd ${pkgdir}/usr
+	ln -sf bin sbin
+	
+	cd ${pkgdir}
+	ln -sf usr/bin bin
+	ln -sf usr/bin sbin
+	ln -sf usr/lib lib
+	
+	case $XARCH in
+		x86_64)
+			cd ${pkgdir}/usr
+			ln -sf lib lib64
+			cd ${pkgdir}
+			ln -sf usr/lib lib64
+	esac
 
-    for _d in boot dev etc home usr var run/lock janus; do
-            install -d -m755 ${_d}
-    done
+	ln -sf /proc/mounts ${pkgdir}/etc/mtab
 
-    for _d in bin include lib share/misc; do
-        install -d -m755 usr/${_d}
-    done
-    
-    for _d in $(seq 8); do
-        install -d -m755 usr/share/man/man${_d}
-    done
-    
-    for _d in bin lib sbin; do
-        install -d -m755 janus/${_d}
-    done
-    
-    for _d in skel rc.d; do
-        install -d -m755 etc/${_d}
-    done
-    
-    cd ${pkgdir}/usr
-    ln -sf bin sbin
-    
-    cd ${pkgdir}
-    ln -sf usr/bin bin
-    ln -sf usr/bin sbin
-    ln -sf usr/lib lib
-
-    install -d -m555 proc
-    install -d -m555 sys
-    install -d -m0750 root
-    install -d -m1777 tmp
-
-    install -d var/{cache/man,lib,log}
-    install -d -m1777 var/{tmp,spool/{,mail,uucp}}
-    ln -s spool/mail var/mail
-    ln -s ../run var/run
-
-    ln -s /proc/mounts etc/mtab
+	touch ${pkgdir}/var/log/lastlog
+	chmod -v 664 ${pkgdir}/var/log/lastlog
 
 	for f in fstab group hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf; do
 		install -m644 ${stuffdir}/${f} etc/
