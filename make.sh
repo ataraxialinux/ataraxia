@@ -18,8 +18,6 @@ stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --bindir=/usr/bin --sbindir=/usr/sbin --localstatedir=/var"
-default_cross_configure="--build=$XHOST --host=$XTARGET"
-default_musl_configure="--build=$XHOST --host=$XTARGET_MUSL"
 
 kernelhost="janus"
 kernelver="4.14.2"
@@ -274,7 +272,6 @@ build_musl(){
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
-		${default_musl_configure} \
 		${default_configure} \
 		--syslibdir=/lib \
 		--enable-optimize=size
@@ -320,7 +317,6 @@ build_nano() {
 	tar -xf nano-2.9.0.tar.xz
 	cd nano-2.9.0
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -332,7 +328,6 @@ build_ntpd() {
 	tar -xf openntpd-6.2p3.tar.gz
 	cd openntpd-6.2p3
 	./configure \
-		${default_cross_configure} \
 		${default_configure} \
 		--with-privsep-user=ntp
 	make -j $NUM_JOBS
@@ -345,7 +340,6 @@ build_links() {
 	tar -xf links-2.14.tar.gz
 	cd links-2.14
 	./configure \
-		${default_cross_configure} \
 		${default_configure} \
 		--disable-graphics \
 		--enable-utf8 \
@@ -363,7 +357,6 @@ build_htop() {
 	tar -xf htop-2.0.2.tar.gz
 	cd htop-2.0.2
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -384,7 +377,6 @@ build_e2fsprogs() {
 	tar -xf e2fsprogs-1.43.7.tar.gz
 	cd e2fsprogs-1.43.7
 	./configure \
-		${default_cross_configure} \
 		${default_configure} \
 		--enable-elf-shlibs \
 		--enable-symlink-install \
@@ -405,7 +397,6 @@ build_util_linux() {
 	tar -xf util-linux-2.31.tar.xz
 	cd util-linux-2.31
 	./configure \
-		${default_cross_configure} \
 		${default_configure} \
 		--enable-raw \
 		--disable-uuidd \
@@ -433,7 +424,6 @@ build_libressl() {
 	cd libressl-2.6.3
 	./autogen.sh
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -445,7 +435,6 @@ build_openssh() {
 	tar -xf openssh-7.6p1.tar.gz
 	cd openssh-7.6p1
 	./configure \
-		${default_cross_configure} \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--sysconfdir=/etc/ssh \
@@ -470,7 +459,6 @@ build_curl() {
 	tar -xf curl-7.56.1.tar.xz
 	cd curl-7.56.1
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -482,7 +470,6 @@ build_kbd() {
 	tar -xf kbd-2.0.4.tar.xz
 	cd kbd-2.0.4
 	./configure \
-		${default_cross_configure} \
 		${default_configure} \
 		--disable-vlock
 	make -j $NUM_JOBS
@@ -495,7 +482,6 @@ build_libz() {
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -507,7 +493,6 @@ build_file() {
 	tar -xf file-5.32.tar.gz
 	cd file-5.32
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -521,7 +506,6 @@ build_sudo() {
 	sed -i "/<config.h>/s@.*@&\n\n#include <sys/types.h>@" \
 		src/preserve_fds.c
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -537,7 +521,6 @@ build_libarchive() {
 	sed -i 's@xz -d@unxz@' libarchive/archive_read_support_filter_xz.c
 	sed -i 's@lzma -d@unlzma@' libarchive/archive_read_support_filter_xz.c
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -558,7 +541,6 @@ build_less() {
 	tar -xf less-487.tar.gz
 	cd less-487
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -570,7 +552,6 @@ build_readline() {
 	tar -xf readline-7.0.tar.gz
 	cd readline-7.0
 	./configure \
-		${default_cross_configure} \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
