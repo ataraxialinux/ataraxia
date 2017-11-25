@@ -70,15 +70,15 @@ prepare_filesystem() {
 	install -d -m 1777 ${pkgdir}/{var/,}tmp
 	mkdir -p ${pkgdir}/usr/{bin,include,lib/{firmware,modules},share}
 	mkdir -pv ${pkgdir}/usr/local/{bin,include,lib,sbin,share}
-	
+
 	cd ${pkgdir}/usr
 	ln -sf bin sbin
-	
+
 	cd ${pkgdir}
 	ln -sf usr/bin bin
 	ln -sf usr/bin sbin
 	ln -sf usr/lib lib
-	
+
 	case $XARCH in
 		x86_64)
 			cd ${pkgdir}/usr
@@ -104,7 +104,7 @@ prepare_filesystem() {
 		install -m600 ${stuffdir}/${f} etc/rc.d/
 		chmod +x etc/rc.d/${f}
 	done
-    
+
 	cat >${pkgdir}/etc/os-release<<EOF
 NAME="${product_name}"
 ID=${product_id}
