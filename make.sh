@@ -584,20 +584,20 @@ strip_filesystem() {
 make_iso() {
 	cd ${pkgdir}
 	find . | cpio -H newc -o | gzip -9 > ${isodir}/rootfs.gz
-	
+
 	cd ${isodir}
 	cp ${srcdir}/syslinux-6.03/bios/core/isolinux.bin ${isodir}/isolinux.bin
 	cp ${srcdir}/syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 ${isodir}/ldlinux.c32
-	
+
 	mkdir -p ${isodir}/efi/boot
 cat << CEOF > ${isodir}/efi/boot/startup.nsh
 echo -off
 echo ${product_name} is starting...
 \\bzImage initrd=\\rootfs.gz
 CEOF
-	
+
 	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
-	
+
 	genisoimage \
   		-J -r -o ${topdir}/${product_name}-${product_version}.iso \
   		-b isolinux.bin \
@@ -607,7 +607,7 @@ CEOF
   		-boot-load-size 4 \
   		-boot-info-table \
   		${isodir}/
-		
+
 	isohybrid -u ${topdir}/${product_name}-${product_version}.iso
 }
 
