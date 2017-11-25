@@ -19,7 +19,7 @@ isodir=$(pwd)/work/rootcd
 stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
-default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --sbindir=/sbin --localstatedir=/var"
+default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --bindir=/usr/bin --sbindir=/usr/sbin --localstatedir=/var"
 default_cross_configure="--build=$XTARGET --host=$XTARGET --target=$XTARGET"
 default_musl_configure="--build=$XTARGET_MUSL --host=$XTARGET_MUSL --target=$XTARGET_MUSL"
 
@@ -458,10 +458,10 @@ build_openssh() {
 	cd openssh-7.6p1
 	./configure \
 		${default_cross_configure} \
-		${default_configure} \
+		--prefix=/usr \
+		--libdir=/usr/lib \
 		--sysconfdir=/etc/ssh \
 		--libexecdir=/usr/lib/ssh \
-		--mandir=/usr/share/man \
 		--with-pid-dir=/run \
 		--with-mantype=man \
 		--with-privsep-path=/var/empty \
@@ -588,6 +588,12 @@ build_readline() {
 	make DESTDIR=${pkgdir} install
 }
 
+strip_filesystem() {
+	find ${pkgdir} -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-all --strip-unneeded --strip-debug 2>/dev/null || true
+	find ${pkgdir} -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-all --strip-unneeded --strip-debug 2>/dev/null || true
+	find ${pkgdir} -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip -g 
+}
+
 make_iso() {
 	cd ${pkgdir}
 	find . | cpio -H newc -o | gzip -9 > ${isodir}/rootfs.gz
@@ -646,6 +652,7 @@ build_ntpd
 build_curl
 build_links
 build_libarchive
+strip_filesystem
 make_iso
 
 exit 0
