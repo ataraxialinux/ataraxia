@@ -28,7 +28,7 @@ kernelver="4.14.2"
 just_prepare() {
 	rm -rf ${srcdir} ${tooldir} ${pkgdir} ${isodir}
 	mkdir -p ${srcdir} ${tooldir} ${pkgdir} ${isodir}
-	
+
 	export CFLAGS="$xflags"
 	export CXXLAGS="$CFLAGS"
 
@@ -47,8 +47,8 @@ prepare_cross() {
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=nocona
-			export XTARGET=$XCPU-pc-linux-musl
-			export XTARGET_MUSL=$XCPU-pc-linux-musl
+			export XTARGET=x86_64-pc-linux-musl
+			export XTARGET_MUSL=x86_64-pc-linux-musl
 			export KARCH=x86_64
 			;;
 		*)
