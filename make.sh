@@ -128,8 +128,8 @@ EOF
 }
 
 build_toolchain() {
-	cd {tooldir}
-	ln -sfv . usr
+	cd ${tooldir}
+	ln -sf . usr
 
 	cd ${srcdir}
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
