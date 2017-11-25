@@ -301,6 +301,9 @@ build_busybox() {
 	mkdir ${pkgdir}/usr/share/udhcpc
 	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
 	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
+	cd ${pkgdir}
+	ln -sf bin/busybox init
+	rm -rf linuxrc
 }
 
 build_iana_etc() {
