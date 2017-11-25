@@ -20,8 +20,8 @@ stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --bindir=/usr/bin --sbindir=/usr/sbin --localstatedir=/var"
-default_cross_configure="--build=$XTARGET --host=$XTARGET --target=$XTARGET"
-default_musl_configure="--build=$XTARGET_MUSL --host=$XTARGET_MUSL --target=$XTARGET_MUSL"
+default_cross_configure="--build=$XHOST --host=$XTARGET"
+default_musl_configure="--build=$XHOST --host=$XTARGET_MUSL"
 
 kernelhost="janus"
 kernelver="4.14.2"
