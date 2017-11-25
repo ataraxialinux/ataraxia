@@ -584,6 +584,7 @@ strip_filesystem() {
 make_iso() {
 	cd ${pkgdir}
 	find . | cpio -H newc -o | gzip -9 > ${isodir}/rootfs.gz
+	cp -a ${srcdir}/linux-${kernelver}/arch/x86/boot/bzImage ${isodir}/bzImage
 
 	cd ${isodir}
 	cp ${srcdir}/syslinux-6.03/bios/core/isolinux.bin ${isodir}/isolinux.bin
