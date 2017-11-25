@@ -11,6 +11,7 @@ product_url="januslinux.github.io"
 
 NUM_JOBS=$(expr $(nproc) + 1)
 
+topdir=$(pwd)
 srcdir=$(pwd)/work/sources
 tooldir=$(pwd)/work/tools
 pkgdir=$(pwd)/work/rootfs
@@ -43,6 +44,7 @@ prepare_cross() {
 			export XTARGET=$XCPU-pc-linux-musl
 			export XTARGET_MUSL=i386-pc-linux-musl
 			export KARCH=i386
+			export libSuffix=
 			;;
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
@@ -50,6 +52,7 @@ prepare_cross() {
 			export XTARGET=x86_64-pc-linux-musl
 			export XTARGET_MUSL=x86_64-pc-linux-musl
 			export KARCH=x86_64
+			export libSuffix=64
 			;;
 		*)
 			echo "XARCH isn't set!"
@@ -219,6 +222,7 @@ build_toolchain() {
 	cd ../gcc-build
 	../gcc-7.2.0/configure \
 		--prefix=${tooldir} \
+		--libdir=${tooldir}/lib \
 		--build=$XHOST \
 		--host=$XHOST \
 		--target=$XTARGET \
@@ -275,7 +279,7 @@ build_linux() {
 }
 
 build_libgcc() {
-	cp -a ${tooldir}/lib/libgcc_s.so.1 ${pkgdir}/lib/
+	cp -a ${tooldir}/$XTARGET/lib${libSuffix}/libgcc_s.so.1 ${pkgdir}/lib/
 }
 
 build_musl(){
@@ -434,17 +438,40 @@ build_util_linux() {
 	make DESTDIR=${pkgdir} install
 }
 
-build_wolfssl() {
+build_libressl() {
 	cd ${srcdir}
-	wget https://github.com/wolfSSL/wolfssl/archive/v3.12.2-stable.tar.gz
-	tar -xf v3.12.2-stable.tar.gz
-	cd wolfssl-3.12.2-stable
+	wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.3.tar.gz
+	tar -xf libressl-2.6.3.tar.gz
+	cd libressl-2.6.3
 	./autogen.sh
 	./configure \
 		${default_cross_configure} \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_openssh() {
+	cd ${srcdir}
+	wget https://fastly.cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz
+	tar -xf openssh-7.6p1.tar.gz
+	cd openssh-7.6p1
+	./configure \
+		${default_cross_configure} \
 		${default_configure} \
-		--enable-all \
-		--enable-sslv3
+		--sysconfdir=/etc/ssh \
+		--libexecdir=/usr/lib/ssh \
+		--mandir=/usr/share/man \
+		--with-pid-dir=/run \
+		--with-mantype=man \
+		--with-privsep-path=/var/empty \
+		--with-xauth=/usr/bin/xauth \
+		--with-privsep-user=sshd \
+		--with-md5-passwords \
+		--with-ssl-engine \
+		--disable-lastlog \
+		--disable-strip \
+		--disable-wtmp
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -549,6 +576,18 @@ build_less() {
 	make DESTDIR=${pkgdir} install
 }
 
+build_readline() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
+	tar -xf readline-7.0.tar.gz
+	cd readline-7.0
+	./configure \
+		${default_cross_configure} \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
 make_iso() {
 	cd ${pkgdir}
 	find . | cpio -H newc -o | gzip -9 > ${isodir}/rootfs.gz
@@ -567,7 +606,7 @@ CEOF
 	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
 	
 	genisoimage \
-  		-J -r -o ../${product_name}-${product_version}.iso \
+  		-J -r -o ${topdir}/${product_name}-${product_version}.iso \
   		-b isolinux.bin \
   		-c boot.cat \
   		-input-charset UTF-8 \
@@ -576,7 +615,7 @@ CEOF
   		-boot-info-table \
   		${isodir}/
 		
-	isohybrid -u ../${product_name}-${product_version}.iso
+	isohybrid -u ${topdir}/${product_name}-${product_version}.iso
 }
 
 just_prepare
@@ -584,6 +623,7 @@ prepare_cross
 build_toolchain
 toolchain_variables
 prepare_filesystem
+build_linux
 build_libgcc
 build_musl
 build_busybox
@@ -592,6 +632,7 @@ build_iana_etc
 build_libz
 build_file
 build_curses
+build_readline
 build_e2fsprogs
 build_util_linux
 build_kbd
@@ -599,12 +640,12 @@ build_htop
 build_nano
 build_sudo
 build_less
-build_wolfssl
+build_libressl
+build_openssh
 build_ntpd
 build_curl
 build_links
 build_libarchive
-build_linux
 make_iso
 
 exit 0
