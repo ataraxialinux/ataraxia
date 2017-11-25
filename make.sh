@@ -136,8 +136,6 @@ build_musl(){
 	./configure \
 		${default_configure} \
 		--syslibdir=/lib \
-		--enable-shared \
-		--enable-static \
 		--enable-optimize=size
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -150,7 +148,6 @@ build_busybox() {
 	cd busybox-1.27.2
 	make distclean -j $NUM_JOBS
 	make defconfig -j $NUM_JOBS
-	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
 	make -j $NUM_JOBS
 	make CONFIG_PREFIX=${pkgdir} install -j $NUM_JOBS
 	mkdir ${pkgdir}/usr/share/udhcpc
@@ -174,9 +171,7 @@ build_nano() {
 	tar -xf nano-2.9.0.tar.xz
 	cd nano-2.9.0
 	./configure \
-		${default_configure} \
-		--disable-shared \
-		--enable-static
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -187,9 +182,7 @@ build_ntpd() {
 	tar -xf openntpd-6.2p3.tar.gz
 	cd openntpd-6.2p3
 	./configure \
-		${default_configure} \
-		--disable-shared \
-		--enable-static \
+		${default_configure}
 		--with-privsep-user=ntp
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -202,13 +195,10 @@ build_links() {
 	cd links-2.14
 	./configure \
 		${default_configure} \
-		--disable-shared \
 		--disable-graphics \
-		--enable-static \
 		--enable-utf8 \
 		--with-ipv6 \
 		--with-ssl \
-		--disable-graphics \
 		--without-x \
 		--without-zlib
 	make -j $NUM_JOBS
@@ -221,9 +211,7 @@ build_htop() {
 	tar -xf htop-2.0.2.tar.gz
 	cd htop-2.0.2
 	./configure \
-		${default_configure} \
-		--disable-shared \
-		--enable-static
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -233,8 +221,8 @@ build_curses() {
 	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
 	tar -xf netbsd-curses-0.2.1.tar.xz
 	cd netbsd-curses-0.2.1
-	make CFLAGS="-O2" LDFLAGS="-static" PREFIX=${pkgdir}/usr all-static
-	make CFLAGS="-O2" LDFLAGS="-static" PREFIX=${pkgdir}/usr install-static
+	make PREFIX=${pkgdir}/usr
+	make PREFIX=${pkgdir}/usr install
 }
 
 build_e2fsprogs() {
@@ -244,7 +232,6 @@ build_e2fsprogs() {
 	cd e2fsprogs-1.43.7
 	./configure \
 		${default_configure} \
-		--enable-static \
 		--enable-elf-shlibs \
 		--enable-symlink-install \
 		--disable-fsck \
@@ -252,8 +239,7 @@ build_e2fsprogs() {
 		--disable-libuuid \
 		--disable-libblkid \
 		--disable-tls \
-		--disable-nls \
-		--disable-shared
+		--disable-nls
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install install-libs -j $NUM_JOBS
 }
@@ -266,7 +252,6 @@ build_util_linux() {
 	cd util-linux-2.31
 	./configure \
 		${default_configure} \
-		--enable-static \
 		--enable-raw \
 		--disable-uuidd \
 		--disable-nls \
@@ -279,8 +264,7 @@ build_util_linux() {
 		--disable-pylibmount \
 		--without-python \
 		--without-systemd \
-		--without-systemdsystemunitdi \
-		--disable-shared
+		--without-systemdsystemunitdi
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -293,10 +277,8 @@ build_wolfssl() {
 	./autogen.sh
 	./configure \
 		${default_configure} \
-		--enable-static \
 		--enable-all \
-		--enable-sslv3 \
-		--disable-shared
+		--enable-sslv3
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -307,9 +289,7 @@ build_curl() {
 	tar -xf curl-7.56.1.tar.xz
 	cd curl-7.56.1
 	./configure \
-		${default_configure} \
-		--enable-static \
-		--disable-shared
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -321,8 +301,6 @@ build_kbd() {
 	cd kbd-2.0.4
 	./configure \
 		${default_configure} \
-		--enable-static \
-		--disable-shared \
 		--disable-vlock
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
@@ -334,9 +312,7 @@ build_libz() {
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
 	./configure \
-		${default_configure} \
-		--enable-static \
-		--disable-shared
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -347,9 +323,7 @@ build_file() {
 	tar -xf file-5.32.tar.gz
 	cd file-5.32
 	./configure \
-		${default_configure} \
-		--enable-static \
-		--disable-shared
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -377,9 +351,7 @@ build_sudo() {
 	sed -i "/<config.h>/s@.*@&\n\n#include <sys/types.h>@" \
 		src/preserve_fds.c
 	./configure \
-		${default_configure} \
-		--enable-static \
-		--disable-shared
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -394,9 +366,7 @@ build_libarchive() {
 	sed -i 's@xz -d@unxz@' libarchive/archive_read_support_filter_xz.c
 	sed -i 's@lzma -d@unlzma@' libarchive/archive_read_support_filter_xz.c
 	./configure \
-		${default_configure} \
-		--enable-static \
-		--disable-shared
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
@@ -406,7 +376,7 @@ build_mksh() {
 	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
 	tar -xf mksh-R56b.tgz
 	cd mksh
-	CC="gcc -static" sh Build.sh -r
+	Build.sh -r
 	install -D -m 755 mksh $pkgdir/bin/mksh
 }
 
@@ -416,9 +386,7 @@ build_less() {
 	tar -xf less-487.tar.gz
 	cd less-487
 	./configure \
-		${default_configure} \
-		--enable-static \
-		--disable-shared
+		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install -j $NUM_JOBS
 }
