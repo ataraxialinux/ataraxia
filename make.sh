@@ -661,42 +661,6 @@ build_gawk() {
 	make DESTDIR=${pkgdir} install
 }
 
-build_gmp() {
-	cd ${srcdir}
-	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	tar -xf gmp-6.1.2.tar.xz
-	cd gmp-6.1.2
-	./configure \
-		--host=$XTARGET \
-		${default_configure}
-	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install
-}
-
-build_mpfr() {
-	cd ${srcdir}
-	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
-	tar -xf mpfr-3.1.6.tar.xz
-	cd mpfr-3.1.6
-	./configure \
-		--host=$XTARGET \
-		${default_configure}
-	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install
-}
-
-build_mpc() {
-	cd ${srcdir}
-	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
-	tar -xf mpc-1.0.3.tar.gz
-	cd mpc-1.0.3
-	./configure \
-		--host=$XTARGET \
-		${default_configure}
-	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} install
-}
-
 build_gcc() {
 	cd ${srcdir}
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
