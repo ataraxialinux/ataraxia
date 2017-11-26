@@ -700,8 +700,17 @@ build_mpc() {
 build_gcc() {
 	cd ${srcdir}
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
+	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
+	tar xf ../mpfr-3.1.6.tar.xz
+	mv -v mpfr-3.1.6 mpfr
+	tar xf ../gmp-6.1.2.tar.xz
+	mv gmp-6.1.2 gmp
+	tar xf ../mpc-1.0.3.tar.gz
+	mv mpc-1.0.3 mpc
 	mkdir build
 	cd build
 	../configure \
@@ -731,12 +740,7 @@ build_gcc() {
 		--enable-languages=c,c++,lto \
 		--enable-clocale=generic
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} \
-		install-gcc \
-		install-lto-plugin \
-		install-target-libgcc \
-		install-target-libssp \
-		install-target-libstdc++-v3
+	make DESTDIR=${pkgdir} install
 }
 
 build_binutils() {
@@ -757,10 +761,7 @@ build_binutils() {
 		--enable-deterministic-archives \
 		--enable-lto
 	make -j $NUM_JOBS
-	make DESTDIR=${pkgdir} \
-		install-gas \
-		install-ld \
-		install-binutils
+	make DESTDIR=${pkgdir} install
 }
 
 build_make() {
@@ -973,16 +974,13 @@ build_mksh
 build_iana_etc
 build_zlib
 build_file
-build_gmp
-build_mpfr
-build_mpc
-build_m4
-build_sed
-build_gawk
 build_gcc
 build_binutils
 build_make
 build_patch
+build_m4
+build_sed
+build_gawk
 build_perl
 build_pkg_config
 build_bzip2
