@@ -1,5 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 #
+
+set -ex
 
 product_name="Janus Linux"
 product_version="0.1"
@@ -32,28 +34,30 @@ just_prepare() {
 	export PATH="${tooldir}/bin:$PATH"
 }
 
+clean_sources() {
+	rm -rf ${srcdir}/*
+}
+
 prepare_cross() {
 	case $XARCH in
 		i686)
-			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
+			export XHOST=$($CC -dumpmachine|sed 's/gnu/musl/')
 			export XCPU=i686
-			export XTARGET=$XCPU-pc-linux-musl
-			export XTARGET_MUSL=i386-pc-linux-musl
+			export XTARGET=i686-pc-linux-musl
 			export KARCH=i386
 			export libSuffix=
 			;;
 		x86_64)
-			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
+			export XHOST=$($CC -dumpmachine|sed 's/gnu/musl/')
 			export XCPU=nocona
 			export XTARGET=x86_64-pc-linux-musl
-			export XTARGET_MUSL=x86_64-pc-linux-musl
 			export KARCH=x86_64
 			export libSuffix=64
 			;;
 		*)
 			echo "XARCH isn't set!"
 			echo "Please run: XARCH=[supported architecture] sh make.sh"
-			echo "Supported architectures: i686, x86_64"
+			echo "Supported architectures: i686(in development!), x86_64"
 			exit 0
 	esac
 }
@@ -111,7 +115,18 @@ BUG_REPORT_URL="${product_bug_url}"
 EOF
 
 	cat >${pkgdir}/etc/issue<<EOF
-${product_name} ${product_version} \r \l
+
+
+       _                         _      _                  
+      | |                       | |    (_)                 
+      | | __ _ _ __  _   _ ___  | |     _ _ __  _   ___  __
+  _   | |/ _` | '_ \| | | / __| | |    | | '_ \| | | \ \/ /
+ | |__| | (_| | | | | |_| \__ \ | |____| | | | | |_| |>  < 
+  \____/ \__,_|_| |_|\__,_|___/ |______|_|_| |_|\__,_/_/\_\
+                                                           
+                                                           
+
+			  You are running on Linux \r on \m
 EOF
 }
 
@@ -185,8 +200,8 @@ build_toolchain() {
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure CROSS_COMPILE=$XTARGET- \
-		--prefix=/ \
-		--target=$XTARGET
+		--target=$XTARGET \
+		--prefix=/
 	make -j $NUM_JOBS
 	make DESTDIR=${tooldir} install
 
@@ -232,14 +247,23 @@ toolchain_variables() {
 	export STRIP="$XTARGET-strip"
 }
 
+build_linux_headers() {
+	cd ${srcdir}
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
+	tar -xf linux-${kernelver}.tar.xz
+	cd linux-${kernelver}
+	make mrproper
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_HDR_PATH=${pkgdir}/usr headers_install
+}
+
 build_linux() {
 	cd ${srcdir}
 	rm -rf linux-${kernelver}*
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
 	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
-	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- mrproper -j $NUM_JOBS
-	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- defconfig -j $NUM_JOBS
+	make mrproper -j $NUM_JOBS
+	make ARCH=$KARCH defconfig -j $NUM_JOBS
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"${kernelhost}\"/" .config
 	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
 	echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> .config
@@ -255,23 +279,20 @@ build_linux() {
 	if [ $? = 1 ] ; then
 		echo "CONFIG_EFI_MIXED=y" >> .config
 	fi
+	make ARCH=$KARCH silentoldconfig -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
-	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_HDR_PATH=${pkgdir}/usr headers_install
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=${pkgdir} modules_install
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install
-}
-
-build_libgcc() {
-	cp -a ${tooldir}/$XTARGET/lib${libSuffix}/libgcc_s.so.1 ${pkgdir}/lib/
+	cp -a arch/x86/boot/bzImage ${pkgdir}/boot/bzImage-${kernelver}
 }
 
 build_musl(){
 	cd ${srcdir}
-	rm -rf musl*
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
+		--host=$XTARGET \
 		${default_configure} \
 		--syslibdir=/lib \
 		--enable-optimize=size
@@ -293,7 +314,7 @@ build_busybox() {
 	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install
-	mkdir ${pkgdir}/usr/share/udhcpc
+	mkdir -p ${pkgdir}/usr/share/udhcpc
 	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
 	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
 	cd ${pkgdir}
@@ -317,17 +338,20 @@ build_nano() {
 	tar -xf nano-2.9.0.tar.xz
 	cd nano-2.9.0
 	./configure \
-		${default_configure}
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-nls
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
 
-build_ntpd() {
+build_openntpd() {
 	cd ${srcdir}
 	wget https://fastly.cdn.openbsd.org/pub/OpenBSD/OpenNTPD/openntpd-6.2p3.tar.gz
 	tar -xf openntpd-6.2p3.tar.gz
 	cd openntpd-6.2p3
 	./configure \
+		--host=$XTARGET \
 		${default_configure} \
 		--with-privsep-user=ntp
 	make -j $NUM_JOBS
@@ -340,13 +364,14 @@ build_links() {
 	tar -xf links-2.14.tar.gz
 	cd links-2.14
 	./configure \
+		--host=$XTARGET \
 		${default_configure} \
 		--disable-graphics \
 		--enable-utf8 \
 		--with-ipv6 \
 		--with-ssl \
-		--without-x \
-		--without-zlib
+		--with-zlib \
+		--without-x
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -357,18 +382,32 @@ build_htop() {
 	tar -xf htop-2.0.2.tar.gz
 	cd htop-2.0.2
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
 
-build_curses() {
+build_ncurses() {
 	cd ${srcdir}
-	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
-	tar -xf netbsd-curses-0.2.1.tar.xz
-	cd netbsd-curses-0.2.1
-	make PREFIX=/usr DESTDIR=${pkgdir} -j $NUM_JOBS
-	make PREFIX=/usr DESTDIR=${pkgdir} install
+	wget http://invisible-mirror.net/archives/ncurses/current/ncurses-6.0-20171125.tgz
+	tar -xf ncurses-6.0-20171125.tgz
+	cd ncurses-6.0-20171125
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--with-pkg-config-libdir=/usr/lib/pkgconfig
+		--without-cxx-binding \
+		--without-debug \
+		--without-ada \
+		--without-tests \
+		--with-normal \
+		--with-shared \
+		--disable-nls \
+		--enable-pc-files \
+		--enable-widec 
+	make -j $NUM_JOBS
+	make install
 }
 
 build_e2fsprogs() {
@@ -377,6 +416,7 @@ build_e2fsprogs() {
 	tar -xf e2fsprogs-1.43.7.tar.gz
 	cd e2fsprogs-1.43.7
 	./configure \
+		--host=$XTARGET \
 		${default_configure} \
 		--enable-elf-shlibs \
 		--enable-symlink-install \
@@ -397,6 +437,7 @@ build_util_linux() {
 	tar -xf util-linux-2.31.tar.xz
 	cd util-linux-2.31
 	./configure \
+		--host=$XTARGET \
 		${default_configure} \
 		--enable-raw \
 		--disable-uuidd \
@@ -422,8 +463,8 @@ build_libressl() {
 	wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.3.tar.gz
 	tar -xf libressl-2.6.3.tar.gz
 	cd libressl-2.6.3
-	./autogen.sh
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -435,20 +476,29 @@ build_openssh() {
 	tar -xf openssh-7.6p1.tar.gz
 	cd openssh-7.6p1
 	./configure \
+		--host=$XTARGET \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--sysconfdir=/etc/ssh \
 		--libexecdir=/usr/lib/ssh \
 		--with-pid-dir=/run \
 		--with-mantype=man \
-		--with-privsep-path=/var/empty \
+		--with-privsep-user=nobody \
 		--with-xauth=/usr/bin/xauth \
-		--with-privsep-user=sshd \
+		--without-stackprotect \
 		--with-md5-passwords \
-		--with-ssl-engine \
-		--disable-lastlog \
 		--disable-strip \
-		--disable-wtmp
+		--disable-lastlog \
+		--disable-utmp \
+		--disable-utmpx \
+		--disable-btmp \
+		--disable-wtmp \
+		--disable-wtmpx \
+		--disable-pututline \
+		--disable-pututxline
+	sed -i '/USE_BTMP/d' config.h
+	sed -i '/USE_UTMP/d' config.h
+	sed -i 's@HAVE_DECL_HOWMANY 1@HAVE_DECL_HOWMANY 0@' config.h
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -459,6 +509,7 @@ build_curl() {
 	tar -xf curl-7.56.1.tar.xz
 	cd curl-7.56.1
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -470,19 +521,22 @@ build_kbd() {
 	tar -xf kbd-2.0.4.tar.xz
 	cd kbd-2.0.4
 	./configure \
+		--host=$XTARGET \
 		${default_configure} \
-		--disable-vlock
+		--disable-vlock \
+		--disable-nls
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
 
-build_libz() {
+build_zlib() {
 	cd ${srcdir}
-	wget https://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
-	tar -xf libz-1.2.8.2015.12.26.tar.gz
-	cd libz-1.2.8.2015.12.26
+	wget http://zlib.net/zlib-1.2.11.tar.xz
+	tar -xf zlib-1.2.11.tar.xz
+	cd zlib-1.2.11
 	./configure \
-		${default_configure}
+		--prefix=/usr \
+		--libdir=/usr/lib
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -493,6 +547,7 @@ build_file() {
 	tar -xf file-5.32.tar.gz
 	cd file-5.32
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -503,10 +558,10 @@ build_sudo() {
 	wget https://www.sudo.ws/dist/sudo-1.8.21p2.tar.gz
 	tar -xf sudo-1.8.21p2.tar.gz
 	cd sudo-1.8.21p2
-	sed -i "/<config.h>/s@.*@&\n\n#include <sys/types.h>@" \
-		src/preserve_fds.c
 	./configure \
-		${default_configure}
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-nls
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -516,11 +571,8 @@ build_libarchive() {
 	wget http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz
 	tar -xf libarchive-3.3.2.tar.gz
 	cd libarchive-3.3.2
-	sed -i 's@HAVE_LCHMOD@&_DISABLE@' libarchive/archive_write_disk_posix.c
-	sed -i 's@ -qq@@' libarchive/archive_read_support_filter_xz.c
-	sed -i 's@xz -d@unxz@' libarchive/archive_read_support_filter_xz.c
-	sed -i 's@lzma -d@unlzma@' libarchive/archive_read_support_filter_xz.c
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -541,6 +593,7 @@ build_less() {
 	tar -xf less-487.tar.gz
 	cd less-487
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
@@ -552,7 +605,320 @@ build_readline() {
 	tar -xf readline-7.0.tar.gz
 	cd readline-7.0
 	./configure \
+		--host=$XTARGET \
 		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_grub() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/grub/grub-2.02.tar.xz
+	tar -xf grub-2.02.tar.xz
+	cd grub-2.02
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--enable-boot-time \
+		--disable-werror \
+		--disable-nls \
+		--disable-liblzma
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_m4() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+	tar -xf m4-1.4.18.tar.xz
+	cd m4-1.4.18
+	./configure \
+		--host=$XTARGET \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_sed() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
+	tar -xf sed-4.4.tar.xz
+	cd sed-4.4
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-i18n \
+		--disable-nls
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_gawk() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/gawk/gawk-4.2.0.tar.xz
+	tar -xf gawk-4.2.0.tar.xz
+	cd gawk-4.2.0
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-nls
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_gmp() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	tar -xf gmp-6.1.2.tar.xz
+	cd gmp-6.1.2
+	./configure \
+		--host=$XTARGET \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_mpfr() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
+	tar -xf mpfr-3.1.6.tar.xz
+	cd mpfr-3.1.6
+	./configure \
+		--host=$XTARGET \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_mpc() {
+	cd ${srcdir}
+	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+	tar -xf mpc-1.0.3.tar.gz
+	cd mpc-1.0.3
+	./configure \
+		--host=$XTARGET \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_gcc() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	tar -xf gcc-7.2.0.tar.xz
+	cd gcc-7.2.0
+	mkdir build
+	cd build
+	../configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--with-headers=no \
+		--with-arch=$XCPU \
+		--with-system-zlib \
+		--with-target-libiberty=no \
+		--with-target-zlib=no \
+		--with-multilib-list= \
+		--disable-multilib \
+		--disable-nls \
+		--disable-mudflap \
+		--disable-libmudflap \
+		--disable-libgomp \
+		--disable-debug \
+		--disable-bootstrap \
+		--disable-libsanitizer \
+		--disable-vtable-verify \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libquadmath \
+		--enable-libstdcxx-time \
+		--enable-lto \
+		--enable-libssp \
+		--enable-languages=c,c++,lto \
+		--enable-clocale=generic
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} \
+		install-gcc \
+		install-lto-plugin \
+		install-target-libgcc \
+		install-target-libssp \
+		install-target-libstdc++-v3
+}
+
+build_binutils() {
+	cd ${srcdir}
+	rm -rf binutils*
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir build
+	cd build
+	../configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-nls \
+		--disable-werror \
+		--disable-install-libbfd \
+		--enable-initfini-array \
+		--enable-deterministic-archives \
+		--enable-lto
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} \
+		install-gas \
+		install-ld \
+		install-binutils
+}
+
+build_make() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
+	tar -xf make-4.2.1.tar.bz2
+	cd make-4.2.1
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-nls
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_patch() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/patch/patch-2.7.5.tar.xz
+	tar -xf patch-2.7.5.tar.xz
+	cd patch-2.7.5
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-nls
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_perl() {
+	cd ${srcdir}
+	wget http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
+	tar -xf perl-5.26.1.tar.xz
+	cd perl-5.26.1
+	./Configure -des \
+		-Aldflags="$CFLAGS" \
+		-Dprefix=/usr -Dvendorprefix=/usr \
+		-Dinstallprefix=${pkgdir} \
+		-Dprivlib=/usr/lib/perl5/core_perl \
+		-Darchlib=/usr/lib/perl5/core_perl \
+		-Dsitelib=/usr/lib/perl5/site_perl \
+		-Dsitearch=/usr/lib/perl5/site_perl \
+		-Dvendorlib=/usr/lib/perl5/vendor_perl \
+		-Dvendorarch=/usr/lib/perl5/vendor_perl \
+		-Dscriptdir=/usr/bin \
+		-Dsitescript=/usr/bin \
+		-Dvendorscript=/usr/bin \
+		-Dinc_version_list=none \
+		-Dman1dir=/usr/share/man/man1perl -Dman1ext=1perl \
+		-Dman3dir=/usr/share/man/man3perl -Dman3ext=3perl
+	make -j $NUM_JOBS
+	make install
+}
+
+build_pkg_config() {
+	cd ${srcdir}
+	wget https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
+	tar -xf pkg-config-0.29.2.tar.gz
+	cd pkg-config-0.29.2
+	./configure \
+		--host=$XTARGET \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_git() {
+	cd ${srcdir}
+	wget http://cdn.kernel.org/pub/software/scm/git/git-2.15.0.tar.xz
+	tar -xf git-2.15.0.tar.xz
+	cd git-2.15.0
+	cat >> config.mak <<-EOF
+		NO_GETTEXT=YesPlease
+		NO_SVN_TESTS=YesPlease
+		NO_REGEX=YesPlease
+		USE_LIBPCRE2=YesPlease
+		NO_NSEC=YesPlease
+		NO_SYS_POLL_H=1
+		CFLAGS=$CFLAGS
+EOF
+	make -j1 prefix=/usr gitexecdir=/usr/libexec DESTDIR=${pkgdir} perl/perl.mak
+	make prefix=/usr gitexecdir=/usr/libexec DESTDIR=${pkgdir} -j $NUM_JOBS
+	make -j1 prefix=/usr \
+		DESTDIR=${pkgdir} \
+		INSTALLDIRS=vendor \
+		install
+}
+
+build_xz() {
+	cd ${srcdir}
+	wget http://tukaani.org/xz/xz-5.2.3.tar.xz
+	tar -xf xz-5.2.3.tar.xz
+	cd xz-5.2.3
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-rpath \
+		--disable-werror \
+		--disable-nls
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_bzip2() {
+	cd ${srcdir}
+	wget http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
+	tar -xf bzip2-1.0.6.tar.gz
+	cd bzip2-1.0.6
+	patch -Np1 -i ${stuffdir}/bzip2.patch
+	make -j $NUM_JOBS
+	make PREFIX=${pkgdir}/usr install
+	make -f Makefile-libbz2_so -j $NUM_JOBS
+	make -f Makefile-libbz2_so PREFIX=${pkgdir}/usr install
+}
+
+build_attr() {
+	cd ${srcdir}
+	wget http://download.savannah.gnu.org/releases/attr/attr-2.4.47.src.tar.gz
+	tar -xf attr-2.4.47.src.tar.gz
+	cd attr-2.4.47
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-gettext
+	make -j $NUM_JOBS
+	make DIST_ROOT=${pkgdir} install install-dev install-lib
+}
+
+
+build_acl() {
+	cd ${srcdir}
+	wget http://download.savannah.gnu.org/releases/acl/acl-2.2.52.src.tar.gz
+	tar -xf acl-2.2.52.src.tar.gz
+	cd acl-2.2.52
+	./configure \
+		--host=$XTARGET \
+		${default_configure} \
+		--disable-gettext
+	make -j $NUM_JOBS
+	make DIST_ROOT=${pkgdir} install install-dev install-lib
+}
+
+build_cracklib() {
+	cd ${srcdir}
+	wget https://github.com/cracklib/cracklib/releases/download/cracklib-2.9.6/cracklib-2.9.6.tar.gz
+	tar -xf cracklib-2.9.6.tar.gz
+	cd cracklib-2.9.6
+	./configure \
+		--build=$XTARGET --host=$HOST --target=$XTARGET \
+		${default_configure} \
+		--with-default-dict \
+		--without-python \
+		--disable-static \
+		--disable-nls
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -594,35 +960,59 @@ CEOF
 	isohybrid -u ${topdir}/${product_name}-${product_version}.iso
 }
 
+make_rootfs_archive() {
+	cd ${pkgdir}
+	tar jcfv ${topdir}/${product_name}-${product_version}-${XARCH}.tar.bz2 *
+}
+
 just_prepare
 prepare_cross
 build_toolchain
 toolchain_variables
+clean_sources
 prepare_filesystem
-build_linux
-build_libgcc
+build_linux_headers
 build_musl
 build_busybox
 build_mksh
 build_iana_etc
-build_libz
+build_zlib
 build_file
-build_curses
+build_gmp
+build_mpfr
+build_mpc
+build_m4
+build_sed
+build_gawk
+build_gcc
+build_binutils
+build_make
+build_patch
+build_perl
+build_pkg_config
+build_bzip2
+build_attr
+build_acl
+build_ncurses
 build_readline
 build_e2fsprogs
 build_util_linux
 build_kbd
+build_xz
 build_htop
 build_nano
 build_sudo
 build_less
 build_libressl
 build_openssh
-build_ntpd
+build_openntpd
 build_curl
+build_git
 build_links
 build_libarchive
+build_grub
 strip_filesystem
-make_iso
+# make_iso
+make_rootfs_archive
 
 exit 0
