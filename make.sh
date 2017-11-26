@@ -46,6 +46,7 @@ prepare_cross() {
 			export XTARGET=i686-pc-linux-musl
 			export KARCH=i386
 			export libSuffix=
+			export BUILD="-m32"
 			;;
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
@@ -53,11 +54,20 @@ prepare_cross() {
 			export XTARGET=x86_64-pc-linux-musl
 			export KARCH=x86_64
 			export libSuffix=64
+			export BUILD="-m64"
+			;;
+		powerpc64)
+			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
+			export XCPU=
+			export XTARGET=powerpc64-pc-linux-musl
+			export KARCH=powerpc64
+			export libSuffix=
+			export BUILD="-m64"
 			;;
 		*)
 			echo "XARCH isn't set!"
 			echo "Please run: XARCH=[supported architecture] sh make.sh"
-			echo "Supported architectures: i686(in development!), x86_64"
+			echo "Supported architectures: i686(in development), x86_64, powerpc64le(in development)"
 			exit 0
 	esac
 }
@@ -237,8 +247,8 @@ build_toolchain() {
 }
 
 toolchain_variables() {
-	export CC="$XTARGET-gcc --sysroot=${pkgdir}"
-	export CXX="$XTARGET-g++ --sysroot=${pkgdir}"
+	export CC="$XTARGET-gcc ${BUILD} --sysroot=${pkgdir}"
+	export CXX="$XTARGET-g++ ${BUILD} --sysroot=${pkgdir}"
 	export AR="$XTARGET-ar"
 	export AS="$XTARGET-as"
 	export LD="$XTARGET-ld --sysroot=${pkgdir}"
@@ -1011,6 +1021,20 @@ build_git
 build_links
 build_libarchive
 build_grub
+case $XARCH in
+	i686)
+		build_grub
+		;;
+	x86_64)
+		build_grub
+		;;
+	powerpc64)
+		echo "In development"
+		;;
+	*)
+		echo "No bootloader available"
+		exit 0
+esac
 strip_filesystem
 # make_iso
 make_rootfs_archive
