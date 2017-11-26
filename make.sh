@@ -1020,7 +1020,6 @@ build_curl
 build_git
 build_links
 build_libarchive
-build_grub
 case $XARCH in
 	i686)
 		build_grub
