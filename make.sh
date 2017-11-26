@@ -102,7 +102,7 @@ prepare_filesystem() {
 	touch ${pkgdir}/var/log/lastlog
 	chmod -v 664 ${pkgdir}/var/log/lastlog
 
-	for f in fstab group hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf sysctl.conf; do
+	for f in fstab group hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf sysctl.conf issue; do
 		install -m644 ${stuffdir}/${f} etc/
 	done
 
@@ -122,21 +122,6 @@ VERSION_ID=${product_version}
 PRETTY_NAME="${product_name} ${product_version}"
 HOME_URL="${product_url}"
 BUG_REPORT_URL="${product_bug_url}"
-EOF
-
-	cat >${pkgdir}/etc/issue<<EOF
-
-
-       _                         _      _                  
-      | |                       | |    (_)                 
-      | | __ _ _ __  _   _ ___  | |     _ _ __  _   ___  __
-  _   | |/ _` | '_ \| | | / __| | |    | | '_ \| | | \ \/ /
- | |__| | (_| | | | | |_| \__ \ | |____| | | | | |_| |>  < 
-  \____/ \__,_|_| |_|\__,_|___/ |______|_|_| |_|\__,_/_/\_\
-                                                           
-                                                           
-
-			  You are running on Linux \r on \m
 EOF
 }
 
