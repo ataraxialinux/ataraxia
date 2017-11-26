@@ -41,14 +41,14 @@ clean_sources() {
 prepare_cross() {
 	case $XARCH in
 		i686)
-			export XHOST=$($CC -dumpmachine|sed 's/gnu/musl/')
+			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=i686
 			export XTARGET=i686-pc-linux-musl
 			export KARCH=i386
 			export libSuffix=
 			;;
 		x86_64)
-			export XHOST=$($CC -dumpmachine|sed 's/gnu/musl/')
+			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=nocona
 			export XTARGET=x86_64-pc-linux-musl
 			export KARCH=x86_64
