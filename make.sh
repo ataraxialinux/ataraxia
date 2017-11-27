@@ -146,7 +146,7 @@ build_toolchain() {
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	tar xf ../mpfr-3.1.6.tar.xz
-	mv -v mpfr-3.1.6 mpfr
+	mv mpfr-3.1.6 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
@@ -191,7 +191,7 @@ build_toolchain() {
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	tar xf ../mpfr-3.1.6.tar.xz
-	mv -v mpfr-3.1.6 mpfr
+	mv mpfr-3.1.6 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
@@ -206,7 +206,7 @@ build_toolchain() {
 		--target=$XTARGET \
 		--with-sysroot=${tooldir} \
 		--with-arch=$XCPU \
-		--enable-languages=c,c++ \
+		--enable-languages=c \
 		--enable-c99 \
 		--enable-long-long \
 		--disable-libmudflap \
