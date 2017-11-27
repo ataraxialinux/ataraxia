@@ -937,8 +937,7 @@ build_busybox
 build_mksh
 build_iana_etc
 build_zlib
-build_file
-build_gcc
+build_filebuild_gcc
 build_binutils
 build_make
 build_patch
@@ -982,7 +981,8 @@ case $XARCH in
 		exit 0
 esac
 strip_filesystem
-# make_iso
+build_linux_headers
+make_iso
 make_rootfs_archive
 
 exit 0
