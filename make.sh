@@ -199,10 +199,6 @@ build_toolchain() {
 	rm -rf ../gcc-build
 	mkdir ../gcc-build
 	cd ../gcc-build
-	CC="$XTARGET-gcc --sysroot=${tooldir}" 
-	CXX="$XTARGET-g++ --sysroot=${tooldir}" \
-	AR="$XTARGET-ar" \
-	RANLIB="$XTARGET-ranlib" \
 	../gcc-7.2.0/configure \
 		--prefix=${tooldir} \
 		--build=$XHOST \
