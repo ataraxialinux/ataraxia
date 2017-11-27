@@ -86,7 +86,7 @@ prepare_filesystem() {
 	touch ${pkgdir}/var/log/lastlog
 	chmod -v 664 ${pkgdir}/var/log/lastlog
 
-	for f in fstab group hosts passwd profile securetty shells mdev.conf inittab hostname syslog.conf sysctl.conf issue; do
+	for f in fstab group hosts passwd profile securetty shells mdev.conf inittab hostname syslog.conf sysctl.conf issue resolv.conf; do
 		install -m644 ${stuffdir}/${f} etc/
 	done
 
@@ -94,7 +94,7 @@ prepare_filesystem() {
 		install -m640 ${stuffdir}/${f} etc/
 	done
 
-	for f in rc.init rc.shutdown rc.local; do
+	for f in rc.init rc.shutdown rc.local rc.dhcp; do
 		install -m644 ${stuffdir}/${f} etc/rc.d/
 		chmod +x etc/rc.d/${f}
 	done
