@@ -172,9 +172,9 @@ build_toolchain() {
 		--disable-libquadmath \
 		--disable-threads \
 		--disable-multilib \
-		--enable-languages=c
-	make all-gcc all-target-libgcc -j $NUM_JOBS
-	make install-gcc install-target-libgcc
+		--enable-languages=c,c++
+	make -j $NUM_JOBS
+	make install
 
 	cd ${srcdir}
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
@@ -210,7 +210,7 @@ build_toolchain() {
 		--target=$XTARGET \
 		--with-sysroot=${tooldir} \
 		--with-arch=$XCPU \
-		--enable-languages=c \
+		--enable-languages=c,c++ \
 		--enable-c99 \
 		--enable-long-long \
 		--disable-libmudflap \
