@@ -199,7 +199,6 @@ build_toolchain() {
 	cd ../gcc-build
 	../gcc-7.2.0/configure \
 		--prefix=${tooldir} \
-		--libdir=${tooldir}/lib \
 		--build=$XHOST \
 		--host=$XHOST \
 		--target=$XTARGET \
