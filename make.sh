@@ -90,8 +90,8 @@ prepare_filesystem() {
 		install -m644 ${stuffdir}/${f} etc/
 	done
 
-	for f in shadow gshadow; do
-		install -m600 ${stuffdir}/${f} etc/
+	for f in shadow; do
+		install -m640 ${stuffdir}/${f} etc/
 	done
 
 	for f in rc.init rc.shutdown rc.local; do
