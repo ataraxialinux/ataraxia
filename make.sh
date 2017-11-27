@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 
-product_name="Janus Linux"
+product_name="JanusLinux"
 product_version="0.1"
 product_id="janus"
 product_bug_url="https://github.com/protonesso/janus/issues"
