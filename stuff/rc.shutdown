@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export PATH=/usr/bin
+
 C_GREEN='\e[1;32m'
 C_CLEAR='\e[m'
 
@@ -11,19 +13,30 @@ msgtwo() {
   echo -e " ${C_GREEN}*${C_CLEAR} ${@}"
 }
 
-hwclock --systohc --utc
+/usr/bin/stty onlcr
 
-killall5 -15
-sleep 5
-killall5 -9
+/usr/bin/hwclock -u -w
+
+/usr/bin/killall5 -15
+/usr/bin/sleep 5
+/usr/bin/killall5 -9
 
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 
-swapoff -a
+/usr/bin/swapoff -a
 
-sync
+/usr/bin/umount -a -d -r -t nosysfs,noproc,nodevtmpfs
+if [ -x /usr/bin/lvm ]; then
+  /usr/bin//vgchange --ignorelockingfailure -a n
+fi
 
-umount -a -r
+/usr/bin/umount -a -r
+
+/usr/bin/mount -o remount,ro /
+
+/usr/bin/sync
+/usr/bin/sleep 1
+/usr/bin/wait
 
 msgone See you next time!
 sleep 1
