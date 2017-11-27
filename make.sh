@@ -47,6 +47,7 @@ prepare_cross() {
 			export BUILD="-m64"
 			export BARCH="x86"
 			export KIMAGE="bzImage"
+			export GCCOPTS="--with-arch=$XCPU"
 			;;
 		*)
 			echo "XARCH isn't set!"
@@ -159,7 +160,6 @@ build_toolchain() {
 		--host=$XHOST \
 		--target=$XTARGET \
 		--with-sysroot=${tooldir} \
-		--with-arch=$XCPU \
 		--with-newlib \
 		--without-headers \
 		--disable-nls  \
@@ -172,7 +172,8 @@ build_toolchain() {
 		--disable-libquadmath \
 		--disable-threads \
 		--disable-multilib \
-		--enable-languages=c,c++
+		--enable-languages=c,c++ \
+		$GCCOPTS
 	make -j $NUM_JOBS
 	make install
 
@@ -205,13 +206,13 @@ build_toolchain() {
 		--host=$XHOST \
 		--target=$XTARGET \
 		--with-sysroot=${tooldir} \
-		--with-arch=$XCPU \
 		--enable-languages=c \
 		--enable-c99 \
 		--enable-long-long \
 		--disable-libmudflap \
 		--disable-multilib \
-		--disable-nls
+		--disable-nls \
+		$GCCOPTS
 	make -j $NUM_JOBS
 	make install
 }
