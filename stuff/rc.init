@@ -16,13 +16,13 @@ msgtwo() {
 msgone Janus Linux is starting...
 sleep 1
 
-/usr/bin/mount -n -t proc -o nosuid,noexec,nodev proc /proc
-/usr/bin/mount -n -t sysfs -o nosuid,noexec,nodev sysfs /sys
-/usr/bin/mount -n -t tmpfs -o nosuid,mode=0755 dev /dev
-/usr/bin/mkdir -p /dev/pts
-/usr/bin/mount -n -t devpts -o gid=5,mode=0620 devpts /dev/pts
-/usr/bin/grep -q " verbose" /proc/cmdline && dmesg -n 8 || dmesg -n 3
-/usr/bin/mount -o remount,ro /
+mount -n -t proc -o nosuid,noexec,nodev proc /proc
+mount -n -t sysfs -o nosuid,noexec,nodev sysfs /sys
+mount -n -t tmpfs -o nosuid,mode=0755 dev /dev
+mkdir -p /dev/pts
+mount -n -t devpts -o gid=5,mode=0620 devpts /dev/pts
+grep -q " verbose" /proc/cmdline && dmesg -n 8 || dmesg -n 3
+mount -o remount,ro /
 
 if which udevd > /dev/null 2>&1 ; then
 	udevd --daemon
@@ -32,8 +32,8 @@ if which udevd > /dev/null 2>&1 ; then
 	udevadm trigger --type=devices --action=change
 	udevadm settle
 else
-	/usr/bin/mdev -s
-	echo /usr/bin/mdev > /proc/sys/kernel/hotplug
+	mdev -s
+	echo /bin/mdev > /proc/sys/kernel/hotplug
 fi
 
 if type lvm > /dev/null 2>&1
@@ -55,24 +55,24 @@ if [ $? -gt 1 ]; then
 	echo "*                                                          *"
 	echo "************************************************************"
 	echo
-	/usr/bin/sulogin -p
+	sulogin -p
 	echo "Automatic reboot in progress..."
-	/usr/bin/umount -a -r
-	/usr/bin/mount -o remount,ro /
-	/usr/bin/reboot -f
+	umount -a -r
+	mount -o remount,ro /
+	reboot -f
 	exit 0
 fi
 
-/usr/bin/mount -o remount,rw /
-/usr/bin/mount -a
+mount -o remount,rw /
+mount -a
 
-/usr/bin/swapon -a
+swapon -a
 
-/usr/bin/hwclock -u -s
+hwclock -u -s
 
-/usr/bin/hostname $(cat /etc/hostname)
+hostname $(cat /etc/hostname)
 
-/usr/bin/ifconfig lo up
+ifconfig lo up
 
 [ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
@@ -85,7 +85,7 @@ if [ -x /bin/rc.local ]; then
 	/etc/rc.d/rc.local
 fi
 
-/usr/bin/dmesg > /var/log/boot
+dmesg > /var/log/boot
 
 clear
 
