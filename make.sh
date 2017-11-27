@@ -348,23 +348,23 @@ echo ${product_name} is starting...
 CEOF
 
 	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
+		
+	xorriso \
+		-as mkisofs -J -r \
+		-o ${topdir}/${product_name}-${product_version}-$(date -Idate).iso \
+		-b isolinux.bin \
+		-c boot.cat \
+		-input-charset UTF-8 \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		${isodir}/
 
-	genisoimage \
-  		-J -r -o ${topdir}/${product_name}-${product_version}-$(date -Idate).iso \
-  		-b isolinux.bin \
-  		-c boot.cat \
-  		-input-charset UTF-8 \
-  		-no-emul-boot \
-  		-boot-load-size 4 \
-  		-boot-info-table \
-  		${isodir}/
-
-	isohybrid -u ${topdir}/${product_name}-${product_version}-$(date -Idate).iso
 }
 
 make_rootfs_archive() {
 	cd ${pkgdir}
-	tar jcfv ${topdir}/${product_name}-${product_version}-$(date -Idate).tar.bz2 *
+	fakeroot tar jcfv ${topdir}/${product_name}-${product_version}-$(date -Idate).tar.bz2 *
 }
 
 just_prepare
