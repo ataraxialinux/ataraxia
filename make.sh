@@ -10,10 +10,10 @@ product_url="januslinux.github.io"
 NUM_JOBS=$(expr $(nproc) + 1)
 
 topdir=$(pwd)
-srcdir=$(pwd)/work/sources
-tooldir=$(pwd)/work/tools
-pkgdir=$(pwd)/work/rootfs
-isodir=$(pwd)/work/rootcd
+srcdir=${topdir}/work/sources
+tooldir=${topdir}/work/tools
+pkgdir=${topdir}/work/rootfs
+isodir=${topdir}/work/rootcd
 stuffdir=$(pwd)/stuff
 
 xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
