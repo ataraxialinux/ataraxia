@@ -41,7 +41,7 @@ prepare_cross() {
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=nocona
-			export XTARGET=x86_64-pc-linux-uclibc
+			export XTARGET=x86_64-pc-linux-musl
 			export KARCH=x86_64
 			export libSuffix=64
 			export BUILD="-m64"
@@ -172,28 +172,21 @@ build_toolchain() {
 		--disable-libquadmath \
 		--disable-threads \
 		--disable-multilib \
-		--enable-languages=c,c++ \
+		--enable-languages=c \
 		$GCCOPTS
 	make -j $NUM_JOBS
 	make install
 
 	cd ${srcdir}
-	wget https://downloads.uclibc-ng.org/releases/1.0.26/uClibc-ng-1.0.26.tar.xz
-	tar -xf uClibc-ng-1.0.26.tar.xz
-	cd uClibc-ng-1.0.26
-	make CROSS=$XTARGET- PREFIX=${tooldir} defconfig
-	make CROSS=$XTARGET- defconfig
-	sed -i \
-		-e "/^CROSS_COMPILER_PREFIX/s|=.*|=\"$XTARGET-\"|" \
-		-e "/^KERNEL_HEADERS/s|=.*|=\"${tooldir}/include\"|" \
-		-e "/^SHARED_LIB_LOADER_PREFIX/s|=.*|=\"/lib\"|" \
-		-e "/^DEVEL_PREFIX/s|=.*|=\"/\"|" \
-		-e "/^RUNTIME_PREFIX/s|=.*|=\"/\"|" \
-		-e "/^UCLIBC_EXTRA_CFLAGS/s|=.*|=\"$CFLAGS\"|" \
-		.config
-	make CROSS=$XTARGET- silentoldconfig
-	make CROSS=$XTARGET- all utils -j $NUM_JOBS
-	make CROSS=$XTARGET- DESTDIR=${tooldir} install install_utils
+	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
+	./configure \
+		CROSS_COMPILE=$XTARGET- \
+		--target=$XTARGET \
+		--prefix=/
+	make -j $NUM_JOBS
+	make DESTDIR=${tooldir} install
 
 	cd ${srcdir}
 	rm -rf gcc-7.2.0
@@ -276,23 +269,18 @@ build_linux() {
 	cp -a arch/$BARCH/boot/$KIMAGE ${pkgdir}/boot/$KIMAGE-${kernelver}
 }
 
-build_uclibc(){
+build_musl(){
 	cd ${srcdir}
-	wget https://downloads.uclibc-ng.org/releases/1.0.26/uClibc-ng-1.0.26.tar.xz
-	tar -xf uClibc-ng-1.0.26.tar.xz
-	cd uClibc-ng-1.0.26
-	make CROSS=$XTARGET- defconfig
-	sed -i \
-		-e "/^CROSS_COMPILER_PREFIX/s|=.*|=\"$XTARGET-\"|" \
-		-e "/^KERNEL_HEADERS/s|=.*|=\"${pkgdir}/include\"|" \
-		-e "/^SHARED_LIB_LOADER_PREFIX/s|=.*|=\"/lib\"|" \
-		-e "/^DEVEL_PREFIX/s|=.*|=\"/usr\"|" \
-		-e "/^RUNTIME_PREFIX/s|=.*|=\"/\"|" \
-		-e "/^UCLIBC_EXTRA_CFLAGS/s|=.*|=\"$CFLAGS\"|" \
-		.config
-	make CROSS=$XTARGET- silentoldconfig
-	make CROSS=$XTARGET- all utils -j $NUM_JOBS
-	make CROSS=$XTARGET- DESTDIR=${pkgdir} install install_utils
+	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
+	./configure \
+		CROSS_COMPILE=$XTARGET- \
+		--target=$XTARGET \
+		${default_configure} \
+		--disable-static
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
 }
 
 build_busybox() {
@@ -302,6 +290,8 @@ build_busybox() {
 	cd busybox-1.27.2
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- defconfig -j $NUM_JOBS
 	sed -i -e "s/CONFIG_EXTRA_COMPAT=y/CONFIG_EXTRA_COMPAT=n/" .config
+	sed -i "s/.*CONFIG_IFPLUGD.*/CONFIG_IFPLUGD=n/" .config
+	sed -i "s/.*CONFIG_INETD.*/CONFIG_INETD=n/" .config
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install
 	cd ${pkgdir}
@@ -395,7 +385,7 @@ clean_sources
 prepare_filesystem
 build_iana_etc
 build_linux_headers
-build_uclibc
+build_musl
 build_busybox
 build_mksh
 build_dhcpcd
