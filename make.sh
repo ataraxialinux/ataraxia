@@ -16,7 +16,7 @@ pkgdir=${topdir}/work/rootfs
 isodir=${topdir}/work/rootcd
 stuffdir=$(pwd)/stuff
 
-xflags="-Os -g0 -pipe -fno-stack-protector -fomit-frame-pointer -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration -U_FORTIFY_SOURCE"
+xflags="-Os -g0 -pipe -fno-stack-protector -fomit-frame-pointer -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --bindir=/usr/bin --sbindir=/usr/sbin --localstatedir=/var"
 
 kernelhost="janus"
@@ -182,6 +182,7 @@ build_toolchain() {
 	tar -xf uClibc-ng-1.0.26.tar.xz
 	cd uClibc-ng-1.0.26
 	make CROSS=$XTARGET- PREFIX=${tooldir} defconfig
+	make CROSS=$XTARGET- defconfig
 	sed -i \
 		-e "/^CROSS_COMPILER_PREFIX/s|=.*|=\"$XTARGET-\"|" \
 		-e "/^KERNEL_HEADERS/s|=.*|=\"${tooldir}/include\"|" \
@@ -190,9 +191,9 @@ build_toolchain() {
 		-e "/^RUNTIME_PREFIX/s|=.*|=\"/\"|" \
 		-e "/^UCLIBC_EXTRA_CFLAGS/s|=.*|=\"$CFLAGS\"|" \
 		.config
-	make CROSS=$XTARGET- PREFIX=${tooldir} silentoldconfig
-	make CROSS=$XTARGET- PREFIX=${tooldir} all utils -j $NUM_JOBS
-	make CROSS=$XTARGET- PREFIX=${tooldir} install  install_utils
+	make CROSS=$XTARGET- silentoldconfig
+	make CROSS=$XTARGET- all utils -j $NUM_JOBS
+	make CROSS=$XTARGET- DESTDIR=${tooldir} install install_utils
 
 	cd ${srcdir}
 	rm -rf gcc-7.2.0
@@ -283,7 +284,7 @@ build_uclibc(){
 	make CROSS=$XTARGET- defconfig
 	sed -i \
 		-e "/^CROSS_COMPILER_PREFIX/s|=.*|=\"$XTARGET-\"|" \
-		-e "/^KERNEL_HEADERS/s|=.*|=\"${tooldir}/include\"|" \
+		-e "/^KERNEL_HEADERS/s|=.*|=\"${pkgdir}/include\"|" \
 		-e "/^SHARED_LIB_LOADER_PREFIX/s|=.*|=\"/lib\"|" \
 		-e "/^DEVEL_PREFIX/s|=.*|=\"/usr\"|" \
 		-e "/^RUNTIME_PREFIX/s|=.*|=\"/\"|" \
