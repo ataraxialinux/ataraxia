@@ -100,7 +100,7 @@ prepare_filesystem() {
 	touch ${pkgdir}/var/log/lastlog
 	chmod -v 664 ${pkgdir}/var/log/lastlog
 
-	for f in fstab group hosts passwd profile resolv.conf securetty shells adduser.conf busybox.conf mdev.conf inittab hostname syslog.conf sysctl.conf issue; do
+	for f in fstab group hosts passwd profile securetty shells mdev.conf inittab hostname syslog.conf sysctl.conf issue; do
 		install -m644 ${stuffdir}/${f} etc/
 	done
 
