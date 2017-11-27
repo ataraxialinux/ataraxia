@@ -12,21 +12,18 @@ msg() {
 msg Janus Linux is starting...
 sleep 1
 
-mount -n -t proc -o nosuid,noexec,nodev proc /proc
-mount -n -t sysfs -o nosuid,noexec,nodev sysfs /sys
-mount -n -t tmpfs -o nosuid,mode=0755 dev /dev
-mkdir -p /dev/pts
-mount -n -t devpts -o gid=5,mode=0620 devpts /dev/pts
-grep -q " verbose" /proc/cmdline && dmesg -n 8 || dmesg -n 3
-mount -o remount,ro /
+mountpoint -q /proc || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p /dev/pts /dev/shm
+mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 
 if which udevd > /dev/null 2>&1 ; then
-	udevd --daemon
-	sleep 1
-	udevadm trigger --type=subsystems --action=add
-	udevadm trigger --type=devices --action=add
-	udevadm trigger --type=devices --action=change
-	udevadm settle
+        udevd --daemon
+        udevadm trigger --action=add --type=subsystems
+	udevadm trigger --action=add --type=devices
 else
 	mdev -s
 	echo /bin/mdev > /proc/sys/kernel/hotplug
@@ -59,8 +56,8 @@ if [ $? -gt 1 ]; then
 	exit 0
 fi
 
-mount -o remount,rw /
 mount -a
+mount -o remount,rw /
 
 swapon -a
 
@@ -73,9 +70,6 @@ for DEVICE in /sys/class/net/* ; do
 	ip link set ${DEVICE##*/} up
 	[ ${DEVICE##*/} != lo ] && udhcpc -b -i ${DEVICE##*/} -s /etc/rc.d/rc.dhcp
 done
-
-[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
-dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 
 if [ -x /bin/rc.modules ]; then
 	/etc/rc.d/rc.modules
