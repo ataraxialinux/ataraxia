@@ -284,18 +284,9 @@ build_busybox() {
 	wget http://busybox.net/downloads/busybox-1.27.2.tar.bz2
 	tar -xf busybox-1.27.2.tar.bz2
 	cd busybox-1.27.2
-	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- defconfig -j $NUM_JOBS
-	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
-	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- KCONFIG_ALLCONFIG=${stuffdir}/busybox.config allnoconfig
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install
-	mkdir -p ${pkgdir}/usr/share/udhcpc
-	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
-	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
 	cd ${pkgdir}
 	ln -sf bin/busybox init
 	rm -rf linuxrc
