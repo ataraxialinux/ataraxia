@@ -115,12 +115,14 @@ prepare_filesystem() {
 
 	cat >${pkgdir}/etc/os-release<<EOF
 NAME="${product_name}"
-ID=${product_id}
-VERSION_ID=${product_version}
-PRETTY_NAME="${product_name} ${product_version}"
+ID="${product_id}-$(date -Idate)"
+VERSION_ID="${product_version}-$(date -Idate)"
+PRETTY_NAME="${product_name} ${product_version}-$(date -Idate)"
 HOME_URL="${product_url}"
 BUG_REPORT_URL="${product_bug_url}"
 EOF
+
+	echo "${product_name}-${product_version}-$(date -Idate)" >> ${pkgdir}/etc/jiz.vash
 }
 
 build_toolchain() {
@@ -932,8 +934,8 @@ prepare_filesystem
 build_linux_headers
 build_musl
 build_busybox
-build_mksh
 build_iana_etc
+build_mksh
 build_zlib
 build_file
 #case $XARCH in
