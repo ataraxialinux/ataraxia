@@ -373,13 +373,13 @@ build_toolchain
 toolchain_variables
 clean_sources
 prepare_filesystem
+build_iana_etc
 build_linux_headers
 build_musl
 build_busybox
-build_iana_etc
 build_mksh
-strip_filesystem
 build_linux
+strip_filesystem
 make_iso
 make_rootfs_archive
 
