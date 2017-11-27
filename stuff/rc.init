@@ -1,5 +1,8 @@
 #!/bin/sh
 
+PATH=/usr/bin
+export PATH
+
 C_GREEN='\e[1;32m'
 C_CLEAR='\e[m'
 
@@ -14,59 +17,74 @@ msgtwo() {
 msgone Janus Linux is starting...
 sleep 1
 
-mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
-mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
-mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
-mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
-mkdir -p /dev/pts /dev/shm
-mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
-mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+/usr/bin/mount -n -t proc -o nosuid,noexec,nodev proc /proc
+/usr/bin/mount -n -t sysfs -o nosuid,noexec,nodev sysfs /sys
+/usr/bin/mount -n -t tmpfs -o nosuid,mode=0755 dev /dev
+/usr/bin/mkdir -p /dev/pts
+/usr/bin/mount -n -t devpts -o gid=5,mode=0620 devpts /dev/pts
+/usr/bin/grep -q " verbose" /proc/cmdline && dmesg -n 8 || dmesg -n 3
+/usr/bin/mount -o remount,ro /
 
-mdev -s
-echo /sbin/mdev > /proc/sys/kernel/hotplug
-
-hwclock --hctosys --utc
-
-if [ -x /sbin/fsck ]; then
-	echo "Starting fsck for local filesystems."
-	fsck -A -C -R -T -t nonfs,nosmbfs
-	if [ "$?" -gt 2 ]; then
-		echo "WARNING: Errors found while checking filesystems."
-		echo "You can login as root now, the system will reboot after logout."
-		sulogin
-		reboot
-	elif [ "$?" = "2" ]; then
-		echo "NOTICE: System needs to be rebooted now."
-		sleep 1
-		reboot
-	else
-		echo -n "Checking local filesystems: "
-	fi
+if which udevd > /dev/null 2>&1 ; then
+	udevd --daemon
+	sleep 1
+	udevadm trigger --type=subsystems --action=add
+	udevadm trigger --type=devices --action=add
+	udevadm trigger --type=devices --action=change
+	udevadm settle
+else
+	/usr/bin/mdev -s
+	echo /usr/bin/mdev > /proc/sys/kernel/hotplug
 fi
 
-swapon -a
+if type lvm > /dev/null 2>&1
+then
+	vgscan --mknodes --ignorelockingfailure && \
+	vgchange --ignorelockingfailure -a y
+fi
 
-mount -a
-mount -o remount,rw /
+/usr/bin/fsck -f -A -T -C -a
+if [ $? -gt 1 ]; then
+	echo
+	echo "***************  FILESYSTEM CHECK FAILED  ******************"
+	echo "*                                                          *"
+	echo "*  Please repair manually and reboot. Note that the root   *"
+	echo "*  file system is currently mounted read-only. To remount  *"
+	echo "*  it read-write type: mount -n -o remount,rw /            *"
+	echo "*  When you exit the maintainance shell the system will    *"
+	echo "*  reboot automatically.                                   *"
+	echo "*                                                          *"
+	echo "************************************************************"
+	echo
+	/usr/bin/sulogin -p
+	echo "Automatic reboot in progress..."
+	/usr/bin/umount -a -r
+	/usr/bin/mount -o remount,ro /
+	/usr/bin/reboot -f
+	exit 0
+fi
 
-touch /var/log/wtmp
-touch /var/log/messages
-chmod 0664 /var/run/utmp
-chmod 0664 /var/log/wtmp
-chmod 0660 /var/log/messages
-rm -rf /tmp/*
+/usr/bin/mount -o remount,rw /
+/usr/bin/mount -a
 
-hostname -F /etc/hostname
+/usr/bin/swapon -a
 
-for DEVICE in /sys/class/net/* ; do
-	ip link set \${DEVICE##*/} up
-	if [ \${DEVICE##*/} != "lo" ]; then
-		udhcpc -b -S -i \${DEVICE##*/} -s /etc/rc.d/rc.dhcp >/dev/null 2>&1
-	fi
-done
+/usr/bin/hwclock --hctosys --utc
 
-# temp
-/etc/rc.d/rc.local
+/usr/bin/hostname $(cat /etc/hostname)
+
+/usr/bin/ifconfig lo up
+
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+if [ -x /bin/rc.modules ]; then
+	/etc/rc.d/rc.modules
+fi
+
+if [ -x /bin/rc.local ]; then
+	/etc/rc.d/rc.local
+fi
 
 clear
 
