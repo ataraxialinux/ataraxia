@@ -16,7 +16,7 @@ pkgdir=${topdir}/work/rootfs
 isodir=${topdir}/work/rootcd
 stuffdir=$(pwd)/stuff
 
-xflags="-Os -s -g0 -pipe -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration"
+xflags="-Os -g0 -pipe -fno-stack-protector -fomit-frame-pointer -fno-asynchronous-unwind-tables -Werror-implicit-function-declaration -U_FORTIFY_SOURCE"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --bindir=/usr/bin --sbindir=/usr/sbin --localstatedir=/var"
 
 kernelhost="janus"
@@ -225,6 +225,8 @@ toolchain_variables() {
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
+	export CFLAGS="$xflags"
+	export CXXFLAGS="$xflags"
 }
 
 build_linux_headers() {
