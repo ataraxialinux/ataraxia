@@ -45,11 +45,13 @@ prepare_cross() {
 			export KARCH=x86_64
 			export libSuffix=64
 			export BUILD="-m64"
+			export BARCH="x86"
+			export KIMAGE="bzImage"
 			;;
 		*)
 			echo "XARCH isn't set!"
 			echo "Please run: XARCH=[supported architecture] sh make.sh"
-			echo "Supported architectures: i686(in development), x86_64, powerpc64le(in development)"
+			echo "Supported architectures: x86_64"
 			exit 0
 	esac
 }
@@ -260,8 +262,7 @@ build_linux() {
 	make ARCH=$KARCH silentoldconfig -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=${pkgdir} modules_install
-	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_FW_PATH=${pkgdir}/lib/firmware firmware_install
-	cp -a arch/x86/boot/bzImage ${pkgdir}/boot/bzImage-${kernelver}
+	cp -a arch/$BARCH/boot/$KIMAGE ${pkgdir}/boot/$KIMAGE-${kernelver}
 }
 
 build_musl(){
