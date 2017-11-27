@@ -1,8 +1,6 @@
 #!/bin/sh
 #
 
-set -ex
-
 product_name="Janus Linux"
 product_version="0.1"
 product_id="janus"
@@ -908,7 +906,7 @@ CEOF
 	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
 
 	genisoimage \
-  		-J -r -o ${topdir}/${product_name}-${product_version}.iso \
+  		-J -r -o ${topdir}/${product_name}-${product_version}-$(date -Idate).iso \
   		-b isolinux.bin \
   		-c boot.cat \
   		-input-charset UTF-8 \
@@ -917,12 +915,12 @@ CEOF
   		-boot-info-table \
   		${isodir}/
 
-	isohybrid -u ${topdir}/${product_name}-${product_version}.iso
+	isohybrid -u ${topdir}/${product_name}-${product_version}-$(date -Idate).iso
 }
 
 make_rootfs_archive() {
 	cd ${pkgdir}
-	tar jcfv ${topdir}/${product_name}-${product_version}-${XARCH}.tar.bz2 *
+	tar jcfv ${topdir}/${product_name}-${product_version}-$(date -Idate).tar.bz2 *
 }
 
 just_prepare
@@ -938,22 +936,22 @@ build_mksh
 build_iana_etc
 build_zlib
 build_file
-case $XARCH in
-	i686)
-		build_grub
-		;;
-	x86_64)
-		build_grub
-		;;
-	powerpc64)
-		echo "In development"
-		;;
-	*)
-		echo "No bootloader available"
-		exit 0
-esac
+#case $XARCH in
+#	i686)
+#		build_grub
+#		;;
+#	x86_64)
+#		build_grub
+#		;;
+#	powerpc64)
+#		echo "In development"
+#		;;
+#	*)
+#		echo "No bootloader available"
+#		exit 0
+#esac
 strip_filesystem
-build_linux_headers
+build_linux
 make_iso
 make_rootfs_archive
 
