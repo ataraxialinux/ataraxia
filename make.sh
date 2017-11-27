@@ -38,28 +38,12 @@ clean_sources() {
 
 prepare_cross() {
 	case $XARCH in
-		i686)
-			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
-			export XCPU=i686
-			export XTARGET=i686-pc-linux-musl
-			export KARCH=i386
-			export libSuffix=
-			export BUILD="-m32"
-			;;
 		x86_64)
 			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
 			export XCPU=nocona
 			export XTARGET=x86_64-pc-linux-musl
 			export KARCH=x86_64
 			export libSuffix=64
-			export BUILD="-m64"
-			;;
-		powerpc64)
-			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
-			export XCPU=
-			export XTARGET=powerpc64-pc-linux-musl
-			export KARCH=powerpc64
-			export libSuffix=
 			export BUILD="-m64"
 			;;
 		*)
