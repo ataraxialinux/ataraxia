@@ -320,6 +320,18 @@ build_mksh() {
 	install -D -m 755 mksh $pkgdir/bin/mksh
 }
 
+build_dhcpcd() {
+	cd ${srcdir}
+	wget https://roy.marples.name/downloads/dhcpcd/dhcpcd-6.11.5.tar.xz
+	tar -xf dhcpcd-6.11.5.tar.xz
+	cd dhcpcd-6.11.5
+	./configure \
+		--host=$XTARGET \
+		${default_configure}
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
 strip_filesystem() {
 	find ${pkgdir} -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-all --strip-unneeded --strip-debug 2>/dev/null || true
 	find ${pkgdir} -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-all --strip-unneeded --strip-debug 2>/dev/null || true
@@ -378,6 +390,7 @@ build_linux_headers
 build_musl
 build_busybox
 build_mksh
+build_dhcpcd
 build_linux
 strip_filesystem
 make_iso
