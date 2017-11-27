@@ -68,7 +68,11 @@ hwclock -u -s
 
 hostname $(cat /etc/hostname)
 
-ifconfig lo up
+for DEVICE in /sys/class/net/* ; do
+	echo "Found network device ${DEVICE##*/}"
+	ip link set ${DEVICE##*/} up
+	[ ${DEVICE##*/} != lo ] && udhcpc -b -i ${DEVICE##*/} -s /etc/rc.d/rc.dhcp
+done
 
 [ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
