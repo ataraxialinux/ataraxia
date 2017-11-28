@@ -174,8 +174,8 @@ build_toolchain() {
 		--disable-multilib \
 		--enable-languages=c \
 		$GCCOPTS
-	make -j $NUM_JOBS
-	make install
+	make all-gcc all-target-libgcc -j $NUM_JOBS
+	make install-gcc install-target-libgcc
 
 	cd ${srcdir}
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
@@ -276,9 +276,9 @@ build_musl(){
 	cd musl-1.1.18
 	./configure \
 		CROSS_COMPILE=$XTARGET- \
-		--target=$XTARGET \
 		${default_configure} \
-		--disable-static
+		--disable-static \
+		--target=$XTARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -295,8 +295,8 @@ build_busybox() {
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install
 	cd ${pkgdir}
-	ln -sf bin/busybox init
 	rm -rf linuxrc
+	rm -rf sbin/init
 }
 
 build_iana_etc() {
@@ -324,10 +324,140 @@ build_dhcpcd() {
 	tar -xf dhcpcd-6.11.5.tar.xz
 	cd dhcpcd-6.11.5
 	./configure \
-		--host=$XTARGET \
-		${default_configure}
+		${default_configure} \
+		--host=$XTARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
+}
+
+build_zlib() {
+	cd ${srcdir}
+	wget http://zlib.net/zlib-1.2.11.tar.xz
+	tar -xf zlib-1.2.11.tar.xz
+	cd zlib-1.2.11
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--shared
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_curses() {
+	cd ${srcdir}
+	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
+	tar -xf netbsd-curses-0.2.1.tar.xz
+	cd netbsd-curses-0.2.1
+cat << EOF > config.mak
+CFLAGS=-fPIC $CFLAGS
+LDFLAGS=$LDFLAGS
+PREFIX=/usr
+DESTDIR=${pkgdir}
+EOF
+	make -j $NUM_JOBS
+	make install
+}
+
+build_libressl() {
+	cd ${srcdir}
+	wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.3.tar.gz
+	tar -xf libressl-2.6.3.tar.gz
+	cd libressl-2.6.3
+	./configure \
+		${default_configure} \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_libcap() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
+	tar -xf libcap-2.25.tar.xz
+	cd libcap-2.25
+	patch -Np1 -i  $KEEP/libcap-2.25-gperf.patch
+	make
+	make install \
+		DESTDIR=${pkgdir} \
+		LIBDIR=/usr/lib \
+		SBINDIR=/usr/bin \
+		PKGCONFIGDIR=/usr/lib/pkgconfig \
+		RAISE_SETFCAP=no
+}
+
+build_pciutils() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/software/utils/pciutils/pciutils-3.5.4.tar.xz
+	tar -xf pciutils-3.5.4.tar.xz
+	cd pciutils-3.5.4
+	make -j $NUM_JOBS \
+		PREFIX=/usr \
+		SHAREDIR=/usr/share/hwdata \
+		SHARED=yes
+	make \
+		PREFIX=${pkgdir}/usr \
+		SHAREDIR=/usr/share/hwdata \
+		SHARED=yes \
+		install install-lib
+}
+
+build_libnl() {
+	cd ${srcdir}
+	wget https://github.com/thom311/libnl/releases/download/libnl3_4_0/libnl-3.4.0.tar.gz
+	tar -xf libnl-3.4.0.tar.gz
+	cd libnl-3.4.0
+	./configure \
+		${default_configure} \
+		--disable-static \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_wirelesstools() {
+	cd ${srcdir}
+	wget http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/wireless_tools.29.tar.gz
+	tar -xf wireless_tools.29.tar.gz
+	cd wireless_tools
+	make PREFIX=${pkgdir} -j $NUM_JOBS
+	make install PREFIX=${pkgdir}
+}
+
+build_wpasupplicant() {
+	cd ${srcdir}
+	wget http://hostap.epitest.fi/releases/wpa_supplicant-2.6.tar.gz
+	tar -xf wpa_supplicant-2.6.tar.gz
+	cd wpa_supplicant-2.6
+cat > wpa_supplicant/.config << "EOF"
+CONFIG_BACKEND=file
+CONFIG_CTRL_IFACE=y
+CONFIG_DEBUG_FILE=y
+CONFIG_DEBUG_SYSLOG=y
+CONFIG_DEBUG_SYSLOG_FACILITY=LOG_DAEMON
+CONFIG_DRIVER_NL80211=y
+CONFIG_DRIVER_WEXT=y
+CONFIG_DRIVER_WIRED=y
+CONFIG_EAP_GTC=y
+CONFIG_EAP_LEAP=y
+CONFIG_EAP_MD5=y
+CONFIG_EAP_MSCHAPV2=y
+CONFIG_EAP_OTP=y
+CONFIG_EAP_PEAP=y
+CONFIG_EAP_TLS=y
+CONFIG_EAP_TTLS=y
+CONFIG_IEEE8021X_EAPOL=y
+CONFIG_IPV6=y
+CONFIG_LIBNL32=y
+CONFIG_PEERKEY=y
+CONFIG_PKCS12=y
+CONFIG_READLINE=y
+CONFIG_SMARTCARD=y
+CONFIG_WPS=y
+CFLAGS += -I${pkgdir}/usr/include/libnl3
+EOF
+	cd wpa_supplicant
+	make BINDIR=/usr/bin LIBDIR=/usr/lib -j $NUM_JOBS
+	make DESTDIR=${pkgdir} BINDIR=/usr/bin LIBDIR=/usr/lib install
 }
 
 strip_filesystem() {
@@ -388,7 +518,15 @@ build_linux_headers
 build_musl
 build_busybox
 build_mksh
+build_zlib
+build_libcap
+build_curses
+build_pciutils
+build_libressl
 build_dhcpcd
+build_libnl
+build_wirelesstools
+build_wpasupplicant
 build_linux
 strip_filesystem
 make_iso
