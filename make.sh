@@ -26,8 +26,13 @@ just_prepare() {
 	rm -rf ${srcdir} ${tooldir} ${pkgdir} ${isodir}
 	mkdir -p ${srcdir} ${tooldir} ${pkgdir} ${isodir}
 
-	export CFLAGS="$xflags"
-	export CXXLAGS="$CFLAGS"
+	# optimization
+	export XFLAGS="-O3 -g0 -pipe -fstack-protector-strong"
+	export XLDLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro"
+
+	# toolchain optimization
+	export BFLAGS="-O3 -g0 -pipe -fstack-protector-strong"
+	export BLDLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro"
 
 	export PATH="${tooldir}/bin:$PATH"
 }
@@ -39,20 +44,25 @@ clean_sources() {
 prepare_cross() {
 	case $XARCH in
 		x86_64)
-			export XHOST=$(echo ${MACHTYPE} | sed "s/-[^-]*/-cross/")
-			export XCPU=nocona
-			export XTARGET=x86_64-pc-linux-musl
-			export KARCH=x86_64
-			export libSuffix=64
-			export BUILD="-m64"
-			export BARCH="x86"
-			export KIMAGE="bzImage"
-			export GCCOPTS="--with-arch=$XCPU"
+			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
+			export TARGET="x86_64-unknown-linux-musl"
+			export KARCH="x86_64"
+			export BUILDCFLAGS="-m64 -march=x86-64 -mtune=generic"
+			export LIBSUFFIX="64"
+			export GCCOPTS="--with-arch=nocona"
+			;;
+		i386)
+			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
+			export TARGET="i686-unknown-linux-musl"
+			export KARCH="i386"
+			export BUILDCFLAGS="-m32 -march=i686 -mtune=generic"
+			export LIBSUFFIX=
+			export GCCOPTS="--with-arch=i686"
 			;;
 		*)
 			echo "XARCH isn't set!"
 			echo "Please run: XARCH=[supported architecture] sh make.sh"
-			echo "Supported architectures: x86_64"
+			echo "Supported architectures: x86_64, i386"
 			exit 0
 	esac
 }
@@ -113,33 +123,65 @@ EOF
 }
 
 build_toolchain() {
+	export CFLAGS="$BFLAGS"
+	export CXXFLAGS="$BFLAGS"
+	export LDFLAGS="$BLDFLAGS"
+
+	mkdir -p ${tooldir}/$TARGET/lib
+	cd ${tooldir}/$TARGET
+	
+	case $XARCH in
+		x86_64)
+			cd ${tooldir}
+			ln -sf lib lib64
+			cd ${tooldir}/$TARGET
+			ln -sf ../lib lib
+			ln -sf lib lib64
+			ln -sf ../include include
+			;;
+		*)
+			cd ${tooldir}/$TARGET
+			ln -sf ../lib lib
+			ln -sf ../include include
+	esac
+
 	cd ${tooldir}
 	ln -sf . usr
 
-	cd ${srcdir}
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir -v ../binutils-build
+	cd ../binutils-build
+	AR=ar AS=as \
+	../binutils-2.29.1/configure \
+		--host=$HOST \
+		--target=$TARGET \
+		--prefix=${tooldir} \
+		--with-sysroot=${tooldir} \
+		--enable-deterministic-archives \
+		--enable-gold=yes \
+		--enable-plugins \
+		--enable-threads \
+		--disable-compressed-debug-sections \
+		--disable-werror \
+		--disable-nls \
+		--disable-multilib \
+		--disable-ppl-version-check \
+		--disable-cloog-version-check
+	make configure-host -j$JOBS
+	make -j$JOBS
+	make install
+
+	cd $SRC
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
 	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
 	make mrproper
 	make ARCH=$KARCH INSTALL_HDR_PATH=${tooldir} headers_install
 
-	cd ${srcdir}
-	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
-	mkdir -v ../binutils-build
-	cd ../binutils-build
-	../binutils-2.29.1/configure \
-		--prefix=${tooldir} \
-		--target=$XTARGET \
-		--with-sysroot=${tooldir} \
-		--disable-nls \
-		--disable-multilib
-	make configure-host -j $NUM_JOBS
-	make -j $NUM_JOBS
-	make install
-
-	cd ${srcdir}
+	cd $SRC
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
@@ -152,43 +194,56 @@ build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
+	patch -Np1 -i $KEEP/0001-libgcc_s.patch
 	mkdir ../gcc-build
 	cd ../gcc-build
+	AR=ar \
 	../gcc-7.2.0/configure \
+		--build=$HOST \
+		--host=$HOST \
+		--target=$TARGET \
 		--prefix=${tooldir} \
-		--build=$XHOST \
-		--host=$XHOST \
-		--target=$XTARGET \
 		--with-sysroot=${tooldir} \
 		--with-newlib \
 		--without-headers \
-		--disable-nls  \
+		--without-ppl \
+		--without-cloog \
 		--disable-shared \
+		--disable-nls  \
 		--disable-decimal-float \
-		--disable-libgomp \
 		--disable-libmudflap \
+		--disable-libgomp \
 		--disable-libssp \
 		--disable-libatomic \
+		--disable-libitm \
+		--disable-libsanitizer \
 		--disable-libquadmath \
+		--disable-libvtv \
+		--disable-libcilkrts \
+		--disable-libstdc++-v3 \
 		--disable-threads \
 		--disable-multilib \
+		--disable-libmpx \
+		--disable-gnu-indirect-function \
 		--enable-languages=c \
+		--enable-clocale=generic \
 		$GCCOPTS
-	make all-gcc all-target-libgcc -j $NUM_JOBS
+	make all-gcc all-target-libgcc -j$JOBS
 	make install-gcc install-target-libgcc
 
-	cd ${srcdir}
+	cd $SRC
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
-		CROSS_COMPILE=$XTARGET- \
-		--target=$XTARGET \
+		CROSS_COMPILE=$TARGET- \
+		--target=$TARGET \
 		--prefix=/
-	make -j $NUM_JOBS
+	make -j$JOBS
 	make DESTDIR=${tooldir} install
 
-	cd ${srcdir}
+	cd $SRC
+	rm -rf gcc-build
 	rm -rf gcc-7.2.0
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
@@ -198,37 +253,53 @@ build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
-	rm -rf ../gcc-build
+	patch -Np1 -i $KEEP/0001-libgcc_s.patch
 	mkdir ../gcc-build
 	cd ../gcc-build
+	AR=ar \
 	../gcc-7.2.0/configure \
+		--build=$HOST \
+		--host=$HOST \
+		--target=$TARGET \
 		--prefix=${tooldir} \
-		--build=$XHOST \
-		--host=$XHOST \
-		--target=$XTARGET \
 		--with-sysroot=${tooldir} \
-		--enable-languages=c \
+		--enable-__cxa_atexit \
 		--enable-c99 \
 		--enable-long-long \
+		--enable-libstdcxx-time \
+		--enable-threads=posix \
+		--enable-languages=c,c++ \
+		--enable-checking=release \
+		--enable-fully-dynamic-string \
+		--disable-symvers \
+		--disable-gnu-indirect-function \
 		--disable-libmudflap \
 		--disable-multilib \
+		--disable-libsanitizer \
+		--disable-libmpx \
 		--disable-nls \
+		--disable-static \
+		--disable-lto-plugin \
 		$GCCOPTS
-	make -j $NUM_JOBS
+	make AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" -j$JOBS
 	make install
 }
 
-toolchain_variables() {
-	export CC="$XTARGET-gcc ${BUILD} --sysroot=${pkgdir}"
-	export CXX="$XTARGET-g++ ${BUILD} --sysroot=${pkgdir}"
-	export AR="$XTARGET-ar"
-	export AS="$XTARGET-as"
-	export LD="$XTARGET-ld --sysroot=${pkgdir}"
-	export RANLIB="$XTARGET-ranlib"
-	export READELF="$XTARGET-readelf"
-	export STRIP="$XTARGET-strip"
-	export CFLAGS="$xflags"
-	export CXXFLAGS="$xflags"
+build_variables() {
+	export CC="$TARGET-gcc --sysroot=${pkgdir}"
+	export CXX="$TARGET-g++ --sysroot=${pkgdir}"
+	export LD="$TARGET-ld --sysroot=${pkgdir}"
+	export AS="$TARGET-as --sysroot=${pkgdir}"
+	export AR="$TARGET-ar"
+	export NM="$TARGET-nm"
+	export OBJCOPY="$TARGET-objcopy"
+	export RANLIB="$TARGET-ranlib"
+	export READELF="$TARGET-readelf"
+	export STRIP="$TARGET-strip"
+	export SIZE="$TARGET-size"
+	export CFLAGS="$XFLAGS $BUILDCFLAGS"
+	export CFLAGS="$XFLAGS $BUILDCFLAGS"
+	export LDFLAGS="$XLDFLAGS"
 }
 
 build_linux_headers() {
