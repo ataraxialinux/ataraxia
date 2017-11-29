@@ -112,7 +112,7 @@ prepare_filesystem() {
 		chmod +x etc/rc.d/${f}
 	done
 
-	cat >${pkgdir}/etc/os-release<<EOF
+	cat >${pkgdir}/etc/os-release << EOF
 NAME="${product_name}"
 ID="${product_id}-$(date -Idate)"
 VERSION_ID="${product_version}-$(date -Idate)"
@@ -709,7 +709,7 @@ build_git() {
 	wget http://cdn.kernel.org/pub/software/scm/git/git-2.15.0.tar.xz
 	tar -xf git-2.15.0.tar.xz
 	cd git-2.15.0
-	cat >> config.mak <<-EOF
+	cat >> config.mak << EOF
 		NO_GETTEXT=YesPlease
 		NO_SVN_TESTS=YesPlease
 		NO_REGEX=YesPlease
