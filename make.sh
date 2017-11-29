@@ -1,6 +1,8 @@
 #!/bin/sh
 #
 
+set -e -x
+
 product_name="JanusLinux"
 product_version="0.1"
 product_id="janus"
@@ -540,7 +542,7 @@ build_wpasupplicant() {
 	tar -xf wpa_supplicant-2.6.tar.gz
 	cd wpa_supplicant-2.6
 	cd wpa_supplicant
-cat > .config << "EOF"
+cat > .config << EOF
 CONFIG_BACKEND=file
 CONFIG_CTRL_IFACE=y
 CONFIG_DEBUG_FILE=y
@@ -722,6 +724,19 @@ EOF
 		DESTDIR=${pkgdir} \
 		INSTALLDIRS=vendor \
 		install
+}
+
+build_iproute2() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-4.14.1.tar.xz
+	tar -xf iproute2-4.14.1.tar.xz
+	cd iproute2-4.14.1
+	./configure \
+		${default_configure} \
+		--disable-static \
+		--host=$XTARGET
+	make CCOPTS="$CFLAGS" LIBDIR=/usr/lib  -j $NUM_JOBS
+	make -j1 DESTDIR=${pkgdir} LIBDIR=/usr/lib PREFIX=/usr install
 }
 
 strip_filesystem() {
