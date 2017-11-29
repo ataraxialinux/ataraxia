@@ -151,8 +151,8 @@ build_toolchain() {
 	ln -sf . usr
 
 	cd $SRC
-	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.xz
+	tar -xf binutils-2.29.1.tar.xz
 	cd binutils-2.29.1
 	mkdir -v ../binutils-build
 	cd ../binutils-build
