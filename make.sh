@@ -289,14 +289,19 @@ build_busybox() {
 	tar -xf busybox-1.27.2.tar.bz2
 	cd busybox-1.27.2
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- defconfig -j $NUM_JOBS
-	sed -i -e "s/CONFIG_EXTRA_COMPAT=y/CONFIG_EXTRA_COMPAT=n/" .config
-	sed -i "s/.*CONFIG_IFPLUGD.*/CONFIG_IFPLUGD=n/" .config
-	sed -i "s/.*CONFIG_INETD.*/CONFIG_INETD=n/" .config
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=${pkgdir} install
+	cp examples/udhcp/simple.script ${pkgdir}/usr/share/udhcpc/default.script
+	chmod +x ${pkgdir}/usr/share/udhcpc/default.script
 	cd ${pkgdir}
+	ln -sf bin/busybox init
 	rm -rf linuxrc
-	rm -rf sbin/init
 }
 
 build_iana_etc() {
@@ -343,17 +348,24 @@ build_zlib() {
 	make DESTDIR=${pkgdir} install
 }
 
-build_curses() {
+build_ncurses() {
 	cd ${srcdir}
-	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
-	tar -xf netbsd-curses-0.2.1.tar.xz
-	cd netbsd-curses-0.2.1
-cat << EOF > config.mak
-CFLAGS=-fPIC $CFLAGS
-LDFLAGS=$LDFLAGS
-PREFIX=/usr
-DESTDIR=${pkgdir}
-EOF
+	wget http://invisible-mirror.net/archives/ncurses/current/ncurses-6.0-20171125.tgz
+	tar -xf ncurses-6.0-20171125.tgz
+	cd ncurses-6.0-20171125
+	./configure \
+		${default_configure} \
+		--with-pkg-config-libdir=/usr/lib/pkgconfig
+		--without-cxx-binding \
+		--without-debug \
+		--without-ada \
+		--without-tests \
+		--with-normal \
+		--with-shared \
+		--disable-nls \
+		--enable-pc-files \
+		--enable-widec  \
+		--host=$XTARGET
 	make -j $NUM_JOBS
 	make install
 }
@@ -370,13 +382,35 @@ build_libressl() {
 	make DESTDIR=${pkgdir} install
 }
 
+
+build_openssh() {
+	cd ${srcdir}
+	wget https://fastly.cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz
+	tar -xf openssh-7.6p1.tar.gz
+	cd openssh-7.6p1
+	./configure \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib/ssh \
+		--sysconfdir=/etc/ssh \
+		--without-rpath \
+		--with-ssl-engine \
+		--with-privsep-user=nobody \
+		--with-xauth=/usr/bin/xauth \
+		--with-md5-passwords \
+		--with-pid-dir=/run \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
 build_libcap() {
 	cd ${srcdir}
 	wget https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
 	tar -xf libcap-2.25.tar.xz
 	cd libcap-2.25
 	patch -Np1 -i  $KEEP/libcap-2.25-gperf.patch
-	make
+	make -j $NUM_JOBS
 	make install \
 		DESTDIR=${pkgdir} \
 		LIBDIR=/usr/lib \
@@ -406,6 +440,9 @@ build_libnl() {
 	wget https://github.com/thom311/libnl/releases/download/libnl3_4_0/libnl-3.4.0.tar.gz
 	tar -xf libnl-3.4.0.tar.gz
 	cd libnl-3.4.0
+	sed -i '/linux-private\/linux\/libc-compat/d' Makefile.in Makefile.am
+	sed -i 's/linux-private\///g' lib/route/link/vrf.c
+	rm -r include/linux-private/linux/libc-compat.h
 	./configure \
 		${default_configure} \
 		--disable-static \
@@ -418,7 +455,10 @@ build_wirelesstools() {
 	cd ${srcdir}
 	wget http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/wireless_tools.29.tar.gz
 	tar -xf wireless_tools.29.tar.gz
-	cd wireless_tools
+	cd wireless_tools.29
+	sed -i s/gcc/\$\TARGET\-gcc/g Makefile
+	sed -i s/\ ar/\ \$\TARGET\-ar/g Makefile
+	sed -i s/ranlib/\$\TARGET\-ranlib/g Makefile
 	make PREFIX=${pkgdir} -j $NUM_JOBS
 	make install PREFIX=${pkgdir}
 }
@@ -428,7 +468,8 @@ build_wpasupplicant() {
 	wget http://hostap.epitest.fi/releases/wpa_supplicant-2.6.tar.gz
 	tar -xf wpa_supplicant-2.6.tar.gz
 	cd wpa_supplicant-2.6
-cat > wpa_supplicant/.config << "EOF"
+	cd wpa_supplicant
+cat > .config << "EOF"
 CONFIG_BACKEND=file
 CONFIG_CTRL_IFACE=y
 CONFIG_DEBUG_FILE=y
@@ -453,11 +494,163 @@ CONFIG_PKCS12=y
 CONFIG_READLINE=y
 CONFIG_SMARTCARD=y
 CONFIG_WPS=y
-CFLAGS += -I${pkgdir}/usr/include/libnl3
 EOF
-	cd wpa_supplicant
 	make BINDIR=/usr/bin LIBDIR=/usr/lib -j $NUM_JOBS
 	make DESTDIR=${pkgdir} BINDIR=/usr/bin LIBDIR=/usr/lib install
+}
+
+
+build_shadow() {
+	cd ${srcdir}
+	wget https://github.com/shadow-maint/shadow/releases/download/4.5/shadow-4.5.tar.xz
+	tar -xf shadow-4.5.tar.xz
+	cd shadow-4.5
+	./configure \
+		${default_configure} \
+		--disable-static \
+		--without-libcrack \
+		--without-nscd \
+		--without-audit \
+		--without-acl \
+		--without-attr \
+		--without-selinux \
+		--with-group-name-max-length=32 \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_util_linux() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.tar.xz
+	tar -xf util-linux-2.31.tar.xz
+	cd util-linux-2.31
+	./configure \
+		${default_configure} \
+		--enable-raw \
+		--disable-uuidd \
+		--disable-nls \
+		--disable-tls \
+		--disable-kill \
+		--disable-login \
+		--disable-last \
+		--disable-sulogin \
+		--disable-su \
+		--disable-pylibmount \
+		--disable-makeinstall-chown \
+		--disable-makeinstall-setuid \
+		--without-python \
+		--without-systemd \
+		--without-systemdsystemunitdi \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+
+build_e2fsprogs() {
+	cd ${srcdir}
+	wget http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.7/e2fsprogs-1.43.7.tar.gz
+	tar -xf e2fsprogs-1.43.7.tar.gz
+	cd e2fsprogs-1.43.7
+	./configure \
+		${default_configure} \
+		--enable-elf-shlibs \
+		--enable-symlink-install \
+		--disable-fsck \
+		--disable-uuidd \
+		--disable-libuuid \
+		--disable-libblkid \
+		--disable-tls \
+		--disable-nls \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install install-libs
+}
+
+build_curl() {
+	cd ${srcdir}
+	wget https://curl.haxx.se/download/curl-7.56.1.tar.xz
+	tar -xf curl-7.56.1.tar.xz
+	cd curl-7.56.1
+	./configure \
+		${default_configure} \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_kbd() {
+	cd ${srcdir}
+	wget https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
+	tar -xf kbd-2.0.4.tar.xz
+	cd kbd-2.0.4
+	./configure \
+		${default_configure} \
+		--disable-vlock \
+		--disable-nls \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_file() {
+	cd ${srcdir}
+	wget ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
+	tar -xf file-5.32.tar.gz
+	cd file-5.32
+	./configure \
+		${default_configure} \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+
+build_libarchive() {
+	cd ${srcdir}
+	wget http://www.libarchive.org/downloads/libarchive-3.3.2.tar.gz
+	tar -xf libarchive-3.3.2.tar.gz
+	cd libarchive-3.3.2
+	./configure \
+		${default_configure} \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_readline() {
+	cd ${srcdir}
+	wget http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
+	tar -xf readline-7.0.tar.gz
+	cd readline-7.0
+	./configure \
+		${default_configure} \
+		--host=$XTARGET
+	make -j $NUM_JOBS
+	make DESTDIR=${pkgdir} install
+}
+
+build_git() {
+	cd ${srcdir}
+	wget http://cdn.kernel.org/pub/software/scm/git/git-2.15.0.tar.xz
+	tar -xf git-2.15.0.tar.xz
+	cd git-2.15.0
+	cat >> config.mak <<-EOF
+		NO_GETTEXT=YesPlease
+		NO_SVN_TESTS=YesPlease
+		NO_REGEX=YesPlease
+		USE_LIBPCRE2=YesPlease
+		NO_NSEC=YesPlease
+		NO_SYS_POLL_H=1
+		CFLAGS=$CFLAGS
+EOF
+	make -j1 prefix=/usr gitexecdir=/usr/libexec DESTDIR=${pkgdir} perl/perl.mak
+	make prefix=/usr gitexecdir=/usr/libexec DESTDIR=${pkgdir} -j $NUM_JOBS
+	make -j1 prefix=/usr \
+		DESTDIR=${pkgdir} \
+		INSTALLDIRS=vendor \
+		install
 }
 
 strip_filesystem() {
@@ -517,12 +710,23 @@ build_iana_etc
 build_linux_headers
 build_musl
 build_busybox
-build_mksh
 build_zlib
+build_file
+build_readline
+build_ncurses
 build_libcap
-build_curses
+build_e2fsprogs
+build_util_linux
+build_shadow
+build_kbd
+build_iproute2
+build_mksh
 build_pciutils
 build_libressl
+build_openssh
+build_libarchive
+build_curl
+build_git
 build_dhcpcd
 build_libnl
 build_wirelesstools
