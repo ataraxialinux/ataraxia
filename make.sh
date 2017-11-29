@@ -129,7 +129,7 @@ build_toolchain() {
 	export CXXFLAGS="$BFLAGS"
 	export LDFLAGS="$BLDFLAGS"
 
-	mkdir -p ${tooldir}/$TARGET/lib
+	mkdir -p ${tooldir}/$TARGET/{lib,include}
 	cd ${tooldir}/$TARGET
 	
 	case $XARCH in
@@ -339,7 +339,7 @@ build_linux() {
 	make ARCH=$KARCH silentoldconfig -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- -j $NUM_JOBS
 	make ARCH=$KARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=${pkgdir} modules_install
-	cp -a arch/$BARCH/boot/$KIMAGE ${pkgdir}/boot/$KIMAGE-${kernelver}
+	cp -a arch/x86/boot/bzImage ${pkgdir}/boot/bzImage-${kernelver}
 }
 
 build_musl(){
@@ -348,10 +348,10 @@ build_musl(){
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
-		CROSS_COMPILE=$XTARGET- \
+		CROSS_COMPILE=$TARGET- \
 		${default_configure} \
 		--disable-static \
-		--target=$XTARGET
+		--target=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -403,7 +403,7 @@ build_dhcpcd() {
 	cd dhcpcd-6.11.5
 	./configure \
 		${default_configure} \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -437,8 +437,8 @@ build_ncurses() {
 		--with-shared \
 		--disable-nls \
 		--enable-pc-files \
-		--enable-widec  \
-		--host=$XTARGET
+		--enable-widec \
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make install
 }
@@ -450,7 +450,7 @@ build_libressl() {
 	cd libressl-2.6.3
 	./configure \
 		${default_configure} \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -472,7 +472,7 @@ build_openssh() {
 		--with-xauth=/usr/bin/xauth \
 		--with-md5-passwords \
 		--with-pid-dir=/run \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -519,7 +519,7 @@ build_libnl() {
 	./configure \
 		${default_configure} \
 		--disable-static \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -588,7 +588,7 @@ build_shadow() {
 		--without-attr \
 		--without-selinux \
 		--with-group-name-max-length=32 \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -615,7 +615,7 @@ build_util_linux() {
 		--without-python \
 		--without-systemd \
 		--without-systemdsystemunitdi \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -636,7 +636,7 @@ build_e2fsprogs() {
 		--disable-libblkid \
 		--disable-tls \
 		--disable-nls \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install install-libs
 }
@@ -648,7 +648,7 @@ build_curl() {
 	cd curl-7.56.1
 	./configure \
 		${default_configure} \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -662,7 +662,7 @@ build_kbd() {
 		${default_configure} \
 		--disable-vlock \
 		--disable-nls \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -674,7 +674,7 @@ build_file() {
 	cd file-5.32
 	./configure \
 		${default_configure} \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -687,7 +687,7 @@ build_libarchive() {
 	cd libarchive-3.3.2
 	./configure \
 		${default_configure} \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -699,7 +699,7 @@ build_readline() {
 	cd readline-7.0
 	./configure \
 		${default_configure} \
-		--host=$XTARGET
+		--host=$TARGET
 	make -j $NUM_JOBS
 	make DESTDIR=${pkgdir} install
 }
@@ -734,7 +734,7 @@ build_iproute2() {
 	./configure \
 		${default_configure} \
 		--disable-static \
-		--host=$XTARGET
+		--host=$TARGET
 	make CCOPTS="$CFLAGS" LIBDIR=/usr/lib  -j $NUM_JOBS
 	make -j1 DESTDIR=${pkgdir} LIBDIR=/usr/lib PREFIX=/usr install
 }
