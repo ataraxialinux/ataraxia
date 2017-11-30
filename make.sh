@@ -148,7 +148,7 @@ build_toolchain() {
 	cd ${tooldir}
 	ln -sf . usr
 
-	cd $SRC
+	cd ${srcdir}
 	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.xz
 	tar -xf binutils-2.29.1.tar.xz
 	cd binutils-2.29.1
@@ -174,14 +174,14 @@ build_toolchain() {
 	make -j$JOBS
 	make install
 
-	cd $SRC
+	cd ${srcdir}
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-${kernelver}.tar.xz
 	tar -xf linux-${kernelver}.tar.xz
 	cd linux-${kernelver}
 	make mrproper
 	make ARCH=$KARCH INSTALL_HDR_PATH=${tooldir} headers_install
 
-	cd $SRC
+	cd ${srcdir}
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
@@ -231,7 +231,7 @@ build_toolchain() {
 	make all-gcc all-target-libgcc -j$JOBS
 	make install-gcc install-target-libgcc
 
-	cd $SRC
+	cd ${srcdir}
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
@@ -242,7 +242,7 @@ build_toolchain() {
 	make -j$JOBS
 	make DESTDIR=${tooldir} install
 
-	cd $SRC
+	cd ${srcdir}
 	rm -rf gcc-build
 	rm -rf gcc-7.2.0
 	tar -xf gcc-7.2.0.tar.xz
