@@ -196,7 +196,7 @@ build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
-	patch -Np1 -i $KEEP/0001-libgcc_s.patch
+	patch -p1 $KEEP/0001-libgcc_s.patch
 	mkdir ../gcc-build
 	cd ../gcc-build
 	AR=ar \
@@ -255,7 +255,7 @@ build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
-	patch -Np1 -i $KEEP/0001-libgcc_s.patch
+	patch -p1 $KEEP/0001-libgcc_s.patch
 	mkdir ../gcc-build
 	cd ../gcc-build
 	AR=ar \
