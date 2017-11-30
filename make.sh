@@ -18,7 +18,6 @@ pkgdir=${topdir}/work/rootfs
 isodir=${topdir}/work/rootcd
 stuffdir=$(pwd)/stuff
 
-xflags="-Os -g0 -pipe -fno-stack-protector -fomit-frame-pointer -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE"
 default_configure="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --sysconfdir=/etc --bindir=/usr/bin --sbindir=/usr/sbin --localstatedir=/var"
 
 kernelhost="janus"
@@ -29,11 +28,11 @@ just_prepare() {
 	mkdir -p ${srcdir} ${tooldir} ${pkgdir} ${isodir}
 
 	# optimization
-	export XFLAGS="-O3 -g0 -pipe -fstack-protector-strong"
+	export XFLAGS="-Os -g0 -pipe -fno-stack-protector -fomit-frame-pointer -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE"
 	export XLDLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro"
 
 	# toolchain optimization
-	export BFLAGS="-O3 -g0 -pipe -fstack-protector-strong"
+	export BFLAGS="-Os -g0 -pipe -fno-stack-protector -fomit-frame-pointer -fno-asynchronous-unwind-tables -U_FORTIFY_SOURCE"
 	export BLDLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro"
 
 	export PATH="${tooldir}/bin:$PATH"
@@ -129,22 +128,21 @@ build_toolchain() {
 	export CXXFLAGS="$BFLAGS"
 	export LDFLAGS="$BLDFLAGS"
 
-	mkdir -p ${tooldir}/$TARGET/{lib,include}
+	mkdir -p ${tooldir}/{bin,share,lib,include,$TARGET}
+	cd ${tooldir}
+	ln -sf bin sbin
 	cd ${tooldir}/$TARGET
-	
+	ln -sf ../bin bin
+	ln -sf ../lib lib
+	ln -sf ../share share
+	ln -sf ../include include
+
 	case $XARCH in
 		x86_64)
 			cd ${tooldir}
 			ln -sf lib lib64
 			cd ${tooldir}/$TARGET
-			ln -sf ../lib lib
 			ln -sf lib lib64
-			ln -sf ../include include
-			;;
-		*)
-			cd ${tooldir}/$TARGET
-			ln -sf ../lib lib
-			ln -sf ../include include
 	esac
 
 	cd ${tooldir}
