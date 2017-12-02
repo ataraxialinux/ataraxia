@@ -24,3 +24,9 @@ Download [current image](https://github.com/protonesso/janus/releases/download/2
 
 
 ![Screenshot 2](https://github.com/protonesso/janus/raw/master/www/Screenshot%20from%202017-11-27%2017-12-57.png)
+
+
+# Contact with me
+
+
+If you want give to me some ideas, please welcome: nagakamira@gmail.com 
