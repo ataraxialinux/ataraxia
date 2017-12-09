@@ -95,7 +95,6 @@ do_build_toolchain() {
 			ln -sf lib lib64
 			cd $TOOLS/$TARGET
 			ln -sf lib lib64
-		;;
 	esac
 
 	cd $TOOLS
@@ -253,6 +252,7 @@ do_build_basic_system() {
 	./configure \
 		$CONFIGURE \
 		$LINKING \
+		--enable-optimize=size \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
