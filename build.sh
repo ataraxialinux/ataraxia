@@ -113,9 +113,11 @@ do_build_toolchain() {
 		--target=$TARGET \
 		--prefix=$TOOLS \
 		--with-sysroot=$TOOLS \
-		--with-lib-path="$TOOLS/lib:$TOOLS/usr/lib" \
+		--enable-deterministic-archives \
+		--disable-compressed-debug-sections \
 		--disable-nls \
-		--disable-static \
+		--disable-ppl-version-check \
+		--disable-cloog-version-check \
 		$MULTILIB
 	make configure-host -j$JOBS
 	make -j$JOBS
@@ -151,12 +153,17 @@ do_build_toolchain() {
 		--enable-checking=release \
 		--enable-linker-build-id \
 		--disable-decimal-float \
+		--disable-libmpx \
 		--disable-libquadmath \
 		--disable-libsanitizer \
 		--disable-libatomic \
 		--disable-libmudflap \
+		--disable-libcilkrts \
+		--disable-libstdcxx \
+		--disable-gnu-indirect-function \
 		--disable-decimal-float \
 		--disable-shared \
+		--disable-libvtv \
 		--disable-nls \
 		--disable-static \
 		--disable-threads \
@@ -199,20 +206,26 @@ do_build_toolchain() {
 		--target=$TARGET \
 		--prefix=$TOOLS \
 		--with-sysroot=$TOOLS \
-		--enable-checking=release \
 		--enable-languages=c,c++ \
-		--enable-libstdcxx-time \
-		--enable-threads=posix \
-		--enable-linker-build-id \
-		--enable-__cxa_atexit \
 		--enable-c99 \
+		--enable-__cxa_atexit \
+		--enable-clocale=generic \
+		--enable-tls \
 		--enable-long-long \
-		--enable-shared \
+		--enable-libstdcxx-time \
+		--enable-checking=release \
+		--enable-fully-dynamic-string \
+		--enable-linker-build-id \
+		--disable-symvers \
+		--disable-gnu-indirect-function \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libmpx \
 		--disable-nls \
-		--disable-static \
+		--disable-lto-plugin \
 		$MULTILIB \
 		$GCCOPTS
-	make AS_FOR_TARGET=$TARGET-as LD_FOR_TARGET=$TARGET-ld -j$JOBS
+	make AS_FOR_TARGET="$TARGET-as" LD_FOR_TARGET="$TARGET-ld" -j$JOBS
 	make install
 }
 
@@ -298,6 +311,7 @@ do_build_basic_system() {
 		$LINKING \
 		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
+		--enable-deterministic-archives \
 		--enable-ld=default \
 		--enable-gold=yes \
 		--enable-plugins \
@@ -306,6 +320,7 @@ do_build_basic_system() {
 		--disable-nls \
 		--disable-multilib \
 		--disable-werror \
+		--disable-compressed-debug-sections \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
@@ -315,10 +330,10 @@ do_build_basic_system() {
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	export gcc_cv_prog_makeinfo_modern=no
-	export libat_cv_have_ifunc=no
 	mkdir build
 	cd build
+	export gcc_cv_prog_makeinfo_modern=no
+	export libat_cv_have_ifunc=no
 	../configure \
 		$CONFIGURE \
 		$LINKING \
@@ -338,9 +353,11 @@ do_build_basic_system() {
 		--enable-fully-dynamic-string \
 		--enable-tls \
 		--enable-cloog-backend \
+		--enable-install-libiberty \
 		--disable-bootstrap \
 		--disable-fixed-point \
 		--disable-gnu-indirect-function \
+		--disable-libunwind-exceptions \
 		--disable-libssp \
 		--disable-libmpx \
 		--disable-libmudflap \
@@ -368,4 +385,5 @@ do_build_basic_system
 do_build_post_build
 
 exit 0
+
 
