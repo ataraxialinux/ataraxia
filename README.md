@@ -5,16 +5,30 @@ Fast and mini Linux distro based on busybox and musl libc. It can be cross-compi
 It is provides basic Linux system without GUI(Graphical User Interface).
 
 
+# Download
+
+
+Download [current image](https://github.com/protonesso/janus/releases/download/2017-11-27/JanusLinux-0.1-2017-11-27.iso) (ALPHA VERSION!)
+
+
+# News
+2017.12.09
+   We are rewriting a build system and also add toolchain to main system!
+
+
 # Build system
 
 
 Janus Linux has own toolchain to build it with any libcs and port to another CPU architectures!
 
 
-# Download
+# Development plans
 
 
-Download [current image](https://github.com/protonesso/janus/releases/download/2017-11-27/JanusLinux-0.1-2017-11-27.iso) (ALPHA VERSION!)
+- [ ] Rewrite build system and add ARM architectures
+- [ ] Add toolchain
+- [ ] Establish wireless networking
+- [ ] Optimize the code
 
 
 # Screenshots
