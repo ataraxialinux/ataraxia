@@ -348,6 +348,7 @@ do_build_basic_system() {
 		$LINKING \
 		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
+		--enable-bootstrap \
 		--enable-__cxa_atexit \
 		--enable-default-pie \
 		--enable-c99 \
@@ -363,7 +364,6 @@ do_build_basic_system() {
 		--enable-tls \
 		--enable-cloog-backend \
 		--enable-install-libiberty \
-		--disable-bootstrap \
 		--disable-fixed-point \
 		--disable-gnu-indirect-function \
 		--disable-libunwind-exceptions \
