@@ -92,6 +92,7 @@ do_build_toolchain() {
 
 	case $XARCH in
 		x86_64|aarch64)
+			cd $TOOLS
 			ln -sf lib lib64
 			cd $TOOLS/$TARGET
 			ln -sf lib lib64
