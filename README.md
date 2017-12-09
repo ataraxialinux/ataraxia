@@ -13,7 +13,7 @@ Download [current image](https://github.com/protonesso/janus/releases/download/2
 
 # News
  * 2017.12.09
-  * We are rewriting a build system and also add toolchain to main system!
+   * The website has update!
 
 
 # Build system
