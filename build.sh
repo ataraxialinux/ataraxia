@@ -90,6 +90,14 @@ do_build_toolchain() {
 	ln -sf ../share share
 	ln -sf ../include include
 
+	case $XARCH in
+		x86_64|aarch64)
+			ln -sf lib lib64
+			cd $TOOLS/$TARGET
+			ln -sf lib lib64
+		;;
+	esac
+
 	cd $TOOLS
 	ln -sf . usr
 
