@@ -56,22 +56,22 @@ do_build_cross_config() {
 			export MULTILIB="--enable-multilib --with-multilib-list=m32"
 			export GCCOPTS="--with-arch=i686"
 			;;
-		aarch64)
-			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="aarch64-pc-linux-musl"
-			export KARCH="arm64"
-			export LIBSUFFIX=
-			export MULTILIB="--disable-multilib --with-multilib-list="
-			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
-			;;
-		arm)
-			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="arm-pc-linux-musleabihf"
-			export KARCH="arm"
-			export LIBSUFFIX=
-			export MULTILIB="--disable-multilib --with-multilib-list="
-			export GCCOPTS="--with-arch=armv7-a --with-tune=generic-armv7-a --with-fpu=vfpv3-d16 --with-float=hard --with-abi=aapcs-linux --with-mode=thumb"
-			;;
+#		aarch64)
+#			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
+#			export TARGET="aarch64-pc-linux-musl"
+#			export KARCH="arm64"
+#			export LIBSUFFIX=
+#			export MULTILIB="--disable-multilib --with-multilib-list="
+#			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+#			;;
+#		arm)
+#			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
+#			export TARGET="arm-pc-linux-musleabihf"
+#			export KARCH="arm"
+#			export LIBSUFFIX=
+#			export MULTILIB="--disable-multilib --with-multilib-list="
+#			export GCCOPTS="--with-arch=armv7-a --with-tune=generic-armv7-a --with-fpu=vfpv3-d16 --with-float=hard --with-abi=aapcs-linux --with-mode=thumb"
+#			;;
 		*)
 			echo "XARCH isn't set!"
 			echo "Please run: XARCH=[supported architecture] sh make.sh"
@@ -100,13 +100,6 @@ do_build_toolchain() {
 
 	cd $TOOLS
 	ln -sf . usr
-
-	cd $SRC
-	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
-	tar -xf linux-4.14.4.tar.xz
-	cd linux-4.14.4
-	make mrproper
-	make INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SRC
 	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
@@ -183,6 +176,13 @@ do_build_toolchain() {
 	make all-gcc all-target-libgcc -j$JOBS
 	make install-gcc install-target-libgcc
 	rm -rf $TOOLS/include/limits.h
+
+	cd $SRC
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
+	tar -xf linux-4.14.4.tar.xz
+	cd linux-4.14.4
+	make mrproper
+	make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SRC
 	wget http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
@@ -322,14 +322,13 @@ do_build_basic_system() {
 		--with-system-zlib \
 		--enable-deterministic-archives \
 		--enable-ld=default \
-		--enable-gold=yes \
+		--enable-gold \
 		--enable-plugins \
 		--enable-threads \
-		--enable-install-libiberty \
 		--disable-nls \
-		--disable-multilib \
 		--disable-werror \
 		--disable-compressed-debug-sections \
+		$MULTILIB \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
@@ -348,34 +347,31 @@ do_build_basic_system() {
 		$LINKING \
 		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
-		--enable-bootstrap \
-		--enable-__cxa_atexit \
-		--enable-default-pie \
-		--enable-c99 \
-		--enable-long-long \
-		--enable-libstdcxx-time \
+		--enable-fully-dynamic-string \
 		--enable-checking=release \
 		--enable-languages=c,c++ \
+		--enable-c99 \
+		--enable-libstdcxx-time \
+		--enable-long-long \
+		--enable-tls \
 		--enable-lto \
+		--enable-linker-build-id \
 		--enable-threads=posix \
 		--enable-clocale=generic \
-		--enable-linker-build-id \
-		--enable-fully-dynamic-string \
-		--enable-tls \
-		--enable-cloog-backend \
-		--enable-install-libiberty \
-		--disable-fixed-point \
+		--enable-__cxa_atexit \
+		--disable-bootstrap \
 		--disable-gnu-indirect-function \
-		--disable-libunwind-exceptions \
+		--disable-libitm \
 		--disable-libssp \
 		--disable-libmpx \
 		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libstdcxx-pch \
-		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror \
+		$MULTILIB \
+		$GCCOPTS \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
