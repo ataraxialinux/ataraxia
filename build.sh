@@ -325,10 +325,10 @@ do_build_basic_system() {
 		--enable-gold \
 		--enable-plugins \
 		--enable-threads \
+		--disable-multilib \
 		--disable-nls \
 		--disable-werror \
 		--disable-compressed-debug-sections \
-		$MULTILIB \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
@@ -340,12 +340,9 @@ do_build_basic_system() {
 	cd gcc-7.2.0
 	mkdir build
 	cd build
-	export gcc_cv_prog_makeinfo_modern=no
-	export libat_cv_have_ifunc=no
 	../configure \
 		$CONFIGURE \
 		$LINKING \
-		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
 		--enable-fully-dynamic-string \
 		--enable-checking=release \
@@ -367,11 +364,10 @@ do_build_basic_system() {
 		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libstdcxx-pch \
+		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror \
-		$MULTILIB \
-		$GCCOPTS \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
