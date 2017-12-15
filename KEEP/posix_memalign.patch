@@ -1,0 +1,29 @@
+diff -Naur gcc-7.1.0.orig/gcc/config/i386/pmm_malloc.h gcc-7.1.0/gcc/config/i386/pmm_malloc.h
+--- gcc-7.1.0.orig/gcc/config/i386/pmm_malloc.h	2017-01-01 04:07:43.000000000 -0800
++++ gcc-7.1.0/gcc/config/i386/pmm_malloc.h	2017-05-07 11:35:22.878398460 -0700
+@@ -27,12 +27,13 @@
+ #include <stdlib.h>
+ 
+ /* We can't depend on <stdlib.h> since the prototype of posix_memalign
+-   may not be visible.  */
++   may not be visible and we can't pollute the namespace either.  */
+ #ifndef __cplusplus
+-extern int posix_memalign (void **, size_t, size_t);
++extern int __gcc_posix_memalign (void **, size_t, size_t)
+ #else
+-extern "C" int posix_memalign (void **, size_t, size_t) throw ();
++extern "C" int __gcc_posix_memalign (void **, size_t, size_t) throw ()
+ #endif
++__asm__("posix_memalign");
+ 
+ static __inline void *
+ _mm_malloc (size_t __size, size_t __alignment)
+@@ -42,7 +43,7 @@
+     return malloc (__size);
+   if (__alignment == 2 || (sizeof (void *) == 8 && __alignment == 4))
+     __alignment = sizeof (void *);
+-  if (posix_memalign (&__ptr, __alignment, __size) == 0)
++  if (__gcc_posix_memalign (&__ptr, __alignment, __size) == 0)
+     return __ptr;
+   else
+     return NULL;
