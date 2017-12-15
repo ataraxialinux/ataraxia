@@ -1,7 +1,7 @@
 # JanusLinux
 
 
-Fast and mini Linux distro based on busybox and musl libc. It can be cross-compiled on another CPU architecture(currently support x86_64).
+Fast and mini Linux distro based on busybox and musl libc. It can be cross-compiled on another CPU architecture(currently support x86_64 and i386(i686)).
 It is provides basic Linux system without GUI(Graphical User Interface).
 
 
