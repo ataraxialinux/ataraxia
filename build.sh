@@ -56,22 +56,22 @@ do_build_cross_config() {
 			export MULTILIB="--enable-multilib --with-multilib-list=m32"
 			export GCCOPTS="--with-arch=i686"
 			;;
-#		aarch64)
-#			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-#			export TARGET="aarch64-pc-linux-musl"
-#			export KARCH="arm64"
-#			export LIBSUFFIX=
-#			export MULTILIB="--disable-multilib --with-multilib-list="
-#			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
-#			;;
-#		arm)
-#			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-#			export TARGET="arm-pc-linux-musleabihf"
-#			export KARCH="arm"
-#			export LIBSUFFIX=
-#			export MULTILIB="--disable-multilib --with-multilib-list="
-#			export GCCOPTS="--with-arch=armv7-a --with-tune=generic-armv7-a --with-fpu=vfpv3-d16 --with-float=hard --with-abi=aapcs-linux --with-mode=thumb"
-#			;;
+		aarch64)
+			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
+			export TARGET="aarch64-pc-linux-musl"
+			export KARCH="arm64"
+			export LIBSUFFIX=
+			export MULTILIB="--disable-multilib --with-multilib-list="
+			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			;;
+		arm)
+			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
+			export TARGET="arm-pc-linux-musleabihf"
+			export KARCH="arm"
+			export LIBSUFFIX=
+			export MULTILIB="--disable-multilib --with-multilib-list="
+			export GCCOPTS="--with-arch=armv7-a --with-tune=generic-armv7-a --with-fpu=vfpv3-d16 --with-float=hard --with-abi=aapcs-linux --with-mode=thumb"
+			;;
 		*)
 			echo "XARCH isn't set!"
 			echo "Please run: XARCH=[supported architecture] sh make.sh"
@@ -318,8 +318,8 @@ do_build_basic_system() {
 	../configure \
 		$CONFIGURE \
 		$LINKING \
-		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
+		--with-pic \
 		--enable-deterministic-archives \
 		--enable-ld=default \
 		--enable-gold \
@@ -336,8 +336,24 @@ do_build_basic_system() {
 
 	cd $SRC
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	wget http://isl.gforge.inria.fr/isl-0.18.tar.bz2
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
+	patch -Np1 -i $KEEP/003_all_default-fortify-source.patch
+	patch -Np1 -i $KEEP/Revert-eeb6872bf.patch
+	patch -Np1 -i $KEEP/050_all_libiberty-asprintf.patch
+	patch -Np1 -i $KEEP/PR82155.patch
+	patch -Np1 -i $KEEP/cpu_indicator.patch
+	patch -Np1 -i $KEEP/gcc-4.9-musl-fortify.patch
+	patch -Np1 -i $KEEP/gcc-6.1-musl-libssp.patch
+	patch -Np1 -i $KEEP/libgcc-always-build-gcceh.a.patch
+	patch -Np1 -i $KEEP/posix_memalign.patch
+	tar xf ../isl-0.18.tar.bz2
+	mv isl-0.18 isl
+	sed -i 's@pthread_yield();@sched_yield();@' libcilkrts/runtime/os-unix.c
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	export gcc_cv_prog_makeinfo_modern=no
+	export libat_cv_have_ifunc=no
 	mkdir build
 	cd build
 	../configure \
@@ -346,6 +362,7 @@ do_build_basic_system() {
 		--with-system-zlib \
 		--enable-fully-dynamic-string \
 		--enable-checking=release \
+		--enable-cloog-backend \
 		--enable-languages=c,c++ \
 		--enable-c99 \
 		--enable-libstdcxx-time \
@@ -357,13 +374,14 @@ do_build_basic_system() {
 		--enable-clocale=generic \
 		--enable-__cxa_atexit \
 		--disable-bootstrap \
-		--disable-gnu-indirect-function \
+		--disable-fixed-point \
 		--disable-libitm \
 		--disable-libssp \
 		--disable-libmpx \
 		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libstdcxx-pch \
+		--disable-libunwind-exceptions \		
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
@@ -386,5 +404,3 @@ do_build_basic_system
 do_build_post_build
 
 exit 0
-
-
