@@ -36,6 +36,7 @@ do_build_after_toolchain() {
 	export READELF="$TARGET-readelf"
 	export STRIP="$TARGET-strip"
 	export SIZE="$TARGET-size"
+
 }
 
 do_build_cross_config() {
@@ -129,7 +130,6 @@ do_build_toolchain() {
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
 	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
-	wget http://isl.gforge.inria.fr/isl-0.18.tar.bz2
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	tar xf ../mpfr-3.1.6.tar.xz
@@ -138,8 +138,6 @@ do_build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
-	tar xf ../isl-0.18.tar.bz2
-	mv isl-0.18 isl
 	mkdir build
 	cd build
 	AR=ar \
@@ -208,8 +206,6 @@ do_build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
-	tar xf ../isl-0.18.tar.bz2
-	mv isl-0.18 isl
 	mkdir build
 	cd build
 	AR=ar \
@@ -333,25 +329,18 @@ do_build_basic_system() {
 		--disable-nls \
 		--disable-werror \
 		--disable-compressed-debug-sections \
-		--host=$TARGET
+		--build=$HOST \
+		--host=$TARGET \
+		--target=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
 	cd $SRC
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
-	wget http://isl.gforge.inria.fr/isl-0.18.tar.bz2
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	tar xf ../isl-0.18.tar.bz2
-	mv isl-0.18 isl
-	sed -i 's/install_to_$(INSTALL_DEST) //' libiberty/Makefile.in
-	sed -i 's,-lgcc_s,--start-group -lgcc_eh -lgcc -lc --end-group,' gcc/gcc.c
-	sed -i 's,\./fixinc\.sh,-c true,' gcc/Makefile.in
-	sed -i '/define secure_getenv/s@__secure_getenv@getenv@' \
-		libmpx/mpxrt/mpxrt-utils.c \
-		libvtv/vtv_utils.cc
-	sed -i '/__USE_ISOC11/s@!(@(@' libssp/gets-chk.c
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i 's@pthread_yield();@sched_yield();@' libcilkrts/runtime/os-unix.c
 	export gcc_cv_prog_makeinfo_modern=no
 	export libat_cv_have_ifunc=no
@@ -387,7 +376,9 @@ do_build_basic_system() {
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror \
-		--host=$TARGET
+		--build=$HOST \
+		--host=$TARGET \
+		--target=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
@@ -405,3 +396,4 @@ do_build_basic_system
 do_build_post_build
 
 exit 0
+
