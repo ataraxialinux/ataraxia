@@ -129,6 +129,7 @@ do_build_toolchain() {
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
 	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+	wget http://isl.gforge.inria.fr/isl-0.18.tar.bz2
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	tar xf ../mpfr-3.1.6.tar.xz
@@ -137,6 +138,8 @@ do_build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
+	tar xf ../isl-0.18.tar.bz2
+	mv isl-0.18 isl
 	mkdir build
 	cd build
 	AR=ar \
@@ -205,6 +208,8 @@ do_build_toolchain() {
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.0.3.tar.gz
 	mv mpc-1.0.3 mpc
+	tar xf ../isl-0.18.tar.bz2
+	mv isl-0.18 isl
 	mkdir build
 	cd build
 	AR=ar \
@@ -319,7 +324,6 @@ do_build_basic_system() {
 		$CONFIGURE \
 		$LINKING \
 		--with-system-zlib \
-		--with-pic \
 		--enable-deterministic-archives \
 		--enable-ld=default \
 		--enable-gold \
@@ -339,19 +343,16 @@ do_build_basic_system() {
 	wget http://isl.gforge.inria.fr/isl-0.18.tar.bz2
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	patch -Np1 -i $KEEP/003_all_default-fortify-source.patch
-	patch -Np1 -i $KEEP/Revert-eeb6872bf.patch
-	patch -Np1 -i $KEEP/050_all_libiberty-asprintf.patch
-	patch -Np1 -i $KEEP/PR82155.patch
-	patch -Np1 -i $KEEP/cpu_indicator.patch
-	patch -Np1 -i $KEEP/gcc-4.9-musl-fortify.patch
-	patch -Np1 -i $KEEP/gcc-6.1-musl-libssp.patch
-	patch -Np1 -i $KEEP/libgcc-always-build-gcceh.a.patch
-	patch -Np1 -i $KEEP/posix_memalign.patch
 	tar xf ../isl-0.18.tar.bz2
 	mv isl-0.18 isl
+	sed -i 's/install_to_$(INSTALL_DEST) //' libiberty/Makefile.in
+	sed -i 's,-lgcc_s,--start-group -lgcc_eh -lgcc -lc --end-group,' gcc/gcc.c
+	sed -i 's,\./fixinc\.sh,-c true,' gcc/Makefile.in
+	sed -i '/define secure_getenv/s@__secure_getenv@getenv@' \
+		libmpx/mpxrt/mpxrt-utils.c \
+		libvtv/vtv_utils.cc
+	sed -i '/__USE_ISOC11/s@!(@(@' libssp/gets-chk.c
 	sed -i 's@pthread_yield();@sched_yield();@' libcilkrts/runtime/os-unix.c
-	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	export gcc_cv_prog_makeinfo_modern=no
 	export libat_cv_have_ifunc=no
 	mkdir build
