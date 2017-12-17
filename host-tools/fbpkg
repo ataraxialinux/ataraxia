@@ -1,0 +1,410 @@
+#!/bin/bash
+
+
+: '
+Fabulous Bash Package Manager 
+Package manager for SnackLinux
+https://github.com/snacsnoc/fbpkg
+The MIT License (MIT)
+Copyright (c) 2015 Easton Elliott
+Permission is hereby granted, free of charge, to any person obtaining a 
+copy
+of this software and associated documentation files (the "Software"), to 
+deal
+in the Software without restriction, including without limitation the 
+rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included 
+in
+all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+IN
+THE SOFTWARE.
+'
+
+VERSION=0.1.6
+
+WGET=/usr/bin/wget
+TAR=/bin/tar
+REPO_URL=http://snacklinux.org/repo/pub
+PACKAGES_PATH=/var/lib/fbpkg/packageslist
+DIFF=/usr/bin/diff
+
+
+
+check_if_installed(){
+
+        local package_name=$1
+        local package_version=$2
+
+        # Check if package is already installed and prompt user for 
+reinstallation
+        if [ -e /var/lib/fbpkg/installed/$package_name-$package_version 
+]; then
+
+            while true; do 
+                read -p "$package_name $package_version already 
+installed, reinstall? (y/n) " yn
+                case $yn in
+                    [y]* ) echo "Reinstalling..."; break;;
+                    [Nn]* ) echo "Exiting"; exit 255;;
+                    * ) echo "Y\n " 
+                esac
+            done
+
+        fi
+
+
+}
+
+
+get_wget_status_code(){
+
+
+        local exit_code=$1
+
+        # Get wget's exit code and check for errors
+        case $exit_code in
+                0)
+                        echo "Downloaded package successfully"
+                        ;;
+         
+                1)
+                        echo "Generic error"
+                        exit
+                        ;;
+         
+                3)
+                        echo "File I/O error"
+                        exit
+                        ;;
+
+                4)
+                        echo "Network error"
+                        exit
+                        ;;
+
+                7)
+                        echo "Protocol error"
+                        exit
+                        ;;
+         
+                *)
+
+        esac
+
+
+}
+
+# Check if user is root
+if [ "$UID" -ne  0 ]; then
+	echo "You must be root to run fbpkg. Please try again as root"
+	exit
+else
+
+        # Check if fbpkg directory exists (for package lists and other 
+things)
+
+        if [ ! -d /var/lib/fbpkg/installed ]; then
+                mkdir -p /var/lib/fbpkg/installed
+        fi        
+
+
+	while test $# -ge 0; do
+
+        case "$1" in
+
+                -h|--help)
+                        echo "fbpkg $VERSION - Fabulous Bash package 
+manager "
+                        echo " "
+                        echo "options:"
+                        echo -e "-h, --help \t\t\t show brief help"
+                        echo -e "-v, --version \t\t\t show version info"
+                        echo -e "install <package> \t\t install a 
+package"
+                        echo -e "remove <package> \t\t remove a package"
+                        echo -e "upgrade \t\t\t check for updated 
+packages"
+                        echo -e "update \t\t\t\t update installable 
+packages list "
+                        echo -e "search <package>\t\t search for a 
+package"
+                        echo " "
+                        echo "environment variables:"
+                        echo -e "FB_INSTALL_PATH \t\t Install packages 
+to FB_INSTALL_PATH rather than /"
+                        exit 
+                        ;;
+
+                -v|--version)
+                        echo "fbpkg $VERSION"
+                        echo " "
+                        echo "Copyright (c) 2015 Easton Elliott 
+<easton@geekness.eu>"
+                        exit 
+                        ;;                        
+
+                install)
+        
+                        # Check if we have a packageslist file to read 
+from
+                        if [ -e $PACKAGES_PATH ]; then
+
+                                # Read all packages into array
+                                while read line; do
+                                        packages+=("$line")
+                                done < $PACKAGES_PATH
+
+                                # Use grep to check if the package we 
+want to install is in the package list
+                                if ! grep -q "$2"  $PACKAGES_PATH; then
+                                    echo "$2 not found in package list"
+                                    exit
+                                fi
+
+                                # This is terrible and should be 
+rewritten but it works
+                                for i in "${packages[@]}"; do
+                                
+                                        package_name="$(echo "$i" | awk 
+'{print $1}')"
+                                        package_version="$(echo "$i" | 
+awk '{print $2}')"
+
+                                        if [ $package_name == "$2" ]; 
+then
+                                            echo "Found $2 in package 
+list"    
+                                            break
+                                        else
+                                            continue
+                                        fi
+                                done
+
+                                # If the environment variable 
+FB_INSTALL_PATH is unset, set to install to /
+                                if [[ -z "$FB_INSTALL_PATH" ]]; then
+                                    FB_INSTALL_PATH="/"
+                                fi
+
+                                # Check if the package is already 
+installed and prompt user to reinstall
+                                check_if_installed $package_name 
+$package_version
+
+                                echo "Installing version 
+$package_version"
+
+                                # Download the package
+                                $WGET 
+$REPO_URL/$package_name-$package_version.tgz -O 
+/tmp/$package_name-$package_version.tgz
+
+                                # Check if wget had any issues 
+downloading the packages
+                                get_wget_status_code $?
+
+                                # Extract files
+                                $TAR -xvf 
+/tmp/$package_name-$package_version.tgz -C $FB_INSTALL_PATH
+
+
+                                # Check exit code of tar
+                                if [ "$?" ]; then
+
+                                    # Escape slashes when we prefix the 
+path to the list of installed files
+                                    FB_INSTALL_PATH=$(echo 
+$FB_INSTALL_PATH | sed 's/\//\\\//g')
+
+                                    # Get list of files the package 
+wants to install, prefix FB_INSTALL_PATH and write it 
+                                    $TAR ztvf 
+/tmp/$package_name-$package_version.tgz | awk '{print $6}' | grep -E 
+"^.*(\w$)" | sed "s/^/$FB_INSTALL_PATH\//" > 
+/var/lib/fbpkg/installed/$package_name-$package_version
+                                
+                                    echo "Successfully installed 
+$package_name"
+
+                                    rm -v 
+/tmp/$package_name-$package_version.tgz
+                                    exit
+                                else
+                                    echo "Unable to install 
+$package_name: $?"
+                                    exit
+                                fi
+
+
+                                exit 
+
+                                
+                        else
+                                echo "Please run fbpkg update first"
+                                exit        
+                        fi	
+                        shift
+                        ;;
+
+                remove)
+                        
+                        # Check if there is an installed package
+                        installed_package="$(ls /var/lib/fbpkg/installed   
+| grep -E "^$2-([0-9])" )"   
+
+
+                        # The package is installed, lets remove 
+                        if [ $installed_package ]; then
+
+                               echo "Removing package..." 
+                               # Read all installed files 
+                               installed_files=( $(cat 
+/var/lib/fbpkg/installed/$installed_package | tr '\n' ' ') )
+
+
+                                for i in $(seq 0 
+$((${#installed_files[@]}-1))); do
+                                        rm -v ${installed_files[$i]}
+                                done
+
+                                # Remove the package from the installed 
+packages directory
+                                rm -v 
+/var/lib/fbpkg/installed/$installed_package
+
+                                echo "Successfully removed package"
+                                exit
+                        else 
+                                echo "Package not installed"
+                                exit        
+                        fi        
+
+                        shift
+                        ;;
+
+                update)
+                        # Update the local packages list
+                        $WGET $REPO_URL/packageslist -O 
+/var/lib/fbpkg/packageslist
+
+                        get_wget_status_code $?
+
+                        exit 
+                        shift
+                        ;;
+
+                upgrade)  
+                        # This currently doesn't work to upgrade 
+multiple packages. But it works for single packages!
+
+
+                        
+                        # First, we get a list of the installed packages 
+and format it so it's like packageslist file
+                        ls /var/lib/fbpkg/installed | sed -r 
+'s/([a-z0-9-]+)-([0-9].+)/\1 \2/g' > /tmp/installed_packages
+
+                        # We diff the installed packages and the 
+packageslist from the repository and check if it spits out anything  
+
+                        if [[ -z $($DIFF /tmp/installed_packages 
+/var/lib/fbpkg/packageslist | grep '^\-[a-z]') ]]; then
+                            echo "Nothing to upgrade" 
+                        else
+
+                            new_package_name="$($DIFF 
+/tmp/installed_packages /var/lib/fbpkg/packageslist | grep '^\-[a-z]' | 
+cut -c2- | awk '{print $1}')" 
+                            new_package_version="$($DIFF 
+/tmp/installed_packages /var/lib/fbpkg/packageslist | grep '^\-[a-z]' | 
+cut -c2- | awk '{print $2}')"
+                                    
+
+                            # Prompt user (just in case)
+                            while true; do 
+                                read -p "There is an update to 
+$new_package_name to version $new_package_version. Upgrade now? (y\n) " 
+yn
+                                case $yn in
+                                    [y]* ) echo "Upgrading..."; break;;
+                                    [Nn]* ) echo "Exiting"; exit 255;;
+                                    * ) echo "Y\n " 
+                                esac
+                            done
+
+                            echo "Removing old package..."
+                            fbpkg remove $new_package_name
+
+                            echo "Updating packages list..."
+                            fbpkg update 
+
+                            echo "Installing new package..."
+                            fbpkg install $new_package_name
+
+                            echo "Done!"
+                        fi   
+
+                        rm -v /tmp/installed_packages
+                        exit
+                        shift
+                        ;;
+                
+
+                search)
+                        # Check if we have something to search for
+                        if [ $2 ]; then
+
+                        # Check if we have a packageslist file to read 
+from
+                            if [ -e $PACKAGES_PATH ]; then
+
+                                # Use grep to check if the package we 
+want to install is in the package list
+                                if ! grep -q "$2"  $PACKAGES_PATH; then
+                                    echo "$2 not found in package list"
+                                    exit
+                                else
+                                    
+                                    grep -i "$2"  $PACKAGES_PATH
+                                    exit 
+
+                                fi
+                                
+                            else
+                                echo "Please run fbpkg update first"
+                                exit        
+                            fi
+                        else
+                            echo "No package defined"
+                            exit
+                        fi  
+
+                        shift
+                        ;;
+
+
+
+                "")
+                        
+                        echo "Invalid argument, please run fbpkg --help"
+                        exit
+                        ;;       
+
+                        
+        esac
+done
+fi
+exit 
