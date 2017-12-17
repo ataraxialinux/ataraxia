@@ -43,7 +43,7 @@ do_build_cross_config() {
 	case $XARCH in
 		x86_64)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="x86_64-pc-linux-musl"
+			export TARGET="x86_64-linux-musl"
 			export KARCH="x86_64"
 			export LIBSUFFIX="64"
 			export MULTILIB="--enable-multilib --with-multilib-list=m64"
@@ -51,7 +51,7 @@ do_build_cross_config() {
 			;;
 		i386)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="i686-pc-linux-musl"
+			export TARGET="i686-linux-musl"
 			export KARCH="i386"
 			export LIBSUFFIX=
 			export MULTILIB="--enable-multilib --with-multilib-list=m32"
@@ -59,7 +59,7 @@ do_build_cross_config() {
 			;;
 		aarch64)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="aarch64-pc-linux-musl"
+			export TARGET="aarch64-linux-musl"
 			export KARCH="arm64"
 			export LIBSUFFIX=
 			export MULTILIB="--disable-multilib --with-multilib-list="
@@ -67,7 +67,7 @@ do_build_cross_config() {
 			;;
 		arm)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="arm-pc-linux-musleabihf"
+			export TARGET="arm-linux-musleabihf"
 			export KARCH="arm"
 			export LIBSUFFIX=
 			export MULTILIB="--disable-multilib --with-multilib-list="
@@ -319,6 +319,7 @@ do_build_basic_system() {
 	../configure \
 		$CONFIGURE \
 		$LINKING \
+		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
 		--enable-deterministic-archives \
 		--enable-ld=default \
@@ -329,9 +330,7 @@ do_build_basic_system() {
 		--disable-nls \
 		--disable-werror \
 		--disable-compressed-debug-sections \
-		--build=$HOST \
-		--host=$TARGET \
-		--target=$TARGET
+		--host=$TARGET --target=$TARGET --build=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
@@ -349,10 +348,10 @@ do_build_basic_system() {
 	../configure \
 		$CONFIGURE \
 		$LINKING \
+		--with-build-sysroot=$ROOTFS \
 		--with-system-zlib \
 		--enable-fully-dynamic-string \
 		--enable-checking=release \
-		--enable-cloog-backend \
 		--enable-languages=c,c++ \
 		--enable-c99 \
 		--enable-libstdcxx-time \
@@ -371,14 +370,13 @@ do_build_basic_system() {
 		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libstdcxx-pch \
+		--disable-gnu-indirect-function \
 		--disable-libunwind-exceptions \		
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror \
-		--build=$HOST \
-		--host=$TARGET \
-		--target=$TARGET
+		--host=$TARGET --target=$TARGET --build=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
