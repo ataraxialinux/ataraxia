@@ -30,9 +30,9 @@ Janus Linux has own toolchain to build it with any libcs and port to another CPU
 # Development plans
 
 
-- [ ] Rewrite build system and add ARM architectures
+- [x] Rewrite build system and add ARM architectures
 - [ ] Add toolchain
-- [ ] Establish wireless networking
+- [x] Establish wireless networking
 - [ ] Optimize the code
 
 
