@@ -750,6 +750,28 @@ do_build_basic_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
+	wget http://roy.marples.name/downloads/dhcpcd/dhcpcd-6.11.5.tar.xz
+	tar -xf dhcpcd-6.11.5.tar.xz
+	cd dhcpcd-6.11.5
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.samba.org/ftp/ppp/ppp-2.4.7.tar.gz
+	tar -xf ppp-2.4.7.tar.gz
+	cd ppp-2.4.7
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
 	wget https://www.libssh2.org/download/libssh2-1.8.0.tar.gz
 	tar -xf libssh2-1.8.0.tar.gz
 	cd libssh2-1.8.0
