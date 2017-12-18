@@ -258,6 +258,8 @@ do_build_setup_filesystem() {
 	done
 
 	install -D -m 640 $KEEP/etc/shadow $ROOTFS/etc/shadow
+
+	cp -a $KEEP/rocket $ROOTFS/usr/bin/rocket
 }
 
 do_build_basic_system() {
