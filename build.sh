@@ -231,6 +231,35 @@ do_build_toolchain() {
 	make install
 }
 
+do_build_setup_filesystem() {
+	mkdir -p $ROOTFS/{boot,dev,etc/skel,home}
+	mkdir -p $ROOTFS/{mnt,opt,proc,srv,sys}
+	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
+	install -d -m 0750 $ROOTFS/root
+	install -d -m 1777 $ROOTFS/{var/,}tmp
+	mkdir -p $ROOTFS/usr/{bin,include,lib/{firmware,modules},share}
+	mkdir -p $ROOTFS/usr/local/{bin,include,lib,sbin,share}
+
+	cd $ROOTFS/usr
+	ln -sf bin sbin
+
+	cd $ROOTFS
+	ln -sf usr/bin bin
+	ln -sf usr/bin sbin
+	ln -sf usr/lib lib
+
+	ln -sf /proc/mounts $ROOTFS/etc/mtab
+
+	touch $ROOTFS/var/log/lastlog
+	chmod -v 664 $ROOTFS/var/log/lastlog
+
+	for f in fstab group host.conf hostname hosts inittab issue passwd profile rc.conf securetty shells sysctl.conf; do
+		install -D -m 644 $KEEP/etc/${f} $ROOTFS/etc/${f}
+	done
+
+	install -D -m 640 $KEEP/etc/shadow $ROOTFS/etc/shadow
+}
+
 do_build_basic_system() {
 	cd $SRC
 	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
@@ -253,12 +282,24 @@ do_build_basic_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
+	wget http://busybox.net/downloads/busybox-1.27.2.tar.bz2
+	tar -xf busybox-1.27.2.tar.bz2
+	cd busybox-1.27.2
+	make ARCH=$KARCH CROSS_COMPILE=$TARGET- KCONFIG_ALLCONFIG=$KEEP/busybox.config allnoconfig
+	make ARCH=$KARCH CROSS_COMPILE=$TARGET- -j$JOBS
+	make ARCH=$KARCH CROSS_COMPILE=$TARGET- CONFIG_PREFIX=$ROOTFS install
+	cd $ROOTFS
+	ln -sf bin/busybox init
+	rm -rf linuxrc
+
+	cd $SRC
 	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
 	tar -xf mksh-R56b.tgz
 	cd mksh
 	sh Build.sh -r
 	install -D -m 755 mksh $ROOTFS/usr/bin/mksh
 	cd $ROOTFS/usr/bin
+	rm -rf sh
 	ln -sf mksh sh
 
 	cd $SRC
@@ -898,18 +939,26 @@ do_build_basic_system() {
 	cd wireless_tools.29
 	make -j$JOBS
 	make PREFIX=$ROOTFS/usr install
-}
 
-do_build_post_build() {
-	echo In development
+	cd $SRC
+	rm -rf linux*
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
+	tar -xf linux-4.14.4.tar.xz
+	cd linux-4.14.4
+	make ARCH=$KARCH CROSS_COMPILE=$TARGET- defconfig
+	make ARCH=$KARCH CROSS_COMPILE=$TARGET- -j$JOBS
+	cp System.map $ROOTFS/boot
+	cp arch/x86/boot/bzImage $ROOTFS/boot/vmlinuz
+	make INSTALL_MOD_PATH=$ROOTFS modules_install
 }
 
 do_build_config
 do_build_cross_config
 do_build_toolchain
 do_build_after_toolchain
+do_build_setup_filesystem
 do_build_basic_system
-do_build_post_build
+# do_build_strip_system
 
 exit 0
 
