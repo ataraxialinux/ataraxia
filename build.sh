@@ -81,20 +81,14 @@ do_build_cross_config() {
 }
 
 do_build_toolchain() {
-	mkdir -p $TOOLS/{bin,share,lib,include,$TARGET}
+	mkdir -p $TOOLS/{bin,share,lib,include}
 	cd $TOOLS
 	ln -sf bin sbin
-	cd $TOOLS/$TARGET
-	ln -sf ../bin bin
-	ln -sf ../lib lib
-	ln -sf ../share share
-	ln -sf ../include include
+	ln -sf . $TARGET
 
 	case $XARCH in
 		x86_64|aarch64)
 			cd $TOOLS
-			ln -sf lib lib64
-			cd $TOOLS/$TARGET
 			ln -sf lib lib64
 	esac
 
@@ -259,6 +253,37 @@ do_build_basic_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
+	git clone http://git.suckless.org/sbase
+	cd sbase
+	make -j$JOBS
+	make DESTDIR=$ROOTFS PREFIX=/usr install
+
+	cd $SRC
+	git clone http://git.suckless.org/ubase
+	cd ubase
+	make -j$JOBS
+	make DESTDIR=$ROOTFS PREFIX=/usr install
+
+	cd $SRC
+	wget https://git.suckless.org/sinit/snapshot/sinit-1.0.tar.gz
+	tar -xf sinit-1.0.tar.gz
+	cd sinit-1.0
+	cp $KEEP/sinit_config.h config.h
+	make -j$JOBS
+	make DESTDIR=$ROOTFS PREFIX=/usr install
+	cd $ROOTFS
+	ln -sf usr/bin/init init
+
+	cd $SRC
+	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
+	tar -xf mksh-R56b.tgz
+	cd mksh
+	sh Build.sh -r
+	install -D -m 755 mksh $ROOTFS/usr/bin/mksh
+	cd $ROOTFS/usr/bin
+	ln -sf mksh sh
+
+	cd $SRC
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	tar -xf gmp-6.1.2.tar.xz
 	cd gmp-6.1.2
@@ -321,16 +346,21 @@ do_build_basic_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	wget http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
-	tar -xf netbsd-curses-0.2.1.tar.xz
-	cd netbsd-curses-0.2.1
-    cat << EOF > config.mak
-CFLAGS=-fPIC
-PREFIX=/usr
-DESTDIR=$ROOTFS
-EOF
+	wget http://ftp.gnu.org/gnu//ncurses/ncurses-6.0.tar.gz
+	tar -xf ncurses-6.0.tar.gz
+	cd ncurses-6.0
+	CXXFLAGS="$CXXFLAGS -P" \
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--without-manpages \
+    	--with-shared \
+    	--without-debug \
+    	--enable-widec \
+    	--enable-pc-files \
+		--host=$TARGET
 	make -j$JOBS
-	make install
+	make DESTDIR=$ROOTFS install
 
 	cd $SRC
 	wget http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
@@ -342,39 +372,6 @@ EOF
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
-
-	cd $SRC
-	wget http://download.savannah.gnu.org/releases/attr/attr-2.4.47.src.tar.gz
-	tar -xf attr-2.4.47.src.tar.gz
-	cd attr-2.4.47
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--disable-gettext \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install install-lib install-dev
-
-	cd $SRC
-	wget http://download.savannah.gnu.org/releases/acl/acl-2.2.52.src.tar.gz
-	tar -xf acl-2.2.52.src.tar.gz
-	cd acl-2.2.52
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--disable-gettext \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install install-lib install-dev
-
-	cd $SRC
-	wget https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
-	tar -xf libcap-2.25.tar.xz
-	cd libcap-2.25
-	patch -Np1 -i $KEEP/libcap-2.25-gperf.patch
-	sed -i '/install.*STALIBNAME/d' libcap/Makefile
-	make -j$JOBS
-	make prefix=/usr lib=/usr/lib RAISE_SETFCAP=no DESTDIR=$ROOTFS install
 
 	cd $SRC
 	wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.3.tar.gz
@@ -432,32 +429,6 @@ EOF
 	make PREFIX=$ROOTFS/usr install
 	make -f Makefile-libbz2_so -j$JOBS
 	make -f Makefile-libbz2_so PREFIX=$ROOTFS/usr install
-
-	cd $SRC
-	wget https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.tar.xz
-	tar -xf util-linux-2.31.tar.xz
-	cd util-linux-2.31
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--enable-raw \
-		--disable-uuidd \
-		--disable-nls \
-		--disable-tls \
-		--disable-kill \
-		--disable-login \
-		--disable-last \
-		--disable-sulogin \
-		--disable-su \
-		--disable-pylibmount \
-		--disable-makeinstall-chown \
-		--disable-makeinstall-setuid \
-		--without-python \
-		--without-systemd \
-		--without-systemdsystemunitdir \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
 
 	cd $SRC
 	wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz
@@ -533,24 +504,6 @@ EOF
 		--enable-blkid \
 		--enable-rule-generator \
 		--enable-hwdb \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz
-	tar -xf inetutils-1.9.4.tar.xz
-	cd inetutils-1.9.4
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--disable-logger \
-		--disable-whois \
-		--disable-rcp \
-		--disable-rexec \
-		--disable-rlogin \
-		--disable-rsh \
-		--disable-servers \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
@@ -765,44 +718,6 @@ EOF
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
 
-	cd $SRC
-	wget http://www.sourceware.org/pub/lvm2/releases/LVM2.2.02.176.tgz
-	tar -xf LVM2.2.02.176.tgz
-	cd LVM2.2.02.176
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--enable-write_install \
-		--enable-pkgconfig \
-		--enable-cmdlib \
-		--enable-dmeventd \
-		--disable-nls \
-		--disable-readline \
-		--disable-selinux \
-		--disable-applib \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/parted/parted-3.2.tar.xz
-	tar -xf parted-3.2.tar.xz
-	cd parted-3.2
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--disable-debug \
-		--disable-nls \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SRC
-	wget https://www.kernel.org/pub/linux/utils/raid/mdadm/mdadm-4.0.tar.xz
-	tar -xf mdadm-4.0.tar.xz
-	cd mdadm-4.0
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
 
 	cd $SRC
 	wget http://rpm5.org/files/popt/popt-1.16.tar.gz
@@ -816,9 +731,9 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	wget https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz
-	tar -xf logrotate-3.11.0.tar.xz
-	cd logrotate-3.11.0
+	wget https://github.com/logrotate/logrotate/releases/download/3.13.0/logrotate-3.13.0.tar.xz
+	tar -xf logrotate-3.13.0.tar.xz
+	cd logrotate-3.13.0
 	./configure \
 		$CONFIGURE \
 		$LINKING \
@@ -997,20 +912,15 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	wget https://github.com/thom311/libnl/releases/download/libnl3_4_0/libnl-3.4.0.tar.gz
-	tar -xf libnl-3.4.0.tar.gz
-	cd libnl-3.4.0
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
+	wget http://ftp.barfooze.de/pub/sabotage/tarballs/libnl-tiny-1.0.1.tar.xz
+	tar -xf libnl-tiny-1.0.1.tar.xz
+	cd libnl-tiny-1.0.1
+	make prefix=/usr DESTDIR=$ROOTFS all install -j$JOBS
 
 	cd $SRC
-	wget http://w1.fi/releases/wpa_supplicant-2.5.tar.gz
-	tar -xf wpa_supplicant-2.5.tar.gz
-	cd wpa_supplicant-2.5
+	wget http://w1.fi/releases/wpa_supplicant-2.6.tar.gz
+	tar -xf wpa_supplicant-2.6.tar.gz
+	cd wpa_supplicant-2.6
 	cd wpa_supplicant
 	cp defconfig .config
 	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
