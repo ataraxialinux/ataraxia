@@ -1,0 +1,70 @@
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir build
+	cd build
+	../configure \
+		$CONFIGURE \
+		$LINKING \
+		--with-build-sysroot=$ROOTFS \
+		--with-system-zlib \
+		--enable-deterministic-archives \
+		--enable-ld=default \
+		--enable-gold \
+		--enable-plugins \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror \
+		--disable-compressed-debug-sections \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	tar -xf gcc-7.2.0.tar.xz
+	cd gcc-7.2.0
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i 's@pthread_yield();@sched_yield();@' libcilkrts/runtime/os-unix.c
+	export gcc_cv_prog_makeinfo_modern=no
+	export libat_cv_have_ifunc=no
+	mkdir build
+	cd build
+	../configure \
+		$CONFIGURE \
+		$LINKING \
+		--with-build-sysroot=$ROOTFS \
+		--with-system-zlib \
+		--enable-fully-dynamic-string \
+		--enable-checking=release \
+		--enable-languages=c,c++ \
+		--enable-c99 \
+		--enable-libstdcxx-time \
+		--enable-long-long \
+		--enable-tls \
+		--enable-lto \
+		--enable-linker-build-id \
+		--enable-threads=posix \
+		--enable-clocale=generic \
+		--enable-__cxa_atexit \
+		--disable-bootstrap \
+		--disable-fixed-point \
+		--disable-libitm \
+		--disable-libssp \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libstdcxx-pch \
+		--disable-gnu-indirect-function \
+		--disable-libunwind-exceptions \		
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
