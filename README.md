@@ -12,6 +12,8 @@ Download [current image](https://github.com/protonesso/janus/releases/download/2
 
 
 # News
+ * 2017.12.18
+   * New userland fixes in packages!
  * 2017.12.09
    * The website has update!
 
