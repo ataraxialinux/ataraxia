@@ -253,28 +253,6 @@ do_build_basic_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	git clone http://git.suckless.org/sbase
-	cd sbase
-	make -j$JOBS
-	make DESTDIR=$ROOTFS PREFIX=/usr install
-
-	cd $SRC
-	git clone http://git.suckless.org/ubase
-	cd ubase
-	make -j$JOBS
-	make DESTDIR=$ROOTFS PREFIX=/usr install
-
-	cd $SRC
-	wget https://git.suckless.org/sinit/snapshot/sinit-1.0.tar.gz
-	tar -xf sinit-1.0.tar.gz
-	cd sinit-1.0
-	cp $KEEP/sinit_config.h config.h
-	make -j$JOBS
-	make DESTDIR=$ROOTFS PREFIX=/usr install
-	cd $ROOTFS
-	ln -sf usr/bin/init init
-
-	cd $SRC
 	wget https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-R56b.tgz
 	tar -xf mksh-R56b.tgz
 	cd mksh
@@ -429,19 +407,6 @@ do_build_basic_system() {
 	make PREFIX=$ROOTFS/usr install
 	make -f Makefile-libbz2_so -j$JOBS
 	make -f Makefile-libbz2_so PREFIX=$ROOTFS/usr install
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz
-	tar -xf bash-4.4.12.tar.gz
-	cd bash-4.4.12
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--without-bash-malloc \
-		--with-installed-readline \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
 
 	cd $SRC
 	wget http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.7/e2fsprogs-1.43.7.tar.gz
