@@ -128,7 +128,7 @@ do_build_toolchain() {
 	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
-	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	tar xf ../mpfr-3.1.6.tar.xz
@@ -285,7 +285,7 @@ do_build_basic_system() {
 	rm -rf $ROOTFS/usr/lib/*.la
 
 	cd $SRC
-	wget http://www.multiprecision.org/mpc/download/mpc-1.0.3.tar.gz
+	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 	tar -xf mpc-1.0.3.tar.gz
 	cd mpc-1.0.3
 	./configure \
@@ -344,19 +344,6 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz
-	tar -xf bash-4.4.12.tar.gz
-	cd bash-4.4.12
-	./configure \
-		$CONFIGURE \
-		$LINKING \
-		--without-bash-malloc \
-		--with-installed-readline \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SRC
 	wget http://download.savannah.gnu.org/releases/attr/attr-2.4.47.src.tar.gz
 	tar -xf attr-2.4.47.src.tar.gz
 	cd attr-2.4.47
@@ -379,6 +366,26 @@ EOF
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install install-lib install-dev
+
+	cd $SRC
+	wget https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
+	tar -xf libcap-2.25.tar.xz
+	cd libcap-2.25
+	patch -Np1 -i $KEEP/libcap-2.25-gperf.patch
+	sed -i '/install.*STALIBNAME/d' libcap/Makefile
+	make -j$JOBS
+	make prefix=/usr lib=/usr/lib RAISE_SETFCAP=no DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.3.tar.gz
+	tar -xf libressl-2.6.3.tar.gz
+	cd libressl-2.6.3
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
 
 	cd $SRC
 	wget http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
@@ -412,6 +419,55 @@ EOF
 		$CONFIGURE \
 		$LINKING \
 		--disable-nls \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
+	tar -xf bzip2-1.0.6.tar.gz
+	cd bzip2-1.0.6
+	patch -Np1 -i $KEEP/bzip2.patch
+	make -j$JOBS
+	make PREFIX=$ROOTFS/usr install
+	make -f Makefile-libbz2_so -j$JOBS
+	make -f Makefile-libbz2_so PREFIX=$ROOTFS/usr install
+
+	cd $SRC
+	wget https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.tar.xz
+	tar -xf util-linux-2.31.tar.xz
+	cd util-linux-2.31
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--enable-raw \
+		--disable-uuidd \
+		--disable-nls \
+		--disable-tls \
+		--disable-kill \
+		--disable-login \
+		--disable-last \
+		--disable-sulogin \
+		--disable-su \
+		--disable-pylibmount \
+		--disable-makeinstall-chown \
+		--disable-makeinstall-setuid \
+		--without-python \
+		--without-systemd \
+		--without-systemdsystemunitdir \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/bash/bash-4.4.12.tar.gz
+	tar -xf bash-4.4.12.tar.gz
+	cd bash-4.4.12
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--without-bash-malloc \
+		--with-installed-readline \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
@@ -482,6 +538,35 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
+	wget http://ftp.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz
+	tar -xf inetutils-1.9.4.tar.xz
+	cd inetutils-1.9.4
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--disable-logger \
+		--disable-whois \
+		--disable-rcp \
+		--disable-rexec \
+		--disable-rlogin \
+		--disable-rsh \
+		--disable-servers \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-4.14.1.tar.xz
+	tar -xf iproute2-4.14.1.tar.xz
+	cd iproute2-4.14.1
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
 	wget http://ftp.gnu.org/gnu/diffutils/diffutils-3.6.tar.xz
 	tar -xf diffutils-3.6.tar.xz
 	cd diffutils-3.6
@@ -492,6 +577,7 @@ EOF
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
+
 
 	cd $SRC
 	wget https://sourceforge.net/projects/psmisc/files/psmisc/psmisc-23.1.tar.xz
@@ -505,9 +591,55 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
+	wget https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
+	tar -xf kbd-2.0.4.tar.xz
+	cd kbd-2.0.4
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--disable-vlock \
+		--disable-nls \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/tar/tar-1.29.tar.xz
+	tar -xf tar-1.29.tar.xz
+	cd tar-1.29
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/gzip/gzip-1.8.tar.xz
+	tar -xf gzip-1.8.tar.xz
+	cd gzip-1.8
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
 	wget http://www.greenwoodsoftware.com/less/less-487.tar.gz
 	tar -xf less-487.tar.gz
 	cd less-487
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://download.savannah.gnu.org/releases/libpipeline/libpipeline-1.5.0.tar.gz
+	tar -xf libpipeline-1.5.0.tar.gz
+	cd libpipeline-1.5.0
 	./configure \
 		$CONFIGURE \
 		$LINKING \
@@ -550,9 +682,21 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	wget http://ftp.gnu.org/gnu/tar/tar-1.29.tar.xz
-	tar -xf tar-1.29.tar.xz
-	cd tar-1.29
+	wget http://ftp.gnu.org/gnu/screen/screen-4.6.2.tar.gz
+	tar -xf screen-4.6.2.tar.gz
+	cd screen-4.6.2
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--enable-colors256 \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://libestr.adiscon.com/files/download/libestr-0.1.10.tar.gz
+	tar -xf libestr-0.1.10.tar.gz
+	cd libestr-0.1.10
 	./configure \
 		$CONFIGURE \
 		$LINKING \
@@ -561,9 +705,131 @@ EOF
 	make DESTDIR=$ROOTFS install
 
 	cd $SRC
-	wget https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.3.tar.gz
-	tar -xf libressl-2.6.3.tar.gz
-	cd libressl-2.6.3
+	wget http://www.libee.org/download/files/download/libee-0.4.1.tar.gz
+	tar -xf libee-0.4.1.tar.gz
+	cd libee-0.4.1
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://github.com/rsyslog/rsyslog/archive/v8.31.0.tar.gz
+	tar -xf v8.31.0.tar.gz
+	cd rsyslog-8.31.0
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.kernel.org/pub/software/utils/pciutils/pciutils-3.5.6.tar.xz
+	tar -xf pciutils-3.5.6.tar.xz
+	cd pciutils-3.5.6
+	make -j$JOBS \
+		PREFIX=/usr \
+		SHAREDIR=/usr/share/hwdata \
+		SHARED=yes
+	make \
+		PREFIX=$ROOTFS/usr \
+		SHAREDIR=$ROOTFS/usr/share/hwdata \
+		SHARED=yes \
+		install install-lib 
+
+	cd $SRC
+	wget https://github.com/libfuse/libfuse/releases/download/fuse-2.9.7/fuse-2.9.7.tar.gz
+	tar -xf fuse-2.9.7.tar.gz
+	cd fuse-2.9.7
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--enable-lib \
+		--enable-util \
+		--disable-example \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://tuxera.com/opensource/ntfs-3g_ntfsprogs-2017.3.23.tgz
+	tar -xf ntfs-3g_ntfsprogs-2017.3.23.tgz
+	cd ntfs-3g_ntfsprogs-2017.3.23
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://www.sourceware.org/pub/lvm2/releases/LVM2.2.02.176.tgz
+	tar -xf LVM2.2.02.176.tgz
+	cd LVM2.2.02.176
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--enable-write_install \
+		--enable-pkgconfig \
+		--enable-cmdlib \
+		--enable-dmeventd \
+		--disable-nls \
+		--disable-readline \
+		--disable-selinux \
+		--disable-applib \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/parted/parted-3.2.tar.xz
+	tar -xf parted-3.2.tar.xz
+	cd parted-3.2
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--disable-debug \
+		--disable-nls \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.kernel.org/pub/linux/utils/raid/mdadm/mdadm-4.0.tar.xz
+	tar -xf mdadm-4.0.tar.xz
+	cd mdadm-4.0
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://rpm5.org/files/popt/popt-1.16.tar.gz
+	tar -xf popt-1.16.tar.gz
+	cd popt-1.16
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://github.com/logrotate/logrotate/releases/download/3.11.0/logrotate-3.11.0.tar.xz
+	tar -xf logrotate-3.11.0.tar.xz
+	cd logrotate-3.11.0
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.libssh2.org/download/libssh2-1.8.0.tar.gz
+	tar -xf libssh2-1.8.0.tar.gz
+	cd libssh2-1.8.0
 	./configure \
 		$CONFIGURE \
 		$LINKING \
@@ -591,6 +857,30 @@ EOF
 		--disable-wtmp \
 		--disable-wtmpx \
 		--disable-strip \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.samba.org/ftp/rsync/src/rsync-3.1.2.tar.gz
+	tar -xf rsync-3.1.2.tar.gz
+	cd rsync-3.1.2
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-4.2/ntp-4.2.8p10.tar.gz
+	tar -xf ntp-4.2.8p10.tar.gz
+	cd ntp-4.2.8p10
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--with-lineeditlibs=readline \
+		--enable-linuxcaps \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
@@ -647,6 +937,92 @@ EOF
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://prdownloads.sourceforge.net/expat/expat-2.2.5.tar.bz2
+	tar -xf expat-2.2.5.tar.bz2
+	cd expat-2.2.5
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://github.com//libusb/libusb/releases/download/v1.0.21/libusb-1.0.21.tar.bz2
+	tar -xf libusb-1.0.21.tar.bz2
+	cd libusb-1.0.21
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://downloads.sourceforge.net/libusb/libusb-compat-0.1.5.tar.bz2
+	tar -xf libusb-compat-0.1.5.tar.bz2
+	cd libusb-compat-0.1.5
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://www.kernel.org/pub/linux/utils/usb/usbutils/usbutils-009.tar.xz
+	tar -xf usbutils-009.tar.xz
+	cd usbutils-009
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--datadir=/usr/share/hwdata \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-2.5.1.tar.bz2
+	tar -xf usb-modeswitch-2.5.1.tar.bz2
+	cd usb-modeswitch-2.5.1
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-data-20170806.tar.bz2
+	tar -xf usb-modeswitch-data-20170806.tar.bz2
+	cd usb-modeswitch-data-20170806
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget https://github.com/thom311/libnl/releases/download/libnl3_4_0/libnl-3.4.0.tar.gz
+	tar -xf libnl-3.4.0.tar.gz
+	cd libnl-3.4.0
+	./configure \
+		$CONFIGURE \
+		$LINKING \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://w1.fi/releases/wpa_supplicant-2.5.tar.gz
+	tar -xf wpa_supplicant-2.5.tar.gz
+	cd wpa_supplicant-2.5
+	cd wpa_supplicant
+	cp defconfig .config
+	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
+	make -j$JOBS
+	make BINDIR=/usr/bin DESTDIR=$ROOTFS install
+
+	cd $SRC
+	wget http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/wireless_tools.29.tar.gz
+	tar -xf wireless_tools.29.tar.gz
+	cd wireless_tools.29
+	make -j$JOBS
+	make PREFIX=$ROOTFS/usr install
 }
 
 do_build_post_build() {
