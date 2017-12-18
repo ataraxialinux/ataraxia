@@ -172,9 +172,9 @@ do_build_toolchain() {
 	rm -rf $TOOLS/include/limits.h
 
 	cd $SRC
-	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
-	tar -xf linux-4.14.4.tar.xz
-	cd linux-4.14.4
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
+	tar -xf linux-4.14.7.tar.xz
+	cd linux-4.14.7
 	make mrproper
 	make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$TOOLS headers_install
 
@@ -264,9 +264,9 @@ do_build_setup_filesystem() {
 
 do_build_basic_system() {
 	cd $SRC
-	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
-	tar -xf linux-4.14.4.tar.xz
-	cd linux-4.14.4
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
+	tar -xf linux-4.14.7.tar.xz
+	cd linux-4.14.7
 	make mrproper
 	make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include -name .install -or -name ..install.cmd | xargs rm -rf
@@ -966,9 +966,9 @@ do_build_basic_system() {
 
 	cd $SRC
 	rm -rf linux*
-	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.4.tar.xz
-	tar -xf linux-4.14.4.tar.xz
-	cd linux-4.14.4
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
+	tar -xf linux-4.14.7.tar.xz
+	cd linux-4.14.7
 	make ARCH=$KARCH CROSS_COMPILE=$TARGET- defconfig
 	make ARCH=$KARCH CROSS_COMPILE=$TARGET- -j$JOBS
 	cp System.map $ROOTFS/boot
