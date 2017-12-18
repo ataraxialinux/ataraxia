@@ -5,10 +5,11 @@ Fast and mini Linux distro based on busybox and musl libc. It can be cross-compi
 It is provides basic Linux system without GUI(Graphical User Interface).
 
 
-# Download
+# Releases
 
-
-Download [current image](https://github.com/protonesso/janus/releases/download/2017-11-27/JanusLinux-0.1-2017-11-27.iso) (ALPHA VERSION!)
+Here is a full list of JanusLinux releases:
+JanusLinux [0.91](about:blank) will be released on December of 2017 or on January of 2018
+JanusLinux [0.1-2017-11-27](https://github.com/protonesso/janus/releases/2017-11-27) is released on 27th November of 2017
 
 
 # News
