@@ -42,7 +42,7 @@ do_build_cross_config() {
 	case $XARCH in
 		x86_64)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="x86_64-janus-linux-musl"
+			export TARGET="x86_64-pc-linux-musl"
 			export KARCH="x86_64"
 			export LIBSUFFIX="64"
 			export MULTILIB="--enable-multilib --with-multilib-list=m64"
@@ -50,7 +50,7 @@ do_build_cross_config() {
 			;;
 		i386)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="i686-janus-linux-musl"
+			export TARGET="i686-pc-linux-musl"
 			export KARCH="i386"
 			export LIBSUFFIX=
 			export MULTILIB="--enable-multilib --with-multilib-list=m32"
@@ -58,7 +58,7 @@ do_build_cross_config() {
 			;;
 		aarch64)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="aarch64-janus-linux-musl"
+			export TARGET="aarch64-pc-linux-musl"
 			export KARCH="arm64"
 			export LIBSUFFIX=
 			export MULTILIB="--disable-multilib --with-multilib-list="
@@ -66,7 +66,7 @@ do_build_cross_config() {
 			;;
 		arm)
 			export HOST=$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')
-			export TARGET="arm-janus-linux-musleabihf"
+			export TARGET="arm-pc-linux-musleabihf"
 			export KARCH="arm"
 			export LIBSUFFIX=
 			export MULTILIB="--disable-multilib --with-multilib-list="
