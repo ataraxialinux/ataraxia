@@ -15,6 +15,8 @@ JanusLinux [0.1-2017-11-27](https://github.com/protonesso/janus/releases/2017-11
 
 
 # News
+ * 2017.12.25
+   * Merry Christmas! :)
  * 2017.12.22
    * New code comming soon with chroot builder!
  * 2017.12.18
