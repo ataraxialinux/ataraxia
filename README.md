@@ -31,15 +31,6 @@ JanusLinux [0.1-2017-11-27](https://github.com/protonesso/janus/releases/2017-11
 Janus Linux has own toolchain to build it with any libcs and port to another CPU architectures!
 
 
-# Development plans
-
-
-- [x] Rewrite build system and add ARM architectures
-- [ ] Add toolchain
-- [x] Establish wireless networking
-- [ ] Optimize the code
-
-
 # Screenshots
 
 
@@ -52,4 +43,10 @@ Janus Linux has own toolchain to build it with any libcs and port to another CPU
 # Contact with me
 
 
-If you want give to me some ideas, please welcome: nagakamira@gmail.com 
+If you want give to me some ideas, please welcome: nagakamira@gmail.com
+
+
+# Help me to contribute
+
+
+If you want to help me with development, please welcome: https://github.com/protonesso/janus
