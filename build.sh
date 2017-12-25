@@ -292,28 +292,6 @@ do_build_build_core() {
 	rm -rf $ROOTFS/usr/lib/*.la
 
 	cd $SRC
-	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
-	mkdir build
-	cd build
-	CROSS_COMPILE=$TARGET- \
-	../configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-system-zlib \
-		--enable-gold \
-		--enable-ld=default \
-		--enable-plugins \
-		--disable-multilib \
-		--disable-nls \
-		--disable-werror \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	tar -xf gmp-6.1.2.tar.xz
 	cd gmp-6.1.2
@@ -394,6 +372,28 @@ do_build_build_core() {
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SRC
+	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir build
+	cd build
+	CROSS_COMPILE=$TARGET- \
+	../configure \
+		$CONFIGURE \
+		--with-sysroot=$ROOTFS \
+		--with-system-zlib \
+		--enable-gold \
+		--enable-ld=default \
+		--enable-plugins \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror \
+		--host=$TARGET
+	make tooldir=$ROOTFS -j$JOBS
+	make tooldir=$ROOTFS DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 }
 
