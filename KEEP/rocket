@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# Rocket is an init system made for JanusLinux
+#
+
+. /etc/rc.conf
+
+OnBoot() {
+	echo "Starting Rocket init..."
+	dmesg -n 1
+	echo "Mounting filesystems..."
+	mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
+	mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+	mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+	mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+	mkdir -p /dev/pts /dev/shm
+	mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+	mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+	echo "Starting eudev daemon..."
+	/usr/bin/udevd --daemon
+	/usr/bin/udevadm trigger --action=add --type=subsystems
+	/usr/bin/udevadm trigger --action=add --type=devices
+	echo "Synchronizing clock..."
+	hwclock -u -s
+	echo "Setting hostname to $(cat /etc/hostname)..."
+	hostname -F /etc/hostname
+	echo "Setting font to $FNT..."
+	setfont $FNT
+	echo "Setting keymap to $KMAP..."
+	loadkeys -q -u $KMAP
+	echo "Making filesystem wit read only premissions..."
+	mount -o remount,ro /
+	echo "Checking filesystem..."
+	fsck -A -T -C -p
+	echo "Making filesystem with read and write premissions..."
+	mount -o remount,rw /
+       	echo "Activating swap..."
+       	swapon -a
+        echo "Mounting all from /etc/fstab..."
+        mount -a
+	echo "Cleaning..."
+	rm -rf /tmp/*
+}
+
+OnShutdown() {
+	echo "System going down..."
+	echo "Synchronizing clock..."
+	hwclock -u -w
+	echo "Killing all daemons..."
+	killall5 -15
+	sleep 5
+	killall5 -9
+	echo "Deactivating swap..."
+	swapoff -a
+	echo "Stopping eudev..."
+	killall udevd
+	echo "Syncing.."
+	sync
+	sleep 1
+	echo "Unmounting all filesystems..."
+	umount -a -r
+	echo "See you next time!"
+}
+
+case $1 in
+	startup)
+		OnBoot
+	;;
+	shutdown)
+		OnShutdown
+esac
+
+exit 0
+
