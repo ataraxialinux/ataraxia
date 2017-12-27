@@ -1,0 +1,14 @@
+. $KEEP/common.sh
+
+PKG=stage0-linux-headers
+VER=4.14.9
+
+tarxf https://cdn.kernel.org/pub/linux/kernel/v4.x/ linux-$VER .tar.xz
+
+pkgprep
+
+make mrproper
+make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$OUT/usr headers_install
+
+packpkg
+installhostpkg

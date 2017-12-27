@@ -157,9 +157,9 @@ do_build_toolchain() {
 	rm -rf $TOOLS/include/limits.h
 
 	cd $SRC
-	wget -C https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
-	tar -xf linux-4.14.7.tar.xz
-	cd linux-4.14.7
+	wget -C https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.9.tar.xz
+	tar -xf linux-4.14.9.tar.xz
+	cd linux-4.14.9
 	make mrproper
 	make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$TOOLS headers_install
 

@@ -1,0 +1,19 @@
+. $KEEP/common.sh
+
+PKG=stage0-musl
+VER=1.1.18
+
+tarxf http://www.musl-libc.org/releases/ musl-$VER .tar.gz
+
+pkgprep
+
+./configure CROSS_COMPILE=$TARGET- \
+	--build=$HOST \
+	--host=$TARGET \
+	--prefix=/usr \
+	--enable-optimize=
+make -j$JOBS
+make DESTDIR=$OUT install
+
+packpkg
+installhostpkg
