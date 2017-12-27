@@ -1,0 +1,19 @@
+. $KEEP/common.sh
+
+PKG=stage0-file
+VER=5.32
+
+tarxf ftp://ftp.astron.com/pub/file/ file-$VER .tar.gz
+
+pkgprep
+
+./configure CROSS_COMPILE=$TARGET- \
+	--build=$HOST \
+	--host=$TARGET \
+	--prefix=/usr \
+	--disable-fsect-man5
+make -j$JOBS
+make DESTDIR=$OUT install
+
+packpkg
+installhostpkg
