@@ -81,7 +81,7 @@ do_build_toolchain() {
 	ln -sf . usr
 
 	cd $SRC
-	curl -O http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	wget -C http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
 	tar -xf binutils-2.29.1.tar.bz2
 	cd binutils-2.29.1
 	mkdir build
@@ -104,10 +104,10 @@ do_build_toolchain() {
 	make install
 
 	cd $SRC
-	curl -O http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
-	curl -O http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	curl -O http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
-	curl -O http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
+	wget -C http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	wget -C http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	wget -C http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
+	wget -C http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	tar xf ../mpfr-3.1.6.tar.xz
@@ -157,14 +157,14 @@ do_build_toolchain() {
 	rm -rf $TOOLS/include/limits.h
 
 	cd $SRC
-	curl -O https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
+	wget -C https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
 	tar -xf linux-4.14.7.tar.xz
 	cd linux-4.14.7
 	make mrproper
 	make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SRC
-	curl -O http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	wget -C http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
 	./configure \
@@ -255,9 +255,7 @@ do_build_build_stage0() {
 	./$JANUSPKGS/stage0-binutils
 	./$JANUSPKGS/stage0-gcc
 	./$JANUSPKGS/stage0-file
-	./$JANUSPKGS/stage0-gettext
 	./$JANUSPKGS/stage0-make
-	./$JANUSPKGS/stage0-perl
 	./$JANUSPKGS/stage0-busybox
 	./$JANUSPKGS/stage0-finish
 }
