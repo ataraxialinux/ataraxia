@@ -7,6 +7,7 @@ do_build_config() {
 	export ROOTFS="$BDIR/rootfs"
 	export TOOLS="$BDIR/tools"
 	export SRC="$BDIR/sources"
+	export BPKGS="$BDIR/packages"
 	export KEEP="$(pwd)/KEEP"
 
 	export JOBS="$(expr $(nproc) + 1)"
@@ -17,7 +18,7 @@ do_build_config() {
 
 	export CONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var"
 
-	export STAGEZEROPKG="$(pwd)/stage0"
+	export JANUSPKGS="$(pwd)/pkgs"
 }
 
 do_build_after_toolchain() {
@@ -247,16 +248,18 @@ do_build_setup_filesystem() {
 }
 
 do_build_build_stage0() {
-	./$STAGEZEROPKG/musl
-	./$STAGEZEROPKG/linux-headers
-	./$STAGEZEROPKG/binutils
-	./$STAGEZEROPKG/gcc
-	./$STAGEZEROPKG/file
-	./$STAGEZEROPKG/gettext
-	./$STAGEZEROPKG/make
-	./$STAGEZEROPKG/perl
-	./$STAGEZEROPKG/busybox
-	./$STAGEZEROPKG/finish
+	export FB_INSTALL_PATH=$ROOTFS
+
+	./$JANUSPKGS/stage0-musl
+	./$JANUSPKGS/stage0-linux-headers
+	./$JANUSPKGS/stage0-binutils
+	./$JANUSPKGS/stage0-gcc
+	./$JANUSPKGS/stage0-file
+	./$JANUSPKGS/stage0-gettext
+	./$JANUSPKGS/stage0-make
+	./$JANUSPKGS/stage0-perl
+	./$JANUSPKGS/stage0-busybox
+	./$JANUSPKGS/stage0-finish
 }
 
 do_build_config
