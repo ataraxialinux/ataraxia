@@ -15,7 +15,9 @@ do_build_config() {
 	rm -rf $BDIR
 	mkdir -p $BDIR $ROOTFS $TOOLS $SRC
 
-	export CONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --disable-static"
+	export CONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var"
+
+	export STAGEZEROPKG="$(pwd)/stage0"
 }
 
 do_build_after_toolchain() {
@@ -23,8 +25,8 @@ do_build_after_toolchain() {
 	export CFLAGS=""
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS=""
-	export CC="$TARGET-gcc --sysroot=$ROOTFS"
-	export CXX="$TARGET-g++ --sysroot=$ROOTFS"
+	export CC="$TARGET-gcc -static --static --sysroot=$ROOTFS"
+	export CXX="$TARGET-g++ -static --static --sysroot=$ROOTFS"
 	export LD="$TARGET-ld --sysroot=$ROOTFS"
 	export AS="$TARGET-as --sysroot=$ROOTFS"
 	export AR="$TARGET-ar"
@@ -244,157 +246,17 @@ do_build_setup_filesystem() {
 	cp -a $KEEP/rocket $ROOTFS/usr/bin/rocket
 }
 
-do_build_build_core() {
-	cd $SRC
-	curl -O https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.7.tar.xz
-	tar -xf linux-4.14.7.tar.xz
-	cd linux-4.14.7
-	make mrproper
-	make ARCH=$KARCH CROSS_COMPILE=$TARGET- INSTALL_HDR_PATH=$ROOTFS/usr headers_install
-	find $ROOTFS/usr/include -name .install -or -name ..install.cmd | xargs rm -rf
-
-	cd $SRC
-	curl -O http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
-	tar -xf musl-1.1.18.tar.gz
-	cd musl-1.1.18
-	CROSS_COMPILE=$TARGET- \
-	./configure \
-		$CONFIGURE \
-		--enable-optimize= \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SRC
-	curl -O http://zlib.net/zlib-1.2.11.tar.xz
-	tar -xf zlib-1.2.11.tar.xz
-	cd zlib-1.2.11
-	CHOST=$TARGET \
-	CROSS_COMPILE=$TARGET- \
-	./configure \
-		--prefix=/usr \
-		--libdir=/usr/lib \
-		--shared
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SRC
-	curl -O ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
-	tar -xf file-5.32.tar.gz
-	cd file-5.32
-	CROSS_COMPILE=$TARGET- \
-	./configure \
-		$CONFIGURE \
-		--disable-static \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	tar -xf gmp-6.1.2.tar.xz
-	cd gmp-6.1.2
-	CROSS_COMPILE=$TARGET- \
-	./configure \
-		$CONFIGURE \
-		--enable-cxx \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.xz
-	tar -xf mpfr-3.1.6.tar.xz
-	cd mpfr-3.1.6
-	CROSS_COMPILE=$TARGET- \
-	./configure \
-		$CONFIGURE \
-		--with-gmp=$ROOTFS/usr \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
-	tar -xf mpc-1.0.3.tar.gz
-	cd mpc-1.0.3
-	CROSS_COMPILE=$TARGET- \
-	./configure \
-		$CONFIGURE \
-		--with-gmp=$ROOTFS/usr \
-		--with-mpfr=$ROOTFS/usr \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
-	tar -xf gcc-7.2.0.tar.xz
-	cd $SRC/gcc-7.2.0/libstdc++-v3/config/os
-	mv gnu-linux gnu-linux.orig
-	cp -r generic gnu-linux
-	cd $SRC/gcc-7.2.0/libitm/config
-	mv linux/x86 linux/x86_glibc
-	cp -r generic linux/x86
-	cd $SRC/gcc-7.2.0
-	mkdir build
-	cd build
-	libat_cv_have_ifunc=no \
-	CROSS_COMPILE=$TARGET- \
-	../configure \
-		$CONFIGURE \
-		--with-system-zlib \
-		--enable-__cxa_atexit \
-		--enable-languages=c,c++ \
-		--enable-clocale=generic \
-		--enable-threads=posix \
-		--enable-tls \
-		--enable-lto \
-		--enable-libstdcxx-time \
-		--enable-checking=release \
-		--enable-fully-dynamic-string \
-		--disable-bootstrap \
-		--disable-gnu-indirect-function \
-		--disable-libcilkrts \
-		--disable-libitm \
-		--disable-libmudflap \
-		--disable-libmpx \
-		--disable-libsanitizer \
-		--disable-libstdcxx-pch \
-		--disable-multilib \
-		--disable-nls \
-		--disable-symvers \
-		--disable-werror \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
-	mkdir build
-	cd build
-	CROSS_COMPILE=$TARGET- \
-	../configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-system-zlib \
-		--enable-gold \
-		--enable-ld=default \
-		--enable-plugins \
-		--disable-multilib \
-		--disable-nls \
-		--disable-werror \
-		--host=$TARGET
-	make tooldir=$ROOTFS -j$JOBS
-	make tooldir=$ROOTFS DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
+do_build_build_stage0() {
+	./$STAGEZEROPKG/musl
+	./$STAGEZEROPKG/linux-headers
+	./$STAGEZEROPKG/binutils
+	./$STAGEZEROPKG/gcc
+	./$STAGEZEROPKG/file
+	./$STAGEZEROPKG/gettext
+	./$STAGEZEROPKG/make
+	./$STAGEZEROPKG/perl
+	./$STAGEZEROPKG/busybox
+	./$STAGEZEROPKG/finish
 }
 
 do_build_config
@@ -402,7 +264,7 @@ do_build_cross_config
 do_build_toolchain
 do_build_after_toolchain
 do_build_setup_filesystem
-do_build_build_core
+do_build_build_stage0
 
 exit 0
 
