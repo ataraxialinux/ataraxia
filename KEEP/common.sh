@@ -23,3 +23,7 @@ packpkg() {
 installpkg() {
 	fbpkg install $PKGS/$PKG-$VER.tgz
 }
+
+installhostpkg() {
+        ./$KEEP/fbpkg install $PKGS/$PKG-$VER.tgz
+}
