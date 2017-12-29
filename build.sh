@@ -245,16 +245,17 @@ do_build_setup_filesystem() {
 	install -D -m 640 $KEEP/etc/shadow $ROOTFS/etc/shadow
 
 	cp -a $KEEP/rocket $ROOTFS/usr/bin/rocket
+
+	mkdir $ROOTFS/janus
 }
 
 do_build_build_stage0() {
 	export FB_INSTALL_PATH=$ROOTFS
 
-	./$JANUSPKGS/stage0-musl
 	./$JANUSPKGS/stage0-linux-headers
+	./$JANUSPKGS/stage0-musl
 	./$JANUSPKGS/stage0-binutils
 	./$JANUSPKGS/stage0-gcc
-	./$JANUSPKGS/stage0-file
 	./$JANUSPKGS/stage0-make
 	./$JANUSPKGS/stage0-busybox
 	./$JANUSPKGS/stage0-finish
