@@ -15,12 +15,12 @@ do_build_config() {
 	rm -rf $BDIR
 	mkdir -p $BDIR $ROOTFS $TOOLS $SRC
 
-	export CONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --disable-static"
+	export CONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --disable-static --with-sysroot=$ROOTFS"
 }
 
 do_build_after_toolchain() {
 	rm -rf $SRC/*
-	export CFLAGS=""
+	export CFLAGS="-Os -O3 -pipe -fomit-frame-pointer -g0 -D_GNU_SOURCE"
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-Wl,-rpath,$ROOTFS/usr/lib"
 	export CC="$TARGET-gcc --sysroot=$ROOTFS"
@@ -235,13 +235,13 @@ do_build_setup_filesystem() {
 	touch $ROOTFS/var/log/lastlog
 	chmod -v 664 $ROOTFS/var/log/lastlog
 
-	for f in fstab group host.conf hostname hosts inittab issue passwd profile rc.conf securetty shells sysctl.conf; do
-		install -D -m 644 $KEEP/etc/${f} $ROOTFS/etc/${f}
-	done
+#	for f in fstab group host.conf hostname hosts inittab issue passwd profile rc.conf securetty shells sysctl.conf; do
+#		install -D -m 644 $KEEP/etc/${f} $ROOTFS/etc/${f}
+#	done
 
-	install -D -m 640 $KEEP/etc/shadow $ROOTFS/etc/shadow
+#	install -D -m 640 $KEEP/etc/shadow $ROOTFS/etc/shadow
 
-	cp -a $KEEP/rocket $ROOTFS/usr/bin/rocket
+#	cp -a $KEEP/rocket $ROOTFS/usr/bin/rocket
 }
 
 do_build_build_core() {
@@ -283,109 +283,63 @@ do_build_build_core() {
 	cd file-5.32
 	./configure CROSS_COMPILE=$TARGET- \
 		$CONFIGURE \
-		--disable-static \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
 	cd $SRC
-	wget http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
-	mkdir build
-	cd build
-	../configure CROSS_COMPILE=$TARGET- \
+	wget -c http://invisible-mirror.net/archives/ncurses/current/ncurses-6.0-20171223.tgz
+	tar -xf ncurses-6.0-20171223.tgz
+	cd ncurses-6.0-20171223
+	./configure CROSS_COMPILE=$TARGET- \
 		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-system-zlib \
-		--enable-gold \
-		--enable-ld=default \
-		--enable-plugins \
-		--disable-multilib \
+		--with-pkg-config=/usr/bin/pkgconf \
+		--without-cxx-binding \
+		--without-manpages \
+		--without-debug \
+		--without-ada \
+		--without-tests \
+		--with-normal \
+		--with-shared \
+		--enable-pc-files \
+		--enable-widec \
 		--disable-nls \
-		--disable-werror \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
 
 	cd $SRC
-	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	tar -xf gmp-6.1.2.tar.xz
-	cd gmp-6.1.2
-	CROSS_COMPILE=$TARGET- \
+	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
+	tar -xf util-linux-2.31.1.tar.xz
+	cd util-linux-2.31.1
 	./configure CROSS_COMPILE=$TARGET- \
 		$CONFIGURE \
-		--enable-cxx \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.xz
-	tar -xf mpfr-3.1.6.tar.xz
-	cd mpfr-3.1.6
-	CROSS_COMPILE=$TARGET- \
-	./configure CROSS_COMPILE=$TARGET- \
-		$CONFIGURE \
-		--with-gmp=$ROOTFS/usr \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
-	tar -xf mpc-1.0.3.tar.gz
-	cd mpc-1.0.3
-	./configure CROSS_COMPILE=$TARGET- \
-		$CONFIGURE \
-		--with-gmp=$ROOTFS/usr \
-		--with-mpfr=$ROOTFS/usr \
-		--host=$TARGET
-	make -j$JOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
-
-	cd $SRC
-	wget http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
-	tar -xf gcc-7.2.0.tar.xz
-	cd gcc-7.2.0
-	mkdir build
-	cd build
-	libat_cv_have_ifunc=no \
-	CROSS_COMPILE=$TARGET- \
-	../configure CROSS_COMPILE=$TARGET- \
-		$CONFIGURE \
-		--with-system-zlib \
-		--enable-__cxa_atexit \
-		--enable-languages=c,c++ \
-		--enable-clocale=generic \
-		--enable-threads=posix \
-		--enable-tls \
-		--enable-lto \
-		--enable-libssp \
-		--enable-libstdcxx-time \
-		--enable-checking=release \
-		--enable-fully-dynamic-string \
-		--disable-bootstrap \
-		--disable-gnu-indirect-function \
-		--disable-libcilkrts \
-		--disable-libitm \
-		--disable-libmudflap \
-		--disable-libmpx \
-		--disable-libsanitizer \
-		--disable-libstdcxx-pch \
-		--disable-multilib \
+		--without-python \
+		--enable-write \
+		--disable-chfn-chsh \
+		--disable-login \
+		--disable-nologin \
+		--disable-sulogin \
+		--disable-su \
+		--disable-setpriv \
+		--disable-runuser \
+		--disable-pylibmount \
+		--disable-last \
 		--disable-nls \
-		--disable-symvers \
-		--disable-werror \
 		--host=$TARGET
 	make -j$JOBS
 	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SRC
+	wget -c https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.4.tar.gz
+	tar -xf libressl-2.6.4.tar.gz
+	cd libressl-2.6.4
+	./configure CROSS_COMPILE=$TARGET- \
+		$CONFIGURE \
+		--host=$TARGET
+	make -j$JOBS
+	make DESTDIR=$ROOTFS install
 }
 
 do_build_config
