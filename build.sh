@@ -6,6 +6,13 @@ usage() {
 	echo "Soon!"
 }
 
+check_root() {
+	if [ $(id -u) -ne 0 ]; then
+		echo "You must be root to execute: $(basename $0) $@"
+		exit 1
+	fi
+}
+
 prepare_build() {
 	export SOURCES="$(pwd)/sources"
 	export ROOTFS="$(pwd)/rootfs"
@@ -55,7 +62,7 @@ prepare_toolchain() {
 
 	ln -sf bin sbin
 	ln -sf . $XTARGET
-	
+
 	case $BARCH in
 		x86_64)
 			ln -sf lib lib64
@@ -240,6 +247,7 @@ cook_toolchain() {
 	make install
 }
 
+check_root
 prepare_build
 prepare_cross
 prepare_toolchain
