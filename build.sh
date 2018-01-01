@@ -23,6 +23,8 @@ prepare_build() {
 
 	export LC_ALL=POSIX
 	export LANG=POSIX
+
+	export CONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --disable-static"
 }
 
 prepare_cross() {
@@ -61,6 +63,46 @@ prepare_toolchain() {
 	esac
 
 	ln -sf . usr
+}
+
+build_prepare() {
+	unset LD_LIBRARY_PATH LD_RUN_PATH
+	rm -rf $SOURCES/*
+	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
+	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
+	export LD="$XTARGET-ld --sysroot=$ROOTFS"
+	export AS="$XTARGET-as --sysroot=$ROOTFS"
+	export AR="$XTARGET-ar"
+	export NM="$XTARGET-nm"
+	export OBJCOPY="$XTARGET-objcopy"
+	export RANLIB="$XTARGET-ranlib"
+	export READELF="$XTARGET-readelf"
+	export STRIP="$XTARGET-strip"
+	export SIZE="$XTARGET-size"
+	export LD_LIBRARY_PATH="$ROOTFS/usr/lib"
+	export LD_RUN_PATH="$ROOTFS/usr/lib"
+}
+
+setup_rootfs() {
+	mkdir -p $ROOTFS/{boot,dev,etc,home}
+	mkdir -p $ROOTFS/{mnt,opt,proc,srv,sys}
+	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
+	install -d -m 0750 $ROOTFS/root
+	install -d -m 1777 $ROOTFS/{var/,}tmp
+	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/{firmware,modules},share}
+
+	cd $ROOTFS/usr
+	ln -sf bin sbin
+
+	cd $ROOTFS
+	ln -sf usr/bin bin
+	ln -sf usr/lib lib
+	ln -sf usr/bin sbin
+
+	ln -sf /proc/mounts $ROOTFS/etc/mtab
+
+	touch $ROOTFS/var/log/lastlog
+	chmod 664 $ROOTFS/var/log/lastlog
 }
 
 cook_toolchain() {
@@ -173,7 +215,6 @@ cook_toolchain() {
 	mkdir build
 	cd build
 	AR=ar \
-	LDFLAGS="$LDFLAGS -Wl,-rpath,$TOOLS/lib" \
 	../configure \
 		--prefix=$TOOLS \
 		--build=$XHOST \
@@ -203,6 +244,8 @@ prepare_build
 prepare_cross
 prepare_toolchain
 cook_toolchain
+build_prepare
+setup_rootfs
 
 exit 0
 
