@@ -2,7 +2,7 @@
 
 ## What is this?
 
-JanusLinux is fast and mini Linux distribution which uses [musl libc](http://www.musl-libc.org/) and [busybox](https://www.busybox.net/) userland tools. It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). JanusLinux uses LibreSSL as SSL engine because it is small and "clean".
+JanusLinux is fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/) and [busybox](https://www.busybox.net/) userland tools. It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). JanusLinux uses LibreSSL as SSL engine because it is small and "clean".
 
 ## For who?
 
