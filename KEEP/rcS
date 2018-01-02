@@ -1,0 +1,54 @@
+#!/bin/sh
+
+export PATH="/usr/bin:/usr/local/bin"
+
+dmesg -n 1
+
+echo Mounting virtual filesystems
+mount -n -t proc -o nosuid,noexec,nodev proc /proc
+mount -n -t sysfs -o nosuid,noexec,nodev sysfs /sys
+mount -n -t tmpfs -o nosuid,mode=0755 dev /dev
+mkdir -p /dev/pts
+mount -n -t devpts -o gid=5,mode=0620 devpts /dev/pts
+
+echo Mounting root read-only
+mount -o remount,ro /
+
+echo Starting mdev hotplug
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+
+echo Checking filesystems
+fsck -ATa
+if [ $? -eq 1 ]; then
+	echo Filesystem errors exist, fix manually.
+	sh
+	halt -r
+fi
+
+echo Remounting root as read-write
+mount -o remount,rw /
+
+echo Activating swap partition
+swapon -a
+
+echo Mounting filesystems
+mount -a
+
+echo Setting hostname to $(cat /etc/hostname)
+hostname $(cat /etc/hostname)
+
+echo Synchronizing clock
+hwclock -u -s
+
+echo Setting up networking...
+for DEVICE in /sys/class/net/* ; do
+	ip link set ${DEVICE##*/} up
+	[ ${DEVICE##*/} = wlan0 ] && wpa_supplicant -B -iwlan0 -c/etc/wpa_supplicant.conf
+	[ ${DEVICE##*/} != lo ] && [ ${DEVICE##*/} != sit0 ] && udhcpc -b -i ${DEVICE##*/} -s /etc/init.d/rc.dhcp
+done
+
+echo Saving logs
+dmesg >> /var/log/dmesg.log
+
+echo Welcome to your box!

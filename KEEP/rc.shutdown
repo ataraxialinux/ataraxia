@@ -1,0 +1,34 @@
+#!/bin/sh
+
+export PATH="/usr/bin:/usr/local/bin"
+
+echo Shutting down
+
+echo Stopping networking
+for DEVICE in /sys/class/net/* ; do
+	ip link set ${DEVICE##*/} down
+done
+
+echo Synchroniznig clock
+hwclock -u -w
+
+echo Killing all daeomns
+killall5 -15
+sleep 5
+killall5 -9
+
+echo Remounting root as read-only
+mount -o remount,ro /
+
+echo Unmounting filesystems
+umount -a
+
+echo Deactivating swap partition
+swapoff -a
+
+echo Syncing buffers
+sync
+sleep 3
+wait
+
+echo Bye!
