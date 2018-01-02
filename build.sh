@@ -14,6 +14,7 @@ check_root() {
 }
 
 prepare_build() {
+	export CWD="$(pwd)"
 	export SOURCES="$(pwd)/sources"
 	export ROOTFS="$(pwd)/rootfs"
 	export TOOLS="$(pwd)/tools"
@@ -80,7 +81,7 @@ build_prepare() {
 }
 
 cook_toolchain() {
-	cd $SORCES
+	cd $SOURCES
 	rm -rf janus-toolchain
 	git clone https://github.com/JanusLinux/janus-toolchain.git
 	cd janus-toolchain
@@ -381,7 +382,10 @@ build_kernel() {
 	if [ "`grep "CONFIG_X86_64=y" .config`" = "CONFIG_X86_64=y" ] ; then
 		echo "CONFIG_EFI_MIXED=y" >> .config
 	fi
-	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-"
+	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" $MAKEOPTS
+	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_MOD_PATH=$ROOTFS modules_install
+	cp arch/x86/boot/bzImage $ROOTFS/boot/bzImage-4.14.10
+	cp arch/x86/boot/bzImage $ISODIR/bzImage
 }
 
 strip_filesystem() {
@@ -389,10 +393,53 @@ strip_filesystem() {
 }
 
 generate_iso() {
-	mkdir $ISODIR/boot
-
 	cd $ROOTFS
-	find . -print | cpio -o -H newc | gzip -9 > $ISODIR/boot/rootfs.gz
+	find . -print | cpio -o -H newc | gzip -9 > $ISODIR/rootfs.gz
+
+	cd $SOURCES
+	wget http://kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
+	tar -xf syslinux-6.03.tar.xz
+	cd syslinux-6.03
+	cp bios/core/isolinux.bin $ISODIR/isolinux.bin
+	cp bios/com32/elflink/ldlinux/ldlinux.c32 $ISODIR/ldlinux.c32
+	cp bios/com32/libutil/libutil.c32 $ISODIR/libutil.c32
+	cp bios/com32/menu/menu.c32 $ISODIR/menu.c32
+	
+	cd $ISODIR
+
+	cat << CEOF > ./isolinux.cfg
+UI menu.c32
+PROMPT 0
+ 
+MENU TITLE JanusLinux Boot Menu:
+TIMEOUT 60
+DEFAULT default
+ 
+LABEL default
+        MENU LABEL JanusLinux
+        LINUX bzImage
+        INITRD rootfs.gz
+CEOF
+
+	mkdir -p efi/boot
+	cat << CEOF > ./efi/boot/startup.nsh
+	echo -off
+	echo Please wait...
+	\\bzImage initrd=\\rootfs.gz
+CEOF
+
+	genisoimage -J -r \
+		-o $CWD/januslinux-1.0-alpha-$BARCH.iso \
+		-b isolinux.bin \
+		-c boot.cat \
+		-input-charset UTF-8 \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		-joliet-long \
+		$ISODIR
+		
+	isohybrid -u $CWD/januslinux-1.0-alpha-$BARCH.iso 2>/dev/null || true
 }
 
 generate_docker() {
@@ -406,8 +453,8 @@ cook_toolchain
 build_prepare
 setup_rootfs
 cook_system
-strip_filesystem
-generate_docker
+# strip_filesystem
+# generate_docker
 build_kernel
 generate_iso
 
