@@ -25,8 +25,7 @@ prepare_build() {
 	export MAKEOPTS="-j$(expr $(nproc) + 1)"
 
 	export PATH="$TOOLS/bin:$PATH"
-	export LD_LIBRARY_PATH="$TOOLS/lib"
-	export LD_RUN_PATH="$TOOLS/lib"
+	export LDFLAGS="-Wl,-rpath,$TOOLS/lib"
 
 	export LC_ALL=POSIX
 	export LANG=POSIX
@@ -73,8 +72,11 @@ prepare_toolchain() {
 }
 
 build_prepare() {
-	unset LD_LIBRARY_PATH LD_RUN_PATH
+	unset CFLAGS CXXFLAGS LDFLAGS
 	rm -rf $SOURCES/*
+	export CFLAGS=""
+	export CXXFLAGS=""
+	export LDFLAGS="-Wl,-rpath,$ROOTFS/usr/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export LD="$XTARGET-ld --sysroot=$ROOTFS"
@@ -86,8 +88,6 @@ build_prepare() {
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
 	export SIZE="$XTARGET-size"
-	export LD_LIBRARY_PATH="$ROOTFS/usr/lib"
-	export LD_RUN_PATH="$ROOTFS/usr/lib"
 }
 
 setup_rootfs() {
@@ -247,6 +247,154 @@ cook_toolchain() {
 	make install
 }
 
+cook_system() {
+	cd $SOURCES
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.10.tar.xz
+	tar -xf linux-4.14.10.tar.xz
+	cd linux-4.14.10
+	make mrproper
+	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_HDR_PATH=$ROOTFS/usr headers_install
+
+	cd $SOURCES
+	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
+	CROSS_COMPILE="$XTARGET-" \
+	./configure \
+		$CONFIGURE \
+		--syslibdir=/usr/lib \
+		--enable-optimize \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c https://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
+	tar -xf libz-1.2.8.2015.12.26.tar.gz
+	cd libz-1.2.8.2015.12.26
+	CROSS_COMPILE="$XTARGET-" \
+	./configure \
+		$CONFIGURE \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir build
+	cd build
+	CROSS_COMPILE="$XTARGET-" \
+	../configure \
+		$CONFIGURE \
+		--with-sysroot=$ROOTFS \
+		--with-system-zlib \
+		--enable-gold \
+		--enable-ld=default \
+		--enable-plugins \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SOURCES
+	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	tar -xf gmp-6.1.2.tar.xz
+	cd gmp-6.1.2
+	CROSS_COMPILE=$XTARGET- \
+	./configure \
+		$CONFIGURE \
+		--enable-cxx \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SOURCES
+	wget http://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.xz
+	tar -xf mpfr-3.1.6.tar.xz
+	cd mpfr-3.1.6
+	CROSS_COMPILE=$XTARGET- \
+	./configure \
+		$CONFIGURE \
+		--with-gmp=$ROOTFS/usr \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SOURCES
+	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
+	tar -xf mpc-1.0.3.tar.gz
+	cd mpc-1.0.3
+	CROSS_COMPILE=$XTARGET- \
+	./configure \
+		$CONFIGURE \
+		--with-gmp=$ROOTFS/usr \
+		--with-mpfr=$ROOTFS/usr \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	tar -xf gcc-7.2.0.tar.xz
+	cd gcc-7.2.0
+	mkdir build
+	cd build
+	export libat_cv_have_ifunc=no
+	CROSS_COMPILE="$XTARGET-" \
+	../configure \
+		$CONFIGURE \
+		--with-sysroot=$ROOTFS \
+		--with-system-zlib \
+		--with-linker-hash-style=gnu \
+		--enable-__cxa_atexit \
+		--enable-default-pie \
+		--enable-cloog-backend \
+		--enable-checking=release \
+		--enable-languages=c,c++ \
+		--enable-clocale=generic \
+		--enable-threads=posix \
+		--enable-tls \
+		--enable-lto \
+		--enable-linker-build-id \
+		--disable-bootstrap \
+		--disable-fixed-point \
+		--disable-libmudflap \
+		--disable-libmpx \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdcxx-pch \
+		--disable-libunwind-exceptions \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror \
+		--host=$XTARGET
+	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld" $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/usr/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
+	tar -xf make-4.2.1.tar.bz2
+	cd make-4.2.1
+	CROSS_COMPILE="$XTARGET-" \
+	./configure \
+		$CONFIGURE \
+		--without-guile \
+		--disable-nls \
+		--host=$XTARGET
+	make $MAKEOPTS
+	make DESTDIR=$ROOTFS install
+}
+
 check_root
 prepare_build
 prepare_cross
@@ -254,6 +402,7 @@ prepare_toolchain
 cook_toolchain
 build_prepare
 setup_rootfs
+cook_system
 
 exit 0
 
