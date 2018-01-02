@@ -18,4 +18,4 @@ You can download [current alpha version](https://github.com/protonesso/janus/rel
 
 ## How I can contact and help you with development?
 
-You can write me on [email](mailto:nagakamira@gmail.com) or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](soon lol).
+You can write me on [email](mailto:nagakamira@gmail.com) or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new).
