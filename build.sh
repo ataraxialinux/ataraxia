@@ -129,9 +129,9 @@ cook_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.10.tar.xz
-	tar -xf linux-4.14.10.tar.xz
-	cd linux-4.14.10
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.11.tar.xz
+	tar -xf linux-4.14.11.tar.xz
+	cd linux-4.14.11
 	make mrproper
 	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 
@@ -226,33 +226,29 @@ cook_system() {
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	mkdir build
-	cd build	
-	export libat_cv_have_ifunc=no
+	cd build
 	CROSS_COMPILE="$XTARGET-" \
 	../configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
 		--with-system-zlib \
-		--with-linker-hash-style=gnu \
-		--enable-__cxa_atexit \
-		--enable-default-pie \
-		--enable-cloog-backend \
-		--enable-checking=release \
-		--enable-languages=c,c++ \
-		--enable-clocale=generic \
+		--enable-deterministic-archives \
 		--enable-threads=posix \
+		--enable-clocale=generic \
+		--enable-languages=c,c++ \
+		--enable-libstdcxx-time \
 		--enable-tls \
 		--enable-lto \
-		--enable-linker-build-id \
+		--enable-libssp \
 		--disable-bootstrap \
 		--disable-decimal-float \
 		--disable-fixed-point \
 		--disable-gnu-indirect-function \
-		--disable-libmudflap \
 		--disable-libmpx \
-		--disable-libsanitizer \
-		--disable-libssp \
+		--disable-libmudflap \
+		--disable-libquadmath \
 		--disable-libstdcxx-pch \
+		--disable-libsanitizer \
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
@@ -362,9 +358,9 @@ EOF
 
 build_kernel() {
 	cd $SOURCES
-	rm -rf linux-4.14.10
-	tar -xf linux-4.14.10.tar.xz
-	cd linux-4.14.10
+	rm -rf linux-4.14.11
+	tar -xf linux-4.14.11.tar.xz
+	cd linux-4.14.11
 	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" defconfig
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"janus\"/" .config
 	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
