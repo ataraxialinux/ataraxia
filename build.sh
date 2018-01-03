@@ -80,12 +80,10 @@ build_prepare() {
 	export SIZE="$XTARGET-size"
 }
 
-cook_toolchain() {
+get_toolchain() {
 	cd $SOURCES
-	rm -rf janus-toolchain
-	git clone https://github.com/JanusLinux/janus-toolchain.git
-	cd janus-toolchain
-	TARGET=$XTARGET OUTPUT=$TOOLS make $MAKEOPTS
+	wget -c https://github.com/jprjr/musl-cross-make-static/releases/download/4/gcc-7.2.0-$XTARGET.tar.gz
+	tar -xf gcc-7.2.0-$XTARGET.tar.gz -C $TOOLS
 }
 
 setup_rootfs() {
@@ -94,7 +92,7 @@ setup_rootfs() {
 	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
 	install -d -m 0750 $ROOTFS/root
 	install -d -m 1777 $ROOTFS/{var/,}tmp
-	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/{firmware,modules},share}
+	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/modules,share}
 
 	cd $ROOTFS/usr
 	ln -sf bin sbin
@@ -449,7 +447,7 @@ generate_docker() {
 check_root
 prepare_build
 prepare_cross
-cook_toolchain
+get_toolchain
 build_prepare
 setup_rootfs
 cook_system
