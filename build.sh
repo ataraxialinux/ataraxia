@@ -221,42 +221,41 @@ cook_system() {
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
-	tar -xf gcc-7.2.0.tar.xz
-	cd gcc-7.2.0
-	mkdir build
-	cd build
-	CROSS_COMPILE="$XTARGET-" \
-	../configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-system-zlib \
-		--enable-deterministic-archives \
-		--enable-threads=posix \
-		--enable-clocale=generic \
-		--enable-languages=c,c++ \
-		--enable-libstdcxx-time \
-		--enable-tls \
-		--enable-lto \
-		--enable-libssp \
-		--disable-bootstrap \
-		--disable-decimal-float \
-		--disable-fixed-point \
-		--disable-gnu-indirect-function \
-		--disable-libmpx \
-		--disable-libmudflap \
-		--disable-libquadmath \
-		--disable-libstdcxx-pch \
-		--disable-libsanitizer \
-		--disable-multilib \
-		--disable-nls \
-		--disable-symvers \
-		--disable-werror \
-		--host=$XTARGET
-	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld" $MAKEOPTS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/usr/lib/*.la
+#	cd $SOURCES
+#	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+#	tar -xf gcc-7.2.0.tar.xz
+#	cd gcc-7.2.0
+#	mkdir build
+#	cd build
+#	CROSS_COMPILE="$XTARGET-" \
+#	../configure \
+#		$CONFIGURE \
+#		--with-system-zlib \
+#		--enable-deterministic-archives \
+#		--enable-threads=posix \
+#		--enable-clocale=generic \
+#		--enable-languages=c,c++ \
+#		--enable-libstdcxx-time \
+#		--enable-tls \
+#		--enable-lto \
+#		--enable-libssp \
+#		--disable-bootstrap \
+#		--disable-decimal-float \
+#		--disable-fixed-point \
+#		--disable-gnu-indirect-function \
+#		--disable-libmpx \
+#		--disable-libmudflap \
+#		--disable-libquadmath \
+#		--disable-libstdcxx-pch \
+#		--disable-libsanitizer \
+#		--disable-multilib \
+#		--disable-nls \
+#		--disable-symvers \
+#		--disable-werror \
+#		--host=$XTARGET
+#	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld" $MAKEOPTS
+#	make DESTDIR=$ROOTFS install
+#	rm -rf $ROOTFS/usr/lib/*.la
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
