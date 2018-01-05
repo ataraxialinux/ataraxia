@@ -5,13 +5,13 @@ export PATH="/usr/bin:/usr/local/bin"
 dmesg -n 1
 
 echo Mounting virtual filesystems...
-mount -t proc none /proc
-mount -t sysfs none /sys
-mount -t tmpfs /tmp /tmp
-mkdir /dev/pts
-mkdir /dev/shm
-mount -t devpts none /dev/pts
-mount -t tmpfs none /dev/shm
+mount -n -o nosuid,noexec,nodev -t proc proc /proc
+mount -n -o nosuid,noexec,nodev -t sysfs sysfs /sys
+mount -n -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /dev/shm
+mount -n -o mode=0620,gid=5 -t devpts devpts /dev/pts
+mount -n -o defaults -t tmpfs none /dev/shm
+mount -n -o defaults -t tmpfs tmpfs /run
 
 echo Starting mdev hotplug...
 echo /sbin/mdev > /proc/sys/kernel/hotplug
@@ -20,7 +20,7 @@ mdev -s
 echo Mounting root read-only...
 mount -o remount,ro /
 
-echo Checking filesystems...
+echo Checking filesystem...
 fsck -A -T -C -a
 if [ $? -gt 1 ]; then
 	echo
@@ -45,7 +45,7 @@ fi
 echo Remounting root as read-write...
 mount -o remount,rw /
 
-echo Activating swap partition...
+echo Activating swap...
 swapon -a
 
 echo Mounting filesystems...
@@ -68,7 +68,7 @@ hostname $(cat /etc/hostname)
 echo Synchronizing clock...
 hwclock -u -s
 
-echo Setting up networking...
+echo Starting networking...
 for DEVICE in /sys/class/net/* ; do
 	ip link set ${DEVICE##*/} up
 	[ ${DEVICE##*/} = wlan0 ] && wpa_supplicant -B -iwlan0 -c/etc/wpa_supplicant.conf
