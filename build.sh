@@ -45,15 +45,25 @@ prepare_cross() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-pc-linux-musl"
 			export XKARCH="x86_64"
-			export MULTILIB="--enable-multilib --with-multilib-list=m64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
-		i486)
+		i686)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i486-pc-linux-musl"
+			export XTARGET="i686-pc-linux-musl"
 			export XKARCH="i386"
-			export MULTILIB="--enable-multilib --with-multilib-list=m32"
-			export GCCOPTS="--with-arch=i486 --with-tune=generic"
+			export GCCOPTS="--with-arch=i686 --with-tune=generic"
+			;;
+		arm64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-pc-linux-musl"
+			export XKARCH="arm64"
+			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			;;
+		arm)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-pc-linux-musleabihf"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
 		*)
 			echo "BARCH variable isn't set..."
@@ -63,12 +73,11 @@ prepare_cross() {
 
 build_prepare() {
 	rm -rf $SOURCES/*
-	unset CFLAGS CXXFLAGS LDFLAGS LD_LIBRARY_PATH LIBS
+	unset LD_LIBRARY_PATH CFLAGS CXXFLAGS LDFLAGS
+	export LD_LIBRARY_PATH="$ROOTFS/usr/lib"
 	export CFLAGS="$XCFLAGS"
 	export CXXFLAGS="$XCXXFLAGS"
 	export LDFLAGS="$XLDFLAGS -Wl,-rpath,$ROOTFS/usr/lib"
-	export LD_LIBRARY_PATH="$ROOTFS/usr/lib"
-	export LIBS="-L$ROOTFS/usr/lib" \
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export LD="$XTARGET-ld --sysroot=$ROOTFS"
@@ -84,17 +93,15 @@ build_prepare() {
 
 prepare_toolchain() {
 	cd $TOOLS
-	mkdir bin lib
+	mkdir bin
 
 	ln -sf bin sbin
 
-	case $BARCH in
-		x86_64)
-			ln -sf lib lib64
-			;;
-	esac
-
 	ln -sf . usr
+
+	export CFLAGS="$XCFLAGS"
+	export CXXFLAGS="$XCXXFLAGS"
+	export LDFLAGS="$XLDFLAGS -Wl,-rpath,$TOOLS/lib"
 }
 
 cook_toolchain() {
@@ -114,9 +121,9 @@ cook_toolchain() {
 		--disable-compressed-debug-sections \
 		--disable-cloog-version-check \
 		--disable-ppl-version-check \
+		--disable-multilib \
 		--disable-nls \
-		--disable-werror \
-		$MULTILIB
+		--disable-werror
 	make MAKEINFO="true" $MAKEOPTS
 	make MAKEINFO="true" install
 
@@ -173,8 +180,8 @@ cook_toolchain() {
 		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libmpx \
+		--disable-multilib \
 		--disable-nls \
-		$MULTILIB \
 		$GCCOPTS
 	make all-gcc all-target-libgcc $MAKEOPTS
 	make install-gcc install-target-libgcc
@@ -224,9 +231,9 @@ cook_toolchain() {
 		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libmpx \
+		--disable-multilib \
 		--disable-nls \
 		--disable-lto-plugin \
-		$MULTILIB \
 		$GCCOPTS
 	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld" $MAKEOPTS
 	make install
@@ -376,19 +383,13 @@ cook_system() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-  # Avoid specific Glibc code
-  ( cd libstdc++-v3/config/os && \
-    mv gnu-linux gnu-linux.orig ; \
-    cp -r generic gnu-linux ; \
-    cp gnu-linux.orig/arm-eabi-extra.ver gnu-linux ; \
-  )
-  ( cd libitm/config && \
-    mv linux/x86 linux/x86_glibc ; \
-    cp -r generic linux/x86 ; \
-  )
 	mkdir build
 	cd build
 	export libat_cv_have_ifunc=no
+	CC=$XTARGET-gcc \
+	CXX=$XTARGET-g++ \
+	AR=$XTARGET-ar \
+	RANLIB=$XTARGET-ranlib \
 	CROSS_COMPILE="$XTARGET-" \
 	../configure \
 		$CONFIGURE \
@@ -421,9 +422,9 @@ cook_system() {
 
 build_kernel() {
 	cd $SOURCES
-	rm -rf linux-4.14.11
-	tar -xf linux-4.14.11.tar.xz
-	cd linux-4.14.11
+	rm -rf linux-4.14.12
+	tar -xf linux-4.14.12.tar.xz
+	cd linux-4.14.12
 	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" defconfig
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"janus\"/" .config
 	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
