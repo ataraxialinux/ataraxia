@@ -6,11 +6,11 @@ JanusLinux is fast and mini [Linux](https://www.kernel.org/) distribution which 
 
 ## For who?
 
-JanusLinux is made for people who likes CLI interface and for get Linux knowledge(yes, my English is perfect). It allows call JanusLinux: distribution for begginers.
+JanusLinux is made for people who likes CLI interface and for get Linux knowledge. It allows call JanusLinux: distribution for beginners.
 
 ## What hardware I can run it?
 
-You can run it on Intel i486(It can allow call Janus: distibution for poor people because I can't imagine man who use it on i486 with a good income or he/she/it use it on embedded device lol) and x86_64.
+You can run it on i686, x86_64, arm(v7), arm64. In future will be available these architectures: ppc, ppc64.
 
 ## Where I can get it?
 
@@ -19,3 +19,7 @@ You can download [current alpha version](https://github.com/protonesso/janus/rel
 ## How I can contact and help you with development?
 
 You can write me on [email](mailto:nagakamira@gmail.com) or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new).
+
+## Releases information and roadmap
+
+Roadmap and information of JanusLinux are available [here](https://januslinux.github.io/releases/).
