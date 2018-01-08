@@ -13,9 +13,13 @@ mount -n -o mode=0620,gid=5 -t devpts devpts /dev/pts
 mount -n -o defaults -t tmpfs none /dev/shm
 mount -n -o defaults -t tmpfs tmpfs /run
 
-echo Starting mdev hotplug...
-echo /sbin/mdev > /proc/sys/kernel/hotplug
-mdev -s
+echo Starting eudev daemon...
+udevd --daemon
+sleep 1
+udevadm trigger --type=subsystems --action=add
+udevadm trigger --type=devices    --action=add
+udevadm trigger --type=devices    --action=change
+udevadm settle
 
 echo Initialize the Logical Volume Manager...
 if type lvm > /dev/null 2>&1
