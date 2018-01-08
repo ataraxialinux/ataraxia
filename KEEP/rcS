@@ -17,6 +17,19 @@ echo Starting mdev hotplug...
 echo /sbin/mdev > /proc/sys/kernel/hotplug
 mdev -s
 
+echo Initialize the Logical Volume Manager...
+if type lvm > /dev/null 2>&1
+then
+	vgscan --mknodes --ignorelockingfailure && \
+		vgchange --ignorelockingfailure -a y
+fi
+
+echo Encrypting devices...
+cryptmount -M
+
+echo Synchronizing clock...
+hwclock -u -s
+
 echo Mounting root read-only...
 mount -o remount,ro /
 
@@ -64,9 +77,6 @@ sysctl -p
 
 echo Setting hostname to $(cat /etc/hostname)...
 hostname $(cat /etc/hostname)
-
-echo Synchronizing clock...
-hwclock -u -s
 
 echo Starting networking...
 for DEVICE in /sys/class/net/* ; do
