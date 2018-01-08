@@ -254,11 +254,11 @@ setup_rootfs() {
 
 	ln -sf /proc/mounts $ROOTFS/etc/mtab
 
-	for f in fstab host.conf hosts issue profile shadow sysctl.conf group hostname inittab passwd securetty shells; do
+	for f in fstab host.conf hosts issue profile shadow sysctl.conf group hostname inittab passwd securetty shells crypttab; do
 		install -m644 $KEEP/$f $ROOTFS/etc
 	done
 
-	chmod 640 $ROOTFS/etc/shadow
+	chmod 640 $ROOTFS/etc/shadow $ROOTFS/etc/crypttab
 
 	for f in rcS rc.shutdown rc.dhcp; do
 		install -m644 $KEEP/$f $ROOTFS/etc/init.d
@@ -289,6 +289,7 @@ cook_system() {
 	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--syslibdir=/usr/lib \
@@ -301,6 +302,7 @@ cook_system() {
 	wget -c https://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--host=$XTARGET
@@ -313,6 +315,7 @@ cook_system() {
 	cd binutils-2.29.1
 	mkdir build
 	cd build
+	CROSS_COMPILE="$XTARGET-" \
 	../configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -333,6 +336,7 @@ cook_system() {
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	tar -xf gmp-6.1.2.tar.xz
 	cd gmp-6.1.2
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--enable-cxx \
@@ -345,6 +349,7 @@ cook_system() {
 	wget http://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.xz
 	tar -xf mpfr-3.1.6.tar.xz
 	cd mpfr-3.1.6
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -357,6 +362,7 @@ cook_system() {
 	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 	tar -xf mpc-1.0.3.tar.gz
 	cd mpc-1.0.3
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -372,6 +378,7 @@ cook_system() {
 	mkdir build
 	cd build
 	libat_cv_have_ifunc=no \
+	CROSS_COMPILE="$XTARGET-" \
 	../configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -418,6 +425,7 @@ cook_system() {
 	wget -c http://invisible-mirror.net/archives/ncurses/current/ncurses-6.0-20180106.tgz
 	tar -xf ncurses-6.0-20180106.tgz
 	cd ncurses-6.0-20180106
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--without-cxx-binding \
@@ -438,6 +446,7 @@ cook_system() {
 	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
 	tar -xf util-linux-2.31.1.tar.xz
 	cd util-linux-2.31.1
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -463,6 +472,7 @@ cook_system() {
 	wget -c https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.14.0.tar.xz
 	tar -xf xfsprogs-4.14.0.tar.xz
 	cd xfsprogs-4.14.0
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -500,6 +510,7 @@ cook_system() {
 	wget -c https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
 	tar -xf kbd-2.0.4.tar.xz
 	cd kbd-2.0.4
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--disable-nls \
@@ -512,6 +523,7 @@ cook_system() {
 	wget -c https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.4.tar.gz
 	tar -xf libressl-2.6.4.tar.gz
 	cd libressl-2.6.4
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -523,6 +535,7 @@ cook_system() {
 	wget -c https://curl.haxx.se/download/curl-7.57.0.tar.xz
 	tar -xf curl-7.57.0.tar.xz
 	cd curl-7.57.0
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -539,6 +552,7 @@ cook_system() {
 	wget -c https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz
 	tar -xf openssh-7.6p1.tar.gz
 	cd openssh-7.6p1
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc/ssh \
@@ -560,6 +574,7 @@ cook_system() {
 	wget -c https://invisible-mirror.net/archives/lynx/tarballs/lynx2.8.8rel.2.tar.gz
 	tar -xf lynx2.8.8rel.2.tar.gz
 	cd lynx2-8-8
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -574,8 +589,10 @@ cook_system() {
 	wget -c ftp://ftp.mutt.org/pub/mutt/mutt-1.9.2.tar.gz
 	tar -xf mutt-1.9.2.tar.gz
 	cd mutt-1.9.2
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
+		--with-sysroot=$ROOTFS \
 		--disable-doc \
 		--host=$XTARGET
 	make
@@ -585,6 +602,7 @@ cook_system() {
 	wget -c https://ftp.gnu.org/gnu/nettle/nettle-3.4.tar.gz
 	tar -xf nettle-3.4.tar.gz
 	cd nettle-3.4
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
@@ -596,6 +614,7 @@ cook_system() {
 	wget -c http://rpm5.org/files/popt/popt-1.16.tar.gz
 	tar -xf popt-1.16.tar.gz
 	cd popt-1.16
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--host=$XTARGET
@@ -608,6 +627,7 @@ cook_system() {
 	cd LVM2.2.02.177
 	ac_cv_func_malloc_0_nonnull=yes \
 	ac_cv_func_realloc_0_nonnull=yes \
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-thin=internal \
@@ -625,6 +645,7 @@ cook_system() {
 	wget -c https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz
 	tar -xf cryptsetup-1.7.5.tar.xz
 	cd cryptsetup-1.7.5
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$CONFIGURE \
 		--with-sysroot=$ROOTFS \
