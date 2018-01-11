@@ -74,14 +74,14 @@ prepare_cross() {
 build_prepare() {
 	rm -rf $SOURCES/*
 	unset CFLAGS CXXFLAGS LDFLAGS
-	export LIBLOOK="-L$ROOTFS/usr/lib -Wl,-rpath,$ROOTFS/usr/lib --dynamic-linker=$ROOTFS/usr/lib/libc.so"
+	export LIBLOOK="-Wl,-rpath,$ROOTFS/usr/lib"
 	export CFLAGS="$XCFLAGS"
 	export CXXFLAGS="$XCXXFLAGS"
 	export LDFLAGS="$XLDFLAGS $LIBLOOK"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
-	export AS="$XTARGET-as --sysroot=$ROOTFS"
+	export AS="$XTARGET-as"
 	export LD="$XTARGET-ld --sysroot=$ROOTFS"
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
@@ -236,6 +236,28 @@ cook_toolchain() {
 	make install
 }
 
+econfigure() {
+	./configure \
+		AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP" \
+		CC="$CC" CXX="$CXX" \
+		CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
+		$CONFIGURE \
+		--host=$XTARGET \
+		$1
+}
+
+subeconfigure() {
+	mkdir build
+	cd build
+	../configure \
+		AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP" \
+		CC="$CC" CXX="$CXX" \
+		CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
+		$CONFIGURE \
+		--host=$XTARGET \
+		$1
+}
+
 setup_rootfs() {
 	mkdir -p $ROOTFS/{boot,dev,etc/{init.d,skel},home}
 	mkdir -p $ROOTFS/{mnt,opt,proc,srv,sys}
@@ -302,39 +324,7 @@ cook_system() {
 	wget -c https://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
-	./configure \
-		$CONFIGURE \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
-	tar -xf file-5.32.tar.gz
-	cd file-5.32
-	./configure \
-		$CONFIGURE \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gawk/gawk-4.2.0.tar.xz
-	tar -xf gawk-4.2.0.tar.xz
-	cd gawk-4.2.0
-	./configure \
-		$CONFIGURE \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
-	tar -xf sed-4.4.tar.xz
-	cd sed-4.4
-	./configure \
-		$CONFIGURE \
-		--host=$XTARGET
+	econfigure
 	make
 	make DESTDIR=$ROOTFS install
 
@@ -342,10 +332,7 @@ cook_system() {
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
 	tar -xf binutils-2.29.1.tar.bz2
 	cd binutils-2.29.1
-	mkdir build
-	cd build
-	../configure \
-		$CONFIGURE \
+	subeconfigure \
 		--with-sysroot=$ROOTFS \
 		--with-system-zlib \
 		--enable-gold \
@@ -354,8 +341,7 @@ cook_system() {
 		--enable-shared \
 		--disable-multilib \
 		--disable-nls \
-		--disable-werror \
-		--host=$XTARGET
+		--disable-werror
 	make $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
@@ -364,10 +350,8 @@ cook_system() {
 	wget http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	tar -xf gmp-6.1.2.tar.xz
 	cd gmp-6.1.2
-	./configure \
-		$CONFIGURE \
-		--enable-cxx \
-		--host=$XTARGET
+	econfigure \
+		--enable-cxx
 	make $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
@@ -376,10 +360,8 @@ cook_system() {
 	wget http://www.mpfr.org/mpfr-3.1.6/mpfr-3.1.6.tar.xz
 	tar -xf mpfr-3.1.6.tar.xz
 	cd mpfr-3.1.6
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--host=$XTARGET
+	econfigure \
+		--with-sysroot=$ROOTFS
 	make $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
@@ -388,10 +370,8 @@ cook_system() {
 	wget http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 	tar -xf mpc-1.0.3.tar.gz
 	cd mpc-1.0.3
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--host=$XTARGET
+	econfigure \
+		--with-sysroot=$ROOTFS
 	make $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
@@ -400,11 +380,8 @@ cook_system() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	mkdir build
-	cd build
 	libat_cv_have_ifunc=no \
-	../configure \
-		$CONFIGURE \
+	subeconfigure \
 		--with-sysroot=$ROOTFS \
 		--with-system-zlib \
 		--enable-checking=release \
@@ -425,9 +402,8 @@ cook_system() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
-		--disable-werror \
-		--host=$XTARGET
-	make AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD" $MAKEOPTS
+		--disable-werror
+	make $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
@@ -435,133 +411,21 @@ cook_system() {
 	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
 	tar -xf make-4.2.1.tar.bz2
 	cd make-4.2.1
-	./configure \
-		$CONFIGURE \
+	econfigure \
 		--without-dmalloc \
 		--without-guile \
-		--disable-nls \
-		--host=$XTARGET
+		--disable-nls
 	make $MAKEOPTS
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://github.com/pkgconf/pkgconf/archive/pkgconf-1.4.0.tar.gz
-	tar -xf pkgconf-1.4.0.tar.gz
-	cd pkgconf-pkgconf-1.4.0.tar.gz
-	./autogen.sh
-	./configure \
-		$CONFIGURE \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c http://invisible-mirror.net/archives/ncurses/current/ncurses-6.0-20180106.tgz
-	tar -xf ncurses-6.0-20180106.tgz
-	cd ncurses-6.0-20180106
-	./configure \
-		$CONFIGURE \
-		--without-cxx-binding \
-		--without-debug \
-		--without-ada \
-		--without-tests \
-		--without-manpages \
-		--without-normal \
-		--with-shared \
-		--enable-widec \
-		--enable-symlinks \
-		--enable-pc-files \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
-	tar -xf util-linux-2.31.1.tar.xz
-	cd util-linux-2.31.1
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--without-systemdsystemunitdir \
-		--without-systemd \
-		--without-python \
-		--disable-nls \
-		--disable-tls \
-		--disable-chfn-chsh \
-		--disable-last \
-		--disable-login \
-		--disable-nologin \
-		--disable-sulogin \
-		--disable-su \
-		--disable-setpriv \
-		--disable-runuser \
-		--disable-pylibmount \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.14.0.tar.xz
-	tar -xf xfsprogs-4.14.0.tar.xz
-	cd xfsprogs-4.14.0
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--host=$XTARGET
-	make
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
 	wget -c https://github.com/MirBSD/mksh/archive/mksh-R56b.tar.gz
 	tar -xf mksh-R56b.tar.gz
-	cd mksh-R56b
+	cd mksh-mksh-R56b
 	sh Build.sh -r
 	install -D -m 755 mksh $ROOTFS/usr/bin/mksh
 	cd $ROOTFS/usr/bin
 	ln -sf mksh sh
-
-	cd $SOURCES
-	wget -c http://tukaani.org/xz/xz-5.2.3.tar.xz
-	tar -xf xz-5.2.3.tar.xz
-	cd xz-5.2.3
-	./configure \
-		$CONFIGURE \
-		--disable-nls \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-24.tar.xz
-	tar -xf kmod-24.tar.xz
-	cd kmod-24
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-xz \
-		--with-zlib \
-		--enable-tools \
-		--disable-manpages \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c http://dev.gentoo.org/~blueness/eudev/eudev-3.2.5.tar.gz
-	tar -xf eudev-3.2.5.tar.gz
-	cd eudev-3.2.5
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--enable-rule_generator \
-		--enable-kmod \
-		--disable-hwdb \
-                --disable-introspection \
-		--disable-keymap \
-                --disable-manpages \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
 	wget -c http://busybox.net/downloads/busybox-1.28.0.tar.bz2
@@ -579,160 +443,6 @@ cook_system() {
 	chroot $ROOTFS /usr/bin/busybox --install -s
 	cd $ROOTFS
 	ln -sf usr/bin/busybox init
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
-	tar -xf kbd-2.0.4.tar.xz
-	cd kbd-2.0.4
-	./configure \
-		$CONFIGURE \
-		--disable-nls \
-		--disable-vlock \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.4.tar.gz
-	tar -xf libressl-2.6.4.tar.gz
-	cd libressl-2.6.4
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://ftp.gnu.org/gnu/nettle/nettle-3.4.tar.gz
-	tar -xf nettle-3.4.tar.gz
-	cd nettle-3.4
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c http://rpm5.org/files/popt/popt-1.16.tar.gz
-	tar -xf popt-1.16.tar.gz
-	cd popt-1.16
-	./configure \
-		$CONFIGURE \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://sourceware.org/ftp/lvm2/releases/LVM2.2.02.177.tgz
-	tar -xf LVM2.2.02.177.tgz
-	cd LVM2.2.02.177
-	ac_cv_func_malloc_0_nonnull=yes \
-	ac_cv_func_realloc_0_nonnull=yes \
-	./configure \
-		$CONFIGURE \
-		--with-thin=internal \
-		--enable-pkgconfig \
-		--enable-applib \
-		--enable-cmdlib \
-		--enable-dmeventd \
-		--disable-nls \
-		--disable-readline \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/cryptsetup/v1.7/cryptsetup-1.7.5.tar.xz
-	tar -xf cryptsetup-1.7.5.tar.xz
-	cd cryptsetup-1.7.5
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-crypto_backend=nettle \
-		--disable-nls \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://curl.haxx.se/download/curl-7.57.0.tar.xz
-	tar -xf curl-7.57.0.tar.xz
-	cd curl-7.57.0
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-ca-path=/etc/ssl/certs \
-		--with-random=/dev/urandom \
-		--with-ssl \
-		--without-librtmp \
-		--enable-ipv6 \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-7.6p1.tar.gz
-	tar -xf openssh-7.6p1.tar.gz
-	cd openssh-7.6p1
-	./configure \
-		--prefix=/usr \
-		--sysconfdir=/etc/ssh \
-		--with-sysroot=$ROOTFS \
-		--with-privsep-path=/var/empty \
-		--with-xauth=/usr/bin/xauth \
-		--with-privsep-user=sshd \
-		--with-privsep-path=/var/lib/sshd \
-		--with-md5-passwords \
-		--with-ssl-engine \
-		--disable-lastlog \
-		--disable-strip \
-		--disable-wtmp \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://invisible-mirror.net/archives/lynx/tarballs/lynx2.8.8rel.2.tar.gz
-	tar -xf lynx2.8.8rel.2.tar.gz
-	cd lynx2-8-8
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-ssl \
-		--enable-ipv6 \
-		--disable-nls \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c ftp://ftp.mutt.org/pub/mutt/mutt-1.9.2.tar.gz
-	tar -xf mutt-1.9.2.tar.gz
-	cd mutt-1.9.2
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--disable-doc \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://github.com/libarchive/libarchive/archive/v3.3.2.tar.gz
-	tar -xf v3.3.2.tar.gz
-	cd libarchive-3.3.2
-	./configure \
-		$CONFIGURE \
-		--with-sysroot=$ROOTFS \
-		--with-pic \
-		--without-openssl \
-		--without-xml2 \
-		--without-expat \
-		--host=$XTARGET
-	make
-	make DESTDIR=$ROOTFS install
 }
 
 build_kernel() {
