@@ -65,6 +65,18 @@ prepare_cross() {
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
+		ppc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-pc-linux-musl"
+			export XKARCH="powerpc64le"
+			export GCCOPTS=
+			;;
+		ppc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-pc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt"
+			;;
 		*)
 			echo "BARCH variable isn't set..."
 			exit 0
@@ -125,11 +137,11 @@ cook_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c https://github.com/sabotage-linux/kernel-headers/archive/v3.12.6-5.tar.gz
-	tar -xf v3.12.6-5.tar.gz
-	cd kernel-headers-3.12.6-5
-	make ARCH=$XKARCH prefix=/ $MAKEOPTS
-	make ARCH=$XKARCH prefix=/ DESTDIR=$TOOLS install
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.13.tar.xz
+	tar -xf linux-4.14.13.tar.xz
+	cd linux-4.14.13
+	make mrproper
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
@@ -242,7 +254,9 @@ econfigure() {
 		CC="$CC" CXX="$CXX" \
 		CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
 		$CONFIGURE \
+		--build=$XHOST \
 		--host=$XTARGET \
+		--target=$XTARGET \
 		$1
 }
 
@@ -254,7 +268,9 @@ subeconfigure() {
 		CC="$CC" CXX="$CXX" \
 		CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
 		$CONFIGURE \
+		--build=$XHOST \
 		--host=$XTARGET \
+		--target=$XTARGET \
 		$1
 }
 
@@ -301,23 +317,21 @@ cook_system() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c https://github.com/sabotage-linux/kernel-headers/archive/v3.12.6-5.tar.gz
-	tar -xf v3.12.6-5.tar.gz
-	cd kernel-headers-3.12.6-5
-	make ARCH=$XKARCH prefix=/usr $MAKEOPTS
-	make ARCH=$XKARCH prefix=/usr DESTDIR=$ROOTFS install
+	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.13.tar.xz
+	tar -xf linux-4.14.13.tar.xz
+	cd linux-4.14.13
+	make mrproper
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_HDR_PATH=$ROOTFS/usr headers_install
+	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
 
 	cd $SOURCES
 	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
-	CROSS_COMPILE="$XTARGET-" \
-	./configure \
-		$CONFIGURE \
+	subeconfigure \
 		--syslibdir=/usr/lib \
-		--enable-optimize \
-		--host=$XTARGET
-	make $MAKEOPTS
+		--enable-optimize
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
@@ -325,7 +339,7 @@ cook_system() {
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
 	econfigure
-	make
+	make CROSS_COMPILE=$XTARGET-
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
@@ -335,6 +349,7 @@ cook_system() {
 	subeconfigure \
 		--with-sysroot=$ROOTFS \
 		--with-system-zlib \
+		--enable-deterministic-archives \
 		--enable-gold \
 		--enable-ld=default \
 		--enable-plugins \
@@ -342,7 +357,7 @@ cook_system() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-werror
-	make $MAKEOPTS
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
@@ -352,7 +367,7 @@ cook_system() {
 	cd gmp-6.1.2
 	econfigure \
 		--enable-cxx
-	make $MAKEOPTS
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
@@ -362,7 +377,7 @@ cook_system() {
 	cd mpfr-3.1.6
 	econfigure \
 		--with-sysroot=$ROOTFS
-	make $MAKEOPTS
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
@@ -372,7 +387,7 @@ cook_system() {
 	cd mpc-1.0.3
 	econfigure \
 		--with-sysroot=$ROOTFS
-	make $MAKEOPTS
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
@@ -390,20 +405,24 @@ cook_system() {
 		--enable-default-pie \
 		--enable-cloog-backend \
 		--enable-languages=c,c++ \
+		--enable-libssp \
+		--enable-libstdcxx-time \
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-bootstrap \
+		--disable-decimal-float \
 		--disable-fixed-point \
+		--disable-gnu-indirect-function \
 		--disable-libmudflap \
 		--disable-libmpx \
 		--disable-libsanitizer \
-		--disable-libssp \
 		--disable-libstdcxx-pch \
+		--disable-libquadmath \
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror
-	make $MAKEOPTS
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
 
@@ -415,7 +434,7 @@ cook_system() {
 		--without-dmalloc \
 		--without-guile \
 		--disable-nls
-	make $MAKEOPTS
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
@@ -431,14 +450,14 @@ cook_system() {
 	wget -c http://busybox.net/downloads/busybox-1.28.0.tar.bz2
 	tar -xf busybox-1.28.0.tar.bz2
 	cd busybox-1.28.0
-	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" defconfig
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
 	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
 	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
-	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" $MAKEOPTS
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	cp busybox $ROOTFS/usr/bin/busybox
 	chroot $ROOTFS /usr/bin/busybox --install -s
 	cd $ROOTFS
@@ -447,10 +466,10 @@ cook_system() {
 
 build_kernel() {
 	cd $SOURCES
-	wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.12.tar.xz
-	tar -xf linux-4.14.12.tar.xz
-	cd linux-4.14.12
-	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" defconfig
+	rm -rf linux-4.14.13
+	tar -xf linux-4.14.13.tar.xz
+	cd linux-4.14.13
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"janus\"/" .config
 	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
 	echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> .config
@@ -465,10 +484,10 @@ build_kernel() {
 	if [ "`grep "CONFIG_X86_64=y" .config`" = "CONFIG_X86_64=y" ] ; then
 		echo "CONFIG_EFI_MIXED=y" >> .config
 	fi
-	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" $MAKEOPTS
-	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_MOD_PATH=$ROOTFS modules_install
-	cp arch/x86/boot/bzImage $ROOTFS/boot/bzImage-4.14.10
-	cp arch/x86/boot/bzImage $ISODIR/bzImage
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- $MAKEOPTS
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$ROOTFS modules_install
+	cp arch/$XKARCH/boot/bzImage $ROOTFS/boot/bzImage-4.14.13
+	cp arch/$XKARCH/boot/bzImage $ISODIR/bzImage
 }
 
 strip_filesystem() {
