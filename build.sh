@@ -61,6 +61,12 @@ prepare_cross() {
 			;;
 		arm)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-pc-linux-musleabi"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-float=soft --with-fpu=neon"
+			;;
+		armhf)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-pc-linux-musleabihf"
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
@@ -328,7 +334,7 @@ cook_system() {
 	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
-	subeconfigure \
+	econfigure \
 		--syslibdir=/usr/lib \
 		--enable-optimize
 	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
@@ -339,7 +345,7 @@ cook_system() {
 	tar -xf libz-1.2.8.2015.12.26.tar.gz
 	cd libz-1.2.8.2015.12.26
 	econfigure
-	make CROSS_COMPILE=$XTARGET-
+	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
@@ -395,26 +401,27 @@ cook_system() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	libat_cv_have_ifunc=no \
 	subeconfigure \
 		--with-sysroot=$ROOTFS \
 		--with-system-zlib \
+		--enable-__cxa_atexit \
 		--enable-checking=release \
 		--enable-clocale=generic \
-		--enable-__cxa_atexit \
-		--enable-default-pie \
-		--enable-cloog-backend \
+		--enable-deterministic-archives \
+		--enable-fully-dynamic-string \
 		--enable-languages=c,c++ \
 		--enable-libssp \
 		--enable-libstdcxx-time \
+		--enable-lto \
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-bootstrap \
 		--disable-decimal-float \
-		--disable-fixed-point \
 		--disable-gnu-indirect-function \
-		--disable-libmudflap \
+		--disable-libcilkrts \
+		--disable-libitm \
 		--disable-libmpx \
+		--disable-libmudflap \
 		--disable-libsanitizer \
 		--disable-libstdcxx-pch \
 		--disable-libquadmath \
@@ -422,6 +429,7 @@ cook_system() {
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror
+	gcc_cv_libc_provides_ssp=yes \
 	make CROSS_COMPILE=$XTARGET- $MAKEOPTS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/usr/lib/*.la
