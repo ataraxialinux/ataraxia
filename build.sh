@@ -91,19 +91,22 @@ prepare_cross() {
 
 build_prepare() {
 	rm -rf $SOURCES/*
-	unset CFLAGS CXXFLAGS LDFLAGS
+	unset CFLAGS CXXFLAGS LDFLAGS LD_LIBRARY_PATH
 	export LIBLOOK="-Wl,-rpath,$ROOTFS/usr/lib"
 	export CFLAGS="$XCFLAGS"
 	export CXXFLAGS="$XCXXFLAGS"
 	export LDFLAGS="$XLDFLAGS $LIBLOOK"
+	export LD_LIBRARY_PATH="$ROOTFS/usr/lib"
+	export AR="$XTARGET-ar"
+	export AS="$XTARGET-as --sysroot=$ROOTFS"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
-	export AR="$XTARGET-ar"
-	export AS="$XTARGET-as"
 	export LD="$XTARGET-ld --sysroot=$ROOTFS"
+	export NM="$XTARGET-nm"
+	export OBJCOPY="$XTARGET-objcopy"
 	export RANLIB="$XTARGET-ranlib"
-	export READELF="$XTARGET-readelf"
-	export STRIP="$XTARGET-strip"
+	export SIZE="$XTARGET-size"
+	export STRIP="$XTARGET-strip"	
 }
 
 prepare_toolchain() {
@@ -256,8 +259,6 @@ cook_toolchain() {
 
 econfigure() {
 	./configure \
-		AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP" \
-		CC="$CC" CXX="$CXX" \
 		CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
 		$CONFIGURE \
 		--build=$XHOST \
@@ -270,8 +271,6 @@ subeconfigure() {
 	mkdir build
 	cd build
 	../configure \
-		AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP" \
-		CC="$CC" CXX="$CXX" \
 		CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
 		$CONFIGURE \
 		--build=$XHOST \
@@ -281,8 +280,7 @@ subeconfigure() {
 }
 
 setup_rootfs() {
-	mkdir -p $ROOTFS/{boot,dev,etc/{init.d,skel},home}
-	mkdir -p $ROOTFS/{mnt,opt,proc,srv,sys}
+	mkdir -p $ROOTFS/{boot,dev,etc/{init.d,skel},home,mnt,proc,sys}
 	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
 	install -d -m 0750 $ROOTFS/root
 	install -d -m 1777 $ROOTFS/{var/,}tmp
@@ -402,7 +400,9 @@ cook_system() {
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
 	subeconfigure \
-		--with-sysroot=$ROOTFS \
+		--with-mpc=$ROOTFS/usr \
+		--with-mpfr=$ROOTFS/usr \
+		--with-gmp=$ROOTFS/usr \
 		--with-system-zlib \
 		--enable-__cxa_atexit \
 		--enable-checking=release \
