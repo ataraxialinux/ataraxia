@@ -9,10 +9,10 @@ mk - the JanusLinux build tool.
 
 Usage: sudo BARCH=[supported architecture] ./mk [one of following option]
 
-	toolchain	Build a cross-toolchain
-	image		Build a bootable *.iso image
-	container	Build a docker container
 	all		Build a full JanusLinux system
+	container	Build a docker container
+	image		Build a bootable *.iso image
+	toolchain	Build a cross-toolchain
 
 EOF
 	exit 0
@@ -212,6 +212,205 @@ build_toolchain() {
 	make install
 }
 
+setup_variables() {
+	export CFLAGS=""
+	export CXXFLAGS="$CFLGAS"
+	export LDFLAGS="-Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
+	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
+	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
+	export AR="$XTARGET-ar"
+	export AS="$XTARGET-as"
+	export LD="$XTARGET-ld --sysroot=$ROOTFS"
+	export RANLIB="$XTARGET-ranlib"
+	export READELF="$XTARGET-readelf"
+	export STRIP="$XTARGET-strip"
+}
+
+cleanup_old_sources() {
+	rm -rf $SOURCES/*
+}
+
+build_rootfs() {
+	cd $SOURCES
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.14.tar.xz
+	tar -xf linux-4.14.14.tar.xz
+	cd linux-4.14.14
+	make mrproper
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
+	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
+
+	cd $SOURCES
+	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
+	./configure CROSS_COMPILE="$XTARGET-" \
+		$XCONFIGURE \
+		--syslibdir=/usr/lib \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-optimize=size
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
+	tar -xf libz-1.2.8.2015.12.26.tar.gz
+	cd libz-1.2.8.2015.12.26
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
+	tar -xf file-5.32.tar.gz
+	cd file-5.32
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+	tar -xf m4-1.4.18.tar.xz
+	cd m4-1.4.18
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	tar -xf gmp-6.1.2.tar.xz
+	cd gmp-6.1.2
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-cxx
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://www.mpfr.org/mpfr-4.0.0/mpfr-4.0.0.tar.xz
+	tar -xf mpfr-4.0.0.tar.xz
+	cd mpfr-4.0.0
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+	tar -xf mpc-1.1.0.tar.gz
+	cd mpc-1.1.0
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
+	tar -xf bison-3.0.4.tar.xz
+	cd bison-3.0.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+	tar -xf flex-2.6.4.tar.gz
+	cd flex-2.6.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir build
+	cd build
+	../configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--with-system-zlib \
+		--enable-deterministic-archives \
+		--enable-gold \
+		--enable-ld=default \
+		--enable-plugins \
+		--enable-shared \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	tar -xf gcc-7.2.0.tar.xz
+	cd gcc-7.2.0
+	export gcc_cv_prog_makeinfo_modern=no
+	export libat_cv_have_ifunc=no
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	mkdir build
+	cd build
+	../configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-fully-dynamic-string \
+		--enable-languages=c,c++ \
+		--enable-libstdcxx-time \
+		--enable-lto \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-bootstrap \
+		--disable-gnu-indirect-function \
+		--disable-libcilkrts \
+		--disable-libitm \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror
+	make -j$XJOBS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD"
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+}
+
 case "$1" in
 	toolchain)
 		check_root
@@ -219,6 +418,16 @@ case "$1" in
 		setup_build_env
 		prepare_toolchain
 		build_toolchain
+		;;
+	container)
+		check_root
+		configure_arch
+		setup_build_env
+		prepare_toolchain
+		build_toolchain
+		setup_variables
+		cleanup_old_sources
+		build_rootfs
 		;;
 	usage|*)
 		usage
