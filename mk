@@ -114,16 +114,16 @@ build_toolchain() {
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.6.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
+	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	tar xf ../mpfr-3.1.6.tar.xz
-	mv mpfr-3.1.6 mpfr
+	tar xf ../mpfr-4.0.0.tar.xz
+	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
-	tar xf ../mpc-1.0.3.tar.gz
-	mv mpc-1.0.3 mpc
+	tar xf ../mpc-1.1.0.tar.gz
+	mv mpc-1.1.0 mpc
 	mkdir build
 	cd build
 	../configure \
@@ -177,12 +177,12 @@ build_toolchain() {
 	rm -rf gcc-7.2.0
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	tar xf ../mpfr-3.1.6.tar.xz
-	mv mpfr-3.1.6 mpfr
+	tar xf ../mpfr-4.0.0.tar.xz
+	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
-	tar xf ../mpc-1.0.3.tar.gz
-	mv mpc-1.0.3 mpc
+	tar xf ../mpc-1.1.0.tar.gz
+	mv mpc-1.1.0 mpc
 	mkdir build
 	cd build
 	../configure \
