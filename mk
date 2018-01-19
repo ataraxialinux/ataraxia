@@ -253,13 +253,13 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c http://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
-	tar -xf libz-1.2.8.2015.12.26.tar.gz
-	cd libz-1.2.8.2015.12.26
+	wget -c http://zlib.net/zlib-1.2.11.tar.xz
+	tar -xf zlib-1.2.11.tar.xz
+	cd zlib-1.2.11
+	CHOST="$XTARGET" \
 	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET
+		--prefix=/usr \
+		--libdir=/usr/lib
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
