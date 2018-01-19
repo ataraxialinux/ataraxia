@@ -323,31 +323,6 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
-	tar -xf bison-3.0.4.tar.xz
-	cd bison-3.0.4
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-nls
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
-	tar -xf flex-2.6.4.tar.gz
-	cd flex-2.6.4
-	patch -Np1 -i $KEEP/110-gcc720-segfault.patch
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-nls
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
 	tar -xf binutils-2.29.1.tar.bz2
 	cd binutils-2.29.1
@@ -435,3 +410,4 @@ case "$1" in
 esac
 
 exit 0
+
