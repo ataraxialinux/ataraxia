@@ -83,6 +83,17 @@ prepare_toolchain() {
 
 build_toolchain() {
 	cd $SOURCES
+	wget -c https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
+	tar -xf pkg-config-0.29.2.tar.gz
+	cd pkg-config-0.29.2
+	./configure \
+		--prefix=$TOOLS \
+		--host=$XTARGET \
+		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
+	make -j$XJOBS
+	make install
+
+	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
 	tar -xf binutils-2.29.1.tar.bz2
 	cd binutils-2.29.1
@@ -105,9 +116,9 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.14.tar.xz
-	tar -xf linux-4.14.14.tar.xz
-	cd linux-4.14.14
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.77.tar.xz
+	tar -xf linux-4.9.77.tar.xz
+	cd linux-4.9.77
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
@@ -213,9 +224,9 @@ build_toolchain() {
 }
 
 setup_variables() {
-	export CFLAGS=""
+	export CFLAGS="-Os -g0"
 	export CXXFLAGS="$CFLGAS"
-	export LDFLAGS="-Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
+	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
@@ -230,11 +241,41 @@ cleanup_old_sources() {
 	rm -rf $SOURCES/*
 }
 
+setup_rootfs() {
+	mkdir -p $ROOTFS/{boot,dev,etc/skel,home,mnt,proc,sys}
+	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
+	install -d -m 0750 $ROOTFS/root
+	install -d -m 1777 $ROOTFS/{var/,}tmp
+	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/modules,share}
+
+	cd $ROOTFS/usr
+	ln -sf bin sbin
+
+	cd $ROOTFS
+	ln -sf usr/bin bin
+	ln -sf usr/lib lib
+	ln -sf usr/bin sbin
+
+	case $BARCH in
+		x86_64|arm64)
+			cd $ROOTFS/usr
+			ln -sf lib lib64
+			cd $ROOTFS
+			ln -sf lib lib64
+			;;
+	esac
+
+	ln -sf /proc/mounts $ROOTFS/etc/mtab
+
+	touch $ROOTFS/var/log/lastlog
+	chmod 664 $ROOTFS/var/log/lastlog
+}
+
 build_rootfs() {
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.14.tar.xz
-	tar -xf linux-4.14.14.tar.xz
-	cd linux-4.14.14
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.77.tar.xz
+	tar -xf linux-4.9.77.tar.xz
+	cd linux-4.9.77
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
@@ -246,8 +287,7 @@ build_rootfs() {
 	./configure CROSS_COMPILE="$XTARGET-" \
 		$XCONFIGURE \
 		--syslibdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
+		--target=$XTARGET \
 		--enable-optimize=size
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
@@ -256,7 +296,6 @@ build_rootfs() {
 	wget -c http://zlib.net/zlib-1.2.11.tar.xz
 	tar -xf zlib-1.2.11.tar.xz
 	cd zlib-1.2.11
-	CHOST="$XTARGET" \
 	./configure \
 		--prefix=/usr \
 		--libdir=/usr/lib
@@ -284,6 +323,55 @@ build_rootfs() {
 		--host=$XTARGET
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+	tar -xf flex-2.6.4.tar.gz
+	cd flex-2.6.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--cache-file=$KEEP/flex.cache \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
+	tar -xf bison-3.0.4.tar.xz
+	cd bison-3.0.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
+	tar -xf binutils-2.29.1.tar.bz2
+	cd binutils-2.29.1
+	mkdir build
+	cd build
+	../configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--with-system-zlib \
+		--enable-deterministic-archives \
+		--enable-gold \
+		--enable-ld=default \
+		--enable-plugins \
+		--enable-shared \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
@@ -323,35 +411,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
-	mkdir build
-	cd build
-	../configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--target=$XTARGET \
-		--with-system-zlib \
-		--enable-deterministic-archives \
-		--enable-gold \
-		--enable-ld=default \
-		--enable-plugins \
-		--enable-shared \
-		--disable-multilib \
-		--disable-nls \
-		--disable-werror
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
 	tar -xf gcc-7.2.0.tar.xz
 	cd gcc-7.2.0
-	export gcc_cv_prog_makeinfo_modern=no
-	export libat_cv_have_ifunc=no
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
 	cd build
@@ -382,7 +444,7 @@ build_rootfs() {
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror
-	make -j$XJOBS AS_FOR_TARGET="$AS" LD_FOR_TARGET="$LD"
+	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 }
@@ -403,6 +465,7 @@ case "$1" in
 		build_toolchain
 		setup_variables
 		cleanup_old_sources
+		setup_rootfs
 		build_rootfs
 		;;
 	usage|*)
