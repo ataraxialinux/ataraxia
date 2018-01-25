@@ -83,6 +83,24 @@ prepare_toolchain() {
 
 build_toolchain() {
 	cd $SOURCES
+	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
+	tar -xf file-5.32.tar.gz
+	cd file-5.32
+	./configure \
+		--prefix=$TOOLS
+	make -j$XJOBS
+	make install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+	tar -xf m4-1.4.18.tar.xz
+	cd m4-1.4.18
+	./configure \
+		--prefix=$TOOLS
+	make -j$XJOBS
+	make install
+
+	cd $SOURCES
 	wget -c https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
 	tar -xf pkg-config-0.29.2.tar.gz
 	cd pkg-config-0.29.2
