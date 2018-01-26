@@ -42,6 +42,8 @@ setup_build_env() {
 	export XCONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --enable-shared --disable-static"
 
 	export XJOBS="$(expr $(nproc) + 1)"
+
+    export HOSTCC="gcc"
 }
 
 configure_arch() {
@@ -101,15 +103,17 @@ build_toolchain() {
 	make install
 
 	cd $SOURCES
-	wget -c https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
-	tar -xf pkg-config-0.29.2.tar.gz
-	cd pkg-config-0.29.2
+	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
+	tar -xf pkgconf-1.4.1.tar.xz
+	cd pkgconf-1.4.1
 	./configure \
 		--prefix=$TOOLS \
 		--host=$XTARGET \
 		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
 	make -j$XJOBS
 	make install
+    cd $TOOLS/bin
+    ln -sf pkgconf pkg-config
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
@@ -134,19 +138,19 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.77.tar.xz
-	tar -xf linux-4.9.77.tar.xz
-	cd linux-4.9.77
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.15.tar.xz
+	tar -xf linux-4.14.15.tar.xz
+	cd linux-4.14.15
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-6.4.0/gcc-6.4.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
-	tar -xf gcc-7.3.0.tar.xz
-	cd gcc-7.3.0
+	tar -xf gcc-6.4.0.tar.xz
+	cd gcc-6.4.0
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -203,9 +207,9 @@ build_toolchain() {
 	make DESTDIR=$TOOLS install
 
 	cd $SOURCES
-	rm -rf gcc-7.3.0
-	tar -xf gcc-7.3.0.tar.xz
-	cd gcc-7.3.0
+	rm -rf gcc-6.4.0
+	tar -xf gcc-6.4.0.tar.xz
+	cd gcc-6.4.0
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -279,7 +283,7 @@ setup_rootfs() {
 			cd $ROOTFS/usr
 			ln -sf lib lib64
 			cd $ROOTFS
-			ln -sf lib lib64
+			ln -sf usr/lib lib64
 			;;
 	esac
 
@@ -291,9 +295,9 @@ setup_rootfs() {
 
 build_rootfs() {
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.9.77.tar.xz
-	tar -xf linux-4.9.77.tar.xz
-	cd linux-4.9.77
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.15.tar.xz
+	tar -xf linux-4.14.15.tar.xz
+	cd linux-4.14.15
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
@@ -302,10 +306,9 @@ build_rootfs() {
 	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
-	./configure CROSS_COMPILE="$XTARGET-" \
+    CROSS_COMPILE="$XTARGET-" \
+	./configure \
 		$XCONFIGURE \
-		--syslibdir=/usr/lib \
-		--target=$XTARGET \
 		--enable-optimize=size
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
@@ -329,7 +332,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install-strip
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
@@ -339,6 +342,31 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+	tar -xf flex-2.6.4.tar.gz
+	cd flex-2.6.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
+	tar -xf bison-3.0.4.tar.xz
+	cd bison-3.0.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --enable-threads=posix \
+        --disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
@@ -363,7 +391,7 @@ build_rootfs() {
 		--disable-nls \
 		--disable-werror
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -376,7 +404,7 @@ build_rootfs() {
 		--host=$XTARGET \
 		--enable-cxx
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -388,7 +416,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -400,14 +428,13 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
-	tar -xf gcc-7.3.0.tar.xz
-	cd gcc-7.3.0
-	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-6.4.0/gcc-6.4.0.tar.xz
+	tar -xf gcc-6.4.0.tar.xz
+	cd gcc-6.4.0
 	mkdir build
 	cd build
 	../configure \
@@ -438,8 +465,78 @@ build_rootfs() {
 		--disable-symvers \
 		--disable-werror
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --enable-gettext=no
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+
+	cd $SOURCES
+	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --with-sysroot=$ROOTFS \
+        --enable-gettext=no
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
+	tar -xf libcap-2.25.tar.xz
+	cd libcap-2.25
+    sed -i '/install.*STALIBNAME/d' libcap/Makefile
+    sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+    sed -i 's@/bin/bash@/bin/sh@g' progs/capsh.c
+    sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
+	make -j$XJOBS
+    make BUILD_CC="$HOSTCC" CC="$CC" PKGCONFIGDIR=/usr/lib/pkgconfig RAISE_SETFCAP=no DESTDIR=$ROOTFS install
+    chmod 755 $ROOTFS/usr/lib/libcap.so.2.25
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
+	tar -xf sed-4.4.tar.xz
+	cd sed-4.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --disable-i18n \
+        --disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
+	tar -xf pkgconf-1.4.1.tar.xz
+	cd pkgconf-1.4.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --with-pkg-config-dir=/usr/lib/pkgconfig:/usr/share/pkgconfig
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+    cd $ROOTFS/usr/bin
+    ln -sf pkgconf pkg-config
+
+	cd $SOURCES
+	wget -c http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
+	tar -xf netbsd-curses-0.2.1.tar.xz
+	cd netbsd-curses-0.2.1
+	make CFLAGS="-Os -Wall -fPIC" PREFIX=/usr DESTDIR=$ROOTFS -j$XJOBS all install
 }
 
 case "$1" in
