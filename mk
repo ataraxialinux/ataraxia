@@ -141,12 +141,12 @@ build_toolchain() {
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
-	tar -xf gcc-7.2.0.tar.xz
-	cd gcc-7.2.0
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -203,9 +203,9 @@ build_toolchain() {
 	make DESTDIR=$TOOLS install
 
 	cd $SOURCES
-	rm -rf gcc-7.2.0
-	tar -xf gcc-7.2.0.tar.xz
-	cd gcc-7.2.0
+	rm -rf gcc-7.3.0
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -404,9 +404,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.xz
-	tar -xf gcc-7.2.0.tar.xz
-	cd gcc-7.2.0
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
 	cd build
