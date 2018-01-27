@@ -469,74 +469,67 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
-	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
-	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
+	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
+	tar -xf make-4.2.1.tar.bz2
+	cd make-4.2.1
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --enable-gettext=no
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
-
-	cd $SOURCES
-	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
-	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
-	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-        --with-sysroot=$ROOTFS \
-        --enable-gettext=no
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
-	tar -xf libcap-2.25.tar.xz
-	cd libcap-2.25
-    sed -i '/install.*STALIBNAME/d' libcap/Makefile
-    sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
-    sed -i 's@/bin/bash@/bin/sh@g' progs/capsh.c
-    sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
-	make -j$XJOBS
-    make BUILD_CC="$HOSTCC" CC="$CC" PKGCONFIGDIR=/usr/lib/pkgconfig RAISE_SETFCAP=no DESTDIR=$ROOTFS install
-    chmod 755 $ROOTFS/usr/lib/libcap.so.2.25
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
-	tar -xf sed-4.4.tar.xz
-	cd sed-4.4
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-        --disable-i18n \
+        --without-dmalloc \
+        --without-guile \
         --disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
-	tar -xf pkgconf-1.4.1.tar.xz
-	cd pkgconf-1.4.1
+	wget -c http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.8/e2fsprogs-1.43.8.tar.gz
+	tar -xf e2fsprogs-1.43.8.tar.gz
+	cd e2fsprogs-1.43.8
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --with-pkg-config-dir=/usr/lib/pkgconfig:/usr/share/pkgconfig
+        --disable-nls \
+        --disable-tls
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
-    cd $ROOTFS/usr/bin
-    ln -sf pkgconf pkg-config
+	make DESTDIR=$ROOTFS install install-libs
 
 	cd $SOURCES
-	wget -c http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
-	tar -xf netbsd-curses-0.2.1.tar.xz
-	cd netbsd-curses-0.2.1
-	make CFLAGS="-Os -Wall -fPIC" PREFIX=/usr DESTDIR=$ROOTFS -j$XJOBS all install
+	wget -c http://busybox.net/downloads/busybox-1.28.0.tar.bz2
+	tar -xf busybox-1.28.0.tar.bz2
+	cd busybox-1.28.0
+	make ARCH=$XKARCH defconfig
+    sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+    sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+    sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+    sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+    sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+    sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+    make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" -j$XJOBS
+    make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" CONFIG_PREFIX=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bc/bc-1.07.1.tar.gz
+	tar -xf bc-1.07.1.tar.gz
+	cd bc-1.07.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c https://sourceware.org/ftp/elfutils/0.170/elfutils-0.170.tar.bz2
+	tar -xf elfutils-0.170.tar.bz2
+	cd elfutils-0.170
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make -C libelf DESTDIR=$ROOTFS install
 }
 
 case "$1" in
@@ -557,6 +550,21 @@ case "$1" in
 		cleanup_old_sources
 		setup_rootfs
 		build_rootfs
+        strip_rootfs
+        prepare_rootfs
+		;;
+    image)
+		check_root
+		configure_arch
+		setup_build_env
+		prepare_toolchain
+		build_toolchain
+		setup_variables
+		cleanup_old_sources
+		setup_rootfs
+		build_rootfs
+        strip_rootfs
+        prepare_rootfs
 		;;
 	usage|*)
 		usage
