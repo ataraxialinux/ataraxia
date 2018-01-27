@@ -296,7 +296,7 @@ setup_rootfs() {
 		install -m644 $KEEP/etc/$f $ROOTFS/etc
 	done
 
-	chmod 640 $ROOTFS/etc/shadow
+	install -m600 $KEEP/etc/{gshadow,shadow} $ROOTFS/etc
 
 	for f in rc.startup rc.shutdown rc.dhcp; do
 		install -m644 $KEEP/initscripts/$f $ROOTFS/etc/init.d
