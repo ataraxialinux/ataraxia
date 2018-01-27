@@ -264,8 +264,8 @@ cleanup_old_sources() {
 }
 
 setup_rootfs() {
-	mkdir -p $ROOTFS/{boot,dev,etc/{init.d,skel},home,mnt,proc,sys}
-	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
+	mkdir -p $ROOTFS/{boot,dev,etc/{init.d,service,skel},home,mnt,proc,sys}
+	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,service,spool}
 	install -d -m 0750 $ROOTFS/root
 	install -d -m 1777 $ROOTFS/{var/,}tmp
 	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/modules,share}
