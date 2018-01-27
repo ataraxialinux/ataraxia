@@ -5,13 +5,14 @@ export PATH="/usr/bin:/usr/local/bin"
 dmesg -n 1
 
 echo Mounting virtual filesystems...
-mount -n -o nosuid,noexec,nodev -t proc proc /proc
-mount -n -o nosuid,noexec,nodev -t sysfs sysfs /sys
-mount -n -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc -o nosuid,noexec,nodev
+mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mount -t devtmpfs dev /dev -o mode=0755,nosuid
 mkdir -p /dev/pts /dev/shm
-mount -n -o mode=0620,gid=5 -t devpts devpts /dev/pts
-mount -n -o defaults -t tmpfs none /dev/shm
-mount -n -o defaults -t tmpfs tmpfs /run
+mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+mount -t tmpfs tmpfs /run
 
 echo Starting mdev hotplug...
 echo /sbin/mdev > /proc/sys/kernel/hotplug
