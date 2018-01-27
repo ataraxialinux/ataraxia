@@ -6,7 +6,7 @@ JanusLinux is fast and mini [Linux](https://www.kernel.org/) distribution which 
 
 ## For who?
 
-JanusLinux is made for people who likes CLI interface and for get Linux knowledge. It allows call JanusLinux: distribution for beginners.
+JanusLinux is made for people who likes CLI interface and to get Linux knowledge. It allows call JanusLinux: distribution for beginners.
 
 ## What hardware I can run it?
 
