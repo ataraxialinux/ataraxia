@@ -4,7 +4,7 @@ export PATH="/usr/bin:/usr/local/bin"
 
 dmesg -n 1
 
-echo Mounting virtual filesystems...
+echo Mounting pseudo file systems...
 mount -t proc proc /proc -o nosuid,noexec,nodev
 mount -t sysfs sys /sys -o nosuid,noexec,nodev
 mount -t tmpfs run /run -o mode=0755,nosuid,nodev
@@ -21,7 +21,7 @@ mdev -s
 echo Synchronizing clock...
 hwclock -u -s
 
-echo Mounting root read-only...
+echo Remounting root as read-only...
 mount -o remount,ro /
 
 echo Checking filesystem...
@@ -52,7 +52,7 @@ mount -o remount,rw /
 echo Activating swap...
 swapon -a
 
-echo Mounting filesystems...
+echo Mounting file systems...
 mount -a
 
 echo Cleaning misc files...
@@ -75,6 +75,14 @@ for DEVICE in /sys/class/net/* ; do
 	[ ${DEVICE##*/} = wlan0 ] && wpa_supplicant -B -iwlan0 -c/etc/wpa_supplicant.conf
 	[ ${DEVICE##*/} != lo ] && [ ${DEVICE##*/} != sit0 ] && udhcpc -b -i ${DEVICE##*/} -s /etc/init.d/rc.dhcp
 done
+
+echo Starting services
+service init
+
+if [ -x /etc/rc.local ]; then
+	echo Starting user's scripts
+	/etc/rc.local
+fi
 
 echo Saving boot messages...
 dmesg >> /var/log/dmesg.log
