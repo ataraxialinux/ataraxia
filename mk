@@ -43,7 +43,7 @@ setup_build_env() {
 
 	export XJOBS="$(expr $(nproc) + 1)"
 
-    export HOSTCC="gcc"
+	export HOSTCC="gcc"
 }
 
 configure_arch() {
@@ -112,8 +112,8 @@ build_toolchain() {
 		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
 	make -j$XJOBS
 	make install
-    cd $TOOLS/bin
-    ln -sf pkgconf pkg-config
+	cd $TOOLS/bin
+	ln -sf pkgconf pkg-config
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
@@ -302,9 +302,20 @@ setup_rootfs() {
 		install -m644 $KEEP/initscripts/$f $ROOTFS/etc/init.d
 		chmod +x $ROOTFS/etc/init.d/$f
 	done
+
+	install -m644 $KEEP/service $ROOTFS/usr/bin/service
+	chmod +x $ROOTFS/usr/bin/service
 }
 
 build_rootfs() {
+        cd $SOURCES
+        wget -c http://sethwklein.net/iana-etc-2.30.tar.bz2
+        tar -xf iana-etc-2.30.tar.bz2
+        cd iana-etc-2.30
+	make get
+	make STRIP=yes
+	make DESTDIR=$ROOTFS install
+
 	cd $SOURCES
 	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.15.tar.xz
 	tar -xf linux-4.14.15.tar.xz
@@ -317,7 +328,7 @@ build_rootfs() {
 	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
 	tar -xf musl-1.1.18.tar.gz
 	cd musl-1.1.18
-    CROSS_COMPILE="$XTARGET-" \
+	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$XCONFIGURE \
 		--enable-optimize=size
@@ -364,7 +375,7 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --disable-nls
+		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
 
@@ -376,8 +387,8 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --enable-threads=posix \
-        --disable-nls
+		--enable-threads=posix \
+		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
@@ -487,9 +498,9 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --without-dmalloc \
-        --without-guile \
-        --disable-nls
+		--without-dmalloc \
+		--without-guile \
+		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
@@ -501,8 +512,8 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --disable-nls \
-        --disable-tls
+		--disable-nls \
+		--disable-tls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install install-libs
 
@@ -514,8 +525,8 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-        --disable-nls \
-        --disable-vlock
+		--disable-nls \
+		--disable-vlock
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
@@ -524,14 +535,14 @@ build_rootfs() {
 	tar -xf busybox-1.28.0.tar.bz2
 	cd busybox-1.28.0
 	make ARCH=$XKARCH defconfig
-    sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
-    sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
-    sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
-    sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
-    sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
-    sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
-    make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" -j$XJOBS
-    make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" CONFIG_PREFIX=$ROOTFS install
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" -j$XJOBS
+	make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" CONFIG_PREFIX=$ROOTFS install
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/bc/bc-1.07.1.tar.gz
@@ -557,17 +568,17 @@ build_rootfs() {
 }
 
 strip_rootfs() {
-    find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
-    find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
-    find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip -g  
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip -g  
 }
 
 prepare_rootfs() {
-    cd $ROOTFS
+	cd $ROOTFS
 	ln -s usr/bin/busybox init
-    rm linuxrc
+	rm linuxrc
 
-    chmod 4555 usr/bin/busybox
+	chmod 4555 usr/bin/busybox
 }
 
 case "$1" in
@@ -588,10 +599,10 @@ case "$1" in
 		cleanup_old_sources
 		setup_rootfs
 		build_rootfs
-        strip_rootfs
-        prepare_rootfs
+		strip_rootfs
+		prepare_rootfs
 		;;
-    image)
+	image)
 		check_root
 		configure_arch
 		setup_build_env
@@ -601,8 +612,8 @@ case "$1" in
 		cleanup_old_sources
 		setup_rootfs
 		build_rootfs
-        strip_rootfs
-        prepare_rootfs
+		strip_rootfs
+		prepare_rootfs
 		;;
 	usage|*)
 		usage
