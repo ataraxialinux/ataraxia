@@ -246,9 +246,9 @@ build_toolchain() {
 }
 
 setup_variables() {
-	export CFLAGS="-Os -g0"
+	export CFLAGS="-fdata-sections -ffunction-sections -Os -g0 -fno-unwind-tables -fno-asynchronous-unwind-tables -Wa,--noexecstack"
 	export CXXFLAGS="$CFLGAS"
-	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
+	export LDFLAGS="-s -Wl,--gc-sections -Wl,-z,relro,-z,now -Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
@@ -291,6 +291,17 @@ setup_rootfs() {
 
 	touch $ROOTFS/var/log/lastlog
 	chmod 664 $ROOTFS/var/log/lastlog
+
+	for f in fstab group host.conf hostname hosts inittab issue passwd profile securetty shadow shells sysctl.conf; do
+		install -m644 $KEEP/etc/$f $ROOTFS/etc
+	done
+
+	chmod 640 $ROOTFS/etc/shadow
+
+	for f in rc.startup rc.shutdown rc.dhcp; do
+		install -m644 $KEEP/initscripts/$f $ROOTFS/etc/init.d
+		chmod +x $ROOTFS/etc/init.d/$f
+	done
 }
 
 build_rootfs() {
@@ -496,6 +507,19 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install install-libs
 
 	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
+	tar -xf kbd-2.0.4.tar.xz
+	cd kbd-2.0.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+        --disable-nls \
+        --disable-vlock
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
 	wget -c http://busybox.net/downloads/busybox-1.28.0.tar.bz2
 	tar -xf busybox-1.28.0.tar.bz2
 	cd busybox-1.28.0
@@ -530,6 +554,20 @@ build_rootfs() {
 		--host=$XTARGET
 	make -j$XJOBS
 	make -C libelf DESTDIR=$ROOTFS install
+}
+
+strip_rootfs() {
+    find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
+    find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
+    find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip -g  
+}
+
+prepare_rootfs() {
+    cd $ROOTFS
+	ln -s usr/bin/busybox init
+    rm linuxrc
+
+    chmod 4555 usr/bin/busybox
 }
 
 case "$1" in
