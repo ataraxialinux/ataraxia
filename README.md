@@ -2,7 +2,7 @@
 
 ## What is this?
 
-JanusLinux is fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/) and [busybox](https://www.busybox.net/) userland tools. It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). JanusLinux uses LibreSSL as SSL engine because it is small and "clean".
+JanusLinux is fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/) and [busybox](https://www.busybox.net/) userland tools. It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). JanusLinux uses [LibreSSL](https://www.libressl.org/) as SSL engine because it is small and "clean".
 
 ## For who?
 
@@ -18,7 +18,7 @@ You can download [current alpha version](https://github.com/protonesso/janus/rel
 
 ## How I can contact and help you with development?
 
-You can write me on [email](mailto:nagakamira@gmail.com) or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new).
+You can write me on [email](mailto:nagakamira@gmail.com) and give some suggestions or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new).
 
 ## Releases information and roadmap
 
