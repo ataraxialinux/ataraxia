@@ -636,6 +636,10 @@ strip_rootfs() {
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs $STRIP --strip-all      2>/dev/null || true
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug
+
+	find $ROOTFS \( -name .la \) -delete
+
+	rm -rf $ROOTFS/usr/share/{doc,man,misc,info}
 }
 
 case "$1" in
