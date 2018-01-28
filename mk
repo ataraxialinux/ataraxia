@@ -301,11 +301,11 @@ setup_rootfs() {
 	touch $ROOTFS/var/log/lastlog
 	chmod 664 $ROOTFS/var/log/lastlog
 
-	for f in fstab group host.conf hostname hosts inittab issue passwd profile rc.conf securetty shadow shells sysctl.conf; do
+	for f in fstab group host.conf hostname hosts inittab issue passwd profile rc.conf securetty shells sysctl.conf; do
 		install -m644 $KEEP/etc/$f $ROOTFS/etc
 	done
 
-	install -m600 $KEEP/etc/{gshadow,shadow} $ROOTFS/etc
+	install -m600 $KEEP/etc/shadow $ROOTFS/etc
 
 	for f in rc.local rc.startup rc.shutdown; do
 		install -m644 $KEEP/initscripts/$f $ROOTFS/etc/init.d
