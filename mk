@@ -44,6 +44,10 @@ setup_build_env() {
 	export XJOBS="$(expr $(nproc) + 1)"
 
 	export HOSTCC="gcc"
+
+	export BCFLAGS="-pipe -fdata-sections -ffunction-sections -Os -g0 -fno-unwind-tables -fno-asynchronous-unwind-tables -Wa,--noexecstack"
+	export BCXXFLAGS="$BCFLGAS"
+	export BLDFLAGS="-s -Wl,--gc-sections -Wl,-z,relro,-z,now"
 }
 
 configure_arch() {
@@ -81,6 +85,10 @@ configure_arch() {
 prepare_toolchain() {
 	cd $TOOLS
 	ln -sf . usr
+
+	export CFLAGS="$BCFLAGS"
+	export CXXFLAGS="$BCXXFLAGS"
+	export LDFLAGS="$BLDFLAGS"
 }
 
 build_toolchain() {
@@ -246,9 +254,9 @@ build_toolchain() {
 }
 
 setup_variables() {
-	export CFLAGS="-fdata-sections -ffunction-sections -Os -g0 -fno-unwind-tables -fno-asynchronous-unwind-tables -Wa,--noexecstack"
-	export CXXFLAGS="$CFLGAS"
-	export LDFLAGS="-s -Wl,--gc-sections -Wl,-z,relro,-z,now -Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
+	export CFLAGS="$BCFLAGS"
+	export CXXFLAGS="$BCXXFLAGS"
+	export LDFLAGS="$BLDFLAGS -Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
@@ -261,6 +269,7 @@ setup_variables() {
 
 cleanup_old_sources() {
 	rm -rf $SOURCES/*
+	unset CFLAGS CXXFLAGS LDFLAGS
 }
 
 setup_rootfs() {
@@ -464,7 +473,6 @@ build_rootfs() {
 		--enable-languages=c,c++ \
 		--enable-libstdcxx-time \
 		--enable-lto \
-		--enable-shared \
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-bootstrap \
@@ -579,6 +587,7 @@ build_rootfs() {
 		--with-group-max-length=32 \
 		--without-audit \
 		--without-libcrack \
+		--without-libpam \
 		--without-nscd \
 		--without-selinux \
 		--disable-nls
@@ -609,6 +618,7 @@ build_rootfs() {
 		--disable-runuser \
 		--disable-setpriv \
 		--disable-su \
+		--disable-sulogin \
 		--disable-tls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
@@ -623,9 +633,9 @@ build_rootfs() {
 }
 
 strip_rootfs() {
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip -g  
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs $STRIP --strip-all      2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug
 }
 
 case "$1" in
