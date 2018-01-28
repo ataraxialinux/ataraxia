@@ -1,6 +1,10 @@
 #!/bin/sh
 
+. /etc/rc.conf
+
 export PATH="/usr/bin:/usr/local/bin"
+
+export HST="$(cat /etc/hostname)"
 
 dmesg -n 1
 
@@ -14,9 +18,17 @@ mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
 mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 mount -t tmpfs tmpfs /run
 
-echo Starting mdev hotplug...
-echo /sbin/mdev > /proc/sys/kernel/hotplug
-mdev -s
+echo Starting udev daemon...
+udevd --daemon
+udevadm trigger --type=subsystems --action=add
+udevadm trigger --type=devices    --action=add
+udevadm settle
+
+if [ -x lvm ]; then
+	echo Scanning volume groups...
+	vgscan --mknodes --ignorelockingfailure
+	vgchange --sysinit -a y
+fi
 
 echo Synchronizing clock...
 hwclock -u -s
@@ -24,7 +36,7 @@ hwclock -u -s
 echo Remounting root as read-only...
 mount -o remount,ro /
 
-echo Checking filesystem...
+echo Checking file system...
 fsck -A -T -C -a
 if [ $? -gt 1 ]; then
 	echo
@@ -66,22 +78,21 @@ mkdir -m 1777 /tmp/.ICE-unix
 echo Set up kernel variables...
 sysctl -p
 
-echo Setting hostname to $(cat /etc/hostname)...
-hostname $(cat /etc/hostname)
+echo Setting hostname to $HST...
+hostname $HST
 
-echo Starting networking...
-for DEVICE in /sys/class/net/* ; do
-	ip link set ${DEVICE##*/} up
-	[ ${DEVICE##*/} = wlan0 ] && wpa_supplicant -B -iwlan0 -c/etc/wpa_supplicant.conf
-	[ ${DEVICE##*/} != lo ] && [ ${DEVICE##*/} != sit0 ] && udhcpc -b -i ${DEVICE##*/} -s /etc/init.d/rc.dhcp
-done
+echo Setting font to $FONT
+setfont $FONT
 
-echo Starting services
+echo Setting keyboard layout to $KEYMAP
+loadkeys -q $KEYMAP
+
+echo Starting services...
 service init
 
-if [ -x /etc/rc.local ]; then
-	echo Starting user's scripts
-	/etc/rc.local
+if [ -x /etc/init.d/rc.local ]; then
+	echo Starting user scripts...
+	/etc/init.d/rc.local
 fi
 
 echo Saving boot messages...

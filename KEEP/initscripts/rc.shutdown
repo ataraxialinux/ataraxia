@@ -2,15 +2,17 @@
 
 export PATH="/usr/bin:/usr/local/bin"
 
-echo Shutting down...
+case $1 in
+    reboot)
+        echo System going to reboot...
+        ;;
+    *)
+	echo System going to shutdown...
+        ;;
+esac
 
 echo Stopping services...
 service shutdown
-
-echo Stopping networking...
-for DEVICE in /sys/class/net/* ; do
-	ip link set ${DEVICE##*/} down
-done
 
 echo Synchronizing clock...
 hwclock -u -w
@@ -34,4 +36,13 @@ umount -a -r
 echo Remounting root as read-only...
 mount -o remount,ro /
 
-echo Bye!
+case $1 in
+    reboot)
+        echo Rebooting...
+        halt -r
+        ;;
+    *)
+	echo Shutting down...
+        halt -p
+        ;;
+esac
