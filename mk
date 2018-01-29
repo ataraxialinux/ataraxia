@@ -146,9 +146,9 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.15.tar.xz
-	tar -xf linux-4.14.15.tar.xz
-	cd linux-4.14.15
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.tar.xz
+	tar -xf linux-4.15.tar.xz
+	cd linux-4.15
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
@@ -318,9 +318,9 @@ setup_rootfs() {
 
 build_rootfs() {
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.15.tar.xz
-	tar -xf linux-4.14.15.tar.xz
-	cd linux-4.14.15
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.tar.xz
+	tar -xf linux-4.15.tar.xz
+	cd linux-4.15
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
@@ -607,8 +607,6 @@ build_rootfs() {
 		--without-systemdsystemunitdir \
 		--without-systemd \
 		--without-python \
-		--without-selinux \
-		--without-audit \
 		--enable-raw \
 		--enable-write \
 		--disable-chfn-chsh \
@@ -639,7 +637,7 @@ strip_rootfs() {
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug
 
-	find $ROOTFS \( -name .la \) -delete
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	rm -rf $ROOTFS/usr/share/{doc,man,misc,info}
 }
