@@ -124,9 +124,9 @@ build_toolchain() {
 	ln -sf pkgconf pkg-config
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
+	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
+	tar -xf binutils-2.30.tar.bz2
+	cd binutils-2.30
 	mkdir build
 	cd build
 	../configure \
@@ -153,12 +153,12 @@ build_toolchain() {
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-6.4.0/gcc-6.4.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
-	tar -xf gcc-6.4.0.tar.xz
-	cd gcc-6.4.0
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -215,9 +215,9 @@ build_toolchain() {
 	make DESTDIR=$TOOLS install
 
 	cd $SOURCES
-	rm -rf gcc-6.4.0
-	tar -xf gcc-6.4.0.tar.xz
-	cd gcc-6.4.0
+	rm -rf gcc-7.3.0
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -394,9 +394,9 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.29.1.tar.bz2
-	tar -xf binutils-2.29.1.tar.bz2
-	cd binutils-2.29.1
+	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
+	tar -xf binutils-2.30.tar.bz2
+	cd binutils-2.30
 	mkdir build
 	cd build
 	../configure \
@@ -455,9 +455,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-6.4.0/gcc-6.4.0.tar.xz
-	tar -xf gcc-6.4.0.tar.xz
-	cd gcc-6.4.0
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
 	mkdir build
 	cd build
 	../configure \
@@ -469,6 +469,7 @@ build_rootfs() {
 		--enable-__cxa_atexit \
 		--enable-checking=release \
 		--enable-clocale=generic \
+		--enable-deterministic-archives \
 		--enable-fully-dynamic-string \
 		--enable-languages=c,c++ \
 		--enable-libstdcxx-time \
@@ -476,11 +477,13 @@ build_rootfs() {
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-bootstrap \
+		--disable-decimal-float \
 		--disable-gnu-indirect-function \
 		--disable-libcilkrts \
 		--disable-libitm \
 		--disable-libmpx \
 		--disable-libmudflap \
+		--disable-libquadmath \
 		--disable-libsanitizer \
 		--disable-libstdcxx-pch \
 		--disable-multilib \
