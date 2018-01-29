@@ -556,9 +556,9 @@ build_rootfs() {
 	ln -s pkgconf $ROOTFS/usr/bin/pkg-config
 
 	cd $SOURCES
-	wget -c http://invisible-mirror.net/archives/ncurses/current/ncurses-6.0-20180121.tgz
-	tar -xf ncurses-6.0-20180121.tgz
-	cd ncurses-6.0-20180121
+	wget -c http://ftp.gnu.org/gnu/ncurses/ncurses-6.1.tar.gz
+	tar -xf ncurses-6.1.tar.gz
+	cd ncurses-6.1
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
