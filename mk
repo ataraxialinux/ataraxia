@@ -598,6 +598,7 @@ build_rootfs() {
 	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
 	tar -xf util-linux-2.31.1.tar.xz
 	cd util-linux-2.31.1
+	sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' $(grep -rl '/etc/adjtime' .)
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -606,14 +607,15 @@ build_rootfs() {
 		--without-systemdsystemunitdir \
 		--without-systemd \
 		--without-python \
+		--without-selinux \
+		--without-audit \
 		--enable-raw \
 		--enable-write \
 		--disable-chfn-chsh \
-		--disable-kill \
-		--disable-last \
 		--disable-login \
-		--disable-nologin \
 		--disable-nls \
+		--disable-nologin \
+		--disable-pylibmount \
 		--disable-rpath \
 		--disable-runuser \
 		--disable-setpriv \
