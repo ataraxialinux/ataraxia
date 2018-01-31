@@ -111,6 +111,17 @@ build_toolchain() {
 	make install
 
 	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/ncurses/ncurses-6.1.tar.gz
+	tar -xf ncurses-6.1.tar.gz
+	cd ncurses-6.1
+	./configure \
+		--prefix=$TOOLS \
+		--without-debug
+	make -C include -j$XJOBS
+	make -C progs tic -j$XJOBS
+	install -v -m755 progs/tic $TOOLS/bin
+
+	cd $SOURCES
 	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
 	tar -xf pkgconf-1.4.1.tar.xz
 	cd pkgconf-1.4.1
@@ -256,7 +267,7 @@ build_toolchain() {
 setup_variables() {
 	export CFLAGS="$BCFLAGS"
 	export CXXFLAGS="$BCXXFLAGS"
-	export LDFLAGS="$BLDFLAGS -Wl,-rpath-link,$ROOTFS/usr/lib:$ROOTFS/lib"
+	export LDFLAGS="$BLDFLAGS -Wl,-rpath-link,$ROOTFS/usr/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
@@ -265,6 +276,7 @@ setup_variables() {
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
+	export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig"
 }
 
 cleanup_old_sources() {
@@ -356,6 +368,7 @@ build_rootfs() {
 		--host=$XTARGET
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
@@ -367,6 +380,7 @@ build_rootfs() {
 		--host=$XTARGET
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
@@ -379,6 +393,7 @@ build_rootfs() {
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
@@ -392,6 +407,7 @@ build_rootfs() {
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
@@ -502,6 +518,7 @@ build_rootfs() {
 		--enable-gettext=no
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
@@ -511,10 +528,10 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--enable-gettext=no
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
@@ -524,6 +541,7 @@ build_rootfs() {
 	sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
 	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" -j$XJOBS
 	make RAISE_SETFCAP=no prefix=/usr DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 	chmod 755 $ROOTFS/usr/lib/libcap.so
 
 	cd $SOURCES
@@ -534,11 +552,11 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--disable-i18n \
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
@@ -550,6 +568,7 @@ build_rootfs() {
 		--host=$XTARGET
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 	ln -s pkgconf $ROOTFS/usr/bin/pkg-config
 
 	cd $SOURCES
@@ -561,19 +580,17 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET \
 		--with-pkg-config-libdir=/usr/lib/pkgconfig \
-		--with-normal \
 		--with-shared \
+		--with-normal \
 		--without-ada \
-		--without-cxx-binding \
 		--without-debug \
 		--without-manpages \
-		--without-tests \
 		--enable-pc-files \
 		--enable-symlinks \
-		--enable-widec \
-		--disable-nls
+		--enable-widec
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c https://github.com/shadow-maint/shadow/releases/download/4.5/shadow-4.5.tar.xz
@@ -583,7 +600,6 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--with-group-max-length=32 \
 		--without-audit \
 		--without-libcrack \
@@ -593,17 +609,18 @@ build_rootfs() {
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
 	tar -xf util-linux-2.31.1.tar.xz
 	cd util-linux-2.31.1
 	sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' $(grep -rl '/etc/adjtime' .)
+	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib"
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--without-systemdsystemunitdir \
 		--without-systemd \
 		--without-python \
@@ -622,6 +639,57 @@ build_rootfs() {
 		--disable-tls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.12.tar.xz
+	tar -xf procps-ng-3.3.12.tar.xz
+	cd procps-ng-3.3.12
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-systemd \
+		--disable-kill \
+		--disable-nls \
+		--disable-rpath
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.8/e2fsprogs-1.43.8.tar.gz
+	tar -xf e2fsprogs-1.43.8.tar.gz
+	cd e2fsprogs-1.43.8
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-elf-shlibs \
+		--enable-symlink-install \
+		--disable-fsck \
+		--disable-libblkid \
+		--disable-libuuid \
+		--disable-nls \
+		--disable-tls \
+		--disable-uuidd
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install install-libs
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
+	tar -xf coreutils-8.29.tar.xz
+	cd coreutils-8.29
+	./configure FORCE_UNSAFE_CONFIGURE=1 \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-no-install-program=kill,uptime,hostname \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c http://sethwklein.net/iana-etc-2.30.tar.bz2
