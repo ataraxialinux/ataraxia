@@ -4,16 +4,12 @@ set -e
 
 usage() {
 cat <<EOF
-
 mk - the JanusLinux build tool.
-
 Usage: sudo BARCH=[supported architecture] ./mk [one of following option]
-
 	all		Build a full JanusLinux system
 	container	Build a docker container
 	image		Build a bootable *.iso image
 	toolchain	Build a cross-toolchain
-
 EOF
 	exit 0
 }
@@ -44,37 +40,29 @@ setup_build_env() {
 	export XJOBS="$(expr $(nproc) + 1)"
 
 	export HOSTCC="gcc"
-
-	export BCFLAGS="-pipe -fdata-sections -ffunction-sections -Os -g0 -fno-unwind-tables -fno-asynchronous-unwind-tables -Wa,--noexecstack"
-	export BCXXFLAGS="$BCFLGAS"
-	export BLDFLAGS="-s -Wl,--gc-sections -Wl,-z,relro,-z,now"
 }
 
 configure_arch() {
 	case $BARCH in
 		x86_64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="x86_64-pc-linux-musl"
+			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
 		i686)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-pc-linux-musl"
+			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
-			export GCCOPTS="--with-arch=i686 --with-tune=generic"
 			;;
 		arm64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="aarch64-pc-linux-musl"
+			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
-			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
 			;;
 		arm)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="arm-pc-linux-musleabihf"
+			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
 		*)
 			echo "BARCH variable isn't set..."
@@ -82,192 +70,19 @@ configure_arch() {
 	esac
 }
 
-prepare_toolchain() {
-	cd $TOOLS
-	ln -sf . usr
-
-	export CFLAGS="$BCFLAGS"
-	export CXXFLAGS="$BCXXFLAGS"
-	export LDFLAGS="$BLDFLAGS"
-}
-
 build_toolchain() {
 	cd $SOURCES
-	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
-	tar -xf file-5.32.tar.gz
-	cd file-5.32
-	./configure \
-		--prefix=$TOOLS
-	make -j$XJOBS
-	make install
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
-	tar -xf m4-1.4.18.tar.xz
-	cd m4-1.4.18
-	./configure \
-		--prefix=$TOOLS
-	make -j$XJOBS
-	make install
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/ncurses/ncurses-6.1.tar.gz
-	tar -xf ncurses-6.1.tar.gz
-	cd ncurses-6.1
-	./configure \
-		--prefix=$TOOLS \
-		--without-debug
-	make -C include -j$XJOBS
-	make -C progs tic -j$XJOBS
-	install -v -m755 progs/tic $TOOLS/bin
-
-	cd $SOURCES
-	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
-	tar -xf pkgconf-1.4.1.tar.xz
-	cd pkgconf-1.4.1
-	./configure \
-		--prefix=$TOOLS \
-		--host=$XTARGET \
-		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
-	make -j$XJOBS
-	make install
-	cd $TOOLS/bin
-	ln -sf pkgconf pkg-config
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
-	tar -xf binutils-2.30.tar.bz2
-	cd binutils-2.30
-	mkdir build
-	cd build
-	../configure \
-		AR="ar" AS="as" \
-		--prefix=$TOOLS \
-		--host=$XHOST \
-		--target=$XTARGET \
-		--with-sysroot=$TOOLS \
-		--enable-deterministic-archives \
-		--disable-cloog-version-check \
-		--disable-compressed-debug-sections \
-		--disable-ppl-version-check \
-		--disable-nls \
-		--disable-multilib \
-		--disable-werror
-	make -j$XJOBS MAKEINFO="true"
-	make MAKEINFO="true" install
-
-	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.tar.xz
-	tar -xf linux-4.15.tar.xz
-	cd linux-4.15
-	make mrproper
-	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
-	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
-	tar -xf gcc-7.3.0.tar.xz
-	cd gcc-7.3.0
-	tar xf ../mpfr-4.0.0.tar.xz
-	mv mpfr-4.0.0 mpfr
-	tar xf ../gmp-6.1.2.tar.xz
-	mv gmp-6.1.2 gmp
-	tar xf ../mpc-1.1.0.tar.gz
-	mv mpc-1.1.0 mpc
-	mkdir build
-	cd build
-	../configure \
-		AR="ar" \
-		--prefix=$TOOLS \
-		--libdir=$TOOLS/lib \
-		--build=$XHOST \
-		--host=$XHOST \
-		--target=$XTARGET \
-		--with-sysroot=$TOOLS \
-		--with-newlib \
-		--without-headers \
-		--without-ppl \
-		--without-cloog \
-		--enable-clocale=generic \
-		--enable-languages=c \
-		--disable-decimal-float \
-		--disable-gnu-indirect-function \
-		--disable-libatomic \
-		--disable-libcilkrts \
-		--disable-libgomp \
-		--disable-libitm \
-		--disable-libmpx \
-		--disable-libmudflap \
-		--disable-libquadmath \
-		--disable-libsanitizer \
-		--disable-libssp \
-		--disable-libstdcxx \
-		--disable-libvtv \
-		--disable-multilib \
-		--disable-nls \
-		--disable-shared \
-		--disable-threads \
-		$GCCOPTS
-	make -j$XJOBS all-gcc all-target-libgcc
-	make install-gcc install-target-libgcc
-
-	cd $SOURCES
-	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
-	tar -xf musl-1.1.18.tar.gz
-	cd musl-1.1.18
-	./configure CC="$XTARGET-gcc" CROSS_COMPILE="$XTARGET-" \
-		--prefix= \
-		--syslibdir=/lib \
-		--enable-debug \
-		--enable-optimize
-	make -j$XJOBS
-	make DESTDIR=$TOOLS install
-
-	cd $SOURCES
-	rm -rf gcc-7.3.0
-	tar -xf gcc-7.3.0.tar.xz
-	cd gcc-7.3.0
-	tar xf ../mpfr-4.0.0.tar.xz
-	mv mpfr-4.0.0 mpfr
-	tar xf ../gmp-6.1.2.tar.xz
-	mv gmp-6.1.2 gmp
-	tar xf ../mpc-1.1.0.tar.gz
-	mv mpc-1.1.0 mpc
-	mkdir build
-	cd build
-	../configure \
-		AR="ar" \
-		--prefix=$TOOLS \
-		--libdir=$TOOLS/lib \
-		--build=$XHOST \
-		--host=$XHOST \
-		--target=$XTARGET \
-		--with-sysroot=$TOOLS \
-		--enable-checking=release \
-		--enable-clocale=generic \
-		--enable-fully-dynamic-string \
-		--enable-languages=c,c++ \
-		--enable-libstdcxx-time \
-		--enable-tls \
-		--disable-gnu-indirect-function \
-		--disable-libmpx \
-		--disable-libmudflap \
-		--disable-libsanitizer \
-		--disable-lto-plugin \
-		--disable-multilib \
-		--disable-nls \
-		--disable-symvers \
-		$GCCOPTS
-	make -j$XJOBS all AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
-	make install
+	git clone https://github.com/JanusLinux/musl-cross-make.git
+	cd musl-cross-make
+	make TARGET=$XTARGET -j$XJOBS
+	make -C build/local/$XTARGET install
+	mv build/local/$XTARGET/output/* $TOOLS
 }
 
 setup_variables() {
-	export CFLAGS="$BCFLAGS"
-	export CXXFLAGS="$BCXXFLAGS"
-	export LDFLAGS="$BLDFLAGS -Wl,-rpath-link,$ROOTFS/usr/lib"
+	export CFLAGS="-Os -g0"
+	export CXXFLAGS="$CFLAGS"
+	export LDFLAGS="-s"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
@@ -279,14 +94,9 @@ setup_variables() {
 	export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig"
 }
 
-cleanup_old_sources() {
-	rm -rf $SOURCES/*
-	unset CFLAGS CXXFLAGS LDFLAGS
-}
-
 setup_rootfs() {
-	mkdir -p $ROOTFS/{boot,dev,etc/{init.d,service,skel},home,mnt,proc,sys}
-	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,service,spool}
+	mkdir -p $ROOTFS/{boot,dev,etc/skel,home,mnt,proc,sys}
+	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
 	install -d -m 0750 $ROOTFS/root
 	install -d -m 1777 $ROOTFS/{var/,}tmp
 	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/modules,share}
@@ -318,14 +128,6 @@ setup_rootfs() {
 	done
 
 	install -m600 $KEEP/etc/shadow $ROOTFS/etc
-
-	for f in rc.local rc.startup rc.shutdown; do
-		install -m644 $KEEP/initscripts/$f $ROOTFS/etc/init.d
-		chmod +x $ROOTFS/etc/init.d/$f
-	done
-
-	install -m644 $KEEP/service $ROOTFS/usr/bin/service
-	chmod +x $ROOTFS/usr/bin/service
 }
 
 build_rootfs() {
@@ -715,17 +517,14 @@ case "$1" in
 		check_root
 		configure_arch
 		setup_build_env
-		prepare_toolchain
 		build_toolchain
 		;;
 	container)
 		check_root
 		configure_arch
 		setup_build_env
-		prepare_toolchain
 		build_toolchain
 		setup_variables
-		cleanup_old_sources
 		setup_rootfs
 		build_rootfs
 		strip_rootfs
@@ -734,10 +533,8 @@ case "$1" in
 		check_root
 		configure_arch
 		setup_build_env
-		prepare_toolchain
 		build_toolchain
 		setup_variables
-		cleanup_old_sources
 		setup_rootfs
 		build_rootfs
 		strip_rootfs
