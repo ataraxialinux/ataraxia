@@ -80,9 +80,9 @@ build_toolchain() {
 }
 
 setup_variables() {
-	export CFLAGS="-Os -g0"
+	export CFLAGS="-g0 -Os"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s"
+	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/usr/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
@@ -123,7 +123,7 @@ setup_rootfs() {
 	touch $ROOTFS/var/log/lastlog
 	chmod 664 $ROOTFS/var/log/lastlog
 
-	for f in fstab group host.conf hostname hosts inittab issue passwd profile rc.conf securetty shells sysctl.conf; do
+	for f in fstab group host.conf hostname hosts inittab issue passwd profile securetty shells sysctl.conf; do
 		install -m644 $KEEP/etc/$f $ROOTFS/etc
 	done
 
@@ -276,6 +276,9 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
+	export gcc_cv_prog_makeinfo_modern=no
+	export libat_cv_have_ifunc=no
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
 	cd build
 	../configure \
@@ -287,19 +290,23 @@ build_rootfs() {
 		--enable-__cxa_atexit \
 		--enable-checking=release \
 		--enable-clocale=generic \
-		--enable-fully-dynamic-string \
+		--enable-cloog-backend \
+		--enable-default-pie \
+		--enable-deterministic-archives \
 		--enable-languages=c,c++ \
 		--enable-libstdcxx-time \
-		--enable-lto \
+		--enable-shared \
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-bootstrap \
+		--disable-decimal-float \
+		--disable-fixed-point \
 		--disable-gnu-indirect-function \
-		--disable-libcilkrts \
-		--disable-libitm \
 		--disable-libmpx \
 		--disable-libmudflap \
+		--disable-libquadmath \
 		--disable-libsanitizer \
+		--disable-libssp \
 		--disable-libstdcxx-pch \
 		--disable-multilib \
 		--disable-nls \
