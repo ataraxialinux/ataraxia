@@ -249,9 +249,6 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
-	export gcc_cv_prog_makeinfo_modern=no
-	export libat_cv_have_ifunc=no
-	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
 	cd build
 	../configure \
@@ -263,22 +260,19 @@ build_rootfs() {
 		--enable-__cxa_atexit \
 		--enable-checking=release \
 		--enable-clocale=generic \
-		--enable-cloog-backend \
-		--enable-default-pie \
-		--enable-deterministic-archives \
+		--enable-fully-dynamic-string \
 		--enable-languages=c,c++ \
 		--enable-libstdcxx-time \
+		--enable-lto \
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-bootstrap \
-		--disable-decimal-float \
-		--disable-fixed-point \
 		--disable-gnu-indirect-function \
+		--disable-libcilkrts \
+		--disable-libitm \
 		--disable-libmpx \
 		--disable-libmudflap \
-		--disable-libquadmath \
 		--disable-libsanitizer \
-		--disable-libssp \
 		--disable-libstdcxx-pch \
 		--disable-multilib \
 		--disable-nls \
