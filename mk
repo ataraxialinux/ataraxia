@@ -283,6 +283,78 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
+	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-gettext=no
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-gettext=no
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
+	tar -xf libcap-2.25.tar.xz
+	cd libcap-2.25
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i '/^lib=/s@=.*@=/usr/lib@' Make.Rules
+	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" -j$XJOBS
+	make RAISE_SETFCAP=no prefix=/usr DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+	chmod 755 $ROOTFS/usr/lib/libcap.so
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
+	tar -xf sed-4.4.tar.xz
+	cd sed-4.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-i18n \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
+	tar -xf pkgconf-1.4.1.tar.xz
+	cd pkgconf-1.4.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+	ln -s pkgconf $ROOTFS/usr/bin/pkg-config
+
+	cd $SOURCES
+	wget -c http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
+	tar -xf netbsd-curses-0.2.1.tar.xz
+	cd netbsd-curses-0.2.1
+	make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS -Os -Wall -fPIC" DFLAGS="$LDFLAGS -static" PREFIX=$ROOTFS/usr -j$XJOBS all install
+	make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS -static" PREFIX=$ROOTFS/usr -j$XJOBS all-static install-static
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
 	wget -c http://sethwklein.net/iana-etc-2.30.tar.bz2
 	tar -xf iana-etc-2.30.tar.bz2
 	cd iana-etc-2.30
