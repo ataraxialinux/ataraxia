@@ -342,7 +342,7 @@ build_rootfs() {
 	tar -xf libcap-2.25.tar.xz
 	cd libcap-2.25
 	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
-	sed -i '/^lib=/s@=.*@=/usr/lib@' Make.Rules
+	sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
 	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" -j$XJOBS
 	make RAISE_SETFCAP=no prefix=/usr DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
