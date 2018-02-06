@@ -185,6 +185,35 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
+	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+	tar -xf flex-2.6.4.tar.gz
+	cd flex-2.6.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls \
+		ac_cv_func_malloc_0_nonnull=yes \
+		ac_cv_func_realloc_0_nonnull=yes
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
+	tar -xf bison-3.0.4.tar.xz
+	cd bison-3.0.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-threads=posix \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
 	tar -xf binutils-2.30.tar.bz2
 	cd binutils-2.30
