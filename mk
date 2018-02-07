@@ -386,6 +386,97 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
+	wget -c https://github.com/shadow-maint/shadow/releases/download/4.5/shadow-4.5.tar.xz
+	tar -xf shadow-4.5.tar.xz
+	cd shadow-4.5
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-group-max-length=32 \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
+	tar -xf util-linux-2.31.1.tar.xz
+	cd util-linux-2.31.1
+	sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' $(grep -rl '/etc/adjtime' .)
+	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib"
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-systemdsystemunitdir \
+		--without-systemd \
+		--without-python \
+		--enable-raw \
+		--enable-write \
+		--disable-chfn-chsh \
+		--disable-login \
+		--disable-nls \
+		--disable-nologin \
+		--disable-pylibmount \
+		--disable-rpath \
+		--disable-runuser \
+		--disable-setpriv \
+		--disable-su \
+		--disable-sulogin \
+		--disable-tls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.12.tar.xz
+	tar -xf procps-ng-3.3.12.tar.xz
+	cd procps-ng-3.3.12
+	patch -Np1 -i $KEEP/procps-ng-netbsd-curses.patch
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-systemd \
+		--disable-kill \
+		--disable-nls \
+		--disable-rpath
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.14.0.tar.xz
+	tar -xf xfsprogs-4.14.0.tar.xz
+	cd xfsprogs-4.14.0
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c https://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
+	tar -xf coreutils-8.29.tar.xz
+	cd coreutils-8.29
+	./configure FORCE_UNSAFE_CONFIGURE=1 \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-no-install-program=kill,uptime,hostname \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
 	wget -c http://sethwklein.net/iana-etc-2.30.tar.bz2
 	tar -xf iana-etc-2.30.tar.bz2
 	cd iana-etc-2.30
