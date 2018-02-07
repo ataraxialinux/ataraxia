@@ -312,9 +312,10 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
-	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
-	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
+	wget -c https://github.com/protonesso/mirror/raw/master/attr-5.0-protonesso.tar.xz
+	tar -xf attr-5.0-protonesso.tar.xz
+	cd attr-5.0-protonesso
+	./autogen.sh
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -325,9 +326,10 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
-	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
-	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
+	wget -c https://github.com/protonesso/mirror/raw/master/acl-5.0-protonesso.tar.xz
+	tar -xf acl-5.0-protonesso.tar.xz
+	cd acl-5.0-protonesso
+	./autogen.sh
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
