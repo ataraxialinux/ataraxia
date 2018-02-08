@@ -409,7 +409,7 @@ build_rootfs() {
 	tar -xf util-linux-2.31.1.tar.xz
 	cd util-linux-2.31.1
 	sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' $(grep -rl '/etc/adjtime' .)
-	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib"
+	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib -lcurses -lterminfo"
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
