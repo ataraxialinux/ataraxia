@@ -48,21 +48,25 @@ configure_arch() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
 		i686)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
+			export GCCOPTS="--with-arch=i686 --with-tune=generic"
 			;;
 		arm64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
+			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
 			;;
 		arm)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
 		*)
 			echo "BARCH variable isn't set..."
@@ -70,13 +74,165 @@ configure_arch() {
 	esac
 }
 
+prepare_toolchain() {
+	export CFLAGS="-g0 -Os"
+	export CXXFLAGS="$CFLAGS"
+	export LDFLAGS="-s"
+
+	cd $TOOLS
+	mkdir -p bin lib $XTARGET/{bin,lib}
+
+	case $BARCH in
+		x86_64|arm64)
+			cd $TOOLS
+			ln -sf lib lib64
+			cd $TOOLS/$XTARGET
+			ln -sf lib lib64
+			;;
+	esac
+
+	cd $TOOLS
+	ln -sf . usr
+}
+
 build_toolchain() {
 	cd $SOURCES
-	git clone https://github.com/JanusLinux/musl-cross-make.git
-	cd musl-cross-make
-	make TARGET=$XTARGET -j$XJOBS
-	make -C build/local/$XTARGET install
-	mv build/local/$XTARGET/output/* $TOOLS
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.2.tar.xz
+	tar -xf linux-4.15.2.tar.xz
+	cd linux-4.15.2
+	make mrproper
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.xz
+	tar -xf binutils-2.30.tar.xz
+	cd binutils-2.30
+	mkdir build
+	cd build
+	AR="ar" AS="as" \
+	../configure \
+		--prefix=$TOOLS \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$TOOLS \
+		--enable-deterministic-archives \
+		--disable-cloog-version-check \
+		--disable-compressed-debug-sections \
+		--disable-multilib \
+		--disable-nls \
+		--disable-ppl-version-check \
+		--disable-werror
+	make MAKEINFO="true" -j$XJOBS
+	make MAKEINFO="true" install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
+	for f in 0001-ssp_nonshared.diff 0002-posix_memalign.diff 0003-cilkrts.diff 0004-libatomic-test-fix.diff 0005-libgomp-test-fix.diff 0006-libitm-test-fix.diff 0007-libvtv-test-fix.diff 0008-j2.diff 0009-s390x-muslldso.diff; do
+		patch -Np1 -i $KEEP/gcc-patches/$f
+	done
+	tar xf ../mpfr-4.0.0.tar.xz
+	mv mpfr-4.0.0 mpfr
+	tar xf ../gmp-6.1.2.tar.xz
+	mv gmp-6.1.2 gmp
+	tar xf ../mpc-1.1.0.tar.gz
+	mv mpc-1.1.0 mpc
+	mkdir build
+	cd build
+	AR="ar"\
+	../configure \
+		--prefix=$TOOLS \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$TOOLS \
+		--with-newlib \
+		--without-cloog \
+		--without-headers \
+		--without-ppl \
+		--enable-clocale=generic \
+		--enable-languages=c \
+		--disable-decimal-float \
+		--disable-gnu-indirect-function \
+		--disable-libatomic \
+		--disable-libcilkrts \
+		--disable-libgomp \
+		--disable-libitm \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libquadmath \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdcxx \
+		--disable-libvtv \
+		--disable-multilib \
+		--disable-nls \
+		--disable-shared \
+		--disable-threads \
+		$GCCOPTS
+	make all-gcc all-target-libgcc -j$XJOBS
+	make install-gcc install-target-libgcc
+
+	cd $SOURCES
+	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
+	tar -xf musl-1.1.18.tar.gz
+	cd musl-1.1.18
+	./configure CC="$XTARGET-gcc" CROSS_COMPILE="$XTARGET-" \
+		--prefix= \
+		--syslibdir=/lib \
+		--enable-optimize
+	make -j$XJOBS
+	make DESTDIR=$TOOLS install
+
+	cd $SOURCES
+	rm -rf gcc-7.3.0
+	tar -xf gcc-7.3.0.tar.xz
+	cd gcc-7.3.0
+	for f in 0001-ssp_nonshared.diff 0002-posix_memalign.diff 0003-cilkrts.diff 0004-libatomic-test-fix.diff 0005-libgomp-test-fix.diff 0006-libitm-test-fix.diff 0007-libvtv-test-fix.diff 0008-j2.diff 0009-s390x-muslldso.diff; do
+		patch -Np1 -i $KEEP/gcc-patches/$f
+	done
+	tar xf ../mpfr-4.0.0.tar.xz
+	mv mpfr-4.0.0 mpfr
+	tar xf ../gmp-6.1.2.tar.xz
+	mv gmp-6.1.2 gmp
+	tar xf ../mpc-1.1.0.tar.gz
+	mv mpc-1.1.0 mpc
+	mkdir build
+	cd build
+	AR="ar"\
+	../configure \
+		--prefix=$TOOLS \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$TOOLS \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-fully-dynamic-string \
+		--enable-languages=c,c++ \
+		--enable-libstdcxx-time \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-lto-plugin \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		$GCCOPTS
+	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
+	make install
+}
+
+clean_sources() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	rm -rf $SOURCES/*
 }
 
 setup_variables() {
@@ -114,7 +270,7 @@ setup_rootfs() {
 			cd $ROOTFS/usr
 			ln -sf lib lib64
 			cd $ROOTFS
-			ln -sf usr/lib lib64
+			ln -sf lib lib64
 			;;
 	esac
 
@@ -188,13 +344,13 @@ build_rootfs() {
 	wget -c https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
 	tar -xf flex-2.6.4.tar.gz
 	cd flex-2.6.4
+	ac_cv_func_malloc_0_nonnull=yes \
+	ac_cv_func_realloc_0_nonnull=yes \
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--disable-nls \
-		ac_cv_func_malloc_0_nonnull=yes \
-		ac_cv_func_realloc_0_nonnull=yes
+		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
@@ -278,6 +434,9 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
+	for f in 0001-ssp_nonshared.diff 0002-posix_memalign.diff 0003-cilkrts.diff 0004-libatomic-test-fix.diff 0005-libgomp-test-fix.diff 0006-libitm-test-fix.diff 0007-libvtv-test-fix.diff 0008-j2.diff 0009-s390x-muslldso.diff; do
+		patch -Np1 -i $KEEP/gcc-patches/$f
+	done
 	mkdir build
 	cd build
 	../configure \
@@ -378,11 +537,24 @@ build_rootfs() {
 	ln -s pkgconf $ROOTFS/usr/bin/pkg-config
 
 	cd $SOURCES
-	wget -c http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-0.2.1.tar.xz
-	tar -xf netbsd-curses-0.2.1.tar.xz
-	cd netbsd-curses-0.2.1
-	make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS -Os -Wall -fPIC" DFLAGS="$LDFLAGS -static" PREFIX=$ROOTFS/usr -j$XJOBS all install
-	make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS -static" PREFIX=$ROOTFS/usr -j$XJOBS all-static install-static
+	wget -c http://ftp.gnu.org/gnu//ncurses/ncurses-6.1.tar.gz
+	tar -xf ncurses-6.1.tar.gz
+	cd ncurses-6.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-pkg-config-libdir=/usr/lib/pkgconfig \
+		--with-normal \
+		--with-shared \
+		--without-ada \
+		--without-cxx-binding \
+		--without-debug \
+		--without-tests \
+		--enable-pc-files \
+		--enable-widec
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -409,7 +581,7 @@ build_rootfs() {
 	tar -xf util-linux-2.31.1.tar.xz
 	cd util-linux-2.31.1
 	sed -i -e 's@etc/adjtime@var/lib/hwclock/adjtime@g' $(grep -rl '/etc/adjtime' .)
-	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib -lcurses -lterminfo"
+	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib"
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -438,7 +610,8 @@ build_rootfs() {
 	wget -c http://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.12.tar.xz
 	tar -xf procps-ng-3.3.12.tar.xz
 	cd procps-ng-3.3.12
-	patch -Np1 -i $KEEP/procps-ng-netbsd-curses.patch
+	ac_cv_func_malloc_0_nonnull=yes \
+	ac_cv_func_realloc_0_nonnull=yes \
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -500,13 +673,16 @@ case "$1" in
 		check_root
 		configure_arch
 		setup_build_env
+		prepare_toolchain
 		build_toolchain
 		;;
 	container)
 		check_root
 		configure_arch
 		setup_build_env
+		prepare_toolchain
 		build_toolchain
+		clean_sources
 		setup_variables
 		setup_rootfs
 		build_rootfs
@@ -516,7 +692,9 @@ case "$1" in
 		check_root
 		configure_arch
 		setup_build_env
+		prepare_toolchain
 		build_toolchain
+		clean_sources
 		setup_variables
 		setup_rootfs
 		build_rootfs
