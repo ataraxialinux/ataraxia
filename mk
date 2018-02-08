@@ -550,9 +550,11 @@ build_rootfs() {
 		--without-ada \
 		--without-cxx-binding \
 		--without-debug \
+		--without-manpages \
 		--without-tests \
 		--enable-pc-files \
-		--enable-widec
+		--enable-widec \
+		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
