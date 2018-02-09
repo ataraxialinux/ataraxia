@@ -1,7 +1,0 @@
-#!/bin/sh
-
-for DEVICE in /sys/class/net/* ; do
-	ip link set ${DEVICE##*/} up
-	[ ${DEVICE##*/} = wlan0 ] && exec wpa_supplicant -B -iwlan0 -c/etc/wpa_supplicant.conf
-	[ ${DEVICE##*/} != lo ] && [ ${DEVICE##*/} != sit0 ] && exec udhcpc -b -i ${DEVICE##*/} -s /etc/init.d/rc.dhcp
-done

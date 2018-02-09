@@ -36,7 +36,7 @@ setup_build_env() {
 
 	export PATH="$TOOLS/bin:$PATH"
 
-	export XCONFIGURE="--prefix=/ --libdir=/lib --libexecdir=/libexec --bindir=/bin --sbindir=/sbin --sysconfdir=/etc --localstatedir=/var"
+	export XCONFIGURE="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/sbin --sysconfdir=/etc --localstatedir=/var"
 
 	export XJOBS="$(expr $(nproc) + 1)"
 
@@ -252,35 +252,28 @@ setup_variables() {
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
-	export PKG_CONFIG_PATH="$ROOTFS/lib/pkgconfig"
+	export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig"
 }
 
 setup_rootfs() {
-	mkdir -p $ROOTFS/{boot,bin,dev,etc/{skel,init.d,service},home,lib/modules,mnt,proc,sbin,share,srv,sys,var}
-	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,service,spool}
+	mkdir -p $ROOTFS/{boot,dev,etc/skel,home,mnt,proc,sys}
+	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
 	install -d -m 0750 $ROOTFS/root
 	install -d -m 1777 $ROOTFS/{var/,}tmp
+	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/modules,share}
+
+	cd $ROOTFS/usr
+	ln -sf bin sbin
 
 	cd $ROOTFS
-	ln -sf . usr
+	ln -sf usr/bin bin
+	ln -sf usr/lib lib
+	ln -sf usr/bin sbin
 
 	ln -sf /proc/mounts $ROOTFS/etc/mtab
 
 	touch $ROOTFS/var/log/lastlog
 	chmod 664 $ROOTFS/var/log/lastlog
-
-	for f in fstab group host.conf hostname hosts inittab issue passwd profile securetty shells sysctl.conf; do
-		install -m644 $KEEP/etc/$f $ROOTFS/etc
-	done
-
-	install -m600 $KEEP/etc/shadow $ROOTFS/etc
-
-	for f in rc.dhcp rc.functions rc.shutdown rc.startup; do
-		install -m644 $KEEP/rc/$f $ROOTFS/etc/init.d
-		chmod +x $ROOTFS/etc/init.d/$f
-	done
-
-	cp -a $KEEP/service/* $ROOTFS/etc/service
 }
 
 build_rootfs() {
@@ -299,7 +292,7 @@ build_rootfs() {
 	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$XCONFIGURE \
-		--enable-optimize=size
+		--enable-optimize
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 
@@ -484,15 +477,53 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
-	tar -xf make-4.2.1.tar.bz2
-	cd make-4.2.1
+	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--without-dmalloc \
-		--without-guile \
+		--enable-gettext=no
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--enable-gettext=no
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.25.tar.xz
+	tar -xf libcap-2.25.tar.xz
+	cd libcap-2.25
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
+	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" -j$XJOBS
+	make RAISE_SETFCAP=no prefix=/usr DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+	chmod 755 $ROOTFS/usr/lib/libcap.so
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
+	tar -xf sed-4.4.tar.xz
+	cd sed-4.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--disable-i18n \
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
@@ -535,20 +566,69 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
-	tar -xf util-linux-2.31.1.tar.xz
-	cd util-linux-2.31.1
+	wget -c https://github.com/shadow-maint/shadow/releases/download/4.5/shadow-4.5.tar.xz
+	tar -xf shadow-4.5.tar.xz
+	cd shadow-4.5
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--enable-fsck \
-		--enable-libblkid \
-		--enable-libmount \
-		--enable-libuuid \
-		--disable-all-programs \
+		--with-sysroot=$ROOTFS \
+		--with-group-max-length=32 \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
+	tar -xf util-linux-2.31.1.tar.xz
+	cd util-linux-2.31.1
+	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--without-systemdsystemunitdir \
+		--without-systemd \
+		--without-python \
+		--enable-raw \
+		--enable-write \
+		--disable-chfn-chsh \
+		--disable-login \
 		--disable-nls \
+		--disable-nologin \
+		--disable-pylibmount \
+		--disable-rpath \
+		--disable-runuser \
+		--disable-setpriv \
+		--disable-su \
+		--disable-sulogin \
 		--disable-tls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install-strip
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.12.tar.xz
+	tar -xf procps-ng-3.3.12.tar.xz
+	cd procps-ng-3.3.12
+	ac_cv_func_malloc_0_nonnull=yes \
+	ac_cv_func_realloc_0_nonnull=yes \
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--without-systemd \
+		--disable-kill \
+		--disable-nls \
+		--disable-rpath
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
@@ -563,141 +643,16 @@ build_rootfs() {
 		--host=$XTARGET
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://sethwklein.net/iana-etc-2.30.tar.bz2
-	tar -xf iana-etc-2.30.tar.bz2
-	cd iana-etc-2.30
-	make get
-	make STRIP=yes
-	make DESTDIR=$ROOTFS install
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-4.15.0.tar.xz
-	tar -xf iproute2-4.15.0.tar.xz
-	cd iproute2-4.15.0
-	./configure \
+	wget -c https://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
+	tar -xf coreutils-8.29.tar.xz
+	cd coreutils-8.29
+	./configure FORCE_UNSAFE_CONFIGURE=1 \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--disable-nls
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
-	tar -xf kbd-2.0.4.tar.xz
-	cd kbd-2.0.4
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-nls \
-		--disable-vlock
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c http://tukaani.org/xz/xz-5.2.3.tar.xz
-	tar -xf xz-5.2.3.tar.xz
-	cd xz-5.2.3
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-nls
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c http://busybox.net/downloads/busybox-1.28.0.tar.bz2
-	tar -xf busybox-1.28.0.tar.bz2
-	cd busybox-1.28.0
-	make ARCH=$XKARCH defconfig
-	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
-	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- -j$XJOBS
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=$ROOTFS install
-	cd $ROOTFS
-	ln -s bin/busybox init
-	rm linuxrc
-
-	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/bc/bc-1.07.1.tar.gz
-	tar -xf bc-1.07.1.tar.gz
-	cd bc-1.07.1
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--without-readline
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.6.4.tar.gz
-	tar -xf libressl-2.6.4.tar.gz
-	cd libressl-2.6.4
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c https://github.com/thom311/libnl/releases/download/libnl3_4_0/libnl-3.4.0.tar.gz
-	tar -xf libnl-3.4.0.tar.gz
-	cd libnl-3.4.0
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c http://hostap.epitest.fi/releases/wpa_supplicant-2.6.tar.gz
-	tar -xf wpa_supplicant-2.6.tar.gz
-	cd wpa_supplicant-2.6/wpa_supplicant
-	cp defconfig .config
-	make -j$XJOBS
-	make BINDIR=/sbin DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c https://matt.ucc.asn.au/dropbear/releases/dropbear-2017.75.tar.bz2
-	tar -xf dropbear-2017.75.tar.bz2
-	cd dropbear-2017.75
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c https://invisible-mirror.net/archives/lynx/tarballs/lynx2.8.8rel.2.tar.gz
-	tar -xf lynx2.8.8rel.2.tar.gz
-	cd lynx2-8-8
-	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--with-ssl \
-		--enable-ipv6 \
+		--enable-no-install-program=kill,uptime,hostname \
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
@@ -712,32 +667,6 @@ strip_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	rm -rf $ROOTFS/usr/share/{doc,man,misc,info}
-}
-
-build_kernel() {
-	cd $SOURCES
-	rm -rf linux-4.15.2
-	tar -xf linux-4.15.2.tar.xz
-	cd linux-4.15.2
-	make mrproper
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
-	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"janus\"/" .config
-	sed -i "s/.*CONFIG_OVERLAY_FS.*/CONFIG_OVERLAY_FS=y/" .config
-	echo "CONFIG_OVERLAY_FS_REDIRECT_DIR=y" >> .config
-	echo "CONFIG_OVERLAY_FS_INDEX=y" >> .config
-	sed -i "s/.*\\(CONFIG_KERNEL_.*\\)=y/\\#\\ \\1 is not set/" .config
-	sed -i "s/.*CONFIG_KERNEL_XZ.*/CONFIG_KERNEL_XZ=y/" .config
-	sed -i "s/.*CONFIG_FB_VESA.*/CONFIG_FB_VESA=y/" .config
-	sed -i "s/^CONFIG_DEBUG_KERNEL.*/\\# CONFIG_DEBUG_KERNEL is not set/" .config
-	sed -i "s/.*CONFIG_EFI_STUB.*/CONFIG_EFI_STUB=y/" .config
-	echo "CONFIG_RESET_ATTACK_MITIGATION=y" >> .config
-	echo "CONFIG_APPLE_PROPERTIES=n" >> .config
-	if [ "`grep "CONFIG_X86_64=y" .config`" = "CONFIG_X86_64=y" ] ; then
-		echo "CONFIG_EFI_MIXED=y" >> .config
-	fi
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$ROOTFS modules_install
-	cp arch/$XKARCH/boot/$KIMG $IMGDIR/$KIMG
 }
 
 case "$1" in
@@ -759,7 +688,6 @@ case "$1" in
 		setup_rootfs
 		build_rootfs
 		strip_rootfs
-#		build_container
 		;;
 	image)
 		check_root
@@ -772,7 +700,6 @@ case "$1" in
 		setup_rootfs
 		build_rootfs
 		strip_rootfs
-		build_kernel
 		;;
 	usage|*)
 		usage
