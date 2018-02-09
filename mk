@@ -80,7 +80,7 @@ configure_arch() {
 }
 
 prepare_toolchain() {
-	export CFLAGS="-g0 -Os -pipe -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
+	export CFLAGS="-g0 -Os -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro"
 
@@ -223,7 +223,7 @@ clean_sources() {
 }
 
 setup_variables() {
-	export CFLAGS="-g0 -Os -pipe -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
+	export CFLAGS="-g0 -Os -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro -Wl,-rpath-link,$ROOTFS/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
