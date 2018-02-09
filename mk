@@ -85,18 +85,6 @@ prepare_toolchain() {
 	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro"
 
 	cd $TOOLS
-	mkdir -p bin lib $XTARGET/{bin,lib}
-
-	case $BARCH in
-		x86_64|arm64)
-			cd $TOOLS
-			ln -sf lib lib64
-			cd $TOOLS/$XTARGET
-			ln -sf lib lib64
-			;;
-	esac
-
-	cd $TOOLS
 	ln -sf . usr
 }
 
@@ -137,9 +125,6 @@ build_toolchain() {
 	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
-	for f in 0001-ssp_nonshared.diff 0002-posix_memalign.diff 0003-cilkrts.diff 0004-libatomic-test-fix.diff 0005-libgomp-test-fix.diff 0006-libitm-test-fix.diff 0007-libvtv-test-fix.diff 0008-j2.diff 0009-s390x-muslldso.diff; do
-		patch -Np1 -i $KEEP/gcc-patches/$f
-	done
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -197,9 +182,6 @@ build_toolchain() {
 	rm -rf gcc-7.3.0
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
-	for f in 0001-ssp_nonshared.diff 0002-posix_memalign.diff 0003-cilkrts.diff 0004-libatomic-test-fix.diff 0005-libgomp-test-fix.diff 0006-libitm-test-fix.diff 0007-libvtv-test-fix.diff 0008-j2.diff 0009-s390x-muslldso.diff; do
-		patch -Np1 -i $KEEP/gcc-patches/$f
-	done
 	tar xf ../mpfr-4.0.0.tar.xz
 	mv mpfr-4.0.0 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -269,6 +251,15 @@ setup_rootfs() {
 	ln -sf usr/bin bin
 	ln -sf usr/lib lib
 	ln -sf usr/bin sbin
+
+	case $BARCH in
+		x86_64|arm64)
+			cd $ROOTFS/usr
+			ln -sf lib lib64
+			cd $ROOTFS
+			ln -sf lib lib64
+			;;
+	esac
 
 	ln -sf /proc/mounts $ROOTFS/etc/mtab
 
@@ -436,9 +427,6 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
-	for f in 0001-ssp_nonshared.diff 0002-posix_memalign.diff 0003-cilkrts.diff 0004-libatomic-test-fix.diff 0005-libgomp-test-fix.diff 0006-libitm-test-fix.diff 0007-libvtv-test-fix.diff 0008-j2.diff 0009-s390x-muslldso.diff; do
-		patch -Np1 -i $KEEP/gcc-patches/$f
-	done
 	case $BARCH in
 		x86_64)
 			sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
