@@ -80,9 +80,9 @@ configure_arch() {
 }
 
 prepare_toolchain() {
-	export CFLAGS="-g0 -Os"
+	export CFLAGS="-g0 -Os -pipe -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s"
+	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro"
 
 	cd $TOOLS
 	mkdir -p bin lib $XTARGET/{bin,lib}
@@ -241,9 +241,9 @@ clean_sources() {
 }
 
 setup_variables() {
-	export CFLAGS="-g0 -Os"
+	export CFLAGS="-g0 -Os -pipe -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/lib"
+	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro -Wl,-rpath-link,$ROOTFS/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
