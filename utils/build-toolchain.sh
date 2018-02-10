@@ -1,14 +1,13 @@
 #!/bin/sh
 
-set -e
-
 setup_build_env() {
 	export SOURCES="$BUILD/sources"
+	export ROOTFS="$BUILD/rootfs"
 	export TOOLS="$BUILD/tools"
 	export KEEP="$(pwd)/KEEP"
 
 	rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $TOOLS
+	mkdir -p $BUILD $SOURCES $ROOTFS $TOOLS
 
 	export LC_ALL=POSIX
 
@@ -20,14 +19,14 @@ setup_build_env() {
 }
 
 configure_arch() {
-	case $BARCH in
+	case $A in
 		x86_64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
-		i686)
+		i386)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
@@ -188,10 +187,29 @@ build_toolchain() {
 	make install
 }
 
+clean_sources() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	rm -rf $SOURCES/*
+}
+
+setup_variables() {
+	export CFLAGS="-g0 -Os -fno-stack-protector -fomit-frame-pointer -U_FORTIFY_SOURCE"
+	export CXXFLAGS="$CFLAGS"
+	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro"
+	export CC="$XTARGET-gcc"
+	export CXX="$XTARGET-g++"
+	export AR="$XTARGET-ar"
+	export AS="$XTARGET-as"
+	export LD="$XTARGET-ld --sysroot=$ROOTFS"
+	export RANLIB="$XTARGET-ranlib"
+	export READELF="$XTARGET-readelf"
+	export STRIP="$XTARGET-strip"
+}
+
 configure_arch
 setup_build_env
 prepare_toolchain
 build_toolchain
-
-exit 0
-
+clean_sources
+setup_variables
