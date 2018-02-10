@@ -17,30 +17,6 @@ build() {
 
 	export BCONF="--prefix=/usr --libdir=/usr/lib --libexecdir=/usr/libexec --bindir=/usr/bin --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var"
 
-	use_crosscompile() {
-		export PATH="$TOOLS/bin:$PATH"
-
-		export BHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-
-		[[ $arch == "i686" ]] && export BTARGET="i686-linux-musl"
-		[[ $arch == "x86_64" ]] && export BTARGET="x86_64-linux-musl"
-		[[ $arch == "armv7h" ]] && export BTARGET="arm-linux-musleabihf"
-		[[ $arch == "aarch64" ]] && export BTARGET="aarch64-linux-musl"
-
-		export CC="$BTARGET-gcc"
-		export CXX="$BTARGET-g++"
-		export AR="$BTARGET-ar"
-		export AS="$BTARGET-as"
-		export LD="$BTARGET-ld"
-		export RANLIB="$BTARGET-ranlib"
-		export READELF="$BTARGET-readelf"
-		export STRIP="$BTARGET-strip"
-
-		export CROSS_COMPILE="$BTARGET-"
-	}
-
-	[[ $CROSSCOMPILE == "YES" ]] && use_crosscompile
-
         ./configure \
 		$BCONF \
 		--enable-optimize
