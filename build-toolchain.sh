@@ -3,7 +3,6 @@
 set -e
 
 setup_build_env() {
-	export BUILD="$(pwd)/build"
 	export SOURCES="$BUILD/sources"
 	export TOOLS="$BUILD/tools"
 	export KEEP="$(pwd)/KEEP"
