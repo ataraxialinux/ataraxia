@@ -353,7 +353,7 @@ build_rootfs() {
 	echo "CFLAGS += $CFLAGS -fPIC" > config.mak
 	sed -i 's@HEADERS = src/libelf.h@HEADERS = src/libelf.h src/gelf.h@' Makefile
 	make -j$XJOBS
-	make prefix=/ DESTDIR=$ROOTFS install
+	make prefix=/usr DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -486,8 +486,7 @@ build_rootfs() {
 	tar -xf libcap-2.25.tar.xz
 	cd libcap-2.25
 	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
-	sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
-	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" -j$XJOBS
+	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" PAM_CAP=no -j$XJOBS
 	make RAISE_SETFCAP=no prefix=/usr DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 	chmod 755 $ROOTFS/usr/lib/libcap.so
