@@ -51,7 +51,7 @@ configure_arch() {
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
-		i686)
+		i386)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
@@ -68,6 +68,30 @@ configure_arch() {
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
+			;;
+		mips64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS=
+			;;
+		mips)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS=
+			;;
+		ppc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc64le"
+			export GCCOPTS=
+			;;
+		ppc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt"
 			;;
 		*)
 			echo "BARCH variable isn't set..."
