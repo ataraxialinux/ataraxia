@@ -132,9 +132,10 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.2.tar.xz
-	tar -xf linux-4.15.2.tar.xz
-	cd linux-4.15.2
+	wget -c 
+https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.3.tar.xz
+	tar -xf linux-4.15.3.tar.xz
+	cd linux-4.15.3
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
@@ -288,9 +289,10 @@ setup_rootfs() {
 
 build_rootfs() {
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.2.tar.xz
-	tar -xf linux-4.15.2.tar.xz
-	cd linux-4.15.2
+	wget -c 
+https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.3.tar.xz
+	tar -xf linux-4.15.3.tar.xz
+	cd linux-4.15.3
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
