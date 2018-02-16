@@ -132,8 +132,7 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c 
-https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.3.tar.xz
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.3.tar.xz
 	tar -xf linux-4.15.3.tar.xz
 	cd linux-4.15.3
 	make mrproper
@@ -289,8 +288,7 @@ setup_rootfs() {
 
 build_rootfs() {
 	cd $SOURCES
-	wget -c 
-https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.3.tar.xz
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.15.3.tar.xz
 	tar -xf linux-4.15.3.tar.xz
 	cd linux-4.15.3
 	make mrproper
