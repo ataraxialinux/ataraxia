@@ -627,6 +627,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET \
 		--with-sysroot=$ROOTFS \
+		--with-ncurses \
 		--without-systemd \
 		--disable-kill \
 		--disable-nls \
