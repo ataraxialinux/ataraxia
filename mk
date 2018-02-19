@@ -306,16 +306,15 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c http://sortix.org/libz/release/libz-1.2.8.2015.12.26.tar.gz
-	tar -xf libz-1.2.8.2015.12.26.tar.gz
-	cd libz-1.2.8.2015.12.26
+	wget -c http://zlib.net/zlib-1.2.11.tar.xz
+	tar -xf zlib-1.2.11.tar.xz
+	cd zlib-1.2.11
 	./configure \
-		$XCONFIGURE \
-		--build=$XHOST \
-		--host=$XTARGET
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--shared
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
 	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
@@ -499,7 +498,6 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--enable-gettext=no
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
@@ -524,7 +522,6 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--disable-i18n \
 		--disable-nls
 	make -j$XJOBS
@@ -575,7 +572,6 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--with-group-max-length=32 \
 		--without-audit \
 		--without-libcrack \
@@ -591,11 +587,11 @@ build_rootfs() {
 	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
 	tar -xf util-linux-2.31.1.tar.xz
 	cd util-linux-2.31.1
+	LDFLAGS="$LDFLAGS -L$ROOTFS/usr/lib" \
 	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime \
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--without-systemdsystemunitdir \
 		--without-systemd \
 		--without-python \
@@ -626,7 +622,6 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--with-ncurses \
 		--without-systemd \
 		--disable-kill \
