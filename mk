@@ -110,6 +110,27 @@ prepare_toolchain() {
 
 build_toolchain() {
 	cd $SOURCES
+	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
+	tar -xf file-5.32.tar.gz
+	cd file-5.32
+	./configure \
+		--prefix=$TOOLS
+	make -j$XJOBS
+	make install
+
+	cd $SOURCES
+	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.2.tar.xz
+	tar -xf pkgconf-1.4.2.tar.xz
+	cd pkgconf-1.4.2
+	./configure \
+		--prefix=$TOOLS \
+		--host=$XTARGET \
+		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
+	make -j$XJOBS
+	make install
+	ln -s pkgconf $TOOLS/bin/pkg-config
+
+	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.xz
 	tar -xf binutils-2.30.tar.xz
 	cd binutils-2.30
@@ -233,18 +254,6 @@ build_toolchain() {
 		$GCCOPTS
 	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
 	make install
-
-	cd $SOURCES
-	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.2.tar.xz
-	tar -xf pkgconf-1.4.2.tar.xz
-	cd pkgconf-1.4.2
-	./configure \
-		--prefix=$TOOLS \
-		--host=$XTARGET \
-		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
-	make -j$XJOBS
-	make install
-	ln -s pkgconf $TOOLS/bin/pkg-config
 }
 
 clean_sources() {
