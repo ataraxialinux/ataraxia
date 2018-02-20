@@ -635,7 +635,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.12.tar.xz
+	wget -c https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-3.3.12.tar.xz
 	tar -xf procps-ng-3.3.12.tar.xz
 	cd procps-ng-3.3.12
 	ac_cv_func_malloc_0_nonnull=yes \
@@ -644,6 +644,7 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
+		--without-ncurses \
 		--without-systemd \
 		--disable-kill \
 		--disable-nls \
