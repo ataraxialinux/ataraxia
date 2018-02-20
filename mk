@@ -654,15 +654,24 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/xfsprogs-4.14.0.tar.xz
-	tar -xf xfsprogs-4.14.0.tar.xz
-	cd xfsprogs-4.14.0
+	wget -c http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.9/e2fsprogs-1.43.9.tar.gz
+	tar -xf e2fsprogs-1.43.9.tar.gz
+	cd e2fsprogs-1.43.9
+	LIBS="-L$ROOTFS/usr/lib" \
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--enable-elf-shlibs \
+		--enable-symlink-install \
+		--disable-fsck \
+		--disable-libblkid \
+		--disable-libuuid \
+		--disable-nls \
+		--disable-tls \
+		--disable-uuidd
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
+	make DESTDIR=$ROOTFS install install-libs
 
 	cd $SOURCES
 	wget -c https://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
