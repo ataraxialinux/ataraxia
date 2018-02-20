@@ -686,6 +686,327 @@ build_rootfs() {
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget http://sethwklein.net/iana-etc-2.30.tar.bz2
+	tar -xf iana-etc-2.30.tar.bz2
+	cd iana-etc-2.30
+	make get
+	make STRIP=yes
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.xz
+	tar -xf libtool-2.4.6.tar.xz
+	cd libtool-2.4.6
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-4.14.1.tar.xz
+	tar -xf iproute2-4.14.1.tar.xz
+	cd iproute2-4.14.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
+	tar -xf bzip2-1.0.6.tar.gz
+	cd bzip2-1.0.6
+	patch -Np1 -i $KEEP/bzip2.patch
+	make -j$XJOBS
+	make PREFIX=$ROOTFS/usr install
+	make -f Makefile-libbz2_so -j$XJOBS
+	make -f Makefile-libbz2_so PREFIX=$ROOTFS/usr install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gdbm/gdbm-1.14.1.tar.gz
+	tar -xf gdbm-1.14.1.tar.gz
+	cd gdbm-1.14.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-libgdbm-compat
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
+	tar -xf perl-5.26.1.tar.xz
+	cd perl-5.26.1
+	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
+	CC="$CC" \
+	BUILD_ZLIB=False \
+	BUILD_BZIP2=0 \
+	./Configure \
+		--prefix=/usr \
+		-Dvendorprefix=/usr \
+		-Dman1dir=/usr/share/man/man1 \
+		-Dman3dir=/usr/share/man/man3 \
+		-Dpager="/bin/less -isR" \
+		-Dusethreads \
+		-Duseshrplib \
+		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
+		-Aldflags="$LDFLAGS" \
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
+	tar -xf readline-7.0.tar.gz
+	cd readline-7.0
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz
+	tar -xf autoconf-2.69.tar.xz
+	cd autoconf-2.69
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/automake/automake-1.15.1.tar.xz
+	tar -xf automake-1.15.1.tar.xz
+	cd automake-1.15.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bash/bash-4.4.18.tar.gz
+	tar -xf bash-4.4.18.tar.gz
+	cd bash-4.4.18
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-installed-readline \
+		--without-bash-malloc \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/bc/bc-1.07.1.tar.gz
+	tar -xf bc-1.07.1.tar.gz
+	cd bc-1.07.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-readline
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/diffutils/diffutils-3.6.tar.xz
+	tar -xf diffutils-3.6.tar.xz
+	cd diffutils-3.6
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gawk/gawk-4.2.0.tar.xz
+	tar -xf gawk-4.2.0.tar.xz
+	cd gawk-4.2.0
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/findutils/findutils-4.6.0.tar.gz
+	tar -xf findutils-4.6.0.tar.gz
+	cd findutils-4.6.0
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/grep/grep-3.1.tar.xz
+	tar -xf grep-3.1.tar.xz
+	cd grep-3.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/groff/groff-1.22.3.tar.gz
+	tar -xf groff-1.22.3.tar.gz
+	cd groff-1.22.3
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-x
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://www.greenwoodsoftware.com/less/less-487.tar.gz
+	tar -xf less-487.tar.gz
+	cd less-487
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/gzip/gzip-1.9.tar.xz
+	tar -xf gzip-1.9.tar.xz
+	cd gzip-1.9
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz
+	tar -xf inetutils-1.9.4.tar.xz
+	cd inetutils-1.9.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-wrap \
+		--enable-ncurses \
+		--enable-servers \
+		--disable-logger \
+		--disable-nls \
+		--disable-rcp \
+		--disable-readline \
+		--disable-rexec \
+		--disable-rlogin \
+		--disable-rsh \
+		--disable-syslogd \
+		--disable-whois
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/kbd/kbd-2.0.4.tar.xz
+	tar -xf kbd-2.0.4.tar.xz
+	cd kbd-2.0.4
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls \
+		--disable-vlock
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://download.savannah.gnu.org/releases/libpipeline/libpipeline-1.5.0.tar.gz
+	tar -xf libpipeline-1.5.0.tar.gz
+	cd libpipeline-1.5.0
+	PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig" \
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
+	tar -xf make-4.2.1.tar.bz2
+	cd make-4.2.1
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://tukaani.org/xz/xz-5.2.3.tar.xz
+	tar -xf xz-5.2.3.tar.xz
+	cd xz-5.2.3
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-25.tar.xz
+	tar -xf kmod-25.tar.xz
+	cd kmod-25
+	./configure \
+		$XCONFIGURE \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-xz \
+		--with-zlib
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
 }
 
 strip_rootfs() {
