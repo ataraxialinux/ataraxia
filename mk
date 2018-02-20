@@ -233,6 +233,18 @@ build_toolchain() {
 		$GCCOPTS
 	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
 	make install
+
+	cd $SOURCES
+	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.2.tar.xz
+	tar -xf pkgconf-1.4.2.tar.xz
+	cd pkgconf-1.4.2
+	./configure \
+		--prefix=$TOOLS \
+		--host=$XTARGET \
+		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
+	make -j$XJOBS
+	make install
+	ln -s pkgconf $TOOLS/bin/pkg-config
 }
 
 clean_sources() {
@@ -529,13 +541,14 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.1.tar.xz
-	tar -xf pkgconf-1.4.1.tar.xz
-	cd pkgconf-1.4.1
+	wget -c http://distfiles.dereferenced.org/pkgconf/pkgconf-1.4.2.tar.xz
+	tar -xf pkgconf-1.4.2.tar.xz
+	cd pkgconf-1.4.2
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--with-pc-path=/usr/lib/pkgconfig:/usr/share/pkgconfig
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install-strip
 	rm -rf $ROOTFS/{,usr}/lib/*.la
@@ -622,7 +635,6 @@ build_rootfs() {
 		$XCONFIGURE \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-ncurses \
 		--without-systemd \
 		--disable-kill \
 		--disable-nls \
