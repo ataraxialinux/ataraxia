@@ -517,9 +517,10 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
-	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
-	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
+	wget -c http://download.savannah.gnu.org/releases/attr/attr-2.4.47.src.tar.gz
+	tar -xf attr-2.4.47.src.tar.gz
+	cd attr-2.4.47
+	patch -Np1 -i $KEEP/attr-add-musl-libc.patch
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -530,9 +531,10 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
-	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
-	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
+	wget -c http://download.savannah.gnu.org/releases/acl/acl-2.2.52.src.tar.gz
+	tar -xf acl-2.2.52.src.tar.gz
+	cd acl-2.2.52
+	patch -Np1 -i $KEEP/acl-add-musl-libc.patch
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -816,6 +818,7 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz
 	tar -xf autoconf-2.69.tar.xz
 	cd autoconf-2.69
+	patch -Np1 -i $KEEP/autoconf-add-musl.patch
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
