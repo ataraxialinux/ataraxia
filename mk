@@ -770,15 +770,28 @@ build_rootfs() {
 	tar -xf perl-5.26.1.tar.xz
 	cd perl-5.26.1
 	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
-	CC="$CC" \
 	BUILD_ZLIB=False \
 	BUILD_BZIP2=0 \
-	./Configure \
-		--prefix=/usr \
+	BZIP2_LIB=$ROOTFS/usr/lib
+	BZIP2_INCLUDE=$ROOTFS/usr/inculde \
+	./Configure -de \
+		-Dprefix=/usr \
+		-Dinstallprefix=/usr \
+		-Dsiteprefix=/usr/local \
+		-Dprivlib=/usr/share/perl5 \
+		-Darchlib=/usr/lib/perl5 \
+		-Dsitelib=/usr/local/share/perl5 \
+		-Dsitearch=/usr/local/lib/perl5 \
 		-Dvendorprefix=/usr \
-		-Dman1dir=/usr/share/man/man1 \
-		-Dman3dir=/usr/share/man/man3 \
-		-Dpager="/bin/less -isR" \
+		-Dvendorlib=/usr/share/perl5/vendor_perl \
+		-Dvendorarch=/usr/lib/perl5/vendor_perl \
+		-Dlibpth="/usr/local/lib /usr/lib /lib" \
+		-Dscriptdir=/usr/bin \
+		-Duseshrplib \
+		-Ubincompat5005 \
+		-Uversiononly \
+		-Duselargefiles \
+		-Dusemymalloc=n \
 		-Dusethreads \
 		-Duseshrplib \
 		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
