@@ -732,6 +732,7 @@ build_rootfs() {
 	patch -Np1 -i $KEEP/0001-make-iproute2-fhs-compliant.patch
 	patch -Np1 -i $KEEP/iproute2-4.12.0-musl.patch
 	patch -Np1 -i $KEEP/iproute2-disable-arpd.patch
+	sed -e '/^check_elf$/d' -i configure
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
