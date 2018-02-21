@@ -45,34 +45,28 @@ setup_build_env() {
 
 configure_arch() {
 	case $BARCH in
-		x86_64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="x86_64-linux-musl"
-			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
-			;;
-		i386)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
-			export XKARCH="i386"
-			export GCCOPTS="--with-arch=i686 --with-tune=generic"
-			;;
-		arm64)
+		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
-			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			export GCCOPTS="--enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
 			;;
-		arm)
+		armv7hl)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
+			export GCCOPTS="---with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
-		mips64)
+		i586)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips64-linux-musl"
-			export XKARCH="mips"
+			export XTARGET="i586-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS="--with-arch=i586 --with-tune=i686"
+			;;
+		microblaze)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="microblaze-linux-musl"
+			export XKARCH="microblaze"
 			export GCCOPTS=
 			;;
 		mips)
@@ -81,17 +75,35 @@ configure_arch() {
 			export XKARCH="mips"
 			export GCCOPTS=
 			;;
-		ppc64le)
+		or1k)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="or1k-linux-musl"
+			export XKARCH="openrisc"
+			export GCCOPTS=
+			;;
+		powerpc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt"
+			;;
+		powerpc64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="powerpc64le-linux-musl"
 			export XKARCH="powerpc64le"
 			export GCCOPTS=
 			;;
-		ppc)
+		s390x)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc-linux-musl"
-			export XKARCH="powerpc"
-			export GCCOPTS="--enable-secureplt"
+			export XTARGET="s390x-linux-musl"
+			export XKARCH="s390x"
+			export GCCOPTS=
+			;;
+		x86_64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
 			;;
 		*)
 			echo "BARCH variable isn't set..."
@@ -293,7 +305,7 @@ setup_rootfs() {
 	ln -sf usr/bin sbin
 
 	case $BARCH in
-		x86_64|arm64)
+		x86_64)
 			cd $ROOTFS/usr
 			ln -sf lib lib64
 			cd $ROOTFS
@@ -714,9 +726,12 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-4.14.1.tar.xz
-	tar -xf iproute2-4.14.1.tar.xz
-	cd iproute2-4.14.1
+	wget -c https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-4.13.0.tar.xz
+	tar -xf iproute2-4.13.0.tar.xz
+	cd iproute2-4.13.0
+	patch -Np1 -i $KEEP/0001-make-iproute2-fhs-compliant.patch
+	patch -Np1 -i $KEEP/iproute2-4.12.0-musl.patch
+	patch -Np1 -i $KEEP/iproute2-disable-arpd.patch
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -1020,7 +1035,7 @@ strip_rootfs() {
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
 	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug
 	rm -rf $ROOTFS/{,usr}/lib/*.la
-	rm -rf $ROOTFS/usr/share/{doc,man,misc,info}
+	rm -rf $ROOTFS/usr/share/{doc,man,misc,info,locale}
 }
 
 case "$1" in
