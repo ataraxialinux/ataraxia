@@ -309,6 +309,12 @@ setup_rootfs() {
 
 build_rootfs() {
 	cd $SOURCES
+	wget -c https://github.com/JanusLinux/baselayout/archive/1.0-alpha.tar.gz
+	tar -xf 1.0-alpha.tar.gz
+	cd baselayout-1.0-alpha
+	make DESTDIR=$ROOTFS install
+
+	cd $SOURCES
 	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.20.tar.xz
 	tar -xf linux-4.14.20.tar.xz
 	cd linux-4.14.20
