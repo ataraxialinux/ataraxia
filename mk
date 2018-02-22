@@ -292,7 +292,7 @@ setup_variables() {
 setup_rootfs() {
 	cd $ROOTFS
 
-	for d in boot dev etc home mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,service} home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -304,7 +304,7 @@ setup_rootfs() {
 
 	ln -s ../proc/self/mounts etc/mtab
 
-	for d in cache local opt log/old lib/misc empty; do
+	for d in cache local opt log/old lib/misc empty service; do
 		install -d -m755 var/$d
 	done
 
@@ -316,10 +316,6 @@ setup_rootfs() {
 
 	for d in bin include lib share/misc src; do
 		install -d -m755 usr/$d
-	done
-
-	for d in {1..8}; do
-		install -d -m755 usr/share/man/man$d
 	done
 
 	ln -s usr/lib lib
