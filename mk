@@ -781,31 +781,19 @@ build_rootfs() {
 
 	cd $SOURCES
 	wget -c http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
+	wget -c https://github.com/arsv/perl-cross/releases/download/1.1.8/perl-cross-1.1.8.tar.gz
 	tar -xf perl-5.26.1.tar.xz
+	tar -xf perl-cross-1.1.8.tar.gz
 	cd perl-5.26.1
+	cp -a ../perl-cross-1.1.8/* .
 	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
-	BUILD_ZLIB=False \
-	BUILD_BZIP2=0 \
-	BZIP2_LIB=$ROOTFS/usr/lib
-	BZIP2_INCLUDE=$ROOTFS/usr/inculde \
-	./Configure -de \
-		-Dprefix=/usr \
-		-Dinstallprefix=/usr \
-		-Dsiteprefix=/usr/local \
-		-Dprivlib=/usr/share/perl5 \
-		-Darchlib=/usr/lib/perl5 \
-		-Dsitelib=/usr/local/share/perl5 \
-		-Dsitearch=/usr/local/lib/perl5 \
-		-Dvendorprefix=/usr \
-		-Dvendorlib=/usr/share/perl5/vendor_perl \
-		-Dvendorarch=/usr/lib/perl5/vendor_perl \
-		-Dlibpth="/usr/local/lib /usr/lib /lib" \
-		-Dscriptdir=/usr/bin \
-		-Duseshrplib \
-		-Ubincompat5005 \
-		-Uversiononly \
-		-Duselargefiles \
-		-Dusemymalloc=n \
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--sysroot=$ROOTFS \
+		-Dprivlib=/usr/lib/perl5 \
+		-Dsitelib=/usr/lib/perl5/site_perl \
 		-Dusethreads \
 		-Duseshrplib \
 		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
