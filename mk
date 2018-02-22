@@ -321,9 +321,9 @@ setup_rootfs() {
 
 build_rootfs() {
 	cd $SOURCES
-	wget -c https://github.com/JanusLinux/baselayout/archive/1.0-alpha2.tar.gz
-	tar -xf 1.0-alpha2.tar.gz
-	cd baselayout-1.0-alpha2
+	wget -c https://github.com/JanusLinux/baselayout/archive/1.0-alpha2.1.tar.gz
+	tar -xf 1.0-alpha2.1.tar.gz
+	cd baselayout-1.0-alpha2.1
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
