@@ -780,29 +780,6 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
-	wget -c https://github.com/arsv/perl-cross/releases/download/1.1.8/perl-cross-1.1.8.tar.gz
-	tar -xf perl-5.26.1.tar.xz
-	tar -xf perl-cross-1.1.8.tar.gz
-	cd perl-5.26.1
-	cp -a ../perl-cross-1.1.8/* .
-	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--sysroot=$ROOTFS \
-		-Dprivlib=/usr/lib/perl5 \
-		-Dsitelib=/usr/lib/perl5/site_perl \
-		-Dusethreads \
-		-Duseshrplib \
-		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
-		-Aldflags="$LDFLAGS"
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
 	tar -xf readline-7.0.tar.gz
 	cd readline-7.0
