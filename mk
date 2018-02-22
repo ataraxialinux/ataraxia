@@ -797,7 +797,7 @@ build_rootfs() {
 		-Dusethreads \
 		-Duseshrplib \
 		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
-		-Aldflags="$LDFLAGS" \
+		-Aldflags="$LDFLAGS"
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
@@ -1060,10 +1060,10 @@ build_rootfs() {
 }
 
 strip_rootfs() {
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs $STRIP --strip-all      2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug
-	rm -rf $ROOTFS/{,usr}/lib/*.la
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all      2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf
 	rm -rf $ROOTFS/usr/share/{doc,man,misc,info,locale}
 }
 
