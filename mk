@@ -844,8 +844,8 @@ build_rootfs() {
 	install -m644 $KEEP/bash/dot.bash_logout $ROOTFS/etc/skel/.bash_logout
 
 	cd $SOURCES
-	wget -c http://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.gz
-	tar -xf bc-1.06.95.tar.gz
+	wget -c http://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.bz2
+	tar -xf bc-1.06.95.tar.bz2
 	cd bc-1.06.95
 	./configure \
 		$XCONFIGURE \
