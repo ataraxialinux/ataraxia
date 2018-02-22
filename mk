@@ -364,7 +364,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -391,7 +391,7 @@ build_rootfs() {
 		--host=$XTARGET \
 		--disable-nls
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -439,7 +439,7 @@ build_rootfs() {
 		--disable-nls \
 		--disable-werror
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -452,7 +452,7 @@ build_rootfs() {
 		--host=$XTARGET \
 		--enable-cxx
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -464,7 +464,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -476,7 +476,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -513,14 +513,13 @@ build_rootfs() {
 		--disable-symvers \
 		--disable-werror
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://download.savannah.gnu.org/releases/attr/attr-2.4.47.src.tar.gz
-	tar -xf attr-2.4.47.src.tar.gz
-	cd attr-2.4.47
-	patch -Np1 -i $KEEP/attr-add-musl-libc.patch
+	wget -c http://rsync.dragora.org/v3/sources/attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	tar -xf attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase.tar.lz
+	cd attr-c1a7b53073202c67becf4df36cadc32ef4759c8a-rebase
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -531,10 +530,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://download.savannah.gnu.org/releases/acl/acl-2.2.52.src.tar.gz
-	tar -xf acl-2.2.52.src.tar.gz
-	cd acl-2.2.52
-	patch -Np1 -i $KEEP/acl-add-musl-libc.patch
+	wget -c http://rsync.dragora.org/v3/sources/acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	tar -xf acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase.tar.lz
+	cd acl-38f32ea1865bcc44185f4118fde469cb962cff68-rebase
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -651,7 +649,7 @@ build_rootfs() {
 		--disable-sulogin \
 		--disable-tls
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
@@ -670,7 +668,7 @@ build_rootfs() {
 		--disable-nls \
 		--disable-rpath
 	make -j$XJOBS
-	make DESTDIR=$ROOTFS install-strip
+	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
