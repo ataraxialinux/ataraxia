@@ -874,6 +874,7 @@ build_rootfs() {
 		--disable-nls
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
+	ln -sf bash $ROOTFS/bin/sh
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 	install -Dm644 $KEEP/bash/system.bashrc $ROOTFS/etc/bash.bashrc
 	install -Dm644 $KEEP/bash/system.bash_logout $ROOTFS/etc/bash.bash_logout
