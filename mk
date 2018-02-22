@@ -290,33 +290,51 @@ setup_variables() {
 }
 
 setup_rootfs() {
-	mkdir -p $ROOTFS/{boot,dev,etc/{service,skel},home,mnt,proc,sys}
-	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
-	install -d -m 0750 $ROOTFS/root
-	install -d -m 1777 $ROOTFS/{var/,}tmp
-	mkdir -p $ROOTFS/usr/{,local/}{bin,include,lib/modules,share}
-
-	cd $ROOTFS/usr
-	ln -sf bin sbin
-
 	cd $ROOTFS
-	ln -sf usr/bin bin
-	ln -sf usr/lib lib
-	ln -sf usr/bin sbin
 
-	case $BARCH in
-		x86_64)
-			cd $ROOTFS/usr
-			ln -sf lib lib64
-			cd $ROOTFS
-			ln -sf lib lib64
-			;;
-	esac
+	for d in boot dev etc home mnt usr var opt srv/http run; do
+		install -d -m755 $d
+	done
 
-	ln -sf /proc/mounts $ROOTFS/etc/mtab
+	install -d -m555 proc
+	install -d -m555 sys
+	install -d -m0750 root
+	install -d -m1777 tmp
+	install -d -m555 -g 11 srv/ftp
 
-	touch $ROOTFS/var/log/lastlog
-	chmod 664 $ROOTFS/var/log/lastlog
+	ln -s ../proc/self/mounts etc/mtab
+
+	for d in cache local opt log/old lib/misc empty; do
+		install -d -m755 var/$d
+	done
+
+	install -d -m1777 var/{tmp,spool/mail}
+	install -d -m775 -g 50 var/games
+	ln -s spool/mail var/mail
+	ln -s ../run var/run
+	ln -s ../run/lock var/lock
+
+	for d in bin include lib share/misc src; do
+		install -d -m755 usr/$d
+	done
+
+	for d in {1..8}; do
+		install -d -m755 usr/share/man/man$d
+	done
+
+	ln -s usr/lib lib
+	[[ $BARCH = 'x86_64' ]] && {
+		ln -s usr/lib lib64
+		ln -s lib usr/lib64
+	}
+
+	ln -s usr/bin bin
+	ln -s usr/bin sbin
+	ln -s bin usr/sbin
+
+	for d in bin etc games include lib man sbin share src; do
+		install -d -m755 usr/local/$d
+	done
 }
 
 build_rootfs() {
