@@ -290,7 +290,7 @@ setup_variables() {
 }
 
 setup_rootfs() {
-	mkdir -p $ROOTFS/{boot,dev,etc/skel,home,mnt,proc,sys}
+	mkdir -p $ROOTFS/{boot,dev,etc/{service,skel},home,mnt,proc,sys}
 	mkdir -p $ROOTFS/var/{cache,lib,local,lock,log,opt,run,spool}
 	install -d -m 0750 $ROOTFS/root
 	install -d -m 1777 $ROOTFS/{var/,}tmp
@@ -841,6 +841,12 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/bash/bash-4.4.18.tar.gz
 	tar -xf bash-4.4.18.tar.gz
 	cd bash-4.4.18
+	_bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/usr/local/sbin:/usr/local/bin:/usr/bin\"\'
+			-DSTANDARD_UTILS_PATH=\'\"/usr/bin\"\'
+			-DSYS_BASHRC=\'\"/etc/bash.bashrc\"\'
+			-DSYS_BASH_LOGOUT=\'\"/etc/bash.bash_logout\"\'
+			-DNON_INTERACTIVE_LOGIN_SHELLS)
+	CFLAGS="${CFLAGS} ${_bashconfig[@]}"
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -851,11 +857,16 @@ build_rootfs() {
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
+	install -Dm644 $KEEP/bash/system.bashrc $ROOTFS/etc/bash.bashrc
+	install -Dm644 $KEEP/bash/system.bash_logout $ROOTFS/etc/bash.bash_logout
+	install -m644 $KEEP/bash/dot.bashrc $ROOTFS/etc/skel/.bashrc
+	install -m644 $KEEP/bash/dot.bash_profile $ROOTFS/etc/skel/.bash_profile
+	install -m644 $KEEP/bash/dot.bash_logout $ROOTFS/etc/skel/.bash_logout
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/bc/bc-1.07.1.tar.gz
-	tar -xf bc-1.07.1.tar.gz
-	cd bc-1.07.1
+	wget -c http://alpha.gnu.org/gnu/bc/bc-1.06.95.tar.gz
+	tar -xf bc-1.06.95.tar.gz
+	cd bc-1.06.95
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
