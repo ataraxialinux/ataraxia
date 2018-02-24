@@ -221,9 +221,9 @@ build_toolchain() {
 	make install-gcc install-target-libgcc
 
 	cd $SOURCES
-	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
-	tar -xf musl-1.1.18.tar.gz
-	cd musl-1.1.18
+	wget -c http://www.musl-libc.org/releases/musl-1.1.19.tar.gz
+	tar -xf musl-1.1.19.tar.gz
+	cd musl-1.1.19
 	./configure CC="$XTARGET-gcc" CROSS_COMPILE="$XTARGET-" \
 		--prefix= \
 		--syslibdir=/lib
@@ -349,9 +349,9 @@ build_rootfs() {
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
 
 	cd $SOURCES
-	wget -c http://www.musl-libc.org/releases/musl-1.1.18.tar.gz
-	tar -xf musl-1.1.18.tar.gz
-	cd musl-1.1.18
+	wget -c http://www.musl-libc.org/releases/musl-1.1.19.tar.gz
+	tar -xf musl-1.1.19.tar.gz
+	cd musl-1.1.19
 	CROSS_COMPILE="$XTARGET-" \
 	./configure \
 		$XCONFIGURE
