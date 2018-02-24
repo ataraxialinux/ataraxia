@@ -760,9 +760,9 @@ build_rootfs() {
 	tar -xf bzip2-1.0.6.tar.gz
 	cd bzip2-1.0.6
 	patch -Np1 -i $KEEP/bzip2.patch
-	make -j$XJOBS
+	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CC="$CC" -j$XJOBS
 	make PREFIX=$ROOTFS/usr install
-	make -f Makefile-libbz2_so -j$XJOBS
+	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CC="$CC" -f Makefile-libbz2_so -j$XJOBS
 	make -f Makefile-libbz2_so PREFIX=$ROOTFS/usr install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
@@ -778,6 +778,31 @@ build_rootfs() {
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
+
+	cd $SOURCES
+	wget -c http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
+	tar -xf perl-5.26.1.tar.xz
+	cd perl-5.26.1
+	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
+	export BUILD_ZLIB=0
+	export BUILD_BZIP2=0
+	export BZIP2_LIB=$ROOTFS/usr/lib
+	export BZIP2_INCLUDE=$ROOTFS/usr/inculde
+	./Configure -des \
+		-Dusecrosscompile \
+		-Dcc=$XTARGET-gcc \
+		-Dsysroot=$ROOTFS \
+		-Dprefix=/usr \
+		-Dvendorprefix=/usr \
+		-Dman1dir=/usr/share/man/man1 \
+		-Dman3dir=/usr/share/man/man3 \
+		-Doptimize="$CFLAGS" \
+		-Duseshrplib \
+		-Dusethreads
+	make -j$XJOBS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/{,usr}/lib/*.la
+	unset BUILD_ZLIB BUILD_BZIP2 BZIP2_LIB BZIP2_INCLUDE
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
