@@ -277,7 +277,7 @@ clean_sources() {
 setup_variables() {
 	export CFLAGS="-g0 -Os"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/lib"
+	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/usr/lib"
 	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
 	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
