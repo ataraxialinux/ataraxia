@@ -497,6 +497,7 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
 	cd build
 	../configure \
@@ -526,7 +527,7 @@ build_rootfs() {
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror
-	make -j$XJOBS
+	make AS_FOR_TARGET="${AS}" LD_FOR_TARGET="${LD}" -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
