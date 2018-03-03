@@ -165,21 +165,21 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.20.tar.xz
-	tar -xf linux-4.14.20.tar.xz
-	cd linux-4.14.20
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.23.tar.xz
+	tar -xf linux-4.14.23.tar.xz
+	cd linux-4.14.23
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.0.tar.xz
+	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.xz
 	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
-	tar xf ../mpfr-4.0.0.tar.xz
-	mv mpfr-4.0.0 mpfr
+	tar xf ../mpfr-4.0.1.tar.xz
+	mv mpfr-4.0.1 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.1.0.tar.gz
@@ -234,8 +234,8 @@ build_toolchain() {
 	rm -rf gcc-7.3.0
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
-	tar xf ../mpfr-4.0.0.tar.xz
-	mv mpfr-4.0.0 mpfr
+	tar xf ../mpfr-4.0.1.tar.xz
+	mv mpfr-4.0.1 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
 	tar xf ../mpc-1.1.0.tar.gz
@@ -341,9 +341,9 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.20.tar.xz
-	tar -xf linux-4.14.20.tar.xz
-	cd linux-4.14.20
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.23.tar.xz
+	tar -xf linux-4.14.23.tar.xz
+	cd linux-4.14.23
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
@@ -470,9 +470,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://www.mpfr.org/mpfr-4.0.0/mpfr-4.0.0.tar.xz
-	tar -xf mpfr-4.0.0.tar.xz
-	cd mpfr-4.0.0
+	wget -c http://www.mpfr.org/mpfr-4.0.1/mpfr-4.0.1.tar.xz
+	tar -xf mpfr-4.0.1.tar.xz
+	cd mpfr-4.0.1
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -831,9 +831,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/automake/automake-1.15.1.tar.xz
-	tar -xf automake-1.15.1.tar.xz
-	cd automake-1.15.1
+	wget -c http://ftp.gnu.org/gnu/automake/automake-1.16.tar.xz
+	tar -xf automake-1.16.tar.xz
+	cd automake-1.16
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -896,9 +896,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gawk/gawk-4.2.0.tar.xz
-	tar -xf gawk-4.2.0.tar.xz
-	cd gawk-4.2.0
+	wget -c http://ftp.gnu.org/gnu/gawk/gawk-4.2.1.tar.xz
+	tar -xf gawk-4.2.1.tar.xz
+	cd gawk-4.2.1
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
