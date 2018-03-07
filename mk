@@ -178,6 +178,7 @@ build_toolchain() {
 	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	tar xf ../mpfr-4.0.1.tar.xz
 	mv mpfr-4.0.1 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -234,6 +235,7 @@ build_toolchain() {
 	rm -rf gcc-7.3.0
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	tar xf ../mpfr-4.0.1.tar.xz
 	mv mpfr-4.0.1 mpfr
 	tar xf ../gmp-6.1.2.tar.xz
@@ -268,10 +270,14 @@ build_toolchain() {
 	make install
 }
 
-clean_sources() {
-	unset CFLAGS CXXFLAGS LDFLAGS
+strip_toolchain() {
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-all      2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip --strip-debug
 
 	rm -rf $SOURCES/*
+
+	unset CFLAGS CXXFLAGS LDFLAGS LC_ALL XJOBS HOSTCC
 }
 
 setup_variables() {
@@ -498,6 +504,9 @@ build_rootfs() {
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	[[ $BARCH = 'x86_64' ]] && {
+		sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	}
 	mkdir build
 	cd build
 	../configure \
@@ -527,7 +536,7 @@ build_rootfs() {
 		--disable-nls \
 		--disable-symvers \
 		--disable-werror
-	make AS_FOR_TARGET="${AS}" LD_FOR_TARGET="${LD}" -j$XJOBS
+	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
@@ -782,28 +791,22 @@ build_rootfs() {
 
 	cd $SOURCES
 	wget -c http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
+	wget -c https://github.com/arsv/perl-cross/releases/download/1.1.8/perl-cross-1.1.8.tar.gz
 	tar -xf perl-5.26.1.tar.xz
 	cd perl-5.26.1
+	tar --strip-components=1 -zxf ../perl-cross-1.1.8.tar.gz
 	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
-	export BUILD_ZLIB=0
-	export BUILD_BZIP2=0
-	export BZIP2_LIB=$ROOTFS/usr/lib
-	export BZIP2_INCLUDE=$ROOTFS/usr/inculde
-	./Configure -des \
-		-Dusecrosscompile \
-		-Dcc=$XTARGET-gcc \
-		-Dsysroot=$ROOTFS \
-		-Dprefix=/usr \
-		-Dvendorprefix=/usr \
-		-Dman1dir=/usr/share/man/man1 \
-		-Dman3dir=/usr/share/man/man3 \
-		-Doptimize="$CFLAGS" \
+	./configure \
+		--prefix=/usr \
+		--target=$XTARGET \
+		--sysroot=$ROOTFS \
+		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
+		-Aldflags="$LDFLAGS" \
 		-Duseshrplib \
 		-Dusethreads
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
-	unset BUILD_ZLIB BUILD_BZIP2 BZIP2_LIB BZIP2_INCLUDE
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
@@ -1077,6 +1080,7 @@ case "$1" in
 		setup_build_env
 		prepare_toolchain
 		build_toolchain
+		strip_toolchain
 		;;
 	container)
 		check_root
@@ -1084,7 +1088,7 @@ case "$1" in
 		setup_build_env
 		prepare_toolchain
 		build_toolchain
-		clean_sources
+		strip_toolchain
 		setup_variables
 		setup_rootfs
 		build_rootfs
@@ -1096,7 +1100,7 @@ case "$1" in
 		setup_build_env
 		prepare_toolchain
 		build_toolchain
-		clean_sources
+		strip_toolchain
 		setup_variables
 		setup_rootfs
 		build_rootfs
