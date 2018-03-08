@@ -535,7 +535,8 @@ build_rootfs() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
-		--disable-werror
+		--disable-werror \
+		$GCCOPTS
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
