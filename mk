@@ -143,6 +143,13 @@ build_toolchain() {
 	ln -s pkgconf $TOOLS/bin/pkg-config
 
 	cd $SOURCES
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.23.tar.xz
+	tar -xf linux-4.14.23.tar.xz
+	cd linux-4.14.23
+	make mrproper
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
+
+	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.xz
 	tar -xf binutils-2.30.tar.xz
 	cd binutils-2.30
@@ -163,13 +170,6 @@ build_toolchain() {
 		--disable-werror
 	make MAKEINFO="true" -j$XJOBS
 	make MAKEINFO="true" install
-
-	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.23.tar.xz
-	tar -xf linux-4.14.23.tar.xz
-	cd linux-4.14.23
-	make mrproper
-	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
 	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
