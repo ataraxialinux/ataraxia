@@ -770,9 +770,10 @@ build_rootfs() {
 	tar -xf bzip2-1.0.6.tar.gz
 	cd bzip2-1.0.6
 	patch -Np1 -i $KEEP/bzip2.patch
-	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CC="$CC" -j$XJOBS
+	sed -i 's@all: libbz2.a bzip2 bzip2recover test@all: libbz2.a bzip2 bzip2recover@' Makefile
+	make CFLAGS="$CFLAGS -D_GNU_SOURCE -fPIC" LDFLAGS="$LDFLAGS" CC="$CC" -j$XJOBS
 	make PREFIX=$ROOTFS/usr install
-	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CC="$CC" -f Makefile-libbz2_so -j$XJOBS
+	make CFLAGS="$CFLAGS -D_GNU_SOURCE -fPIC" LDFLAGS="$LDFLAGS" CC="$CC" -f Makefile-libbz2_so -j$XJOBS
 	make -f Makefile-libbz2_so PREFIX=$ROOTFS/usr install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
@@ -785,25 +786,6 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET \
 		--enable-libgdbm-compat
-	make -j$XJOBS
-	make DESTDIR=$ROOTFS install
-	rm -rf $ROOTFS/{,usr}/lib/*.la
-
-	cd $SOURCES
-	wget -c http://www.cpan.org/src/5.0/perl-5.26.1.tar.xz
-	wget -c https://github.com/arsv/perl-cross/releases/download/1.1.8/perl-cross-1.1.8.tar.gz
-	tar -xf perl-5.26.1.tar.xz
-	cd perl-5.26.1
-	tar --strip-components=1 -zxf ../perl-cross-1.1.8.tar.gz
-	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
-	./configure \
-		--prefix=/usr \
-		--target=$XTARGET \
-		--sysroot=$ROOTFS \
-		-Accflags="-D_GNU_SOURCE -D_BSD_SOURCE -fPIC $CFLAGS" \
-		-Aldflags="$LDFLAGS" \
-		-Duseshrplib \
-		-Dusethreads
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
