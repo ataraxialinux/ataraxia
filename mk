@@ -696,9 +696,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.43.9/e2fsprogs-1.43.9.tar.gz
-	tar -xf e2fsprogs-1.43.9.tar.gz
-	cd e2fsprogs-1.43.9
+	wget -c http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.44.0/e2fsprogs-1.44.0.tar.gz
+	tar -xf e2fsprogs-1.44.0.tar.gz
+	cd e2fsprogs-1.44.0
 	LIBS="-L$ROOTFS/usr/lib" \
 	./configure \
 		$XCONFIGURE \
