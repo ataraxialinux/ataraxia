@@ -277,7 +277,7 @@ strip_toolchain() {
 
 	rm -rf $SOURCES/*
 
-	unset CFLAGS CXXFLAGS LDFLAGS LC_ALL XJOBS HOSTCC
+	unset CFLAGS CXXFLAGS LDFLAGS
 }
 
 setup_variables() {
