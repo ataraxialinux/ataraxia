@@ -973,7 +973,6 @@ build_rootfs() {
 		--disable-rexec \
 		--disable-rlogin \
 		--disable-rsh \
-		--disable-syslogd \
 		--disable-whois
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
