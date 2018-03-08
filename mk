@@ -143,9 +143,9 @@ build_toolchain() {
 	ln -s pkgconf $TOOLS/bin/pkg-config
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.23.tar.xz
-	tar -xf linux-4.14.23.tar.xz
-	cd linux-4.14.23
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.24.tar.xz
+	tar -xf linux-4.14.24.tar.xz
+	cd linux-4.14.24
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
@@ -347,9 +347,9 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.23.tar.xz
-	tar -xf linux-4.14.23.tar.xz
-	cd linux-4.14.23
+	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.24.tar.xz
+	tar -xf linux-4.14.24.tar.xz
+	cd linux-4.14.24
 	make mrproper
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$ROOTFS/usr headers_install
 	find $ROOTFS/usr/include \( -name .install -o -name ..install.cmd \) -delete
