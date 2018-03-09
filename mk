@@ -122,6 +122,15 @@ prepare_toolchain() {
 
 build_toolchain() {
 	cd $SOURCES
+	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+	tar -xf m4-1.4.18.tar.xz
+	cd m4-1.4.18
+	./configure \
+		--prefix=$TOOLS
+	make -j$XJOBS
+	make install
+
+	cd $SOURCES
 	wget -c ftp://ftp.astron.com/pub/file/file-5.32.tar.gz
 	tar -xf file-5.32.tar.gz
 	cd file-5.32
@@ -922,6 +931,8 @@ build_rootfs() {
 	wget -c http://ftp.gnu.org/gnu/groff/groff-1.22.3.tar.gz
 	tar -xf groff-1.22.3.tar.gz
 	cd groff-1.22.3
+	cp -f $KEEP/config.guess config.guess
+	cp -f $KEEP/config.sub config.sub
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
