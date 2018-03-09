@@ -280,11 +280,11 @@ build_toolchain() {
 }
 
 strip_toolchain() {
+	rm -rf $SOURCES/*
+
 	find $TOOLS -type f | xargs file 2>/dev/null | grep "LSB executable"     | cut -f 1 -d : | xargs strip --strip-all      2>/dev/null || true
 	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"      | cut -f 1 -d : | xargs strip --strip-unneeded 2>/dev/null || true
 	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive" | cut -f 1 -d : | xargs strip --strip-debug
-
-	rm -rf $SOURCES/*
 
 	unset CFLAGS CXXFLAGS LDFLAGS
 }
@@ -938,7 +938,7 @@ build_rootfs() {
 		--build=$XHOST \
 		--host=$XTARGET \
 		--without-x
-	make -j$XJOBS
+	make -j1
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
