@@ -302,6 +302,10 @@ setup_rootfs() {
 		install -d -m755 $d
 	done
 
+	for f in fstab group host.conf hostname hosts inittab issue motd os-release passwd profile securetty shells sysctl.conf; do
+		install -m644 $KEEP/etc/$f etc/
+	done
+
 	install -d -m555 proc
 	install -d -m555 sys
 	install -d -m0750 root
@@ -340,12 +344,6 @@ setup_rootfs() {
 }
 
 build_rootfs() {
-	cd $SOURCES
-	wget -c https://github.com/JanusLinux/baselayout/archive/1.0-alpha2.1.tar.gz
-	tar -xf 1.0-alpha2.1.tar.gz
-	cd baselayout-1.0-alpha2.1
-	make DESTDIR=$ROOTFS install
-
 	cd $SOURCES
 	wget -c https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.14.24.tar.xz
 	tar -xf linux-4.14.24.tar.xz
@@ -647,6 +645,7 @@ build_rootfs() {
 	make -j$XJOBS
 	make DESTDIR=$ROOTFS install
 	rm -rf $ROOTFS/{,usr}/lib/*.la
+	sed -i 's/1000/100/' $ROOTFS/etc/default/useradd
 
 	cd $SOURCES
 	wget -c https://www.kernel.org/pub/linux/utils/util-linux/v2.31/util-linux-2.31.1.tar.xz
