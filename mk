@@ -275,7 +275,7 @@ build_toolchain() {
 		--disable-nls \
 		--disable-symvers \
 		$GCCOPTS
-	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
+	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld" -j$XJOBS
 	make install
 }
 
