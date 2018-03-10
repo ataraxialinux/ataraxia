@@ -122,7 +122,7 @@ prepare_toolchain() {
 
 build_toolchain() {
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/m4/m4-1.4.18.tar.xz
 	tar -xf m4-1.4.18.tar.xz
 	cd m4-1.4.18
 	./configure \
@@ -159,7 +159,7 @@ build_toolchain() {
 	make ARCH=$XKARCH INSTALL_HDR_PATH=$TOOLS headers_install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/binutils/binutils-2.30.tar.xz
 	tar -xf binutils-2.30.tar.xz
 	cd binutils-2.30
 	mkdir build
@@ -181,10 +181,10 @@ build_toolchain() {
 	make MAKEINFO="true" install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
-	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.xz
-	wget -c http://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
@@ -395,7 +395,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/m4/m4-1.4.18.tar.xz
 	tar -xf m4-1.4.18.tar.xz
 	cd m4-1.4.18
 	./configure \
@@ -422,7 +422,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/bison/bison-3.0.4.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/bison/bison-3.0.4.tar.xz
 	tar -xf bison-3.0.4.tar.xz
 	cd bison-3.0.4
 	./configure \
@@ -446,7 +446,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
+	wget -c https://ftpmirror.gnu.org/gnu/binutils/binutils-2.30.tar.bz2
 	tar -xf binutils-2.30.tar.bz2
 	cd binutils-2.30
 	mkdir build
@@ -470,7 +470,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
 	tar -xf gmp-6.1.2.tar.xz
 	cd gmp-6.1.2
 	./configure \
@@ -495,7 +495,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
 	tar -xf mpc-1.1.0.tar.gz
 	cd mpc-1.1.0
 	./configure \
@@ -507,7 +507,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz
 	tar -xf gcc-7.3.0.tar.xz
 	cd gcc-7.3.0
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
@@ -586,7 +586,7 @@ build_rootfs() {
 	chmod 755 $ROOTFS/usr/lib/libcap.so
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/sed/sed-4.4.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/sed/sed-4.4.tar.xz
 	tar -xf sed-4.4.tar.xz
 	cd sed-4.4
 	./configure \
@@ -614,7 +614,7 @@ build_rootfs() {
 	ln -s pkgconf $ROOTFS/usr/bin/pkg-config
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu//ncurses/ncurses-6.1.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu//ncurses/ncurses-6.1.tar.gz
 	tar -xf ncurses-6.1.tar.gz
 	cd ncurses-6.1
 	./configure \
@@ -725,7 +725,7 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install install-libs
 
 	cd $SOURCES
-	wget -c https://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
 	tar -xf coreutils-8.29.tar.xz
 	cd coreutils-8.29
 	./configure FORCE_UNSAFE_CONFIGURE=1 \
@@ -747,7 +747,7 @@ build_rootfs() {
 	make DESTDIR=$ROOTFS install
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/libtool/libtool-2.4.6.tar.xz
 	tar -xf libtool-2.4.6.tar.xz
 	cd libtool-2.4.6
 	./configure \
@@ -787,7 +787,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gdbm/gdbm-1.14.1.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/gdbm/gdbm-1.14.1.tar.gz
 	tar -xf gdbm-1.14.1.tar.gz
 	cd gdbm-1.14.1
 	./configure \
@@ -800,7 +800,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/readline/readline-7.0.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/readline/readline-7.0.tar.gz
 	tar -xf readline-7.0.tar.gz
 	cd readline-7.0
 	./configure \
@@ -812,7 +812,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/autoconf/autoconf-2.69.tar.xz
 	tar -xf autoconf-2.69.tar.xz
 	cd autoconf-2.69
 	patch -Np1 -i $KEEP/autoconf-add-musl.patch
@@ -825,7 +825,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/automake/automake-1.16.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/automake/automake-1.16.tar.xz
 	tar -xf automake-1.16.tar.xz
 	cd automake-1.16
 	./configure \
@@ -837,7 +837,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/bash/bash-4.4.18.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/bash/bash-4.4.18.tar.gz
 	tar -xf bash-4.4.18.tar.gz
 	cd bash-4.4.18
 	_bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/usr/local/sbin:/usr/local/bin:/usr/bin\"\'
@@ -877,7 +877,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/diffutils/diffutils-3.6.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/diffutils/diffutils-3.6.tar.xz
 	tar -xf diffutils-3.6.tar.xz
 	cd diffutils-3.6
 	./configure \
@@ -890,7 +890,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gawk/gawk-4.2.1.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/gawk/gawk-4.2.1.tar.xz
 	tar -xf gawk-4.2.1.tar.xz
 	cd gawk-4.2.1
 	./configure \
@@ -903,7 +903,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/findutils/findutils-4.6.0.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/findutils/findutils-4.6.0.tar.gz
 	tar -xf findutils-4.6.0.tar.gz
 	cd findutils-4.6.0
 	./configure \
@@ -915,7 +915,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/grep/grep-3.1.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/grep/grep-3.1.tar.xz
 	tar -xf grep-3.1.tar.xz
 	cd grep-3.1
 	./configure \
@@ -928,11 +928,9 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/groff/groff-1.22.3.tar.gz
+	wget -c https://ftpmirror.gnu.org/gnu/groff/groff-1.22.3.tar.gz
 	tar -xf groff-1.22.3.tar.gz
 	cd groff-1.22.3
-	cp -f $KEEP/config.guess config.guess
-	cp -f $KEEP/config.sub config.sub
 	./configure \
 		$XCONFIGURE \
 		--build=$XHOST \
@@ -955,7 +953,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/gzip/gzip-1.9.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/gzip/gzip-1.9.tar.xz
 	tar -xf gzip-1.9.tar.xz
 	cd gzip-1.9
 	./configure \
@@ -967,7 +965,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz
+	wget -c https://ftpmirror.gnu.org/gnu/inetutils/inetutils-1.9.4.tar.xz
 	tar -xf inetutils-1.9.4.tar.xz
 	cd inetutils-1.9.4
 	./configure \
@@ -1017,7 +1015,7 @@ build_rootfs() {
 	rm -rf $ROOTFS/{,usr}/lib/*.la
 
 	cd $SOURCES
-	wget -c http://ftp.gnu.org/gnu/make/make-4.2.1.tar.bz2
+	wget -c https://ftpmirror.gnu.org/gnu/make/make-4.2.1.tar.bz2
 	tar -xf make-4.2.1.tar.bz2
 	cd make-4.2.1
 	./configure \
