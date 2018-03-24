@@ -1,0 +1,18 @@
+name="attr-2.4.47"
+srcdir="$SOURCES/$name"
+tarball="$name.src.tar.gz"
+fetchurl="http://download.savannah.gnu.org/releases/attr/$tarball"
+
+bld() {
+	cd $srcdir
+	OPTIMIZER="${CFLAGS}" DEBUG=-DNDEBUG INSTALL_USER=root INSTALL_GROUP=root \
+	./configure \
+		--prefix=/usr \
+		--libdir=/lib \
+		--libexecdir=/usr/libexec \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-gettext
+	make $MKOPTS
+	make DESTDIR=$ROOTFS install install-dev install-lib
+}
