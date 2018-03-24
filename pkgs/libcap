@@ -1,0 +1,13 @@
+name="libcap-2.25"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="http://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/$tarball"
+
+bld() {
+	cd $srcdir
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i '/^lib=/s@=.*@=/lib@' Make.Rules
+	make BUILD_CC="$HOSTCC" CC="$CC" LDFLAGS="$LDFLAGS" PAM_CAP=no $MKOPTS
+	make RAISE_SETFCAP=no prefix=/usr DESTDIR=$ROOTFS install
+	chmod 755 $ROOTFS/usr/lib/libcap.so
+}
