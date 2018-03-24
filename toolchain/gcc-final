@@ -1,0 +1,42 @@
+name="gcc-7.3.0"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+
+bld() {
+	cd $SOURCES
+	rm -rf $name
+	tar -xf $tarball
+	cd $name
+	tar -xf ../gmp-6.1.2.tar.xz
+	mv gmp-6.1.2 gmp
+	tar -xf ../mpfr-4.0.1.tar.xz
+	mv mpfr-4.0.1 mpfr
+	tar -xf ../mpc-1.1.0.tar.gz
+	mv mpc-1.1.0 mpc
+	mkdir build
+	cd build
+	AR="ar"\
+	../configure \
+		--prefix=$TOOLS \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$TOOLS \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-fully-dynamic-string \
+		--enable-languages=c,c++ \
+		--enable-libstdcxx-time \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-lto-plugin \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		$GCCOPTS
+	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld" $MKOPTS
+	make install
+}

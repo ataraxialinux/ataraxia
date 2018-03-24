@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -e
+
+unpck() {
+	echo "Unpacking tarball: $tarball..."
+	case $tarball in
+		*.tar*|*.tgz|*.tbz|*.tbz2|*.tlz|*.txz)
+			tar -xf $tarball
+			;;
+		*.zip|*.xpi)
+			unzip -o $tarball
+			;;
+		*.7z)
+			7zr x $tarbal
+			;;
+		*.Z|*.z)
+			uncompress -c $tarball | tar -xf -
+			;;
+		*.rpm)
+			rpm2cpio $tarball | cpio -idm --quiet
+			;;
+		*)
+			cp $tarball $SOURCES
+	esac
+}
+
+ftch() {
+	echo "Fetching and extracting $name sources..."
+	case $fetchurl in
+		git://*)
+			echo "Cloning git repository: $fetchurl"
+			cd $SOURCES
+			git clone $fetchurl $gitopts
+			;;
+		ftp://*|http://*|https://*)
+			echo "Fetching $fetchurl"
+			cd $SOURCES
+			wget -c $fetchurl
+			unpck
+	esac
+}
+
+applypatch() {
+	echo "Applying patch $@..."
+	patch -Np1 -i $@
+}
+
+strp() {
+	echo "Cleaning package $name..."
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf
+	cd $ROOTFS
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+}
+
+. $1
+
+if [ -n "$fetchurl" ]; then
+        ftch
+else
+	echo "Skipping fetching url"
+fi
+
+bld
+
+if [ "$MODE" == 'toolchain' ]; then
+        echo "Don't clean!"
+else
+	strp
+fi
+
