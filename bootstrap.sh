@@ -127,20 +127,12 @@ build_rootfs() {
 	done
 }
 
-strip_rootfs() {
-	echo "Stripping rootfs..."
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all      2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug
-}
-
 configure_arch
 setup_build_env
 prepare_toolchain
 build_toolchain
 prepare_build
 build_rootfs
-strip_rootfs
 
 exit 0
 
