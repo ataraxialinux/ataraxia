@@ -9,9 +9,13 @@ setup_rootfs() {
 		install -d -m755 $d
 	done
 
-#	for f in fstab group host.conf hostname hosts inittab issue motd os-release passwd profile securetty shells sysctl.conf; do
-#		install -m644 $srcdir/$f etc/
-#	done
+	for f in fstab group host.conf hostname hosts inittab issue motd os-release passwd profile securetty shells sysctl.conf; do
+		install -m644 $KEEP/etc/$f etc/
+	done
+
+	for f in gshadow shadow; do
+		install -m600 $KEEP/etc/$f etc/
+	done
 
 	install -d -m555 proc
 	install -d -m555 sys
