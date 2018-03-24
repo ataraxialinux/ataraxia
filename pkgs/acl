@@ -1,0 +1,21 @@
+name="acl-2.2.52"
+srcdir="$SOURCES/$name"
+tarball="$name.src.tar.gz"
+fetchurl="http://download.savannah.gnu.org/releases/acl/$tarball"
+
+bld() {
+	cd $srcdir
+	unset PLATFORM
+	export OPTIMIZER="${CFLAGS}"
+	export DEBUG=-DNDEBUG
+	./configure \
+		--prefix=/usr \
+		--libdir=/lib \
+		--libexecdir=/usr/libexec \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-gettext
+	make $MKOPTS
+	make DESTDIR=$ROOTFS install install-dev install-lib
+	unset OPTIMIZER DEBUG
+}
