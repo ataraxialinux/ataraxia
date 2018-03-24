@@ -1,0 +1,15 @@
+name="pkgconf-1.4.2"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="http://distfiles.dereferenced.org/pkgconf/$tarball"
+
+bld() {
+	cd $srcdir
+	./configure \
+		--prefix=$TOOLS \
+		--host=$XTARGET \
+		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
+	make $MKOPTS
+	make install
+	ln -s pkgconf $TOOLS/bin/pkg-config
+}
