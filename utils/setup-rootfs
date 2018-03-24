@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -e
+
+setup_rootfs() {
+	cd $ROOTFS
+
+	for d in boot dev etc/skel home mnt usr var opt srv/http run; do
+		install -d -m755 $d
+	done
+
+#	for f in fstab group host.conf hostname hosts inittab issue motd os-release passwd profile securetty shells sysctl.conf; do
+#		install -m644 $srcdir/$f etc/
+#	done
+
+	install -d -m555 proc
+	install -d -m555 sys
+	install -d -m0750 root
+	install -d -m1777 tmp
+	install -d -m555 -g 11 srv/ftp
+
+	ln -s ../proc/self/mounts etc/mtab
+
+	for d in cache local opt log/old lib/misc empty; do
+		install -d -m755 var/$d
+	done
+
+	install -d -m1777 var/{tmp,spool/mail}
+	install -d -m775 -g 50 var/games
+	ln -s spool/mail var/mail
+	ln -s ../run var/run
+	ln -s ../run/lock var/lock
+
+	for d in bin include lib share src; do
+		install -d -m755 usr/$d
+	done
+
+	ln -s usr/lib lib
+	[[ $BARCH = 'x86_64' ]] && {
+		ln -s usr/lib lib64
+		ln -s lib usr/lib64
+	}
+
+	ln -s usr/bin bin
+	ln -s usr/bin sbin
+	ln -s bin usr/sbin
+
+	for d in bin etc games include lib sbin share src; do
+		install -d -m755 usr/local/$d
+	done
+}
+
+setup_rootfs
+

@@ -1,0 +1,15 @@
+name="zlib-1.2.11"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="http://zlib.net/$tarball"
+
+bld() {
+	cd $srcdir
+	CHOST="$XTARGET" \
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--shared
+	make $MKOPTS
+	make DESTDIR=$ROOTFS install
+}
