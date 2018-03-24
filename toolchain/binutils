@@ -1,0 +1,25 @@
+name="binutils-2.30"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="http://ftpmirror.gnu.org/gnu/binutils/$tarball"
+
+bld() {
+	cd $srcdir
+	mkdir build
+	cd build
+	AR="ar" AS="as" \
+	../configure \
+		--prefix=$TOOLS \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$TOOLS \
+		--enable-deterministic-archives \
+		--disable-cloog-version-check \
+		--disable-compressed-debug-sections \
+		--disable-multilib \
+		--disable-nls \
+		--disable-ppl-version-check \
+		--disable-werror
+	make $MKOPTS
+	make install
+}
