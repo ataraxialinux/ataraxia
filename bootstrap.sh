@@ -122,7 +122,7 @@ build_rootfs() {
 	. $UTILS/setup-rootfs
 
 	echo "Building rootfs..."
-	for PKG in linux-headers musl zlib m4 bison flex binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs; do
+	for PKG in linux-headers musl zlib m4 bison flex binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl; do
 		buildpkg $REPO/$PKG
 	done
 }
