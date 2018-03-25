@@ -1,0 +1,16 @@
+name="sed-4.4"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="http://ftpmirror.gnu.org/gnu/sed/$tarball"
+
+bld() {
+	cd $srcdir
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-i18n \
+		--disable-nls
+	make $MKOPTS
+	make DESTDIR=$ROOTFS install
+}
