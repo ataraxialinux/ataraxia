@@ -51,19 +51,19 @@ applypatch() {
 
 strp() {
 	echo "Stripping package $name..."
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all	2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded	2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug	2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf			2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "LSB executable"	| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-all		2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-unneeded	2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	find $ROOTFS -type f | xargs file 2>/dev/null | grep "libtool library file" 	| cut -f 1 -d : 	| xargs rm -rf						2>/dev/null || true
 	cd $ROOTFS
 	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 }
 
 strptc() {
 	echo "Stripping package $name..."
-	find $TOOLS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs strip --strip-all	2>/dev/null || true
-	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
-	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug	2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null	| grep "LSB executable"	| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-all		2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-debug		2>/dev/null || true
 }
 
 check_for_fetch() {
