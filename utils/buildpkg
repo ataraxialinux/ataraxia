@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# The most useless build utility written on shell.
+#
 
 set -e
 
@@ -41,12 +44,6 @@ ftch() {
 	esac
 }
 
-check_for_fetch() {
-	if [ -n "$fetchurl" ]; then
-		ftch
-	fi
-}
-
 applypatch() {
 	echo "Applying patch $@..."
 	patch -Np1 -i $@
@@ -69,17 +66,53 @@ strptc() {
 	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug	2>/dev/null || true
 }
 
+check_for_fetch() {
+	if [ -n "$fetchurl" ]; then
+		ftch
+	fi
+}
+
+check_for_bld() {
+	if type bld &>/dev/null; then
+		bld
+	fi
+}
+
+check_for_strp() {
+	if [ "$nostrip" =! "yes" ]; then
+		strp
+	fi
+}
+
+check_line_strp() {
+	if [ -n "$nostrip" ]; then
+		check_for_strp
+	fi
+}
+
+check_for_strptc() {
+	if [ "$nostrip" =! "yes" ]; then
+		strptc
+	fi
+}
+
+check_line_strptc() {
+	if [ -n "$nostrip" ]; then
+		check_for_strptc
+	fi
+}
+
 . $1
 
 case $MODE in
 	toolchain)
 		check_for_fetch
-		bld
-		strptc
+		check_for_bld
+		check_for_strptc
 		;;
 	*)
 		check_for_fetch
-		bld
-		strp
+		check_for_bld
+		check_line_strp
 esac
 
