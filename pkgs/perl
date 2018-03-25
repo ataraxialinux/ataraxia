@@ -1,6 +1,6 @@
-name="perl-5.24.3"
+name="perl-5.26.1"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
+tarball="$name.tar.gz"
 fetchurl="http://www.cpan.org/src/5.0/$tarball"
 
 bld() {
@@ -8,18 +8,16 @@ bld() {
 	wget -c https://github.com/arsv/perl-cross/releases/download/1.1.8/perl-cross-1.1.8.tar.gz
 	cd $srcdir
 	tar --strip-components=1 -zxf ../perl-cross-1.1.8.tar.gz
+	sed -i 's/-fstack-protector/-fnostack-protector/g' ./Configure
 	./configure \
-		--prefix=/usr \
 		--target=$XTARGET \
-		--all-static \
-		-Dcc="$XTARGET-gcc" \
-		-Dprivlib=/usr/lib/perl5 \
-		-Dsitelib=/usr/lib/perl5/site_perl \
-		-Dldflags="-s -static" \
-		-Doptimize="$CFLAGS -static" \
-		-Duselargefiles \
+		--prefix=/usr \
+		-Duseshrplib \
 		-Dusethreads \
-		BUILD_ZLIB="False" BUILD_BZIP2="0"
-	make BUILD_ZLIB="False" BUILD_BZIP2="0" -j1
+		-Dcc="$XTARGET-gcc" \
+		-Doptimize="${CFLAGS}" \
+		-Dldflags="${LDFLAGS}" \
+		BUILD_ZLIB=False BUILD_BZIP2=0
+	make perl BUILD_ZLIB=False BUILD_BZIP2=0 -j1
 	make DESTDIR=$ROOTFS install
 }
