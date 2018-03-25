@@ -2,6 +2,19 @@
 
 set -e
 
+# Colors!
+export C_CLEAR='\e[m'
+export C_RED='\e[1;31m'
+export C_GREEN='\e[1;32m'
+
+message() {
+	echo -e " ${C_GREEN}>>${C_CLEAR} ${@}"
+}
+
+error() {
+	echo -e " ${C_RED}>>${C_CLEAR} ${@}"
+}
+
 configure_arch() {
 	case $BARCH in
 		x86_64)
@@ -53,13 +66,14 @@ configure_arch() {
 			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
 			;;
 		*)
-			echo "BARCH variable isn't set!"
+			error "BARCH variable isn't set!"
 			exit 0
 	esac
 }
 
 setup_build_env() {
-	echo "Preparing build environment..."
+	message "Preparing build environment..."
+	sleep 1
 	export CWD="$(pwd)"
 	export BUILD="$CWD/build"
 	export SOURCES="$BUILD/sources"
@@ -80,7 +94,8 @@ setup_build_env() {
 }
 
 prepare_toolchain() {
-	echo "Setting up toolchain optimizations..."
+	message "Setting up toolchain optimizations..."
+	sleep 1
 	export CFLAGS="-Os -g0"
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s"
@@ -90,7 +105,8 @@ prepare_toolchain() {
 }
 
 build_toolchain() {
-	echo "Building cross-toolchain for $XTARGET..."
+	message "Building cross-toolchain for $XTARGET..."
+	sleep 1
 	MODE=toolchain buildpkg $TC/file
 	MODE=toolchain buildpkg $TC/pkgconf
 	MODE=toolchain buildpkg $TC/linux-headers
@@ -102,7 +118,8 @@ build_toolchain() {
 }
 
 prepare_build() {
-	echo "Setting up optimzations and toolset for rootfs build..."
+	message "Setting up optimzations and toolset for rootfs build..."
+	sleep 1
 	export CFLAGS="-Os -g0"
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/usr/lib"
@@ -118,10 +135,12 @@ prepare_build() {
 }
 
 build_rootfs() {
-	echo "Setting up filesystem..."
+	message "Setting up filesystem..."
+	sleep 1
 	. $UTILS/setup-rootfs
 
-	echo "Building rootfs..."
+	message "Building rootfs..."
+	sleep 1
 	for PKG in linux-headers musl zlib m4 bison flex binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl; do
 		buildpkg $REPO/$PKG
 	done
