@@ -41,6 +41,12 @@ ftch() {
 	esac
 }
 
+check_for_fetch() {
+	if [ -n "$fetchurl" ]; then
+		ftch
+	fi
+}
+
 applypatch() {
 	echo "Applying patch $@..."
 	patch -Np1 -i $@
@@ -65,17 +71,15 @@ strptc() {
 
 . $1
 
-if [ -n "$fetchurl" ]; then
-        ftch
-else
-	echo "Skipping fetching url"
-fi
-
-bld
-
-if [ "$MODE" == 'toolchain' ]; then
-        strptc
-else
-	strp
-fi
+case $MODE in
+	toolchain)
+		check_for_fetch
+		bld
+		strptc
+		;;
+	*)
+		check_for_fetch
+		bld
+		strp
+esac
 
