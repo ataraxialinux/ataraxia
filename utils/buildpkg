@@ -6,7 +6,7 @@
 set -e
 
 unpck() {
-	echo "Unpacking tarball: $tarball..."
+	message "Unpacking tarball: $tarball..."
 	case $tarball in
 		*.tar*|*.tgz|*.tbz|*.tbz2|*.tlz|*.txz)
 			tar -xf $tarball
@@ -29,7 +29,7 @@ unpck() {
 }
 
 ftch() {
-	echo "Fetching and extracting $name sources..."
+	message "Fetching and extracting $name sources..."
 	case $fetchurl in
 		git://*)
 			echo "Cloning git repository: $fetchurl"
@@ -45,12 +45,12 @@ ftch() {
 }
 
 applypatch() {
-	echo "Applying patch $@..."
+	message "Applying patch $@..."
 	patch -Np1 -i $@
 }
 
 strp() {
-	echo "Stripping package $name..."
+	message "Stripping package $name..."
 	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "LSB executable"		| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-all		2>/dev/null || true
 	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
 	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
@@ -60,7 +60,7 @@ strp() {
 }
 
 strptc() {
-	echo "Stripping package $name..."
+	message "Stripping package $name..."
 	find $TOOLS -type f | xargs file 2>/dev/null	| grep "LSB executable"		| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-all		2>/dev/null || true
 	find $TOOLS -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-unneeded		2>/dev/null || true
 	find $TOOLS -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-debug		2>/dev/null || true
@@ -74,6 +74,8 @@ check_for_fetch() {
 
 check_for_bld() {
 	if type bld &>/dev/null; then
+		message "Building package $name..."
+		sleep 1
 		bld
 	fi
 }
