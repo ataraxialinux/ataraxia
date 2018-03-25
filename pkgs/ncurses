@@ -1,0 +1,27 @@
+name="ncurses-6.1"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.gz"
+fetchurl="http://ftpmirror.gnu.org/gnu/ncurses/$tarball"
+
+bld() {
+	cd $srcdir
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/libexec \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-build-cc=$HOSTCC \
+		--with-pkg-config-libdir=/usr/lib/pkgconfig \
+		--with-normal \
+		--with-shared \
+		--without-ada \
+		--without-debug \
+		--without-manpages \
+		--without-tests \
+		--enable-pc-files \
+		--enable-widec \
+		--disable-nls
+	make $MKOPTS
+	make DESTDIR=$ROOTFS install
+}
