@@ -1,0 +1,18 @@
+name="iproute2-4.15.0"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="https://www.kernel.org/pub/linux/utils/net/iproute2/$tarball"
+
+bld() {
+	cd $srcdir
+	applypatch $KEEP/0001-make-iproute2-fhs-compliant.patch
+	applypatch $KEEP/iproute2-4.12.0-musl.patch
+	applypatch $KEEP/iproute2-disable-arpd.patch
+	sed -e '/^check_elf$/d' -i configure
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET
+	make CCOPTS="-D_GNU_SOURCE $CFLAGS" LIBDIR=/lib $MKOPTS
+	make -j1 DESTDIR=$ROOTFS install
+}
