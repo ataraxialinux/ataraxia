@@ -1,0 +1,18 @@
+name="grub-2.02"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.xz"
+fetchurl="http://ftpmirror.gnu.org/gnu/grub/$tarball"
+
+bld() {
+	cd $srcdir
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-werror
+	make $MKOPTS
+	make DESTDIR=$ROOTFS install
+	rm -rf $ROOTFS/etc/default/grub
+	cp $KEEP/default_grub $ROOTFS/etc/default/grub
+}
