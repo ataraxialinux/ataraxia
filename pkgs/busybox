@@ -1,14 +1,21 @@
-name="m4-1.4.18"
+name="busybox-1.28.1"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+tarball="$name.tar.bz2"
+fetchurl="http://busybox.net/downloads/$tarball"
 
 bld() {
 	cd $srcdir
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
-	make $MKOPTS
-	make DESTDIR=$ROOTFS install
+	make ARCH=$XKARCH defconfig
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=$ROOTFS install
+	cd $ROOTFS
+	ln -s bin/busybox init
+	rm linuxrc
+	chmod 4755 bin/busybox
 }
