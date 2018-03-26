@@ -1,14 +1,13 @@
-name="m4-1.4.18"
+name="wireless_tools.29"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+tarball="$name.tar.gz"
+fetchurl="https://hewlettpackard.github.io/wireless-tools/$tarball"
 
 bld() {
 	cd $srcdir
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
-	make $MKOPTS
+	sed -i s/gcc/\$\{CC\}/g Makefile
+	sed -i s/ar/\$\{AR\}/g Makefile
+	sed -i s/ranlib/\$\{RANLIB\}/g Makefile
+	make CFLAGS="-D_GNU_SOURCE -D_BSD_SOURCE $CFLAGS" PREFIX=/usr $MKOPTS
 	make DESTDIR=$ROOTFS install
 }

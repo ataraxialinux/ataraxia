@@ -1,14 +1,25 @@
-name="m4-1.4.18"
+name="openssh-7.6p1"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+tarball="$name.tar.gz"
+fetchurl="http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/$tarball"
 
 bld() {
 	cd $srcdir
+	sed -i 's/cross_compiling=maybe/cross_compiling=yes/' configure
 	./configure \
 		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/libexec \
+		--sysconfdir=/etc/ssh \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--without-pie \
+		--with-privsep-user=nobody \
+		--with-md5-passwords \
+		--disable-btmp \
+		--disable-lastlog \
+		--disable-strip \
+		--disable-utmpx
 	make $MKOPTS
 	make DESTDIR=$ROOTFS install
 }

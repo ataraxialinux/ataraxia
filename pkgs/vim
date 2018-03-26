@@ -1,14 +1,19 @@
-name="m4-1.4.18"
+name="vim-8.0.586"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+tarball="$name.tar.bz2"
+fetchurl="http://ftp.vim.org/pub/vim/unix/$tarball"
 
 bld() {
 	cd $srcdir
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--with-x=no \
+		--enable-multibyte \
+		--disable-gui \
+		--disable-netbeans \
+		--disable-nls
 	make $MKOPTS
 	make DESTDIR=$ROOTFS install
 }
