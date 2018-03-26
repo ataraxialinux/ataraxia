@@ -1,14 +1,20 @@
-name="m4-1.4.18"
+name="wpa_supplicant-2.6"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+tarball="$name.tar.gz"
+fetchurl="http://hostap.epitest.fi/releases/$tarball"
 
 bld() {
-	cd $srcdir
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+	cd $srcdir/wpa_supplicant
+	cp defconfig .config
+	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
+	cat > .config << EOF
+CFLAGS += ${CFLAGS}
+LDFLAGS += ${LDFLAGS}
+LIBDIR = /usr/lib
+INCDIR = /usr/include
+BINDIR = /usr/bin
+CC = $CC
+EOF
 	make $MKOPTS
 	make DESTDIR=$ROOTFS install
 }

@@ -1,14 +1,18 @@
-name="m4-1.4.18"
-srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+name="lynx2.8.8"
+srcdir="$SOURCES/lynx2-8-8"
+tarball="lynx2.8.8rel.2.tar.gz"
+fetchurl="https://invisible-mirror.net/archives/lynx/tarballs/$tarball"
 
 bld() {
 	cd $srcdir
 	./configure \
 		--prefix=/usr \
+		--sysconfdir=/etc \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--with-ssl \
+		--enable-ipv6 \
+		--disable-nls
 	make $MKOPTS
 	make DESTDIR=$ROOTFS install
 }
