@@ -1,14 +1,12 @@
-name="m4-1.4.18"
+name="libelf-compat-0.152c001"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+tarball="$name.tar.bz2"
+fetchurl="ttp://ftp.barfooze.de/pub/sabotage/tarballs/$tarball"
 
 bld() {
 	cd $srcdir
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
-	make $MKOPTS
-	make DESTDIR=$ROOTFS install
+	echo "CFLAGS += $CFLAGS -fPIC" > config.mak
+	sed -i 's@HEADERS = src/libelf.h@HEADERS = src/libelf.h src/gelf.h@' Makefile
+	make -j$XJOBS
+	make prefix=/usr DESTDIR=$ROOTFS install
 }
