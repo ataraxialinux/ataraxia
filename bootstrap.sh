@@ -79,13 +79,14 @@ setup_build_env() {
 	export SOURCES="$BUILD/sources"
 	export ROOTFS="$BUILD/rootfs"
 	export TOOLS="$BUILD/tools"
+	export PKGS="$BUILD/packages"
 	export KEEP="$CWD/KEEP"
 	export REPO="$CWD/pkgs"
 	export TC="$CWD/toolchain"
 	export UTILS="$CWD/utils"
 
 	rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS $TOOLS
+	mkdir -p $BUILD $SOURCES $ROOTFS $TOOLS $PKGS
 
 	export LC_ALL="POSIX"
 	export PATH="$UTILS:$TOOLS/bin:$PATH"
@@ -142,7 +143,7 @@ build_rootfs() {
 	message "Building rootfs..."
 	sleep 1
 	for PKG in linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim grub libressl openssh curl git libarchive lynx libnl wpa_supplicant linux; do
-		buildpkg $REPO/$PKG
+		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
 }
 
