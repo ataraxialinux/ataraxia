@@ -5,6 +5,9 @@
 
 set -e
 
+export XPACKAGE=$1
+export XDESTDIR=$2
+
 # Colors!
 export C_CLEAR='\e[m'
 export C_RED='\e[1;31m'
@@ -12,6 +15,12 @@ export C_GREEN='\e[1;32m'
 
 message() {
 	echo -e " ${C_GREEN}>>${C_CLEAR} ${@}"
+}
+
+prp_pkg() {
+	message "Preparing for $name build..."
+	rm -rf $XDESTDIR
+	mkdir -p $XDESTDIR
 }
 
 unpck() {
@@ -60,19 +69,12 @@ applypatch() {
 
 strp() {
 	message "Stripping package $name..."
-	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "LSB executable"		| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-all		2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
-	find $ROOTFS -type f | xargs file 2>/dev/null	| grep "libtool library file" 	| cut -f 1 -d : 	| xargs rm -rf						2>/dev/null || true
-	cd $ROOTFS
+	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "LSB executable"	| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-all		2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-unneeded	2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "libtool library file" 	| cut -f 1 -d : 	| xargs rm -rf						2>/dev/null || true
+	cd $XDESTDIR
 	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
-}
-
-strptc() {
-	message "Stripping package $name..."
-	find $TOOLS -type f | xargs file 2>/dev/null	| grep "LSB executable"		| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-all		2>/dev/null || true
-	find $TOOLS -type f | xargs file 2>/dev/null	| grep "shared object"		| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-unneeded		2>/dev/null || true
-	find $TOOLS -type f | xargs file 2>/dev/null	| grep "current ar archive"	| grep "not stripped"	| cut -f 1 -d : | xargs strip --strip-debug		2>/dev/null || true
 }
 
 check_for_fetch() {
@@ -89,17 +91,25 @@ check_for_bld() {
 	fi
 }
 
-. $1
+cp_cnts() {
+	message "Copying $name contents to rootfs..."
+	cp -a $XDESTDIR/* $ROOTFS/
+}
+
+. $XPACKAGE
 
 case $MODE in
 	toolchain)
 		check_for_fetch
 		check_for_bld
-		strptc
 		;;
 	*)
+		prp_pkg
 		check_for_fetch
 		check_for_bld
 		strp
+		cp_cnts
 esac
+
+unset PACKAGE XDESTDIR
 
