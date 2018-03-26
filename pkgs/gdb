@@ -1,14 +1,22 @@
-name="m4-1.4.18"
+name="gdb-8.1"
 srcdir="$SOURCES/$name"
 tarball="$name.tar.xz"
-fetchurl="http://ftpmirror.gnu.org/gnu/m4/$tarball"
+fetchurl="http://ftpmirror.gnu.org/gnu/gdb/$tarball"
 
 bld() {
 	cd $srcdir
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--with-system-gdbinit=/etc/gdb/gdbinit \
+		--with-system-readline \
+		--with-system-zlib \
+		--disable-gdbserver \
+		--disable-plugins \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
 	make $MKOPTS
 	make DESTDIR=$ROOTFS install
 }
