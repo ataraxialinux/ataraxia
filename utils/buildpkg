@@ -72,7 +72,8 @@ strp() {
 	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "LSB executable"	| cut -f 1 -d : | xargs $STRIP --strip-all		2>/dev/null || true
 	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "shared object"		| cut -f 1 -d : | xargs $STRIP --strip-unneeded	2>/dev/null || true
 	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "current ar archive"	| cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
-	find $XDESTDIR -type f | xargs file 2>/dev/null	| grep "libtool library file"	| xargs rm -rf						2>/dev/null || true
+	find $XDESTDIR -type f -name ".packlist *.pod *.la"	| rm -rf										2>/dev/null || true
+	find $ROOTFS   -type f -name ".packlist *.pod *.la"	| rm -rf										2>/dev/null || true
 	cd $XDESTDIR
 	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 }
