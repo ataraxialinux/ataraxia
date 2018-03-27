@@ -101,14 +101,16 @@ prepare_toolchain() {
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s"
 
-	[[ $BARCH = 'x86_64' ]] && {
-		cd $TOOLS
-		mkdir -p $TOOLS/lib
-		ln -s lib lib64
-		mkdir -p $TOOLS/$XTARGET/lib
-		cd $TOOLS/$XTARGET
-		ln -s lib lib64
-	}
+	case $BARCH in
+		x86_64|aarch64|mips64el|powerpc64)
+			cd $TOOLS
+			mkdir -p $TOOLS/lib
+			ln -s lib lib64
+			mkdir -p $TOOLS/$XTARGET/lib
+			cd $TOOLS/$XTARGET
+			ln -s lib lib64
+			;;
+	esac
 
 	cd $TOOLS
 	ln -sf . usr
