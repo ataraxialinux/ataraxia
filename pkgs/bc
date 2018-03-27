@@ -1,21 +1,10 @@
-name="bc-1.07.1"
+name="bc-1.06.95"
 srcdir="$SOURCES/$name"
-tarball="$name.tar.gz"
-fetchurl="http://ftp.gnu.org/gnu/bc/$tarball"
+tarball="$name.tar.bz2"
+fetchurl="http://alpha.gnu.org/gnu/bc/$tarball"
 
 bld() {
 	cd $srcdir
-	cat > bc/fix-libmath_h << "EOF"
-#! /bin/bash
-sed -e '1   s/^/{"/' \
-    -e     's/$/",/' \
-    -e '2,$ s/^/"/'  \
-    -e   '$ d'       \
-    -i libmath.h
-
-sed -e '$ s/$/0}/' \
--i libmath.h
-EOF
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
