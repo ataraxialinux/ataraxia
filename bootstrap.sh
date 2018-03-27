@@ -126,7 +126,17 @@ build_toolchain() {
 	MODE=toolchain buildpkg $TC/gcc-static
 	MODE=toolchain buildpkg $TC/musl
 	MODE=toolchain buildpkg $TC/gcc-final
-	MODE=toolchain buildpkg $TC/finish
+}
+
+finish_toolchain() {
+	message "Finishing toolchain..."
+	rm -rf $SOURCES/*
+	find $ROOLS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs strip --strip-all		2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug		2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf			2>/dev/null || true
+	unset CFLAGS CXXFLAGS LDFLAGS
+	message "Toolchain successfully built!"
 }
 
 prepare_build() {
@@ -153,7 +163,7 @@ build_rootfs() {
 
 	message "Building rootfs..."
 	sleep 1
-	for PKG in linux-headers musl libz m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim grub libressl openssh curl git libarchive lynx libnl wpa_supplicant linux; do
+	for PKG in linux-headers musl libz m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim grub libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux; do
 		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
 }
@@ -162,6 +172,7 @@ configure_arch
 setup_build_env
 prepare_toolchain
 build_toolchain
+finish_toolchain
 prepare_build
 build_rootfs
 
