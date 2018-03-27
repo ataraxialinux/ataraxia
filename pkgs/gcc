@@ -4,6 +4,16 @@ tarball="$name.tar.xz"
 fetchurl="http://ftpmirror.gnu.org/gnu/gcc/$name/$tarball"
 
 bld() {
+	export CFLAGS_FOR_TARGET="${CFLAGS}"
+	export CXXFLAGS_FOR_TARGET="${CXXFLAGS}"
+	export CPPFLAGS_FOR_TARGET="${CXXFLAGS}"
+	export LDFLAGS_FOR_TARGET="${LDFLAGS}"
+
+	export CFLAGS_FOR_BUILD="-Os -g0"
+	export CPPFLAGS_FOR_BUILD="-Os -g0"
+	export CXXFLAGS_FOR_BUILD="-Os -g0"
+	export LDFLAGS_FOR_BUILD="-s"
+
 	cd $srcdir
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
@@ -38,6 +48,10 @@ bld() {
 		--disable-symvers \
 		--disable-werror \
 		$GCCOPTS
-	make $MKOPTS
+	make AS_FOR_TARGET="$XTARGET-as" \
+		LD_FOR_TARGET="$XTARGET-ld" $MKOPTS
 	make DESTDIR=$XDESTDIR install
+
+	unset CFLAGS_FOR_TARGET CXXFLAGS_FOR_TARGET CPPFLAGS_FOR_TARGET LDFLAGS_FOR_TARGET
+	unset CFLAGS_FOR_BUILD CXXFLAGS_FOR_BUILD CPPFLAGS_FOR_BUILD LDFLAGS_FOR_BUILD
 }
