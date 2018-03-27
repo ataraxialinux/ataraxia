@@ -6,7 +6,12 @@ fetchurl="http://ftpmirror.gnu.org/gnu/gcc/$name/$tarball"
 bld() {
 	cd $srcdir
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	case $BARCH in
+		x86_64)
+			sed -e '/m64=/s/lib64/lib/' 
+				-i.orig gcc/config/i386/t-linux64
+			;;
+	esac
 	mkdir build
 	cd build
 	../configure \
