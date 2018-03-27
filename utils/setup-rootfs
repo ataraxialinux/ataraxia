@@ -40,10 +40,13 @@ setup_rootfs() {
 	done
 
 	ln -s usr/lib lib
-	[[ $BARCH = 'x86_64' ]] && {
-		ln -s usr/lib lib64
-		ln -s lib usr/lib64
-	}
+
+	case $BARCH in
+		x86_64|aarch64|mips64el|powerpc64)
+			ln -s usr/lib lib64
+			ln -s lib usr/lib64
+			;;
+	esac
 
 	ln -s usr/bin bin
 	ln -s usr/bin sbin
