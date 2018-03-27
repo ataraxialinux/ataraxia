@@ -35,7 +35,7 @@ setup_rootfs() {
 	ln -s ../run var/run
 	ln -s ../run/lock var/lock
 
-	for d in bin include lib share src; do
+	for d in bin include lib share src $XTARGET/lib; do
 		install -d -m755 usr/$d
 	done
 
@@ -45,9 +45,12 @@ setup_rootfs() {
 		x86_64|aarch64|mips64el|powerpc64)
 			ln -s usr/lib lib64
 			ln -s lib usr/lib64
+			cd $ROOTFS/usr/$XTARGET
+			ln -s lib lib64
 			;;
 	esac
 
+	cd $ROOTFS
 	ln -s usr/bin bin
 	ln -s usr/bin sbin
 	ln -s bin usr/sbin
@@ -55,6 +58,13 @@ setup_rootfs() {
 	for d in bin etc games include lib sbin share src; do
 		install -d -m755 usr/local/$d
 	done
+
+	case $BARCH in
+		x86_64|aarch64|mips64el|powerpc64)
+			cd $ROOTFS/usr/local
+			ln -sf lib lib64
+			;;
+	esac
 }
 
 setup_rootfs
