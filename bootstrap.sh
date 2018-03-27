@@ -55,9 +55,9 @@ configure_arch() {
 			;;
 		powerpc64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64le-linux-musl"
-			export XKARCH="powerpc64le"
-			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			export XTARGET="powerpc64-linux-musl"
+			export XKARCH="powerpc64"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
 			;;
 		powerpc)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
