@@ -125,10 +125,10 @@ build_toolchain() {
 	sleep 1
 	MODE=toolchain buildpkg $TC/file
 	MODE=toolchain buildpkg $TC/pkgconf
-	buildpkg $REPO/linux-headers $PKGS/linux-headers
+	MODE=third buildpkg $REPO/linux-headers $PKGS/linux-headers
 	MODE=toolchain buildpkg $TC/binutils
 	MODE=toolchain buildpkg $TC/gcc-static
-	buildpkg $REPO/musl $PKGS/musl
+	MODE=third buildpkg $REPO/musl $PKGS/musl
 	MODE=toolchain buildpkg $TC/gcc-final
 }
 
