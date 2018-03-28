@@ -157,7 +157,7 @@ prepare_build() {
 build_rootfs() {
 	message "Building rootfs..."
 	sleep 1
-	for PKG in libz m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim grub libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim gdb libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux grub; do
 		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
 }
