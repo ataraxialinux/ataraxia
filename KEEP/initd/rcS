@@ -1,0 +1,147 @@
+#!/bin/sh
+#
+# kuina-init or rcS is main script, which designed for run Linux system.
+#
+
+. /etc/rc.conf
+
+export C_CLEAR='\e[m'
+export C_RED='\e[1;31m'
+export C_GREEN='\e[1;32m'
+
+message() {
+	echo -e " ${C_GREEN}>>${C_CLEAR} ${@}"
+}
+
+status() {
+	local ERR=$?
+	echo -en "\\033[65G"
+	if [ $ERR = 0 ]; then
+		echo -en "\\033[1;32mOK"
+	else
+		echo -en "\\033[1;31mFAIL"
+	fi
+	echo -e "\\033[0;39m"
+}
+
+appendpath () {
+    case ":$PATH:" in
+        *:"$1":*)
+            ;;
+        *)
+            PATH="${PATH:+$PATH:}$1"
+    esac
+}
+
+appendpath '/usr/local/sbin'
+appendpath '/usr/local/bin'
+appendpath '/usr/bin'
+unset appendpath
+
+message "Mounting virtual filesystems..."
+mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p /dev/{pts,shm}
+mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+status
+
+message "Starting udev daemon..."
+udevd --daemon
+udevadm trigger --type=subsystems --action=add
+udevadm trigger --type=devices    --action=add
+udevadm settle
+status
+
+message "Remounting filesystem to read-only..."
+mount -o remount,ro /
+status
+
+message "Checking filesystem..."
+if [ -f /forcefsck ]; then
+FORCEFSCK="-f"
+fi
+fsck $FORCEFSCK -A -T -C -a
+if [ $? -gt 1 ]; then
+	echo
+	echo "***************  FILESYSTEM CHECK FAILED  ******************"
+	echo "*                                                          *"
+	echo "*  Please repair manually and reboot. Note that the root   *"
+	echo "*  file system is currently mounted read-only. To remount  *"
+	echo "*  it read-write type: mount -n -o remount,rw /            *"
+	echo "*  When you exit the maintainance shell the system will    *"
+	echo "*  reboot automatically.                                   *"
+	echo "*                                                          *"
+	echo "************************************************************"
+	echo
+	sulogin -p
+	message "Automatic reboot in progress..."
+	umount -a -r
+	mount -o remount,ro /
+	reboot -f
+	exit 0
+fi
+status
+
+message "Remounting filesystem to read-write..."
+mount -o remount,rw /
+status
+
+message "Activating swap..."
+swapon -a
+status
+
+message "Mounting filesystems..."
+mount -a -O no_netdev
+status
+
+message "Cleaning up misc files..."
+: > /var/run/utmp
+rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+(cd /var/run && find . -name "*.pid" -delete)
+(cd /var/lock && find . ! -type d -delete)
+(cd /tmp && find . ! -name . -delete)
+mkdir -m 1777 /tmp/.ICE-unix
+status
+
+message "Setting up kernel variables..."
+sysctl -p > /dev/null
+status
+
+message "Setting up hostname..."
+hostname -F /etc/hostname
+status
+
+message "Synchronizing clock..."
+hwclock -u -s
+status
+
+if [ "$FONT" ]; then
+	message "Setting up font to $FONT"
+	setfont $FONT
+	status
+fi
+
+if [ "$KEYMAP" ]; then
+	message "Setting up keymap to $KEYMAP"
+	loadkeys -q $KEYMAP
+	status
+fi
+
+message "Loading modules..."
+depmod -a
+status
+
+if [ -x /etc/rc.local ]; then
+	message "Running user's scripts..."
+	/etc/rc.local
+	status
+fi
+
+message "Saving boot messages..."
+dmesg > /var/log/boot
+status
+
+message "Welcome to your box!"

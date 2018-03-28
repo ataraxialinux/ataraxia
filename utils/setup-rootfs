@@ -5,17 +5,23 @@ set -e
 setup_rootfs() {
 	cd $ROOTFS
 
-	for d in boot dev etc/skel home mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,service,init.d} home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
-	for f in fstab group host.conf hostname hosts inittab issue motd os-release passwd profile securetty shells sysctl.conf; do
+	for f in fstab group host.conf hostname hosts inittab issue motd os-release passwd profile rc.conf resolv.conf securetty shells sysctl.conf; do
 		install -m644 $KEEP/etc/$f etc/
 	done
 
-	for f in gshadow shadow; do
+	for f in shadow gshadow; do
 		install -m600 $KEEP/etc/$f etc/
 	done
+
+	for f in rcS rc.shutdown; do
+		cp -a $KEEP/initd/$f etc/init.d
+	done
+
+	cp -a $KEEP/initd/rc.local etc/
 
 	install -d -m555 proc
 	install -d -m555 sys
@@ -25,7 +31,7 @@ setup_rootfs() {
 
 	ln -s ../proc/self/mounts etc/mtab
 
-	for d in cache local opt log/old lib/misc empty; do
+	for d in cache local opt log/old lib/misc empty service; do
 		install -d -m755 var/$d
 	done
 
@@ -65,6 +71,8 @@ setup_rootfs() {
 			ln -sf lib lib64
 			;;
 	esac
+
+	cp $KEEP/runsvdir-start $ROOTFS/usr/bin
 }
 
 setup_rootfs
