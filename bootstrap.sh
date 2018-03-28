@@ -94,7 +94,7 @@ setup_build_env() {
 	export HOSTCC="gcc"
 }
 
-prepare_toolchain() {
+prepare_toolchain_and_rootfs() {
 	message "Setting up toolchain optimizations..."
 	sleep 1
 	export CFLAGS="-Os -g0"
@@ -117,14 +117,18 @@ prepare_toolchain() {
 }
 
 build_toolchain() {
+	message "Setting up filesystem..."
+	sleep 1
+	. $UTILS/setup-rootfs
+
 	message "Building cross-toolchain for $XTARGET..."
 	sleep 1
 	MODE=toolchain buildpkg $TC/file
 	MODE=toolchain buildpkg $TC/pkgconf
-	MODE=toolchain buildpkg $TC/linux-headers
+	buildpkg $REPO/linux-headers $PKGS/linux-headers
 	MODE=toolchain buildpkg $TC/binutils
 	MODE=toolchain buildpkg $TC/gcc-static
-	MODE=toolchain buildpkg $TC/musl
+	buildpkg $REPO/musl $PKGS/musl
 	MODE=toolchain buildpkg $TC/gcc-final
 }
 
@@ -134,42 +138,33 @@ finish_toolchain() {
 	find $ROOLS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs strip --strip-all		2>/dev/null || true
 	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
 	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug		2>/dev/null || true
-	unset CFLAGS CXXFLAGS LDFLAGS
 	message "Toolchain successfully built!"
 }
 
 prepare_build() {
 	message "Setting up optimzations and toolset for rootfs build..."
 	sleep 1
-	export CFLAGS="-Os -g0"
-	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s -Wl,-rpath-link,$ROOTFS/usr/lib"
-	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
-	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
+	export CC="$XTARGET-gcc"
+	export CXX="$XTARGET-g++"
 	export AR="$XTARGET-ar"
 	export AS="$XTARGET-as"
-	export LD="$XTARGET-ld --sysroot=$ROOTFS"
+	export LD="$XTARGET-ld"
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
-	export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig"
 }
 
 build_rootfs() {
-	message "Setting up filesystem..."
-	sleep 1
-	. $UTILS/setup-rootfs
-
 	message "Building rootfs..."
 	sleep 1
-	for PKG in linux-headers musl libz m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim grub libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux; do
+	for PKG in libz m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim grub libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux; do
 		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
 }
 
 configure_arch
 setup_build_env
-prepare_toolchain
+prepare_toolchain_and_rootfs
 build_toolchain
 finish_toolchain
 prepare_build
