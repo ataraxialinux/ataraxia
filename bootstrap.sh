@@ -125,10 +125,10 @@ build_toolchain() {
 	sleep 1
 	MODE=toolchain buildpkg $TC/file
 	MODE=toolchain buildpkg $TC/pkgconf
-	MODE=third buildpkg $REPO/linux-headers $PKGS/linux-headers
+	MODE=toolchain buildpkg $TC/linux-headers
 	MODE=toolchain buildpkg $TC/binutils
 	MODE=toolchain buildpkg $TC/gcc-static
-	MODE=third buildpkg $REPO/musl $PKGS/musl
+	MODE=toolchain buildpkg $TC/musl
 	MODE=toolchain buildpkg $TC/gcc-final
 }
 
@@ -144,11 +144,14 @@ finish_toolchain() {
 prepare_build() {
 	message "Setting up optimzations and toolset for rootfs build..."
 	sleep 1
-	export CC="$XTARGET-gcc"
-	export CXX="$XTARGET-g++"
+	export CFLAGS="$CFLAGS"
+	export CXXFLAGS="$CFLAGS"
+	export LDFLAGS="$LDFLAGS -Wl,-rpath-link,$ROOTFS/usr/lib"
+	export CC="$XTARGET-gcc --sysroot=$ROOTFS"
+	export CXX="$XTARGET-g++ --sysroot=$ROOTFS"
 	export AR="$XTARGET-ar"
 	export AS="$XTARGET-as"
-	export LD="$XTARGET-ld"
+	export LD="$XTARGET-ld --sysroot=$ROOTFS"
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
@@ -157,7 +160,7 @@ prepare_build() {
 build_rootfs() {
 	message "Building rootfs..."
 	sleep 1
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim gdb libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux grub; do
+	for PKG in linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim gdb libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant linux grub; do
 		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
 }
