@@ -7,7 +7,8 @@ bld() {
 	rm -rf $name
 	tar -xf $tarball
 	cd $name
-	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	echo -en "\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 "$ROOTFS/usr/lib/"\n" >> gcc/config/linux.h
+	echo -en "\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n" >> gcc/config/linux.h
 	tar -xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
 	tar -xf ../mpfr-4.0.1.tar.xz
@@ -22,7 +23,9 @@ bld() {
 		--build=$XHOST \
 		--host=$XHOST \
 		--target=$XTARGET \
-		--with-sysroot=$TOOLS/$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--with-local-prefix=$ROOTFS/usr \
+		--with-native-system-header-dir=$ROOTFS/usr/include \
 		--enable-checking=release \
 		--enable-clocale=generic \
 		--enable-fully-dynamic-string \
