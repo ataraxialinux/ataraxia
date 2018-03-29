@@ -135,6 +135,9 @@ build_toolchain() {
 finish_toolchain() {
 	message "Finishing toolchain..."
 	rm -rf $SOURCES/*
+	find $ROOLS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs strip --strip-all		2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug		2>/dev/null || true
 	message "Toolchain successfully built!"
 }
 
