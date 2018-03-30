@@ -1,3 +1,4 @@
+
 #!/bin/bash
 #
 # The most useless build utility written on shell.
@@ -67,8 +68,21 @@ applypatch() {
 	patch -Np1 -i $@
 }
 
-cln() {
-	message "Cleaning package $name..."
+strp() {
+	message "Stripping package $name..."
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs strip --strip-all	2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug	2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf			2>/dev/null || true
+	cd $XDESTDIR
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+}
+
+strp2() {
+	message "Stripping package $name..."
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all	2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded	2>/dev/null || true
+	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug	2>/dev/null || true
 	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf			2>/dev/null || true
 	cd $XDESTDIR
 	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
@@ -102,11 +116,18 @@ case $MODE in
 		check_for_fetch
 		check_for_bld
 		;;
+	third)
+		prp_pkg
+		check_for_fetch
+		check_for_bld
+		strp2
+		inst_pkg
+		;;
 	*)
 		prp_pkg
 		check_for_fetch
 		check_for_bld
-		cln
+		strp
 		inst_pkg
 esac
 
