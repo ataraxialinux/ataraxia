@@ -7,6 +7,7 @@ bld() {
 	rm -rf $name
 	tar -xf $tarball
 	cd $name
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	tar -xf ../gmp-6.1.2.tar.xz
 	mv gmp-6.1.2 gmp
 	tar -xf ../mpfr-4.0.1.tar.xz
@@ -25,7 +26,10 @@ bld() {
 		--with-local-prefix=$ROOTFS/usr \
 		--with-native-system-header-dir=/usr/include \
 		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-clocale=generic \
 		--enable-languages=c,c++ \
+		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-threads=posix \
 		--disable-gnu-indirect-function \
