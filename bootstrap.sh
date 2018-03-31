@@ -125,16 +125,19 @@ build_toolchain() {
 	sleep 1
 	MODE=toolchain buildpkg $TC/file
 	MODE=toolchain buildpkg $TC/pkgconf
-	buildpkg $REPO/linux-headers $PKGS/linux-headers
+	MODE=third buildpkg $REPO/linux-headers $PKGS/linux-headers
 	MODE=toolchain buildpkg $TC/binutils
 	MODE=toolchain buildpkg $TC/gcc-static
-	buildpkg $REPO/musl $PKGS/musl
+	MODE=third buildpkg $REPO/musl $PKGS/musl
 	MODE=toolchain buildpkg $TC/gcc-final
 }
 
 finish_toolchain() {
 	message "Finishing toolchain..."
 	rm -rf $SOURCES/*
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs strip --strip-all	2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs strip --strip-unneeded	2>/dev/null || true
+	find $TOOLS -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs strip --strip-debug	2>/dev/null || true
 	message "Toolchain successfully built!"
 }
 
@@ -175,19 +178,9 @@ build_rootfs() {
 
 	message "Building rootfs..."
 	sleep 1
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf eudev busybox vim gdb libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant $BOOTPKG; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses e2fsprogs iana-etc libtool iproute2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf busybox vim gdb libressl openssh curl git libarchive lynx libnl wireless_tools wpa_supplicant $BOOTPKG; do
 		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
-}
-
-strip_rootfs() {
-	message "Stripping filesystem..."
-	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all		2>/dev/null || true
-	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded	2>/dev/null || true
-	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
-	find $XDESTDIR -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf			2>/dev/null || true
-	cd $XDESTDIR
-	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 }
 
 configure_arch
@@ -197,7 +190,6 @@ build_toolchain
 finish_toolchain
 prepare_build
 build_rootfs
-strip_rootfs
 
 exit 0
 
