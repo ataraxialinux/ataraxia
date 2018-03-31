@@ -48,10 +48,19 @@ mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nos
 mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 status
 
-message "Starting mdev daemon..."
-echo /sbin/mdev > /proc/sys/kernel/hotplug
-mdev -s
-status
+if which udevd > /dev/null 2>&1 ; then
+	message "Starting udev daemon..."
+	udevd --daemon
+	udevadm trigger --type=subsystems --action=add
+	udevadm trigger --type=devices    --action=add
+	udevadm settle
+	status
+else
+	message "Starting mdev daemon..."
+	echo /sbin/mdev > /proc/sys/kernel/hotplug
+	mdev -s
+	status
+fi
 
 message "Remounting filesystem to read-only..."
 mount -o remount,ro /
