@@ -13,6 +13,16 @@ bld() {
 		--with-xz \
 		--with-zlib \
 		--disable-manpages
+	sed -i "s,/usr/include,$ROOTFS/usr/include,g" Makefile
 	make $MKOPTS
 	make DESTDIR=$XDESTDIR install
+	mkdir -p $XDESTDIR/usr/bin
+	ln -s kmod $XDESTDIR/usr/bin/modinfo
+	ln -s kmod $XDESTDIR/usr/bin/depmod
+	ln -s kmod $XDESTDIR/usr/bin/insmod
+	ln -s kmod $XDESTDIR/usr/bin/lsmod
+	ln -s kmod $XDESTDIR/usr/bin/rmmod
+	ln -s kmod $XDESTDIR/usr/bin/modprobe
+	ln -s kmod $XDESTDIR/usr/bin/lsmod
+	install -d $XDESTDIR/etc/{modprobe,depmod}.d
 }
