@@ -155,6 +155,7 @@ prepare_build() {
 	export RANLIB="$XTARGET-ranlib"
 	export READELF="$XTARGET-readelf"
 	export STRIP="$XTARGET-strip"
+	export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig"
 }
 
 build_rootfs() {
