@@ -10,7 +10,7 @@ export C_RED='\e[1;31m'
 export C_GREEN='\e[1;32m'
 
 message() {
-	echo -e " ${C_GREEN}>>${C_CLEAR} ${@}"
+	echo -e " ${C_GREEN}*${C_CLEAR} ${@}"
 }
 
 status() {
@@ -48,11 +48,9 @@ mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nos
 mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 status
 
-message "Starting udev daemon..."
-udevd --daemon
-udevadm trigger --type=subsystems --action=add
-udevadm trigger --type=devices    --action=add
-udevadm settle
+message "Starting mdev daemon..."
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
 status
 
 message "Remounting filesystem to read-only..."
