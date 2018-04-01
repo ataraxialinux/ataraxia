@@ -10,11 +10,11 @@ JanusLinux is made for people who likes CLI interface and to get Linux knowledge
 
 ## What hardware I can run it?
 
-You can run it on i686, x86_64, arm(v7), arm64. In future will be available these architectures: ppc, ppc64.
+You can run it on x86_64. In future will be available these architectures: ppc, ppc64, arm(v7), arm64, i686.
 
 ## Where I can get it?
 
-You can download [current alpha version](https://github.com/protonesso/janus/releases/download/2017-11-27/JanusLinux-0.1-2017-11-27.iso) of JanusLinux which compiled on 27th November of 2017. It has bugs but it can boot.
+You can download [current alpha version](https://github.com/JanusLinux/janus/releases/tag/1.0-alpha) of JanusLinux which compiled on 1st April of 2018. It has bugs but it can boot.
 
 ## How I can contact and help you with development?
 
