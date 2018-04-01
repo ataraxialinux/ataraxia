@@ -22,24 +22,32 @@ configure_arch() {
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
+			export KIMAGE="bzImage"
+			export KDIR="x86"
 			;;
 		i686)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
 			export GCCOPTS="--with-arch=i686 --with-tune=generic"
+			export KIMAGE="bzImage"
+			export KDIR="x86"
 			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			export KIMAGE="zImage"
+			export KDIR="arm64"
 			;;
 		armv7l)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
+			export KIMAGE="zImage"
+			export KDIR="arm"
 			;;
 		mips64el)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
