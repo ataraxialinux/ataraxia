@@ -5,21 +5,18 @@ fetchurl="http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/$tarball"
 
 bld() {
 	cd $srcdir
-	sed -i 's/cross_compiling=maybe/cross_compiling=yes/' configure
 	./configure \
 		--prefix=/usr \
-		--sbindir=/usr/bin \
-		--libexecdir=/usr/libexec \
 		--sysconfdir=/etc/ssh \
+		--libexecdir=/usr/libexec \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-ssl-engine \
-		--with-privsep-user=nobody \
+		--with-mantype=man \
 		--with-md5-passwords \
-		--disable-btmp \
-		--disable-lastlog \
-		--disable-strip \
-		--disable-utmpx
+		--with-pid-dir=/run \
+		--with-privsep-path=/var/empty \
+		--with-privsep-user=nobody \
+		--with-ssl-engine
 	make $MKOPTS
 	make DESTDIR=$XDESTDIR install
 }
