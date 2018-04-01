@@ -183,7 +183,7 @@ build_rootfs() {
 #		buildpkg $REPO/$PKG $PKGS/$PKG
 #	done
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 bzip2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf busybox $BOOTPKG; do
+	for PKG in busybox zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux e2fsprogs iana-etc libtool iproute2 bzip2 perl readline autoconf automake bash bc file gawk grep less kbd make xz kmod expat patch gperf $BOOTPKG; do
 		buildpkg $REPO/$PKG $PKGS/$PKG
 	done
 }
