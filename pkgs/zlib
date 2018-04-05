@@ -5,11 +5,12 @@ fetchurl="http://zlib.net/$tarball"
 
 bld() {
 	cd $srcdir
-	CHOST="$XTARGET" \
+	export LD_LIBRARY_PATH="$TOOLS/$XTARGET/lib64:$TOOLS/$XTARGET/lib:$ROOTFS/usr/lib"
 	./configure \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--shared
 	make $MKOPTS
 	make DESTDIR=$XDESTDIR install
+	unset LD_LIBRARY_PATH
 }
