@@ -1,0 +1,28 @@
+name="eudev-3.2.5"
+srcdir="$SOURCES/$name"
+tarball="$name.tar.gz"
+fetchurl="http://dev.gentoo.org/~blueness/eudev/$tarball"
+
+bld() {
+	cd $srcdir
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-rootprefix="" \
+		--with-firmware-path=/lib/firmware \
+		--enable-hwdb \
+		--enable-kmod \
+		--enable-rule_generator \
+		--enable-split-usr \
+		--disable-gtk-doc-html \
+		--disable-gudev \
+		--disable-keymap \
+                --disable-introspection \
+                --disable-manpages
+	make $MKOPTS
+	make DESTDIR=$XDESTDIR install
+}
