@@ -1,0 +1,32 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=wpa_supplicant
+pkgver=2.6
+pkgrel=1
+pkgdesc="A utility providing key negotiation for WPA wireless networks"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="http://hostap.epitest.fi/wpa_supplicant"
+license=('GPL')
+groups=('base')
+depends=('musl' 'zlib' 'libressl' 'libnl')
+source=("http://w1.fi/releases/$pkgname-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver/$pkgname"
+	cp defconfig .config
+	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
+	make CC="$CC" HOSTCC="$HOSTCC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS -static"
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver/$pkgname"
+	make BINDIR=/usr/bin DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

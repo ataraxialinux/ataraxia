@@ -1,0 +1,37 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=make
+pkgver=4.2.1
+pkgrel=1
+pkgdesc="GNU make utility to maintain groups of programs"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="http://www.gnu.org/software/make"
+license=('GPL')
+groups=('base')
+depends=('musl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-dmalloc \
+		--without-guile \
+		--disable-nls
+	make
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

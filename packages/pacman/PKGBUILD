@@ -1,0 +1,64 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=pacman
+pkgver=5.0.2
+pkgrel=1
+pkgdesc="A library-based package manager with dependency support"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="http://www.archlinux.org/pacman/"
+license=('GPL')
+groups=('base')
+depends=('musl' 'bash' 'curl' 'libarchive' 'xz' 'libressl')
+backup=(etc/pacman.conf etc/makepkg.conf)
+source=("https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.gz"
+        'pacman.conf'
+	'makepkg.conf')
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+
+cat > config.cache << EOF
+ac_cv_func_malloc_0_nonnull=yes
+EOF
+
+	./configure \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--localstatedir=/var \
+		--sysconfdir=/etc \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-scriptlet-shell=/usr/bin/bash \
+		--without-gpgme \
+		--cache-file=config.cache \
+		--disable-doc \
+		--disable-nls \
+		DUFLAGS="-sk" \
+		SEDINPLACEFLAGS="-i"
+	make
+	make -C contrib
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+	make DESTDIR=$pkgdir -C contrib install
+
+	install -dm755 $pkgdir/etc
+	install -m644 $srcdir/pacman.conf $pkgdir/etc/pacman.conf
+	install -m644 $srcdir/makepkg.conf $pkgdir/etc/makepkg.conf
+	sed -i $pkgdir/etc/makepkg.conf \
+		-e "s|@CARCH[@]|$BARCH|g" \
+		-e "s|@CHOST[@]|$XTARGET|g" \
+		-e "s|@CFLAGS[@]|$CFLAGS|g" \
+		-e "s|@CPPFLAGS[@]|$CPPFLAGS|g" \
+		-e "s|@LDFLAGS[@]|$LDFLAGS|g"
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

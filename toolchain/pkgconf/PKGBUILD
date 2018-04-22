@@ -1,0 +1,20 @@
+pkgname=pkgconf
+pkgver=1.4.2
+pkgrel=1
+arch=('any')
+source=("http://distfiles.dereferenced.org/$pkgname/$pkgname-$pkgver.tar.xz")
+
+build() {
+	cd $srcdir/$pkgname-$pkgver
+	./configure \
+		--prefix= \
+		--host=$XTARGET \
+		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
+	make
+}
+
+package() {
+	cd $srcdir/$pkgname-$pkgver
+	make DESTDIR=$pkgdir install
+	ln -s pkgconf $pkgdir/bin/pkg-config
+}
