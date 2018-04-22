@@ -8,19 +8,22 @@ arch=('x86_64' 'i686' 'aarch64' 'armv7l')
 url="http://www.gnu.org/software/m4"
 license=('GPL')
 groups=('base')
-depends=('musl' 'libressl')
-source=("https://curl.haxx.se/download/$pkgname-$pkgver.tar.xz")
+depends=('musl' 'zlib' 'libressl')
+source=("https://curl.haxx.se/download/$pkgname-$pkgver.tar.xz"
+	"0001-openssl-fix-build-with-libressl-2.7.patch")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	patch -Np1 -i $srcdir/0001-openssl-fix-build-with-libressl-2.7.patch
+	autoreconf -vif
+	./configure CFLAGS="$CFLAGS --sysroot=$ROOTFS" CPPFLAGS="$CPPFLAGS -I$ROOTFS/usr/include" \
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-ssl \
-		--with-ca-bundle=/etc/ssl/ca-certs.pem \
+		--with-sysroot=$ROOTFS \
 		--without-librtmp \
 		--enable-ipv6
+	sed -i -e '/SUBDIRS/s:scripts::' Makefile
 	make
 }
 
