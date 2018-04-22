@@ -1,0 +1,41 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=linux
+pkgver=4.16.3
+pkgrel=1
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="https://www.kernel.org/"
+license=('GPL')
+groups=('base')
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz")
+
+prepare() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"suzuha\"/" .config
+	sed -i "s/.*CONFIG_FB_VESA.*/CONFIG_FB_VESA=y/" .config
+	sed -i "s/^CONFIG_DEBUG_KERNEL.*/\\# CONFIG_DEBUG_KERNEL is not set/" .config
+	sed -i "s/.*CONFIG_EFI_STUB.*/CONFIG_EFI_STUB=y/" .config
+	echo "CONFIG_RESET_ATTACK_MITIGATION=y" >> .config
+	echo "CONFIG_APPLE_PROPERTIES=n" >> .config
+	if [ "`grep "CONFIG_X86_64=y" .config`" = "CONFIG_X86_64=y" ] ; then
+		echo "CONFIG_EFI_MIXED=y" >> .config
+	fi
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$pkgdir modules_install
+
+	case $BARCH in
+		x86_64|i686)
+			mkdir -p $pkgdir/boot
+			cp arch/x86/boot/bzImage $pkgdir/boot/bzImage
+			;;
+	esac
+}

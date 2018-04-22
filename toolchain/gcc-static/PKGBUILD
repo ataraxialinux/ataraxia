@@ -1,0 +1,61 @@
+pkgname=gcc-static
+pkgver=7.3.0
+gmpver=6.1.2
+mpfrver=4.0.1
+mpcver=1.1.0
+pkgrel=1
+arch=('any')
+source=("http://ftpmirror.gnu.org/gnu/gcc/gcc-$pkgver/gcc-$pkgver.tar.xz"
+	"http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz"
+	"http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz"
+	"http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz")
+options=(!emptydirs)
+
+prepare() {
+	cd $srcdir/gcc-$pkgver
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+	mkdir build
+}
+
+build() {
+	cd $srcdir/gcc-$pkgver
+	cd build
+	AR="ar"\
+	../configure \
+		--prefix= \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--with-newlib \
+		--without-headers \
+		--enable-languages=c \
+		--disable-decimal-float \
+		--disable-libatomic \
+		--disable-libcilkrts \
+		--disable-libgomp \
+		--disable-libitm \
+		--disable-libmudflap \
+		--disable-libquadmath \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdc++-v3 \
+		--disable-libvtv \
+		--disable-multilib \
+		--disable-nls  \
+		--disable-shared \
+		--disable-threads \
+		$GCCOPTS
+	make all-gcc all-target-libgcc
+}
+
+package() {
+	cd $srcdir/gcc-$pkgver
+	cd build
+	make DESTDIR=$pkgdir install-gcc install-target-libgcc
+}

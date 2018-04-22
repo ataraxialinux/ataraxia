@@ -1,0 +1,38 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=curl
+pkgver=7.59.0
+pkgrel=1
+pkgdesc="An URL retrival utility and library"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="http://www.gnu.org/software/m4"
+license=('GPL')
+groups=('base')
+depends=('musl' 'libressl')
+source=("https://curl.haxx.se/download/$pkgname-$pkgver.tar.xz")
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-ssl \
+		--with-ca-bundle=/etc/ssl/ca-certs.pem \
+		--without-librtmp \
+		--enable-ipv6
+	make
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
