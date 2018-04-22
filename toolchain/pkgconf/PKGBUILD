@@ -6,15 +6,16 @@ source=("http://distfiles.dereferenced.org/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd $srcdir/$pkgname-$pkgver
+	LDFLAGS="$LDFLAGS -static" \
 	./configure \
 		--prefix= \
-		--host=$XTARGET \
-		--with-pc-path=$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig
-	make
+		--with-pc-path="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+	make LDFLAGS="$LDFLAGS -static"
 }
 
 package() {
 	cd $srcdir/$pkgname-$pkgver
 	make DESTDIR=$pkgdir install
 	ln -s pkgconf $pkgdir/bin/pkg-config
+	ln -s pkgconf $pkgdir/bin/$XTARGET-pkg-config
 }
