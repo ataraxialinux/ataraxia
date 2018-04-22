@@ -1,0 +1,55 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=util-linux
+pkgver=2.32
+majorver=2.32
+pkgrel=1
+pkgdesc="Miscellaneous system utilities for Linux"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="https://www.kernel.org/pub/linux/utils/util-linux/"
+license=('GPL')
+groups=('base')
+depends=('musl' 'ncurses')
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v$majorver/$pkgname-$pkgver.tar.xz")
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--localstatedir=/var \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-python \
+		--enable-fs-paths-default=/usr/bin \
+		--enable-raw \
+		--enable-write \
+		--disable-chfn-chsh \
+		--disable-login \
+		--disable-nls \
+		--disable-nologin \
+		--disable-runuser \
+		--disable-setpriv \
+		--disable-su \
+		--disable-sulogin \
+		--disable-tls
+	make
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	cd "$pkgdir"
+	mv {,usr/}sbin/* usr/bin
+	rm -rf sbin usr/sbin
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

@@ -1,0 +1,16 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=linux-headers
+pkgver=3.12.6
+_headrel=5
+pkgrel=1
+pkgdesc="Linux headers"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+license=('other')
+groups=('toolchain')
+source=("http://ftp.barfooze.de/pub/sabotage/tarballs/kernel-headers-$pkgver-$_headrel.tar.xz")
+
+package() {
+	cd "$srcdir/kernel-headers-$pkgver-$_headrel"
+	make ARCH=$XKARCH prefix=/usr DESTDIR=$pkgdir install
+}
