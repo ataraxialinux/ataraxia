@@ -71,13 +71,12 @@ setup_build_env() {
 	export LOGS="$BUILD/logs"
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
-	export UTILS="$CWD/utils"
 
 	fakeroot rm -rf $BUILD
 	mkdir -p $BUILD $SOURCES $ROOTFS $TOOLS $PKGS $LOGS
 
 	export LC_ALL="POSIX"
-	export PATH="$PATH:$UTILS:$TOOLS/bin"
+	export PATH="$TOOLS/bin:$PATH"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 	export HOSTCC="gcc"
 }
