@@ -142,7 +142,7 @@ build_rootfs() {
 #		install_target $PKG
 #	done
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz expat libressl patch linux sudo libarchive openssh curl pacman git rsync libnl wpa_supplicant; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake mksh bc file less kbd make xz expat libressl patch linux libarchive openssh libnl curl git pacman rsync; do
 		install_target $PKG
 	done
 }

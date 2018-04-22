@@ -1,34 +1,28 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=git
-pkgver=2.17.0
+pkgname=m4
+pkgver=1.4.18
 pkgrel=1
-pkgdesc="The fast distributed version control system"
+pkgdesc="The GNU macro processor"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="http://git-scm.com/"
+url="http://www.gnu.org/software/m4"
 license=('GPL')
 groups=('base')
-depends=('musl' 'zlib' 'libressl' 'curl' 'expat')
-source=("https://www.kernel.org/pub/software/scm/git/git-$pkgver.tar.xz")
+depends=('musl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make prefix=/usr gitexecdir=/usr/lib/git \
-		HOSTCC="$HOSTCC" CC="$CC" NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
-		CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS" \
-		NO_CROSS_DIRECTORY_HARDLINKS=1 NO_REGEX="NeedsStartEnd" \
-		MAN_BOLD_LITERAL=1 \
-		all
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET
+	make
 }
 
 package() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make prefix=/usr gitexecdir=/usr/lib/git \
-		HOSTCC="$HOSTCC" CC="$CC" NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
-		CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS" \
-		NO_CROSS_DIRECTORY_HARDLINKS=1 NO_REGEX="NeedsStartEnd" \
-		MAN_BOLD_LITERAL=1 \
-		DESTDIR=$pkgdir install
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

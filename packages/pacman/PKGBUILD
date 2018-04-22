@@ -8,7 +8,7 @@ arch=('x86_64' 'i686' 'aarch64' 'armv7l')
 url="http://www.archlinux.org/pacman/"
 license=('GPL')
 groups=('base')
-depends=('musl' 'bash' 'curl' 'libarchive' 'xz' 'libressl')
+depends=('musl' 'mksh' 'curl' 'libarchive' 'xz' 'libressl')
 backup=(etc/pacman.conf etc/makepkg.conf)
 source=("https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.gz"
         'pacman.conf'
@@ -28,13 +28,17 @@ EOF
 		--sysconfdir=/etc \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-scriptlet-shell=/usr/bin/bash \
+		--with-scriptlet-shell=/usr/bin/mksh \
 		--without-gpgme \
 		--cache-file=config.cache \
 		--disable-doc \
 		--disable-nls \
 		DUFLAGS="-sk" \
 		SEDINPLACEFLAGS="-i"
+	sed -i "s,/usr/include,$ROOTFS/usr/include,g" lib/libalpm/Makefile
+	sed -i "s,/usr/include,$ROOTFS/usr/include,g" src/util/Makefile
+	sed -i "s,/usr/include,$ROOTFS/usr/include,g" src/common/Makefile
+	sed -i "s,/usr/include,$ROOTFS/usr/include,g" src/pacman/Makefile
 	make
 	make -C contrib
 }

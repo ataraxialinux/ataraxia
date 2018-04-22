@@ -9,20 +9,36 @@ url="https://www.gnu.org/software/bc/"
 license=('GPL')
 groups=('base')
 depends=('musl' 'readline')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
+
+cat > bc/fix-libmath_h << "EOF"
+#! /bin/bash
+sed -e '1   s/^/{"/' \
+    -e     's/$/",/' \
+    -e '2,$ s/^/"/'  \
+    -e   '$ d'       \
+    -i libmath.h
+
+sed -e '$ s/$/0}/' \
+    -i libmath.h
+EOF
+
 	LDFLAGS="$LDFLAGS -static" \
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--with-readline
+	echo "MAKEINFO = :" >> doc/Makefile
 	make -j1
 }
 
 package() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 
