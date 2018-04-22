@@ -1,0 +1,55 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=busybox
+pkgver=1.28.3
+pkgrel=1
+pkgdesc="Size optimized toolbox of many common UNIX utilities"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="https://www.busybox.net/"
+license=('GPL')
+groups=('base')
+depends=('musl')
+source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2")
+
+prepare() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	sed -i "s/.*CONFIG_STATIC.*/CONFIG_STATIC=y/" .config
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=$pkgdir install
+
+	cd $pkgdir
+
+	for d in bin sbin usr/sbin; do
+		mv $d/* usr/bin/
+		rm -rf $d
+	done
+
+	rm -rf linuxrc
+
+	ln -s usr/bin/busybox init
+
+	rm -rf $pkgdir/{,usr/}bin/strings
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
