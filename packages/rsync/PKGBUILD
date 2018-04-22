@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=rsync
-pkgver=1.4.18
+pkgver=3.1.3
 pkgrel=1
 pkgdesc="A file transfer program to keep remote files in sync"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
@@ -13,15 +13,15 @@ source=("https://download.samba.org/pub/rsync/src/rsync-3.1.3.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	LDFLAGS="$LDFLAGS -static" \
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-rsh=ssh \
+		--with-sysroot=$ROOTFS \
 		--with-included-popt \
 		--with-included-zlib \
-		--disable-debug
+		--disable-debug \
+		rsync_cv_HAVE_GETTIMEOFDAY_TZ=yes
 	make
 }
 

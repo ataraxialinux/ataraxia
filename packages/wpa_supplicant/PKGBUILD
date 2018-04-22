@@ -6,16 +6,27 @@ pkgrel=1
 pkgdesc="A utility providing key negotiation for WPA wireless networks"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
 url="http://hostap.epitest.fi/wpa_supplicant"
-license=('GPL')
+license=('BSD')
 groups=('base')
-depends=('musl' 'zlib' 'libressl' 'libnl')
-source=("http://w1.fi/releases/$pkgname-$pkgver.tar.gz")
+depends=('musl' 'zlib' 'readline' 'libressl' 'libnl')
+source=("http://w1.fi/releases/$pkgname-$pkgver.tar.gz"
+	"libressl.patch"
+	"eloop.patch")
 
 build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	patch -Np1 -i $srcdir/libressl.patch
+	patch -Np1 -i $srcdir/eloop.patch
 	cd "$srcdir/$pkgname-$pkgver/$pkgname"
 	cp defconfig .config
 	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
-	make CC="$CC" HOSTCC="$HOSTCC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS -static"
+	echo "CONFIG_READLINE=y
+		CC=$CC
+		HOSTCC=$HOSTCC
+		CFLAGS=$CFLAGS --sysroot=$ROOTFS
+		CPPFLAGS=$CPPFLAGS -I$ROOTFS/usr/include -I$ROOTFS/usr/include/libnl3
+		LDFLAGS=$LDFLAGS" >> .config
+	make
 }
 
 package() {
