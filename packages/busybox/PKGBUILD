@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=busybox
-pkgver=1.28.3
+pkgver=1.28.2
 pkgrel=1
 pkgdesc="Size optimized toolbox of many common UNIX utilities"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
@@ -45,6 +45,8 @@ package() {
 
 	mkdir -p $pkgdir/usr/share/udhcpc
 	install -Dm0755 $srcdir/$pkgname-$pkgver/examples/udhcp/simple.script $pkgdir/usr/share/udhcpc/default.script
+
+	chmod 4755 usr/bin/busybox
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
