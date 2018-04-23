@@ -1,28 +1,25 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=m4
-pkgver=1.4.18
+pkgname=mksh
+pkgver=R56c
 pkgrel=1
-pkgdesc="The GNU macro processor"
+pkgdesc="The MirBSD Korn Shell - an enhanced version of the public domain ksh"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="http://www.gnu.org/software/m4"
-license=('GPL')
+url="https://www.mirbsd.org/mksh.htm"
+license=('custom')
 groups=('base')
 depends=('musl')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+source=("https://www.mirbsd.org/MirOS/dist/mir/mksh/mksh-$pkgver.tgz")
 
 build() {
-	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
-	make
+	cd "$srcdir/$pkgname"
+	sh Build.sh -r
 }
 
 package() {
-	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR=$pkgdir install
+	cd "$srcdir/$pkgname"
+	install -D -m 755 mksh $pkgdir/usr/bin/mksh
+	ln -s mksh $pkgdir/usr/bin/sh
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
