@@ -13,7 +13,6 @@ source=("http://www.greenwoodsoftware.com/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	LDFLAGS="$LDFLAGS -static" \
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
@@ -22,6 +21,7 @@ build() {
 }
 
 package() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 

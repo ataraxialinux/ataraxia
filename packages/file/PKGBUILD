@@ -13,6 +13,7 @@ source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+	LD_LIBRARY_PATH="$ROOTFS/usr/lib:$TOOLS/$XTARGET/lib" \
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
@@ -21,6 +22,7 @@ build() {
 }
 
 package() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 

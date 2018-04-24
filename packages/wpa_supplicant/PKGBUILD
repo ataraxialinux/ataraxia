@@ -20,16 +20,11 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver/$pkgname"
 	cp defconfig .config
 	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
-	echo "CONFIG_READLINE=y
-		CC=$CC
-		HOSTCC=$HOSTCC
-		CFLAGS=$CFLAGS --sysroot=$ROOTFS
-		CPPFLAGS=$CPPFLAGS -I$ROOTFS/usr/include -I$ROOTFS/usr/include/libnl3
-		LDFLAGS=$LDFLAGS" >> .config
-	make
+	make CC="$CC"
 }
 
 package() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver/$pkgname"
 	make BINDIR=/usr/bin DESTDIR=$pkgdir install
 
