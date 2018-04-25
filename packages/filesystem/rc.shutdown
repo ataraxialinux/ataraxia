@@ -1,0 +1,35 @@
+#!/bin/sh
+
+appendpath () {
+    case ":$PATH:" in
+        *:"$1":*)
+            ;;
+        *)
+            PATH="${PATH:+$PATH:}$1"
+    esac
+}
+
+appendpath '/usr/local/sbin'
+appendpath '/usr/local/bin'
+appendpath '/usr/bin'
+unset appendpath
+
+export PATH
+
+clear
+
+hwclock -u -w
+
+sync
+
+killall5 -15
+sleep 5
+killall5 -9
+
+swapoff -a
+
+umount -a -r
+
+mount -o remount,ro /
+
+wait
