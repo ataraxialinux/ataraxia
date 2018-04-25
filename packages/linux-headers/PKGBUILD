@@ -1,16 +1,20 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=linux-headers
-pkgver=3.12.6
-_headrel=5
+pkgver=4.14.36
 pkgrel=1
-pkgdesc="Linux headers"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-license=('other')
-groups=('toolchain')
-source=("http://ftp.barfooze.de/pub/sabotage/tarballs/kernel-headers-$pkgver-$_headrel.tar.xz")
+url="Header files and scripts for building modules for Linux kernel"
+license=('GPL')
+groups=('base')
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz")
+build() {
+	cd "$srcdir/linux-$pkgver"
+	make mrproper
+}
 
 package() {
-	cd "$srcdir/kernel-headers-$pkgver-$_headrel"
-	make ARCH=$XKARCH prefix=/usr DESTDIR=$pkgdir install
+	cd "$srcdir/linux-$pkgver"
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$pkgdir/usr headers_install
+	find $pkgdir/usr/include -name .install -or -name ..install.cmd | xargs rm -rf
 }
