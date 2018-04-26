@@ -137,14 +137,8 @@ clean_tool_pkg() {
 	done
 }
 
-build_bootstrapfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz expat libressl patch busybox libarchive curl git pacman rsync; do
-		install_target $PKG
-	done
-}
-
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz expat libressl patch busybox linux libarchive openssh libnl curl git pacman rsync; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz expat libressl patch busybox libarchive dropbear curl git pacman rsync linux extlinux; do
 		install_target $PKG
 	done
 }
@@ -155,25 +149,6 @@ prepare_build
 build_toolchain
 clean_tool_pkg
 build_rootfs
-
-case "$1" in
-	bootstrap)
-		configure_arch
-		setup_build_env
-		prepare_build
-		build_toolchain
-		clean_tool_pkg
-		build_bootstrapfs
-		;;
-	*)
-		configure_arch
-		setup_build_env
-		prepare_build
-		build_toolchain
-		clean_tool_pkg
-		build_rootfs
-esac
-
 
 exit 0
 

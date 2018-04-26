@@ -1,32 +1,43 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=wpa_supplicant
-pkgver=2.6
+pkgname=util-linux
+pkgver=2.32
+pkgmajor=2.32
 pkgrel=1
-pkgdesc="A utility providing key negotiation for WPA wireless networks"
+pkgdesc="Miscellaneous system utilities for Linux"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="http://hostap.epitest.fi/wpa_supplicant"
-license=('BSD')
+url="https://www.kernel.org/pub/linux/utils/util-linux/"
+license=('GPL')
 groups=('base')
-depends=('musl' 'zlib' 'readline' 'libressl' 'libnl')
-source=("http://w1.fi/releases/$pkgname-$pkgver.tar.gz"
-	"libressl.patch"
-	"eloop.patch")
+depends=('musl')
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgbase-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	patch -Np1 -i $srcdir/libressl.patch
-	patch -Np1 -i $srcdir/eloop.patch
-	cd "$srcdir/$pkgname-$pkgver/$pkgname"
-	cp defconfig .config
-	sed -i 's,#CONFIG_WPS=y,CONFIG_WPS=y,' .config
-	make CC="$CC"
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--localstatedir=/var \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-all-programs \
+		--enable-fs-paths-default=/usr/bin \
+		--enable-fsck \
+		--enable-libblkid \
+		--enable-libmount \
+		--enable-libuuid
+	make
 }
 
 package() {
 	unset MAKEFLAGS
-	cd "$srcdir/$pkgname-$pkgver/$pkgname"
-	make BINDIR=/usr/bin DESTDIR=$pkgdir install
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	cd $pkgdir
+	mv {,usr/}sbin/* usr/bin
+	rmdir sbin usr/sbin
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
