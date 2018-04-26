@@ -36,8 +36,8 @@ package() {
 	make DESTDIR=$pkgdir install
 
 	cd $pkgdir
-	mv {,usr/}sbin/* usr/bin
-	rmdir sbin usr/sbin
+	mv sbin/* usr/bin/
+	rm -rf sbin usr/sbin
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
