@@ -9,7 +9,9 @@ url="https://www.busybox.net/"
 license=('GPL')
 groups=('base')
 depends=('musl')
-source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2")
+backup=('etc/mdev.conf')
+source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2"
+	'mdev.conf')
 
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -40,6 +42,11 @@ package() {
 	done
 
 	rm -rf linuxrc
+
+	ln -s usr/bin/busybox init
+
+	mkdir -p $pkgdir/etc
+	install -m644 $srcdir/mdev.conf $pkgdir/etc/mdev.conf
 
 	rm -rf $pkgdir/{,usr/}bin/{blkid,chattr,chvt,clear,dc,deallocvt,fgconsole,findfs,kbd_mode,less,lsattr,lzcat,lzma,mke2fs,mkfs.ext2,openvt,patch,reset,setfont,setkeycodes,sh,showkey,unlzma,unxz,xz,xzcat,strings,fsck}
 	mkdir -p $pkgdir/usr/share/udhcpc
