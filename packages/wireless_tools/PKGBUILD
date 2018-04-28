@@ -1,0 +1,32 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=wireless_tools
+pkgver=29
+pkgrel=1
+pkgdesc="Tools allowing to manipulate the Wireless Extensions"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html"
+license=('GPL')
+groups=('base')
+depends=('musl')
+source=("http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/$pkgname.$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir/$pkgname.$pkgver"
+	sed -i 's@sbin@bin@' Makefile
+	make PREFIX=$pkgdir/usr CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS"
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname.$pkgver"
+	make PREFIX=$pkgdir/usr install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
