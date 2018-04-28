@@ -1,44 +1,36 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=util-linux
-pkgver=2.32
-pkgmajor=2.32
+pkgname=acl
+pkgver=2.2.52
 pkgrel=1
-pkgdesc="Miscellaneous system utilities for Linux"
+pkgdesc="Access control list utilities, libraries and headers"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.kernel.org/pub/linux/utils/util-linux/"
-license=('GPL')
+url="http://savannah.nongnu.org/projects/acl"
+license=('LGPL')
 groups=('base')
-depends=('musl')
-options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+depends=('musl' 'attr')
+source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src.tar.gz"
+	'acl-add-musl-libc.patch')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+	patch -Np1 -i $srcdir/acl-add-musl-libc.patch
+	export INSTALL_USER=root INSTALL_GROUP=root
 	./configure \
 		--prefix=/usr \
 		--libdir=/usr/lib \
-		--bindir=/usr/bin \
-		--localstatedir=/var \
+		--libexecdir=/usr/lib \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--disable-all-programs \
-		--enable-fs-paths-default=/usr/bin \
-		--enable-fsck \
-		--enable-libblkid \
-		--enable-libmount \
-		--enable-libuuid
+		--disable-gettext
 	make
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR=$pkgdir install
-
-	cd $pkgdir
-	mv sbin/* usr/bin/
-	rm -rf sbin usr/sbin
+	make DIST_ROOT=$pkgdir install install-dev install-lib
+	chmod 0755 $pkgdir/usr/lib/libacl.so.*.*.*
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

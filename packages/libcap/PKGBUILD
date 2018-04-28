@@ -1,44 +1,29 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=util-linux
-pkgver=2.32
-pkgmajor=2.32
+pkgname=libcap
+pkgver=2.25
 pkgrel=1
-pkgdesc="Miscellaneous system utilities for Linux"
+pkgdesc="POSIX 1003.1e capabilities"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.kernel.org/pub/linux/utils/util-linux/"
+url="http://sites.google.com/site/fullycapable/"
 license=('GPL')
 groups=('base')
-depends=('musl')
-options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+depends=('musl' 'acl')
+source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
-		--prefix=/usr \
-		--libdir=/usr/lib \
-		--bindir=/usr/bin \
-		--localstatedir=/var \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-all-programs \
-		--enable-fs-paths-default=/usr/bin \
-		--enable-fsck \
-		--enable-libblkid \
-		--enable-libmount \
-		--enable-libuuid
-	make
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+	make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
+		prefix=/usr lib=lib PAM_CAP=no
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR=$pkgdir install
-
-	cd $pkgdir
-	mv sbin/* usr/bin/
-	rm -rf sbin usr/sbin
+	make prefix=/usr lib=lib DESTDIR=$pkgdir PAM_CAP=no RAISE_SETFCAP=no install
+	chmod 0755 $pkgdir/usr/lib/libcap.so.$pkgver
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
