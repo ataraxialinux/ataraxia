@@ -1,33 +1,27 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=util-linux
-pkgver=2.32
-pkgmajor=2.32
+pkgname=kmod
+pkgver=25
 pkgrel=1
-pkgdesc="Miscellaneous system utilities for Linux"
+pkgdesc="Linux kernel module management tools and library"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.kernel.org/pub/linux/utils/util-linux/"
+url="http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=summary"
 license=('GPL')
 groups=('base')
-depends=('musl')
-options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+depends=('musl' 'zlib' 'xz')
+source=("https://www.kernel.org/pub/linux/utils/kernel/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--libdir=/usr/lib \
-		--bindir=/usr/bin \
-		--localstatedir=/var \
+		--sysconfdir=/etc \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--disable-all-programs \
-		--enable-fs-paths-default=/usr/bin \
-		--enable-fsck \
-		--enable-libblkid \
-		--enable-libmount \
-		--enable-libuuid
+		--with-xz \
+		--with-zlib \
+		--disable-manpages
+	sed -i "s,/usr/include,$ROOTFS/usr/include,g" Makefile
 	make
 }
 
@@ -36,9 +30,9 @@ package() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 
-	cd $pkgdir
-	mv sbin/* usr/bin/
-	rm -rf sbin usr/sbin
+	for tool in depmod insmod modinfo modprobe rmmod; do
+		ln -s kmod $pkgdir/usr/bin/${tool}
+	done
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
