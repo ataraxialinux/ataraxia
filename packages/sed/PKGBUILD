@@ -1,39 +1,22 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=util-linux
-pkgver=2.32
-pkgmajor=2.32
+pkgname=sed
+pkgver=4.5
 pkgrel=1
-pkgdesc="Miscellaneous system utilities for Linux"
+pkgdesc="GNU stream editor"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.kernel.org/pub/linux/utils/util-linux/"
+url="https://www.gnu.org/software/sed/"
 license=('GPL')
 groups=('base')
-depends=('musl' 'ncurses')
-options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+depends=('musl' 'attr' 'acl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--libdir=/usr/lib \
-		--bindir=/usr/bin \
-		--localstatedir=/var \
 		--build=$XHOST \
-		--host=$XTARGET \
-		--without-python \
-		--enable-raw \
-		--enable-write \
-		--disable-chfn-chsh \
-		--disable-login \
-		--disable-nls \
-		--disable-nologin \
-		--disable-runuser \
-		--disable-setpriv \
-		--disable-su \
-		--disable-sulogin \
-		--disable-tls
+		--host=$XTARGET
 	make
 }
 
@@ -41,10 +24,6 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
-
-	cd "$pkgdir"
-	mv {,usr/}sbin/* usr/bin
-	rm -rf sbin usr/sbin
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
