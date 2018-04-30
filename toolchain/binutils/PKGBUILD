@@ -6,6 +6,8 @@ source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd $srcdir/$pkgname-$pkgver
+	# ArchLinux build problems
+	unset CFLAGS CXXFLAGS LDFLAGS CPPFLAGS
 	mkdir build
 	cd build
 	AR="ar" AS="as" \
@@ -20,7 +22,6 @@ build() {
 		--enable-threads \
 		--disable-multilib \
 		--disable-nls \
-		--disable-static \
 		--disable-werror
 	make configure-host
 	make
