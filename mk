@@ -133,12 +133,12 @@ build_toolchain() {
 
 clean_tool_pkg() {
 	for toolpkg in file pkgconf binutils gcc-static gcc-final; do
-		rm -rf $PKGS/$toolpkg*.pkg.tar.xz
+		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
 	done
 }
 
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz expat libressl kmod patch busybox libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux grub; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux procps-ng e2fsprogs coreutils libtool iproute2 bzip2 gdbm perl readline autoconf automake bash bc file; do
 		install_target $PKG
 	done
 }
