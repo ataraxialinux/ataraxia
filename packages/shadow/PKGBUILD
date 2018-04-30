@@ -1,39 +1,36 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=util-linux
-pkgver=2.32
-pkgmajor=2.32
+pkgname=shadow
+pkgver=4.5
 pkgrel=1
-pkgdesc="Miscellaneous system utilities for Linux"
+pkgdesc="Password and account management tool suite"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.kernel.org/pub/linux/utils/util-linux/"
-license=('GPL')
+url="https://github.com/shadow-maint/shadow"
+license=('BSD')
 groups=('base')
-depends=('musl' 'ncurses')
+depends=('musl' 'acl')
+backup=('etc/login.defs'
+	'etc/default/useradd')
 options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--libdir=/usr/lib \
 		--bindir=/usr/bin \
-		--localstatedir=/var \
+		--sbindir=/usr/bin \
+		--libdir=/usr/lib \
+		--sysconfdir=/etc \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--without-python \
-		--enable-raw \
-		--enable-write \
-		--disable-chfn-chsh \
-		--disable-login \
-		--disable-nls \
-		--disable-nologin \
-		--disable-runuser \
-		--disable-setpriv \
-		--disable-su \
-		--disable-sulogin \
-		--disable-tls
+		--with-group-max-length=32 \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--disable-nls
 	make
 }
 
@@ -41,10 +38,10 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
+	sed -i 's/1000/100/' $pkgdir/etc/default/useradd
 
-	cd "$pkgdir"
-	mv {,usr/}sbin/* usr/bin
-	rm -rf sbin usr/sbin
+	mv $pkgdir/usr/sbin/* $pkgdir/usr/bin
+	rmdir $pkgdir/usr/sbin
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

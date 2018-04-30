@@ -1,50 +1,30 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=util-linux
-pkgver=2.32
-pkgmajor=2.32
+pkgname=bzip2
+pkgver=1.0.6
 pkgrel=1
-pkgdesc="Miscellaneous system utilities for Linux"
+pkgdesc="A high-quality data compression program"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.kernel.org/pub/linux/utils/util-linux/"
-license=('GPL')
+url="http://sources.redhat.com/bzip2"
+license=('custom')
 groups=('base')
-depends=('musl' 'ncurses')
-options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+depends=('musl')
+source=("http://www.bzip.org/$pkgver/bzip2-$pkgver.tar.gz"
+	'bzip2.patch')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
-		--prefix=/usr \
-		--libdir=/usr/lib \
-		--bindir=/usr/bin \
-		--localstatedir=/var \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--without-python \
-		--enable-raw \
-		--enable-write \
-		--disable-chfn-chsh \
-		--disable-login \
-		--disable-nls \
-		--disable-nologin \
-		--disable-runuser \
-		--disable-setpriv \
-		--disable-su \
-		--disable-sulogin \
-		--disable-tls
-	make
+	patch -Np1 -i $srcdir/bzip2.patch
+	sed -i 's@all: libbz2.a bzip2 bzip2recover test@all: libbz2.a bzip2 bzip2recover@' Makefile
+	make CFLAGS="$CFLAGS -D_GNU_SOURCE -fPIC" LDFLAGS="$LDFLAGS" CC="$CC"
+	make CFLAGS="$CFLAGS -D_GNU_SOURCE -fPIC" LDFLAGS="$LDFLAGS" CC="$CC" -f Makefile-libbz2_so
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR=$pkgdir install
-
-	cd "$pkgdir"
-	mv {,usr/}sbin/* usr/bin
-	rm -rf sbin usr/sbin
+	make PREFIX=$pkgdir/usr install
+	make -f Makefile-libbz2_so PREFIX=$pkgdir/usr install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
