@@ -138,7 +138,7 @@ clean_tool_pkg() {
 }
 
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux procps-ng e2fsprogs coreutils libtool iproute2 bzip2 gdbm perl readline autoconf automake bash bc file; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses util-linux procps-ng e2fsprogs coreutils libtool iproute2 bzip2 perl gdbm readline autoconf automake bash bc file; do
 		install_target $PKG
 	done
 }
