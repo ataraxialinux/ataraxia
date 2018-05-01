@@ -13,7 +13,6 @@ source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	sed -i '/^SUBDIRS/s/locate//' Makefile.in
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
@@ -26,6 +25,7 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
+	rm -rf $pkgdir/usr/bin/locate
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
