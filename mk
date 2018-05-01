@@ -7,7 +7,7 @@ install_host() {
 	for dpkg in $XPKG; do
 		cd $TCREPO/$dpkg
 		makepkg --config $BUILD/host-makepkg.conf -d -c -C -f --skipchecksums
-		yes y | fakeroot pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $TOOLS --force
+		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $TOOLS --force
 	done
 }
 
@@ -16,7 +16,7 @@ install_target() {
 	for dpkg in $XPKG; do
 		cd $REPO/$dpkg
 		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
-		yes y | fakeroot pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
+		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
 	done
 }
 
@@ -25,7 +25,7 @@ install_host_target() {
 	for dpkg in $XPKG; do
 		cd $REPO/$dpkg
 		makepkg --config $BUILD/host-makepkg.conf -d -c -f -C --skipchecksums
-		yes y | fakeroot pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
+		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
 	done
 }
 
@@ -56,7 +56,7 @@ configure_arch() {
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
 		*)
-			exit "BARCH variable isn't set!"
+			echo "BARCH variable isn't set!"
 			exit 1
 	esac
 }
@@ -72,7 +72,7 @@ setup_build_env() {
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
 
-	fakeroot rm -rf $BUILD
+	sudo rm -rf $BUILD
 	mkdir -p $BUILD $SOURCES $ROOTFS $TOOLS $PKGS $LOGS
 
 	export LC_ALL="POSIX"
@@ -136,7 +136,7 @@ clean_tool_pkg() {
 }
 
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool iproute2 bzip2 perl gdbm readline autoconf automake bash bc file; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap sed pkgconf ncurses shadow util-linux procps-ng coreutils libtool iproute2 bzip2 perl gdbm readline autoconf automake bash bc file; do
 		install_target $PKG
 	done
 }
