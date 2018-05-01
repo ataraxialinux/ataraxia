@@ -1,37 +1,44 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=grub
-pkgver=2.02
+pkgname=eudev
+pkgver=3.2.5
 pkgrel=1
-pkgdesc="GNU GRand Unified Bootloader"
-arch=('x86_64' 'i686')
-url="https://www.gnu.org/software/grub/"
+pkgdesc="The userspace dev tools (udev) forked by Gentoo"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="http://www.gentoo.org/proj/en/eudev/"
 license=('GPL')
 groups=('base')
-depends=('musl')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
-	'grub.default')
+depends=('musl' 'kmod')
+backup=('etc/udev/udev.conf')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure LDFLAGS="$LDFLAGS -static" \
+	CFLAGS="$CFLAGS -I$ROOTFS/usr/include" \
+	BLKID_CFLAGS="-I$ROOTFS/usr/include/blkid" \
+	BLKID_LIBS="-L$ROOTFS/usr/lib -lblkid" \
+	KMOD_CFLAGS="-I$ROOTFS/usr/include" \
+	KMOD_LIBS="-L$ROOTFS/usr/lib -lkmod" \
+	./configure \
 		--prefix=/usr \
-		--bindir=/usr/bin \
-		--sbindir=/usr/bin \
-		--mandir=/usr/share/man \
-		--infodir=/usr/share/info \
-		--datarootdir=/usr/share \
+		--with-rootprefix=/usr \
 		--sysconfdir=/etc \
-	 	--program-prefix="" \
-		--with-bootdir=/boot \
-		--with-grubdir=grub \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--enable-boot-time \
-		--enable-grub-mkfont=no \
-		--disable-liblzma \
-		--disable-nls \
-		--disable-werror
+		--with-sysroot=$ROOTFS \
+		--with-rootprefix="" \
+		--with-firmware-path=/lib/firmware \
+		--enable-hwdb \
+		--enable-kmod \
+		--enable-rule_generator \
+		--enable-split-usr \
+		--disable-gtk-doc-html \
+		--disable-gudev \
+		--disable-keymap \
+                --disable-introspection \
+		--disable-manpages
 	make
 }
 
@@ -40,9 +47,6 @@ package() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 
-	mkdir -p $pkgdir/etc/default/
-	install -D -m0644 $srcdir/grub.default $pkgdir/etc/default/grub
-
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
@@ -50,6 +54,4 @@ package() {
 	cd $pkgdir
 	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
-
-	mkdir -p $pkgdir/usr/share/locale
 }

@@ -1,29 +1,30 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=file
-pkgver=5.33
+pkgname=iputils
+pkgver=s20161105
 pkgrel=1
-pkgdesc="File type identification utility"
+pkgdesc="Network monitoring tools, including ping"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.darwinsys.com/file/"
-license=('custom')
+url="http://www.skbuff.net/iputils/"
+license=('GPL')
 groups=('base')
-depends=('musl' 'zlib')
-source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz")
+depends=('musl')
+backup=(etc/xinetd.d/tftp)
+source=("https://github.com/iputils/iputils/archive/$pkgver.tar.gz"
+	'iputils-99999999-musl.patch')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
-		--prefix=$pkgdir/usr \
-		--build=$XHOST \
-		--host=$XTARGET
-	make
+	patch -Np1 -i $srcdir/iputils-99999999-musl.patch
+	make USE_IDN=no USE_CAP=no USE_NETTLE=no USE_CRYPTO=no \
+		CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS"
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make install
+	install -dm755 $pkgdir/usr/bin
+	install -m755 arping clockdiff ping rarpd rdisc tftpd tracepath $pkgdir/usr/bin/
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
