@@ -84,7 +84,6 @@ setup_build_env() {
 prepare_build() {
 	export CFLAGS="-Os -g0"
 	export CXXFLAGS="$CFLAGS"
-	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 	export LDFLAGS="-s"
 
 	cp -a $TCREPO/makepkg.conf $BUILD/host-makepkg.conf
@@ -96,7 +95,6 @@ prepare_build() {
 			-e "s|@CHOST[@]|$XTARGET|g" \
 			-e "s|@CFLAGS[@]|$CFLAGS|g" \
 			-e "s|@CXXFLAGS[@]|$CXXFLAGS|g" \
-			-e "s|@CPPFLAGS[@]|$CPPFLAGS|g" \
 			-e "s|@LDFLAGS[@]|$LDFLAGS|g" \
 			-e "s|@MKOPTS[@]|$MKOPTS|g" \
 			-e "s|@PKGS[@]|$PKGS|g" \
