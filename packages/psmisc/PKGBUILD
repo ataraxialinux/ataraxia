@@ -1,29 +1,31 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=file
-pkgver=5.33
+pkgname=psmisc
+pkgver=23.1
 pkgrel=1
-pkgdesc="File type identification utility"
+pkgdesc="Miscellaneous procfs tools"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="https://www.darwinsys.com/file/"
-license=('custom')
+url="http://psmisc.sourceforge.net/index.html"
+license=('GPL')
 groups=('base')
-depends=('musl' 'zlib')
-source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz")
+depends=('musl' 'ncurses')
+source=("http://sourceforge.net/projects/psmisc/files/psmisc/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
-		--prefix=$pkgdir/usr \
+		--prefix=/usr \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--disable-nls
 	make
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make install
+	make DESTDIR=$pkgdir install
+	rm $pkgdir/usr/bin/pstree.x11
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
