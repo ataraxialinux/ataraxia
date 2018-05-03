@@ -6,11 +6,11 @@ source=("http://distfiles.dereferenced.org/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd $srcdir/$pkgname-$pkgver
-	LDFLAGS="$LDFLAGS -static" \
 	./configure \
 		--prefix= \
+		--host=$XTARGET \
 		--with-pc-path="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
-	make LDFLAGS="$LDFLAGS -static"
+	make
 }
 
 package() {
