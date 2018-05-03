@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=filesystem
-pkgver=20180430
+pkgver=20180425
 pkgrel=1
 pkgdesc="Filesystem layout and configuration files"
 arch=('any')
@@ -10,6 +10,7 @@ license=('MIT')
 groups=('base')
 source=('fstab'
 	'group'
+	'gshadow'
 	'host.conf'
 	'hostname'
 	'hosts'
@@ -29,6 +30,7 @@ source=('fstab'
 	'shells')
 backup=('etc/fstab'
 	'etc/group'
+	'etc/gshadow'
 	'etc/host.conf'
 	'etc/hostname'
 	'etc/hosts'
@@ -48,7 +50,7 @@ backup=('etc/fstab'
 package() {
 	cd $pkgdir
 
-	for d in boot dev etc/{skel,profile.d} home mnt usr var opt srv/http run; do
+	for d in boot dev etc home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -64,7 +66,9 @@ package() {
 		install -m644 $srcdir/$f $pkgdir/etc
 	done
 
-	install -m 0640 $srcdir/shadow $pkgdir/etc
+	for f in shadow gshadow; do
+		install -m600 $srcdir/$f $pkgdir/etc
+	done
 
 	install -Dm0755 $srcdir/rc.local $pkgdir/etc/rc.local
 

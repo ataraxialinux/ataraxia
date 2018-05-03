@@ -30,9 +30,30 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	mkdir -p $pkgdir/usr/bin
-	cp busybox $pkgdir/usr/bin/busybox
-	chmod +x $pkgdir/usr/bin/busybox
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=$pkgdir install
+
+	cd $pkgdir
+
+	for d in bin sbin usr/sbin; do
+		mv $d/* usr/bin/
+		rm -rf $d
+	done
+
+	rm -rf linuxrc
+
+cat >init <<EOF
+#!/bin/sh
+
+exec /sbin/init
+
+EOF
+
+chmod +x init
+
+	mkdir -p $pkgdir/usr/share/udhcpc
+	install -Dm0755 $srcdir/$pkgname-$pkgver/examples/udhcp/simple.script $pkgdir/usr/share/udhcpc/default.script
+
+	chmod 4755 $pkgdir/usr/bin/busybox
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
