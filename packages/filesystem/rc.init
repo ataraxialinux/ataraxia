@@ -20,15 +20,11 @@ dmesg -n 1
 
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
-mount -t tmpfs /tmp /tmp
-
 echo /sbin/mdev > /proc/sys/kernel/hotplug
 mdev -s
-
 mkdir -p /dev/pts /dev/shm
-
-mount -t devpts none /dev/pts
-mount -t tmpfs none /dev/shm
+mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /dev/shm
 
 mount -o remount,ro /
 
@@ -54,11 +50,11 @@ else
 	hostname localhost
 fi
 
-ifconfig lo up
-
 hwclock -u -s
 
 sysctl -w -p /etc/sysctl.conf
+
+ifup -a
 
 if [ -x /etc/rc.local ]; then
 	/etc/rc.local
