@@ -19,11 +19,10 @@ build() {
 		--libexecdir=/usr/lib \
 		--build=$XHOST \
 		--host=$XTARGET \
+		--with-build-cc=$HOSTCC \
 		--with-pkg-config-libdir=/usr/lib/pkgconfig \
 		--with-normal \
 		--with-shared \
-		--with-cxx-binding \
-		--with-cxx-shared \
 		--without-ada \
 		--without-debug \
 		--without-manpages \
@@ -38,19 +37,6 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
-
-	for lib in ncurses ncurses++ form panel menu; do
-		echo "INPUT(-l${lib}w)" > "$pkgdir/usr/lib/lib${lib}.so"
-		ln -s ${lib}w.pc "$pkgdir/usr/lib/pkgconfig/${lib}.pc"
-	done
-
-	for lib in tic tinfo; do
-		echo "INPUT(libncursesw.so.${pkgver:0:1})" > "$pkgdir/usr/lib/lib${lib}.so"
-		ln -s libncursesw.so.${pkgver:0:1} "$pkgdir/usr/lib/lib${lib}.so.${pkgver:0:1}"
-	done
-
-	echo 'INPUT(-lncursesw)' > "$pkgdir/usr/lib/libcursesw.so"
-	ln -s libncurses.so "$pkgdir/usr/lib/libcurses.so"
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
