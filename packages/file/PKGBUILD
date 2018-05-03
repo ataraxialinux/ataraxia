@@ -13,8 +13,12 @@ source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+
+	export CFLAGS="$CFLAGS --sysroot=$ROOTFS"
+	export LDFLAGS="$LDFLAGS --sysroot=$ROOTFS"
+
 	./configure \
-		--prefix=$pkgdir/usr \
+		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET
 	make
@@ -23,7 +27,7 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make install
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
