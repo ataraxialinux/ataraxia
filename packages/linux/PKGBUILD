@@ -9,7 +9,8 @@ license=('GPL')
 groups=('base')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
 	'x86_64-config'
-	'i386-config')
+	'i386-config'
+	'aarch64-config')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -18,7 +19,10 @@ build() {
 			cp $srcdir/x86_64-config .config
 			;;
 		i386)
-                        cp $srcdir/i386-config .config
+			cp $srcdir/i386-config .config
+			;;
+		aarch64)
+			cp $srcdir/aarch64-config .config
 			;;
 	esac
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
@@ -30,5 +34,12 @@ package() {
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$pkgdir/usr modules_install
 
 	mkdir -p $pkgdir/boot
-	cp arch/x86/boot/bzImage $pkgdir/boot/bzImage
+	case $XKARCH in
+		x86_64|i386)
+			cp arch/x86/boot/bzImage $pkgdir/boot/bzImage
+			;;
+		aarch64)
+			cp arch/arm64/boot/zImage $pkgdir/boot/zImage
+			;;
+	esac
 }
