@@ -7,20 +7,21 @@ arch=('x86_64' 'i686' 'aarch64' 'armv7l')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
-source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
+	'x86_64-config'
+	'i386-config')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make ARCH=$XKARCH defconfig
-	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"suzuha\"/" .config
-	sed -i "s/.*CONFIG_FB_VESA.*/CONFIG_FB_VESA=y/" .config
-	sed -i "s/^CONFIG_DEBUG_KERNEL.*/\\# CONFIG_DEBUG_KERNEL is not set/" .config
-	sed -i "s/.*CONFIG_EFI_STUB.*/CONFIG_EFI_STUB=y/" .config
-	echo "CONFIG_RESET_ATTACK_MITIGATION=y" >> .config
-	echo "CONFIG_APPLE_PROPERTIES=n" >> .config
-	if [ "`grep "CONFIG_X86_64=y" .config`" = "CONFIG_X86_64=y" ] ; then
-		echo "CONFIG_EFI_MIXED=y" >> .config
-	fi
+	case $XKARCH in
+		x86_64)
+			cp $srcdir/x86_64-config .config
+			;;
+		i386)
+                        cp $srcdir/i386-config .config
+			;;
+	esac
+	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
 }
 
