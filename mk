@@ -137,17 +137,9 @@ clean_tool_pkg() {
 }
 
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux grub; do
 		install_target $PKG
 	done
-}
-
-build_bootloader() {
-	case $BARCH in
-		x86_64|i686)
-			install_target syslinux
-			;;
-	esac
 }
 
 fix_install_packages() {
