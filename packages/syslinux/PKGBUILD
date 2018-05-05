@@ -25,7 +25,7 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make bios install INSTALLROOT=$pkgdir SBINDIR=/usr/bin MANDIR=/usr/share/man AUXDIR=/usr/lib/syslinux
+	make CC="$CC" HOSTCC="$HOSTCC" bios install INSTALLROOT=$pkgdir SBINDIR=/usr/bin MANDIR=/usr/share/man AUXDIR=/usr/lib/syslinux
 	install -d $pkgdir/usr/lib/syslinux/bios
 	mv $pkgdir/usr/lib/syslinux/{*.bin,*.c32,*.0,memdisk} $pkgdir/usr/lib/syslinux/bios
 	install -D -m0755 $srcdir/syslinux-install_update $pkgdir/usr/bin/syslinux-install_update
