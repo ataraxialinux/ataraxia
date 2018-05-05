@@ -66,6 +66,7 @@ setup_build_env() {
 	export BUILD="$CWD/build"
 	export SOURCES="$BUILD/sources"
 	export ROOTFS="$BUILD/rootfs"
+	export FINALFS="$BUILD/finalfs"
 	export TOOLS="$BUILD/tools"
 	export PKGS="$BUILD/packages"
 	export LOGS="$BUILD/logs"
@@ -73,7 +74,7 @@ setup_build_env() {
 	export TCREPO="$CWD/toolchain"
 
 	sudo rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS $TOOLS $PKGS $LOGS
+	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS
 
 	export LC_ALL="POSIX"
 	export PATH="$TOOLS/bin:$PATH"
@@ -130,7 +131,7 @@ build_toolchain() {
 }
 
 clean_tool_pkg() {
-	for toolpkg in file pkgconf binutils gcc-static gcc-final; do
+	for toolpkg in cdrtools file pkgconf binutils gcc-static gcc-final; do
 		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
 	done
 }
@@ -141,12 +142,34 @@ build_rootfs() {
 	done
 }
 
+build_bootloader() {
+	case $BARCH in
+		x86_64|i686)
+			install_target syslinux
+			;;
+	esac
+}
+
+fix_install_packages() {
+	sudo mkdir -p $FINALFS/var/lib/pacman
+	yes y | sudo pacman -U $PKGS/*.pkg.tar.xz --root $FINALFS --arch $BARCH
+}
+
+generate_archive() {
+	cd $FINALFS
+	sudo tar cfJ $CWD/januslinux-1.0-$(date -Idate)-$BARCH.tar.xz .
+	echo -e "Generated archive with januslinux is here: $CWD/januslinux-1.0-$(date -Idate)-$BARCH.tar.xz"
+	echo "Enjoy!"
+}
+
 configure_arch
 setup_build_env
 prepare_build
 build_toolchain
 clean_tool_pkg
 build_rootfs
+build_bootloader
+generate_archive
 
 exit 0
 
