@@ -160,6 +160,7 @@ generate_archive() {
 	sudo tar cfJ $CWD/januslinux-1.0-$(date -Idate)-$BARCH.tar.xz .
 	echo -e "Generated archive with januslinux is here: $CWD/januslinux-1.0-$(date -Idate)-$BARCH.tar.xz"
 	echo "Enjoy!"
+	cd $CWD
 }
 
 configure_arch
