@@ -1,26 +1,44 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=make
-pkgver=4.2.1
+pkgname=eudev
+pkgver=3.2.5
 pkgrel=1
-pkgdesc="GNU make utility to maintain groups of programs"
+pkgdesc="The userspace dev tools (udev) forked by Gentoo"
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
-url="http://www.gnu.org/software/make"
+url="http://www.gentoo.org/proj/en/eudev/"
 license=('GPL')
 groups=('base')
-depends=('musl')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz"
-	'fix-glob-dtype.patch')
+depends=('musl' 'util-linux' 'kmod')
+backup=('etc/udev/udev.conf')
+source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	patch -Np1 -i $srcdir/fix-glob-dtype.patch
+	CFLAGS="$CFLAGS -I$ROOTFS/usr/include" \
+	BLKID_CFLAGS="-I$ROOTFS/usr/include/blkid" \
+	BLKID_LIBS="-L$ROOTFS/usr/lib -lblkid" \
+	KMOD_CFLAGS="-I$ROOTFS/usr/include" \
+	KMOD_LIBS="-L$ROOTFS/usr/lib -lkmod" \
 	./configure \
 		--prefix=/usr \
+		--with-rootprefix=/usr \
+		--sysconfdir=/etc \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--without-guile \
-		--disable-nls
+		--with-sysroot=$ROOTFS \
+		--with-rootprefix="" \
+		--with-firmware-path=/lib/firmware \
+		--enable-hwdb \
+		--enable-kmod \
+		--enable-rule_generator \
+		--enable-split-usr \
+		--disable-gtk-doc-html \
+		--disable-gudev \
+		--disable-keymap \
+                --disable-introspection \
+		--disable-manpages
 	make
 }
 
