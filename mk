@@ -136,7 +136,7 @@ clean_tool_pkg() {
 }
 
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz expat libressl patch busybox libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux grub; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file less kbd make xz kmod expat libressl patch gperf eudev busybox libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux; do
 		install_target $PKG
 	done
 }
