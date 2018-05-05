@@ -1,0 +1,42 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=syslinux
+pkgver=6.03
+pkgrel=1
+pkgdesc="Collection of boot loaders that boot from FAT, ext2/3/4 and btrfs filesystems, from CDs and via PXE"
+arch=('x86_64' 'i686')
+url='http://www.syslinux.org/'
+license=('GPL')
+groups=('base')
+depends=('musl')
+backup=('boot/syslinux/syslinux.cfg')
+options=('!makeflags' '!buildflags')
+source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/$pkgname-$pkgver.tar.xz"
+	'syslinux-install_update'
+	'syslinux.cfg')
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	export LDFLAGS+="--no-dynamic-linker"
+	export EXTRA_CFLAGS="-fno-PIE"
+	make CC="$CC" HOSTCC="$HOSTCC" bios installer
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	make bios install INSTALLROOT=$pkgdir SBINDIR=/usr/bin MANDIR=/usr/share/man AUXDIR=/usr/lib/syslinux
+	install -d $pkgdir/usr/lib/syslinux/bios
+	mv $pkgdir/usr/lib/syslinux/{*.bin,*.c32,*.0,memdisk} $pkgdir/usr/lib/syslinux/bios
+	install -D -m0755 $srcdir/syslinux-install_update $pkgdir/usr/bin/syslinux-install_update
+	mkdir -p $srcdir/boot/syslinux
+	install -D -m0644 $srcdir/syslinux.cfg $pkgdir/boot/syslinux/syslinux.cfg
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
