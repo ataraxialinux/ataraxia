@@ -37,6 +37,12 @@ configure_arch() {
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
+		aarch64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-linux-musl"
+			export XKARCH="arm64"
+			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			;;
 		*)
 			echo "BARCH variable isn't set!"
 			exit 1
