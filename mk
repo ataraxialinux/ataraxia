@@ -121,13 +121,13 @@ build_toolchain() {
 }
 
 clean_tool_pkg() {
-	for toolpkg in cdrtools file pkgconf binutils gcc-static gcc-final; do
+	for toolpkg in file pkgconf binutils gcc-static gcc-final; do
 		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
 	done
 }
 
 build_rootfs() {
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox 9base libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux grub; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git pacman rsync linux grub; do
 		install_target $PKG
 	done
 }
