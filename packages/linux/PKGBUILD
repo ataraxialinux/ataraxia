@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=linux
-pkgver=4.16.7
+pkgver=4.14.39
 pkgrel=1
 arch=('x86_64' 'i686' 'aarch64' 'armv7l')
 url="https://www.kernel.org/"
@@ -10,7 +10,8 @@ groups=('base')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
 	'x86_64-config'
 	'i386-config'
-	'aarch64-config')
+	'aarch64-config'
+	'arm-config')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -24,6 +25,9 @@ build() {
 		aarch64)
 			cp $srcdir/aarch64-config .config
 			;;
+                arm)
+                        cp $srcdir/arm-config .config
+                        ;;
 	esac
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
@@ -38,7 +42,7 @@ package() {
 		x86_64|i386)
 			cp arch/x86/boot/bzImage $pkgdir/boot/bzImage
 			;;
-		aarch64)
+		aarch64|arm)
 			cp arch/arm64/boot/zImage $pkgdir/boot/zImage
 			;;
 	esac
