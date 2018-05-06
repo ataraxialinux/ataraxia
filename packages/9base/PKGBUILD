@@ -1,0 +1,51 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=9base
+pkgver=9
+pkgrel=1
+pkgdesc="Tools from Plan 9"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="https://tools.suckless.org/9base/"
+license=('custom')
+groups=('base')
+depends=('linux-headers' 'musl')
+source=("https://github.com/protonesso/9base/archive/$pkgver.tar.gz"
+	'9base-bc-yacc.patch')
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	echo "PREFIX = /usr" >>config.mk
+	echo "CFLAGS += -fsigned-char -D_GNU_SOURCE -DPLAN9PORT -D__USE_MISC $CFLAGS" >>config.mk
+	echo "LDFLAGS += $LDFLAGS" >> config.mk
+	echo "CC = $CC" >> config.mk
+	echo "STRIP = $STRIP" >> config.mk
+	echo "YACC = yacc" >> config.mk
+	patch -p1 < $srcdir/9base-bc-yacc.patch
+	for i in diff lib9 ; do sed -i 's@-I\${PREFIX}/include@@' $i/Makefile ; done
+	for i in std.mk diff/Makefile ; do
+		sed -i 's/@strip/$(STRIP)/' $i
+	done
+	sed -i 's/__linux__/__not_linux__/;s/__sun__/__linux__/' lib9/dirread.c
+	sed -i '/sys.termios.h/d' lib9/readcons.c
+	sed -i '/^.touch./d' Makefile
+	stuff_to_build="yacc ascii bc cleanname dc factor fmt freq getflags look mk mtime pbd primes read unicode"
+	stuff_to_build=$(echo "$stuff_to_build" | sed -e 's/hoc //' -e 's/yacc //')
+	echo "SUBDIRS=lib9 $stuff_to_build" >> config.mk
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	for f in ascii bc cleanname dc factor fmt freq getflags mk mtime pbd primes read unicode;do
+		make -C $f PREFIX=/usr DESTDIR=$pkgdir install
+	done
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
