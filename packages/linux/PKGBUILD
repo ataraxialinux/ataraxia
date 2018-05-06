@@ -7,16 +7,11 @@ arch=('x86_64' 'i686' 'aarch64' 'armv7l')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
-source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
-	'x86_64-config'
-	'i386-config'
-	'arm64-config'
-	'arm-config')
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	cp $srcdir/$XKARCH-config .config
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
+	make ARCH=$XKARCH defconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
 }
 
