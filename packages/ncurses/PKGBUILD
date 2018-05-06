@@ -22,8 +22,6 @@ build() {
 		--with-pkg-config-libdir=/usr/lib/pkgconfig \
 		--with-normal \
 		--with-shared \
-		--with-cxx-binding \
-		--with-cxx-shared \
 		--without-ada \
 		--without-debug \
 		--without-manpages \
@@ -39,7 +37,7 @@ package() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 
-	for lib in ncurses ncurses++ form panel menu; do
+	for lib in ncurses form panel menu; do
 		echo "INPUT(-l${lib}w)" > "$pkgdir/usr/lib/lib${lib}.so"
 		ln -s ${lib}w.pc "$pkgdir/usr/lib/pkgconfig/${lib}.pc"
 	done
