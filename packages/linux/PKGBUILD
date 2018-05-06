@@ -10,25 +10,12 @@ groups=('base')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
 	'x86_64-config'
 	'i386-config'
-	'aarch64-config'
+	'arm64-config'
 	'arm-config')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	case $XKARCH in
-		x86_64)
-			cp $srcdir/x86_64-config .config
-			;;
-		i386)
-			cp $srcdir/i386-config .config
-			;;
-		aarch64)
-			cp $srcdir/aarch64-config .config
-			;;
-                arm)
-                        cp $srcdir/arm-config .config
-                        ;;
-	esac
+	cp $srcdir/$XKARCH-config .config
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
 }
