@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=filesystem
-pkgver=20180505
+pkgver=20180512
 pkgrel=1
 pkgdesc="Filesystem layout and configuration files"
 arch=('any')
@@ -14,6 +14,7 @@ source=('fstab'
 	'hostname'
 	'hosts'
 	'inittab'
+	'interfaces'
 	'issue'
 	'motd'
 	'passwd'	
@@ -26,7 +27,8 @@ source=('fstab'
 	'securetty'
 	'services'
 	'shadow'
-	'shells')
+	'shells'
+	'sysctl.conf')
 backup=('etc/fstab'
 	'etc/group'
 	'etc/host.conf'
@@ -43,7 +45,9 @@ backup=('etc/fstab'
 	'etc/securetty'
 	'etc/services'
 	'etc/shadow'
-	'etc/shells')
+	'etc/shells'
+	'etc/sysctl.conf'
+	'etc/network/interfaces')
 
 package() {
 	cd $pkgdir
@@ -60,13 +64,16 @@ package() {
 
 	ln -s /proc/self/mounts $pkgdir/etc/mtab
 
-	for f in fstab group host.conf hostname hosts issue inittab motd passwd profile protocols resolv.conf securetty services shells; do
+	for f in fstab group host.conf hostname hosts issue inittab motd passwd profile protocols resolv.conf securetty services shells sysctl.conf; do
 		install -m644 $srcdir/$f $pkgdir/etc
 	done
 
 	for f in shadow; do
 		install -m600 $srcdir/$f $pkgdir/etc
 	done
+
+	mkdir -p $pkgdir/etc/network/
+	cp $srcdir/interfaces $pkgdir/etc/network/interfaces
 
 	install -Dm0755 $srcdir/rc.local $pkgdir/etc/rc.local
 
