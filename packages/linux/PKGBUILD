@@ -3,15 +3,26 @@
 pkgname=linux
 pkgver=4.14.39
 pkgrel=1
-arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+arch=('x86_64' 'aarch64')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
-source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
+	"x86_64-config"
+	"aarch64-config")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make ARCH=$XKARCH defconfig
+	unset LDFLAGS
+	case $CARCH in
+		x86_64)
+			cp $srcdir/x86_64-config $srcdir/$pkgname-$pkgver/.config
+			;;
+		aarch64)
+			cp $srcdir/aarch64-config $srcdir/$pkgname-$pkgver/.config
+			;;
+	esac
+	make ARCH=$XKARCH silentoldconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
 }
 
@@ -20,15 +31,12 @@ package() {
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$pkgdir/usr modules_install
 
 	mkdir -p $pkgdir/boot
-	case $XKARCH in
-		x86_64|i386)
-			cp arch/x86/boot/bzImage $pkgdir/boot/bzImage
+	case $CARCH in
+		x86_64)
+			cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
 			;;
 		aarch64)
-			cp arch/arm64/boot/zImage $pkgdir/boot/zImage
-			;;
-		arm)
-			cp arch/arm/boot/zImage $pkgdir/boot/zImage
+			cp arch/arm64/boot/Image $pkgdir/boot/vmlinuz
 			;;
 	esac
 }
