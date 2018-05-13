@@ -1,100 +1,15 @@
-<!DOCTYPE html>
-<html lang='en'>
-<head>
-<title>fix-xattrs-glibc.patch\python3\main - aports - Main aports tree
-</title>
-<meta name='generator' content='cgit v1.1'/>
-<meta name='robots' content='index, nofollow'/>
-<link rel='stylesheet' type='text/css' href='/cgit.css'/>
-<link rel='shortcut icon' href='//alpinelinux.org/alpine-logo.ico'/>
-<link rel='alternate' title='Atom feed' href='https://git.alpinelinux.org/cgit/aports/atom/main/python3/fix-xattrs-glibc.patch?h=master' type='application/atom+xml'/>
-<link rel='vcs-git' href='git://git.alpinelinux.org/aports' title='aports Git repository'/>
-<link rel='vcs-git' href='https://git.alpinelinux.org/cgit/aports' title='aports Git repository'/>
-</head>
-<body>
-<div id='cgit'><table id='header'>
-<tr>
-<td class='logo' rowspan='2'><a href='/cgit/'><img src='//wiki.alpinelinux.org/w/resources/assets/alogo.png' alt='cgit logo'/></a></td>
-<td class='main'><a href='/cgit/'>index</a> : <a title='aports' href='/cgit/aports/'>aports</a></td><td class='form'><form method='get'>
-<select name='h' onchange='this.form.submit();'>
-<option value='1.10-stable'>1.10-stable</option>
-<option value='1.9'>1.9</option>
-<option value='2.0-stable'>2.0-stable</option>
-<option value='2.1-stable'>2.1-stable</option>
-<option value='2.2-stable'>2.2-stable</option>
-<option value='2.3-stable'>2.3-stable</option>
-<option value='2.4-stable'>2.4-stable</option>
-<option value='2.5-stable'>2.5-stable</option>
-<option value='2.6-stable'>2.6-stable</option>
-<option value='2.7-stable'>2.7-stable</option>
-<option value='3.0-stable'>3.0-stable</option>
-<option value='3.1-stable'>3.1-stable</option>
-<option value='3.2-stable'>3.2-stable</option>
-<option value='3.3-stable'>3.3-stable</option>
-<option value='3.4-stable'>3.4-stable</option>
-<option value='3.5-stable'>3.5-stable</option>
-<option value='3.6-stable'>3.6-stable</option>
-<option value='3.7-stable'>3.7-stable</option>
-<option value='master' selected='selected'>master</option>
-</select> <input type='submit' value='switch'/></form></td></tr>
-<tr><td class='sub'>Main aports tree
-</td><td class='sub right'>gitolite</td></tr></table>
-<table class='tabs'><tr><td>
-<a href='/cgit/aports/about/'>about</a><a href='/cgit/aports/'>summary</a><a href='/cgit/aports/refs/'>refs</a><a href='/cgit/aports/log/main/python3/fix-xattrs-glibc.patch'>log</a><a class='active' href='/cgit/aports/tree/main/python3/fix-xattrs-glibc.patch'>tree</a><a href='/cgit/aports/commit/main/python3/fix-xattrs-glibc.patch'>commit</a><a href='/cgit/aports/diff/main/python3/fix-xattrs-glibc.patch'>diff</a><a href='/cgit/aports/stats/main/python3/fix-xattrs-glibc.patch'>stats</a></td><td class='form'><form class='right' method='get' action='/cgit/aports/log/main/python3/fix-xattrs-glibc.patch'>
-<select name='qt'>
-<option value='grep'>log msg</option>
-<option value='author'>author</option>
-<option value='committer'>committer</option>
-<option value='range'>range</option>
-</select>
-<input class='txt' type='text' size='10' name='q' value=''/>
-<input type='submit' value='search'/>
-</form>
-</td></tr></table>
-<div class='path'>path: <a href='/cgit/aports/tree/'>root</a>/<a href='/cgit/aports/tree/main'>main</a>/<a href='/cgit/aports/tree/main/python3'>python3</a>/<a href='/cgit/aports/tree/main/python3/fix-xattrs-glibc.patch'>fix-xattrs-glibc.patch</a></div><div class='content'>blob: 57a8fb73ab78bfcc6c14df1b9596277b57c0f264 (<a href='/cgit/aports/plain/main/python3/fix-xattrs-glibc.patch'>plain</a>)
-<table summary='blob content' class='blob'>
-<tr><td class='linenumbers'><pre><a id='n1' href='#n1'>1</a>
-<a id='n2' href='#n2'>2</a>
-<a id='n3' href='#n3'>3</a>
-<a id='n4' href='#n4'>4</a>
-<a id='n5' href='#n5'>5</a>
-<a id='n6' href='#n6'>6</a>
-<a id='n7' href='#n7'>7</a>
-<a id='n8' href='#n8'>8</a>
-<a id='n9' href='#n9'>9</a>
-<a id='n10' href='#n10'>10</a>
-<a id='n11' href='#n11'>11</a>
-<a id='n12' href='#n12'>12</a>
-<a id='n13' href='#n13'>13</a>
-<a id='n14' href='#n14'>14</a>
-<a id='n15' href='#n15'>15</a>
-</pre></td>
-<td class='lines'><pre><code>diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
 index 8f8ba25..72b92da 100644
-<span style="color:#0057ae">--- a/Modules/posixmodule.c</span>
-<span style="color:#000000; font-weight:bold">+++ b/Modules/posixmodule.c</span>
-&#64;&#64; -103,8 +103,9 &#64;&#64; corresponding Unix manual entries for more information on calls.&quot;);
+--- a/Modules/posixmodule.c
++++ b/Modules/posixmodule.c
+@@ -103,8 +103,9 @@ corresponding Unix manual entries for more information on calls.");
  #undef HAVE_SCHED_SETAFFINITY
  #endif
  
-<span style="color:#0057ae">-#if defined(HAVE_SYS_XATTR_H) &amp;&amp; defined(__GLIBC__) &amp;&amp; !defined(__FreeBSD_kernel__) &amp;&amp; !defined(__GNU__)</span>
-<span style="color:#000000; font-weight:bold">+#if defined(HAVE_SYS_XATTR_H) &amp;&amp; defined(__linux__) &amp;&amp; !defined(__FreeBSD_kernel__) &amp;&amp; !defined(__GNU__)</span>
+-#if defined(HAVE_SYS_XATTR_H) && defined(__GLIBC__) && !defined(__FreeBSD_kernel__) && !defined(__GNU__)
++#if defined(HAVE_SYS_XATTR_H) && defined(__linux__) && !defined(__FreeBSD_kernel__) && !defined(__GNU__)
  #define USE_XATTRS
-<span style="color:#000000; font-weight:bold">+#include &lt;linux/limits.h&gt;</span>
++#include <linux/limits.h>
  #endif
  
  #ifdef USE_XATTRS
-</code></pre></td></tr></table>
-</div> <!-- class=content -->
-<script type="text/javascript">
-var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
-<script type="text/javascript">
-try {
-var pageTracker = _gat._getTracker("UA-2804446-12");
-pageTracker._trackPageview();
-} catch(err) {}</script>
-</div> <!-- id=cgit -->
-</body>
-</html>
