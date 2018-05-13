@@ -71,10 +71,10 @@ setup_build_env() {
 }
 
 prepare_build() {
-	export CFLAGS="-fdata-sections -ffunction-sections -Os -g0 -fno-unwind-tables -fno-asynchronous-unwind-tables -Wa,--noexecstack"
+	export CFLAGS="-Os -g0"
 	export CXXFLAGS="$CFLAGS"
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export LDFLAGS="-s -Wl,--gc-sections -Wl,-z,relro,-z,now"
+	export LDFLAGS="-s"
 
 	cp -a $TCREPO/makepkg.conf $BUILD/host-makepkg.conf
 	cp -a $REPO/makepkg.conf $BUILD/target-makepkg.conf
