@@ -2,11 +2,11 @@
 
 ## What is this?
 
-januslinux is fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/). It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). januslinux uses [LibreSSL](https://www.libressl.org/) as SSL engine because it is small and "clean".
+januslinux is fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/). It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). januslinux uses [LibreSSL](https://www.libressl.org/) as SSL engine because it is small and clean.
 
 ## For who?
 
-januslinux is made for people who likes CLI interface and to get Linux knowledge. It allows call JanusLinux: distribution for beginners.
+januslinux was made for people who like CLI interface and to get Linux knowledge. It allows call januslinux: distribution for beginners.
 
 ## What hardware I can run it?
 
