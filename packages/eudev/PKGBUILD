@@ -10,7 +10,8 @@ license=('GPL')
 groups=('base')
 depends=('musl' 'util-linux' 'kmod')
 backup=('etc/udev/udev.conf')
-source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz")
+source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
+	"udev-hwdb.hook")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -46,6 +47,8 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
+
+	install -Dm644 $srcdir/udev-hwdb.hook $pkgdir/usr/share/libalpm/hooks/udev-hwdb.hook
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
