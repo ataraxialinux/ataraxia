@@ -1,160 +1,45 @@
-<!DOCTYPE html>
-<html lang='en'>
-<head>
-<title>musl-find_library.patch\python3\main - aports - Main aports tree
-</title>
-<meta name='generator' content='cgit v1.1'/>
-<meta name='robots' content='index, nofollow'/>
-<link rel='stylesheet' type='text/css' href='/cgit.css'/>
-<link rel='shortcut icon' href='//alpinelinux.org/alpine-logo.ico'/>
-<link rel='alternate' title='Atom feed' href='https://git.alpinelinux.org/cgit/aports/atom/main/python3/musl-find_library.patch?h=master' type='application/atom+xml'/>
-<link rel='vcs-git' href='git://git.alpinelinux.org/aports' title='aports Git repository'/>
-<link rel='vcs-git' href='https://git.alpinelinux.org/cgit/aports' title='aports Git repository'/>
-</head>
-<body>
-<div id='cgit'><table id='header'>
-<tr>
-<td class='logo' rowspan='2'><a href='/cgit/'><img src='//wiki.alpinelinux.org/w/resources/assets/alogo.png' alt='cgit logo'/></a></td>
-<td class='main'><a href='/cgit/'>index</a> : <a title='aports' href='/cgit/aports/'>aports</a></td><td class='form'><form method='get'>
-<select name='h' onchange='this.form.submit();'>
-<option value='1.10-stable'>1.10-stable</option>
-<option value='1.9'>1.9</option>
-<option value='2.0-stable'>2.0-stable</option>
-<option value='2.1-stable'>2.1-stable</option>
-<option value='2.2-stable'>2.2-stable</option>
-<option value='2.3-stable'>2.3-stable</option>
-<option value='2.4-stable'>2.4-stable</option>
-<option value='2.5-stable'>2.5-stable</option>
-<option value='2.6-stable'>2.6-stable</option>
-<option value='2.7-stable'>2.7-stable</option>
-<option value='3.0-stable'>3.0-stable</option>
-<option value='3.1-stable'>3.1-stable</option>
-<option value='3.2-stable'>3.2-stable</option>
-<option value='3.3-stable'>3.3-stable</option>
-<option value='3.4-stable'>3.4-stable</option>
-<option value='3.5-stable'>3.5-stable</option>
-<option value='3.6-stable'>3.6-stable</option>
-<option value='3.7-stable'>3.7-stable</option>
-<option value='master' selected='selected'>master</option>
-</select> <input type='submit' value='switch'/></form></td></tr>
-<tr><td class='sub'>Main aports tree
-</td><td class='sub right'>gitolite</td></tr></table>
-<table class='tabs'><tr><td>
-<a href='/cgit/aports/about/'>about</a><a href='/cgit/aports/'>summary</a><a href='/cgit/aports/refs/'>refs</a><a href='/cgit/aports/log/main/python3/musl-find_library.patch'>log</a><a class='active' href='/cgit/aports/tree/main/python3/musl-find_library.patch'>tree</a><a href='/cgit/aports/commit/main/python3/musl-find_library.patch'>commit</a><a href='/cgit/aports/diff/main/python3/musl-find_library.patch'>diff</a><a href='/cgit/aports/stats/main/python3/musl-find_library.patch'>stats</a></td><td class='form'><form class='right' method='get' action='/cgit/aports/log/main/python3/musl-find_library.patch'>
-<select name='qt'>
-<option value='grep'>log msg</option>
-<option value='author'>author</option>
-<option value='committer'>committer</option>
-<option value='range'>range</option>
-</select>
-<input class='txt' type='text' size='10' name='q' value=''/>
-<input type='submit' value='search'/>
-</form>
-</td></tr></table>
-<div class='path'>path: <a href='/cgit/aports/tree/'>root</a>/<a href='/cgit/aports/tree/main'>main</a>/<a href='/cgit/aports/tree/main/python3'>python3</a>/<a href='/cgit/aports/tree/main/python3/musl-find_library.patch'>musl-find_library.patch</a></div><div class='content'>blob: 7899abb7360307209a1e3aa71ff28c6bcf8c63d7 (<a href='/cgit/aports/plain/main/python3/musl-find_library.patch'>plain</a>)
-<table summary='blob content' class='blob'>
-<tr><td class='linenumbers'><pre><a id='n1' href='#n1'>1</a>
-<a id='n2' href='#n2'>2</a>
-<a id='n3' href='#n3'>3</a>
-<a id='n4' href='#n4'>4</a>
-<a id='n5' href='#n5'>5</a>
-<a id='n6' href='#n6'>6</a>
-<a id='n7' href='#n7'>7</a>
-<a id='n8' href='#n8'>8</a>
-<a id='n9' href='#n9'>9</a>
-<a id='n10' href='#n10'>10</a>
-<a id='n11' href='#n11'>11</a>
-<a id='n12' href='#n12'>12</a>
-<a id='n13' href='#n13'>13</a>
-<a id='n14' href='#n14'>14</a>
-<a id='n15' href='#n15'>15</a>
-<a id='n16' href='#n16'>16</a>
-<a id='n17' href='#n17'>17</a>
-<a id='n18' href='#n18'>18</a>
-<a id='n19' href='#n19'>19</a>
-<a id='n20' href='#n20'>20</a>
-<a id='n21' href='#n21'>21</a>
-<a id='n22' href='#n22'>22</a>
-<a id='n23' href='#n23'>23</a>
-<a id='n24' href='#n24'>24</a>
-<a id='n25' href='#n25'>25</a>
-<a id='n26' href='#n26'>26</a>
-<a id='n27' href='#n27'>27</a>
-<a id='n28' href='#n28'>28</a>
-<a id='n29' href='#n29'>29</a>
-<a id='n30' href='#n30'>30</a>
-<a id='n31' href='#n31'>31</a>
-<a id='n32' href='#n32'>32</a>
-<a id='n33' href='#n33'>33</a>
-<a id='n34' href='#n34'>34</a>
-<a id='n35' href='#n35'>35</a>
-<a id='n36' href='#n36'>36</a>
-<a id='n37' href='#n37'>37</a>
-<a id='n38' href='#n38'>38</a>
-<a id='n39' href='#n39'>39</a>
-<a id='n40' href='#n40'>40</a>
-<a id='n41' href='#n41'>41</a>
-<a id='n42' href='#n42'>42</a>
-<a id='n43' href='#n43'>43</a>
-<a id='n44' href='#n44'>44</a>
-<a id='n45' href='#n45'>45</a>
-</pre></td>
-<td class='lines'><pre><code>diff -ru Python-2.7.12.orig/Lib/ctypes/util.py Python-2.7.12/Lib/ctypes/util.py
-<span style="color:#0057ae">--- Python-2.7.12.orig/Lib/ctypes/util.py	2016-06-26 00:49:30.000000000 +0300</span>
-<span style="color:#000000; font-weight:bold">+++ Python-2.7.12/Lib/ctypes/util.py	2016-11-03 16:05:46.954665040 +0200</span>
-<span style="color:#010181">&#64;&#64; -204,6 +204,41 &#64;&#64;</span>
+diff -ru Python-2.7.12.orig/Lib/ctypes/util.py Python-2.7.12/Lib/ctypes/util.py
+--- Python-2.7.12.orig/Lib/ctypes/util.py	2016-06-26 00:49:30.000000000 +0300
++++ Python-2.7.12/Lib/ctypes/util.py	2016-11-03 16:05:46.954665040 +0200
+@@ -204,6 +204,41 @@
          def find_library(name, is64 = False):
              return _get_soname(_findLib_crle(name, is64) or _findLib_gcc(name))
  
-<span style="color:#000000; font-weight:bold">+    elif True:</span>
-<span style="color:#000000; font-weight:bold">+</span>
-<span style="color:#000000; font-weight:bold">+        # Patched for Alpine Linux / musl - search manually system paths</span>
-<span style="color:#000000; font-weight:bold">+        def _is_elf(filepath):</span>
-<span style="color:#000000; font-weight:bold">+            try:</span>
-<span style="color:#000000; font-weight:bold">+                with open(filepath, &apos;rb&apos;) as fh:</span>
-<span style="color:#000000; font-weight:bold">+                    return fh.read(4) == b&apos;\x7fELF&apos;</span>
-<span style="color:#000000; font-weight:bold">+            except:</span>
-<span style="color:#000000; font-weight:bold">+                return False</span>
-<span style="color:#000000; font-weight:bold">+</span>
-<span style="color:#000000; font-weight:bold">+        def find_library(name):</span>
-<span style="color:#000000; font-weight:bold">+            from glob import glob</span>
-<span style="color:#000000; font-weight:bold">+            # absolute name?</span>
-<span style="color:#000000; font-weight:bold">+            if os.path.isabs(name):</span>
-<span style="color:#000000; font-weight:bold">+                return name</span>
-<span style="color:#000000; font-weight:bold">+            # special case for libm, libcrypt and libpthread and musl</span>
-<span style="color:#000000; font-weight:bold">+            if name in [&apos;m&apos;, &apos;crypt&apos;, &apos;pthread&apos;]:</span>
-<span style="color:#000000; font-weight:bold">+                name = &apos;c&apos;</span>
-<span style="color:#000000; font-weight:bold">+            elif name in [&apos;libm.so&apos;, &apos;libcrypt.so&apos;, &apos;libpthread.so&apos;]:</span>
-<span style="color:#000000; font-weight:bold">+                name = &apos;libc.so&apos;</span>
-<span style="color:#000000; font-weight:bold">+            # search in standard locations (musl order)</span>
-<span style="color:#000000; font-weight:bold">+            paths = [&apos;/lib&apos;, &apos;/usr/local/lib&apos;, &apos;/usr/lib&apos;]</span>
-<span style="color:#000000; font-weight:bold">+            if &apos;LD_LIBRARY_PATH&apos; in os.environ:</span>
-<span style="color:#000000; font-weight:bold">+                paths = os.environ[&apos;LD_LIBRARY_PATH&apos;].split(&apos;:&apos;) + paths</span>
-<span style="color:#000000; font-weight:bold">+            for d in paths:</span>
-<span style="color:#000000; font-weight:bold">+                f = os.path.join(d, name)</span>
-<span style="color:#000000; font-weight:bold">+                if _is_elf(f):</span>
-<span style="color:#000000; font-weight:bold">+                    return os.path.basename(f)</span>
-<span style="color:#000000; font-weight:bold">+</span>
-<span style="color:#000000; font-weight:bold">+                prefix = os.path.join(d, &apos;lib&apos;+name)</span>
-<span style="color:#000000; font-weight:bold">+                for suffix in [&apos;.so&apos;, &apos;.so.*&apos;]:</span>
-<span style="color:#000000; font-weight:bold">+                    for f in glob(&apos;{0}{1}&apos;.format(prefix, suffix)):</span>
-<span style="color:#000000; font-weight:bold">+                        if _is_elf(f):</span>
-<span style="color:#000000; font-weight:bold">+                            return os.path.basename(f)</span>
-<span style="color:#000000; font-weight:bold">+</span>
++    elif True:
++
++        # Patched for Alpine Linux / musl - search manually system paths
++        def _is_elf(filepath):
++            try:
++                with open(filepath, 'rb') as fh:
++                    return fh.read(4) == b'\x7fELF'
++            except:
++                return False
++
++        def find_library(name):
++            from glob import glob
++            # absolute name?
++            if os.path.isabs(name):
++                return name
++            # special case for libm, libcrypt and libpthread and musl
++            if name in ['m', 'crypt', 'pthread']:
++                name = 'c'
++            elif name in ['libm.so', 'libcrypt.so', 'libpthread.so']:
++                name = 'libc.so'
++            # search in standard locations (musl order)
++            paths = ['/lib', '/usr/local/lib', '/usr/lib']
++            if 'LD_LIBRARY_PATH' in os.environ:
++                paths = os.environ['LD_LIBRARY_PATH'].split(':') + paths
++            for d in paths:
++                f = os.path.join(d, name)
++                if _is_elf(f):
++                    return os.path.basename(f)
++
++                prefix = os.path.join(d, 'lib'+name)
++                for suffix in ['.so', '.so.*']:
++                    for f in glob('{0}{1}'.format(prefix, suffix)):
++                        if _is_elf(f):
++                            return os.path.basename(f)
++
      else:
  
          def _findSoname_ldconfig(name):
-</code></pre></td></tr></table>
-</div> <!-- class=content -->
-<script type="text/javascript">
-var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
-<script type="text/javascript">
-try {
-var pageTracker = _gat._getTracker("UA-2804446-12");
-pageTracker._trackPageview();
-} catch(err) {}</script>
-</div> <!-- id=cgit -->
-</body>
-</html>
