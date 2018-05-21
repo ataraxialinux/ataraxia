@@ -1,0 +1,61 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=openrc
+pkgver=0.35.5
+pkgrel=1
+pkgdesc="Dependency based init system that works with sysvinit"
+arch=('x86_64' 'aarch64')
+url='https://github.com/OpenRC/openrc/'
+license=('BSD')
+groups=('base')
+depends=('musl' 'busybox' 'bash' 'util-linux' 'kbd' 'kmod')
+backup=('etc/rc.conf'
+	'etc/conf.d/bootmisc'
+	'etc/conf.d/consolefont'
+	'etc/conf.d/devfs'
+	'etc/conf.d/dmesg'
+	'etc/conf.d/fsck'
+	'etc/conf.d/hostname'
+	'etc/conf.d/hwclock'
+	'etc/conf.d/keymaps'
+	'etc/conf.d/killprocs'
+	'etc/conf.d/localmount'
+	'etc/conf.d/modules'
+	'etc/conf.d/netmount'
+	'etc/conf.d/network'
+	'etc/conf.d/staticroute'
+	'etc/conf.d/tmpfiles'
+	'etc/conf.d/urandom'
+	'etc/conf.d/tmpfiles')
+source=("https://github.com/OpenRC/openrc/archive/$pkgver.tar.gz")
+
+_makeargs=(BRANDING='januslinux')
+_makeargs+=(MKSELINUX=no)
+_makeargs+=(MKNET=newnet)
+_makeargs+=(MKTERMCAP=ncurses)
+_makeargs+=(PKG_PREFIX="")
+_makeargs+=(LIBDIR=/usr/lib)
+_makeargs+=(SHLIBDIR=/usr/lib)
+_makeargs+=(LIBEXECDIR=/usr/lib/rc)
+_makeargs+=(BINDIR=/usr/bin)
+_makeargs+=(SBINDIR=/usr/bin)
+_makeargs+=(SYSCONFDIR=/etc)
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make "${_makeargs[@]}"
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir "${_makeargs[@]}" install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
