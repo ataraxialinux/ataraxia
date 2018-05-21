@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=curl
-pkgver=7.59.0
+pkgver=7.60.0
 pkgrel=1
 pkgdesc="An URL retrival utility and library"
 arch=('x86_64' 'aarch64')
@@ -9,18 +9,17 @@ url="http://www.gnu.org/software/m4"
 license=('GPL')
 groups=('base')
 depends=('musl' 'zlib' 'libressl' 'ca-certificates')
-source=("https://curl.haxx.se/download/$pkgname-$pkgver.tar.xz"
-	"0001-openssl-fix-build-with-libressl-2.7.patch")
+source=("https://curl.haxx.se/download/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	patch -Np1 -i $srcdir/0001-openssl-fix-build-with-libressl-2.7.patch
 	autoreconf -vif
 	./configure CFLAGS="$CFLAGS --sysroot=$ROOTFS" CPPFLAGS="$CPPFLAGS -I$ROOTFS/usr/include" \
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--with-sysroot=$ROOTFS \
+		--with-ssl \
 		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
 		--with-ca-path=/etc/ssl/certs \
 		--without-librtmp \
