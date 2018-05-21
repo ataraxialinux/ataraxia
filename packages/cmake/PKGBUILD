@@ -1,0 +1,70 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=cmake
+pkgver=3.11.2
+pkgrel=1
+pkgdesc='A cross-platform open-source make system'
+arch=('x86_64' 'aarch64')
+url="http://www.cmake.org/"
+license=('custom')
+groups=('base')
+depends=('musl' 'zlib' 'expat' 'libarchive' 'curl')
+source=("https://www.cmake.org/files/v${pkgver%.*}/${pkgname}-${pkgver}.tar.gz")
+
+prepare() {
+	cd "$srcdir/$pkgname-$pkgver"
+	mkdir -p build
+	cd build
+
+	for i in ar ld nm objcopy objdump strip ; do
+	printf '#!/bin/sh\n%s%s "$@"\n' "$XTARGET-" "$i" > "$XTARGET-""$i"
+	chmod +x "$XTARGET-""$i"
+	done
+
+	sed -i 's@macro(ADD_DOCS target dependency)@macro(ADD_DOCS target dependency)\nendmacro()\nmacro(ADD_FUCKS target dependency)@' ../Utilities/CMakeLists.txt || { echo sed err ; exit 1 ; }
+	sed -i 's@^ COMMAND \${CMD}@ COMMAND true@' ../Utilities/CMakeLists.txt || { echo sed err ; exit 1 ; }
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	cd build
+
+	CFLAGS="-D_GNU_SOURCE $CFLAGS" \
+	LDFLAGS="$LDFLAGS -Wl,-rpath-link=$ROOTFS/usr/lib" \
+	CXXFLAGS="$CXXFLAGS" \
+	cmake $srcdir/$pkgname-$pkgver \
+		-DCMAKE_FIND_ROOT_PATH=$ROOTFS/usr \
+		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+		-DCMAKE_AR=$XTARGET-ar \
+		-DCMAKE_LD=$XTARGET-ld \
+		-DCMAKE_NM=$XTARGET-nm \
+		-DCMAKE_OBJCOPY=$XTARGET-objcopy \
+		-DCMAKE_OBJDUMP=$XTARGET-objdump \
+		-DCMAKE_STRIP=$XTARGET-strip \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_USE_SYSTEM_LIBARCHIVE=ON \
+		-DCMAKE_USE_SYSTEM_CURL=ON \
+		-DCMAKE_USE_SYSTEM_ZLIB=ON \
+		-DCMAKE_USE_SYSTEM_EXPAT=ON \
+		-DCTEST_TEST_CPACK=OFF
+	# :DDDD
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	cd build
+	sed -i 's@^[\t ]*bin/cmake@\tcmake@g' Makefile
+	make DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
