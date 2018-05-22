@@ -1,38 +1,30 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=attr
-pkgver=2.4.47
+pkgname=bzip2
+pkgver=1.0.6
 pkgrel=1
-pkgdesc="Extended attribute support library for ACL support"
+pkgdesc="A high-quality data compression program"
 arch=('x86_64' 'aarch64')
-url="http://savannah.nongnu.org/projects/attr"
-license=('LGPL')
+url="http://sources.redhat.com/bzip2"
+license=('custom')
 groups=('base')
 depends=('musl')
-source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src.tar.gz"
-	'attr-add-musl-libc.patch'
-	'fix-headers.patch')
+source=("http://www.bzip.org/$pkgver/bzip2-$pkgver.tar.gz"
+	'bzip2.patch')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	patch -Np1 -i $srcdir/attr-add-musl-libc.patch
-	patch -Np1 -i $srcdir/fix-headers.patch
-	export INSTALL_USER=root INSTALL_GROUP=root
-	./configure \
-		--prefix=/usr \
-		--libdir=/usr/lib \
-		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-gettext
-	make
+	patch -Np1 -i $srcdir/bzip2.patch
+	sed -i 's@all: libbz2.a bzip2 bzip2recover test@all: libbz2.a bzip2 bzip2recover@' Makefile
+	make CFLAGS="$CFLAGS -D_GNU_SOURCE -fPIC" LDFLAGS="$LDFLAGS" CC="$CC"
+	make CFLAGS="$CFLAGS -D_GNU_SOURCE -fPIC" LDFLAGS="$LDFLAGS" CC="$CC" -f Makefile-libbz2_so
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DIST_ROOT=$pkgdir install install-dev install-lib
-	chmod 0755 $pkgdir/usr/lib/libattr.so.*.*.*
+	make PREFIX=$pkgdir/usr install
+	make -f Makefile-libbz2_so PREFIX=$pkgdir/usr install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
