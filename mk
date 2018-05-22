@@ -209,7 +209,7 @@ echo januslinux is starting...
 \\bzImage initrd=\\rootfs.gz
 CEOF
 
-	echo 'default bzImage initrd=rootfs.gz' > ${isodir}/isolinux.cfg
+	echo 'default bzImage initrd=rootfs.gz' > $ISODIR/isolinux.cfg
 		
 	xorriso \
 		-as mkisofs -J -r \
