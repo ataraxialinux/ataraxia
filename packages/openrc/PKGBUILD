@@ -42,7 +42,6 @@ source=("https://github.com/OpenRC/openrc/archive/$pkgver.tar.gz"
 	'networking.initd'
 	'modloop.confd'
 	'sysfsconf.initd')
-install=$pkgname.install
 
 _makeargs=(BRANDING="\e[45mjanuslinux\e[0m")
 _makeargs+=(MKSELINUX=no)
@@ -78,9 +77,7 @@ package() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir "${_makeargs[@]}" install
 
-	rm -f $pkgdir/etc/runlevels/*/*
-
-	for i in $srcdir/hostname.initd hwdrivers.initd modules.initd modloop.initd networking.initd sysfsconf.initd; do
+	for i in $srcdir/{hostname.initd,hwdrivers.initd,modules.initd,modloop.initd,networking.initd,sysfsconf.initd}; do
 		j=${i##*/}
 		install -Dm755 $i $pkgdir/etc/init.d/${j%.initd}
 	done
