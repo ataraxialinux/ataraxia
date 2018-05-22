@@ -9,7 +9,7 @@ arch=('x86_64' 'aarch64')
 url="http://www.gentoo.org/proj/en/eudev/"
 license=('GPL')
 groups=('base')
-depends=('musl' 'util-linux' 'kmod')
+depends=('musl' 'util-linux' 'kmod' 'openrc')
 backup=('etc/udev/udev.conf')
 source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
 	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$udevinitscriptver.tar.gz"
@@ -47,6 +47,7 @@ build() {
 	make
 
 	cd "$srcdir/udev-init-scripts-$udevinitscriptver"
+	patch -Np1 -i $srcdir/udev-init-scripts.patch
 	make
 }
 
