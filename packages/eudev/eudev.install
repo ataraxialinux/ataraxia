@@ -1,11 +1,15 @@
 post_install() {
-	if ! [ -e /etc/runlevels/sysinit/udev ]; then
-		exit 0
-	fi
+	rc-update add udev sysinit
+	rc-update add udev-trigger sysinit
+}
 
-	if ! [ /etc/runlevels/sysinit/udev-trigger ]; then
-		ln -s /etc/init.d/udev-trigger /etc/runlevels/sysinit/udev-trigger
-	fi
+post_remove() {
+	rc-update del udev sysinit
+	rc-update del udev-trigger sysinit
+}
+
+pre_upgrade() {
+	post_remove
 }
 
 post_upgrade() {
