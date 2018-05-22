@@ -27,9 +27,24 @@ backup=('etc/rc.conf'
 	'etc/conf.d/tmpfiles'
 	'etc/conf.d/urandom'
 	'etc/conf.d/tmpfiles')
-source=("https://github.com/OpenRC/openrc/archive/$pkgver.tar.gz")
+source=("https://github.com/OpenRC/openrc/archive/$pkgver.tar.gz"
+	'0001-call-sbin-mkmntdirs-in-localmount-OpenRC-service.patch'
+	'0002-force-root-be-rw-before-localmount.patch'
+	'0003-sysctl-add-compatibility-for-busybox-sysctl.patch'
+	'0004-hide-error-when-migrating-var-run-to-run.patch'
+	'0005-rc-pull-in-sysinit-and-boot-as-stacked-levels-when-n.patch'
+	'0007-make-consolefont-service-compatible-with-busyboxs-se.patch'
+	'0001-fsck-don-t-add-C0-to-busybox-fsck.patch'
+	'hostname.initd'
+	'hwdrivers.initd'
+	'modules.initd'
+	'modloop.initd'
+	'networking.initd'
+	'modloop.confd'
+	'sysfsconf.initd')
+install=$pkgname.install
 
-_makeargs=(BRANDING='januslinux')
+_makeargs=(BRANDING="\e[45mjanuslinux\e[0m")
 _makeargs+=(MKSELINUX=no)
 _makeargs+=(MKNET=newnet)
 _makeargs+=(MKTERMCAP=ncurses)
@@ -41,6 +56,18 @@ _makeargs+=(BINDIR=/usr/bin)
 _makeargs+=(SBINDIR=/usr/bin)
 _makeargs+=(SYSCONFDIR=/etc)
 
+prepare() {
+	cd "$srcdir/$pkgname-$pkgver"
+	patch -Np1 -i $srcdir/0001-call-sbin-mkmntdirs-in-localmount-OpenRC-service.patch
+	patch -Np1 -i $srcdir/0002-force-root-be-rw-before-localmount.patch
+	patch -Np1 -i $srcdir/0003-sysctl-add-compatibility-for-busybox-sysctl.patch
+	patch -Np1 -i $srcdir/0004-hide-error-when-migrating-var-run-to-run.patch
+	patch -Np1 -i $srcdir/0005-rc-pull-in-sysinit-and-boot-as-stacked-levels-when-n.patch
+	patch -Np1 -i $srcdir/0007-make-consolefont-service-compatible-with-busyboxs-se.patch
+	patch -Np1 -i $srcdir/0001-fsck-don-t-add-C0-to-busybox-fsck.patch
+	sed -i -e '/^sed/d' pkgconfig/Makefile
+}
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make "${_makeargs[@]}"
@@ -50,6 +77,20 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir "${_makeargs[@]}" install
+
+	rm -f $pkgdir/etc/runlevels/*/*
+
+	for i in $srcdir/hostname.initd hwdrivers.initd modules.initd modloop.initd networking.initd sysfsconf.initd; do
+		j=${i##*/}
+		install -Dm755 $i $pkgdir/etc/init.d/${j%.initd}
+	done
+
+	for i in $srcdir/modloop.confd; do
+		j=${i##*/}
+		install -Dm644 $i $pkgdir/etc/conf.d/${j%.confd}
+	done
+
+	rm -f $pkgdir/etc/init.d/keymaps $pkgdir/etc/conf.d/keymaps
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
