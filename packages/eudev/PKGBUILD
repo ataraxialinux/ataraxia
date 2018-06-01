@@ -2,20 +2,16 @@
 
 pkgname=eudev
 pkgver=3.2.5
-udevinitscriptver=32
 pkgrel=1
 pkgdesc="The userspace dev tools (udev) forked by Gentoo"
 arch=('x86_64' 'aarch64')
 url="http://www.gentoo.org/proj/en/eudev/"
 license=('GPL')
 groups=('base')
-depends=('musl' 'util-linux' 'kmod' 'openrc')
+depends=('musl' 'util-linux' 'kmod')
 backup=('etc/udev/udev.conf')
 source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
-	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$udevinitscriptver.tar.gz"
-	"udev-init-scripts.patch"
 	"udev-hwdb.hook")
-install=$pkgname.install
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -45,10 +41,6 @@ build() {
                 --disable-introspection \
 		--disable-manpages
 	make
-
-	cd "$srcdir/udev-init-scripts-$udevinitscriptver"
-	patch -Np1 -i $srcdir/udev-init-scripts.patch
-	make
 }
 
 package() {
@@ -57,9 +49,6 @@ package() {
 	make DESTDIR=$pkgdir install
 
 	install -Dm644 $srcdir/udev-hwdb.hook $pkgdir/usr/share/libalpm/hooks/udev-hwdb.hook
-
-	cd "$srcdir/udev-init-scripts-$udevinitscriptver"
-	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

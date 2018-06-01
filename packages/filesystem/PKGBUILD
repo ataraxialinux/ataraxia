@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=filesystem
-pkgver=20180521
+pkgver=20180512
 pkgrel=1
 pkgdesc="Filesystem layout and configuration files"
 arch=('any')
@@ -14,11 +14,15 @@ source=('fstab'
 	'hostname'
 	'hosts'
 	'inittab'
+	'interfaces'
 	'issue'
 	'motd'
 	'passwd'	
 	'profile'
 	'protocols'
+	'rc.init'
+	'rc.local'
+	'rc.shutdown'
 	'resolv.conf'
 	'securetty'
 	'services'
@@ -36,12 +40,14 @@ backup=('etc/fstab'
 	'etc/passwd'
 	'etc/profile'
 	'etc/protocols'
+	'etc/rc.local'
 	'etc/resolv.conf'
 	'etc/securetty'
 	'etc/services'
 	'etc/shadow'
 	'etc/shells'
-	'etc/sysctl.conf')
+	'etc/sysctl.conf'
+	'etc/network/interfaces')
 
 package() {
 	cd $pkgdir
@@ -66,6 +72,11 @@ package() {
 		install -m600 $srcdir/$f $pkgdir/etc
 	done
 
+	mkdir -p $pkgdir/etc/network/
+	cp $srcdir/interfaces $pkgdir/etc/network/interfaces
+
+	install -Dm0755 $srcdir/rc.local $pkgdir/etc/rc.local
+
 	for d in cache local opt log/old lib/misc empty; do
 		install -d -m755 var/$d
 	done
@@ -89,5 +100,9 @@ package() {
 
 	for d in bin etc games include lib man sbin share src; do
 		install -d -m755 usr/local/$d
+	done
+
+	for f in rc.init rc.shutdown; do
+		install -Dm0755 $srcdir/$f $pkgdir/usr/bin/$f
 	done
 }
