@@ -81,6 +81,7 @@ setup_build_env() {
 	export PATH="$TOOLS/bin:$PATH"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 	export HOSTCC="gcc"
+	export HOSTCXX="g++"
 }
 
 prepare_build() {
@@ -113,6 +114,7 @@ prepare_build() {
 			-e "s|@GCCOPTS[@]|$GCCOPTS|g" \
 			-e "s|@LC_ALL[@]|$LC_ALL|g" \
 			-e "s|@HOSTCC[@]|$HOSTCC|g" \
+			-e "s|@HOSTCXX[@]|$HOSTCXX|g" \
 			-e "s|@PATH[@]|$PATH|g"
 	done
 
@@ -140,7 +142,7 @@ clean_tool_pkg() {
 	done
 }
 
-build_rootfs() {
+build_repo() {
 	print_green "Building repository"
 	case $BARCH in
 		x86_64)
@@ -156,12 +158,18 @@ build_rootfs() {
 	done
 }
 
+fix_install_packages() {
+	sudo mkdir -p $FINALFS/var/lib/pacman
+	yes y | sudo pacman -U $PKGS/*.pkg.tar.xz --root $FINALFS --arch $BARCH
+}
+
 configure_arch
 setup_build_env
 prepare_build
 build_toolchain
 clean_tool_pkg
-build_rootfs
+build_repo
+fix_install_packages
 
 exit 0
 
