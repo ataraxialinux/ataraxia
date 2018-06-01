@@ -1,28 +1,20 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=linux
-pkgver=4.14.42
+pkgver=4.16.13
 pkgrel=1
 arch=('x86_64' 'aarch64')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
-	"x86_64-config"
-	"aarch64-config")
+	"config")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	unset LDFLAGS
-	case $CARCH in
-		x86_64)
-			cp $srcdir/x86_64-config $srcdir/$pkgname-$pkgver/.config
-			;;
-		aarch64)
-			cp $srcdir/aarch64-config $srcdir/$pkgname-$pkgver/.config
-			;;
-	esac
-	make ARCH=$XKARCH silentoldconfig
+	cp $srcdir/config $srcdir/$pkgname-$pkgver/.config
+	make ARCH=$XKARCH allnoconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
 }
 
