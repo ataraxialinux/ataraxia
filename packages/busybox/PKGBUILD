@@ -10,11 +10,7 @@ license=('GPL')
 groups=('base')
 depends=('musl')
 options=('debug')
-source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2"
-	acpid.initd crond.initd dnsd.initd httpd.initd inetd.initd klogd.initd
-	ntpd.initd rdate.initd syslog.initd udhcpd.initd loadkmap.initd
-	watchdog.initd crond.confd klogd.confd ntpd.confd rdate.confd syslog.confd
-	watchdog.confd loadkmap.confd default.script)
+source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2")
 
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -49,26 +45,10 @@ package() {
 	rm -rf linuxrc
 	ln -s usr/bin/busybox init
 
-	rm -rf $pkgdir/usr/bin/{blkdiscard,blkid,blockdev,cal,chattr,chrt,chvt,clear,deallocvt,dmesg,eject,fallocate,fdformat,fdisk,fgconsole,findfs,flock,fsck,fsck.minix,fsfreeze,fstrim,getopt,hexdump,hwclock,ionice,ipcrm,ipcs,kbd_mode,kill,less,linux*,logger,losetup,lsattr,lzcat,lzma,mesg,mke2fs,mkfs.ext2,mkfs.minix,mkswap,more,mount,mountpoint,nsenter,openvt,patch,pivot_root,readprofile,renice,reset,rev,rtcwake,script,scriptreplay,setarch,setfont,setkeycodes,setsid,sh,showkey,strings,swapoff,swapon,switch_root,taskset,umount,unlzma,unshare,unxz,xz,xzcat,depmod,insmod,modinfo,modprobe,rmmod,start-stop-daemon,setfattr,bunzip2,bzcat,bzip2}
+	mkdir -p $pkgdir/usr/share/udhcpc
+	install -Dm0755 $srcdir/$pkgname-$pkgver/examples/udhcp/simple.script $pkgdir/usr/share/udhcpc/default.script
 
-	mkdir -p $pkgdir/etc/conf.d $pkgdir/etc/init.d $pkgdir/etc/acpi/PWRF
-
-	for i in acpid.initd crond.initd dnsd.initd httpd.initd inetd.initd klogd.initd ntpd.initd rdate.initd syslog.initd udhcpd.initd loadkmap.initd watchdog.initd; do
-		install -m755 $srcdir/$i $pkgdir/etc/init.d/${i%.*} || return 1
-	done
-
-	for i in crond.confd klogd.confd ntpd.confd rdate.confd syslog.confd watchdog.confd loadkmap.confd; do
-		install -m644 $srcdir/$i $pkgdir/etc/conf.d/${i%.*} || return 1
-	done
-
-cat >$pkgdir/etc/acpi/PWRF/00000080 <<EOF
-#!/bin/sh
-poweroff
-EOF
-	chmod +x $pkgdir/etc/acpi/PWRF/00000080
-
-	install -Dm755 $srcdir/default.script \
-		$pkgdir/usr/share/udhcpc/default.script || return 1
+	rm -rf $pkgdir/usr/bin/{blkdiscard,blkid,blockdev,cal,chattr,chrt,chvt,clear,deallocvt,dmesg,eject,fallocate,fdformat,fdisk,fgconsole,findfs,flock,fsck,fsck.minix,fsfreeze,fstrim,getopt,hexdump,hwclock,ionice,ipcrm,ipcs,kbd_mode,kill,less,linux*,logger,losetup,lsattr,lzcat,lzma,mesg,mke2fs,mkfs.ext2,mkfs.minix,mkswap,more,mount,mountpoint,nsenter,openvt,patch,pivot_root,readprofile,renice,reset,rev,rtcwake,script,scriptreplay,setarch,setfont,setkeycodes,setsid,sh,showkey,strings,swapoff,swapon,switch_root,taskset,umount,unlzma,unshare,unxz,xz,xzcat,depmod,insmod,modinfo,modprobe,rmmod}
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
