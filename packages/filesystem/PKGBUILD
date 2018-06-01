@@ -94,7 +94,7 @@ package() {
 
 	install -Dm0755 $srcdir/rc.local $pkgdir/etc/rc.local
 
-	for d in cache local opt log/old lib/misc empty service; do
+	for d in cache local opt log/{old,dmesg} lib/misc empty service; do
 		install -d -m755 var/$d
 	done
 
@@ -128,7 +128,7 @@ package() {
 	for ttys in tty1 tty2 tty3 tty4 ttyS0; do
 		install -Dm0755 $srcdir/$ttys $pkgdir/etc/service/$ttys/run
 		cd $pkgdir
-		ln -s etc/service/$ttys var/service/$ttys
+		ln -sf /etc/service/$ttys var/service/$ttys
 	done
 
 	install -Dm0755 $srcdir/crond $pkgdir/etc/service/cron/run
@@ -137,6 +137,6 @@ package() {
 	for f in sysklogd dmesg; do
 		install -Dm0755 $srcdir/$f $pkgdir/etc/service/$f/run
 		cd $pkgdir
-		ln -s etc/service/$f var/service/$f
+		ln -sf /etc/service/$f var/service/$f
 	done
 }
