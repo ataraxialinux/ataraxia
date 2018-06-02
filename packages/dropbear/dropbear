@@ -1,0 +1,17 @@
+#!/bin/sh
+
+[ ! -d /etc/dropbear ] && mkdir -p /etc/dropbear
+
+make_key_if_needed() {
+	local key=$1
+	local filename=/etc/dropbear/dropbear_${key}_host_key
+	if [ ! -f "$filename" ] ; then
+		local bits=1024
+		[ "$key" = "rsa" ] && bits=2048
+		dropbearkey -s $bits -t $key -f "$filename" | tail -n2 > ${filename}.pub
+	fi
+}
+make_key_if_needed rsa
+make_key_if_needed dss
+
+exec dropbear -F 2>&1

@@ -9,7 +9,9 @@ url="https://matt.ucc.asn.au/dropbear/dropbear.html"
 license=('MIT')
 groups=('base')
 depends=('musl' 'zlib')
-source=("https://matt.ucc.asn.au/dropbear/releases/$pkgname-$pkgver.tar.bz2")
+source=("https://matt.ucc.asn.au/dropbear/releases/$pkgname-$pkgver.tar.bz2"
+	'dropbear'
+	'dropbear-log')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -26,6 +28,11 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" DESTDIR=$pkgdir install
+
+	mkdir -p $pkgdir/var/log/dropbear
+
+	install -Dm0755 $srcdir/dropbear $pkgdir/etc/service/dropbear/run
+	install -Dm0755 $srcdir/dropbear-log $pkgdir/etc/service/dropbear/log/run
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
