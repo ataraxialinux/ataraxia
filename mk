@@ -153,7 +153,7 @@ build_repo() {
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 perl gdbm readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates libffi python patch gperf eudev busybox linux $BOOTLOADER sudo libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git fakeroot pacman rsync cmake; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 perl gdbm readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates libffi python patch gperf eudev busybox linux $BOOTLOADER sudo libarchive dropbear libnl-tiny wireless_tools wpa_supplicant curl git fakeroot pacman rsync cmake re2c ninja meson; do
 		install_target $PKG
 	done
 }
