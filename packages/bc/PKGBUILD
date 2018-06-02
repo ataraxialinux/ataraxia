@@ -1,31 +1,37 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=bc
-pkgver=2e6dc8216ebb9eb68fe88c3dc8a6c4a3b0d5639f
+pkgver=1.06.95
 pkgrel=1
-pkgdesc="An implementation of POSIX bc with GNU extensions"
-arch=('x86_64' 'aarch64')
-url="https://github.com/gavinhoward/bc"
-license=('custom')
+pkgdesc="An arbitrary precision calculator language"
+arch=('x86_64' 'i686' 'aarch64' 'armv7l')
+url="https://www.gnu.org/software/bc/"
+license=('GPL')
 groups=('base')
-depends=('musl')
-source=("https://github.com/gavinhoward/bc/archive/$pkgver.tar.gz")
+depends=('musl' 'readline')
+source=("http://alpha.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.bz2")
 
 build() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make CC="$CC" PREFIX=/usr
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-readline
+	make -j1
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make PREFIX=/usr DESTDIR=$pkgdir install
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
 	cd $pkgdir
-	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
