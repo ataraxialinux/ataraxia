@@ -1,0 +1,83 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=syslinux
+pkgver=6.03
+pkgrel=1
+pkgdesc='Collection of boot loaders that boot from FAT, ext2/3/4 and btrfs filesystems, from CDs and via PXE'
+arch=('x86_64')
+url='http://www.syslinux.org/'
+license=('GPL')
+groups=('base')
+depends=('musl')
+source=("https://www.kernel.org/pub/linux/utils/boot/syslinux/$pkgname-$pkgver.tar.xz"
+	'syslinux.cfg')
+backup=('boot/syslinux/syslinux.cfg')
+options=('!makeflags' '!buildflags')
+
+prepare() {
+	cd "$srcdir/$pkgname-$pkgver"
+	msg "Patching syslinux"
+	sed 's|INSTALLSUBDIRS = com32 utils dosutil|INSTALLSUBDIRS = com32 utils|g' -i Makefile
+	sed '/DIAGDIR/d' -i Makefile
+	sed 's|diag libinstaller dos win32 win64 dosutil txt|libinstaller txt|g' -i Makefile
+	sed 's|win32/syslinux.exe win64/syslinux64.exe||g' -i Makefile
+	sed 's|dosutil/\*.com dosutil/\*.sys||g' -i Makefile
+	sed 's|dos/syslinux.com||g' -i Makefile
+	sed 's|gpxe/gpxelinuxk*\.0||g' -i Makefile
+	sed "s|utils/[a-z]*||g" -i Makefile
+	sed "s,core/isolinux-debug.bin,," -i Makefile
+	sed "s,mbr/\*.bin,mbr/\*mbr.bin mbr/isohdpfx.bin," -i Makefile
+	sed "s,memdisk/memdisk,," -i Makefile
+	sed "s,memdump/memdump.com,," -i Makefile
+	sed "s,com32/modules/\*.c32,," -i Makefile
+	sed "s,com32/hdt/\*.c32,," -i Makefile
+	sed "s,com32/rosh/\*.c32,," -i Makefile
+	sed "s,com32/gfxboot/\*.c32,," -i Makefile
+	sed "s,com32/sysdump/\*.c32,," -i Makefile
+	sed "s,com32/lua/src/\*.c32,," -i Makefile
+	sed "s,com32/gpllib/\*.c32,," -i Makefile
+	sed "s,com32/cmenu/libmenu/\*.c32,," -i Makefile
+	sed '/DIRS/ s/utils//' -i Makefile
+	sed -i 's,#include <getkey.h>,#include "include/getkey.h",' com32/libutil/keyname.c
+	sed -i 's,#include <libutil.h>,#include "include/libutil.h",' com32/libutil/keyname.c
+	sed -i 's,#include "sha1.h",#include "include/sha1.h",' com32/libutil/sha1hash.c
+	sed -i 's,#include <base64.h>,#include "include/base64.h",' com32/libutil/unbase64.c
+	sed -i 's,#include <md5.h>,#include "include/md5.h",' com32/libutil/md5.c
+	sed -i 's,#include <md5.h>,#include "include/md5.h",' com32/libutil/crypt-md5.c
+	sed -i 's,#include <minmax.h>,#include "include/minmax.h",' com32/libutil/sha256crypt.c
+	sed -i 's,#include "xcrypt.h",#include "include/xcrypt.h",' com32/libutil/sha256crypt.c
+	sed -i 's,#include <minmax.h>,#include "include/minmax.h",' com32/libutil/sha512crypt.c
+	sed -i 's,#include "xcrypt.h",#include "include/xcrypt.h",' com32/libutil/sha512crypt.c
+	sed -i 's,#include <base64.h>,#include "include/base64.h",' com32/libutil/base64.c
+	sed -i '/herror.*/d' utils/gethostip.c
+	sed -ri 's,__uint([0-9]+)_t,uint\1_t,g' efi/wrapper.c
+	sed -ri 's,__uint([0-9]+)_t,uint\1_t,g' efi/wrapper.h
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make BINDIR=/usr/bin SBINDIR=/usr/bin \
+		LIBDIR=/usr/lib DATADIR=/usr/share MANDIR=/usr/share/man INCDIR=/usr/include \
+		CC="$CC" OPTFLAGS="$CPPFLAGS $CFLAGS $LDFLAGS -static" \
+		AUXDIR=/usr/share/syslinux INSTALLROOT=$pkgdir bios installer
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	make BINDIR=/usr/bin SBINDIR=/usr/bin \
+		LIBDIR=/usr/lib DATADIR=/usr/share MANDIR=/usr/share/man INCDIR=/usr/include \
+		CC="$CC" OPTFLAGS="$CPPFLAGS $CFLAGS $LDFLAGS -static" \
+		AUXDIR=/usr/share/syslinux INSTALLROOT=$pkgdir bios install
+
+	mkdir -p $pkgdir/boot/syslinux/
+	install -m644 $srcdir/syslinux.cfg $pkgdir/boot/syslinux/
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

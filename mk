@@ -146,7 +146,7 @@ build_repo() {
 	print_green "Building repository"
 	case $BARCH in
 		x86_64)
-			export BOOTLOADER="grub"
+			export BOOTLOADER="syslinux"
 			;;
 		aarch64)
 			export BOOTLOADER=""
