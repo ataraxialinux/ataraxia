@@ -10,7 +10,7 @@ januslinux was made for people who like CLI interface and to get Linux knowledge
 
 ## What hardware I can run it?
 
-You can run it on x86_64, aarch64.
+You can run it on x86_64, arch64.
 
 ## Where I can get it?
 
