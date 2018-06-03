@@ -1,19 +1,17 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=gcc
+pkgname=('gcc' 'gcc-libs')
+pkgbase=gcc
 pkgver=8.1.0
 pkgrel=1
-pkgdesc="The GNU Compiler Collection - C and C++ frontends"
 arch=('x86_64' 'aarch64')
 url="http://gcc.gnu.org/"
 license=('custom' 'FDL' 'GPL' 'LGPL')
-groups=('base')
-depends=('musl' 'zlib' 'binutils' 'mpc')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver/$pkgname-$pkgver.tar.xz")
+source=("http://ftpmirror.gnu.org/gnu/$pkgbase/$pkgbase-$pkgver/$pkgbase-$pkgver.tar.xz")
 options=(!emptydirs)
 
 prepare() {
-	cd $srcdir/$pkgname-$pkgver
+	cd $srcdir/$pkgbase-$pkgver
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
 	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
@@ -21,7 +19,7 @@ prepare() {
 }
 
 build() {
-	cd "$srcdir/$pkgname-$pkgver"
+	cd "$srcdir/$pkgbase-$pkgver"
 
 	export CFLAGS_FOR_TARGET="$CFLAGS"
 	export CXXFLAGS_FOR_TARGET="$CXXFLAGS"
@@ -60,13 +58,45 @@ build() {
 	make
 }
 
-package() {
+package_gcc() {
+	pkgdesc="The GNU Compiler Collection - C and C++ frontends"
+	groups=('base')
+	depends=('musl' 'zlib' 'binutils' 'mpc' 'gcc-libs')
+
 	unset MAKEFLAGS
-	cd "$srcdir/$pkgname-$pkgver"
+	cd "$srcdir/$pkgbase-$pkgver"
 	cd build
 	make DESTDIR=$pkgdir install
 
 	ln -s gcc $pkgdir/usr/bin/cc
+
+	rm -rf $pkgdir/usr/lib/*.so{,.*}
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
+
+package_gcc-libs() {
+	pkgdesc="Runtime libraries shipped by GCC"
+	groups=('base')
+	depends=('musl')
+
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgbase-$pkgver"
+	cd build
+	make DESTDIR=$pkgdir install
+
+	msg "Copying gcc's libraries..."
+	mkdir -p $srcdir/libs
+	mv $pkgdir/usr/lib/*.so{,.*} $srcdir/libs
+	rm -rf $pkgdir/*
+	mkdir -p $pkgdir/usr/lib/
+	mv $srcdir/libs/* $pkgdir/usr/lib/
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
