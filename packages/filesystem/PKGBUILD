@@ -29,15 +29,7 @@ source=('fstab'
 	'shadow'
 	'shells'
 	'sysctl.conf'
-	'runsvdir-start'
-	'tty1'
-	'tty2'
-	'tty3'
-	'tty4'
-	'ttyS0'
-	'crond'
-	'crond-log'
-	'dmesg')
+	'runsvdir-start')
 backup=('etc/fstab'
 	'etc/group'
 	'etc/host.conf'
@@ -93,7 +85,7 @@ package() {
 
 	install -Dm0755 $srcdir/rc.local $pkgdir/etc/rc.local
 
-	for d in cache local opt log/{old,dmesg,crond} lib/misc empty service spool/cron/crontabs; do
+	for d in cache local opt log/old lib/misc empty service; do
 		install -d -m755 var/$d
 	done
 
@@ -123,19 +115,4 @@ package() {
 	done
 
 	install -Dm0755 $srcdir/runsvdir-start $pkgdir/usr/bin/runsvdir-start
-
-	for ttys in tty1 tty2 tty3 tty4 ttyS0; do
-		install -Dm0755 $srcdir/$ttys $pkgdir/etc/service/$ttys/run
-		cd $pkgdir
-		ln -sf /etc/service/$ttys var/service/$ttys
-	done
-
-	install -Dm0755 $srcdir/crond $pkgdir/etc/service/cron/run
-	install -Dm0755 $srcdir/crond-log $pkgdir/etc/service/cron/log/run
-
-	for f in dmesg; do
-		install -Dm0755 $srcdir/$f $pkgdir/etc/service/$f/run
-		cd $pkgdir
-		ln -sf /etc/service/$f var/service/$f
-	done
 }

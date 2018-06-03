@@ -10,7 +10,16 @@ license=('GPL')
 groups=('base')
 depends=('musl')
 options=('debug')
-source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2")
+source=("http://busybox.net/downloads/$pkgname-$pkgver.tar.bz2"
+	'tty1'
+	'tty2'
+	'tty3'
+	'tty4'
+	'ttyS0'
+	'crond'
+	'crond-log'
+	'dmesg')
+install=$pkgname.install
 
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -49,6 +58,25 @@ package() {
 	install -Dm0755 $srcdir/$pkgname-$pkgver/examples/udhcp/simple.script $pkgdir/usr/share/udhcpc/default.script
 
 	rm -rf $pkgdir/usr/bin/{blkdiscard,blkid,blockdev,cal,chattr,chrt,chvt,clear,deallocvt,dmesg,eject,fallocate,fdformat,fdisk,fgconsole,findfs,flock,fsck,fsck.minix,fsfreeze,fstrim,getopt,hexdump,hwclock,ionice,ipcrm,ipcs,kbd_mode,kill,less,linux*,logger,losetup,lsattr,lzcat,lzma,mesg,mke2fs,mkfs.ext2,mkfs.minix,mkswap,more,mount,mountpoint,nsenter,openvt,patch,pivot_root,readprofile,renice,reset,rev,rtcwake,script,scriptreplay,setarch,setfont,setkeycodes,setsid,sh,showkey,strings,swapoff,swapon,switch_root,taskset,umount,unlzma,unshare,unxz,xz,xzcat,depmod,insmod,modinfo,modprobe,rmmod,setfattr,bunzip2,bzcat,bzip2,dc}
+
+	mkdir -p $pkgdir/etc/service $pkgdir/var/service
+
+	for ttys in tty1 tty2 tty3 tty4 ttyS0; do
+		install -Dm0755 $srcdir/$ttys $pkgdir/etc/service/$ttys/run
+		cd $pkgdir
+		ln -sf /etc/service/$ttys var/service/$ttys
+	done
+
+	install -Dm0755 $srcdir/crond $pkgdir/etc/service/crond/run
+	install -Dm0755 $srcdir/crond-log $pkgdir/etc/service/crond/log/run
+
+	for f in dmesg; do
+		install -Dm0755 $srcdir/$f $pkgdir/etc/service/$f/run
+		cd $pkgdir
+		ln -sf /etc/service/$f var/service/$f
+	done
+
+	mkdir -p  $pkgdir/var/log/crond $pkgdir/var/log/dmesg $pkgdir/var/spool/cron/crontabs
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
