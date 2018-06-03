@@ -15,11 +15,6 @@ source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	CFLAGS="$CFLAGS -I$ROOTFS/usr/include" \
-	BLKID_CFLAGS="-I$ROOTFS/usr/include/blkid" \
-	BLKID_LIBS="-L$ROOTFS/usr/lib -lblkid" \
-	KMOD_CFLAGS="-I$ROOTFS/usr/include" \
-	KMOD_LIBS="-L$ROOTFS/usr/lib -lkmod" \
 	./configure \
 		--prefix=/usr \
 		--with-rootprefix=/usr \
@@ -28,7 +23,6 @@ build() {
 		--sbindir=/usr/bin \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
 		--with-rootprefix="" \
 		--with-firmware-path=/lib/firmware \
 		--enable-hwdb \
