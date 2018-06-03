@@ -1,0 +1,54 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=openssh
+pkgver=7.7p1
+pkgrel=1
+pkgdesc="Free version of the SSH connectivity tools"
+arch=('x86_64' 'aarch64')
+url="https://www.openssh.com/portable.html"
+license=('BSD')
+groups=('base')
+depends=('musl' 'zlib' 'libressl')
+source=("http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/$pkgname-$pkgver.tar.gz"
+	'openssh'
+	'openssh-log')
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+
+	unset CC CXX AR AS RANLIB LD STRIP
+
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc/ssh \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-default-path='/usr/bin:/usr/local/bin:/usr/local/sbin' \
+		--with-mantype=man \
+		--with-md5-passwords \
+		--with-pid-dir=/run \
+		--with-privsep-path=/var/empty \
+		--with-privsep-user=nobody \
+		--with-ssl-engine
+	make
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	mkdir -p $pkgdir/var/log/sshd
+
+	install -Dm0755 $srcdir/openssh $pkgdir/etc/service/sshd/run
+	install -Dm0755 $srcdir/openssh-log $pkgdir/etc/service/sshd/log/run
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
