@@ -12,6 +12,7 @@ depends=('musl' 'zlib' 'readline' 'expat' 'libffi' 'libressl')
 source=("https://www.python.org/ftp/python/$pkgver/Python-$pkgver.tar.xz"
 	"musl-find_library.patch"
 	"fix-xattrs-glibc.patch"
+	"bpo-30353.patch"
 	"libressl.patch"
 	"libressl-2.7.patch")
 
@@ -19,17 +20,16 @@ prepare() {
 	cd "$srcdir/Python-$pkgver"
 	patch -Np1 -i $srcdir/musl-find_library.patch
 	patch -Np1 -i $srcdir/fix-xattrs-glibc.patch
+	patch -Rp1 < $srcdir/bpo-30353.patch
 	patch -Np1 -i $srcdir/libressl.patch
 	patch -Np1 -i $srcdir/libressl-2.7.patch
 
 cat > config.cache << EOF
+ac_cv_have_long_long_format=yes
 ac_cv_file__dev_ptmx=yes
 ac_cv_file__dev_ptc=yes
-ac_cv_prog_HAS_HG=/bin/false
-ac_cv_prog_SVNVERSION=/bin/false
-ac_cv_have_long_long_format=yes
 ac_cv_working_tzset=yes
-ac_cv_little_endian_double=yes
+ac_cv_prog_HAS_HG=/bin/false
 EOF
 
 	rm -r Modules/expat \
@@ -40,12 +40,13 @@ EOF
 
 build() {
 	cd "$srcdir/Python-$pkgver"
+	OPT="" \
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--cache-file=config.cache \
-		--with-ensurepip=yes \
+		--with-ensurepip=no \ # falling build
 		--with-lto \
 		--with-system-expat \
 		--with-system-ffi \
@@ -59,7 +60,7 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/Python-$pkgver"
-	make -j1 DESTDIR=$pkgdir commoninstall bininstall
+	make -j1 EXTRA_CFLAGS="$CFLAGS" DESTDIR=$pkgdir install
 
 	chmod 755 $pkgdir/usr/lib/libpython3.6m.so
 	chmod 755 $pkgdir/usr/lib/libpython3.so
