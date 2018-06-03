@@ -20,6 +20,24 @@ install_target() {
 	done
 }
 
+install_target_nodeps() {
+	XPKG=$1
+	for dpkg in $XPKG; do
+		cd $REPO/$dpkg
+		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
+		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH -dd
+	done
+}
+
+install_target_multiple() {
+	XPKG=$1
+	for dpkg in $XPKG; do
+		cd $REPO/$dpkg
+		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
+		yes y | sudo pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
+	done
+}
+
 install_host_target() {
 	XPKG=$1
 	for dpkg in $XPKG; do
@@ -152,7 +170,16 @@ build_rootfs() {
 	esac
 
 	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux $BOOTLOADER openssh sudo libffi python python2 libarchive libnl-tiny wireless_tools wpa_supplicant curl git fakeroot pacman rsync cmake re2c ninja meson base; do
-		install_target $PKG
+		case "$PKG" in
+			gmp)
+				install_target_nodeps gmp
+				;;
+			gcc)
+				install_target_multiple gcc
+				;;
+			*)
+				install_target $PKG
+		esac
 	done
 }
 
