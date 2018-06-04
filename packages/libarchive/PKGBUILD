@@ -8,11 +8,13 @@ arch=('x86_64' 'aarch64')
 url="http://libarchive.org/"
 license=('BSD')
 groups=('base')
-depends=('musl' 'zlib' 'acl' 'bzip2' 'xz')
-source=("http://www.libarchive.org/downloads/$pkgname-$pkgver.tar.gz")
+depends=('musl' 'zlib' 'acl' 'bzip2' 'xz' 'libressl')
+source=("http://www.libarchive.org/downloads/$pkgname-$pkgver.tar.gz"
+	'libressl-2.7.patch')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+	patch -Np1 -i $srcdir/libressl-2.7.patch
 	./configure \
 		--prefix=/usr \
 		--libdir=/usr/lib \
@@ -23,8 +25,7 @@ build() {
 		--without-xml2 \
 		--without-iconv \
 		--without-nettle \
-		--without-expat \
-		--without-openssl
+		--without-expat
 	make
 }
 
