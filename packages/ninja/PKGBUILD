@@ -13,9 +13,15 @@ source=("https://github.com/ninja-build/ninja/archive/v$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	CC="$CC" CXX="$CXX" AR="$AR" AS="$AS" RANLIB="$RANLIB" LD="$LD" STRIP="$STRIP" \
+	unset CC CXX AR AS RANLIB LD STRIP
+	./configure.py --bootstrap
+	mv ninja ninja-inital
+
+	CC="$XTARGET-gcc" CXX="$XTARGET-g++" \
+	AR="$XTARGET-ar" AS="$XTARGET-as" \
+	RANLIB="$XTARGET-ranlib" LD="$XTARGET-ld" STRIP="$XTARGET-strip" \
 	./configure.py --platform=linux
-	ninja
+	./ninja-inital
 }
 
 package() {
