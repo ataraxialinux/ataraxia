@@ -1,0 +1,52 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=vim
+pkgver=8.0.586
+pkgrel=1
+pkgdesc='Vi Improved, a highly configurable, improved version of the vi text editor'
+arch=('x86_64' 'aarch64')
+url='http://www.vim.org'
+license=('Vim')
+groups=('base')
+depends=('musl' 'ncurses')
+source=("ftp://ftp.vim.org/pub/vim/unix/vim-$pkgver.tar.bz2")
+
+build() {
+	cd "$srcdir/vim80"
+	vim_cv_terminfo=yes \
+	vim_cv_tty_group=world \
+	vim_cv_tty_group=world \
+	vim_cv_getcwd_broken=no \
+	vim_cv_stat_ignores_slash=no \
+	vim_cv_memmove_handles_overlap=yes \
+	vim_cv_toupper_broken=no \
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-x \
+		--with-tlib=ncurses \
+		--enable-gui=no \
+		--enable-multibyte \
+		--disable-gtktest \
+		--disable-gpm \
+		--disable-gui \
+		--disable-netbeans \
+		--disable-nls \
+		--disable-xim
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/vim80"
+	make -j1 DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
