@@ -94,6 +94,7 @@ configure_arch() {
 
 setup_build_dirs() {
 	print_green "Setting up build environment"
+	sleep 1
 	export CWD="$(pwd)"
 	export BUILD="$CWD/build"
 	export SOURCES="$BUILD/sources"
@@ -157,6 +158,7 @@ prepare_build() {
 
 build_toolchain() {
 	print_green "Building cross-toolchain for $BARCH"
+	sleep 1
 	install_host file
 	install_host pkgconf
 	install_host_target filesystem
@@ -175,6 +177,7 @@ clean_tool_pkg() {
 
 build_repository() {
 	print_green "Building repository"
+	sleep 1
 	case $BARCH in
 		x86_64)
 			export BOOTLOADER="syslinux"
@@ -198,11 +201,13 @@ build_repository() {
 	done
 
 	print_green "Building repository database"
+	sleep 1
 	repo-add $PKGS/repo.db.tar.gz $PKGS/*.pkg.tar.xz
 }
 
 install_base_packages() {
 	print_green "Installing base system"
+	sleep 1
 	cp -a $REPO/pacman.conf $BUILD/target-pacman.conf
 	sed -i $BUILD/target-pacman.conf -e "s|@PKGS[@]|$PKGS|g"
 	sudo mkdir -p $FINALFS/var/lib/pacman
