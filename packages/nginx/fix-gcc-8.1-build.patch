@@ -1,0 +1,193 @@
+diff -ruN nginx-1.14.0/src/http/modules/ngx_http_fastcgi_module.c patched/nginx-1.14.0/src/http/modules/ngx_http_fastcgi_module.c
+--- nginx-1.14.0/src/http/modules/ngx_http_fastcgi_module.c	2018-04-17 18:22:36.000000000 +0300
++++ patched/nginx-1.14.0/src/http/modules/ngx_http_fastcgi_module.c	2018-06-04 01:16:22.784829558 +0300
+@@ -3264,7 +3264,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].key.len;
+ 
+         copy = ngx_array_push_n(params->lengths,
+@@ -3273,7 +3274,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].skip_empty;
+ 
+ 
+diff -ruN nginx-1.14.0/src/http/modules/ngx_http_grpc_module.c patched/nginx-1.14.0/src/http/modules/ngx_http_grpc_module.c
+--- nginx-1.14.0/src/http/modules/ngx_http_grpc_module.c	2018-04-17 18:22:36.000000000 +0300
++++ patched/nginx-1.14.0/src/http/modules/ngx_http_grpc_module.c	2018-06-04 01:17:17.675491492 +0300
+@@ -4389,7 +4389,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].key.len;
+ 
+         size = (sizeof(ngx_http_script_copy_code_t)
+diff -ruN nginx-1.14.0/src/http/modules/ngx_http_proxy_module.c patched/nginx-1.14.0/src/http/modules/ngx_http_proxy_module.c
+--- nginx-1.14.0/src/http/modules/ngx_http_proxy_module.c	2018-04-17 18:22:36.000000000 +0300
++++ patched/nginx-1.14.0/src/http/modules/ngx_http_proxy_module.c	2018-06-04 01:18:46.025337787 +0300
+@@ -3493,7 +3493,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].key.len;
+ 
+         size = (sizeof(ngx_http_script_copy_code_t)
+diff -ruN nginx-1.14.0/src/http/modules/ngx_http_scgi_module.c patched/nginx-1.14.0/src/http/modules/ngx_http_scgi_module.c
+--- nginx-1.14.0/src/http/modules/ngx_http_scgi_module.c	2018-04-17 18:22:36.000000000 +0300
++++ patched/nginx-1.14.0/src/http/modules/ngx_http_scgi_module.c	2018-06-04 01:19:22.472449314 +0300
+@@ -1724,7 +1724,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].key.len + 1;
+ 
+         copy = ngx_array_push_n(params->lengths,
+@@ -1733,7 +1734,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].skip_empty;
+ 
+ 
+diff -ruN nginx-1.14.0/src/http/modules/ngx_http_uwsgi_module.c patched/nginx-1.14.0/src/http/modules/ngx_http_uwsgi_module.c
+--- nginx-1.14.0/src/http/modules/ngx_http_uwsgi_module.c	2018-04-17 18:22:36.000000000 +0300
++++ patched/nginx-1.14.0/src/http/modules/ngx_http_uwsgi_module.c	2018-06-04 01:19:56.715614566 +0300
+@@ -1987,7 +1987,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].key.len;
+ 
+         copy = ngx_array_push_n(params->lengths,
+@@ -1996,7 +1997,8 @@
+             return NGX_ERROR;
+         }
+ 
+-        copy->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++        copy->code = (ngx_http_script_code_pt) (void *)
++						ngx_http_script_copy_len_code;
+         copy->len = src[i].skip_empty;
+ 
+ 
+diff -ruN nginx-1.14.0/src/http/ngx_http_script.c patched/nginx-1.14.0/src/http/ngx_http_script.c
+--- nginx-1.14.0/src/http/ngx_http_script.c	2018-04-17 18:22:36.000000000 +0300
++++ patched/nginx-1.14.0/src/http/ngx_http_script.c	2018-06-04 01:21:03.397989043 +0300
+@@ -695,7 +695,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_http_script_code_pt) ngx_http_script_copy_len_code;
++    code->code = (ngx_http_script_code_pt) (void *)
++                                                 ngx_http_script_copy_len_code;
+     code->len = len;
+ 
+     size = (sizeof(ngx_http_script_copy_code_t) + len + sizeof(uintptr_t) - 1)
+@@ -784,7 +785,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_http_script_code_pt) ngx_http_script_copy_var_len_code;
++    code->code = (ngx_http_script_code_pt) (void *)
++                                             ngx_http_script_copy_var_len_code;
+     code->index = (uintptr_t) index;
+ 
+     code = ngx_http_script_add_code(*sc->values,
+@@ -1178,8 +1180,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_http_script_code_pt)
+-                      ngx_http_script_copy_capture_len_code;
++    code->code = (ngx_http_script_code_pt) (void *)
++                                         ngx_http_script_copy_capture_len_code;
+     code->n = 2 * n;
+ 
+ 
+@@ -1293,7 +1295,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_http_script_code_pt) ngx_http_script_full_name_len_code;
++    code->code = (ngx_http_script_code_pt) (void *)
++                                            ngx_http_script_full_name_len_code;
+     code->conf_prefix = sc->conf_prefix;
+ 
+     code = ngx_http_script_add_code(*sc->values,
+@@ -1760,3 +1763,4 @@
+ {
+     e->ip += sizeof(uintptr_t);
+ }
++
+diff -ruN nginx-1.14.0/src/stream/ngx_stream_script.c patched/nginx-1.14.0/src/stream/ngx_stream_script.c
+--- nginx-1.14.0/src/stream/ngx_stream_script.c	2018-04-17 18:22:37.000000000 +0300
++++ patched/nginx-1.14.0/src/stream/ngx_stream_script.c	2018-06-04 01:21:44.732981416 +0300
+@@ -587,7 +587,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_stream_script_code_pt) ngx_stream_script_copy_len_code;
++    code->code = (ngx_stream_script_code_pt) (void *)
++                                               ngx_stream_script_copy_len_code;
+     code->len = len;
+ 
+     size = (sizeof(ngx_stream_script_copy_code_t) + len + sizeof(uintptr_t) - 1)
+@@ -677,8 +678,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_stream_script_code_pt)
+-                      ngx_stream_script_copy_var_len_code;
++    code->code = (ngx_stream_script_code_pt) (void *)
++                                           ngx_stream_script_copy_var_len_code;
+     code->index = (uintptr_t) index;
+ 
+     code = ngx_stream_script_add_code(*sc->values,
+@@ -767,8 +768,8 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_stream_script_code_pt)
+-                      ngx_stream_script_copy_capture_len_code;
++    code->code = (ngx_stream_script_code_pt) (void *)
++                                       ngx_stream_script_copy_capture_len_code;
+     code->n = 2 * n;
+ 
+ 
+@@ -859,7 +860,7 @@
+         return NGX_ERROR;
+     }
+ 
+-    code->code = (ngx_stream_script_code_pt)
++    code->code = (ngx_stream_script_code_pt) (void *)
+                                           ngx_stream_script_full_name_len_code;
+     code->conf_prefix = sc->conf_prefix;
+ 
+@@ -919,3 +920,4 @@
+ 
+     e->ip += sizeof(ngx_stream_script_full_name_code_t);
+ }
++
