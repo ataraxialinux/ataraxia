@@ -188,7 +188,7 @@ build_repository() {
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux $BOOTLOADER openssh sudo libffi python python2 libarchive libnl-tiny wireless_tools wpa_supplicant curl git fakeroot pacman rsync cmake re2c ninja meson base build-essential; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux $BOOTLOADER openssh sudo libffi python python2 libarchive libnl-tiny wireless_tools wpa_supplicant curl git fakeroot pacman rsync cmake re2c ninja meson pcre nginx base build-essential; do
 		case "$PKG" in
 			gmp)
 				install_target_nodeps gmp
