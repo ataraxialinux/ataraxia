@@ -27,6 +27,9 @@ package() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 
+	mkdir -p $pkgdir/usr/bin
+	ln -sf /lib/libc.so $pkgdir/usr/bin/ldd
+
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $XTARGET-strip --strip-all			2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $XTARGET-strip --strip-unneeded		2>/dev/null || true
