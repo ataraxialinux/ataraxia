@@ -103,13 +103,14 @@ setup_build_dirs() {
 	export TOOLS="$BUILD/tools"
 	export PKGS="$BUILD/packages"
 	export LOGS="$BUILD/logs"
+	export IMGDIR="$BUILD/imgdir"
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
 }
 
 setup_build_env() {
 	sudo rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS
+	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS $IMGDIR
 
 	export PATH="$TOOLS/bin:$PATH"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
@@ -207,12 +208,83 @@ build_repository() {
 
 install_base_packages() {
 	print_green "Installing base system"
-	sleep 1
+	sudo rm -rf $FINALFS
 	cp -a $REPO/pacman.conf $BUILD/target-pacman.conf
 	sed -i $BUILD/target-pacman.conf -e "s|@PKGS[@]|$PKGS|g"
 	sudo mkdir -p $FINALFS/var/lib/pacman
 	sudo pacman -Syy --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
 	yes y | sudo pacman -S base --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
+}
+
+prepare_files() {
+	print_green "Preparing files for .iso image"
+	mkdir -p $IMGDIR/boot
+
+	print_green "Building rootfs archive"
+	cd $FINALFS
+	sudo find . -print | cpio -o -H newc | gzip -9 > $IMGDIR/boot/rootfs.gz
+
+	print_green "Copying kernel"
+	cp $FINALFS/boot/vmlinuz $IMGDIR/boot/vmlinuz
+}
+
+install_loader() {
+	print_green "Preparing syslinux for .iso image"
+	cd $BUILD
+	rm -rf syslinux-*
+	cp $SOURCES/syslinux-* .
+	tar -xf syslinux-*
+
+	mkdir -p $IMGDIR/boot/syslinux
+	cp syslinux-*/bios/core/isolinux.bin $IMGDIR/boot/syslinux
+	cp syslinux-*/bios/com32/elflink/ldlinux/ldlinux.c32 $IMGDIR/boot/syslinux
+
+cat << CEOF > $IMGDIR/boot/syslinux/syslinux.cfg
+PROMPT 1
+TIMEOUT 50
+DEFAULT boot
+
+LABEL boot
+	LINUX /boot/vmlinuz
+	APPEND quiet
+	INITRD /boot/rootfs.gz
+CEOF
+
+	mkdir -p $IMGDIR/efi/boot
+cat << CEOF > $IMGDIR/efi/boot/startup.nsh
+echo -off
+echo Booting, please wait...
+\boot\vmlinuz quiet initrd=\boot\rootfs.gz
+CEOF
+}
+
+make_iso() {
+	print_green "Generating .iso image"
+	cd $IMGDIR
+	xorriso \
+		-as mkisofs \
+		-o $CWD/januslinux.iso \
+		-b boot/syslinux/isolinux.bin \
+		-c boot/syslinux/boot.cat \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		$IMGDIR
+
+	print_green "Generation of .iso file was completed!"
+}
+
+build_iso_image() {
+	case $BARCH in
+		x86_64)
+			prepare_files
+			install_loader
+			make_iso
+			;;
+		*)
+			print_red "Building .iso file isn't supported for architecture"
+			exit 1
+	esac
 }
 
 OPT="$1"
@@ -245,7 +317,7 @@ case "$OPT" in
 		configure_arch
 		setup_build_dirs
 		install_base_packages
-#		build_iso_image
+		build_iso_image
 		;;
 	usage|*)
 		mkusage
