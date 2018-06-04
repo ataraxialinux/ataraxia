@@ -2,6 +2,19 @@
 
 set -e
 
+mkusage() {
+	cat <<EOF
+mk - small and simple januslinux build system
+
+Usage:	BARCH=[supported architecture] ./mk [option] [package (only in 'package' option)]
+	toolchain			Build cross-toolchain
+	repository			Build every package
+	package				Build specific package
+	image				Build bootable .iso image
+EOF
+	exit 0
+}
+
 install_host() {
 	XPKG=$1
 	for dpkg in $XPKG; do
@@ -79,7 +92,7 @@ configure_arch() {
 	esac
 }
 
-setup_build_env() {
+setup_build_dirs() {
 	print_green "Setting up build environment"
 	export CWD="$(pwd)"
 	export BUILD="$CWD/build"
@@ -91,7 +104,9 @@ setup_build_env() {
 	export LOGS="$BUILD/logs"
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
+}
 
+setup_build_env() {
 	sudo rm -rf $BUILD
 	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS
 
@@ -158,8 +173,8 @@ clean_tool_pkg() {
 	done
 }
 
-build_rootfs() {
-	print_green "Building rootfs"
+build_repository() {
+	print_green "Building repository"
 	case $BARCH in
 		x86_64)
 			export BOOTLOADER="syslinux"
@@ -181,21 +196,55 @@ build_rootfs() {
 				install_target $PKG
 		esac
 	done
+
+	print_green "Building repository database"
+	repo-add $PKGS/repo.db.tar.gz $PKGS/*.pkg.tar.xz
 }
 
-fix_install_packages() {
-	print_green "Installing packages in rootfs"
+install_base_packages() {
+	print_green "Installing base system"
+	cp -a $REPO/pacman.conf $BUILD/target-pacman.conf
+	sed -i $BUILD/target-pacman.conf -e "s|@PKGS[@]|$PKGS|g"
 	sudo mkdir -p $FINALFS/var/lib/pacman
-	yes y | sudo pacman -U $PKGS/*.pkg.tar.xz --root $FINALFS --arch $BARCH
+	sudo pacman -Syy --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
+	yes y | sudo pacman -S base --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
 }
 
-configure_arch
-setup_build_env
-prepare_build
-build_toolchain
-clean_tool_pkg
-build_rootfs
-fix_install_packages
+OPT="$1"
+JPKG="$2"
+
+case "$OPT" in
+	toolchain)
+		configure_arch
+		setup_build_dirs
+		setup_build_env
+		prepare_build
+		build_toolchain
+		clean_tool_pkg
+		;;
+	repository)
+		configure_arch
+		setup_build_dirs
+		setup_build_env
+		prepare_build
+		build_toolchain
+		clean_tool_pkg
+		build_repository
+		;;
+	package)
+		configure_arch
+		setup_build_dirs
+		install_target $JPKG
+		;;
+	image)
+		configure_arch
+		setup_build_dirs
+		install_base_packages
+#		build_iso_image
+		;;
+	usage|*)
+		mkusage
+esac
 
 exit 0
 
