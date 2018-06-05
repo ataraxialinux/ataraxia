@@ -2,7 +2,7 @@
 
 pkgname=nginx
 pkgver=1.14.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Lightweight HTTP server and IMAP/POP3 proxy server'
 arch=('x86_64' 'aarch64')
 url='https://nginx.org'
@@ -72,6 +72,8 @@ package() {
 	install -Dm0755 $srcdir/nginx-log $pkgdir/etc/service/nginx/log/run
 
 	mkdir -p $pkgdir/var/log/nginx
+	
+	install -d $pkgdir/var/spool/nginx/body
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
