@@ -36,14 +36,12 @@ EOF
 		--disable-doc \
 		--disable-nls
 	make
-	make -C contrib
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
-	make DESTDIR=$pkgdir -C contrib install
 
 	install -dm755 $pkgdir/etc
 	install -m644 $srcdir/pacman.conf $pkgdir/etc/pacman.conf
