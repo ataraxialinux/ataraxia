@@ -14,7 +14,7 @@ You can run it on x86_64, aarch64.
 
 ## Where I can get it?
 
-You can download [sedcond beta version](https://github.com/JanusLinux/janus/releases/download/1.0-beta2/januslinux.iso) of januslinux which compiled on 05th June of 2018. It have bugs.
+You can download [second beta version](https://github.com/JanusLinux/janus/releases/download/1.0-beta2/januslinux.iso) of januslinux which compiled on 05th June of 2018. It have bugs.
 
 ## How I can contact and help you with development?
 
