@@ -13,8 +13,11 @@ source=("https://w1.fi/releases/$pkgname-$pkgver.tar.gz"
 	'libressl.patch'
 	'eloop.patch'
 	'wpa_supplicant'
-	'wpa_supplicant-log')
+	'wpa_supplicant-log'
+	'wpa_supplicant.conf'
+	'wifi-setup')
 install=$pkgname.install
+backup=('etc/wpa_supplicant.conf')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -35,6 +38,10 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver/$pkgname"
 	make BINDIR=/usr/bin DESTDIR=$pkgdir install
+
+	install -Dm0755 $srcdir/wifi-setup $pkgdir/usr/bin/wifi-setup
+
+	install -m644 $srcdir/wpa_supplicant.conf $pkgdir/etc
 
 	mkdir -p $pkgdir/var/log/wpa_supplicant
 
