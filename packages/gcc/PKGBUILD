@@ -14,7 +14,8 @@ prepare() {
 	cd $srcdir/$pkgbase-$pkgver
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
-	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
+	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
 	mkdir build
 }
 
@@ -40,8 +41,11 @@ build() {
 		--host=$XTARGET \
 		--target=$XTARGET \
 		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
 		--enable-default-pie \
-		--enable-languages=c,c++ \
+		--enable-default-ssp \
+		--enable-languages=c,c++,lto \
 		--enable-libstdcxx-time \
 		--enable-lto \
 		--enable-threads=posix \

@@ -12,9 +12,9 @@ source=("http://llvm.org/releases/$pkgver/llvm-$pkgver.src.tar.xz"
 	"http://llvm.org/releases/$pkgver/compiler-rt-$pkgver.src.tar.xz"
 	"http://llvm.org/releases/$pkgver/libunwind-$pkgver.src.tar.xz"
 	"llvm-003-musl.patch"
-	"cfe-001-fix-stdint.patch"
-	"cfe-003-fix-unwind-chain-inclusion.patch"
-	"cfe-004-add-musl-triples.patch")
+	"0002-Enable-Stack-Protector-by-default.patch"
+	"0003-Enable-PIE-by-default.patch"
+	"0004-Enable-FORTIFY_SOURCE-macro-by-default.patch")
 
 prepare() {
 	cd $srcdir/llvm-$pkgver.src
@@ -24,9 +24,9 @@ prepare() {
 
 	cd $srcdir/cfe-$pkgver.src
 	msg "Patching Clang"
-	patch -Np1 -i $srcdir/cfe-001-fix-stdint.patch
-	patch -Np1 -i $srcdir/cfe-003-fix-unwind-chain-inclusion.patch
-	patch -Np1 -i $srcdir/cfe-004-add-musl-triples.patch
+	patch -Np1 -i $srcdir/0002-Enable-Stack-Protector-by-default.patch
+	patch -Np1 -i $srcdir/0003-Enable-PIE-by-default.patch
+	patch -Np1 -i $srcdir/0004-Enable-FORTIFY_SOURCE-macro-by-default.patch
 
 	cd $srcdir/compiler-rt-$pkgver.src
 	msg "Patching compiler-rt"
@@ -59,9 +59,7 @@ build() {
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DLLVM_TARGET_ARCH="$LARCH" \
-		-DLLVM_TARGETS_TO_BUILD="$TARGETS" \
-		-DLLVM_BUILD_LLVM_DYLIB=ON \
-		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DLLVM_TARGETS_TO_BUILD="$TARGETS"
 	make
 
 	mkdir -p $srcdir/libs
@@ -127,7 +125,7 @@ package_llvm-libs() {
 
 package_clang() {
 	pkgdesc="C language family frontend for LLVM"
-	depends=('llvm-libs' 'binutils')
+	depends=('llvm-libs' 'llvm' 'binutils')
 
 	mkdir -p $pkgdir
 

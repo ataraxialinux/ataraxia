@@ -7,9 +7,11 @@ source=("http://llvm.org/releases/$pkgver/llvm-$pkgver.src.tar.xz"
 	"http://llvm.org/releases/$pkgver/compiler-rt-$pkgver.src.tar.xz"
 	"http://llvm.org/releases/$pkgver/libunwind-$pkgver.src.tar.xz"
 	"llvm-003-musl.patch"
-	"cfe-001-fix-stdint.patch"
-	"cfe-003-fix-unwind-chain-inclusion.patch"
-	"cfe-004-add-musl-triples.patch")
+	"0001-Driver-Avoid-invalidated-iterator-in-insertTargetAnd.patch"
+	"0002-test-Fix-Cross-DSO-CFI-Android-sanitizer-test-for-rt.patch"
+	"0002-Enable-Stack-Protector-by-default.patch"
+	"0003-Enable-PIE-by-default.patch"
+	"0004-Enable-FORTIFY_SOURCE-macro-by-default.patch")
 
 prepare() {
 	cd $srcdir/$pkgname-$pkgver.src
@@ -19,9 +21,11 @@ prepare() {
 
 	cd $srcdir/cfe-$pkgver.src
 	msg "Patching Clang"
-	patch -Np1 -i $srcdir/cfe-001-fix-stdint.patch
-	patch -Np1 -i $srcdir/cfe-003-fix-unwind-chain-inclusion.patch
-	patch -Np1 -i $srcdir/cfe-004-add-musl-triples.patch
+	patch -Np1 -i $srcdir/0001-Driver-Avoid-invalidated-iterator-in-insertTargetAnd.patch
+	patch -Np1 -i $srcdir/0002-test-Fix-Cross-DSO-CFI-Android-sanitizer-test-for-rt.patch
+	patch -Np1 -i $srcdir/0002-Enable-Stack-Protector-by-default.patch
+	patch -Np1 -i $srcdir/0003-Enable-PIE-by-default.patch
+	patch -Np1 -i $srcdir/0004-Enable-FORTIFY_SOURCE-macro-by-default.patch
 
 	cd $srcdir/compiler-rt-$pkgver.src
 	msg "Patching compiler-rt"
