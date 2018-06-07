@@ -33,6 +33,21 @@ install_target() {
 	done
 }
 
+build_target_only() {
+	XPKG=$1
+	for dpkg in $XPKG; do
+		cd $REPO/$dpkg
+		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
+	done
+}
+
+install_target_only() {
+	XPKG=$1
+	for dpkg in $XPKG; do
+		yes y | sudo pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
+	done
+}
+
 install_target_nodeps() {
 	XPKG=$1
 	for dpkg in $XPKG; do
@@ -78,6 +93,8 @@ configure_arch() {
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
+			export TARGETS="X86;AMDGPU"
+			export LARCH="X86"
 			;;
 		aarch64)
 			print_green "Using config for aarch64"
@@ -85,6 +102,8 @@ configure_arch() {
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			export TARGETS="AArch64;AMDGPU"
+			export LARCH="AArch64"
 			;;
 		*)
 			print_red "BARCH variable isn't set!"
@@ -146,6 +165,8 @@ prepare_build() {
 			-e "s|@XTARGET[@]|$XTARGET|g" \
 			-e "s|@XKARCH[@]|$XKARCH|g" \
 			-e "s|@GCCOPTS[@]|$GCCOPTS|g" \
+			-e "s|@TARGETS[@]|$TARGETS|g" \
+			-e "s|@LARCH[@]|$LARCH|g" \
 			-e "s|@HOSTCC[@]|$HOSTCC|g" \
 			-e "s|@HOSTCXX[@]|$HOSTCXX|g" \
 			-e "s|@PATH[@]|$PATH|g"
@@ -168,10 +189,11 @@ build_toolchain() {
 	install_host gcc-static
 	install_host_target musl
 	install_host gcc-final
+	install_host llvm
 }
 
 clean_tool_pkg() {
-	for toolpkg in file pkgconf binutils gcc-static gcc-final; do
+	for toolpkg in file pkgconf binutils gcc-static gcc-final llvm; do
 		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
 	done
 }
@@ -188,13 +210,18 @@ build_repository() {
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux $BOOTLOADER vim nano htop gdb strace openssh iptables sudo libffi python python2 libarchive libnl-tiny wireless_tools wpa_supplicant curl git fakeroot pacman rsync cmake re2c ninja meson pcre nginx lynx libevent tor tmux base build-essential; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux $BOOTLOADER vim nano htop gdb strace openssh iptables curl sudo libarchive cmake libffi llvm python python2 libnl-tiny wireless_tools wpa_supplicant git fakeroot pacman rsync re2c ninja meson pcre nginx lynx libevent tor tmux base build-essential; do
 		case "$PKG" in
 			gmp)
 				install_target_nodeps gmp
 				;;
 			gcc)
 				install_target_multiple gcc
+				;;
+			llvm)
+				build_target_only llvm
+				install_target_only llvm
+				install_target_only clang
 				;;
 			*)
 				install_target $PKG
