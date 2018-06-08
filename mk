@@ -214,6 +214,9 @@ build_repository() {
 			gcc)
 				install_target_multiple gcc
 				;;
+			libtool)
+				install_target_nodeps libtool
+				;;
 			*)
 				install_target $PKG
 		esac
