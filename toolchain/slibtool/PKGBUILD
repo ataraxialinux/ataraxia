@@ -1,0 +1,22 @@
+pkgname=slibtool
+pkgver=0.5.19
+pkgrel=1
+arch=('any')
+source=("https://github.com/midipix-project/slibtool/archive/v$pkgver.tar.gz")
+
+build() {
+	cd $srcdir/$pkgname-$pkgver
+	./configure \
+		--prefix= \
+		--all-static \
+		--enable-static \
+		--disable-shared \
+		--sysroot=$ROOTFS
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd $srcdir/$pkgname-$pkgver
+	make DESTDIR=$pkgdir install
+}
