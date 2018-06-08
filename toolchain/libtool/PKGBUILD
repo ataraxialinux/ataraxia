@@ -6,8 +6,10 @@ source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd $srcdir/$pkgname-$pkgver
+	LIBDIR="$ROOTFS/usr/lib" \
+	LT_SYS_LIBRARY_PATH="$LIBDIR" \
 	./configure \
-		--prefix= \
+		--prefix=$TOOLS \
 		--with-sysroot=$ROOTFS
 	make
 }
@@ -15,5 +17,5 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd $srcdir/$pkgname-$pkgver
-	make DESTDIR=$pkgdir install
+	make install
 }
