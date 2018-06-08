@@ -178,9 +178,9 @@ build_toolchain() {
 	install_host file
 	install_host pkgconf
 	install_host_target filesystem
-	install_host_target linux-headers
 	install_host binutils
 	install_host gcc-static
+	install_host_target linux-headers
 	install_host_target musl
 	install_host gcc-final
 }
