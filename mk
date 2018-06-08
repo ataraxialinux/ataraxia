@@ -339,6 +339,12 @@ case "$OPT" in
 		setup_build_dirs
 		install_host $JPKG
 		;;
+	update-package)
+		configure_arch
+		setup_build_dirs
+		rm -rf $PKGS/$JPKG-*.pkg.tar.xz
+		install_target $JPKG
+		;;
 	image)
 		configure_arch
 		setup_build_dirs
