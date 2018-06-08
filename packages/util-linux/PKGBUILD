@@ -2,7 +2,10 @@
 
 pkgname=util-linux
 pkgver=2.32
-pkgmajor=2.32
+case $pkgver in
+	*.*.*) _v=${pkgver%.*};;
+	*.*) _v=$pkgver;;
+esac
 pkgrel=1
 pkgdesc="Miscellaneous system utilities for Linux"
 arch=('x86_64' 'aarch64' 'armhf')
@@ -11,10 +14,12 @@ license=('GPL')
 groups=('base')
 depends=('musl')
 options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+	libtoolize --force && aclocal -I m4 && autoconf \
+		&& automake --add-missing
 	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime \
 		--prefix=/usr \
 		--libdir=/usr/lib \
