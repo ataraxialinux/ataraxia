@@ -92,7 +92,6 @@ configure_arch() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --enable-long-long"
 			;;
 		aarch64)
 			print_green "Using config for aarch64"
@@ -100,6 +99,13 @@ configure_arch() {
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			;;
+		armhf)
+			print_green "Using config for armhf"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-fpu=vfpv3 --with-float=hard"
 			;;
 		*)
 			print_red "BARCH variable isn't set!"
@@ -197,9 +203,6 @@ build_repository() {
 	case $BARCH in
 		x86_64)
 			export BOOTLOADER="syslinux"
-			;;
-		aarch64)
-			export BOOTLOADER=""
 			;;
 	esac
 
