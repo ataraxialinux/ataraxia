@@ -3,8 +3,8 @@
 pkgname=('gcc' 'gcc-libs')
 pkgbase=gcc
 pkgver=8.1.0
-pkgrel=2
-arch=('x86_64' 'aarch64')
+pkgrel=3
+arch=('x86_64' 'aarch64' 'armhf')
 url="http://gcc.gnu.org/"
 license=('custom' 'FDL' 'GPL' 'LGPL')
 source=("http://ftpmirror.gnu.org/gnu/$pkgbase/$pkgbase-$pkgver/$pkgbase-$pkgver.tar.xz")
@@ -16,6 +16,7 @@ prepare() {
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
 	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
 	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 }
 
@@ -33,7 +34,7 @@ build() {
 	export LDFLAGS_FOR_BUILD="$LDFLAGS"
 
 	cd build
-	../configure \
+	../configure $GCCOPTS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
@@ -46,7 +47,6 @@ build() {
 		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-languages=c,c++,lto \
-		--enable-libstdcxx-time \
 		--enable-lto \
 		--enable-threads=posix \
 		--enable-tls \
@@ -57,8 +57,7 @@ build() {
 		--disable-libstdcxx-pch \
 		--disable-multilib \
 		--disable-nls \
-		--disable-werror \
-		$GCCOPTS
+		--disable-werror
 	make
 }
 

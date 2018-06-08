@@ -3,7 +3,7 @@
 pkgname=linux
 pkgver=4.17
 pkgrel=2
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
@@ -355,7 +355,12 @@ package() {
 			cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
 			;;
 		aarch64)
+			make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_DTBS_PATH=$pkgdir/boot/dtbs dtbs_install
 			cp arch/arm64/boot/Image $pkgdir/boot/vmlinuz
+			;;
+		armhf)
+			make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_DTBS_PATH=$pkgdir/boot/dtbs dtbs_install
+			cp arch/arm64/boot/zImage $pkgdir/boot/vmlinuz
 			;;
 	esac
 }

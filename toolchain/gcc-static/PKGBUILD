@@ -19,6 +19,7 @@ prepare() {
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
 	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 }
 
@@ -26,7 +27,7 @@ build() {
 	cd $srcdir/gcc-$pkgver
 	cd build
 	AR="ar" \
-	../configure \
+	../configure $GCCOPTS \
 		--prefix= \
 		--build=$XHOST \
 		--host=$XHOST \
@@ -34,7 +35,6 @@ build() {
 		--with-sysroot=$ROOTFS \
 		--with-newlib \
 		--without-headers \
-		--enable-default-pie \
 		--enable-languages=c \
 		--disable-decimal-float \
 		--disable-libatomic \
@@ -50,8 +50,7 @@ build() {
 		--disable-multilib \
 		--disable-nls  \
 		--disable-shared \
-		--disable-threads \
-		$GCCOPTS
+		--disable-threads
 	make all-gcc all-target-libgcc
 }
 
