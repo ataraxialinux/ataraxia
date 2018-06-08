@@ -234,7 +234,7 @@ install_base_packages() {
 	sed -i $BUILD/target-pacman.conf -e "s|@PKGS[@]|$PKGS|g"
 	sudo mkdir -p $FINALFS/var/lib/pacman
 	sudo pacman -Syy --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
-	yes y | sudo pacman -S base syslinux --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
+	yes y | sudo pacman -S base syslinux efibootmgr --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
 }
 
 prepare_files() {
