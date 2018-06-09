@@ -203,7 +203,7 @@ build_repository() {
 	case $BARCH in
 		x86_64)
 			export BOOTLOADER="grub syslinux efivar efibootmgr"
-			export KERNEL="linux"
+			export KERNEL="linux linux-firmware"
 			;;
 	esac
 
