@@ -1,0 +1,39 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libxml2
+pkgver=2.9.8
+pkgrel=1
+pkgdesc="XML parsing library, version 2"
+arch=('x86_64' 'aarch64' 'armhf')
+url="http://www.xmlsoft.org/"
+license=('MIT')
+groups=('base')
+depends=('musl' 'zlib')
+source=("http://xmlsoft.org/sources/$pkgname-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-python \
+		--with-history \
+		--with-threads
+	make
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	unset MAKEFLAGS
+	make DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
