@@ -11,8 +11,7 @@ groups=('base')
 depends=('musl' 'gcc-libs' 'zlib' 'bzip2' 'expat' 'libarchive' 'curl')
 source=("https://www.cmake.org/files/v${pkgver%.*}/${pkgname}-${pkgver}.tar.gz")
 
-prepare() {
-	cd "$srcdir/$pkgname-$pkgver"
+crossbuild() {
 	mkdir -p build
 	cd build
 
@@ -20,14 +19,8 @@ prepare() {
 	printf '#!/bin/sh\n%s%s "$@"\n' "$XTARGET-" "$i" > "$XTARGET-""$i"
 	chmod +x "$XTARGET-""$i"
 	done
-
 	sed -i 's@macro(ADD_DOCS target dependency)@macro(ADD_DOCS target dependency)\nendmacro()\nmacro(ADD_FUCKS target dependency)@' ../Utilities/CMakeLists.txt || { echo sed err ; exit 1 ; }
 	sed -i 's@^ COMMAND \${CMD}@ COMMAND true@' ../Utilities/CMakeLists.txt || { echo sed err ; exit 1 ; }
-}
-
-build() {
-	cd "$srcdir/$pkgname-$pkgver"
-	cd build
 
 	CFLAGS="-D_GNU_SOURCE $CFLAGS" \
 	LDFLAGS="$LDFLAGS -Wl,-rpath-link=$ROOTFS/usr/lib" \
@@ -50,6 +43,26 @@ build() {
 		-DCMAKE_USE_SYSTEM_ZLIB=ON \
 		-DCMAKE_USE_SYSTEM_EXPAT=ON \
 		-DCTEST_TEST_CPACK=OFF
+}
+
+nativebuild() {
+	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
+
+	./bootstrap \
+		--prefix=/usr \
+		--system-libs \
+		--no-system-jsoncpp \
+		--no-system-librhash
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	if [ "$NATIVE" = "no" ]
+	then
+		crossbuild
+	else
+		nativebuild
+	fi
 	make
 }
 
