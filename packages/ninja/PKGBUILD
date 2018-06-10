@@ -11,8 +11,7 @@ groups=('base')
 depends=('musl' 'gcc-libs')
 source=("https://github.com/ninja-build/ninja/archive/v$pkgver.tar.gz")
 
-build() {
-	cd "$srcdir/$pkgname-$pkgver"
+crossbuild() {
 	unset CC CXX AR AS RANLIB LD STRIP
 	./configure.py --bootstrap
 	mv ninja ninja-inital
@@ -22,6 +21,20 @@ build() {
 	RANLIB="$XTARGET-ranlib" LD="$XTARGET-ld" STRIP="$XTARGET-strip" \
 	./configure.py --platform=linux
 	./ninja-inital
+}
+
+nativebuild() {
+	./configure.py --platform=linux --bootstrap
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	if [ "$NATIVE" = "no" ]
+	then
+		crossbuild
+	else
+		nativebuild
+	fi
 }
 
 package() {
