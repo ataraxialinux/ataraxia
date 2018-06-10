@@ -203,11 +203,16 @@ build_repository() {
 	case $BARCH in
 		x86_64)
 			export BOOTLOADER="grub syslinux efivar efibootmgr"
-			export KERNEL="linux linux-firmware"
+			;;
+		aarch64)
+			export BOOTLOADER=""
+			;;
+		armhf)
+			export BOOTLOADER=""
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $KERNEL vim nano htop gdb strace openssh iptables curl sudo libarchive cmake libffi python python2 libnl-tiny wireless_tools wpa_supplicant git fakeroot pacman rsync re2c ninja meson ccache pcre nginx lynx libevent tor tmux sqlite libxml2 popt dosfstools $BOOTLOADER base build-essential; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux vim nano htop gdb strace openssh iptables curl sudo libarchive cmake libffi python python2 libnl-tiny wireless_tools wpa_supplicant git fakeroot pacman rsync re2c ninja meson ccache pcre nginx lynx libevent tor tmux sqlite libxml2 popt dosfstools $BOOTLOADER base build-essential; do
 		case "$PKG" in
 			gmp)
 				install_target_nodeps gmp
