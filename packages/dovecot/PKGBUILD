@@ -1,51 +1,29 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=openssh
-pkgver=7.7p1
+pkgname=m4
+pkgver=1.4.18
 pkgrel=1
-pkgdesc="Free version of the SSH connectivity tools"
+pkgdesc="The GNU macro processor"
 arch=('x86_64' 'aarch64' 'armhf')
-url="https://www.openssh.com/portable.html"
-license=('BSD')
+url="http://www.gnu.org/software/m4"
+license=('GPL')
 groups=('base')
-depends=('musl' 'zlib' 'libressl')
-source=("http://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/$pkgname-$pkgver.tar.gz"
-	'openssh'
-	'openssh-log')
-backup=('etc/ssh/ssh_config' 'etc/ssh/sshd_config')
-install=$pkgname.install
+depends=('musl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-
-	export LD="$CC"
-
 	./configure \
 		--prefix=/usr \
-		--sysconfdir=/etc/ssh \
-		--libexecdir=/usr/lib \
-		--sbindir=/usr/bin \
 		--build=$XHOST \
-		--host=$XTARGET \
-		--with-default-path='/usr/bin:/usr/local/bin:/usr/local/sbin' \
-		--with-mantype=man \
-		--with-md5-passwords \
-		--with-pid-dir=/run \
-		--with-privsep-path=/var/empty \
-		--with-privsep-user=nobody \
-		--with-ssl-engine \
-		--disable-strip
+		--host=$XTARGET
 	make
 }
 
 package() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
-
-	mkdir -p $pkgdir/var/log/sshd
-
-	install -Dm0755 $srcdir/openssh $pkgdir/etc/service/sshd/run
-	install -Dm0755 $srcdir/openssh-log $pkgdir/etc/service/sshd/log/run
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
