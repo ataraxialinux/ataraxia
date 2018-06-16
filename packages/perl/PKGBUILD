@@ -13,12 +13,18 @@ depends=('musl' 'zlib' 'bzip2' 'gdbm')
 source=("https://www.cpan.org/src/5.0/perl-$pkgver.tar.xz"
 	"https://github.com/arsv/perl-cross/releases/download/$perlcrossver/perl-cross-$perlcrossver.tar.gz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--target=$XTARGET"
+else
+	export CROSSFLAGS=
+fi
+
 build() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	tar --strip-components=1 -zxf ../perl-cross-$perlcrossver.tar.gz
-	./configure \
-		--target=$XTARGET \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		-Dvendorprefix=/usr \
 		-Duseshrplib \
