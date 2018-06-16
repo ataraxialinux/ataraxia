@@ -1,4 +1,20 @@
 # Welcome to januslinux - Fast and mini Linux distribution which uses musl libc.
+```
+
+                                       ________________
+                                      |\               \
+                                      | \               \
+                                      |  \               \
+                                      |   \ ______________\
+                                      |    |              |
+                                      |    |              |
+                                      |    |              |
+                                       \   |  januslinux  |
+                                        \  |              |
+                                         \ |              | 
+                                          \|______________|
+                           Fast and mini Linux distribution which uses musl libc.
+```
 
 ## What is this?
 
