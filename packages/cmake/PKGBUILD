@@ -70,8 +70,11 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	cd build
-	sed -i 's@^[\t ]*bin/cmake@\tcmake@g' Makefile
+	if [ "$NATIVE" = "no" ]
+	then
+		cd build
+		sed -i 's@^[\t ]*bin/cmake@\tcmake@g' Makefile
+	fi
 	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
