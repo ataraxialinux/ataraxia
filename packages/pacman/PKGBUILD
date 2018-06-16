@@ -2,7 +2,7 @@
 
 pkgname=pacman
 pkgver=5.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="A library-based package manager with dependency support"
 arch=('x86_64' 'aarch64' 'armhf')
 url="http://www.archlinux.org/pacman/"
@@ -17,11 +17,9 @@ source=("https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.gz"
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	autoreconf --force --install
+	sed -i -e '/x-cpio/s@)@|*application/x-empty*)@' scripts/makepkg.sh.in
 
-cat > config.cache << EOF
-ac_cv_func_malloc_0_nonnull=yes
-EOF
+	autoreconf --force --install
 
 	LDFLAGS="$LDFLAGS -static" \
 	./configure \
@@ -34,7 +32,9 @@ EOF
 		--with-scriptlet-shell=/usr/bin/bash \
 		--without-gpgme \
 		--disable-doc \
-		--disable-nls
+		--disable-nls \
+		DUFLAGS="-sk" \
+		SEDINPLACEFLAGS="-i"
 	make
 }
 
