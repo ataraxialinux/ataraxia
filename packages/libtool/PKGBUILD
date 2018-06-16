@@ -2,13 +2,13 @@
 
 pkgname=libtool
 pkgver=2.4.6
-pkgrel=2
+pkgrel=3
 pkgdesc="A generic library support script"
 arch=('x86_64' 'aarch64' 'armhf')
 url="http://www.gnu.org/software/libtool"
 license=('GPL')
 groups=('base')
-depends=('musl' 'sh')
+depends=('musl' 'gcc=8.1.0' 'sh')
 options=('libtool')
 source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
@@ -17,7 +17,8 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		lt_cv_sys_lib_dlsearch_path_spec="/usr/local/lib /usr/lib"
 	make
 }
 
