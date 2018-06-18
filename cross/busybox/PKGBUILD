@@ -24,6 +24,12 @@ install=$pkgname.install
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+	else
+		make defconfig
+	fi
 	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
 	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
@@ -34,13 +40,23 @@ prepare() {
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- EXTRA_CFLAGS="$CFLAGS"
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- EXTRA_CFLAGS="$CFLAGS"
+	else
+		make EXTRA_CFLAGS="$CFLAGS"
+	fi
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=$pkgdir install
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- CONFIG_PREFIX=$pkgdir install
+	else
+		make CONFIG_PREFIX=$pkgdir install
+	fi
 
 	cd $pkgdir
 
