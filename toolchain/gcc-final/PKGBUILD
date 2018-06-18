@@ -3,12 +3,14 @@ pkgver=8.1.0
 gmpver=6.1.2
 mpfrver=4.0.1
 mpcver=1.1.0
+islver=0.19
 pkgrel=1
 arch=('any')
 source=("http://ftpmirror.gnu.org/gnu/gcc/gcc-$pkgver/gcc-$pkgver.tar.xz"
 	"http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz"
 	"http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz"
-	"http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz")
+	"http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz"
+	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 options=(!emptydirs)
 
 prepare() {
@@ -16,6 +18,7 @@ prepare() {
 	mv ../gmp-$gmpver gmp
 	mv ../mpfr-$mpfrver mpfr
 	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
 	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
