@@ -27,7 +27,7 @@ install_host() {
 install_target() {
 	XPKG=$1
 	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
+		cd $CROSS/$dpkg
 		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
 		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
 	done
@@ -36,7 +36,7 @@ install_target() {
 build_target_only() {
 	XPKG=$1
 	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
+		cd $CROSS/$dpkg
 		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
 	done
 }
@@ -51,7 +51,7 @@ install_target_only() {
 install_target_nodeps() {
 	XPKG=$1
 	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
+		cd $CROSS/$dpkg
 		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
 		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH -dd
 	done
@@ -60,7 +60,7 @@ install_target_nodeps() {
 install_target_multiple() {
 	XPKG=$1
 	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
+		cd $CROSS/$dpkg
 		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
 		yes y | sudo pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
 	done
@@ -69,7 +69,7 @@ install_target_multiple() {
 install_host_target() {
 	XPKG=$1
 	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
+		cd $CROSS/$dpkg
 		makepkg --config $BUILD/host-makepkg.conf -d -c -f -C --skipchecksums
 		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
 	done
@@ -122,6 +122,7 @@ setup_build_dirs() {
 	export ROOTFS="$BUILD/rootfs"
 	export FINALFS="$BUILD/finalfs"
 	export TOOLS="$BUILD/tools"
+	export CROSS="$BUILD/cross"
 	export PKGS="$BUILD/packages"
 	export LOGS="$BUILD/logs"
 	export IMGDIR="$BUILD/imgdir"
@@ -146,7 +147,7 @@ prepare_build() {
 	export LDFLAGS="-s"
 
 	cp -a $TCREPO/makepkg.conf $BUILD/host-makepkg.conf
-	cp -a $REPO/makepkg.conf $BUILD/target-makepkg.conf
+	cp -a $CROSS/makepkg.conf $BUILD/target-makepkg.conf
 
 	for files in $BUILD/host-makepkg.conf $BUILD/target-makepkg.conf; do
 		sed -i $files \
@@ -207,7 +208,7 @@ build_repository() {
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $LINUX vim nano htop gdb strace openssh iptables curl sudo libarchive libuv cmake libffi python python2 libnl-tiny wireless_tools wpa_supplicant git fakeroot pacman rsync re2c ninja meson ccache pcre nginx lynx libevent tor tmux sqlite libxml2 db haveged nasm zsh nsd popt dosfstools $BOOTLOADER base build-essential; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $LINUX sudo libnl-tiny wireless_tools wpa_supplicant curl libarchive fakeroot pacman dosfstools popt $BOOTLOADER; do
 		case "$PKG" in
 			gmp)
 				install_target_nodeps gmp
