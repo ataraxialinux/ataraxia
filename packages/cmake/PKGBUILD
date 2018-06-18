@@ -11,41 +11,8 @@ groups=('base')
 depends=('musl' 'gcc-libs' 'zlib' 'bzip2' 'expat' 'libarchive' 'libuv' 'curl')
 source=("https://www.cmake.org/files/v${pkgver%.*}/${pkgname}-${pkgver}.tar.gz")
 
-crossbuild() {
-	mkdir -p build
-	cd build
-
-	for i in ar ld nm objcopy objdump strip ; do
-	printf '#!/bin/sh\n%s%s "$@"\n' "$XTARGET-" "$i" > "$XTARGET-""$i"
-	chmod +x "$XTARGET-""$i"
-	done
-	sed -i 's@macro(ADD_DOCS target dependency)@macro(ADD_DOCS target dependency)\nendmacro()\nmacro(ADD_FUCKS target dependency)@' ../Utilities/CMakeLists.txt || { echo sed err ; exit 1 ; }
-	sed -i 's@^ COMMAND \${CMD}@ COMMAND true@' ../Utilities/CMakeLists.txt || { echo sed err ; exit 1 ; }
-
-	CFLAGS="-D_GNU_SOURCE $CFLAGS" \
-	LDFLAGS="$LDFLAGS -Wl,-rpath-link=$ROOTFS/usr/lib" \
-	CXXFLAGS="$CXXFLAGS" \
-	cmake $srcdir/$pkgname-$pkgver \
-		-DCMAKE_FIND_ROOT_PATH=$ROOTFS/usr \
-		-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-		-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
-		-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-		-DCMAKE_AR=$XTARGET-ar \
-		-DCMAKE_LD=$XTARGET-ld \
-		-DCMAKE_NM=$XTARGET-nm \
-		-DCMAKE_OBJCOPY=$XTARGET-objcopy \
-		-DCMAKE_OBJDUMP=$XTARGET-objdump \
-		-DCMAKE_STRIP=$XTARGET-strip \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_USE_SYSTEM_BZIP2=ON \
-		-DCMAKE_USE_SYSTEM_LIBARCHIVE=ON \
-		-DCMAKE_USE_SYSTEM_CURL=ON \
-		-DCMAKE_USE_SYSTEM_ZLIB=ON \
-		-DCMAKE_USE_SYSTEM_EXPAT=ON \
-		-DCTEST_TEST_CPACK=OFF
-}
-
-nativebuild() {
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
 	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
 
 	./bootstrap \
@@ -53,27 +20,12 @@ nativebuild() {
 		--system-libs \
 		--no-system-jsoncpp \
 		--no-system-librhash
-}
-
-build() {
-	cd "$srcdir/$pkgname-$pkgver"
-	if [ "$NATIVE" = "no" ]
-	then
-		crossbuild
-	else
-		nativebuild
-	fi
 	make
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	if [ "$NATIVE" = "no" ]
-	then
-		cd build
-		sed -i 's@^[\t ]*bin/cmake@\tcmake@g' Makefile
-	fi
 	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
