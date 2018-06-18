@@ -1,24 +1,22 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=strace
-pkgver=4.23
+pkgname=isl
+pkgver=0.19
 pkgrel=1
-pkgdesc='A diagnostic, debugging and instructional userspace tracer'
+pkgdesc="A integer set library"
 arch=('x86_64' 'aarch64' 'armhf')
-url='http://sourceforge.net/projects/strace/'
-license=('BSD')
+url="http://freshmeat.net/projects/isl"
+license=('MIT')
 groups=('base')
-depends=('musl')
-source=("https://github.com/strace/strace/releases/download/v$pkgver/strace-$pkgver.tar.xz")
+depends=('musl' 'gmp')
+source=("http://isl.gforge.inria.fr/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	CFLAGS="$CFLAGS -Dsigcontext_struct=sigcontext" \
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-mpers
+		--host=$XTARGET
 	make
 }
 
