@@ -23,7 +23,12 @@ build() {
 	make mrproper
 
 	msg "Generating Linux kernel config"
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+	else
+		make defconfig
+	fi
 
 	yconfig UNWINDER_FRAME_POINTER BLK_DEV_SD ATA ATA_SFF ATA_BMDMA \
 		ATA_PIIX E1000 SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS KERNEL_XZ MULTIUSER BLOCK NO_HZ SWAP SYSVIPC \
@@ -74,13 +79,29 @@ build() {
 
 	echo "CONFIG_EXTRA_FIRMWARE_DIR=/lib/firmware" >> .config
 
-	yes '' | make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
+	if [ "$NATIVE" = "no" ]
+	then
+		yes '' | make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- silentoldconfig
+	else
+		yes '' | make silentoldconfig
+	fi
+
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET-
+	else
+		make
+	fi
 }
 
 package() {
 	cd "$srcdir/$pkgname-$pkgver"
-	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$pkgdir/usr modules_install
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$pkgdir/usr modules_install
+	else
+		make INSTALL_MOD_PATH=$pkgdir/usr modules_install
+	fi
 
 	mkdir -p $pkgdir/boot
 	cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
