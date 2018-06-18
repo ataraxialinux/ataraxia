@@ -122,12 +122,12 @@ setup_build_dirs() {
 	export ROOTFS="$BUILD/rootfs"
 	export FINALFS="$BUILD/finalfs"
 	export TOOLS="$BUILD/tools"
-	export CROSS="$BUILD/cross"
 	export PKGS="$BUILD/packages"
 	export LOGS="$BUILD/logs"
 	export IMGDIR="$BUILD/imgdir"
-	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
+	export CROSS="$CWD/cross"
+	export REPO="$CWD/packages"
 }
 
 setup_build_env() {
