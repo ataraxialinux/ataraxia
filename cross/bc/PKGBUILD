@@ -11,13 +11,18 @@ groups=('base')
 depends=('musl' 'readline')
 source=("http://alpha.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.bz2")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-readline
 	make -j1
 }

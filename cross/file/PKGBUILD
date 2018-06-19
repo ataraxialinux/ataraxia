@@ -11,12 +11,17 @@ groups=('base')
 depends=('musl' 'zlib')
 source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+	./configure $CROSSFLAGS \
+		--prefix=/usr
 	make
 }
 

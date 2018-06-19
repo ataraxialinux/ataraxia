@@ -12,14 +12,19 @@ depends=('musl' 'zlib' 'libressl' 'ca-certificates')
 source=("https://curl.haxx.se/download/$pkgname-$pkgver.tar.xz"
 	'use-OPENSSL_config.patch')
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/use-OPENSSL_config.patch
 	autoreconf -vif
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-ssl \
 		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
 		--with-ca-path=/etc/ssl/certs \

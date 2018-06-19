@@ -8,20 +8,25 @@ arch=('x86_64' 'aarch64' 'armhf')
 url="http://libarchive.org/"
 license=('BSD')
 groups=('base')
-depends=('musl' 'zlib' 'acl' 'bzip2' 'xz' 'libressl')
+depends=('musl' 'zlib' 'acl' 'attr' 'bzip2' 'xz' 'libressl')
 source=("http://www.libarchive.org/downloads/$pkgname-$pkgver.tar.gz"
 	'libressl-2.7.patch')
+
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/libressl-2.7.patch
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--bindir=/usr/bin \
 		--includedir=/usr/include \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--without-xml2 \
 		--without-iconv \
 		--without-nettle \

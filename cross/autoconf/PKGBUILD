@@ -12,13 +12,18 @@ depends=('musl' 'perl')
 source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
 	"autoconf-add-musl.patch")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/autoconf-add-musl.patch
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--disable-nls
 	make
 }

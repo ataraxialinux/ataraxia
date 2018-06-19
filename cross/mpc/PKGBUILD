@@ -11,14 +11,19 @@ groups=('base')
 depends=('musl' 'mpfr')
 source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
-		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET
+		--libexecdir=/usr/lib
 	make
 }
 
