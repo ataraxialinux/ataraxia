@@ -226,7 +226,7 @@ build_repository() {
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $LINUX sudo libnl-tiny wireless_tools wpa_supplicant curl libarchive fakeroot pacman git dosfstools popt $BOOTLOADER; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $LINUX sudo libnl-tiny wireless_tools wpa_supplicant curl libarchive fakeroot pacman git dosfstools popt $BOOTLOADER; do
 		case "$PKG" in
 			gmp)
 				install_target_nodeps gmp
@@ -247,7 +247,7 @@ install_base_packages() {
 	print_green "Installing base system"
 	sudo rm -rf $STAGEFS
 	sudo mkdir -p $STAGEFS/var/lib/pacman
-	yes y | sudo pacman -U $PKGS/{filesystem,linux-headers,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext-tiny,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,git,dosfstools}-*.pkg.tar.xz --root $STAGEFS --arch $BARCH
+	yes y | sudo pacman -U $PKGS/{filesystem,linux-headers,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,git,dosfstools}-*.pkg.tar.xz --root $STAGEFS --arch $BARCH
 	case $BARCH in
 		x86_64)
 			yes y | sudo pacman -U $PKGS/linux*.pkg.tar.xz --root $STAGEFS --arch $BARCH

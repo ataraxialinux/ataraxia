@@ -1,26 +1,34 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=gettext-tiny
-pkgver=0.2.0
+pkgname=gettext
+pkgver=0.19.8.1
 pkgrel=1
-pkgdesc="stub and/or lightweight replacements of the gnu gettext suite; because the GNU one takes ages to compile"
+pkgdesc="GNU internationalization library"
 arch=('x86_64' 'aarch64' 'armhf')
-url="https://github.com/sabotage-linux/gettext-tiny"
-license=('MIT')
+url="https://www.gnu.org/software/gettext/"
+license=('GPL')
 groups=('base')
-depends=('musl')
-source=("http://ftp.barfooze.de/pub/sabotage/tarballs/$pkgname-$pkgver.tar.xz")
+depends=('musl' 'gcc-libs')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
+
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+	./configure $CROSSFLAGS \
+		--prefix=/usr
 	make
 }
 
 package() {
+	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make prefix=/usr DESTDIR=$pkgdir install
-
-	rm -rf $pkgdir/usr/include/libintl.h
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
@@ -30,4 +38,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
-md5sums=('55d9026ca610ae439c82c628e74261c7')
+md5sums=('97e034cf8ce5ba73a28ff6c3c0638092')
