@@ -7,7 +7,8 @@ pkgrel=3
 arch=('x86_64' 'aarch64' 'armhf')
 url="http://gcc.gnu.org/"
 license=('custom' 'FDL' 'GPL' 'LGPL')
-source=("http://ftpmirror.gnu.org/gnu/$pkgbase/$pkgbase-$pkgver/$pkgbase-$pkgver.tar.xz")
+source=("http://ftpmirror.gnu.org/gnu/$pkgbase/$pkgbase-$pkgver/$pkgbase-$pkgver.tar.xz"
+	"gcc-pure64.patch")
 options=(!emptydirs)
 
 if [ "$NATIVE" = "no" ]
@@ -19,10 +20,8 @@ fi
 
 prepare() {
 	cd $srcdir/$pkgbase-$pkgver
+	patch -Np1 -i $srcdir/gcc-pure64.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
-	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
-	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 }
@@ -113,4 +112,5 @@ package_gcc-libs() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
-md5sums=('65f7c65818dc540b3437605026d329fc')
+md5sums=('65f7c65818dc540b3437605026d329fc'
+         'b4a5842c4a3b23e28239743aa7355948')
