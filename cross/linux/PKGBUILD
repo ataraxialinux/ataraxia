@@ -12,9 +12,11 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz")
 case $CARCH in
 	armhf)
 		export DEFCONFIG="vexpress_defconfig"
+		export kinstall="zinstall"
 		;;
 	*)
 		export DEFCONFIG="defconfig"
+		export kinstall="install"
 	esac
 
 yconfig() {
@@ -124,16 +126,11 @@ package() {
 	esac
 
 	mkdir -p $pkgdir/boot
-	case $CARCH in
-		x86_64)
-			cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
-			;;
-		aarch64)
-			cp arch/arm64/boot/Image $pkgdir/boot/vmlinuz
-			;;
-		armhf)
-			cp arch/arm/boot/zImage $pkgdir/boot/vmlinuz
-			;;
-	esac
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_PATH=$pkgdir/boot $kinstall
+	else
+		make INSTALL_PATH=$pkgdir/boot $kinstall
+	fi
 }
 md5sums=('dfe836c521c754a3f54f5f535f2ea588')
