@@ -11,18 +11,22 @@ groups=('base')
 depends=('musl' 'zlib')
 source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
 	mkdir build
 	cd build
-	../configure \
+	../configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--target=$XTARGET \
 		--with-system-zlib \
 		--with-pic \
 		--enable-deterministic-archives \
