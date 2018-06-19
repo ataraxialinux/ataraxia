@@ -12,12 +12,17 @@ groups=('base')
 depends=('musl')
 source=("http://distfiles.dereferenced.org/$pkgname/$pkgname-$pkgver.tar.xz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-pkg-config-dir="/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig"
 	make
 }

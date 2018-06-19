@@ -12,16 +12,21 @@ depends=('musl' 'attr')
 source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src.tar.gz"
 	'acl-add-musl-libc.patch')
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/acl-add-musl-libc.patch
 	export INSTALL_USER=root INSTALL_GROUP=root
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--disable-gettext
 	make
 }

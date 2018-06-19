@@ -11,16 +11,21 @@ groups=('base')
 depends=('musl')
 source=("https://github.com/$pkgname/$pkgname/releases/download/v$pkgver/$pkgname-$pkgver.tar.xz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
 		--sbindir=/usr/bin \
 		--mandir=/usr/share/man \
 		--docdir=/usr/share/doc/dosfstools \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-compat-symlinks
 	make
 }
