@@ -15,6 +15,13 @@ source=("https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.gz"
         'pacman.conf'
 	'makepkg.conf')
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	sed -i -e '/x-cpio/s@)@|*application/x-empty*)@' scripts/makepkg.sh.in
@@ -22,12 +29,11 @@ build() {
 	autoreconf --force --install
 
 	LDFLAGS="$LDFLAGS -static" \
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--bindir=/usr/bin \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--host=$XTARGET \
 		--cache-file=config.cache \
 		--with-scriptlet-shell=/usr/bin/bash \
 		--without-gpgme \
@@ -52,7 +58,6 @@ package() {
 		-e "s|@CFLAGS[@]|$CFLAGS|g" \
 		-e "s|@CPPFLAGS[@]|$CPPFLAGS|g" \
 		-e "s|@LDFLAGS[@]|$LDFLAGS|g" \
-		-e "s|@XKARCH[@]|$XKARCH|g" \
 		-e "s|@GCCOPTS[@]|$GCCOPTS|g"
 
 	msg "Stripping package $pkgname..."

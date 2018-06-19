@@ -22,6 +22,13 @@ backup=('boot/grub/grub.cfg'
 	'etc/default/grub'
 	'etc/grub.d/40_custom')
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	unset CFLAGS
@@ -34,7 +41,7 @@ build() {
 	patch -Np1 -i $srcdir/0006-tsc-Change-default-tsc-calibration-method-to-pmtimer-on-EFI-systems.patch
 	patch -Np1 -i $srcdir/0007-grub-mkconfig_10_linux_Support_multiple_early_initrd_images.patch
 	patch -Np1 -i $srcdir/0008-Fix-packed-not-aligned-error-on-GCC-8.patch
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--bindir=/usr/bin \
 		--sbindir=/usr/bin \
@@ -45,8 +52,6 @@ build() {
 	 	--program-prefix="" \
 		--with-bootdir=/boot \
 		--with-grubdir=grub \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-boot-time \
 		--disable-liblzma \
 		--disable-nls \

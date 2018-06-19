@@ -16,6 +16,13 @@ source=("http://ftp.debian.org/debian/pool/main/f/fakeroot/fakeroot_$pkgver.orig
 	'fakeroot-no-ldlibrarypath.patch'
 	'xstatjunk.patch')
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/fakeroot-hide-dlsym-errors.patch
@@ -33,10 +40,8 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	export CFLAGS="-D_STAT_VER=0 $CFLAGS"
 	CONFIG_SHELL=/bin/sh ./bootstrap
-	CONFIG_SHELL=/bin/sh ./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+	CONFIG_SHELL=/bin/sh ./configure $CROSSFLAGS \
+		--prefix=/usr
 	make
 }
 

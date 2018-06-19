@@ -11,15 +11,22 @@ groups=('base')
 depends=('musl')
 source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-pkg-config-libdir=/usr/lib/pkgconfig \
+		--with-cxx-binding \
+		--with-cxx-shared \
 		--with-normal \
 		--with-shared \
 		--without-ada \
@@ -38,7 +45,7 @@ package() {
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
 
-	for lib in ncurses form panel menu; do
+	for lib in ncurses ncurses++ form panel menu; do
 		echo "INPUT(-l${lib}w)" > "$pkgdir/usr/lib/lib${lib}.so"
 		ln -s ${lib}w.pc "$pkgdir/usr/lib/pkgconfig/${lib}.pc"
 	done

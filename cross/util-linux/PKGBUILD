@@ -16,15 +16,20 @@ depends=('musl')
 options=('debug')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$pkgname-$pkgver.tar.xz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime \
+	./configure $CROSSFLAGS ADJTIME_PATH=/var/lib/hwclock/adjtime \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--bindir=/usr/bin \
 		--localstatedir=/var \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--without-python \
 		--enable-raw \
 		--enable-write \

@@ -13,17 +13,22 @@ source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src
 	'attr-add-musl-libc.patch'
 	'fix-headers.patch')
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/attr-add-musl-libc.patch
 	patch -Np1 -i $srcdir/fix-headers.patch
 	export INSTALL_USER=root INSTALL_GROUP=root
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--disable-gettext
 	make
 }

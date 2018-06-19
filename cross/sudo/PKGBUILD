@@ -17,6 +17,13 @@ source=("https://www.sudo.ws/dist/$pkgname-$pkgver.tar.gz"
 	'musl-fix-headers.patch')
 install=$pkgname.install
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 prepare() {
 	cd "$srcdir/$pkgname-$pkgver"
 	patch -Np1 -i $srcdir/fix-cross-compile.patch
@@ -27,14 +34,12 @@ prepare() {
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--libexecdir=/usr/lib \
 		--with-rundir=/run/sudo \
 		--with-vardir=/var/lib/sudo \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-all-insults \
 		--with-env-editor \
 		--without-pam \
