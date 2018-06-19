@@ -221,12 +221,11 @@ build_repository() {
 	sleep 1
 	case $BARCH in
 		x86_64)
-			export LINUX="linux"
 			export BOOTLOADER="grub syslinux efivar efibootmgr"
 			;;
 	esac
 
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $LINUX sudo libnl-tiny wireless_tools wpa_supplicant curl libarchive fakeroot pacman git dosfstools popt $BOOTLOADER; do
+	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox linux sudo libnl-tiny wireless_tools wpa_supplicant curl libarchive fakeroot pacman git dosfstools popt $BOOTLOADER; do
 		case "$PKG" in
 			gmp)
 				install_target_nodeps gmp
