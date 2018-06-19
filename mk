@@ -246,12 +246,7 @@ install_base_packages() {
 	print_green "Installing base system"
 	sudo rm -rf $STAGEFS
 	sudo mkdir -p $STAGEFS/var/lib/pacman
-	yes y | sudo pacman -U $PKGS/{filesystem,linux-headers,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,git,dosfstools}-*.pkg.tar.xz --root $STAGEFS --arch $BARCH
-	case $BARCH in
-		x86_64)
-			yes y | sudo pacman -U $PKGS/linux*.pkg.tar.xz --root $STAGEFS --arch $BARCH
-			;;
-	esac
+	yes y | sudo pacman -U $PKGS/{filesystem,linux,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,git,dosfstools}-*.pkg.tar.xz --root $STAGEFS --arch $BARCH
 }
 
 install_iso_packages() {
