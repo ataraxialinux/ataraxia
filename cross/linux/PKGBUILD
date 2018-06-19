@@ -3,11 +3,19 @@
 pkgname=linux
 pkgver=4.17.2
 pkgrel=4
-arch=('x86_64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz")
+
+case $CARCH in
+	armhf)
+		export DEFCONFIG="vexpress_defconfig"
+		;;
+	*)
+		export DEFCONFIG="defconfig"
+	esac
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -25,9 +33,9 @@ build() {
 	msg "Generating Linux kernel config"
 	if [ "$NATIVE" = "no" ]
 	then
-		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- defconfig
+		make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- $DEFCONFIG
 	else
-		make defconfig
+		make $DEFCONFIG
 	fi
 
 	yconfig UNWINDER_FRAME_POINTER BLK_DEV_SD ATA ATA_SFF ATA_BMDMA \
@@ -76,6 +84,7 @@ build() {
 	sed -i "s/^CONFIG_DEBUG_KERNEL.*/\\# CONFIG_DEBUG_KERNEL is not set/" .config
 	sed -i "s/^CONFIG_EMBEDDED.*/\\# CONFIG_EMBEDDED is not set/" .config
 	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"janus\"/" .config
+	sed -i "s/.*CONFIG_LOCALVERSION.*/CONFIG_LOCALVERSION=\"-janus\"/" .config
 
 	echo "CONFIG_EXTRA_FIRMWARE_DIR=/lib/firmware" >> .config
 
@@ -103,7 +112,28 @@ package() {
 		make INSTALL_MOD_PATH=$pkgdir/usr modules_install
 	fi
 
+	case $CARCH in
+		aarch64|armhf)
+			if [ "$NATIVE" = "no" ]
+			then
+				make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_DTBS_PATH=$pkgdir/boot/dtbs dtbs_install
+			else
+				make INSTALL_DTBS_PATH=$pkgdir/boot/dtbs dtbs_install
+			fi
+			;;
+	esac
+
 	mkdir -p $pkgdir/boot
-	cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
+	case $CARCH in
+		x86_64)
+			cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
+			;;
+		aarch64)
+			cp arch/arm64/boot/Image $pkgdir/boot/vmlinuz
+			;;
+		armhf)
+			cp arch/arm/boot/zImage $pkgdir/boot/vmlinuz
+			;;
+	esac
 }
 md5sums=('dfe836c521c754a3f54f5f535f2ea588')
