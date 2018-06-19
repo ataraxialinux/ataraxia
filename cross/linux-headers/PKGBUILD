@@ -15,6 +15,11 @@ build() {
 
 package() {
 	cd "$srcdir/linux-$pkgver"
-	make ARCH=$XKARCH INSTALL_HDR_PATH=$pkgdir/usr headers_install
+	if [ "$NATIVE" = "no" ]
+	then
+		make ARCH=$XKARCH INSTALL_HDR_PATH=$pkgdir/usr headers_install
+	else
+		make INSTALL_HDR_PATH=$pkgdir/usr headers_install
+	fi
 	find $pkgdir/usr/include -name .install -or -name ..install.cmd | xargs rm -rf
 }

@@ -13,16 +13,21 @@ backup=('etc/udev/udev.conf')
 source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
 	"udev-hwdb.hook")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--with-rootprefix=/usr \
 		--sysconfdir=/etc \
 		--libdir=/usr/lib \
 		--sbindir=/usr/bin \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-rootprefix="" \
 		--with-firmware-path=/lib/firmware \
 		--enable-hwdb \

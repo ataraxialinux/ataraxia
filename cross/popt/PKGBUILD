@@ -12,15 +12,20 @@ depends=('musl')
 source=("ftp://anduin.linuxfromscratch.org/BLFS/popt/$pkgname-$pkgver.tar.gz"
 	"config.sub")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	cp $srcdir/config.sub .
 	CFLAGS="$CFLAGS -D_GNU_SOURCE" \
 	LDFLAGS="$LDFLAGS" \
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+	./configure $CROSSFLAGS \
+		--prefix=/usr
 	for i in po; do
 		printf 'all:\n\ttrue\ninstall:\n\ttrue\nclean:\n\ttrue\n' > "$i"/Makefile
 	done

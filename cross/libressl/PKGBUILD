@@ -11,13 +11,18 @@ groups=('base')
 depends=('musl')
 source=("https://fastly.cdn.openbsd.org/pub/OpenBSD/LibreSSL/$pkgname-$pkgver.tar.gz")
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
-		--with-openssldir=/etc/ssl \
-		--build=$XHOST \
-		--host=$XTARGET
+		--with-openssldir=/etc/ssl
 	make
 }
 
