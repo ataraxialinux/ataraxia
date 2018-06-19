@@ -231,10 +231,10 @@ install_base_packages() {
 	print_green "Installing base system"
 	sudo rm -rf $STAGEFS
 	sudo mkdir -p $STAGEFS/var/lib/pacman
-	yes y | sudo pacman -U $PKGS/{filesystem,linux-headers,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext-tiny,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,dosfstools}*.pkg.tar.xz --root $STAGEFS --arch $BARCH
+	yes y | sudo pacman -U $PKGS/{filesystem,linux-headers,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext-tiny,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,dosfstools}-*.pkg.tar.xz --root $STAGEFS --arch $BARCH
 	case $BARCH in
 		x86_64)
-			sudo pacman -U $PKGS/linux*.pkg.tar.xz --root $STAGEFS --arch $BARCH
+			yes y | sudo pacman -U $PKGS/linux*.pkg.tar.xz --root $STAGEFS --arch $BARCH
 			;;
 	esac
 }
@@ -243,7 +243,7 @@ install_iso_packages() {
 	print_green "Installing base system for *.iso image"
 	sudo rm -rf $FINALFS
 	sudo mkdir -p $FINALFS/var/lib/pacman
-	yes y | sudo pacman -U $PKGS/{filesystem,linux,musl,gcc-libs,zlib,attr,acl,libcap,ncurses,util-linux,e2fsprogs,dosfstools,bzip2,gdbm,readline,bash,file,less,kbd,xz,kmod,expat,libressl,ca-certificates,eudev,busybox,libnl-tiny,wireless_tools,wpa_supplicant,curl,fakeroot,pacman,syslinux,efibootmgr,grub}*.pkg.tar.xz --root $FINALFS --arch $BARCH
+	yes y | sudo pacman -U $PKGS/{filesystem,linux,musl,gcc-libs,zlib,attr,acl,libcap,ncurses,util-linux,e2fsprogs,dosfstools,bzip2,gdbm,readline,bash,file,less,kbd,xz,kmod,expat,libressl,ca-certificates,eudev,busybox,libnl-tiny,wireless_tools,wpa_supplicant,curl,fakeroot,pacman,syslinux,efibootmgr,grub}-*.pkg.tar.xz --root $FINALFS --arch $BARCH
 }
 
 prepare_files() {
@@ -321,6 +321,7 @@ build_stage_archive() {
 	print_green "Generating stage archive"
 	cd $STAGEFS
 	sudo tar -cJf $CWD/januslinux.tar.xz .
+	print_green "Generation stage archive was completed!"
 }
 
 OPT="$1"
