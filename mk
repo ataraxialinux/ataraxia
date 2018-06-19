@@ -11,6 +11,7 @@ Usage:	BARCH=[supported architecture] ./mk [option] [package (only in 'package' 
 	repository			Build every package
 	package				Build specific package
 	image				Build bootable .iso image
+	stage				Build stage archive
 EOF
 	exit 0
 }
@@ -121,6 +122,7 @@ setup_build_dirs() {
 	export SOURCES="$BUILD/sources"
 	export ROOTFS="$BUILD/rootfs"
 	export FINALFS="$BUILD/finalfs"
+	export STAGEFS="$BUILD/stagefs"
 	export TOOLS="$BUILD/tools"
 	export PKGS="$BUILD/packages"
 	export LOGS="$BUILD/logs"
@@ -132,7 +134,7 @@ setup_build_dirs() {
 
 setup_build_env() {
 	sudo rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS $IMGDIR
+	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS $IMGDIR $STAGEFS
 
 	export PATH="$TOOLS/bin:$PATH"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
@@ -199,7 +201,7 @@ clean_tool_pkg() {
 }
 
 build_repository() {
-	print_green "Building repository"
+	print_green "Building core packages"
 	sleep 1
 	case $BARCH in
 		x86_64)
@@ -223,20 +225,25 @@ build_repository() {
 				install_target $PKG
 		esac
 	done
-
-	print_green "Building repository database"
-	sleep 1
-	repo-add $PKGS/repo.db.tar.gz $PKGS/*.pkg.tar.xz
 }
 
 install_base_packages() {
 	print_green "Installing base system"
+	sudo rm -rf $STAGEFS
+	sudo mkdir -p $STAGEFS/var/lib/pacman
+	yes y | sudo pacman -U $PKGS/{filesystem,linux-headers,musl,zlib,m4,bison,flex,libelf,binutils,gmp,mpfr,mpc,isl,gcc,attr,acl,libcap,pkgconf,ncurses,util-linux,e2fsprogs,libtool,bzip2,gdbm,perl,readline,autoconf,automake,bash,bc,file,gettext-tiny,less,kbd,make,xz,kmod,expat,libressl,ca-certificates,patch,gperf,eudev,busybox,sudo,libnl-tiny,wireless_tools,wpa_supplicant,curl,libarchive,fakeroot,pacman,dosfstools}*.pkg.tar.xz --root $STAGEFS --arch $BARCH
+	case $BARCH in
+		x86_64)
+			sudo pacman -U $PKGS/linux*.pkg.tar.xz --root $STAGEFS --arch $BARCH
+			;;
+	esac
+}
+
+install_iso_packages() {
+	print_green "Installing base system for *.iso image"
 	sudo rm -rf $FINALFS
-	cp -a $REPO/pacman.conf $BUILD/target-pacman.conf
-	sed -i $BUILD/target-pacman.conf -e "s|@PKGS[@]|$PKGS|g"
 	sudo mkdir -p $FINALFS/var/lib/pacman
-	sudo pacman -Syy --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
-	yes y | sudo pacman -S base syslinux efibootmgr grub --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
+	yes y | sudo pacman -U $PKGS/{filesystem,linux,musl,gcc-libs,zlib,attr,acl,libcap,ncurses,util-linux,e2fsprogs,dosfstools,bzip2,gdbm,readline,bash,file,less,kbd,xz,kmod,expat,libressl,ca-certificates,eudev,busybox,libnl-tiny,wireless_tools,wpa_supplicant,curl,fakeroot,pacman,syslinux,efibootmgr,grub}*.pkg.tar.xz --root $FINALFS --arch $BARCH
 }
 
 prepare_files() {
@@ -310,6 +317,12 @@ build_iso_image() {
 	esac
 }
 
+build_stage_archive() {
+	print_green "Generating stage archive"
+	cd $STAGEFS
+	sudo tar -cJf $CWD/januslinux.tar.xz .
+}
+
 OPT="$1"
 JPKG="$2"
 
@@ -350,8 +363,14 @@ case "$OPT" in
 	image)
 		configure_arch
 		setup_build_dirs
-		install_base_packages
+		install_iso_packages
 		build_iso_image
+		;;
+	stage)
+		configure_arch
+		setup_build_dirs
+		install_base_packages
+		build_stage_archive
 		;;
 	usage|*)
 		mkusage
