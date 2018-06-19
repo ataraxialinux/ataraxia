@@ -10,6 +10,13 @@ license=('custom' 'FDL' 'GPL' 'LGPL')
 source=("http://ftpmirror.gnu.org/gnu/$pkgbase/$pkgbase-$pkgver/$pkgbase-$pkgver.tar.xz")
 options=(!emptydirs)
 
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+else
+	export CROSSFLAGS="--build=$($HOSTCC -dumpmachine)"
+fi
+
 prepare() {
 	cd $srcdir/$pkgbase-$pkgver
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
@@ -34,13 +41,10 @@ build() {
 	export LDFLAGS_FOR_BUILD="$LDFLAGS"
 
 	cd build
-	../configure $GCCOPTS \
+	../configure $CROSSFLAGS $GCCOPTS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--target=$XTARGET \
 		--with-system-zlib \
 		--enable-__cxa_atexit \
 		--enable-checking=release \
