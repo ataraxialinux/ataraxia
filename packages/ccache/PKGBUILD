@@ -4,7 +4,7 @@ pkgname=ccache
 pkgver=3.4.2
 pkgrel=1
 pkgdesc='Compiler cache that speeds up recompilation by caching previous compilations'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='https://ccache.samba.org/'
 license=('GPL')
 groups=('base')
@@ -16,8 +16,7 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -42,3 +41,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('9e048f88f3897125864f9a5e1abfb72d')

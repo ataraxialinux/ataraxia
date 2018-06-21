@@ -4,7 +4,7 @@ pkgname=nginx
 pkgver=1.15.0
 pkgrel=2
 pkgdesc='Lightweight HTTP server and IMAP/POP3 proxy server'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='https://nginx.org'
 license=('custom')
 groups=('base')
@@ -26,8 +26,7 @@ install=$pkgname.install
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	unset CC CXX AR AS RANLIB LD STRIP
-	./configure --with-cc-opt="-I$ROOTFS/usr/include" \
+	./configure \
 		--prefix=/usr \
 		--sbin-path=/usr/bin/nginx \
 		--conf-path=/etc/nginx/nginx.conf \
@@ -45,7 +44,7 @@ build() {
 		--with-ipv6 \
 		--with-threads \
 		--with-http_ssl_module
-	make CC="$XTARGET-gcc" CXX="$XTARGET-g++" AR="$XTARGET-ar" AS="$XTARGET-as" RANLIB="$XTARGET-ranlib" LD="$XTARGET-ld" STRIP="$XTARGET-strip"
+	make
 }
 
 package() {
@@ -81,3 +80,8 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('4a6ed39e9becf8705187b5bacb1263c8'
+         '7ab574afea598a5be47b4bb3c31fd99a'
+         'd2d568b8bcbe2b1acf09511f5baef6f8'
+         '153d58be471b6ceb7930686409c39310'
+         '3b6e550716d3ac25560e86a697a50f06')

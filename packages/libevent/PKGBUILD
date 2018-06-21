@@ -4,7 +4,7 @@ pkgname=libevent
 pkgver=2.1.8
 pkgrel=1
 pkgdesc="An event notification library"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://libevent.org/"
 license=('BSD')
 groups=('base')
@@ -18,8 +18,7 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -36,3 +35,5 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('f3eeaed018542963b7d2416ef1135ecc'
+         'e54149ec1223bd38a153ea787352ad6f')

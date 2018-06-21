@@ -4,7 +4,7 @@ pkgname=htop
 pkgver=2.2.0
 pkgrel=1
 pkgdesc="Interactive process viewer"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://hisham.hm/htop/"
 license=('GPL')
 groups=('base')
@@ -16,8 +16,7 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -34,3 +33,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('0d816b6beed31edc75babcfbf863ffa8')

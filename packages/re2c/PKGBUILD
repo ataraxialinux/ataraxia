@@ -4,7 +4,7 @@ pkgname=re2c
 pkgver=1.0.3
 pkgrel=1
 pkgdesc='A tool for generating C-based recognizers from regular expressions'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://re2c.org'
 license=('public domain')
 groups=('base')
@@ -15,8 +15,7 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -33,3 +32,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('8f575e2bf2efd3c685c87042f279ae4f')

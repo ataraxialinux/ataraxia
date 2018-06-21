@@ -4,7 +4,7 @@ pkgname=nasm
 pkgver=2.13.03
 pkgrel=1
 pkgdesc="An 80x86 assembler designed for portability and modularity"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.nasm.us"
 license=('BSD')
 groups=('base')
@@ -18,8 +18,7 @@ build() {
 		-i include/nasmlib.h
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -36,3 +35,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('d5ca2ad7121ccbae69dd606b1038532c')

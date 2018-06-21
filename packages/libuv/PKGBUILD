@@ -4,7 +4,7 @@ pkgname=libuv
 pkgver=1.20.3
 pkgrel=1
 pkgdesc="Multi-platform support library with a focus on asynchronous I/O"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="https://github.com/libuv/libuv"
 license=('custom')
 groups=('base')
@@ -16,8 +16,7 @@ build() {
 	./autogen.sh
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -34,3 +33,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('3fd8f3045d160abc5b54183e8e629d3c')

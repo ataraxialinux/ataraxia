@@ -4,7 +4,7 @@ pkgname=gdb
 pkgver=8.1
 pkgrel=2
 pkgdesc='The GNU Debugger'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://www.gnu.org/software/gdb/'
 license=('GPL')
 groups=('base')
@@ -16,16 +16,14 @@ build() {
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--target=$XTARGET \
 		--without-guile \
 		--with-system-readline \
 		--with-system-zlib \
 		--disable-gdbserver \
 		--disable-multilib \
 		--disable-nls \
-		--disable-werror
+		--disable-werror \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -48,3 +46,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('f46487561f9a16916a8102316f7fd105')
