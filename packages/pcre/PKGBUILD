@@ -4,7 +4,7 @@ pkgname=pcre
 pkgver=8.42
 pkgrel=1
 pkgdesc='A library that implements Perl 5-style regular expressions'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://www.pcre.org/'
 license=('BSD')
 groups=('base')
@@ -15,15 +15,14 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-unicode-properties \
 		--enable-pcre16 \
 		--enable-pcre32 \
 		--enable-jit \
 		--enable-pcregrep-libz \
 		--enable-pcregrep-libbz2 \
-		--enable-pcretest-libreadline
+		--enable-pcretest-libreadline \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -40,3 +39,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('085b6aa253e0f91cae70b3cdbe8c1ac2')

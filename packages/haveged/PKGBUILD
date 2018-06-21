@@ -4,7 +4,7 @@ pkgname=haveged
 pkgver=1.9.2
 pkgrel=1
 pkgdesc='Entropy harvesting daemon using CPU timings'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://www.issihosts.com/haveged'
 license=('GPL')
 groups=('base')
@@ -20,8 +20,7 @@ build() {
 		--prefix=/usr \
 		--bindir=/usr/bin \
 		--sbindir=/usr/bin \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -43,3 +42,6 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('fb1d8b3dcbb9d06b30eccd8aa500fd31'
+         '8dce2a8507b3353128ce64d302fa3b19'
+         '57556fd13ced960a3399c2935af832e9')

@@ -4,7 +4,7 @@ pkgname=vim
 pkgver=8.1.0073
 pkgrel=1
 pkgdesc='Vi Improved, a highly configurable, improved version of the vi text editor'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://www.vim.org'
 license=('Vim')
 groups=('base')
@@ -15,8 +15,6 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--without-x \
 		--with-tlib=ncurses \
 		--enable-gui=no \
@@ -26,7 +24,8 @@ build() {
 		--disable-gui \
 		--disable-netbeans \
 		--disable-nls \
-		--disable-xim
+		--disable-xim \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -43,3 +42,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('bd194a7b079910207c1d4a2dc7ab9408')
