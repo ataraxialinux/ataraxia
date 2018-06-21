@@ -67,15 +67,6 @@ install_target_multiple() {
 	done
 }
 
-install_host_target() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $CROSS/$dpkg
-		makepkg --config $BUILD/host-makepkg.conf -d -c -f -C --skipchecksums
-		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
-	done
-}
-
 updatesumscross() {
 	XPKG=$1
 	for dpkg in $XPKG; do
@@ -217,11 +208,11 @@ build_toolchain() {
 	sleep 1
 	install_host file
 	install_host pkgconf
-	install_host_target filesystem
+	install_target filesystem
 	install_host binutils
 	install_host gcc-static
-	install_host_target linux-headers
-	install_host_target musl
+	install_target linux-headers
+	install_target musl
 	install_host gcc-final
 }
 
@@ -280,7 +271,7 @@ prepare_files() {
 	sudo find . -print | cpio -o -H newc | gzip -9 > $IMGDIR/boot/rootfs.gz
 
 	print_green "Copying kernel"
-	cp $FINALFS/boot/vmlinuz $IMGDIR/boot/vmlinuz
+	cp $FINALFS/boot/vmlinuz* $IMGDIR/boot/vmlinuz
 }
 
 install_loader() {
