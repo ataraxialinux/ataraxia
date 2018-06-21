@@ -227,7 +227,7 @@ build_repository() {
 	sleep 1
 	case $BARCH in
 		x86_64)
-			export BOOTLOADER="grub syslinux efivar efibootmgr"
+			export BOOTLOADER="syslinux efivar efibootmgr"
 			;;
 	esac
 
@@ -259,7 +259,7 @@ install_iso_packages() {
 	print_green "Installing base system for *.iso image"
 	sudo rm -rf $FINALFS
 	sudo mkdir -p $FINALFS/var/lib/pacman
-	yes y | sudo pacman -U $PKGS/{filesystem,linux,musl,gcc-libs,zlib,attr,acl,libcap,ncurses,util-linux,e2fsprogs,dosfstools,bzip2,gdbm,readline,bash,file,less,kbd,xz,kmod,expat,libressl,ca-certificates,eudev,busybox,libnl-tiny,wireless_tools,wpa_supplicant,curl,fakeroot,pacman,syslinux,efibootmgr,grub}-*.pkg.tar.xz --root $FINALFS --arch $BARCH
+	yes y | sudo pacman -U $PKGS/{filesystem,linux,musl,gcc-libs,zlib,attr,acl,libcap,ncurses,util-linux,e2fsprogs,dosfstools,bzip2,gdbm,readline,bash,file,less,kbd,xz,kmod,expat,libressl,ca-certificates,eudev,busybox,libnl-tiny,wireless_tools,wpa_supplicant,curl,fakeroot,pacman,syslinux,efibootmgr}-*.pkg.tar.xz --root $FINALFS --arch $BARCH
 }
 
 prepare_files() {
@@ -309,7 +309,7 @@ make_iso() {
 	cd $IMGDIR
 	xorriso \
 		-as mkisofs \
-		-o $CWD/januslinux.iso \
+		-o $CWD/januslinux-$BARCH.iso \
 		-b boot/syslinux/isolinux.bin \
 		-c boot/syslinux/boot.cat \
 		-no-emul-boot \
@@ -336,7 +336,7 @@ build_iso_image() {
 build_stage_archive() {
 	print_green "Generating stage archive"
 	cd $STAGEFS
-	sudo tar -cJf $CWD/januslinux.tar.xz .
+	sudo tar -cJf $CWD/januslinux-$BARCH.tar.xz .
 	print_green "Generation stage archive was completed!"
 }
 

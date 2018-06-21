@@ -11,11 +11,13 @@ groups=('base')
 depends=('sh' 'gettext' 'busybox' 'pacman' 'git')
 source=("https://git.archlinux.org/srcpac.git/snapshot/$pkgname-$pkgver.tar.xz"
 	'fake-abs'
-	'abs.conf')
+	'abs.conf'
+	'srcpac.patch')
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
+	patch -Np1 -i $srcdir/srcpac.patch
 	make DESTDIR=$pkgdir install
 
 	install -Dm0755 $srcdir/fake-abs $pkgdir/usr/bin/abs
@@ -30,5 +32,6 @@ package() {
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
 md5sums=('7fea3c0706a56f76ade056f31de874e9'
-         '694148dd0cde1965864f38502afb56e9'
-         'd5386bfce520617dfcb045451ada20fd')
+         '18b620ac480ae744e0bedfa159721170'
+         'd5386bfce520617dfcb045451ada20fd'
+         'b9f496aa5365bfd6e947eb1dc3563bb3')
