@@ -2,7 +2,7 @@
 
 pkgname=pacman
 pkgver=5.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="A library-based package manager with dependency support"
 arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.archlinux.org/pacman/"
@@ -24,7 +24,9 @@ fi
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	sed -i -e '/x-cpio/s@)@|*application/x-empty*)@' scripts/makepkg.sh.in
+	sed -i -e '/x-cpio/s@)@|*application/x-empty*)@'  \
+		-e 's/EUID == 0/EUID == -1/' \
+		scripts/makepkg.sh.in
 
 	autoreconf --force --install
 
