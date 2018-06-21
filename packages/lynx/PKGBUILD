@@ -5,7 +5,7 @@ pkgver=2.8.8
 _relver=${pkgver}rel.2
 pkgrel=1
 pkgdesc="A text browser for the World Wide Web"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://lynx.browser.org/"
 license=('GPL')
 groups=('base')
@@ -22,12 +22,11 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--with-ssl \
 		--with-zlib \
 		--enable-ipv6 \
-		--disable-nls
+		--disable-nls \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -44,3 +43,6 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('b231c2aa34dfe7ca25681ef4e55ee7e8'
+         '18e82a6634ac9e6f39af6d83e9cf775b'
+         'e7f8d90f83388abdcda4f103a558209e')

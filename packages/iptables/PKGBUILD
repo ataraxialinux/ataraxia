@@ -4,7 +4,7 @@ pkgname=iptables
 pkgver=1.6.2
 pkgrel=1
 pkgdesc='Linux kernel packet control tool'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://www.netfilter.org/projects/iptables/index.html'
 license=('GPL')
 groups=('base')
@@ -19,9 +19,8 @@ build() {
 		--sbindir=/usr/bin \
 		--libexecdir=/usr/lib/iptables \
 		--with-xtlibdir=/usr/lib/iptables \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-nftables
+		--disable-nftables \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -38,3 +37,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('7d2b7847e4aa8832a18437b8a4c1873d')

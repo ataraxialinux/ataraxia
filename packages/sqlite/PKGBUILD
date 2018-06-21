@@ -17,7 +17,7 @@ esac
 _ver=${_a}${_b}${_c}${_d}
 pkgrel=1
 pkgdesc="A C library that implements an SQL database engine"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.sqlite.org/"
 license=('custom:Public Domain')
 groups=('base')
@@ -41,11 +41,10 @@ build() {
 	export CFLAGS="$CFLAGS $_amalgamation"
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-threadsafe \
 		--enable-readline \
-		--enable-dynamic-extensions
+		--enable-dynamic-extensions \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -62,3 +61,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('dcd96fb9bbb603d29f6b0ad9554932ee')

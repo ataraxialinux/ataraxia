@@ -4,7 +4,7 @@ pkgname=python
 pkgver=3.6.5
 pkgrel=1
 pkgdesc="Next generation of the python high-level scripting language"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.python.org/"
 license=('custom')
 groups=('base')
@@ -24,14 +24,6 @@ prepare() {
 	patch -Np1 -i $srcdir/libressl.patch
 	patch -Np1 -i $srcdir/libressl-2.7.patch
 
-cat > config.cache << EOF
-ac_cv_have_long_long_format=yes
-ac_cv_file__dev_ptmx=yes
-ac_cv_file__dev_ptc=yes
-ac_cv_working_tzset=yes
-ac_cv_prog_HAS_HG=/bin/false
-EOF
-
 	rm -r Modules/expat \
 		Modules/zlib \
 		Modules/_ctypes/darwin* \
@@ -43,9 +35,6 @@ build() {
 	OPT="" \
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--cache-file=config.cache \
 		--with-ensurepip=yes \
 		--with-lto \
 		--with-system-expat \
@@ -53,7 +42,8 @@ build() {
 		--with-threads \
 		--enable-ipv6 \
 		--enable-shared \
-		--disable-rpath
+		--disable-rpath \
+		--build=$($HOSTCC -dumpmachine)
 	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
 }
 
@@ -73,3 +63,9 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('9f49654a4d6f733ff3284ab9d227e9fd'
+         '2840477c6552a0ca2f4ede885ad872f1'
+         '443e376a1a05caa6ec6bffd8855b7900'
+         '9b220ccca196b6953368c5ac3df48caa'
+         '660e504bceb5521a5a2d4711f8886bd4'
+         'e315a11230992bee191f96d5afec437a')

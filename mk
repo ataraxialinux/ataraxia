@@ -109,6 +109,7 @@ configure_arch() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
+			export GCCOPTS=
 			;;
 		aarch64)
 			print_green "Using config for aarch64"
@@ -123,6 +124,20 @@ configure_arch() {
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-fpu=vfpv3 --with-float=hard"
+			;;
+		ppc64le)
+			print_green "Using config for ppc64le"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			;;
+		s390x)
+			print_green "Using config for s390x"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="s390x-linux-musl"
+			export XKARCH="s390"
+			export GCCOPTS="--with-arch=z196 --with-tune=zEC12 --with-zarch --with-long-double-128 --enable-decimal-float"
 			;;
 		*)
 			print_red "BARCH variable isn't set!"

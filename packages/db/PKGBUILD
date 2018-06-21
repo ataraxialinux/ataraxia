@@ -4,7 +4,7 @@ pkgname=db
 pkgver=6.2.32
 pkgrel=1
 pkgdesc="The Berkeley DB embedded database system"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.gnu.org/software/m4"
 license=('custom')
 groups=('base')
@@ -15,11 +15,10 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver/build_unix"
 	../dist/configure \
 		--prefix=/usr\
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-compat185\
 		--enable-cxx \
-		--enable-dbm
+		--enable-dbm \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -37,3 +36,4 @@ package() {
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 	rm -rf $pkgdir/usr/docs
 }
+md5sums=('33491b4756cb44b91c3318b727e71023')

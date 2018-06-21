@@ -4,7 +4,7 @@ pkgname=nano
 pkgver=2.9.8
 pkgrel=1
 pkgdesc="Pico editor clone with enhancements"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.nano-editor.org"
 license=('GPL')
 groups=('base')
@@ -17,10 +17,9 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-utf8 \
-		--disable-nls
+		--disable-nls \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -37,3 +36,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('31714360342f9baa344e2fa574c144db')

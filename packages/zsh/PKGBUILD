@@ -4,7 +4,7 @@ pkgname=zsh
 pkgver=5.5.1
 pkgrel=1
 pkgdesc='A very advanced and programmable command interpreter (shell) for UNIX'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://www.zsh.org/'
 license=('custom')
 groups=('base')
@@ -21,8 +21,7 @@ build() {
 		--prefix=/usr \
 		--sysconfdir=/etc/zsh \
 		--enable-etcdir=/etc/zsh \
-		--build=$XHOST \
-		--host=$XTARGET
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -39,3 +38,5 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('678bc037a7311a46e7fc0adca7ed8266'
+         'b496872ad09d1c4d105b85497636553e')
