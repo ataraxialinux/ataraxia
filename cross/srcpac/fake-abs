@@ -1,0 +1,20 @@
+#!/bin/sh
+
+. /etc/abs.conf
+
+fakesync() {
+	if [ ! -d "$ABSROOT" ]; then
+		git clone $SYNCSERVER $ABSROOT
+	else
+		cd $ABSROOT && git pull
+	fi
+}
+
+case $1 in
+	sync)
+		fakesync
+		;;
+	*)
+		echo ":D"
+		exit 0
+esac
