@@ -1,0 +1,34 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=srcpac
+pkgver=0.10.10
+pkgrel=1
+pkgdesc="A tool to rebuild packages from source"
+arch=('any')
+url="https://git.archlinux.org/srcpac.git/"
+license=('GPL')
+groups=('base')
+depends=('sh' 'gettext' 'busybox' 'pacman' 'git')
+source=("https://git.archlinux.org/srcpac.git/snapshot/$pkgname-$pkgver.tar.xz"
+	'fake-abs'
+	'abs.conf')
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	install -Dm0755 $srcdir/fake-abs $pkgdir/usr/bin/abs
+	install -m644 $srcdir/abs.conf $pkgdir/etc/abs.conf
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
+md5sums=('7fea3c0706a56f76ade056f31de874e9'
+         '694148dd0cde1965864f38502afb56e9'
+         'd5386bfce520617dfcb045451ada20fd')
