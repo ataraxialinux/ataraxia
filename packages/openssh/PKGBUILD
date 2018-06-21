@@ -4,7 +4,7 @@ pkgname=openssh
 pkgver=7.7p1
 pkgrel=1
 pkgdesc="Free version of the SSH connectivity tools"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="https://www.openssh.com/portable.html"
 license=('BSD')
 groups=('base')
@@ -25,16 +25,15 @@ build() {
 		--sysconfdir=/etc/ssh \
 		--libexecdir=/usr/lib \
 		--sbindir=/usr/bin \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--with-default-path='/usr/bin:/usr/local/bin:/usr/local/sbin' \
+		--with-default-path='/usr/local/sbin:/usr/local/bin:/usr/bin' \
 		--with-mantype=man \
 		--with-md5-passwords \
 		--with-pid-dir=/run \
 		--with-privsep-path=/var/empty \
 		--with-privsep-user=nobody \
 		--with-ssl-engine \
-		--disable-strip
+		--disable-strip \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -55,3 +54,6 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('68ba883aff6958297432e5877e9a0fe2'
+         'd507765ad4c2cd9b1071d4f0c4b4644d'
+         '41fa69bcf4099b3a37f942193d386c58')

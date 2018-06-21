@@ -4,7 +4,7 @@ pkgname=tor
 pkgver=0.3.3.7
 pkgrel=1
 pkgdesc='Anonymizing overlay network.'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='https://www.torproject.org/'
 license=('BSD')
 groups=('base')
@@ -21,9 +21,8 @@ build() {
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-seccomp
+		--disable-seccomp \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -47,3 +46,6 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('5288d8de30c516073ad13fee44f6fdf3'
+         '9ade8a3757da6eb4486cbff10e037fc4'
+         '7eaad594be99021f2c1fd60d81f9d452')

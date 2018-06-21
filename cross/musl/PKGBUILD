@@ -4,7 +4,7 @@ pkgname=musl
 pkgver=1.1.19
 pkgrel=1
 pkgdesc="The standard C library"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.musl-libc.org/"
 license=('MIT')
 groups=('base')
@@ -14,15 +14,14 @@ options=("!strip")
 
 if [ "$NATIVE" = "no" ]
 then
-	export XTARGET="$XTARGET"
+	export CROSSFLAGS="--host=$XTARGET"
 else
-	export XTARGET="$($HOSTCC -dumpmachine)"
+	export CROSSFLAGS=
 fi
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	CROSS_COMPILE=$XTARGET- \
-	./configure \
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		--syslibdir=/usr/lib \
 		--enable-optimize

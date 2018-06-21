@@ -4,7 +4,7 @@ pkgname=transmission
 pkgver=2.94
 pkgrel=1
 pkgdesc="Fast, easy, and free BitTorrent client"
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url="http://www.transmissionbt.com/"
 license=('MIT')
 groups=('base')
@@ -15,9 +15,8 @@ build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-nls
+		--disable-nls \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -34,3 +33,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('c92829294edfa391c046407eeb16358a')

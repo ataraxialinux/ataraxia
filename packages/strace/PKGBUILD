@@ -4,7 +4,7 @@ pkgname=strace
 pkgver=4.23
 pkgrel=1
 pkgdesc='A diagnostic, debugging and instructional userspace tracer'
-arch=('x86_64' 'aarch64' 'armhf')
+arch=('x86_64' 'aarch64' 'armhf' 'ppc64le' 's390x')
 url='http://sourceforge.net/projects/strace/'
 license=('BSD')
 groups=('base')
@@ -16,9 +16,8 @@ build() {
 	CFLAGS="$CFLAGS -Dsigcontext_struct=sigcontext" \
 	./configure \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--disable-mpers
+		--disable-mpers \
+		--build=$($HOSTCC -dumpmachine)
 	make
 }
 
@@ -35,3 +34,4 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
+md5sums=('fad4bba0947553cef34d46a9fd78f039')
