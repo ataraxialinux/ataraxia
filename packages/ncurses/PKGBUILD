@@ -1,31 +1,35 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=libffi
-pkgver=3.2.1
+pkgname=ncurses
+pkgver=6.1
 pkgrel=1
-pkgdesc="Portable foreign function interface library"
+pkgdesc="System V Release 4.0 curses emulation library"
 arch=('x86_64' 'aarch64')
-url="http://sourceware.org/libffi/"
+url="https://www.gnu.org/software/ncurses/"
 license=('MIT')
 groups=('base')
 depends=('musl')
-source=("ftp://sourceware.org/pub/$pkgname/$pkgname-$pkgver.tar.gz")
-
-prepare() {
-	cd "$srcdir/$pkgname-$pkgver"
-	sed -e '/^includesdir/ s/$(libdir).*$/$(includedir)/' \
-		-i include/Makefile.in
-	sed -e '/^includedir/ s/=.*$/=@includedir@/' \
-		-e 's/^Cflags: -I${includedir}/Cflags:/' \
-		-i libffi.pc.in
-}
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
 		--build=$XHOST \
-		--host=$XTARGET
+		--host=$XTARGET \
+		--with-pkg-config-libdir=/usr/lib/pkgconfig \
+		--with-normal \
+		--with-shared \
+		--without-ada \
+		--without-debug \
+		--without-manpages \
+		--without-tests \
+		--enable-pc-files \
+		--enable-widec \
+		--disable-nls \
+		--disable-stripping
 	make
 }
 
@@ -33,6 +37,19 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
+
+	for lib in ncurses form panel menu; do
+		echo "INPUT(-l${lib}w)" > "$pkgdir/usr/lib/lib${lib}.so"
+		ln -s ${lib}w.pc "$pkgdir/usr/lib/pkgconfig/${lib}.pc"
+	done
+
+	for lib in tic tinfo; do
+		echo "INPUT(libncursesw.so.${pkgver:0:1})" > "$pkgdir/usr/lib/lib${lib}.so"
+		ln -s libncursesw.so.${pkgver:0:1} "$pkgdir/usr/lib/lib${lib}.so.${pkgver:0:1}"
+	done
+
+	echo 'INPUT(-lncursesw)' > "$pkgdir/usr/lib/libcursesw.so"
+	ln -s libncurses.so "$pkgdir/usr/lib/libcurses.so"
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
