@@ -1,27 +1,25 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=rsync
-pkgver=3.1.3
+pkgname=gmp
+pkgver=6.1.2
 pkgrel=1
-pkgdesc="A file transfer program to keep remote files in sync"
+pkgdesc="A free library for arbitrary precision arithmetic"
 arch=('x86_64' 'aarch64')
-url="https://rsync.samba.org/"
-license=('GPL')
+url="http://gmplib.org/"
+license=('GPL' 'LGPL')
 groups=('base')
-depends=('musl' 'zlib' 'perl')
-source=("https://download.samba.org/pub/rsync/src/rsync-$pkgver.tar.gz")
+depends=('musl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
-		--disable-acl-support \
-		--disable-xattr-support \
-		--disable-debug \
-		rsync_cv_HAVE_GETTIMEOFDAY_TZ=yes
+		--enable-cxx
 	make
 }
 
@@ -35,6 +33,6 @@ package() {
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
 	cd $pkgdir
-	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf usr/{,local/}{,share/}{doc,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }

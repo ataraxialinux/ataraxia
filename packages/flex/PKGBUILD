@@ -1,27 +1,30 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=rsync
-pkgver=3.1.3
+pkgname=flex
+pkgver=2.6.4
 pkgrel=1
-pkgdesc="A file transfer program to keep remote files in sync"
+pkgdesc="A tool for generating text-scanning programs"
 arch=('x86_64' 'aarch64')
-url="https://rsync.samba.org/"
-license=('GPL')
+url="https://github.com/westes/flex"
+license=('custom')
 groups=('base')
-depends=('musl' 'zlib' 'perl')
-source=("https://download.samba.org/pub/rsync/src/rsync-$pkgver.tar.gz")
+depends=('musl' 'm4' 'bison')
+source=("http://github.com/westes/flex/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
+
+cat > config.cache << EOF
+ac_cv_func_malloc_0_nonnull=yes
+ac_cv_func_realloc_0_nonnull=yes
+EOF
+
 	./configure \
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
-		--disable-acl-support \
-		--disable-xattr-support \
-		--disable-debug \
-		rsync_cv_HAVE_GETTIMEOFDAY_TZ=yes
+		--disable-nls \
+		--cache-file=config.cache
 	make
 }
 

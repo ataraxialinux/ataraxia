@@ -1,0 +1,60 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=bash
+pkgver=4.4.18
+pkgrel=1
+pkgdesc="The GNU Bourne Again shell"
+arch=('x86_64' 'aarch64')
+url="http://www.gnu.org/software/bash/bash.html"
+license=('GPL')
+groups=('base')
+backup=(etc/bash.bash{rc,_logout} etc/skel/.bash{rc,_profile,_logout})
+depends=('musl' 'readline')
+provides=('sh')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz"
+	"system.bashrc"
+	"system.bash_logout"
+	"dot.bashrc"
+	"dot.bash_profile"
+	"dot.bash_logout"
+)
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	_bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/usr/local/sbin:/usr/local/bin:/usr/bin\"\'
+			-DSTANDARD_UTILS_PATH=\'\"/usr/bin\"\'
+			-DSYS_BASHRC=\'\"/etc/bash.bashrc\"\'
+			-DSYS_BASH_LOGOUT=\'\"/etc/bash.bash_logout\"\'
+			-DNON_INTERACTIVE_LOGIN_SHELLS)
+	CFLAGS="$CFLAGS ${_bashconfig[@]}" \
+	./configure \
+		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--without-bash-malloc \
+		--with-installed-readline \
+		--disable-nls
+	make
+}
+
+package() {
+	cd "$srcdir/$pkgname-$pkgver"
+	make DESTDIR=$pkgdir install
+
+	ln -s bash $pkgdir/usr/bin/sh
+
+	mkdir -p $pkgdir/etc/skel
+	install -Dm644 $srcdir/system.bashrc $pkgdir/etc/bash.bashrc
+	install -Dm644 $srcdir/system.bash_logout $pkgdir/etc/bash.bash_logout
+	install -m644 $srcdir/dot.bashrc $pkgdir/etc/skel/.bashrc
+	install -m644 $srcdir/dot.bash_profile $pkgdir/etc/skel/.bash_profile
+	install -m644 $srcdir/dot.bash_logout $pkgdir/etc/skel/.bash_logout
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}
