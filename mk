@@ -116,13 +116,6 @@ configure_arch() {
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-fpu=vfpv3 --with-float=hard"
 			;;
-		ppc64le)
-			print_green "Using config for ppc64le"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64le-linux-musl"
-			export XKARCH="powerpc"
-			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
-			;;
 		s390x)
 			print_green "Using config for s390x"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
