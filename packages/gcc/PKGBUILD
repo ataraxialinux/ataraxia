@@ -1,0 +1,81 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gcc
+pkgver=8.1.0
+pkgrel=1
+pkgdesc="The GNU Compiler Collection - C and C++ frontends"
+arch=('x86_64' 'aarch64')
+url="http://gcc.gnu.org/"
+license=('custom' 'FDL' 'GPL' 'LGPL')
+groups=('base')
+depends=('musl' 'zlib' 'binutils' 'gmp' 'mpfr' 'mpc' 'isl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver/$pkgname-$pkgver.tar.xz"
+	"gcc-pure64.patch")
+options=(!emptydirs)
+
+prepare() {
+	cd $srcdir/$pkgname-$pkgver
+	patch -Np1 -i $srcdir/gcc-pure64.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+	mkdir build
+}
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+
+	export CFLAGS_FOR_TARGET="$CFLAGS"
+	export CXXFLAGS_FOR_TARGET="$CXXFLAGS"
+	export CPPFLAGS_FOR_TARGET="$CPPFLAGS"
+	export LDFLAGS_FOR_TARGET="$LDFLAGS"
+
+	export CFLAGS_FOR_BUILD="$CFLAGS"
+	export CXXFLAGS_FOR_BUILD="$CXXFLAGS"
+	export CPPFLAGS_FOR_TARGET="$CPPFLAGS"
+	export LDFLAGS_FOR_BUILD="$LDFLAGS"
+
+	cd build
+	../configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-languages=c,c++,lto \
+		--enable-lto \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror \
+		$GCCOPTS
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	cd build
+	make DESTDIR=$pkgdir install
+
+	ln -s gcc $pkgdir/usr/bin/cc
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

@@ -1,34 +1,34 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=rsync
-pkgver=3.1.3
+pkgname=git
+pkgver=2.17.0
 pkgrel=1
-pkgdesc="A file transfer program to keep remote files in sync"
+pkgdesc="The fast distributed version control system"
 arch=('x86_64' 'aarch64')
-url="https://rsync.samba.org/"
+url="http://git-scm.com/"
 license=('GPL')
 groups=('base')
-depends=('musl' 'zlib' 'perl')
-source=("https://download.samba.org/pub/rsync/src/rsync-$pkgver.tar.gz")
+depends=('musl' 'zlib' 'libressl' 'ca-certificates' 'curl' 'expat')
+source=("https://www.kernel.org/pub/software/scm/git/git-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	./configure \
-		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--with-sysroot=$ROOTFS \
-		--disable-acl-support \
-		--disable-xattr-support \
-		--disable-debug \
-		rsync_cv_HAVE_GETTIMEOFDAY_TZ=yes
-	make
+	make prefix=/usr gitexecdir=/usr/lib/git \
+		HOSTCC="$HOSTCC" CC="$CC" NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
+		CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS" \
+		NO_CROSS_DIRECTORY_HARDLINKS=1 NO_REGEX="NeedsStartEnd" \
+		MAN_BOLD_LITERAL=1 \
+		all
 }
 
 package() {
-	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR=$pkgdir install
+	make prefix=/usr gitexecdir=/usr/lib/git \
+		HOSTCC="$HOSTCC" CC="$CC" NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
+		CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" CPPFLAGS="$CPPFLAGS" \
+		NO_CROSS_DIRECTORY_HARDLINKS=1 NO_REGEX="NeedsStartEnd" \
+		MAN_BOLD_LITERAL=1 \
+		DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

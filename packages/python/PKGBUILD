@@ -4,15 +4,14 @@ pkgname=python
 pkgver=3.6.5
 pkgrel=1
 pkgdesc="Next generation of the python high-level scripting language"
-arch=('x86_64' 'aarch64' 'armhf' 's390x')
+arch=('x86_64' 'aarch64')
 url="http://www.python.org/"
 license=('custom')
 groups=('base')
-depends=('musl' 'zlib' 'readline' 'expat' 'libffi' 'libressl')
+depends=('musl' 'zlib' 'readline' 'expat' 'libffi')
 source=("https://www.python.org/ftp/python/$pkgver/Python-$pkgver.tar.xz"
 	"musl-find_library.patch"
 	"fix-xattrs-glibc.patch"
-	"bpo-30353.patch"
 	"libressl.patch"
 	"libressl-2.7.patch")
 
@@ -20,9 +19,18 @@ prepare() {
 	cd "$srcdir/Python-$pkgver"
 	patch -Np1 -i $srcdir/musl-find_library.patch
 	patch -Np1 -i $srcdir/fix-xattrs-glibc.patch
-	patch -Rp1 < $srcdir/bpo-30353.patch
 	patch -Np1 -i $srcdir/libressl.patch
 	patch -Np1 -i $srcdir/libressl-2.7.patch
+
+cat > config.cache << EOF
+ac_cv_file__dev_ptmx=yes
+ac_cv_file__dev_ptc=yes
+ac_cv_prog_HAS_HG=/bin/false
+ac_cv_prog_SVNVERSION=/bin/false
+ac_cv_have_long_long_format=yes
+ac_cv_working_tzset=yes
+ac_cv_little_endian_double=yes
+EOF
 
 	rm -r Modules/expat \
 		Modules/zlib \
@@ -32,9 +40,11 @@ prepare() {
 
 build() {
 	cd "$srcdir/Python-$pkgver"
-	OPT="" \
 	./configure \
 		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--cache-file=config.cache \
 		--with-ensurepip=yes \
 		--with-lto \
 		--with-system-expat \
@@ -42,15 +52,14 @@ build() {
 		--with-threads \
 		--enable-ipv6 \
 		--enable-shared \
-		--disable-rpath \
-		--build=$($HOSTCC -dumpmachine)
+		--disable-rpath
 	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/Python-$pkgver"
-	make -j1 EXTRA_CFLAGS="$CFLAGS" DESTDIR=$pkgdir install
+	make -j1 DESTDIR=$pkgdir commoninstall bininstall
 
 	chmod 755 $pkgdir/usr/lib/libpython3.6m.so
 	chmod 755 $pkgdir/usr/lib/libpython3.so
@@ -63,9 +72,3 @@ package() {
 	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
-md5sums=('9f49654a4d6f733ff3284ab9d227e9fd'
-         '2840477c6552a0ca2f4ede885ad872f1'
-         '443e376a1a05caa6ec6bffd8855b7900'
-         '9b220ccca196b6953368c5ac3df48caa'
-         '660e504bceb5521a5a2d4711f8886bd4'
-         'e315a11230992bee191f96d5afec437a')
