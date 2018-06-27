@@ -1,0 +1,39 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=db
+pkgver=6.2.32
+pkgrel=1
+pkgdesc="The Berkeley DB embedded database system"
+arch=('x86_64' 'aarch64' 'armhf')
+url="http://www.gnu.org/software/m4"
+license=('custom')
+groups=('base')
+depends=('musl' 'gcc-libs' 'sh')
+source=("http://download.oracle.com/berkeley-db/db-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver/build_unix"
+	../dist/configure \
+		--prefix=/usr\
+		--build=$XHOST \
+		--host=$XTARGET \
+		--enable-compat185\
+		--enable-cxx \
+		--enable-dbm
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver/build_unix"
+	make DESTDIR=$pkgdir install
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+	rm -rf $pkgdir/usr/docs
+}

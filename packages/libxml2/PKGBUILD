@@ -1,37 +1,39 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=dropbear
-pkgver=2018.76
+pkgname=libxml2
+pkgver=2.9.8
 pkgrel=1
-pkgdesc="Lightweight SSH server"
-arch=('x86_64' 'aarch64')
-url="https://matt.ucc.asn.au/dropbear/dropbear.html"
+pkgdesc="XML parsing library, version 2"
+arch=('x86_64' 'aarch64' 'armhf')
+url="http://www.xmlsoft.org/"
 license=('MIT')
 groups=('base')
 depends=('musl' 'zlib')
-source=("https://matt.ucc.asn.au/dropbear/releases/$pkgname-$pkgver.tar.bz2")
+source=("http://xmlsoft.org/sources/$pkgname-$pkgver.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
 	./configure \
 		--prefix=/usr \
-		--bindir=/usr/bin \
-		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
 		--build=$XHOST \
-		--host=$XTARGET
-	make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp"
+		--host=$XTARGET \
+		--without-python \
+		--with-history \
+		--with-threads
+	make
 }
 
 package() {
-	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make PROGRAMS="dropbear dbclient dropbearkey dropbearconvert scp" DESTDIR=$pkgdir install
+	unset MAKEFLAGS
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
 	cd $pkgdir
-	rm -rf usr/{,local/}{,share/}{doc,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf usr/{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf $pkgdir/{,usr/}lib/charset.alias
 }
