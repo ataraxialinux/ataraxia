@@ -1,0 +1,80 @@
+Submitted By: Pierre Labastie <pierre dot labastie at neuf dot fr>
+Date: 2018-01-30
+Initial Package Version: 2.8.8rel.2
+Upstream Status: Fixed in master (at lynx-2.8.9dev.12)
+Origin: Upstream
+Description: Fix for building with ncurses-6.1
+diff -ur lynx2.8.9dev.11/src/LYCurses.c lynx2.8.9dev.12/src/LYCurses.c
+--- lynx2.8.9dev.11/src/LYCurses.c	2016-11-04 22:54:57.000000000 +0100
++++ lynx2.8.9dev.12/src/LYCurses.c	2017-03-18 22:42:48.000000000 +0100
+@@ -1696,7 +1696,7 @@
+ void lynx_nl2crlf(int normal GCC_UNUSED)
+ {
+ #if defined(NCURSES_VERSION_PATCH) && defined(SET_TTY) && defined(TERMIOS) && defined(ONLCR)
+-    static TTY saved_tty;
++    static struct termios saved_tty;
+     static int did_save = FALSE;
+     static int waiting = FALSE;
+     static int can_fix = TRUE;
+@@ -1705,8 +1705,10 @@
+ 	if (cur_term == 0) {
+ 	    can_fix = FALSE;
+ 	} else {
+-	    saved_tty = cur_term->Nttyb;
++	    tcgetattr(fileno(stdout), &saved_tty);
+ 	    did_save = TRUE;
++	    if ((saved_tty.c_oflag & ONLCR))
++		can_fix = FALSE;
+ #if NCURSES_VERSION_PATCH < 20010529
+ 	    /* workaround for optimizer bug with nonl() */
+ 	    if ((tigetstr("cud1") != 0 && *tigetstr("cud1") == '\n')
+@@ -1718,14 +1720,18 @@
+     if (can_fix) {
+ 	if (normal) {
+ 	    if (!waiting) {
+-		cur_term->Nttyb.c_oflag |= ONLCR;
++		struct termios alter_tty = saved_tty;
++
++		alter_tty.c_oflag |= ONLCR;
++		tcsetattr(fileno(stdout), TCSAFLUSH, &alter_tty);
++		def_prog_mode();
+ 		waiting = TRUE;
+ 		nonl();
+ 	    }
+ 	} else {
+ 	    if (waiting) {
+-		cur_term->Nttyb = saved_tty;
+-		SET_TTY(fileno(stdout), &saved_tty);
++		tcsetattr(fileno(stdout), TCSAFLUSH, &saved_tty);
++		def_prog_mode();
+ 		waiting = FALSE;
+ 		nl();
+ 		LYrefresh();
+@@ -2203,6 +2209,8 @@
+     int y, x;
+     size_t inx;
+ 
++    (void) y;
++    (void) y0;
+ #ifdef USE_CURSES_PADS
+     /*
+      * If we've configured to use pads for left/right scrolling, that can
+diff -ur lynx2.8.9dev.11/src/LYStrings.c lynx2.8.9dev.12/src/LYStrings.c
+--- lynx2.8.9dev.11/src/LYStrings.c	2015-12-16 02:18:53.000000000 +0100
++++ lynx2.8.9dev.12/src/LYStrings.c	2017-04-29 02:32:21.000000000 +0200
+@@ -1004,12 +1004,13 @@
+ {
+     char name[BUFSIZ];
+     int code;
++    TERMTYPE *tp = (TERMTYPE *) (cur_term);
+ 
+     LYStrNCpy(name, first, len);
+     if ((code = lookup_tiname(name, strnames)) >= 0
+ 	|| (code = lookup_tiname(name, strfnames)) >= 0) {
+-	if (cur_term->type.Strings[code] != 0) {
+-	    LYStrNCpy(*result, cur_term->type.Strings[code], (final - *result));
++	if (tp->Strings[code] != 0) {
++	    LYStrNCpy(*result, tp->Strings[code], (final - *result));
+ 	    (*result) += strlen(*result);
+ 	}
+     }

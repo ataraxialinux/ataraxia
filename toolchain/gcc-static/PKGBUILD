@@ -8,10 +8,9 @@ pkgrel=1
 arch=('any')
 source=("http://ftpmirror.gnu.org/gnu/gcc/gcc-$pkgver/gcc-$pkgver.tar.xz"
 	"http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz"
-	"http://ftpmirror.gnu.org/gnu/mpfr/mpfr-$mpfrver.tar.xz"
+	"http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz"
 	"http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz"
-	"http://isl.gforge.inria.fr/isl-$islver.tar.xz"
-	"gcc-pure64.patch")
+	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 options=(!emptydirs)
 
 prepare() {
@@ -20,8 +19,9 @@ prepare() {
 	mv ../mpfr-$mpfrver mpfr
 	mv ../mpc-$mpcver mpc
 	mv ../isl-$islver isl
-	patch -Np1 -i $srcdir/gcc-pure64.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 }

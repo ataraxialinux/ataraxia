@@ -1,0 +1,44 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=attr
+pkgver=2.4.47
+pkgrel=1
+pkgdesc="Extended attribute support library for ACL support"
+arch=('x86_64' 'aarch64' 'armhf')
+url="http://savannah.nongnu.org/projects/attr"
+license=('LGPL')
+groups=('base')
+depends=('musl')
+source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src.tar.gz"
+	'attr-add-musl-libc.patch'
+	'fix-headers.patch')
+
+build() {
+	cd "$srcdir/$pkgname-$pkgver"
+	patch -Np1 -i $srcdir/attr-add-musl-libc.patch
+	patch -Np1 -i $srcdir/fix-headers.patch
+	export INSTALL_USER=root INSTALL_GROUP=root
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-gettext
+	make
+}
+
+package() {
+	unset MAKEFLAGS
+	cd "$srcdir/$pkgname-$pkgver"
+	make DIST_ROOT=$pkgdir install install-dev install-lib
+	chmod 0755 $pkgdir/usr/lib/libattr.so.*.*.*
+
+	msg "Stripping package $pkgname..."
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $pkgdir -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug		2>/dev/null || true
+	cd $pkgdir
+	rm -rf usr/{,local/}{,share/}{doc,man,misc,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf $pkgdir/{,usr/}lib/charset.alias
+}

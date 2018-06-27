@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=filesystem
-pkgver=20180512
+pkgver=20180616
 pkgrel=1
 pkgdesc="Filesystem layout and configuration files"
 arch=('any')
@@ -17,6 +17,7 @@ source=('fstab'
 	'interfaces'
 	'issue'
 	'motd'
+	'os-release'
 	'passwd'	
 	'profile'
 	'protocols'
@@ -28,7 +29,14 @@ source=('fstab'
 	'services'
 	'shadow'
 	'shells'
-	'sysctl.conf')
+	'sysctl.conf'
+	'runsvdir-start'
+	'pacstrap'
+	'genfstab'
+	'zzz'
+	'screenoff'
+	'alarmclock'
+	'battery')
 backup=('etc/fstab'
 	'etc/group'
 	'etc/host.conf'
@@ -37,6 +45,7 @@ backup=('etc/fstab'
 	'etc/inittab'
 	'etc/issue'
 	'etc/motd'
+	'etc/os-release'
 	'etc/passwd'
 	'etc/profile'
 	'etc/protocols'
@@ -52,7 +61,7 @@ backup=('etc/fstab'
 package() {
 	cd $pkgdir
 
-	for d in boot dev etc home mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,service,profile.d} home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -64,7 +73,7 @@ package() {
 
 	ln -s /proc/self/mounts $pkgdir/etc/mtab
 
-	for f in fstab group host.conf hostname hosts issue inittab motd passwd profile protocols resolv.conf securetty services shells sysctl.conf; do
+	for f in fstab group host.conf hostname hosts issue inittab motd os-release passwd profile protocols resolv.conf securetty services shells sysctl.conf; do
 		install -m644 $srcdir/$f $pkgdir/etc
 	done
 
@@ -72,12 +81,19 @@ package() {
 		install -m600 $srcdir/$f $pkgdir/etc
 	done
 
-	mkdir -p $pkgdir/etc/network/
+	mkdir -p \
+		$pkgdir/etc/network/if-down.d \
+		$pkgdir/etc/network/if-post-down.d \
+		$pkgdir/etc/network/if-post-up.d \
+		$pkgdir/etc/network/if-pre-down.d \
+		$pkgdir/etc/network/if-pre-up.d \
+		$pkgdir/etc/network/if-up.d
+
 	cp $srcdir/interfaces $pkgdir/etc/network/interfaces
 
 	install -Dm0755 $srcdir/rc.local $pkgdir/etc/rc.local
 
-	for d in cache local opt log/old lib/misc empty; do
+	for d in cache local opt log/old lib/misc empty service; do
 		install -d -m755 var/$d
 	done
 
@@ -105,4 +121,12 @@ package() {
 	for f in rc.init rc.shutdown; do
 		install -Dm0755 $srcdir/$f $pkgdir/usr/bin/$f
 	done
+
+	install -Dm0755 $srcdir/runsvdir-start $pkgdir/usr/bin/runsvdir-start
+	install -Dm0755 $srcdir/genfstab $pkgdir/usr/bin/genfstab
+	install -Dm0755 $srcdir/pacstrap $pkgdir/usr/bin/pacstrap
+	install -Dm0755 $srcdir/zzz $pkgdir/usr/bin/zzz
+	install -Dm0755 $srcdir/screenoff $pkgdir/usr/bin/screenoff
+	install -Dm0755 $srcdir/alarmclock $pkgdir/usr/bin/alarmclock
+	install -Dm0755 $srcdir/battery $pkgdir/usr/bin/battery
 }

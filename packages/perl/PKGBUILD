@@ -5,20 +5,26 @@ pkgver=5.26.2
 perlcrossver=1.1.9
 pkgrel=1
 pkgdesc="A highly capable, feature-rich programming language"
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="http://www.perl.org/"
 license=('GPL' 'PerlArtistic')
 groups=('base')
-depends=('musl')
+depends=('musl' 'zlib' 'bzip2' 'gdbm')
 source=("https://www.cpan.org/src/5.0/perl-$pkgver.tar.xz"
 	"https://github.com/arsv/perl-cross/releases/download/$perlcrossver/perl-cross-$perlcrossver.tar.gz")
+
+if [ "$NATIVE" = "no" ]
+then
+	export CROSSFLAGS="--target=$XTARGET"
+else
+	export CROSSFLAGS=
+fi
 
 build() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	cp -f -r perl-cross-$perlcrossver/* .
-	./configure \
-		--target=$XTARGET \
+	tar --strip-components=1 -zxf ../perl-cross-$perlcrossver.tar.gz
+	./configure $CROSSFLAGS \
 		--prefix=/usr \
 		-Dvendorprefix=/usr \
 		-Duseshrplib \
