@@ -1,14 +1,14 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=pacman
-pkgver=5.0.2
-pkgrel=1
+pkgver=5.1.0
+pkgrel=2
 pkgdesc="A library-based package manager with dependency support"
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="http://www.archlinux.org/pacman/"
 license=('GPL')
 groups=('base')
-depends=('musl' 'bash' 'curl' 'libarchive' 'xz' 'libressl' 'ca-certificates')
+depends=('musl' 'bash' 'curl' 'libarchive' 'fakeroot')
 backup=('etc/pacman.conf'
 	'etc/makepkg.conf')
 source=("https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.gz"
@@ -17,16 +17,11 @@ source=("https://sources.archlinux.org/other/pacman/$pkgname-$pkgver.tar.gz"
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	export CFLAGS="$CFLAGS"
-	export CPPFLAGS="$CPPFLAGS"
-	export LDFLAGS="$LDFLAGS -static"
+	sed -i -e '/x-cpio/s@)@|*application/x-empty*)@' scripts/makepkg.sh.in
 
 	autoreconf --force --install
 
-cat > config.cache << EOF
-ac_cv_func_malloc_0_nonnull=yes
-EOF
-
+	LDFLAGS="$LDFLAGS -static" \
 	./configure \
 		--prefix=/usr \
 		--bindir=/usr/bin \
@@ -37,26 +32,16 @@ EOF
 		--with-scriptlet-shell=/usr/bin/bash \
 		--without-gpgme \
 		--disable-doc \
-		--disable-nls
-
-	for srcdirs in common pacman util; do
-		sed -i "s,/usr/include,$ROOTFS/usr/include,g" $srcdir/$pkgname-$pkgver/src/$srcdirs/Makefile
-	done
-
-	sed -i "s,/usr/include,$ROOTFS/usr/include,g" $srcdir/$pkgname-$pkgver/contrib/Makefile
-	sed -i "s,/usr/include,$ROOTFS/usr/include,g" $srcdir/$pkgname-$pkgver/etc/Makefile
-	sed -i "s,/usr/include,$ROOTFS/usr/include,g" $srcdir/$pkgname-$pkgver/lib/libalpm/Makefile
-	sed -i "s,/usr/include,$ROOTFS/usr/include,g" $srcdir/$pkgname-$pkgver/scripts/Makefile
-
+		--disable-nls \
+		DUFLAGS="-sk" \
+		SEDINPLACEFLAGS="-i"
 	make
-	make -C contrib
 }
 
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
-	make DESTDIR=$pkgdir -C contrib install
 
 	install -dm755 $pkgdir/etc
 	install -m644 $srcdir/pacman.conf $pkgdir/etc/pacman.conf
@@ -66,7 +51,9 @@ package() {
 		-e "s|@CHOST[@]|$XTARGET|g" \
 		-e "s|@CFLAGS[@]|$CFLAGS|g" \
 		-e "s|@CPPFLAGS[@]|$CPPFLAGS|g" \
-		-e "s|@LDFLAGS[@]|$LDFLAGS|g"
+		-e "s|@LDFLAGS[@]|$LDFLAGS|g" \
+		-e "s|@XKARCH[@]|$XKARCH|g" \
+		-e "s|@GCCOPTS[@]|$GCCOPTS|g"
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
