@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=attr
-pkgver=2.4.47
+pkgver=2.4.48
 pkgrel=1
 pkgdesc="Extended attribute support library for ACL support"
 arch=('x86_64' 'aarch64' 'armhf')
@@ -9,14 +9,10 @@ url="http://savannah.nongnu.org/projects/attr"
 license=('LGPL')
 groups=('base')
 depends=('musl')
-source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src.tar.gz"
-	'attr-add-musl-libc.patch'
-	'fix-headers.patch')
+source=("https://download.savannah.gnu.org/releases/${pkgname}/${pkgname}-${pkgver}.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	patch -Np1 -i $srcdir/attr-add-musl-libc.patch
-	patch -Np1 -i $srcdir/fix-headers.patch
 	export INSTALL_USER=root INSTALL_GROUP=root
 	./configure \
 		--prefix=/usr \
@@ -31,8 +27,7 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DIST_ROOT=$pkgdir install install-dev install-lib
-	chmod 0755 $pkgdir/usr/lib/libattr.so.*.*.*
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
