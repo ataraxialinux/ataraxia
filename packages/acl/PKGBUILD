@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=acl
-pkgver=2.2.52
+pkgver=2.2.53
 pkgrel=1
 pkgdesc="Access control list utilities, libraries and headers"
 arch=('x86_64' 'aarch64' 'armhf')
@@ -9,12 +9,10 @@ url="http://savannah.nongnu.org/projects/acl"
 license=('LGPL')
 groups=('base')
 depends=('musl' 'attr')
-source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.src.tar.gz"
-	'acl-add-musl-libc.patch')
+source=("https://download.savannah.gnu.org/releases/${pkgname}/${pkgname}-${pkgver}.tar.gz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	patch -Np1 -i $srcdir/acl-add-musl-libc.patch
 	export INSTALL_USER=root INSTALL_GROUP=root
 	./configure \
 		--prefix=/usr \
@@ -29,8 +27,7 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	make DIST_ROOT=$pkgdir install install-dev install-lib
-	chmod 0755 $pkgdir/usr/lib/libacl.so.*.*.*
+	make DESTDIR=$pkgdir install
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
