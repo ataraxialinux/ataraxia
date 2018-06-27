@@ -2,20 +2,22 @@
 
 pkgname=util-linux
 pkgver=2.32
-pkgmajor=2.32
+case $pkgver in
+	*.*.*) _v=${pkgver%.*};;
+	*.*) _v=$pkgver;;
+esac
 pkgrel=1
 pkgdesc="Miscellaneous system utilities for Linux"
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="https://www.kernel.org/pub/linux/utils/util-linux/"
 license=('GPL')
 groups=('base')
 depends=('musl')
 options=('debug')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v$pkgmajor/$pkgname-$pkgver.tar.xz")
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
-	export LDFLAGS="-L$ROOTFS/usr/lib $LDFLAGS"
 	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime \
 		--prefix=/usr \
 		--libdir=/usr/lib \
@@ -24,13 +26,18 @@ build() {
 		--build=$XHOST \
 		--host=$XTARGET \
 		--without-python \
-		--disable-all-programs \
-		--enable-fs-paths-default=/usr/bin \
-		--enable-libblkid \
-		--enable-libfdisk \
-		--enable-libmount \
-		--enable-libsmartcols \
-		--enable-libuuid
+		--enable-raw \
+		--enable-write \
+		--disable-chfn-chsh \
+		--disable-login \
+		--disable-nls \
+		--disable-nologin \
+		--disable-pylibmount \
+		--disable-runuser \
+		--disable-setpriv \
+		--disable-su \
+		--disable-sulogin \
+		--disable-tls
 	make
 }
 
@@ -41,7 +48,10 @@ package() {
 
 
 	cd "$pkgdir"
-	rm -rf bin sbin usr/sbin
+	mv {,usr/}sbin/* usr/bin
+	rm -rf sbin usr/sbin
+
+	mkdir -p $pkgdir/var/lib/hwclock
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

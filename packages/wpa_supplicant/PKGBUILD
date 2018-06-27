@@ -2,16 +2,22 @@
 
 pkgname=wpa_supplicant
 pkgver=2.6
-pkgrel=1
+pkgrel=2
 pkgdesc="A utility providing key negotiation for WPA wireless networks"
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="http://hostap.epitest.fi/wpa_supplicant"
 license=('GPL')
 groups=('base')
 depends=('musl' 'zlib' 'libressl' 'libnl-tiny')
 source=("https://w1.fi/releases/$pkgname-$pkgver.tar.gz"
 	'libressl.patch'
-	'eloop.patch')
+	'eloop.patch'
+	'wpa_supplicant'
+	'wpa_supplicant-log'
+	'wpa_supplicant.conf'
+	'wifi-setup')
+install=$pkgname.install
+backup=('etc/wpa_supplicant.conf')
 
 build() {
 	cd "$srcdir/$pkgname-$pkgver"
@@ -32,6 +38,17 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver/$pkgname"
 	make BINDIR=/usr/bin DESTDIR=$pkgdir install
+
+	install -Dm0755 $srcdir/wifi-setup $pkgdir/usr/bin/wifi-setup
+
+	mkdir -p $pkgdir/etc
+	install -m644 $srcdir/wpa_supplicant.conf $pkgdir/etc
+
+	mkdir -p $pkgdir/var/log/wpa_supplicant
+
+	mkdir -p $pkgdir/etc/service/wpa_supplicant/log
+	install -Dm0755 $srcdir/wpa_supplicant $pkgdir/etc/service/wpa_supplicant/run
+	install -Dm0755 $srcdir/wpa_supplicant-log $pkgdir/etc/service/wpa_supplicant/log/run
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

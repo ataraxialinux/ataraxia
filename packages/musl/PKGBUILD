@@ -4,7 +4,7 @@ pkgname=musl
 pkgver=1.1.19
 pkgrel=1
 pkgdesc="The standard C library"
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="http://www.musl-libc.org/"
 license=('MIT')
 groups=('base')
@@ -26,6 +26,9 @@ package() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
 	make DESTDIR=$pkgdir install
+
+	mkdir -p $pkgdir/usr/bin
+	ln -sf /lib/libc.so $pkgdir/usr/bin/ldd
 
 	msg "Stripping package $pkgname..."
 	find $pkgdir -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $XTARGET-strip --strip-all			2>/dev/null || true

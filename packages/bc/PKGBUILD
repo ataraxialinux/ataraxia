@@ -1,22 +1,23 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=bc
-pkgver=1.07.01
+pkgver=1.06.95
 pkgrel=1
 pkgdesc="An arbitrary precision calculator language"
-arch=('x86_64' 'aarch64')
+arch=('x86_64' 'aarch64' 'armhf')
 url="https://www.gnu.org/software/bc/"
 license=('GPL')
 groups=('base')
 depends=('musl' 'readline')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.bz2")
+source=("http://alpha.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.bz2")
 
 build() {
 	unset MAKEFLAGS
 	cd "$srcdir/$pkgname-$pkgver"
-	CC=$CC \
 	./configure \
 		--prefix=/usr \
+		--build=$XHOST \
+		--host=$XTARGET \
 		--with-readline
 	make -j1
 }

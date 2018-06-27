@@ -1,18 +1,23 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=linux
-pkgver=4.14.41
-pkgrel=1
-arch=('x86_64' 'aarch64')
+pkgver=4.17.2
+pkgrel=4
+arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL')
 groups=('base')
-source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$pkgname-$pkgver.tar.xz"
-	"x86_64-config"
-	"aarch64-config")
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz")
+
+yconfig() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=y/" .config
+		grep ^"CONFIG_$1=y" .config || echo "CONFIG_$1=y" >> .config
+		shift 1
+	done
+}
 
 build() {
-	cd "$srcdir/$pkgname-$pkgver"
 	cd "$srcdir/$pkgname-$pkgver"
 	unset LDFLAGS
 	make mrproper
@@ -78,12 +83,5 @@ package() {
 	make ARCH=$XKARCH CROSS_COMPILE=$XTARGET- INSTALL_MOD_PATH=$pkgdir/usr modules_install
 
 	mkdir -p $pkgdir/boot
-	case $CARCH in
-		x86_64)
-			cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
-			;;
-		aarch64)
-			cp arch/arm64/boot/Image $pkgdir/boot/vmlinuz
-			;;
-	esac
+	cp arch/x86/boot/bzImage $pkgdir/boot/vmlinuz
 }
