@@ -1,0 +1,15 @@
+pkgname=ninja
+pkgver=1.8.2
+pkgrel=1
+arch=('any')
+source=("https://github.com/ninja-build/ninja/archive/v$pkgver.tar.gz")
+
+build() {
+	cd $srcdir/$pkgname-$pkgver
+	python3 configure.py --bootstrap
+}
+
+package() {
+	cd $srcdir/$pkgname-$pkgver
+	install -m755 -D ninja $pkgdir/bin/ninja
+}

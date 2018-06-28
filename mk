@@ -190,10 +190,11 @@ build_toolchain() {
 	install_host_target musl
 	install_host gcc-final
 	install_host python
+	install_host ninja
 }
 
 clean_tool_pkg() {
-	for toolpkg in file pkgconf binutils gcc-static gcc-final python; do
+	for toolpkg in file pkgconf binutils gcc-static gcc-final python ninja; do
 		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
 	done
 }
