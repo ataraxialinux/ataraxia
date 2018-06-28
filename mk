@@ -189,10 +189,11 @@ build_toolchain() {
 	install_host_target linux-headers
 	install_host_target musl
 	install_host gcc-final
+	install_host python
 }
 
 clean_tool_pkg() {
-	for toolpkg in file pkgconf binutils gcc-static gcc-final; do
+	for toolpkg in file pkgconf binutils gcc-static gcc-final python; do
 		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
 	done
 }
