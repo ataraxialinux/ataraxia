@@ -1,7 +1,7 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=python
-pkgver=3.7.0
+pkgver=3.6.5
 pkgrel=1
 pkgdesc="Next generation of the python high-level scripting language"
 arch=('x86_64' 'aarch64' 'armhf')
@@ -60,6 +60,7 @@ build() {
 package() {
 	unset MAKEFLAGS
 	cd "$srcdir/Python-$pkgver"
+	sed -i 's/^all:.*$/all: build_all/' Makefile
 	make -j1 EXTRA_CFLAGS="$CFLAGS" DESTDIR=$pkgdir install
 
 	chmod 755 $pkgdir/usr/lib/libpython3.6m.so
