@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export PATH="/local/bin:/bin"
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
 
 dmesg -n 1
 
