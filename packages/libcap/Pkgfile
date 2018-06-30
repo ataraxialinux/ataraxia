@@ -13,9 +13,9 @@ build() {
 	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
 	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
 	make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
-		prefix= lib=lib PAM_CAP=no
-	make prefix= lib=lib DESTDIR=$PKG PAM_CAP=no RAISE_SETFCAP=no install
-	chmod 0755 $PKG/lib/libcap.so.$version
+		prefix=/usr lib=lib PAM_CAP=no
+	make prefix=/usr lib=lib DESTDIR=$PKG PAM_CAP=no RAISE_SETFCAP=no install
+	chmod 0755 $PKG/usr/lib/libcap.so.$version
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
