@@ -14,17 +14,17 @@ source=(https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.
 
 build() {
 	cd $name-$version
-	LDFLAGS="-L$ROOTFS/lib $LDFLAGS" \
+	LDFLAGS="-L$ROOTFS/usr/lib $LDFLAGS" \
 	./configure \
-		--prefix= \
-		--libdir=/lib \
-		--bindir=/bin \
-		--sbindir=/bin \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
 		--localstatedir=/var \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--disable-all-programs \
-		--enable-fs-paths-default=/bin \
+		--enable-fs-paths-default=/usr/bin \
 		--enable-libblkid \
 		--enable-libfdisk \
 		--enable-libmount \
@@ -33,7 +33,7 @@ build() {
 	make
 	make DESTDIR=$PKG install
 
-	rm -rf $PKG/bin $PKG/sbin
+	rm -rf $PKG/bin $PKG/sbin $PKG/usr/bin $PKG/usr/sbin
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
