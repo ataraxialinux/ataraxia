@@ -11,14 +11,12 @@ source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.gz)
 build() {
 	cd $name-$version
 	./configure \
-		--prefix= \
-		--libdir=/lib \
-		--libexecdir=/lib \
+		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--with-cxx-binding \
 		--with-cxx-shared \
-		--with-pkg-config-libdir=/lib/pkgconfig \
+		--with-pkg-config-libdir=/usr/lib/pkgconfig \
 		--with-normal \
 		--with-shared \
 		--without-ada \
@@ -31,17 +29,17 @@ build() {
 	make DESTDIR=$PKG install
 
 	for lib in ncurses ncurses++ form panel menu; do
-		echo "INPUT(-l${lib}w)" > $PKG/lib/lib${lib}.so
-		ln -s ${lib}w.pc $PKG/lib/pkgconfig/${lib}.pc
+		echo "INPUT(-l${lib}w)" > $PKG/usr/lib/lib${lib}.so
+		ln -s ${lib}w.pc $PKG/usr/lib/pkgconfig/${lib}.pc
 	done
 
 	for lib in tic tinfo; do
-		echo "INPUT(libncursesw.so.${version:0:1})" > $PKG/lib/lib${lib}.so
-		ln -s libncursesw.so.${version:0:1} $PKG/lib/lib${lib}.so.${version:0:1}
+		echo "INPUT(libncursesw.so.${version:0:1})" > $PKG/usr/lib/lib${lib}.so
+		ln -s libncursesw.so.${version:0:1} $PKG/usr/lib/lib${lib}.so.${version:0:1}
 	done
 
-	echo 'INPUT(-lncursesw)' > $PKG/lib/libcursesw.so
-	ln -s libncurses.so $PKG/lib/libcurses.so
+	echo 'INPUT(-lncursesw)' > $PKG/usr/lib/libcursesw.so
+	ln -s libncurses.so $PKG/usr/lib/libcurses.so
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
