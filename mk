@@ -136,7 +136,7 @@ altbuild_rootfs() {
 
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall libz m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs
 }
 
 OPT="$1"
