@@ -80,10 +80,6 @@ setup_environment() {
 	export PACKAGES="$BUILD/packages"
 	export IMAGE="$BUILD/image"
 
-	rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS/var/lib/pkg $TOOLS/var/lib/pkg $PACKAGES $IMAGE
-	touch {$ROOTFS/var/lib/pkg,$TOOLS/var/lib/pkg}/db
-
 	export LC_ALL="POSIX"
 	export PATH="$TOOLS/bin:$PATH"
 	export HOSTCC="gcc"
@@ -91,9 +87,15 @@ setup_environment() {
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -g0"
-	export CXXFLAGS="-Os -g0"
-	export LDFLAGS="-s"
+	export CFLAGS="-Os -g0 -fstack-protector-strong -pipe"
+	export CXXFLAGS="-Os -g0 -fstack-protector-strong -pipe"
+	export LDFLAGS="-s -Wl,-z,relro,-z,now"
+}
+
+make_environment() {
+	rm -rf $BUILD
+	mkdir -p $BUILD $SOURCES $ROOTFS/var/lib/pkg $TOOLS/var/lib/pkg $PACKAGES $IMAGE
+	touch {$ROOTFS/var/lib/pkg,$TOOLS/var/lib/pkg}/db
 }
 
 build_toolchain() {
@@ -134,14 +136,43 @@ altbuild_rootfs() {
 
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall libz m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap
+	pkginstall libz m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs
 }
 
-check_for_root
-setup_architecture
-setup_environment
-build_toolchain
-build_rootfs
+OPT="$1"
+JPKG="$2"
+
+case "$OPT" in
+	toolchain)
+		check_for_root
+		setup_architecture
+		setup_environment
+		make_environment
+		build_toolchain
+		;;
+	image)
+		check_for_root
+		setup_architecture
+		setup_environment
+		make_environment
+		build_toolchain
+		build_rootfs
+		;;
+	package)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkginstall $JPKG
+		;;
+	host-package)
+		check_for_root
+		setup_architecture
+		setup_environment
+		toolpkginstall $JPKG
+		;;
+	usage|*)
+		mkusage
+esac
 
 exit 0
 
