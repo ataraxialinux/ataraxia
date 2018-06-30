@@ -1,0 +1,21 @@
+#!/bin/sh
+
+export PATH="/local/bin:/bin"
+
+clear
+
+hwclock -u -w
+
+sv down /var/service/*
+
+sync
+
+killall5 -15
+sleep 5
+killall5 -9
+
+swapoff -a
+
+umount -a -r
+
+mount -o remount,ro /
