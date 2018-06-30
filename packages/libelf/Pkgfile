@@ -13,7 +13,7 @@ build() {
 	echo "CFLAGS += $CFLAGS -fPIC" > config.mak
 	sed -i 's@HEADERS = src/libelf.h@HEADERS = src/libelf.h src/gelf.h@' Makefile
 	make CC="$CC" HOSTCC="$HOSTCC"
-	make prefix= DESTDIR=$PKG install
+	make prefix=/usr DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

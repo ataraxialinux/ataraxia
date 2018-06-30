@@ -87,9 +87,9 @@ setup_environment() {
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -g0 -fstack-protector-strong -pipe"
-	export CXXFLAGS="-Os -g0 -fstack-protector-strong -pipe"
-	export LDFLAGS="-s -Wl,-z,relro,-z,now"
+	export CFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
+	export CXXFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
+	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
 }
 
 make_environment() {

@@ -11,13 +11,13 @@ source=(http://distfiles.dereferenced.org/$name/$name-$version.tar.xz)
 build() {
 	cd $name-$version
 	./configure \
-		--prefix= \
+		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-pkg-config-dir="/local/lib/pkgconfig:/local/share/pkgconfig:/lib/pkgconfig:/share/pkgconfig"
+		--with-pkg-config-dir="/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig"
 	make
 	make DESTDIR=$PKG install
-	ln -s pkgconf $PKG/bin/pkg-config
+	ln -s pkgconf $PKG/usr/bin/pkg-config
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
