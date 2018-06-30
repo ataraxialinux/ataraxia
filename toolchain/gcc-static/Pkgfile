@@ -1,0 +1,49 @@
+name=gcc-static
+version=8.1.0
+release=1
+source=(http://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
+	http://ftpmirror.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+	http://www.mpfr.org/mpfr-4.0.1/mpfr-4.0.1.tar.xz
+	http://ftpmirror.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+	http://isl.gforge.inria.fr/isl-0.19.tar.xz)
+
+build() {
+	cd gcc-$version
+	mv ../gmp-6.1.2 gmp
+	mv ../mpfr-4.0.1 mpfr
+	mv ../mpc-1.1.0 mpc
+	mv ../isl-0.19 isl
+	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
+	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+	mkdir build
+	cd build
+	../configure $GCCOPTS \
+		--prefix= \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--with-newlib \
+		--without-headers \
+		--enable-languages=c \
+		--disable-decimal-float \
+		--disable-libatomic \
+		--disable-libcilkrts \
+		--disable-libgomp \
+		--disable-libitm \
+		--disable-libmudflap \
+		--disable-libmpx \
+		--disable-libquadmath \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdc++-v3 \
+		--disable-libvtv \
+		--disable-multilib \
+		--disable-nls \
+		--disable-shared \
+		--disable-threads
+	make all-gcc all-target-libgcc
+	make DESTDIR=$PKG install-gcc install-target-libgcc
+}

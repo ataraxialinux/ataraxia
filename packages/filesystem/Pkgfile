@@ -1,0 +1,39 @@
+# Description: Filesystem layout and configuration files
+# URL:         https://januslinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=filesystem
+version=20180628
+release=1
+
+build() {
+	cd $PKG
+	mkdir -p boot bin dev etc/skel home lib mnt proc root share srv sys tmp var
+	mkdir -p var/log/sshd var/log/crond var/log/dmesg
+	mkdir -p var/empty var/service var/lib var/spool/cron/crontabs
+
+	ln -sfn . usr
+	ln -sfn bin sbin
+
+	chmod 1777 tmp
+	chmod 700 root
+
+	cp -a $KEEP/etc/* etc/
+	chmod 0600 etc/shadow
+
+	cp -a $KEEP/{genfstab,runsvdir-start,zzz} bin/
+
+	for services in tty1 tty2 tty3 tty4 tty5 tty6 ttyS0 dmesg; do
+		ln -s /etc/service/$services var/service/$services
+	done
+
+	ln -s /proc/self/mounts etc/mtab
+
+	mkdir -p \
+		etc/network/if-down.d \
+		etc/network/if-post-down.d \
+		etc/network/if-post-up.d \
+		etc/network/if-pre-down.d \
+		etc/network/if-pre-up.d \
+		etc/network/if-up.d
+}
