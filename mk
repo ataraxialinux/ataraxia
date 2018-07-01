@@ -19,7 +19,7 @@ pkginstall() {
 	for mergepkg in $pkg; do
 		printmsg "Building and installing $mergepkg"
 		cd $REPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
+		pkgmk -d -im -is -ns -cf $REPO/pkgmk.conf
 		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $ROOTFS
 	done
 }
@@ -29,7 +29,7 @@ toolpkginstall() {
 	for mergepkg in $pkg; do
 		printmsg "Building and installing $mergepkg"
 		cd $TCREPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
+		pkgmk -d -im -is -ns -cf $TCREPO/pkgmk.conf
 		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $TOOLS -f
 	done
 }
@@ -136,7 +136,7 @@ altbuild_rootfs() {
 
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake mksh bc
 }
 
 OPT="$1"
