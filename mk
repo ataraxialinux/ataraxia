@@ -19,7 +19,7 @@ pkginstall() {
 	for mergepkg in $pkg; do
 		printmsg "Building and installing $mergepkg"
 		cd $REPO/$mergepkg
-		pkgmk -d -uf -im -is -ns -cf $REPO/pkgmk.conf
+		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
 		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $ROOTFS
 	done
 }
@@ -29,7 +29,7 @@ toolpkginstall() {
 	for mergepkg in $pkg; do
 		printmsg "Building and installing $mergepkg"
 		cd $TCREPO/$mergepkg
-		pkgmk -d -uf -im -is -ns -cf $TCREPO/pkgmk.conf
+		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
 		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $TOOLS -f
 	done
 }
