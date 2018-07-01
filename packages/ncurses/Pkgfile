@@ -14,8 +14,6 @@ build() {
 		--prefix=/usr \
 		--build=$XHOST \
 		--host=$XTARGET \
-		--with-cxx-binding \
-		--with-cxx-shared \
 		--with-pkg-config-libdir=/usr/lib/pkgconfig \
 		--with-normal \
 		--with-shared \
@@ -28,7 +26,7 @@ build() {
 	make
 	make DESTDIR=$PKG install
 
-	for lib in ncurses ncurses++ form panel menu; do
+	for lib in ncurses form panel menu; do
 		echo "INPUT(-l${lib}w)" > $PKG/usr/lib/lib${lib}.so
 		ln -s ${lib}w.pc $PKG/usr/lib/pkgconfig/${lib}.pc
 	done
