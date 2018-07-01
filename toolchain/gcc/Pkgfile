@@ -1,18 +1,22 @@
 name=gcc
 version=8.1.0
+gmpver=6.1.2
+mpfrver=4.0.1
+mpcver=1.1.0
+islver=0.19
 release=1
 source=(http://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
-	http://ftpmirror.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
-	http://www.mpfr.org/mpfr-4.0.1/mpfr-4.0.1.tar.xz
-	http://ftpmirror.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
-	http://isl.gforge.inria.fr/isl-0.19.tar.xz)
+	http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
+	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
+	http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
 
 build() {
 	cd gcc-$version
-	mv ../gmp-6.1.2 gmp
-	mv ../mpfr-4.0.1 mpfr
-	mv ../mpc-1.1.0 mpc
-	mv ../isl-0.19 isl
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
 	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
 	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
