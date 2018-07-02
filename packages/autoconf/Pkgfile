@@ -11,10 +11,8 @@ source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 build() {
 	cd $name-$version
 	patch -Np1 -i $KEEP/autoconf/autoconf-add-musl.patch
-	./configure \
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--disable-nls
 	make
 	make DESTDIR=$PKG install

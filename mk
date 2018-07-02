@@ -114,7 +114,7 @@ build_toolchain() {
 
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bc file kbd make xz patch busybox libressl ca-certificates linux
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux curl libarchive pkgutils
 }
 
 OPT="$1"
