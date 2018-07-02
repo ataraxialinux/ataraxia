@@ -59,7 +59,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
@@ -114,7 +114,7 @@ build_toolchain() {
 
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bc file kbd make xz patch busybox libressl ca-certificates
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bc file kbd make xz patch busybox libressl ca-certificates linux
 }
 
 OPT="$1"
