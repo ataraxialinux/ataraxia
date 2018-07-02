@@ -39,7 +39,21 @@ EOF
 	find $PKG/usr/share/${pkgname}/ -name '*.crt' | \
 		rev | cut -d/ -f1-2 | rev | sort > $PKG/etc/ca-certificates.conf
 
+	mkdir -p $PKG/etc/ssl/certs/
 	install -Dm0755 c_rehash $PKG/usr/bin/c_rehash
+
+	cat $PKG/usr/share/ca-certificates/*/*.crt >$PKG/etc/ssl/certs/ca-certificates.crt
+
+	cd $PKG
+	for i in  etc/ssl/certs/* ; do
+		test ! -L "$i" && continue
+		s=$(readlink "$i")
+		p=$(printf "%s" "$s" | awk '{n=split($0, a, "/share"); if(n>1)print a[n];}')
+		if test -n "$p" ; then
+			nl=$(printf "../../../share%s" "$p")
+			ln -sf "$nl" "$i"
+		fi
+	done
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
