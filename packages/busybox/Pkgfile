@@ -1,0 +1,61 @@
+# Description: Size optimized toolbox of many common UNIX utilities
+# URL:         https://www.busybox.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  musl
+
+name=busybox
+version=1.28.4
+release=1
+source=(http://busybox.net/downloads/$name-$version.tar.bz2)
+
+build() {
+	cd $name-$version
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE defconfig
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS"
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" busybox.links
+
+	install -D busybox $PKG/usr/bin/busybox
+
+	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox $PKG/usr/bin/$applet || true; done
+
+	rm -rf $PKG/usr/bin/{chattr,chvt,clear,dc,deallocvt,fgconsole,kbd_mode,lsattr,lzcat,lzma,mke2fs,mkfs.ext2,openvt,patch,reset,setfattr,setfont,setkeycodes,showkey,strings,unlzma,unxz,xz,xzcat}
+
+	cd $PKG
+	ln -s usr/bin/busybox init
+
+	mkdir -p $PKG/usr/share/udhcpc
+	install -Dm0755 $SRC/$name-$version/examples/udhcp/simple.script $PKG/usr/share/udhcpc/default.script
+
+	mkdir -p $PKG/var/log/crond $PKG/var/log/dmesg $PKG/var/spool/cron/crontabs
+	mkdir -p $PKG/var/log/acpid $PKG/var/log/ntpd $PKG/var/log/watchdog $PKG/var/log/watchdog $PKG/var/log/telnetd
+
+	mkdir -p $PKG/etc/service $PKG/var/service
+
+	for services in tty1 tty2 tty3 tty4 ttyS0 dmesg; do
+		install -Dm0755 $KEEP/services/$services $PKG/etc/service/$services/run
+		cd $PKG
+		ln -sf /etc/service/$services var/service/$services
+	done
+
+	for services in acpid crond ntpd telnetd watchdog; do
+		install -Dm0755 $KEEP/services/$services $PKG/etc/service/$services/run
+		install -Dm0755 $KEEP/services/$services-log $PKG/etc/service/$services/log/run
+	done
+
+	chmod 4755 $PKG/usr/bin/busybox
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
