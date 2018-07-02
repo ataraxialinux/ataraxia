@@ -87,9 +87,9 @@ setup_environment() {
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
-	export CXXFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
-	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
+	export CFLAGS="-Os -g0 -fstack-protector-string -pipe"
+	export CXXFLAGS="-Os -g0 -fstack-protector-string -pipe"
+	export LDFLAGS="-s -Wl,-z,relro,-z,now"
 }
 
 make_environment() {
@@ -112,31 +112,9 @@ build_toolchain() {
 	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc}#*
 }
 
-altbuild_rootfs() {
-	source $KEEP/toolchain_vers
-
-	printmsg "Building busybox"
-	tarxf http://busybox.net/downloads/ busybox-1.28.4 .tar.bz2
-	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE defconfig $MKOPTS
-	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
-	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
-	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
-	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" $MKOPTS
-	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE CONFIG_PREFIX=$ROOTFS install
-
-	# Configure busybox
-	printmsg "Configuring busybox"
-	chmod 4755 $ROOTFS/bin/busybox
-	install -Dm0755 examples/udhcp/simple.script $ROOTFS/share/udhcpc/default.script
-	rm -rf $ROOTFS/linuxrc
-}
-
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake mksh bc file kbd make xz patch
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bc file kbd make xz patch busybox
 }
 
 OPT="$1"
