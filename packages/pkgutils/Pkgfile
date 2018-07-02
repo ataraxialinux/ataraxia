@@ -1,19 +1,29 @@
-# Description: A integer set library
-# URL:         http://freshmeat.net/projects/isl
+# Description: A set of utilities to manage software packages
+# URL:         http://crux.nu/gitweb/?p=tools/pkgutils.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  musl gmp
+# Depends on:  musl libarchive
 
-name=isl
-version=0.19
+name=pkgutils
+version=5.40.8
 release=1
-source=(http://isl.gforge.inria.fr/$name-$version.tar.xz)
+source=(https://github.com/protonesso/pkgutils/archive/$version.tar.gz
+	pkgmk.conf)
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR=$PKG install-strip
+	make PREFIX=/usr DESTDIR=$PKG install
+
+	rm -rf $PKG/etc/pkgmk.conf
+	cp $SRC/pkgmk.conf $PKG/etc/pkgmk.conf
+
+	sed -i $PKG/etc/pkgmk.conf \
+		-e "s|@BARCH[@]|$BARCH|g" \
+		-e "s|@LC_ALL[@]|$LC_ALL|g" \
+		-e "s|@CPPFLAGS[@]|$CPPFLAGS|g" \
+		-e "s|@CFLAGS[@]|$CFLAGS|g" \
+		-e "s|@CXXFLAGS[@]|$CXXFLAGS|g" \
+		-e "s|@LDFLAGS[@]|$LDFLAGS|g" \
+		-e "s|@GCCOPTS[@]|$GCCOPTS|g"
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
