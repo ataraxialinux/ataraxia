@@ -9,12 +9,9 @@ source=(http://www.musl-libc.org/releases/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	CROSS_COMPILE=$CROSS_COMPILE \
-	./configure \
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--syslibdir=/usr/lib \
-		--build=$XHOST \
-		--host=$XTARGET \
 		--enable-optimize
 	make
 	make DESTDIR=$PKG install
