@@ -1,19 +1,25 @@
-# Description: A integer set library
-# URL:         http://freshmeat.net/projects/isl
+# Description: An URL retrival utility and library
+# URL:         http://www.gnu.org/software/m4
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  musl gmp
+# Depends on:  musl zlib libressl ca-certificates
 
-name=isl
-version=0.19
+name=curl
+version=7.60.0
 release=1
-source=(http://isl.gforge.inria.fr/$name-$version.tar.xz)
+source=(https://curl.haxx.se/download/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
+	patch -Np1 -i $KEEP/curl/use-OPENSSL_config.patch
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--with-ssl \
+		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+		--with-ca-path=/etc/ssl/certs \
+		--without-librtmp \
+		--enable-ipv6
 	make
-	make DESTDIR=$PKG install-strip
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

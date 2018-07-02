@@ -1,19 +1,27 @@
-# Description: A integer set library
-# URL:         http://freshmeat.net/projects/isl
+# Description: Library that can create and read several streaming archive formats
+# URL:         http://libarchive.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  musl gmp
+# Depends on:  musl zlib acl xz libressl
 
-name=isl
-version=0.19
+name=libarchive
+version=3.3.2
 release=1
-source=(http://isl.gforge.inria.fr/$name-$version.tar.xz)
+source=(http://www.libarchive.org/downloads/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
+	patch -Np1 -i $KEEP/libarchive/libressl-2.7.patch
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--includedir=/usr/include \
+		--without-xml2 \
+		--without-iconv \
+		--without-nettle \
+		--without-expat
 	make
-	make DESTDIR=$PKG install-strip
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
