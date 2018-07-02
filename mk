@@ -87,8 +87,8 @@ setup_environment() {
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -g0 -fstack-protector-string -pipe"
-	export CXXFLAGS="-Os -g0 -fstack-protector-string -pipe"
+	export CFLAGS="-Os -g0 -fstack-protector-strong -pipe"
+	export CXXFLAGS="-Os -g0 -fstack-protector-strong -pipe"
 	export LDFLAGS="-s -Wl,-z,relro,-z,now"
 }
 
@@ -114,7 +114,7 @@ build_toolchain() {
 
 build_rootfs() {
 	printmsg "Building root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bc file kbd make xz patch busybox
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bc file kbd make xz patch busybox libressl ca-certificates
 }
 
 OPT="$1"
