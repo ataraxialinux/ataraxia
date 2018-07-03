@@ -116,7 +116,7 @@ build_rootfs() {
 	printmsg "Building root filesystem"
 	case $BARCH in
 		x86_64)
-			export BOOTLOADER=
+			export BOOTLOADER="grub"
 			;;
 	esac
 	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux $BOOTLOADER curl libarchive pkgutils expat
