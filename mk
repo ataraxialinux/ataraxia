@@ -81,7 +81,7 @@ setup_environment() {
 	export IMAGE="$BUILD/image"
 
 	export LC_ALL="POSIX"
-	export PATH="$TOOLS/bin:$PATH"
+	export PATH="$TOOLS/usr/bin:$TOOLS/bin:$PATH"
 	export HOSTCC="gcc"
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
@@ -107,9 +107,10 @@ build_toolchain() {
 	toolpkginstall gcc-static
 	pkginstall linux-headers musl
 	toolpkginstall gcc
+	toolpkginstall go
 
 	printmsg "Cleaning"
-	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc}#*
+	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc,go}#*
 }
 
 build_rootfs() {
@@ -119,7 +120,7 @@ build_rootfs() {
 			export BOOTLOADER="grub"
 			;;
 	esac
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux $BOOTLOADER curl libarchive pkgutils expat
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux $BOOTLOADER curl libarchive pkgutils expat go
 }
 
 OPT="$1"
