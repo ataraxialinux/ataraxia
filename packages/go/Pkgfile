@@ -36,7 +36,13 @@ build() {
 	install -d -m 755 $PKG/usr/lib/go/pkg/tool
 
 	cd ..
-	cp -R bin/linux_$GOARCH $PKG/usr/lib/go/bin
+
+	if [ -d bin/linux_$GOARCH ]; then
+		cp -R bin/linux_$GOARCH $PKG/usr/lib/go/bin
+	else
+		cp -R bin $PKG/usr/lib/go/bin
+	fi
+
 	cp -R pkg/linux_$GOARCH $PKG/usr/lib/go/pkg/
 	cp -R pkg/tool/linux_$GOARCH $PKG/usr/lib/go/pkg/tool/
 	cp -R src $PKG/usr/lib/go/src
