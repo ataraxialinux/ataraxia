@@ -24,18 +24,12 @@ build() {
 
 	./make.bash
 
-	install -d -m 755 $PKG/usr
-	install -d -m 755 $PKG/usr/lib
-	install -d -m 755 $PKG/usr/lib/go/bin
-	install -d -m 755 $PKG/usr/lib/go/pkg
-	install -d -m 755 $PKG/usr/lib/go/pkg/tool
-	install -d -m 755 $PKG/usr/lib/go/src
-
 	cd ..
-	cp -R bin/* $PKG/usr/lib/go/bin/
-	cp -R pkg/* $PKG/usr/lib/go/pkg/
-	cp -R pkg/tool/linux_*/* $PKG/usr/lib/go/pkg/tool/
-	cp -R src/* $PKG/usr/lib/go/src
+	install -d $PKG/usr/bin $PKG/usr/lib/go
+	cp -a bin pkg src lib misc api $PKG/usr/lib/go
+
+	ln -sf ../lib/go/bin/go $PKG/usr/bin/go
+	ln -sf ../lib/go/bin/gofmt $PKG/usr/bin/gofmt
 
 	find $PKG/usr/lib/go/src -name "testdata" | sort -u | xargs rm -rf
 }
