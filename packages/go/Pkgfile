@@ -32,18 +32,20 @@ build() {
 
 	CGO_ENABLED=0 ./make.bash
 
-	install -d -m 755 ${PKG}/usr/bin
-	install -d -m 755 ${PKG}/usr/lib/go/pkg/tool
+	install -d -m 755 $PKG/usr/bin
+	install -d -m 755 $PKG/usr/lib/go/pkg/tool
 
 	cd ..
-	install -d $PKG/usr/bin $PKG/usr/lib/go
-	cp -a bin pkg src lib misc api $PKG/usr/lib/go
+	cp -R bin/linux_$GOARCH $PKG/usr/lib/go/bin
+	cp -R pkg/linux_$GOARCH $PKG/usr/lib/go/pkg/
+	cp -R pkg/tool/linux_$GOARCH $PKG/usr/lib/go/pkg/tool/
+	cp -R src $PKG/usr/lib/go/src
+	ln -sf ../lib/go/bin/go $PKG/usr/bin/go
+	ln -sf ../lib/go/bin/gofmt $PKG/usr/bin/gofmt
 
-	ln -sf /usr/lib/go/bin/go $PKG/usr/bin/go
-	ln -sf /usr/lib/go/bin/gofmt $PKG/usr/bin/gofmt
-
+	find $PKG/usr/lib/go/src -name "testdata" | sort -u | xargs rm -rf
 	rm -rf $PKG/usr/lib/go/pkg/bootstrap
-	rm -rf $PKG/usr/lib/go/pkg/tool/*/api
+	rm -rf $PKG/usr/lib/go/pkg/tools/*/api
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
