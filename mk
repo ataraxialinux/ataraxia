@@ -19,7 +19,7 @@ pkginstall() {
 	for mergepkg in $pkg; do
 		printmsg "Building and installing $mergepkg"
 		cd $REPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
+		pkgmk -kw -d -if -im -is -ns -cf $REPO/pkgmk.conf
 		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $ROOTFS
 	done
 }
