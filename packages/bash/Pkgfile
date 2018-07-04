@@ -4,12 +4,19 @@
 # Depends on:  readline
 
 name=bash
-version=4.4.18
+version=4.4.023
+_basever=4.4
+_stripped_basever="$(echo ${_basever} | tr -d '.')"
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.gz)
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}.tar.gz)
 
 build() {
-	cd $name-$version
+	cd $name-${_basever}
+
+	for a in 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018 019 020 021 022 023; do
+		curl -O -L http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-$a
+		patch -p0 -i $name${_stripped_basever}-$a
+	done
 
 cat > config.cache << EOF
 ac_cv_func_mmap_fixed_mapped=yes

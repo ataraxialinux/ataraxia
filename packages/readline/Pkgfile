@@ -8,20 +8,15 @@ _basever=7.0
 _stripped_basever="$(echo ${_basever} | tr -d '.')"
 version=${_basever}.005
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}.tar.gz
-	http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-001
-	http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-002
-	http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-003
-	http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-004
-	http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-005)
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}.tar.gz)
 
 build() {
 	cd $name-${_basever}
-	patch -p0 -i ../$name${_stripped_basever}-001
-	patch -p0 -i ../$name${_stripped_basever}-002
-	patch -p0 -i ../$name${_stripped_basever}-003
-	patch -p0 -i ../$name${_stripped_basever}-004
-	patch -p0 -i ../$name${_stripped_basever}-005
+	for a in 001 002 003 004 005; do
+		curl -O -L http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}-patches/$name${_stripped_basever}-$a
+		patch -p0 -i $name${_stripped_basever}-$a
+	done
+
 	autoconf
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
