@@ -120,7 +120,7 @@ build_rootfs() {
 			export BOOTLOADER="grub"
 			;;
 	esac
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant sudo rsync ccache openssh curl libarchive pkgutils expat git go libffi python $BOOTLOADER
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant sudo rsync ccache openssh curl libarchive npkg expat git go libffi python $BOOTLOADER
 }
 
 OPT="$1"
