@@ -888,11 +888,11 @@ main() {
 	if [ "`build_needed`" = "no" ] && [ "$PKGMK_FORCE" = "no" ] && [ "$PKGMK_CHECK_MD5SUM" = "no" ] && [ "$PKGMK_CHECK_SIGNATURE" = "no" ]; then
 		info "Package '$TARGET' is up to date."
 	else
-		if [ "$BOOTSTRAP" == "no" ]; then
-			error "This package isn't allowed to build via bootstrap."
-		else
+		if [ "$BOOTSTRAP" == "yes" ]; then
 			download_source
 			build_package
+		else
+			error "This package isn't allowed to build via bootstrap."
 		fi
 	fi
 
