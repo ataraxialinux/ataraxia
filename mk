@@ -59,7 +59,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
