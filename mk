@@ -81,7 +81,7 @@ setup_environment() {
 	export IMAGE="$BUILD/image"
 
 	export LC_ALL="POSIX"
-	export PATH="$TOOLS/usr/bin:$TOOLS/bin:$PATH"
+	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
 	export HOSTCC="gcc"
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
