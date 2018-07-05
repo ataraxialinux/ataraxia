@@ -107,7 +107,6 @@ build_toolchain() {
 	toolpkginstall gcc-static
 	pkginstall linux-headers musl
 	toolpkginstall gcc
-	toolpkginstall go
 
 	printmsg "Cleaning"
 	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc,go}#*
@@ -120,7 +119,7 @@ build_rootfs() {
 			export BOOTLOADER="grub"
 			;;
 	esac
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant sudo rsync ccache openssh curl libarchive npkg expat git go libffi python $BOOTLOADER
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive npkg $BOOTLOADER
 }
 
 OPT="$1"
