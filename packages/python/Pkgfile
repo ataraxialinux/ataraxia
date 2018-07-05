@@ -4,7 +4,7 @@
 # Depends on:  zlib readline libressl expat libffi
 
 name=python
-version=3.6.6
+version=3.6.5
 release=1
 source=(https://www.python.org/ftp/python/$version/Python-$version.tar.xz)
 
@@ -31,8 +31,6 @@ build() {
 		--enable-ipv6 \
 		--enable-shared
 	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
-
-	sed -i 's/^all:.*$/all: build_all/' Makefile
 	make -j1 DESTDIR=$PKG install
 
 	chmod 755 $PKG/usr/lib/libpython3.6m.so
