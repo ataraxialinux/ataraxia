@@ -1,0 +1,49 @@
+# Description: GNU GRand Unified Bootloader
+# URL:         http://www.gnu.org/software/grub
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=grub
+version=2.02
+release=1
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+
+	unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
+	unset CPPFLAGS_FOR_BUILD CFLAGS_FOR_BUILD CXXFLAGS_FOR_BUILD LDFLAGS_FOR_BUILD
+	unset CPPFLAGS_FOR_TARGET CFLAGS_FOR_TARGET CXXFLAGS_FOR_TARGET LDFLAGS_FOR_TARGET
+
+	export CFLAGS="-Os -g0"
+	export CXXFLAGS="$CFLAGS"
+	export LDFLAGS="-s"
+
+	patch -Np1 -i $KEEP/grub/0004-add-GRUB_COLOR_variables.patch
+	patch -Np1 -i $KEEP/grub/0005-Allow_GRUB_to_mount_ext234_filesystems_that_have_the_encryption_feature.patch
+	patch -Np1 -i $KEEP/grub/0006-tsc-Change-default-tsc-calibration-method-to-pmtimer-on-EFI-systems.patch
+	patch -Np1 -i $KEEP/grub/0007-grub-mkconfig_10_linux_Support_multiple_early_initrd_images.patch
+	patch -Np1 -i $KEEP/grub/0008-Fix-packed-not-aligned-error-on-GCC-8.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--enable-boot-time \
+		--disable-liblzma \
+		--disable-nls \
+		--disable-werror
+	make
+	make DESTDIR=$PKG install
+
+	install -D -m0644 $KEEP/grub/grub.default $pkgdir/etc/default/grub
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
