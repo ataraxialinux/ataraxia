@@ -35,7 +35,9 @@ toolpkginstall() {
 }
 
 check_for_root() {
-	:
+	if [[ $EUID -ne 0 ]]; then
+		printmsgerror "This script must be run as root" 
+	fi
 }
 
 setup_architecture() {
