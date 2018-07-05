@@ -20,7 +20,7 @@ pkginstall() {
 		printmsg "Building and installing $mergepkg"
 		cd $REPO/$mergepkg
 		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $ROOTFS
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS -u
 	done
 }
 
@@ -30,7 +30,7 @@ toolpkginstall() {
 		printmsg "Building and installing $mergepkg"
 		cd $TCREPO/$mergepkg
 		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $TOOLS -f
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f -u
 	done
 }
 
@@ -53,13 +53,6 @@ setup_architecture() {
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
-			;;
-		armhf)
-			printmsg "Using configuration for armhf"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="arm-linux-musleabihf"
-			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
@@ -107,20 +100,14 @@ build_toolchain() {
 	toolpkginstall gcc-static
 	pkginstall linux-headers musl
 	toolpkginstall gcc
-	toolpkginstall go
 
 	printmsg "Cleaning"
 	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc,go}#*
 }
 
-build_rootfs() {
-	printmsg "Building root filesystem"
-	case $BARCH in
-		x86_64)
-			export BOOTLOADER="grub"
-			;;
-	esac
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant sudo rsync ccache openssh curl libarchive npkg expat git go libffi python $BOOTLOADER
+bootstrap_rootfs() {
+	printmsg "Bootstraping root filesystem"
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive npkg
 }
 
 OPT="$1"
@@ -134,13 +121,13 @@ case "$OPT" in
 		make_environment
 		build_toolchain
 		;;
-	image)
+	bootstrap)
 		check_for_root
 		setup_architecture
 		setup_environment
 		make_environment
 		build_toolchain
-		build_rootfs
+		bootstrap_rootfs
 		;;
 	package)
 		check_for_root
