@@ -12,6 +12,7 @@ printmsgerror() {
 	local msg=$(echo $1 | tr -s / /)
 	printf "\e[1m\e[31m==!\e[0m $msg\n"
 	sleep 1
+	exit 1
 }
 
 pkginstall() {
@@ -58,7 +59,6 @@ setup_architecture() {
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
-			exit 1
 	esac
 }
 
