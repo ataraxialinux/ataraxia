@@ -8,9 +8,6 @@ release=1
 source=(https://storage.googleapis.com/golang/go$version.src.tar.gz)
 
 build() {
-	cd $name
-	cd src
-
 	export GOOS=linux
 
 	case "$BARCH" in
@@ -20,14 +17,23 @@ build() {
 		aarch64)
 			export GOARCH=arm64
 			;;
-		armhf)
-			export GOARCH=arm
-			export GOARM=7
-			;;
 	esac
 
+	mkdir -p bootstrap
+	curl -C - -L -O https://dl.google.com/go/go$version.linux-$GOARCH.tar.gz
+
+	tar -xf go$version.linux-$GOARCH.tar.gz -C bootstrap
+
+	export XBOOTSTRAP="$(pwd)/bootstrap"
+
+	cd $name
+	patch -Np1 -i $KEEP/go/default-buildmode-pie.patch
+	patch -Np1 -i $KEEP/go/set-external-linker.patch
+
+	cd src
+
 	export GOROOT_FINAL=/usr/lib/go
-	export GOROOT_BOOTSTRAP=$TOOLS/usr/lib/go
+	export GOROOT_BOOTSTRAP=$XBOOTSTRAP/go
 
 	CGO_ENABLED=0 ./make.bash
 
