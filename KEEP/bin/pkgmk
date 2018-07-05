@@ -1,0 +1,953 @@
+#!/bin/bash
+#
+#  pkgutils
+#
+#  Copyright (c) 2000-2005 Per Liden
+#  Copyright (c) 2006-2017 by CRUX team (http://crux.nu)
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+#  USA.
+#
+
+##
+# error codes
+E_GENERAL=1
+E_PKGFILE=2    # invalid Pkgfile
+E_DIR_PERM=3   # (source/build) directory missing or missing read/write permission
+E_DOWNLOAD=4   # error during download
+E_UNPACK=5     # error during unpacking of source file(s)
+E_MD5=6        # md5sum verification failed
+E_FOOTPRINT=7  # footprint check failure
+E_BUILD=8      # error while running 'build()'
+E_INSTALL=9    # error while installing the package via 'pkgadd'
+E_SIGNATURE=10 # error verifying the signature
+
+info() {
+	echo "=======> $1"
+}
+
+warning() {
+	info "WARNING: $1" >&2
+}
+
+error() {
+	info "ERROR: $1" >&2
+}
+
+get_filename() {
+	local ABSOLUTE=""
+	if [ "$1" = "-a" ]; then
+		ABSOLUTE=1
+		shift
+	fi
+
+	if [[ $1 =~ ^(http|https|ftp|file)://.*/(.+) ]]; then
+		echo "$PKGMK_SOURCE_DIR/${BASH_REMATCH[2]}"
+	else
+		if [ "$ABSOLUTE" ]; then
+			echo $PKGMK_ROOT/$1
+		else
+			echo $1
+		fi
+	fi
+}
+
+get_basename() {
+	local FILE="`echo $1 | sed 's|^.*://.*/||g'`"
+	echo $FILE
+}
+
+check_pkgfile() {
+	if [ ! "$name" ]; then
+		error "Variable 'name' not specified in $PKGMK_PKGFILE."
+		exit $E_PKGFILE
+	elif [ ! "$version" ]; then
+		error "Variable 'version' not specified in $PKGMK_PKGFILE."
+		exit $E_PKGFILE
+	elif [ ! "$release" ]; then
+		error "Variable 'release' not specified in $PKGMK_PKGFILE."
+		exit $E_PKGFILE
+	elif [ "`type -t build`" != "function" ]; then
+		error "Function 'build' not specified in $PKGMK_PKGFILE."
+		exit $E_PKGFILE
+	fi
+}
+
+check_directory() {
+	if [ ! -d $1 ]; then
+		error "Directory '$1' does not exist."
+		exit $E_DIR_PERM
+	elif [ ! -w $1 ]; then
+		error "Directory '$1' not writable."
+		exit $E_DIR_PERM
+	elif [ ! -x $1 ] || [ ! -r $1 ]; then
+		error "Directory '$1' not readable."
+		exit $E_DIR_PERM
+	fi
+}
+
+check_file() {
+	if [ -e $1 ] && [ ! -w $1 ]; then
+		error "File '$1' is not writable."
+		exit 1
+	fi
+}
+
+download_file() {
+	info "Downloading '$1'."
+
+	PKGMK_DOWNLOAD_PROG=${PKGMK_DOWNLOAD_PROG:-wget}
+	if [ ! "`type -p ${PKGMK_DOWNLOAD_PROG}`" ]; then
+		error "Command '${PKGMK_DOWNLOAD_PROG}' not found."
+		exit $E_GENERAL
+	fi
+
+	LOCAL_FILENAME=`get_filename $1`
+	LOCAL_FILENAME_PARTIAL="$LOCAL_FILENAME.partial"
+
+	case ${PKGMK_DOWNLOAD_PROG} in
+		curl)
+			RESUME_CMD="-C -"
+			DOWNLOAD_OPTS="-L --fail --ftp-pasv --retry 3 --retry-delay 3 \
+			-o $LOCAL_FILENAME_PARTIAL $PKGMK_CURL_OPTS"
+			;;
+		wget)
+			RESUME_CMD="-c"
+			DOWNLOAD_OPTS="--compression=none --passive-ftp --no-directories --tries=3 --waitretry=3 \
+			--directory-prefix=$PKGMK_SOURCE_DIR \
+			--output-document=$LOCAL_FILENAME_PARTIAL $PKGMK_WGET_OPTS"
+			;;
+	esac
+
+	if [ -f "$LOCAL_FILENAME_PARTIAL" ]; then
+		info "Partial download found, trying to resume"
+		RESUME_OPTS="$RESUME_CMD"
+	fi
+
+	error=1
+
+	BASENAME=`get_basename $1`
+	for REPO in ${PKGMK_SOURCE_MIRRORS[@]}; do
+		REPO="`echo $REPO | sed 's|/$||'`"
+		$PKGMK_DOWNLOAD_PROG $DOWNLOAD_OPTS $RESUME_OPTS $REPO/$BASENAME
+		error=$?
+		if [ $error == 0 ]; then
+			break
+		fi
+	done
+
+	if [ $error != 0 ]; then
+		while true; do
+			$PKGMK_DOWNLOAD_PROG $DOWNLOAD_OPTS $RESUME_OPTS $1
+			error=$?
+			if [ $error != 0 ] && [ "$RESUME_OPTS" ]; then
+				info "Partial download failed, restarting"
+				rm -f "$LOCAL_FILENAME_PARTIAL"
+				RESUME_OPTS=""
+			else
+				break
+			fi
+		done
+	fi
+
+	if [ $error != 0 -o ! -f "$LOCAL_FILENAME_PARTIAL" ]; then
+		error "Downloading '$1' failed."
+		exit $E_DOWNLOAD
+	fi
+
+	mv -f "$LOCAL_FILENAME_PARTIAL" "$LOCAL_FILENAME"
+}
+
+download_source() {
+	local FILE LOCAL_FILENAME
+
+	for FILE in ${source[@]}; do
+		LOCAL_FILENAME=`get_filename $FILE`
+		if [ ! -e $LOCAL_FILENAME ]; then
+			if [ "$LOCAL_FILENAME" = "$FILE" ]; then
+				error "Source file '$LOCAL_FILENAME' not found (can not be downloaded, URL not specified)."
+				exit $E_DOWNLOAD
+			else
+				if [ "$PKGMK_DOWNLOAD" = "yes" ]; then
+					download_file $FILE
+				else
+					error "Source file '$LOCAL_FILENAME' not found (use option -d to download)."
+					exit $E_DOWNLOAD
+				fi
+			fi
+		fi
+	done
+}
+
+unpack_source() {
+	local FILE LOCAL_FILENAME COMMAND
+
+	for FILE in ${source[@]}; do
+		LOCAL_FILENAME=`get_filename $FILE`
+		case $LOCAL_FILENAME in
+			*.tar|*.tar.gz|*.tar.Z|*.tgz|*.tar.bz2|*.tbz2|*.tar.xz|*.txz|*.tar.lzma|*.tar.lz|*.zip|*.rpm|*.7z)
+				COMMAND="bsdtar -p -o -C $SRC -xf $LOCAL_FILENAME" ;;
+			*)
+				COMMAND="cp $LOCAL_FILENAME $SRC" ;;
+		esac
+
+		echo "$COMMAND"
+
+		$COMMAND
+
+		if [ $? != 0 ]; then
+			if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+				rm -rf $PKGMK_WORK_DIR
+			fi
+			error "Building '$TARGET' failed."
+			exit $E_UNPACK
+		fi
+	done
+}
+
+make_md5sum() {
+	local FILE LOCAL_FILENAMES
+
+	if [ "$source" ]; then
+		for FILE in ${source[@]}; do
+			LOCAL_FILENAMES="$LOCAL_FILENAMES `get_filename $FILE`"
+		done
+
+		md5sum $LOCAL_FILENAMES | sed -e 's|  .*/|  |' | sort -k 2
+	fi
+}
+
+make_footprint() {
+	pkginfo --footprint $TARGET | \
+		sed "s|\tlib/modules/`uname -r`/|\tlib/modules/<kernel-version>/|g" | \
+		sort -k 3
+}
+
+check_md5sum() {
+	local FILE="$PKGMK_WORK_DIR/.tmp"
+
+	cd $PKGMK_ROOT
+
+	if [ -f $PKGMK_MD5SUM ]; then
+		make_md5sum > $FILE.md5sum
+		sort -k 2 $PKGMK_MD5SUM > $FILE.md5sum.orig
+		diff -w -t -U 0 $FILE.md5sum.orig $FILE.md5sum | \
+			sed '/^@@/d' | \
+			sed '/^+++/d' | \
+			sed '/^---/d' | \
+			sed 's/^+/NEW       /g' | \
+			sed 's/^-/MISSING   /g' > $FILE.md5sum.diff
+		if [ -s $FILE.md5sum.diff ]; then
+			error "Md5sum mismatch found:"
+			cat $FILE.md5sum.diff >&2
+
+			if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+				rm -rf $PKGMK_WORK_DIR
+			fi
+
+			if [ "$PKGMK_CHECK_MD5SUM" = "yes" ]; then
+				error "Md5sum not ok."
+				exit $E_MD5
+			fi
+
+			error "Building '$TARGET' failed."
+			exit $E_MD5
+		fi
+	else
+		if [ "$PKGMK_CHECK_MD5SUM" = "yes" ]; then
+			if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+				rm -rf $PKGMK_WORK_DIR
+			fi
+			info "Md5sum not found."
+			exit $E_MD5
+		fi
+
+		warning "Md5sum not found, creating new."
+		make_md5sum > $PKGMK_MD5SUM
+	fi
+
+	if [ "$PKGMK_CHECK_MD5SUM" = "yes" ]; then
+		if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+			rm -rf $PKGMK_WORK_DIR
+		fi
+		info "Md5sum ok."
+		exit 0
+	fi
+}
+
+# requires a previous call of make_work_dir()
+check_signature() {
+	local RESULT=0
+	local PUBKEY=""
+
+	if [ -f $PKGMK_ROOT/$PKGMK_SIGNATURE ]; then
+		cd $SRC
+		for FILE in "$PKGMK_PKGFILE" "$PKGMK_FOOTPRINT" ${source[@]}; do
+			ln -s $(get_filename -a $FILE) .
+		done
+
+		if [ "$PKGMK_PUBLICKEY" ]; then
+			err=$(signify -q -C -p "$PKGMK_PUBLICKEY" -x "$PKGMK_ROOT/$PKGMK_SIGNATURE" 2>&1)
+		else
+			err=$(signify -q -C -x "$PKGMK_ROOT/$PKGMK_SIGNATURE" 2>&1)
+		fi
+
+		RESULT=$?
+		cd $PKGMK_ROOT
+
+		if [ $RESULT -ne 0 ]; then
+			if [ "$err" = "signify: signature verification failed" ]; then
+				error "Failed verifying cryptographic digest"
+			else
+				error "Signature mismatch found:"
+				echo "$err" | while read n; do echo 'MISMATCH	'${n%%:*}; done
+			fi
+
+			if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+				rm -rf $PKGMK_WORK_DIR
+			fi
+
+			error "Building '$TARGET' failed."
+			exit $E_SIGNATURE
+		#else
+			#info "Signature verification succeeded."
+		fi
+	else
+		if [ "$PKGMK_IGNORE_MD5SUM" = "no" ] && [ "$PKGMK_CHECK_SIGNATURE" = "no" ]; then
+			warning "Signature file not found, falling back to old md5sum checking."
+			return 1;
+		fi
+		if [ "$PKGMK_CHECK_SIGNATURE" = "yes" ]; then
+			if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+				rm -rf $PKGMK_WORK_DIR
+			fi
+			info "Signature not found."
+			exit $E_SIGNATURE
+		fi
+
+		warning "Signature not found, creating new."
+		cd $PKGMK_ROOT
+		make_signature
+	fi
+
+	if [ "$PKGMK_CHECK_SIGNATURE" = "yes" ]; then
+		if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+			rm -rf $PKGMK_WORK_DIR
+		fi
+		info "Signature ok."
+		exit 0
+	fi
+
+	# remove soft links
+	find $SRC -maxdepth 1 -mindepth 1 -type l -delete
+	return 0
+}
+
+make_signature() {
+	local FILE LOCAL_FILENAMES
+	local REPO
+
+	for FILE in "$PKGMK_PKGFILE" "$PKGMK_FOOTPRINT" ${source[@]}; do
+		LOCAL_FILENAMES="$LOCAL_FILENAMES `get_filename $FILE`"
+	done
+
+	if [ ! "$PKGMK_PRIVATEKEY" ]; then
+		REPO=${PWD%/*}
+		REPO=${REPO##*/}
+		REPO=${REPO%.git}
+	fi
+
+	if [ "$REPO" ]; then
+		PKGMK_PRIVATEKEY="/etc/ports/${REPO}.sec"
+	fi
+
+	sha256sum --tag $LOCAL_FILENAMES | sed 's|^SHA256 (.*/\(.*\))\(.* = .*\)|SHA256 (\1)\2|' | \
+	signify -S -e -x - -q -s "$PKGMK_PRIVATEKEY" -m - > ${PKGMK_SIGNATURE}.tmp
+
+	if [ $? -ne 0 ]; then
+		rm ${PKGMK_SIGNATURE}.tmp
+		error "Creating signature failed"
+		exit $E_SIGNATURE
+	else
+		mv ${PKGMK_SIGNATURE}.tmp ${PKGMK_SIGNATURE}
+	fi
+}
+
+refresh_signature() {
+	if [ ! "$PKGMK_PRIVATEKEY" ]; then
+		REPO=${PWD%/*}
+		REPO=${REPO##*/}
+		REPO=${REPO%.git}
+	fi
+
+	if [ "$REPO" ]; then
+		PKGMK_PRIVATEKEY="/etc/ports/${REPO}.sec"
+	fi
+
+	tail -n +3 ${PKGMK_SIGNATURE} | \
+	signify -S -e -x - -q -s "$PKGMK_PRIVATEKEY" -m - > ${PKGMK_SIGNATURE}.tmp
+
+	if [ $? -ne 0 ]; then
+		rm ${PKGMK_SIGNATURE}.tmp
+		error "Refreshing signature failed"
+		exit $E_SIGNATURE
+	else
+		mv ${PKGMK_SIGNATURE}.tmp ${PKGMK_SIGNATURE}
+	fi
+}
+
+strip_files() {
+	local FILTER
+	local N=$(nproc)
+
+	cd $PKG
+
+	if [ -f $PKGMK_ROOT/$PKGMK_NOSTRIP ]; then
+		FILTER="grep -v -f $PKGMK_ROOT/$PKGMK_NOSTRIP"
+	else
+		FILTER="cat"
+	fi
+
+	find . -type f -printf "%P\n" | $FILTER                   \
+		| xargs -r -L10 -P$N                              \
+			file --no-buffer --separator '>'          \
+			-e apptype -e ascii -e encoding -e tokens \
+			-e cdf -e compress -e tar -e text         \
+		| awk '
+			BEGIN { FS = ">[ ]+" }
+			$0 ~ /ELF.*executable.*not stripped/    { print "--strip-all      \"" $1 "\"" }
+			$0 ~ /ELF.*shared object.*not stripped/ { print "--strip-unneeded \"" $1 "\"" }
+			$2 == "current ar archive"              { print "--strip-debug    \"" $1 "\"" }
+			' \
+		| xargs -r -L1 -P$N strip
+}
+
+compress_manpages() {
+	local FILE DIR TARGET
+
+	cd $PKG
+
+	find . -type f -path "*/man/man*/*" | while read FILE; do
+		if [ "$FILE" = "${FILE%%.gz}" ]; then
+			gzip -9 "$FILE"
+		fi
+	done
+
+	find . -type l -path "*/man/man*/*" | while read FILE; do
+		TARGET=`readlink -n "$FILE"`
+		TARGET="${TARGET##*/}"
+		TARGET="${TARGET%%.gz}.gz"
+		rm -f "$FILE"
+		FILE="${FILE%%.gz}.gz"
+		DIR=`dirname "$FILE"`
+
+		if [ -e "$DIR/$TARGET" ]; then
+			ln -sf "$TARGET" "$FILE"
+		fi
+	done
+}
+
+check_footprint() {
+	local FILE="$PKGMK_WORK_DIR/.tmp"
+
+	cd $PKGMK_ROOT
+
+	if [ -f $TARGET ]; then
+		make_footprint > $FILE.footprint
+		if [ -f $PKGMK_FOOTPRINT ]; then
+			sort -k 3 $PKGMK_FOOTPRINT > $FILE.footprint.orig
+			diff -w -t -U 0 $FILE.footprint.orig $FILE.footprint | \
+				sed '/^@@/d' | \
+				sed '/^+++/d' | \
+				sed '/^---/d' | \
+				sed 's/^+/NEW       /g' | \
+				sed 's/^-/MISSING   /g' > $FILE.footprint.diff
+			if [ -s $FILE.footprint.diff ]; then
+				if [ "$PKGMK_IGNORE_NEW" = "yes" ] && \
+				   [ -z "$(egrep -l ^MISSING $FILE.footprint.diff)" ] ; then
+					info "New files found:"
+				else
+					error "Footprint mismatch found:"
+					BUILD_SUCCESSFUL="no"
+				fi
+				cat $FILE.footprint.diff >&2
+			fi
+		else
+			warning "Footprint not found, creating new."
+			mv $FILE.footprint $PKGMK_FOOTPRINT
+		fi
+	else
+		error "Package '$TARGET' was not found."
+		BUILD_SUCCESSFUL="no"
+	fi
+}
+
+make_work_dir() {
+	PKG="$PKGMK_WORK_DIR/pkg"
+	SRC="$PKGMK_WORK_DIR/src"
+	umask 022
+
+	cd $PKGMK_ROOT
+	remove_work_dir
+	mkdir -p $SRC $PKG
+
+	if [ "$PKGMK_IGNORE_SIGNATURE" = "no" ] || [ "$PKGMK_CHECK_SIGNATURE" = "yes" ]; then
+		test -f $PKGMK_SIGNATURE && cp $PKGMK_SIGNATURE $PKGMK_WORK_DIR
+		if check_signature && test ! -f $PKGMK_MD5SUM
+		then
+			return 0
+		fi
+	fi
+	if [ "$PKGMK_IGNORE_MD5SUM" = "no" ]; then
+		check_md5sum
+	fi
+}
+
+remove_work_dir() {
+	rm -rf $PKGMK_WORK_DIR
+}
+
+
+build_package() {
+	local BUILD_SUCCESSFUL="no"
+	local COMPRESSION
+
+	check_file "$TARGET"
+	make_work_dir
+
+	if [ "$UID" != "0" ]; then
+		warning "Packages should be built as root."
+	fi
+
+	info "Building '$TARGET'."
+
+	unpack_source
+
+	cd $SRC
+	(set -e ; build)
+
+	if [ $? = 0 ]; then
+		if [ "$PKGMK_NO_STRIP" = "no" ]; then
+			strip_files
+		fi
+
+		compress_manpages
+
+		cd $PKG
+		info "Build result:"
+
+		case $PKGMK_COMPRESSION_MODE in
+			gz)  COMPRESSION="-z" ;;
+			xz)  COMPRESSION="-J" ;;
+			lz)  COMPRESSION="--lzip" ;;
+		esac
+		bsdtar -c $COMPRESSION -f $TARGET *  &&  bsdtar -t -v -f $TARGET
+
+		if [ $? = 0 ]; then
+			BUILD_SUCCESSFUL="yes"
+
+			if [ "$PKGMK_IGNORE_FOOTPRINT" = "yes" ]; then
+				warning "Footprint ignored."
+			else
+				check_footprint
+			fi
+		fi
+	fi
+
+	if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+		remove_work_dir
+	fi
+
+	if [ "$BUILD_SUCCESSFUL" = "yes" ]; then
+		info "Building '$TARGET' succeeded."
+	else
+		if [ -f $TARGET ]; then
+			touch -r $PKGMK_ROOT/$PKGMK_PKGFILE $TARGET &> /dev/null
+		fi
+		error "Building '$TARGET' failed."
+		exit 1
+	fi
+}
+
+install_package() {
+	local COMMAND
+
+	info "Installing '$TARGET'."
+
+	if [ "$PKGMK_INSTALL" = "install" ]; then
+		COMMAND="pkgadd $TARGET"
+	else
+		COMMAND="pkgadd -u $TARGET"
+	fi
+
+	cd $PKGMK_ROOT
+	echo "$COMMAND"
+	$COMMAND
+
+	if [ $? = 0 ]; then
+		info "Installing '$TARGET' succeeded."
+	else
+		error "Installing '$TARGET' failed."
+		exit 1
+	fi
+}
+
+recursive() {
+	local ARGS FILE DIR
+
+	ARGS=`echo "$@" | sed -e "s/--recursive//g" -e "s/-r//g"`
+
+	for FILE in `find $PKGMK_ROOT -name $PKGMK_PKGFILE | sort`; do
+		DIR="`dirname $FILE`/"
+		if [ -d $DIR ]; then
+			info "Entering directory '$DIR'."
+			(cd $DIR && $PKGMK_COMMAND $ARGS)
+			info "Leaving directory '$DIR'."
+		fi
+	done
+}
+
+clean() {
+	local FILE LOCAL_FILENAME
+
+	if [ -f $TARGET ]; then
+		info "Removing $TARGET"
+		rm -f $TARGET
+	fi
+
+	for FILE in ${source[@]}; do
+		LOCAL_FILENAME=`get_filename $FILE`
+		if [ -e $LOCAL_FILENAME ] && [ "$LOCAL_FILENAME" != "$FILE" ]; then
+			info "Removing $LOCAL_FILENAME"
+			rm -f $LOCAL_FILENAME
+		fi
+	done
+}
+
+update_footprint() {
+	if [ ! -f $TARGET ]; then
+		error "Unable to update footprint. File '$TARGET' not found."
+		exit 1
+	fi
+
+	check_file "$PKGMK_FOOTPRINT"
+	make_footprint > $PKGMK_FOOTPRINT
+	touch $TARGET
+
+	info "Footprint updated."
+}
+
+build_needed() {
+	local FILE RESULT
+
+	RESULT="yes"
+	if [ -f $TARGET ]; then
+		RESULT="no"
+		for FILE in $PKGMK_PKGFILE ${source[@]}; do
+			FILE=`get_filename $FILE`
+			if [ -e $FILE ] && [ ! $TARGET -nt $FILE ]; then
+				RESULT="yes"
+				break
+			fi
+		done
+	fi
+
+	echo $RESULT
+}
+
+interrupted() {
+	echo ""
+	error "Interrupted."
+
+	if [ "$PKGMK_KEEP_WORK" = "no" ]; then
+		rm -rf $PKGMK_WORK_DIR
+	fi
+
+	exit 1
+}
+
+print_help() {
+	echo "usage: `basename $PKGMK_COMMAND` [options]"
+	echo "options:"
+	echo "  -i,   --install             build and install package"
+	echo "  -u,   --upgrade             build and install package (as upgrade)"
+	echo "  -r,   --recursive           search for and build packages recursively"
+	echo "  -d,   --download            download missing source file(s)"
+	echo "  -do,  --download-only       do not build, only download missing source file(s)"
+	echo "  -eo,  --extract-only        do not build, only extract source file(s)"
+	echo "  -utd, --up-to-date          do not build, only check if package is up to date"
+	echo "  -uf,  --update-footprint    update footprint using result from last build"
+	echo "  -if,  --ignore-footprint    build package without checking footprint"
+	echo "  -in,  --ignore-new          build package, ignore new files in a footprint missmatch"
+	echo "  -um,  --update-md5sum       update md5sum"
+	echo "  -im,  --ignore-md5sum       build package without checking md5sum"
+	echo "  -cm,  --check-md5sum        do not build, only check md5sum"
+	echo "  -us,  --update-signature    update signature including sha256 checksums"
+	echo "  -cs,  --check-signature     check the validity of the port files"
+	echo "  -is,  --ignore-signature    build package without checking the signature"
+	echo "  -rs,  --refresh-signature   create new signature and keep existing sha256 checksums"
+	echo "  -sk,  --secret-key <file>   use <file> to sign the port"
+	echo "  -pk,  --public-key <file>   check the port signature using public-key <file>"
+	echo "  -ns,  --no-strip            do not strip executable binaries or libraries"
+	echo "  -f,   --force               build package even if it appears to be up to date"
+	echo "  -c,   --clean               remove package and downloaded files"
+	echo "  -kw,  --keep-work           keep temporary working directory"
+	echo "  -cf,  --config-file <file>  use alternative configuration file"
+	echo "  -v,   --version             print version and exit"
+	echo "  -h,   --help                print help and exit"
+}
+
+parse_options() {
+	while [ "$1" ]; do
+		case $1 in
+			-i|--install)
+				PKGMK_INSTALL="install" ;;
+			-u|--upgrade)
+				PKGMK_INSTALL="upgrade" ;;
+			-r|--recursive)
+				PKGMK_RECURSIVE="yes" ;;
+			-d|--download)
+				PKGMK_DOWNLOAD="yes" ;;
+			-do|--download-only)
+				PKGMK_DOWNLOAD="yes"
+				PKGMK_DOWNLOAD_ONLY="yes" ;;
+			-eo|--extract-only)
+				PKGMK_EXTRACT_ONLY="yes" ;;
+			-utd|--up-to-date)
+				PKGMK_UP_TO_DATE="yes" ;;
+			-uf|--update-footprint)
+				PKGMK_UPDATE_FOOTPRINT="yes" ;;
+			-if|--ignore-footprint)
+				PKGMK_IGNORE_FOOTPRINT="yes" ;;
+			-in|--ignore-new)
+				PKGMK_IGNORE_NEW="yes" ;;
+			-um|--update-md5sum)
+				PKGMK_UPDATE_MD5SUM="yes" ;;
+			-im|--ignore-md5sum)
+				PKGMK_IGNORE_MD5SUM="yes" ;;
+			-cm|--check-md5sum)
+				PKGMK_CHECK_MD5SUM="yes" ;;
+			-us|--update-signature)
+				PKGMK_UPDATE_SIGNATURE="yes" ;;
+			-cs|--check-signature)
+				PKGMK_CHECK_SIGNATURE="yes" ;;
+			-is|--ignore-signature)
+				PKGMK_IGNORE_SIGNATURE="yes" ;;
+			-rs|--referesh-signature)
+				PKGMK_REFRESH_SIGNATURE="yes" ;;
+			-ns|--no-strip)
+				PKGMK_NO_STRIP="yes" ;;
+			-f|--force)
+				PKGMK_FORCE="yes" ;;
+			-c|--clean)
+				PKGMK_CLEAN="yes" ;;
+			-kw|--keep-work)
+				PKGMK_KEEP_WORK="yes" ;;
+			-pk|--public-key)
+				if [ ! "$2" ]; then
+					echo "`basename $PKGMK_COMMAND`: option $1 requires an argument"
+					exit 1
+				fi
+				PKGMK_PUBLICKEY="$2"
+				shift ;;
+			-sk|--secret-key)
+				if [ ! "$2" ]; then
+					echo "`basename $PKGMK_COMMAND`: option $1 requires an argument"
+					exit 1
+				fi
+				PKGMK_PRIVATEKEY="$2"
+				shift ;;
+			-cf|--config-file)
+				if [ ! "$2" ]; then
+					echo "`basename $PKGMK_COMMAND`: option $1 requires an argument"
+					exit 1
+				fi
+				PKGMK_CONFFILE="$2"
+				shift ;;
+			-v|--version)
+				echo "`basename $PKGMK_COMMAND` (pkgutils) $PKGMK_VERSION"
+				exit 0 ;;
+			-h|--help)
+				print_help
+				exit 0 ;;
+			*)
+				echo "`basename $PKGMK_COMMAND`: invalid option $1"
+				exit 1 ;;
+		esac
+		shift
+	done
+}
+
+main() {
+	# multilib
+	PKGMK_ARCH=64
+	if [ -f ".32bit" ]; then
+		PKGMK_ARCH=32
+	fi
+
+	local FILE TARGET
+
+	parse_options "$@"
+
+	if [ "$PKGMK_RECURSIVE" = "yes" ]; then
+		recursive "$@"
+		exit 0
+	fi
+
+	for FILE in $PKGMK_PKGFILE $PKGMK_CONFFILE; do
+		if [ ! -f $FILE ]; then
+			error "File '$FILE' not found."
+			exit 1
+		fi
+		. $FILE
+	done
+
+	check_directory "$PKGMK_SOURCE_DIR"
+	check_directory "$PKGMK_PACKAGE_DIR"
+	check_directory "`dirname $PKGMK_WORK_DIR`"
+
+	check_pkgfile
+
+	case $PKGMK_COMPRESSION_MODE in
+		gz|xz|lz)
+			TARGET="$PKGMK_PACKAGE_DIR/$name#$version-$release.pkg.tar.$PKGMK_COMPRESSION_MODE"
+			;;
+		*)
+			error "Compression mode '$PKGMK_COMPRESSION_MODE' not supported"
+			exit 1
+			;;
+	esac
+
+	if [ "$PKGMK_CLEAN" = "yes" ]; then
+		clean
+		exit 0
+	fi
+
+	if [ "$PKGMK_UPDATE_FOOTPRINT" = "yes" ]; then
+		update_footprint
+		exit 0
+	fi
+
+	if [ "$PKGMK_UPDATE_MD5SUM" = "yes" ]; then
+		download_source
+		check_file "$PKGMK_MD5SUM"
+		make_md5sum > $PKGMK_MD5SUM
+		info "Md5sum updated."
+		exit 0
+	fi
+
+	if [ "$PKGMK_UPDATE_SIGNATURE" = "yes" ]; then
+		download_source
+		check_file "$PKGMK_SIGNATURE"
+		make_signature
+		info "Signature updated."
+		exit 0
+	fi
+
+	if [ "$PKGMK_REFRESH_SIGNATURE" = "yes" ]; then
+		check_file "$PKGMK_SIGNATURE"
+		refresh_signature
+		info "Signature refreshed."
+		exit 0
+	fi
+
+	if [ "$PKGMK_DOWNLOAD_ONLY" = "yes" ]; then
+		download_source
+		exit 0
+	fi
+
+	if [ "$PKGMK_EXTRACT_ONLY" = "yes" ]; then
+		download_source
+		make_work_dir
+		info "Extracting sources of package '$name-$version'."
+		unpack_source
+		exit 0
+	fi
+
+	if [ "$PKGMK_UP_TO_DATE" = "yes" ]; then
+		if [ "`build_needed`" = "yes" ]; then
+			info "Package '$TARGET' is not up to date."
+		else
+			info "Package '$TARGET' is up to date."
+		fi
+		exit 0
+	fi
+
+	if [ "`build_needed`" = "no" ] && [ "$PKGMK_FORCE" = "no" ] && [ "$PKGMK_CHECK_MD5SUM" = "no" ] && [ "$PKGMK_CHECK_SIGNATURE" = "no" ]; then
+		info "Package '$TARGET' is up to date."
+	else
+		if [ "$BOOTSTRAP" == "yes" ]; then
+			download_source
+			build_package
+		else
+			error "This package isn't allowed to build via bootstrap."
+		fi
+	fi
+
+	if [ "$PKGMK_INSTALL" != "no" ]; then
+		install_package
+	fi
+
+	exit 0
+}
+
+trap "interrupted" SIGHUP SIGINT SIGQUIT SIGTERM
+
+export LC_ALL=POSIX
+
+readonly PKGMK_VERSION="0.1"
+readonly PKGMK_COMMAND="$0"
+readonly PKGMK_ROOT="$PWD"
+
+PKGMK_CONFFILE="/etc/pkgmk.conf"
+PKGMK_PKGFILE="Pkgfile"
+PKGMK_FOOTPRINT=".footprint"
+PKGMK_MD5SUM=".md5sum"
+PKGMK_NOSTRIP=".nostrip"
+PKGMK_SIGNATURE=".signature"
+
+PKGMK_SOURCE_MIRRORS=()
+PKGMK_SOURCE_DIR="$PWD"
+PKGMK_PACKAGE_DIR="$PWD"
+PKGMK_WORK_DIR="$PWD/work"
+
+PKGMK_COMPRESSION_MODE="xz"
+
+PKGMK_INSTALL="no"
+PKGMK_RECURSIVE="no"
+PKGMK_DOWNLOAD="no"
+PKGMK_DOWNLOAD_ONLY="no"
+PKGMK_EXTRACT_ONLY="no"
+PKGMK_UP_TO_DATE="no"
+PKGMK_UPDATE_FOOTPRINT="no"
+PKGMK_IGNORE_FOOTPRINT="no"
+PKGMK_IGNORE_NEW="no"
+PKGMK_FORCE="no"
+PKGMK_KEEP_WORK="no"
+PKGMK_UPDATE_MD5SUM="no"
+PKGMK_IGNORE_MD5SUM="no"
+PKGMK_CHECK_MD5SUM="no"
+PKGMK_UPDATE_SIGNATURE="no"
+PKGMK_IGNORE_SIGNATURE="no"
+PKGMK_CHECK_SIGNATURE="no"
+PKGMK_REFRESH_SIGNATURE="no"
+PKGMK_PRIVATEKEY=""
+PKGMK_NO_STRIP="no"
+PKGMK_CLEAN="no"
+
+main "$@"
+
+# End of file
+

@@ -2,313 +2,125 @@
 
 set -e
 
-mkusage() {
-	cat <<EOF
-mk - small and simple januslinux build system
-
-Usage:	BARCH=[supported architecture] ./mk [option] [package (only in 'package' option)]
-	toolchain			Build cross-toolchain
-	repository			Build every package
-	package				Build specific package
-	image				Build bootable .iso image
-EOF
-	exit 0
-}
-
-install_host() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $TCREPO/$dpkg
-		makepkg --config $BUILD/host-makepkg.conf -d -c -C -f --skipchecksums
-		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $TOOLS --force
-	done
-}
-
-install_target() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
-		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
-		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
-	done
-}
-
-build_target_only() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
-		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
-	done
-}
-
-install_target_only() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		yes y | sudo pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
-	done
-}
-
-install_target_nodeps() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
-		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
-		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH -dd
-	done
-}
-
-install_target_multiple() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
-		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums
-		yes y | sudo pacman -U $PKGS/$dpkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH
-	done
-}
-
-install_host_target() {
-	XPKG=$1
-	for dpkg in $XPKG; do
-		cd $REPO/$dpkg
-		makepkg --config $BUILD/host-makepkg.conf -d -c -f -C --skipchecksums
-		yes y | sudo pacman -U $PKGS/$dpkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH
-	done
-}
-
-print_green() {
+printmsg() {
 	local msg=$(echo $1 | tr -s / /)
-	printf "\e[1m\e[32m>>>\e[0m $msg\n"
+	printf "\e[1m\e[32m==>\e[0m $msg\n"
+	sleep 1
 }
 
-print_red() {
+printmsgerror() {
 	local msg=$(echo $1 | tr -s / /)
-	printf "\e[1m\e[31m>>>\e[0m $msg\n"
+	printf "\e[1m\e[31m==!\e[0m $msg\n"
+	sleep 1
 }
 
-configure_arch() {
+pkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Building and installing $mergepkg"
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $ROOTFS
+	done
+}
+
+toolpkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Building and installing $mergepkg"
+		cd $TCREPO/$mergepkg
+		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.gz --root $TOOLS -f
+	done
+}
+
+check_for_root() {
+	:
+}
+
+setup_architecture() {
 	case $BARCH in
 		x86_64)
-			print_green "Using config for x86_64"
+			printmsg "Using configuration for x86_64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
 			;;
 		aarch64)
-			print_green "Using config for aarch64"
+			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
 			;;
 		armhf)
-			print_green "Using config for armhf"
+			printmsg "Using configuration for armhf"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-fpu=vfpv3 --with-float=hard"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3"
 			;;
 		*)
-			print_red "BARCH variable isn't set!"
+			printmsgerror "BARCH variable isn't set!"
 			exit 1
 	esac
 }
 
-setup_build_dirs() {
-	print_green "Setting up build environment"
-	sleep 1
+setup_environment() {
+	printmsg "Setting up build environment"
 	export CWD="$(pwd)"
+	export KEEP="$CWD/KEEP"
 	export BUILD="$CWD/build"
-	export SOURCES="$BUILD/sources"
-	export ROOTFS="$BUILD/rootfs"
-	export FINALFS="$BUILD/finalfs"
-	export TOOLS="$BUILD/tools"
-	export PKGS="$BUILD/packages"
-	export LOGS="$BUILD/logs"
-	export IMGDIR="$BUILD/imgdir"
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
-}
+	export SOURCES="$BUILD/sources"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export PACKAGES="$BUILD/packages"
+	export IMAGE="$BUILD/image"
 
-setup_build_env() {
-	sudo rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS $FINALFS $TOOLS $PKGS $LOGS $IMGDIR
-
-	export PATH="$TOOLS/bin:$PATH"
-	export MKOPTS="-j$(expr $(nproc) + 1)"
+	export LC_ALL="POSIX"
+	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
 	export HOSTCC="gcc"
 	export HOSTCXX="g++"
+	export MKOPTS="-j$(expr $(nproc) + 1)"
+
+	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
+	export CFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
+	export CXXFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
+	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
 }
 
-prepare_build() {
-	export CFLAGS="-Os -g0"
-	export CXXFLAGS="$CFLAGS"
-	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export LDFLAGS="-s"
-
-	cp -a $TCREPO/makepkg.conf $BUILD/host-makepkg.conf
-	cp -a $REPO/makepkg.conf $BUILD/target-makepkg.conf
-
-	for files in $BUILD/host-makepkg.conf $BUILD/target-makepkg.conf; do
-		sed -i $files \
-			-e "s|@CARCH[@]|$BARCH|g" \
-			-e "s|@CHOST[@]|$XTARGET|g" \
-			-e "s|@CFLAGS[@]|$CFLAGS|g" \
-			-e "s|@CXXFLAGS[@]|$CXXFLAGS|g" \
-			-e "s|@CPPFLAGS[@]|$CPPFLAGS|g" \
-			-e "s|@LDFLAGS[@]|$LDFLAGS|g" \
-			-e "s|@MKOPTS[@]|$MKOPTS|g" \
-			-e "s|@PKGS[@]|$PKGS|g" \
-			-e "s|@SOURCES[@]|$SOURCES|g" \
-			-e "s|@LOGS[@]|$LOGS|g" \
-			-e "s|@ROOTFS[@]|$ROOTFS|g" \
-			-e "s|@TOOLS[@]|$TOOLS|g" \
-			-e "s|@UTILS[@]|$UTILS|g" \
-			-e "s|@XHOST[@]|$XHOST|g" \
-			-e "s|@XTARGET[@]|$XTARGET|g" \
-			-e "s|@XKARCH[@]|$XKARCH|g" \
-			-e "s|@GCCOPTS[@]|$GCCOPTS|g" \
-			-e "s|@HOSTCC[@]|$HOSTCC|g" \
-			-e "s|@HOSTCXX[@]|$HOSTCXX|g" \
-			-e "s|@PATH[@]|$PATH|g"
-	done
-
-	mkdir -p {$ROOTFS,$TOOLS}/var/lib/pacman
-
-	cd $TOOLS
-	mkdir -p {bin,include,lib,$XTARGET/{bin,include,lib}}
+make_environment() {
+	rm -rf $BUILD
+	mkdir -p $BUILD $SOURCES $ROOTFS/var/lib/pkg $TOOLS/var/lib/pkg $PACKAGES $IMAGE
+	touch {$ROOTFS/var/lib/pkg,$TOOLS/var/lib/pkg}/db
 }
 
 build_toolchain() {
-	print_green "Building cross-toolchain for $BARCH"
-	sleep 1
-	install_host file
-	install_host pkgconf
-	install_host_target filesystem
-	install_host binutils
-	install_host gcc-static
-	install_host_target linux-headers
-	install_host_target musl
-	install_host gcc-final
-	install_host python
-	install_host ninja
+	printmsg "Building cross-toolchain for $BARCH"
+	pkginstall filesystem
+	toolpkginstall file
+	toolpkginstall pkgconf
+	toolpkginstall binutils
+	toolpkginstall gcc-static
+	pkginstall linux-headers musl
+	toolpkginstall gcc
+	toolpkginstall go
+
+	printmsg "Cleaning"
+	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc,go}#*
 }
 
-clean_tool_pkg() {
-	for toolpkg in file pkgconf binutils gcc-static gcc-final python ninja; do
-		rm -rf $PKGS/$toolpkg-*.pkg.tar.xz
-	done
-}
-
-build_repository() {
-	print_green "Building repository"
-	sleep 1
+build_rootfs() {
+	printmsg "Building root filesystem"
 	case $BARCH in
 		x86_64)
-			export LINUX="linux"
-			export BOOTLOADER="grub syslinux efivar efibootmgr"
+			export BOOTLOADER="grub"
 			;;
 	esac
-
-	for PKG in zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool bzip2 gdbm perl readline autoconf automake bash bc file gettext-tiny less kbd make xz kmod expat libressl ca-certificates patch gperf eudev busybox $LINUX vim nano htop gdb strace openssh iptables curl sudo libarchive libuv cmake libffi python python2 libnl-tiny wireless_tools wpa_supplicant git fakeroot pacman rsync re2c ninja meson ccache pcre lynx libevent tor tmux sqlite libxml2 db haveged nasm zsh popt dosfstools $BOOTLOADER base build-essential; do
-		case "$PKG" in
-			gmp)
-				install_target_nodeps gmp
-				;;
-			gcc)
-				install_target_multiple gcc
-				;;
-			libtool)
-				install_target_nodeps libtool
-				;;
-			*)
-				install_target $PKG
-		esac
-	done
-
-	print_green "Building repository database"
-	sleep 1
-	repo-add $PKGS/repo.db.tar.gz $PKGS/*.pkg.tar.xz
-}
-
-install_base_packages() {
-	print_green "Installing base system"
-	sudo rm -rf $FINALFS
-	cp -a $REPO/pacman.conf $BUILD/target-pacman.conf
-	sed -i $BUILD/target-pacman.conf -e "s|@PKGS[@]|$PKGS|g"
-	sudo mkdir -p $FINALFS/var/lib/pacman
-	sudo pacman -Syy --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
-	yes y | sudo pacman -S base syslinux efibootmgr grub --root $FINALFS --arch $BARCH --config $BUILD/target-pacman.conf
-}
-
-prepare_files() {
-	print_green "Preparing files for .iso image"
-	mkdir -p $IMGDIR/boot
-
-	print_green "Building rootfs archive"
-	cd $FINALFS
-	sudo find . -print | cpio -o -H newc | gzip -9 > $IMGDIR/boot/rootfs.gz
-
-	print_green "Copying kernel"
-	cp $FINALFS/boot/vmlinuz $IMGDIR/boot/vmlinuz
-}
-
-install_loader() {
-	print_green "Preparing syslinux for .iso image"
-	cd $BUILD
-	rm -rf syslinux-*
-	cp $SOURCES/syslinux-* .
-	tar -xf syslinux-*
-
-	mkdir -p $IMGDIR/boot/syslinux
-	cp syslinux-*/bios/core/isolinux.bin $IMGDIR/boot/syslinux
-	cp syslinux-*/bios/com32/elflink/ldlinux/ldlinux.c32 $IMGDIR/boot/syslinux
-
-cat << CEOF > $IMGDIR/boot/syslinux/syslinux.cfg
-PROMPT 1
-TIMEOUT 50
-DEFAULT boot
-
-LABEL boot
-	LINUX /boot/vmlinuz
-	APPEND quiet
-	INITRD /boot/rootfs.gz
-CEOF
-
-	mkdir -p $IMGDIR/efi/boot
-cat << CEOF > $IMGDIR/efi/boot/startup.nsh
-echo -off
-echo Booting, please wait...
-\boot\vmlinuz quiet initrd=\boot\rootfs.gz
-CEOF
-}
-
-make_iso() {
-	print_green "Generating .iso image"
-	cd $IMGDIR
-	xorriso \
-		-as mkisofs \
-		-o $CWD/januslinux.iso \
-		-b boot/syslinux/isolinux.bin \
-		-c boot/syslinux/boot.cat \
-		-no-emul-boot \
-		-boot-load-size 4 \
-		-boot-info-table \
-		$IMGDIR
-
-	print_green "Generation of .iso file was completed!"
-}
-
-build_iso_image() {
-	case $BARCH in
-		x86_64)
-			prepare_files
-			install_loader
-			make_iso
-			;;
-		*)
-			print_red "Building .iso file isn't supported for architecture"
-			exit 1
-	esac
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant sudo rsync ccache openssh curl libarchive npkg expat git go libffi python $BOOTLOADER
 }
 
 OPT="$1"
@@ -316,43 +128,31 @@ JPKG="$2"
 
 case "$OPT" in
 	toolchain)
-		configure_arch
-		setup_build_dirs
-		setup_build_env
-		prepare_build
+		check_for_root
+		setup_architecture
+		setup_environment
+		make_environment
 		build_toolchain
-		clean_tool_pkg
-		;;
-	repository)
-		configure_arch
-		setup_build_dirs
-		setup_build_env
-		prepare_build
-		build_toolchain
-		clean_tool_pkg
-		build_repository
-		;;
-	package)
-		configure_arch
-		setup_build_dirs
-		install_target $JPKG
-		;;
-	host-package)
-		configure_arch
-		setup_build_dirs
-		install_host $JPKG
-		;;
-	update-package)
-		configure_arch
-		setup_build_dirs
-		rm -rf $PKGS/$JPKG-*.pkg.tar.xz
-		install_target $JPKG
 		;;
 	image)
-		configure_arch
-		setup_build_dirs
-		install_base_packages
-		build_iso_image
+		check_for_root
+		setup_architecture
+		setup_environment
+		make_environment
+		build_toolchain
+		build_rootfs
+		;;
+	package)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkginstall $JPKG
+		;;
+	host-package)
+		check_for_root
+		setup_architecture
+		setup_environment
+		toolpkginstall $JPKG
 		;;
 	usage|*)
 		mkusage

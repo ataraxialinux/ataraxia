@@ -1,0 +1,50 @@
+name=gcc
+version=8.1.0
+gmpver=6.1.2
+mpfrver=4.0.1
+mpcver=1.1.0
+islver=0.19
+release=1
+source=(http://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
+	http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
+	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
+	http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
+
+build() {
+	cd gcc-$version
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
+	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
+	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+	mkdir build
+	cd build
+	../configure $GCCOPTS \
+		--prefix= \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-languages=c,c++ \
+		--enable-lto \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror
+	make
+	make DESTDIR=$PKG install
+}

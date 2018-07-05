@@ -1,0 +1,18 @@
+name=pkgconf
+version=1.5.1
+release=1
+source=(http://distfiles.dereferenced.org/pkgconf/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	LDFLAGS="-s -static" \
+	./configure \
+		--prefix= \
+		--host=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--with-pkg-config-dir="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+	make
+	make DESTDIR=$PKG install
+	ln -s pkgconf $PKG/bin/pkg-config
+	ln -s pkgconf $PKG/bin/$XTARGET-pkg-config
+}
