@@ -104,12 +104,12 @@ build_toolchain() {
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
-	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc,go}#*
+	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc}#*
 }
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive git npkg
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive git npkg prt-get
 }
 
 OPT="$1"
