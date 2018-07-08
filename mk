@@ -156,7 +156,7 @@ bootstrap_rootfs() {
 generate_stage_archive() {
 	printmsg "Building stage archive"
 
-	pkginstallstage linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux curl libarchive git npkg prt-get
+	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux curl libarchive git npkg prt-get
 
 	chown -R root:root $STAGE
 
@@ -167,7 +167,7 @@ generate_stage_archive() {
 generate_initrd() {
 	printmsg "Building initrd archive"
 
-	pkginstallinitrd linux-headers musl zlib attr acl libcap ncurses util-linux e2fsprogs readline bash file kbd xz busybox libressl ca-certificates linux libnl wpa_supplicant curl
+	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses util-linux e2fsprogs readline bash file kbd xz busybox libressl ca-certificates linux libnl wpa_supplicant curl
 
 	cd $INITRD
 	rm -rf usr/include
