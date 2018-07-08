@@ -25,6 +25,22 @@ pkginstall() {
 	done
 }
 
+pkginstallstage() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Installing $mergepkg"
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $STAGE || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $STAGE -u
+	done
+}
+
+pkginstallinitrd() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Installing $mergepkg"
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $INITRD || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $INITRD -u
+	done
+}
+
 toolpkginstall() {
 	local pkg="$@"
 	for mergepkg in $pkg; do
@@ -40,6 +56,13 @@ initdb() {
 	for dbindir in $dir; do
 		mkdir -p $dbindir/var/lib/pkg
 		touch $dbindir/var/lib/pkg/db
+	done
+}
+
+rmpkg() {
+	local rmpkg="$@"
+	for rmpack in $rmpkg; do
+		rm -rf $PACKAGES/$rmpack#*
 	done
 }
 
@@ -64,6 +87,13 @@ setup_architecture() {
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			;;
+		armhf)
+			printmsg "Using configuration for armhf"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-tune=generic-armv7-a --with-fpu=vfpv3-d16 --with-float=hard --with-abi=aapcs-linux --with-mode=thumb"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
@@ -115,12 +145,71 @@ build_toolchain() {
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
-	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc}#*
+	rmpkg file pkgconf binutils gcc-static gcc
 }
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
 	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive git npkg prt-get
+}
+
+generate_stage_archive() {
+	printmsg "Building stage archive"
+
+	pkginstallstage linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux curl libarchive git npkg prt-get
+
+	chown -R root:root $STAGE
+
+	cd $STAGE
+	tar jcfv $BUILD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
+}
+
+generate_initrd() {
+	printmsg "Building initrd archive"
+
+	pkginstallinitrd linux-headers musl zlib attr acl libcap ncurses util-linux e2fsprogs readline bash file kbd xz busybox libressl ca-certificates linux libnl wpa_supplicant curl
+
+	cd $INITRD
+	rm -rf usr/include
+	find . | cpio -R root:root -H newc -o | xz -9 --check=none > $IMAGE/rootfs.cpio.xz
+
+	cp boot/vmlinuz* $IMAGE/vmlinuz
+}
+
+generate_iso() {
+	printmsg "Building *.iso image"
+	cd $SOURCES
+	curl -C - -O -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
+	tar -xf syslinux-6.03.tar.xz
+
+	cp syslinux-6.03/bios/core/isolinux.bin $IMAGE/isolinux.bin
+	cp syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 $IMAGE/ldlinux.c32
+
+cat << CEOF > $IMGDIR/syslinux.cfg
+PROMPT 1
+TIMEOUT 50
+DEFAULT boot
+LABEL boot
+	LINUX vmlinuz
+	APPEND quiet
+	INITRD rootfs.cpio.xz
+CEOF
+
+	mkdir -p $IMAGE/efi/boot
+cat << CEOF > $IMAGE/efi/boot/startup.nsh
+echo januslinux starting...
+\\vmlinuz quiet initrd=\\rootfs.cpio.xz
+CEOF
+
+	genisoimage \
+		-J -r -o $BUILD/januslinux-1.0-beta4-$BARCH.iso \
+		-b isolinux.bin \
+		-c boot.cat \
+		-input-charset UTF-8 \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		$IMAGE
 }
 
 OPT="$1"
@@ -141,6 +230,19 @@ case "$OPT" in
 		make_environment
 		build_toolchain
 		bootstrap_rootfs
+		;;
+	stage)
+		check_for_root
+		setup_architecture
+		setup_environment
+		generate_stage_archive
+		;;
+	image)
+		check_for_root
+		setup_architecture
+		setup_environment
+		generate_initrd
+		generate_iso
 		;;
 	package)
 		check_for_root
