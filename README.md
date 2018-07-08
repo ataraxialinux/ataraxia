@@ -11,7 +11,7 @@
                                       |    |              |
                                        \   |  januslinux  |
                                         \  |              |
-                                         \ |              | 
+                                         \ |              |
                                           \|______________|
                            Fast and mini Linux distribution which uses musl libc.
 ```
