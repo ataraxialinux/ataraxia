@@ -35,6 +35,14 @@ toolpkginstall() {
 	done
 }
 
+initdb() {
+	local dir="$@"
+	for dbindir in $dir; do
+		mkdir -p $dbindir/var/lib/pkg
+		touch $dbindir/var/lib/pkg/db
+	done
+}
+
 check_for_root() {
 	if [[ $EUID -ne 0 ]]; then
 		printmsgerror "This script must be run as root" 
@@ -74,6 +82,8 @@ setup_environment() {
 	export TOOLS="$BUILD/tools"
 	export PACKAGES="$BUILD/packages"
 	export IMAGE="$BUILD/image"
+	export INITRD="$BUILD/initrd"
+	export STAGE="$BUILD/stage"
 
 	export LC_ALL="POSIX"
 	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
@@ -89,8 +99,9 @@ setup_environment() {
 
 make_environment() {
 	rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS/var/lib/pkg $TOOLS/var/lib/pkg $PACKAGES $IMAGE
-	touch {$ROOTFS/var/lib/pkg,$TOOLS/var/lib/pkg}/db
+	mkdir -p $BUILD $SOURCES $ROOTFS $INITRD $STAGE $TOOLS $PACKAGES $IMAGE
+
+	initdb $ROOTFS $TOOLS $INITRD $STAGE
 }
 
 build_toolchain() {
