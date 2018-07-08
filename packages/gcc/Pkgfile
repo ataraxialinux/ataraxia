@@ -4,23 +4,37 @@
 # Depends on:  binutils gmp mpfr mpc isl
 
 name=gcc
-version=8.1.0
+version=7.3.0
 release=1
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
+	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
+	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
+	patch -Np1 -i $KEEP/gcc/0003-cilkrts.patch
+	patch -Np1 -i $KEEP/gcc/0004-libatomic-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0005-libgomp-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0006-libitm-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0007-libvtv-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0008-Revert-PR-driver-81523-Make-static-override-pie.patch
+	patch -Np1 -i $KEEP/gcc/0009-static-pie-support.patch
+	patch -Np1 -i $KEEP/gcc/0010-j2.patch
+	patch -Np1 -i $KEEP/gcc/0011-s390x-muslldso.patch
+	patch -Np1 -i $KEEP/gcc/0012-microblaze-pr65649.patch
+	patch -Np1 -i $KEEP/gcc/0013-ldbl128-config.patch
+	patch -Np1 -i $KEEP/gcc/0014-m68k.patch
 	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
 	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 	cd build
 	../configure $TOOLFLAGS $GCCOPTS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
+		--with-pkgversion="$version januslinux edition" \
 		--with-system-zlib \
 		--enable-__cxa_atexit \
 		--enable-checking=release \

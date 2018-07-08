@@ -95,6 +95,41 @@ setup_architecture() {
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
 			;;
+		mipsel)
+			printmsg "Using configuration for mipsel"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mipsel-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
+			;;
+		mips)
+			printmsg "Using configuration for mips"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
+			;;
+		ppc64le)
+			printmsg "Using configuration for ppc64le"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			;;
+		ppc)
+			printmsg "Using configuration for ppc"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
+			;;
+		s390x)
+			printmsg "Using configuration for s390x"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="s390x-linux-musl"
+			export XKARCH="s390"
+			export GCCOPTS="--with-arch=z196 --with-tune=zEC12 --with-zarch --with-long-double-128 --enable-decimal-float"
+			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
 	esac
@@ -121,10 +156,9 @@ setup_environment() {
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
-	export CXXFLAGS="-Os -g0 -fstack-protector-strong -fno-plt -pipe"
-	export LDFLAGS="-s -Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
+	export CFLAGS="-Os -g0 -pipe"
+	export CXXFLAGS="-Os -g0 -pipe"
+	export LDFLAGS="-s"
 }
 
 make_environment() {
