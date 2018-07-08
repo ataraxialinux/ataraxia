@@ -5,7 +5,7 @@
 
 name=prt-get
 version=5.19.1
-release=1
+release=2
 source=(http://crux.nu/files/prt-get-$version.tar.xz
 	prt-get.conf)
 BOOTSTRAP=yes
@@ -18,6 +18,8 @@ build() {
 	make DESTDIR=$PKG install
 
 	install -m 644 $SRC/prt-get.conf $PKG/etc
+
+	cp -a $KEEP/reposync $PKG/usr/bin
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
