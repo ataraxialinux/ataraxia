@@ -1,21 +1,17 @@
-# Description: A cross-platform open-source make system
-# URL:         http://www.cmake.org/
+# Description: Multi-platform support library with a focus on asynchronous I/O
+# URL:         https://github.com/libuv/libuv
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libressl expat curl libarchive libuv
 
-name=cmake
-version=3.11.4
+name=libuv
+version=1.20.3
 release=1
-source=(https://www.cmake.org/files/v${version%.*}/$name-$version.tar.gz)
+source=(https://github.com/libuv/libuv/archive/v$version/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
-	./bootstrap \
-		--prefix=/usr \
-		--system-libs \
-		--no-system-jsoncpp \
-		--no-system-librhash
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
 
