@@ -4,46 +4,37 @@
 # Depends on:  zlib readline libressl expat libffi
 
 name=python
-version=2.7.15
+version=3.6.5
 release=1
 source=(https://www.python.org/ftp/python/$version/Python-$version.tar.xz)
 
 build() {
 	cd Python-$version
 	patch -Np1 -i $KEEP/python/musl-find_library.patch
-	patch -Np1 -i $KEEP/python/unchecked-ioctl.patch
+	patch -Np1 -i $KEEP/python/fix-xattrs-glibc.patch
+	patch -Rp1 < $KEEP/python/bpo-30353.patch
+	patch -Np1 -i $KEEP/python/libressl.patch
+	patch -Np1 -i $KEEP/python/libressl-2.7.patch
 
-cat > config.cache << EOF
-ac_cv_file__dev_ptmx=yes
-ac_cv_file__dev_ptc=yes
-ac_cv_prog_HAS_HG=/bin/false
-ac_cv_prog_SVNVERSION=/bin/false
-ac_cv_have_long_long_format=yes
-ac_cv_working_tzset=yes
-ac_cv_little_endian_double=yes
-EOF
+	rm -r Modules/expat \
+		Modules/zlib \
+		Modules/_ctypes/darwin* \
+		Modules/_ctypes/libffi*
 
-	rm -r Modules/expat Modules/_ctypes/libffi* Modules/zlib
-
-	export OPT="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--build=$XHOST \
-		--host=$XTARGET \
-		--cache-file=config.cache \
+		--with-ensurepip=yes \
+		--with-lto \
 		--with-system-expat \
 		--with-system-ffi \
-		--with-system-zlib \
 		--with-threads \
 		--enable-ipv6 \
-		--enable-shared \
-		--enable-unicode=ucs4
-	make
+		--enable-shared
+	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
 	make -j1 DESTDIR=$PKG install
 
-	chmod 755 $PKG/usr/lib/libpython2.7.so.1.0
-
-	rm -rf $PKG/usr/bin/2to3
+	chmod 755 $PKG/usr/lib/libpython3.6m.so
+	chmod 755 $PKG/usr/lib/libpython3.so
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

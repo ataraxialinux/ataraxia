@@ -12,6 +12,7 @@ printmsgerror() {
 	local msg=$(echo $1 | tr -s / /)
 	printf "\e[1m\e[31m==!\e[0m $msg\n"
 	sleep 1
+	exit 1
 }
 
 pkginstall() {
@@ -34,8 +35,18 @@ toolpkginstall() {
 	done
 }
 
+initdb() {
+	local dir="$@"
+	for dbindir in $dir; do
+		mkdir -p $dbindir/var/lib/pkg
+		touch $dbindir/var/lib/pkg/db
+	done
+}
+
 check_for_root() {
-	:
+	if [[ $EUID -ne 0 ]]; then
+		printmsgerror "This script must be run as root" 
+	fi
 }
 
 setup_architecture() {
@@ -56,7 +67,6 @@ setup_architecture() {
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
-			exit 1
 	esac
 }
 
@@ -72,6 +82,8 @@ setup_environment() {
 	export TOOLS="$BUILD/tools"
 	export PACKAGES="$BUILD/packages"
 	export IMAGE="$BUILD/image"
+	export INITRD="$BUILD/initrd"
+	export STAGE="$BUILD/stage"
 
 	export LC_ALL="POSIX"
 	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
@@ -87,8 +99,9 @@ setup_environment() {
 
 make_environment() {
 	rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS/var/lib/pkg $TOOLS/var/lib/pkg $PACKAGES $IMAGE
-	touch {$ROOTFS/var/lib/pkg,$TOOLS/var/lib/pkg}/db
+	mkdir -p $BUILD $SOURCES $ROOTFS $INITRD $STAGE $TOOLS $PACKAGES $IMAGE
+
+	initdb $ROOTFS $TOOLS $INITRD $STAGE
 }
 
 build_toolchain() {
@@ -102,12 +115,12 @@ build_toolchain() {
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
-	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc,go}#*
+	rm -rf $PACKAGES/{file,pkgconf,binutils,gcc-static,gcc}#*
 }
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive npkg
+	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses util-linux e2fsprogs libtool perl readline autoconf automake bash bc file kbd make xz patch busybox libressl ca-certificates linux libnl wpa_supplicant curl libarchive git npkg prt-get
 }
 
 OPT="$1"
