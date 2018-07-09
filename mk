@@ -198,7 +198,7 @@ generate_iso() {
 	cp syslinux-6.03/bios/core/isolinux.bin $IMAGE/isolinux.bin
 	cp syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 $IMAGE/ldlinux.c32
 
-cat << CEOF > $IMGDIR/syslinux.cfg
+cat << CEOF > $IMAGE/syslinux.cfg
 PROMPT 1
 TIMEOUT 50
 DEFAULT boot
