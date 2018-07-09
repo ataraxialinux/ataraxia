@@ -109,13 +109,6 @@ setup_architecture() {
 			export XKARCH="mips"
 			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
 			;;
-		s390x)
-			printmsg "Using configuration for s390x"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="s390x-linux-musl"
-			export XKARCH="s390"
-			export GCCOPTS="--with-arch=z196 --with-tune=zEC12 --with-zarch --with-long-double-128 --enable-decimal-float"
-			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
 	esac
