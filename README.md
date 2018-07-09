@@ -26,7 +26,7 @@ januslinux was made for people who like CLI interface and to get Linux knowledge
 
 ## What hardware I can run it?
 
-You can run it on x86_64, aarch64, armv7l (hard float), ppc64le and s390x.
+You can run it on x86_64, aarch64, armv7l (hard float), mips, mipsel and s390x.
 
 ## Where I can get it?
 
@@ -34,7 +34,7 @@ You can download [second beta version](https://github.com/JanusLinux/janus/relea
 
 ## How I can contact and help you with development?
 
-You can write me on [email](mailto:nagakamira@gmail.com) and give some suggestions or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We are have own Discord server, click [here](https://discord.gg/a329dDz). We have an IRC channel on freenode.net: #januslinux
+You can write me on [email](mailto:nagakamira@gmail.com) and give some suggestions or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We are have own Discord server, click [here](https://discord.gg/a329dDz). We have an IRC channel on freenode.net: #januslinux. Also you can subscribe on our mailing lists, click [here](https://www.freelists.org/list/januslinux).
 
 ## Releases information and roadmap
 
