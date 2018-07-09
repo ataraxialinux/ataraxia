@@ -21,7 +21,7 @@ pkginstall() {
 		printmsg "Building and installing $mergepkg"
 		cd $REPO/$mergepkg
 		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS -u
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS
 	done
 }
 
@@ -29,7 +29,7 @@ pkginstallstage() {
 	local pkg="$@"
 	for mergepkg in $pkg; do
 		printmsg "Installing $mergepkg"
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $STAGE || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $STAGE -u
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $STAGE
 	done
 }
 
@@ -37,7 +37,7 @@ pkginstallinitrd() {
 	local pkg="$@"
 	for mergepkg in $pkg; do
 		printmsg "Installing $mergepkg"
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $INITRD || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $INITRD -u
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $INITRD
 	done
 }
 
@@ -47,7 +47,27 @@ toolpkginstall() {
 		printmsg "Building and installing $mergepkg"
 		cd $TCREPO/$mergepkg
 		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f || pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f -u
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f
+	done
+}
+
+pkgupdate() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Building and updating $mergepkg"
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS -u
+	done
+}
+
+toolpkgupdate() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Building and updating $mergepkg"
+		cd $TCREPO/$mergepkg
+		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f -u
 	done
 }
 
@@ -88,12 +108,19 @@ setup_architecture() {
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
 			;;
-		armhf)
-			printmsg "Using configuration for armhf"
+		armv7h)
+			printmsg "Using configuration for armv7h"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon"
+			;;
+		armv6h)
+			printmsg "Using configuration for armv6h"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabi"
+			export XKARCH="arm"
+			export GCCOPTS="---with-march=armv6 --with-mfloat-abi=soft --with-mfp=vfp"
 			;;
 		mipsel)
 			printmsg "Using configuration for mipsel"
@@ -268,6 +295,18 @@ case "$OPT" in
 		setup_architecture
 		setup_environment
 		toolpkginstall $JPKG
+		;;
+	package-update)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkgupdate $JPKG
+		;;
+	host-package-update)
+		check_for_root
+		setup_architecture
+		setup_environment
+		toolpkgupdate $JPKG
 		;;
 	usage|*)
 		mkusage
