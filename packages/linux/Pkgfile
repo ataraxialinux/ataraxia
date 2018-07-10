@@ -3,7 +3,7 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=linux
-version=4.17.4
+version=4.17.5
 release=1
 source=(https://cdn.kernel.org/pub/linux/kernel/v4.x/$name-$version.tar.xz)
 BOOTSTRAP=yes
@@ -110,6 +110,10 @@ build() {
 			yconfig MIPS_MALTA CPU_MIPS32_R2 SERIAL_8250 SERIAL_8250_CONSOLE PCI BLK_DEV_SD ATA ATA_SFF ATA_BMDMA ATA_PIIX POWER_RESET POWER_RESET_SYSCON
 			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
 			;;
+		ppc64le)
+			yconfig PPC64 POWER8_CPU PPC_PSERIES CPU_LITTLE_ENDIAN PPC_OF_BOOT_TRAMPOLINE BLK_DEV_SD SCSI_LOWLEVEL SCSI_IBMVSCSI ATA IBMVETH HVC_CONSOLE \
+				PPC_TRANSACTIONAL_MEM PPC_DISABLE_WERROR SECTION_MISMATCH_WARN_ONLY
+			;;
 	esac
 
 	yes '' | make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE silentoldconfig
@@ -120,6 +124,9 @@ build() {
 	sed -i "s/^CONFIG_DEBUG_KERNEL.*/\\# CONFIG_DEBUG_KERNEL is not set/" .config
 
 	case $BARCH in
+		mipsel)
+			sed -i -e 's:CONFIG_CPU_BIG_ENDIAN:CONFIG_CPU_LITTLE_ENDIAN:' .config
+			;;
 		mips)
 			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
 			;;
@@ -145,6 +152,9 @@ build() {
 			cp arch/arm/boot/zImage $PKG/boot/vmlinuz-$version
 			;;
 		mips|mipsel)
+			cp vmlinux $PKG/boot/vmlinuz-$version
+			;;
+		ppc64le)
 			cp vmlinux $PKG/boot/vmlinuz-$version
 			;;
 	esac
