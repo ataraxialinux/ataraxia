@@ -30,12 +30,8 @@ You can run it on x86_64, aarch64, armv7l, armv6l, mips, mipsel and ppc64le.
 
 ## Where I can get it?
 
-You can download [second beta version](https://github.com/JanusLinux/janus/releases/download/1.0-beta2/januslinux.iso) of januslinux which compiled on 05th June of 2018. It have bugs.
+You can download [first pre-release version of Beta 4](https://github.com/JanusLinux/janus/releases/tag/180710) of januslinux which compiled on 10th July of 2018. It have bugs.
 
 ## How I can contact and help you with development?
 
 You can write me on [email](mailto:nagakamira@gmail.com) and give some suggestions or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We are have own Discord server, click [here](https://discord.gg/a329dDz). We have an IRC channel on freenode.net: #januslinux. Also you can subscribe on our mailing lists, click [here](https://www.freelists.org/list/januslinux).
-
-## Releases information and roadmap
-
-Roadmap and information of januslinux are available [here](https://januslinux.github.io/releases/).
