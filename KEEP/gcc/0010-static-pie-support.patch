@@ -1,12 +1,13 @@
-From fe6a0619b0ecd89680a4580f4c24e810d4a8ce31 Mon Sep 17 00:00:00 2001
+From 6f2a5dd95b4256c8b259c5a6aedc8e0350398952 Mon Sep 17 00:00:00 2001
 From: Szabolcs Nagy <nsz@port70.net>
 Date: Sun, 1 Jul 2018 12:03:57 +0000
-Subject: [PATCH 09/14] static pie support
+Subject: [PATCH 10/15] static pie support
 
 ---
- gcc/config/gnu-user.h | 6 +++---
- gcc/gcc.c             | 4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ gcc/config/gnu-user.h     | 6 +++---
+ gcc/config/rs6000/sysv4.h | 7 +++++--
+ gcc/gcc.c                 | 4 ++--
+ 3 files changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/gcc/config/gnu-user.h b/gcc/config/gnu-user.h
 index 2787a3d16be..ee7b781319e 100644
@@ -26,6 +27,25 @@ index 2787a3d16be..ee7b781319e 100644
     %{fvtable-verify=none:%s; \
       fvtable-verify=preinit:vtv_start_preinit.o%s; \
       fvtable-verify=std:vtv_start.o%s} \
+diff --git a/gcc/config/rs6000/sysv4.h b/gcc/config/rs6000/sysv4.h
+index de386291a51..577fddc8a7c 100644
+--- a/gcc/config/rs6000/sysv4.h
++++ b/gcc/config/rs6000/sysv4.h
+@@ -759,9 +759,12 @@ ENDIAN_SELECT(" -mbig", " -mlittle", DEFAULT_ASM_ENDIAN)
+ 
+ #ifdef HAVE_LD_PIE
+ #define	STARTFILE_LINUX_SPEC "\
+-%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
++%{!shared: %{pg|p|profile:gcrt1.o%s;: \
++  %{" PIE_SPEC ":%{static:rcrt1.o%s;:Scrt1.o%s}} %{" NO_PIE_SPEC ":crt1.o%s}}} \
+ %{mnewlib:ecrti.o%s;:crti.o%s} \
+-%{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s} \
++%{shared:crtbeginS.o%s;: \
++  %{" PIE_SPEC ":crtbeginS.o%s} \
++  %{" NO_PIE_SPEC ":%{static:crtbeginT.o%s;:crtbegin.o%s}}} \
+ " CRTOFFLOADBEGIN
+ #else
+ #define	STARTFILE_LINUX_SPEC "\
 diff --git a/gcc/gcc.c b/gcc/gcc.c
 index 91eb0534722..74a390e6005 100644
 --- a/gcc/gcc.c

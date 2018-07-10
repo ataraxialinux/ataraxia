@@ -99,7 +99,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			export GCCOPTS=
 			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
@@ -135,6 +135,13 @@ setup_architecture() {
 			export XTARGET="mips-linux-musl"
 			export XKARCH="mips"
 			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
+			;;
+		ppc64le)
+			printmsg "Using configuration for ppc64le"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
