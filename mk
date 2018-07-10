@@ -208,7 +208,7 @@ generate_stage_archive() {
 	chown -R root:root $STAGE
 
 	cd $STAGE
-	tar jcfv $BUILD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
+	tar jcfv $CWD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
 }
 
 generate_initrd() {
@@ -249,7 +249,7 @@ echo januslinux starting...
 CEOF
 
 	genisoimage \
-		-J -r -o $BUILD/januslinux-1.0-beta4-$BARCH.iso \
+		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
 		-b isolinux.bin \
 		-c boot.cat \
 		-input-charset UTF-8 \
