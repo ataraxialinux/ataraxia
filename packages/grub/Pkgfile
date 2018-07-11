@@ -9,21 +9,8 @@ source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-
-	unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
-	unset CPPFLAGS_FOR_BUILD CFLAGS_FOR_BUILD CXXFLAGS_FOR_BUILD LDFLAGS_FOR_BUILD
-	unset CPPFLAGS_FOR_TARGET CFLAGS_FOR_TARGET CXXFLAGS_FOR_TARGET LDFLAGS_FOR_TARGET
-
-	export CFLAGS="-Os -g0"
-	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s"
-
-	patch -Np1 -i $KEEP/grub/0004-add-GRUB_COLOR_variables.patch
-	patch -Np1 -i $KEEP/grub/0005-Allow_GRUB_to_mount_ext234_filesystems_that_have_the_encryption_feature.patch
-	patch -Np1 -i $KEEP/grub/0006-tsc-Change-default-tsc-calibration-method-to-pmtimer-on-EFI-systems.patch
-	patch -Np1 -i $KEEP/grub/0007-grub-mkconfig_10_linux_Support_multiple_early_initrd_images.patch
-	patch -Np1 -i $KEEP/grub/0008-Fix-packed-not-aligned-error-on-GCC-8.patch
-
+	patch -Np1 -i $KEEP/grub/fix-gcc-no-pie-specs.patch
+	patch -Np1 -i $KEEP/grub/grub2-accept-empty-module.patch
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--bindir=/usr/bin \
