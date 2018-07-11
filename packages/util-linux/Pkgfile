@@ -1,6 +1,7 @@
 # Description: Miscellaneous system utilities for Linux
 # URL:         https://www.kernel.org/pub/linux/utils/util-linux/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib ncurses
 
 name=util-linux
 version=2.32
@@ -8,7 +9,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=1
+release=2
 source=(https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
@@ -27,7 +28,10 @@ build() {
 		--enable-libfdisk \
 		--enable-libmount \
 		--enable-libsmartcols \
-		--enable-libuuid
+		--enable-libuuid \
+		--enable-fsck \
+		--enable-fdisk \
+		--enable-cfdisk
 	make
 	make DESTDIR=$PKG install-strip
 
