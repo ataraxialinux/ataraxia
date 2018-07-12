@@ -10,14 +10,15 @@ source=(https://cdn.kernel.org/pub/linux/utils/boot/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	patch -p1 < $KEEP/syslinux/gcc-fix-alignment.patch
-	patch -p1 < $KEEP/syslinux/dont-guess-alignment.patch
-	patch -p1 < $KEEP/syslinux/btrfs-fix.patch
-	patch -p1 < $KEEP/syslinux/kdb-230.patch
-	patch -p1 < $KEEP/syslinux/correct_base_type.patch
-	patch -p1 < $KEEP/syslinux/set_mode_base.patch
-	patch -p1 < $KEEP/syslinux/fix_return_pointer.patch
-	patch -p1 < $KEEP/syslinux/support-ext4-64bit.patch
+	unset LDFLAGS
+	# patch -p1 < $KEEP/syslinux/gcc-fix-alignment.patch
+	# patch -p1 < $KEEP/syslinux/dont-guess-alignment.patch
+	# patch -p1 < $KEEP/syslinux/btrfs-fix.patch
+	# patch -p1 < $KEEP/syslinux/kdb-230.patch
+	# patch -p1 < $KEEP/syslinux/correct_base_type.patch
+	# patch -p1 < $KEEP/syslinux/set_mode_base.patch
+	# patch -p1 < $KEEP/syslinux/fix_return_pointer.patch
+	# patch -p1 < $KEEP/syslinux/support-ext4-64bit.patch
 	sed -i 's,/sbin,/bin,' syslinux.spec mk/syslinux.mk
 	sed 's|INSTALLSUBDIRS = com32 utils dosutil|INSTALLSUBDIRS = com32 utils|g' -i Makefile
 	sed '/DIAGDIR/d' -i Makefile
