@@ -1,31 +1,18 @@
-# Description: GNU GRand Unified Bootloader
-# URL:         http://www.gnu.org/software/grub
+# Description: An 80x86 assembler designed for portability and modularity
+# URL:         http://www.nasm.us
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
-name=grub
-version=2.02
-release=2
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+name=nasm
+version=2.13.03
+release=1
+source=(http://www.nasm.us/pub/nasm/releasebuilds/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	patch -Np1 -i $KEEP/grub/fix-gcc-no-pie-specs.patch
-	patch -Np1 -i $KEEP/grub/grub2-accept-empty-module.patch
-	autoreconf -vif
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--bindir=/usr/bin \
-		--sbindir=/usr/bin \
-		--sysconfdir=/etc \
-		--enable-boot-time \
-		--disable-efiemu \
-		--disable-liblzma \
-		--disable-nls \
-		--disable-werror
+		--prefix=/usr
 	make
-	make DESTDIR=$PKG install
-
-	install -D -m0644 $KEEP/grub/grub.default $pkgdir/etc/default/grub
+	make INSTALLROOT=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
