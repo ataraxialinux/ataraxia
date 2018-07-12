@@ -11,56 +11,17 @@ source=(https://cdn.kernel.org/pub/linux/utils/boot/$name/$name-$version.tar.xz)
 build() {
 	cd $name-$version
 	unset LDFLAGS
-	# patch -p1 < $KEEP/syslinux/gcc-fix-alignment.patch
-	# patch -p1 < $KEEP/syslinux/dont-guess-alignment.patch
-	# patch -p1 < $KEEP/syslinux/btrfs-fix.patch
-	# patch -p1 < $KEEP/syslinux/kdb-230.patch
-	# patch -p1 < $KEEP/syslinux/correct_base_type.patch
-	# patch -p1 < $KEEP/syslinux/set_mode_base.patch
-	# patch -p1 < $KEEP/syslinux/fix_return_pointer.patch
-	# patch -p1 < $KEEP/syslinux/support-ext4-64bit.patch
-	sed -i 's,/sbin,/bin,' syslinux.spec mk/syslinux.mk
-	sed 's|INSTALLSUBDIRS = com32 utils dosutil|INSTALLSUBDIRS = com32 utils|g' -i Makefile
-	sed '/DIAGDIR/d' -i Makefile
-	sed 's|diag libinstaller dos win32 win64 dosutil txt|libinstaller txt|g' -i Makefile
-	sed 's|win32/syslinux.exe win64/syslinux64.exe||g' -i Makefile
-	sed 's|dosutil/\*.com dosutil/\*.sys||g' -i Makefile
-	sed 's|dos/syslinux.com||g' -i Makefile
-	sed 's|gpxe/gpxelinuxk*\.0||g' -i Makefile
-	sed "s|utils/[a-z]*||g" -i Makefile
-	sed "s,core/isolinux-debug.bin,," -i Makefile
-	sed "s,mbr/\*.bin,mbr/\*mbr.bin mbr/isohdpfx.bin," -i Makefile
-	sed "s,memdisk/memdisk,," -i Makefile
-	sed "s,memdump/memdump.com,," -i Makefile
-	sed "s,com32/modules/\*.c32,," -i Makefile
-	sed "s,com32/hdt/\*.c32,," -i Makefile
-	sed "s,com32/rosh/\*.c32,," -i Makefile
-	sed "s,com32/gfxboot/\*.c32,," -i Makefile
-	sed "s,com32/sysdump/\*.c32,," -i Makefile
-	sed "s,com32/lua/src/\*.c32,," -i Makefile
-	sed "s,com32/gpllib/\*.c32,," -i Makefile
-	sed "s,com32/cmenu/libmenu/\*.c32,," -i Makefile
-	sed '/DIRS/ s/utils//' -i Makefile
-	sed -i 's,#include <getkey.h>,#include "include/getkey.h",' com32/libutil/keyname.c
-	sed -i 's,#include <libutil.h>,#include "include/libutil.h",' com32/libutil/keyname.c
-	sed -i 's,#include "sha1.h",#include "include/sha1.h",' com32/libutil/sha1hash.c
-	sed -i 's,#include <base64.h>,#include "include/base64.h",' com32/libutil/unbase64.c
-	sed -i 's,#include <md5.h>,#include "include/md5.h",' com32/libutil/md5.c
-	sed -i 's,#include <md5.h>,#include "include/md5.h",' com32/libutil/crypt-md5.c
-	sed -i 's,#include <minmax.h>,#include "include/minmax.h",' com32/libutil/sha256crypt.c
-	sed -i 's,#include "xcrypt.h",#include "include/xcrypt.h",' com32/libutil/sha256crypt.c
-	sed -i 's,#include <minmax.h>,#include "include/minmax.h",' com32/libutil/sha512crypt.c
-	sed -i 's,#include "xcrypt.h",#include "include/xcrypt.h",' com32/libutil/sha512crypt.c
-	sed -i 's,#include <base64.h>,#include "include/base64.h",' com32/libutil/base64.c
-	sed -i '/herror.*/d' utils/gethostip.c
-	sed -ri 's,__uint([0-9]+)_t,uint\1_t,g' efi/wrapper.c
-	sed -ri 's,__uint([0-9]+)_t,uint\1_t,g' efi/wrapper.h
+	patch -p1 < $KEEP/syslinux/gcc-fix-alignment.patch
+	patch -p1 < $KEEP/syslinux/dont-guess-alignment.patch
+	patch -p1 < $KEEP/syslinux/btrfs-fix.patch
+	patch -p1 < $KEEP/syslinux/kdb-230.patch
+	patch -p1 < $KEEP/syslinux/correct_base_type.patch
+	patch -p1 < $KEEP/syslinux/set_mode_base.patch
+	patch -p1 < $KEEP/syslinux/fix_return_pointer.patch
+	patch -p1 < $KEEP/syslinux/support-ext4-64bit.patch
 
-	export ARGS="BINDIR='/usr/bin' SBINDIR='/usr/bin' LIBDIR='/usr/lib' DATADIR='/usr/share' MANDIR='/usr/share/man' INCDIR='/usr/include'"
-	make $ARGS CC="$CC" OPTFLAGS="$CFLAGS $LDFLAGS" \
-		AUXDIR="/usr/share/syslinux" INSTALLROOT="$PKG" bios installer
-	make $ARGS CC="$CC" OPTFLAGS="$CFLAGS $LDFLAGS" \
-		AUXDIR="/usr/share/syslinux" INSTALLROOT="$PKG" bios install
+	make installer
+	make -j1 INSTALLROOT=$PKG MANDIR=/usr/share/man bios install
 
 	install -D -m0644 $KEEP/syslinux/syslinux.cfg $PKG/boot/syslinux/syslinux.cfg
 
