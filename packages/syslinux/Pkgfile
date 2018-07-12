@@ -1,0 +1,74 @@
+# Description: Collection of boot loaders
+# URL:         http://www.syslinux.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  nasm
+
+name=syslinux
+version=6.03
+release=1
+source=(https://cdn.kernel.org/pub/linux/utils/boot/$name/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	patch -p1 < $KEEP/syslinux/gcc-fix-alignment.patch
+	patch -p1 < $KEEP/syslinux/dont-guess-alignment.patch
+	patch -p1 < $KEEP/syslinux/btrfs-fix.patch
+	patch -p1 < $KEEP/syslinux/kdb-230.patch
+	patch -p1 < $KEEP/syslinux/correct_base_type.patch
+	patch -p1 < $KEEP/syslinux/set_mode_base.patch
+	patch -p1 < $KEEP/syslinux/fix_return_pointer.patch
+	patch -p1 < $KEEP/syslinux/support-ext4-64bit.patch
+	sed -i 's,/sbin,/bin,' syslinux.spec mk/syslinux.mk
+	sed 's|INSTALLSUBDIRS = com32 utils dosutil|INSTALLSUBDIRS = com32 utils|g' -i Makefile
+	sed '/DIAGDIR/d' -i Makefile
+	sed 's|diag libinstaller dos win32 win64 dosutil txt|libinstaller txt|g' -i Makefile
+	sed 's|win32/syslinux.exe win64/syslinux64.exe||g' -i Makefile
+	sed 's|dosutil/\*.com dosutil/\*.sys||g' -i Makefile
+	sed 's|dos/syslinux.com||g' -i Makefile
+	sed 's|gpxe/gpxelinuxk*\.0||g' -i Makefile
+	sed "s|utils/[a-z]*||g" -i Makefile
+	sed "s,core/isolinux-debug.bin,," -i Makefile
+	sed "s,mbr/\*.bin,mbr/\*mbr.bin mbr/isohdpfx.bin," -i Makefile
+	sed "s,memdisk/memdisk,," -i Makefile
+	sed "s,memdump/memdump.com,," -i Makefile
+	sed "s,com32/modules/\*.c32,," -i Makefile
+	sed "s,com32/hdt/\*.c32,," -i Makefile
+	sed "s,com32/rosh/\*.c32,," -i Makefile
+	sed "s,com32/gfxboot/\*.c32,," -i Makefile
+	sed "s,com32/sysdump/\*.c32,," -i Makefile
+	sed "s,com32/lua/src/\*.c32,," -i Makefile
+	sed "s,com32/gpllib/\*.c32,," -i Makefile
+	sed "s,com32/cmenu/libmenu/\*.c32,," -i Makefile
+	sed '/DIRS/ s/utils//' -i Makefile
+	sed -i 's,#include <getkey.h>,#include "include/getkey.h",' com32/libutil/keyname.c
+	sed -i 's,#include <libutil.h>,#include "include/libutil.h",' com32/libutil/keyname.c
+	sed -i 's,#include "sha1.h",#include "include/sha1.h",' com32/libutil/sha1hash.c
+	sed -i 's,#include <base64.h>,#include "include/base64.h",' com32/libutil/unbase64.c
+	sed -i 's,#include <md5.h>,#include "include/md5.h",' com32/libutil/md5.c
+	sed -i 's,#include <md5.h>,#include "include/md5.h",' com32/libutil/crypt-md5.c
+	sed -i 's,#include <minmax.h>,#include "include/minmax.h",' com32/libutil/sha256crypt.c
+	sed -i 's,#include "xcrypt.h",#include "include/xcrypt.h",' com32/libutil/sha256crypt.c
+	sed -i 's,#include <minmax.h>,#include "include/minmax.h",' com32/libutil/sha512crypt.c
+	sed -i 's,#include "xcrypt.h",#include "include/xcrypt.h",' com32/libutil/sha512crypt.c
+	sed -i 's,#include <base64.h>,#include "include/base64.h",' com32/libutil/base64.c
+	sed -i '/herror.*/d' utils/gethostip.c
+	sed -ri 's,__uint([0-9]+)_t,uint\1_t,g' efi/wrapper.c
+	sed -ri 's,__uint([0-9]+)_t,uint\1_t,g' efi/wrapper.h
+
+	ARGS="BINDIR='/usr/bin' SBINDIR='/usr/bin' LIBDIR='/usr/lib' DATADIR='/usr/share' MANDIR='/usr/share/man' INCDIR='/usr/include'" \
+	make $ARGS CC="$CC" OPTFLAGS="$CFLAGS $LDFLAGS" \
+		AUXDIR="/usr/share/syslinux" INSTALLROOT="$PKG" bios installer \
+	make $ARGS CC="$CC" OPTFLAGS="$CFLAGS $LDFLAGS" \
+		AUXDIR="/usr/share/syslinux" INSTALLROOT="$PKG" bios install
+
+	install -D -m0644 $KEEP/syslinux/syslinux.cfg $PKG/boot/syslinux/syslinux.cfg
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
