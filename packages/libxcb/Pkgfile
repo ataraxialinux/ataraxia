@@ -10,10 +10,12 @@ source=(https://xcb.freedesktop.org/dist/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
+	sed -i "s/pthread-stubs//" configure
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--localstatedir=/var
+		--localstatedir=/var \
+		--without-doxygen
 	make
 	make DESTDIR=$PKG install
 
