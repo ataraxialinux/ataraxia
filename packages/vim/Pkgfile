@@ -5,7 +5,7 @@
 
 name=vim
 version=8.1.0191
-release=1
+release=2
 source=(https://github.com/vim/vim/archive/v${version}/$name-$version.tar.gz)
 
 build() {
@@ -21,6 +21,8 @@ build() {
 		--disable-nls
 	make VIMRTDIR=
 	make -j1 VIMRTDIR= DESTDIR=$PKG install
+	
+	rm -rf $PKG/usr/bin/xxd
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
