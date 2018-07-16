@@ -5,7 +5,7 @@
 
 name=gdb
 version=8.1
-release=1
+release=2
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 
 build() {
@@ -25,11 +25,9 @@ build() {
 	install -dm755 $PKG/etc/gdb
 	touch $PKG/etc/gdb/gdbinit
 
-	rm $PKG/usr/include/{ansidecl,bfd,bfdlink,dis-asm,symcat}.h
-	rm -r $PKG/usr/share/info
+	rm $PKG/usr/include/{ansidecl,bfd,bfdlink,dis-asm,plugin-api,symcat}.h
+	rm $PKG/usr/share/info/bfd.info
 	rm $PKG/usr/lib/{libbfd,libopcodes}.a
-
-	rm -rf $PKG/usr/lib
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
