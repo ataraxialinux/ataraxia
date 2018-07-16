@@ -1,0 +1,92 @@
+# Description: The Xorg libraries
+# URL:         https://xcb.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  fontconfig libxcb
+
+name=xorg-libs
+version=2018.07.16
+release=1
+
+build() {
+	export PATH="/usr/local/bin:/usr/bin:$PKG/usr/bin"
+	export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:$PKG/usr/lib/pkgconfig"
+	export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/share/pkgconfig:/usr/share/pkgconfig:$PKG/usr/share/pkgconfig"
+	export LIBRARY_PATH="/usr/local/lib:/usr/lib:$PKG/usr/lib"
+	export C_INCLUDE_PATH="/usr/local/include:/usr/include:$PKG/usr/include"
+	export CPLUS_INCLUDE_PATH="/usr/local/include:/usr/include:$PKG/usr/include"
+
+	export CONF="$BUILDFLAGS --prefix=/usr --sysconfdir=/etc --localstatedir=/var"
+
+cat > lib-7.md5 << "EOF"
+c5ba432dd1514d858053ffe9f4737dd8  xtrans-1.3.5.tar.bz2
+0f618db70c4054ca67cee0cc156a4255  libX11-1.6.5.tar.bz2
+52df7c4c1f0badd9f82ab124fb32eb97  libXext-1.3.3.tar.bz2
+d79d9fe2aa55eb0f69b1a4351e1368f7  libFS-1.0.7.tar.bz2
+addfb1e897ca8079531669c7c7711726  libICE-1.0.9.tar.bz2
+499a7773c65aba513609fe651853c5f3  libSM-1.2.2.tar.bz2
+7a773b16165e39e938650bcc9027c1d5  libXScrnSaver-1.2.2.tar.bz2
+8f5b5576fbabba29a05f3ca2226f74d3  libXt-1.1.5.tar.bz2
+41d92ab627dfa06568076043f3e089e4  libXmu-1.1.2.tar.bz2
+20f4627672edb2bd06a749f11aa97302  libXpm-3.5.12.tar.bz2
+e5e06eb14a608b58746bdd1c0bd7b8e3  libXaw-1.0.13.tar.bz2
+07e01e046a0215574f36a3aacb148be0  libXfixes-5.0.3.tar.bz2
+f7a218dcbf6f0848599c6c36fc65c51a  libXcomposite-0.4.4.tar.bz2
+802179a76bded0b658f4e9ec5e1830a4  libXrender-0.9.10.tar.bz2
+58fe3514e1e7135cf364101e714d1a14  libXcursor-1.1.15.tar.bz2
+0cf292de2a9fa2e9a939aefde68fd34f  libXdamage-1.1.4.tar.bz2
+0920924c3a9ebc1265517bdd2f9fde50  libfontenc-1.1.3.tar.bz2
+b7ca87dfafeb5205b28a1e91ac3efe85  libXfont2-2.0.3.tar.bz2
+331b3a2a3a1a78b5b44cfbd43f86fcfe  libXft-2.3.2.tar.bz2
+1f0f2719c020655a60aee334ddd26d67  libXi-1.7.9.tar.bz2
+9336dc46ae3bf5f81c247f7131461efd  libXinerama-1.1.3.tar.bz2
+28e486f1d491b757173dd85ba34ee884  libXrandr-1.5.1.tar.bz2
+5d6d443d1abc8e1f6fc1c57fb27729bb  libXres-1.2.0.tar.bz2
+ef8c2c1d16a00bd95b9fdcef63b8a2ca  libXtst-1.2.3.tar.bz2
+210b6ef30dda2256d54763136faa37b9  libXv-1.0.11.tar.bz2
+4cbe1c1def7a5e1b0ed5fce8e512f4c6  libXvMC-1.0.10.tar.bz2
+d7dd9b9df336b7dd4028b6b56542ff2c  libXxf86dga-1.1.4.tar.bz2
+298b8fff82df17304dfdb5fe4066fe3a  libXxf86vm-1.1.4.tar.bz2
+d2f1f0ec68ac3932dd7f1d9aa0a7a11c  libdmx-1.1.4.tar.bz2
+8f436e151d5106a9cfaa71857a066d33  libpciaccess-0.14.tar.bz2
+4a4cfeaf24dab1b991903455d6d7d404  libxkbfile-1.0.9.tar.bz2
+42dda8016943dc12aff2c03a036e0937  libxshmfence-1.3.tar.bz2
+EOF
+
+	mkdir lib
+	cd lib
+	grep -v '^#' ../lib-7.md5 | awk '{print $2}' | wget -i- -c \
+		-B https://www.x.org/pub/individual/lib/
+	md5sum -c ../lib-7.md5
+
+	for package in $(grep -v '^#' ../lib-7.md5 | awk '{print $2}')
+	do
+		packagedir=${package%.tar.bz2}
+		tar -xf $package
+		pushd $packagedir
+			case $packagedir in
+				libXfont2-[0-9]* )
+					./configure $CONF --disable-devel-docs
+					;;
+				libXt-[0-9]* )
+					./configure $CONF \
+						--with-appdefaultdir=/etc/X11/app-defaults
+					;;
+				* )
+					./configure $CONF
+					;;
+			esac
+			make
+			make DESTDIR=$PKG install
+		popd
+		rm -rf $packagedir
+	done
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
