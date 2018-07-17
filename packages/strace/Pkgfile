@@ -4,13 +4,15 @@
 
 name=strace
 version=4.23
-release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+release=2
+source=(https://github.com/strace/strace/releases/download/v$version/strace-$version.tar.xz)
 
 build() {
 	cd $name-$version
+	export CFLAGS="$CFLAGS -Dsigcontext_struct=sigcontext"
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--enable-mpers=no
 	make
 	make DESTDIR=$PKG install
 
