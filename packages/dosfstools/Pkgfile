@@ -1,26 +1,24 @@
-# Description: Highly configurable text editor
-# URL:         http://www.vim.org/
+# Description: DOS filesystem utilities
+# URL:         https://github.com/dosfstools/dosfstools
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  acl ncurses
 
-name=vim
-version=8.1.0191
-release=3
-source=(https://github.com/vim/vim/archive/v${version}/$name-$version.tar.gz)
+name=dosfstools
+version=4.1
+release=1
+source=(https://github.com/$name/$name/releases/download/v$version/$name-$version.tar.xz)
+BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--with-vim-name=vim \
-		--without-x \
-		--enable-cscope \
-		--enable-multibyte \
-		--disable-gui \
-		--disable-gpm \
-		--disable-nls
-	make VIMRTDIR=
-	make -j1 VIMRTDIR= DESTDIR=$PKG install
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--mandir=/usr/share/man \
+		--docdir=/usr/share/doc/dosfstools \
+		--enable-compat-symlinks
+	make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

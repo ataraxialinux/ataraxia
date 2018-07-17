@@ -1,26 +1,18 @@
-# Description: Highly configurable text editor
-# URL:         http://www.vim.org/
+# Description: Tools and library to manipulate EFI variables
+# URL:         https://github.com/rhinstaller/efivar
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  acl ncurses
+# Depends on:  popt
 
-name=vim
-version=8.1.0191
-release=3
-source=(https://github.com/vim/vim/archive/v${version}/$name-$version.tar.gz)
+name=efivar
+version=36
+release=1
+source=(https://github.com/rhboot/efivar/releases/download/$version/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--with-vim-name=vim \
-		--without-x \
-		--enable-cscope \
-		--enable-multibyte \
-		--disable-gui \
-		--disable-gpm \
-		--disable-nls
-	make VIMRTDIR=
-	make -j1 VIMRTDIR= DESTDIR=$PKG install
+	make libdir=/usr/lib bindir=/usr/bin mandir=/usr/share/man includedir=/usr/include
+	make -j1 DESTDIR=$PKG \
+		libdir=/usr/lib bindir=/usr/bin mandir=/usr/share/man includedir=/usr/include install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
