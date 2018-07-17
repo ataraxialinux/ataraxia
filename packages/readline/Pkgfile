@@ -7,7 +7,7 @@ name=readline
 version=7.0.005
 _basever=7.0
 _stripped_basever="$(echo ${_basever} | tr -d '.')"
-release=1
+release=2
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}.tar.gz)
 BOOTSTRAP=yes
 
@@ -19,11 +19,14 @@ build() {
 	done
 
 	autoconf
+
+	sed -i '/MV.*old/d' Makefile.in
+	sed -i '/{OLDSUFF}/c:' support/shlib-install
+
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--enable-curses
-	make
-	make DESTDIR=$PKG install
+		--prefix=/usr
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
