@@ -1,26 +1,24 @@
-# Description: Highly configurable text editor
-# URL:         http://www.vim.org/
+# Description: A commandline option parser
+# URL:         http://rpm5.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  acl ncurses
 
-name=vim
-version=8.1.0191
-release=3
-source=(https://github.com/vim/vim/archive/v${version}/$name-$version.tar.gz)
+name=popt
+version=1.16
+release=1
+source=(ftp://anduin.linuxfromscratch.org/BLFS/popt/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
+	cp $KEEP/config.sub .
+	CFLAGS="$CFLAGS -D_GNU_SOURCE" \
+	LDFLAGS="$LDFLAGS" \
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--with-vim-name=vim \
-		--without-x \
-		--enable-cscope \
-		--enable-multibyte \
-		--disable-gui \
-		--disable-gpm \
-		--disable-nls
-	make VIMRTDIR=
-	make -j1 VIMRTDIR= DESTDIR=$PKG install
+		--prefix=/usr
+	for i in po; do
+		printf 'all:\n\ttrue\ninstall:\n\ttrue\nclean:\n\ttrue\n' > "$i"/Makefile
+	done
+make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
