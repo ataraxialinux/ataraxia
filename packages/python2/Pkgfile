@@ -1,0 +1,46 @@
+# Description: Next generation of the python high-level scripting language
+# URL:         http://www.python.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib readline libressl expat libffi
+
+name=python2
+version=2.7.15
+release=1
+source=(https://www.python.org/ftp/python/$version/Python-$version.tar.xz)
+
+build() {
+	cd Python-$version
+	patch -Np1 -i $KEEP/python2/musl-find_library.patch
+	patch -Np1 -i $KEEP/python2/unchecked-ioctl.patch
+
+	rm -r Modules/expat Modules/_ctypes/libffi* Modules/zlib
+
+	export OPT="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-system-expat \
+		--with-system-ffi \
+		--with-system-zlib \
+		--with-threads \
+		--enable-ipv6 \
+		--enable-shared \
+		--enable-unicode=ucs4
+	make
+
+	sed -i 's/^all:.*$/all: build_all/' Makefile
+	make -j1 DESTDIR=$PKG install
+
+
+	chmod 755 $PKG/usr/lib/libpython2.7.so.1.0
+
+	rm -rf $PKG/usr/bin/2to3
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
