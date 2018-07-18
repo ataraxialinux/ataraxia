@@ -19,8 +19,8 @@ if grep -q cgroup /proc/filesystems
 then
 	if test -d /sys/fs/cgroup
 	then
-		mount -v -n -t tmpfs cgroup_root /sys/fs/cgroup
-		mount -v -n -t cgroup cgroup /sys/fs/cgroup
+		mount -n -t tmpfs cgroup_root /sys/fs/cgroup
+		mount -n -t cgroup cgroup /sys/fs/cgroup
 	fi
 fi
 
