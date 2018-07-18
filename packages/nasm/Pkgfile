@@ -9,6 +9,9 @@ source=(http://www.nasm.us/pub/nasm/releasebuilds/$version/$name-$version.tar.xz
 
 build() {
 	cd $name-$version
+	sed -e '/seg_init/d' \
+		-e 's/pure_func seg_alloc/seg_alloc/' \
+		-i include/nasmlib.h
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
