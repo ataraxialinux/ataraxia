@@ -1,23 +1,22 @@
-# Description: Interactive process viewer
-# URL:         http://hisham.hm/htop/
+# Description: A text browser for the World Wide Web
+# URL:         http://lynx.invisible-island.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses libnl python2
+# Depends on:  zlib ncurses libressl
 
-name=htop
-version=2.2.0
-release=2
-source=(https://hisham.hm/$name/releases/$version/$name-$version.tar.gz)
+name=lynx
+version=2.8.9rel.1
+release=1
+source=(https://invisible-mirror.net/archives/lynx/tarballs/$name$version.tar.gz)
 
 build() {
-	cd $name-$version
+	cd $name$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--enable-cgroup \
-		--enable-delayacct \
-		--enable-openvz \
-		--enable-unicode \
-		--enable-vserver
+		--with-ssl \
+		--with-zlib \
+		--enable-ipv6 \
+		--disable-nls
 	make
 	make DESTDIR=$PKG install
 
