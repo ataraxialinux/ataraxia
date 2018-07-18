@@ -1,23 +1,21 @@
-# Description: Interactive process viewer
-# URL:         http://hisham.hm/htop/
+# Description: A text WWW browser, similar to Lynx
+# URL:         http://links.twibright.com/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses libnl python2
+# Depends on:  zlib xz libressl pcre libevent
 
-name=htop
-version=2.2.0
-release=2
-source=(https://hisham.hm/$name/releases/$version/$name-$version.tar.gz)
+name=links
+version=2.16
+release=1
+source=(http://links.twibright.com/download/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sysconfdir=/etc \
-		--enable-cgroup \
-		--enable-delayacct \
-		--enable-openvz \
-		--enable-unicode \
-		--enable-vserver
+		--without-x \
+		--enable-javascript \
+		--disable-graphics \
+		--disable-nls
 	make
 	make DESTDIR=$PKG install
 

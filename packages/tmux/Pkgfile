@@ -1,23 +1,17 @@
-# Description: Interactive process viewer
-# URL:         http://hisham.hm/htop/
+# Description: A terminal multiplexer
+# URL:         http://tmux.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses libnl python2
+# Depends on:  ncurses libevent
 
-name=htop
-version=2.2.0
-release=2
-source=(https://hisham.hm/$name/releases/$version/$name-$version.tar.gz)
+name=tmux
+version=2.7
+release=1
+source=(https://github.com/tmux/tmux/releases/download/$version/tmux-$version.tar.gz)
 
 build() {
 	cd $name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--sysconfdir=/etc \
-		--enable-cgroup \
-		--enable-delayacct \
-		--enable-openvz \
-		--enable-unicode \
-		--enable-vserver
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
 
