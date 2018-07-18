@@ -1,48 +1,44 @@
-# Description: Miscellaneous system utilities for Linux
-# URL:         https://www.kernel.org/pub/linux/utils/util-linux/
+# Description: Password and account management tool suite with support for shadow files
+# URL:         https://github.com/shadow-maint/shadow
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib ncurses
+# Depends on:  acl
 
-name=util-linux
-version=2.32.1
-case $version in
-	*.*.*) _v=${version%.*};;
-	*.*) _v=$version;;
-esac
-release=2
-source=(https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz)
+name=shadow
+version=4.6
+release=1
+source=(https://github.com/shadow-maint/shadow/releases/download/$version/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
-	LDFLAGS="-L$ROOTFS/usr/lib $LDFLAGS" \
-	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime $BUILDFLAGS \
+	patch -Np0 -i $KEEP/shadow/shadow-manpages
+	patch -Np0 -i $KEEP/shadow/shadow-no_rlogin
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--libdir=/usr/lib \
 		--bindir=/usr/bin \
 		--sbindir=/usr/bin \
-		--localstatedir=/var \
-		--with-btrfs \
-		--without-python \
-		--without-systemd \
-		--without-systemdsystemunitdir \
-		--enable-fs-paths-default=/usr/bin \
-		--enable-write \
-		--disable-chfn-chsh \
-		--disable-login \
-		--disable-nologin \
-		--disable-pylibmount \
-		--disable-runuser \
-		--disable-setpriv \
-		--disable-su
+		--libdir=/usr/lib \
+		--sysconfdir=/etc \
+		--with-group-name-max-length=32 \
+		--with-sha-crypt \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--disable-man \
+		--disable-nls \
+		--disable-shared
 	make
-	make DESTDIR=$PKG install-strip
+	make DESTDIR=$PKG install
 
-	cd $PKG
-	mv usr/sbin/* usr/bin
-	rm -rf bin sbin usr/sbin
+	install -Dm644 $KEEP/shadow/useradd.defaults $PKG/etc/default/useradd
+	install -Dm644 $KEEP/shadow/login.defs $PKG/etc/login.defs
 
-	mkdir -p $PKG/var/lib/hwclock
+	rm $PKG/usr/sbin/logoutd
+
+	mv $PKG/usr/sbin/* $PKG/usr/bin
+	rm -rf $PKG/usr/sbin
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
