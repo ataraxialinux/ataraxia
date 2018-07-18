@@ -15,6 +15,21 @@ mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 echo /sbin/mdev > /proc/sys/kernel/hotplug
 mdev -s
 
+if grep -q cgroup /proc/filesystems
+then
+	if test -d /sys/fs/cgroup
+	then
+		mount -v -n -t tmpfs cgroup_root /sys/fs/cgroup
+		mount -v -n -t cgroup cgroup /sys/fs/cgroup
+	fi
+fi
+
+if type lvm > /dev/null 2>&1
+then
+	vgscan --mknodes --ignorelockingfailure 2> /dev/null && \
+	vgchange --ignorelockingfailure -a y
+fi
+
 mount -o remount,ro /
 
 fsck -ATa
