@@ -1,23 +1,19 @@
-# Description: Interactive process viewer
-# URL:         http://hisham.hm/htop/
+# Description: An event notification library
+# URL:         http://libevent.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses libnl python2
+# Depends on:  libressl
 
-name=htop
-version=2.2.0
-release=2
-source=(https://hisham.hm/$name/releases/$version/$name-$version.tar.gz)
+name=libevent
+version=2.1.8
+release=1
+source=(https://github.com/libevent/libevent/releases/download/release-$version-stable/$name-$version-stable.tar.gz)
 
 build() {
-	cd $name-$version
+	cd $name-$version-stable
+	patch -Np1 -i $KEEP/libevent/libressl-2.7.patch
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sysconfdir=/etc \
-		--enable-cgroup \
-		--enable-delayacct \
-		--enable-openvz \
-		--enable-unicode \
-		--enable-vserver
+		--sysconfdir=/etc
 	make
 	make DESTDIR=$PKG install
 
