@@ -1,5 +1,5 @@
 name=gcc
-version=7.3.0
+version=8.1.0
 gmpver=6.1.2
 mpfrver=4.0.1
 mpcver=1.1.0
@@ -18,26 +18,25 @@ build() {
 	mv ../mpfr-$mpfrver mpfr
 	mv ../mpc-$mpcver mpc
 	mv ../isl-$islver isl
-	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
-	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
-	patch -Np1 -i $KEEP/gcc/0003-cilkrts.patch
-	patch -Np1 -i $KEEP/gcc/0004-libatomic-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0005-libgomp-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0006-libitm-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0007-libvtv-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0008-Revert-PR-driver-81523-Make-static-override-pie.patch
-	patch -Np1 -i $KEEP/gcc/0009-Revert-RS6000-linux-startfile-endfile.patch
-	patch -Np1 -i $KEEP/gcc/0010-static-pie-support.patch
-	patch -Np1 -i $KEEP/gcc/0011-j2.patch
-	patch -Np1 -i $KEEP/gcc/0012-s390x-muslldso.patch
-	patch -Np1 -i $KEEP/gcc/0013-microblaze-pr65649.patch
-	patch -Np1 -i $KEEP/gcc/0014-ldbl128-config.patch
-	patch -Np1 -i $KEEP/gcc/0015-m68k.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
 	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
-	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 	cd build
+
+	export CFLAGS_FOR_TARGET="$CFLAGS"
+	export CXXFLAGS_FOR_TARGET="$CXXFLAGS"
+	export CPPFLAGS_FOR_TARGET="$CPPFLAGS"
+	export LDFLAGS_FOR_TARGET="$LDFLAGS"
+
+	export CFLAGS_FOR_BUILD="$CFLAGS"
+	export CPPFLAGS_FOR_BUILD="$CPPFLAGS"
+	export CXXFLAGS_FOR_BUILD="$CXXFLAGS"
+	export LDFLAGS_FOR_BUILD="$LDFLAGS"
+
+	unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+
 	../configure $GCCOPTS \
 		--prefix= \
 		--build=$XHOST \
