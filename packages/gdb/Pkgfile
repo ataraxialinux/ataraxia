@@ -5,11 +5,12 @@
 
 name=gdb
 version=8.1
-release=2
+release=3
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-system-gdbinit=/etc/gdb/gdbinit \
