@@ -1,0 +1,152 @@
+--- libmisc/Makefile.am.orig	2011-11-18 18:23:28.000000000 -0300
++++ libmisc/Makefile.am	2012-10-29 19:08:34.000000000 -0300
+@@ -44,7 +44,6 @@
+ 	pwdcheck.c \
+ 	pwd_init.c \
+ 	remove_tree.c \
+-	rlogin.c \
+ 	root_flag.c \
+ 	salt.c \
+ 	setugid.c \
+--- src/login.c.orig	2012-05-25 08:51:55.000000000 -0300
++++ src/login.c	2012-10-29 19:23:58.000000000 -0300
+@@ -94,11 +94,6 @@
+ static bool pflg = false;
+ static bool fflg = false;
+ 
+-#ifdef RLOGIN
+-static bool rflg = false;
+-#else				/* RLOGIN */
+-#define rflg false
+-#endif				/* !RLOGIN */
+ static bool hflg = false;
+ static bool preauth_flag = false;
+ 
+@@ -158,9 +153,6 @@
+ 		exit (1);
+ 	}
+ 	fprintf (stderr, _("       %s [-p] [-h host] [-f name]\n"), Prog);
+-#ifdef RLOGIN
+-	fprintf (stderr, _("       %s [-p] -r host\n"), Prog);
+-#endif				/* RLOGIN */
+ 	exit (1);
+ }
+ 
+@@ -311,13 +303,6 @@
+ 			hostname = optarg;
+ 			reason = PW_TELNET;
+ 			break;
+-#ifdef	RLOGIN
+-		case 'r':
+-			rflg = true;
+-			hostname = optarg;
+-			reason = PW_RLOGIN;
+-			break;
+-#endif				/* RLOGIN */
+ 		case 'p':
+ 			pflg = true;
+ 			break;
+@@ -326,21 +311,12 @@
+ 		}
+ 	}
+ 
+-#ifdef RLOGIN
+-	/*
+-	 * Neither -h nor -f should be combined with -r.
+-	 */
+-
+-	if (rflg && (hflg || fflg)) {
+-		usage ();
+-	}
+-#endif				/* RLOGIN */
+ 
+ 	/*
+ 	 * Allow authentication bypass only if real UID is zero.
+ 	 */
+ 
+-	if ((rflg || fflg || hflg) && !amroot) {
++	if ((fflg || hflg) && !amroot) {
+ 		fprintf (stderr, _("%s: Permission denied.\n"), Prog);
+ 		exit (1);
+ 	}
+@@ -355,11 +331,6 @@
+ 		++optind;
+ 	}
+ 
+-#ifdef	RLOGIN
+-	if (rflg && (NULL != username)) {
+-		usage ();
+-	}
+-#endif				/* RLOGIN */
+ 	if (fflg && (NULL == username)) {
+ 		usage ();
+ 	}
+@@ -519,9 +490,6 @@
+ 	const char *tmptty;
+ 	char tty[BUFSIZ];
+ 
+-#ifdef RLOGIN
+-	char term[128] = "";
+-#endif				/* RLOGIN */
+ #if defined(HAVE_STRFTIME) && !defined(USE_PAM)
+ 	char ptime[80];
+ #endif
+@@ -597,7 +565,7 @@
+ 	is_console = console (tty);
+ #endif
+ 
+-	if (rflg || hflg) {
++	if (hflg) {
+ 		/*
+ 		 * Add remote hostname to the environment. I think
+ 		 * (not sure) I saw it once on Irix.  --marekm
+@@ -610,19 +578,6 @@
+ 	if (hflg) {
+ 		reason = PW_RLOGIN;
+ 	}
+-#ifdef RLOGIN
+-	if (rflg) {
+-		assert (NULL == username);
+-		username = xmalloc (USER_NAME_MAX_LENGTH + 1);
+-		username[USER_NAME_MAX_LENGTH] = '\0';
+-		if (do_rlogin (hostname, username, USER_NAME_MAX_LENGTH, term, sizeof term)) {
+-			preauth_flag = true;
+-		} else {
+-			free (username);
+-			username = NULL;
+-		}
+-	}
+-#endif				/* RLOGIN */
+ 
+ 	OPENLOG ("login");
+ 
+@@ -657,11 +612,6 @@
+ 		}
+ 	}
+ 
+-#ifdef RLOGIN
+-	if (term[0] != '\0') {
+-		addenv ("TERM", term);
+-	} else
+-#endif				/* RLOGIN */
+ 	{
+ 		/* preserve TERM from getty */
+ 		if (!pflg) {
+@@ -678,7 +628,7 @@
+ 		set_env (argc - optind, &argv[optind]);
+ 	}
+ 
+-	if (rflg || hflg) {
++	if (hflg) {
+ 		cp = hostname;
+ #ifdef	HAVE_STRUCT_UTMP_UT_HOST
+ 	} else if ((NULL != utent) && ('\0' != utent->ut_host[0])) {
+@@ -1082,7 +1032,7 @@
+ 		(void) puts (_("Login incorrect"));
+ 
+ 		/* allow only one attempt with -r or -f */
+-		if (rflg || fflg || (retries <= 0)) {
++		if (fflg || (retries <= 0)) {
+ 			closelog ();
+ 			exit (1);
+ 		}

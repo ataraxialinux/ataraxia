@@ -4,7 +4,7 @@
 
 name=busybox
 version=1.29.1
-release=5
+release=7
 source=(http://busybox.net/downloads/$name-$version.tar.bz2)
 BOOTSTRAP=yes
 
@@ -24,7 +24,9 @@ build() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox $PKG/usr/bin/$applet || true; done
 
-	rm -rf $PKG/usr/bin/{chattr,chvt,clear,dc,deallocvt,fgconsole,kbd_mode,lsattr,lzcat,lzma,mke2fs,mkfs.ext2,openvt,patch,reset,setfattr,setfont,setkeycodes,sh,showkey,strings,unlzma,unxz,xz,xzcat,wget,xxd,mkdosfs,mkfs.vfat}
+	for conflicts in $(cat $KEEP/busybox/conflicts); do
+		rm -rf $PKG/$conflicts
+	done
 
 	cd $PKG
 	ln -s usr/bin/busybox init
