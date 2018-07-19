@@ -111,16 +111,16 @@ setup_architecture() {
 		armv7h)
 			printmsg "Using configuration for armv7h"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="arm-linux-musleabihf"
+			export XTARGET="armv7l-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-tune=generic-armv7-a --with-fpu=vfpv3-d16 --with-float=hard --with-abi=aapcs-linux --with-mode=thumb"
+			export GCCOPTS="--with-arch=armv7-a --with-fpu=vfpv3 --with-float=hard"
 			;;
 		armv6h)
 			printmsg "Using configuration for armv6h"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv6zk --with-tune=arm1176jzf-s --with-fpu=vfp --with-float=hard --with-abi=aapcs-linux"
+			export GCCOPTS="--with-arch=armv6 --with-fpu=vfp --with-float=hard"
 			;;
 		mipsel)
 			printmsg "Using configuration for mipsel"
