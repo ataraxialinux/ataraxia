@@ -1,11 +1,13 @@
 name=gcc
-version=7.3.0
+version=8.1.0
+patchver=1.3
 gmpver=6.1.2
 mpfrver=4.0.1
 mpcver=1.1.0
 islver=0.19
 release=1
 source=(http://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
+	http://distfiles.gentoo.org/distfiles/gcc-$version-patches-$patchver.tar.bz2
 	http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
 	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
 	http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
@@ -14,27 +16,30 @@ BOOTSTRAP=yes
 
 build() {
 	cd gcc-$version
+	patch -Np1 -i ../patch/10_all_default-fortify-source.patch
+	patch -Np1 -i ../patch/11_all_default-warn-format-security.patch
+	patch -Np1 -i ../patch/12_all_default-warn-trampolines.patch
+	patch -Np1 -i ../patch/13_all_default-ssp-fix.patch
+	patch -Np1 -i ../patch/25_all_alpha-mieee-default.patch
+	patch -Np1 -i ../patch/34_all_ia64_note.GNU-stack.patch
+	patch -Np1 -i ../patch/35_all_i386_libgcc_note.GNU-stack.patch
+	patch -Np1 -i ../patch/50_all_libiberty-asprintf.patch
+	patch -Np1 -i ../patch/51_all_libiberty-pic.patch
+	patch -Np1 -i ../patch/54_all_nopie-all-flags.patch
+	patch -Np1 -i ../patch/55_all_extra-options.patch
+	patch -Np1 -i ../patch/90_all_pr55930-dependency-tracking.patch
+	patch -Np1 -i ../patch/92_all_sh-drop-sysroot-suffix.patch
+	patch -Np1 -i ../patch/93_all_arm-arch.patch
+	patch -Np1 -i ../patch/94_all_mips-o32-asan.patch
+	patch -Np1 -i ../patch/95_all_ia64-TEXTREL.patch
+	patch -Np1 -i ../patch/96_all_lto-O2-PR85655.patch
+	patch -Np1 -i ../patch/97_all_disable-systemtap-switch.patch
+	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
+	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
 	mv ../gmp-$gmpver gmp
 	mv ../mpfr-$mpfrver mpfr
 	mv ../mpc-$mpcver mpc
 	mv ../isl-$islver isl
-	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
-	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
-	patch -Np1 -i $KEEP/gcc/0003-cilkrts.patch
-	patch -Np1 -i $KEEP/gcc/0004-libatomic-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0005-libgomp-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0006-libitm-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0007-libvtv-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0008-Revert-PR-driver-81523-Make-static-override-pie.patch
-	patch -Np1 -i $KEEP/gcc/0009-Revert-RS6000-linux-startfile-endfile.patch
-	patch -Np1 -i $KEEP/gcc/0010-static-pie-support.patch
-	patch -Np1 -i $KEEP/gcc/0011-j2.patch
-	patch -Np1 -i $KEEP/gcc/0012-s390x-muslldso.patch
-	patch -Np1 -i $KEEP/gcc/0013-microblaze-pr65649.patch
-	patch -Np1 -i $KEEP/gcc/0014-ldbl128-config.patch
-	patch -Np1 -i $KEEP/gcc/0015-m68k.patch
-	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
-	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	mkdir build
 	cd build
