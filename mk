@@ -221,7 +221,7 @@ generate_initrd() {
 	cp boot/vmlinuz* $IMAGE/vmlinuz
 }
 
-generate_iso() {
+generate_iso_x86() {
 	printmsg "Building *.iso image"
 	cd $SOURCES
 	curl -C - -O -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
@@ -242,6 +242,7 @@ CEOF
 
 	mkdir -p $IMAGE/efi/boot
 cat << CEOF > $IMAGE/efi/boot/startup.nsh
+echo -off
 echo januslinux starting...
 \\vmlinuz quiet initrd=\\rootfs.cpio.xz
 CEOF
@@ -255,6 +256,36 @@ CEOF
 		-boot-load-size 4 \
 		-boot-info-table \
 		$IMAGE
+}
+
+generate_iso_arm() {
+	mkdir -p $IMAGE/efi/boot
+cat << CEOF > $IMAGE/efi/boot/startup.nsh
+echo -off
+echo januslinux starting...
+\\vmlinuz quiet initrd=\\rootfs.cpio.xz
+CEOF
+
+	genisoimage \
+		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
+		-input-charset UTF-8 \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		$IMAGE
+}
+
+generate_iso() {
+	case $BARCH in
+		x86_64)
+			generate_iso_x86
+			;;
+		aarch64|armv7h)
+			generate_iso_arm
+			;;
+		*)
+			printmsgerror "Unsupported for $BARCH"
+	esac
 }
 
 OPT="$1"
