@@ -122,20 +122,6 @@ setup_architecture() {
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv6 --with-fpu=vfp --with-float=hard"
 			;;
-		mipsel)
-			printmsg "Using configuration for mipsel"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mipsel-linux-musl"
-			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
-			;;
-		mips)
-			printmsg "Using configuration for mips"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips-linux-musl"
-			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
-			;;
 		ppc64le)
 			printmsg "Using configuration for ppc64le"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
