@@ -1,35 +1,18 @@
-# Description: An open-source implementation of the OpenGL specification
-# URL:         https://www.mesa3d.org/
+# Description: A computer display server protocol
+# URL:         https://wayland.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libdrm libvdpau llvm wayland-protocols libxdamage libxshmfence libxvmc libxxf86vm mako
+# Depends on:  expat libffi libxml2
 
-name=mesa
-version=18.1.4
-release=2
-source=(https://mesa.freedesktop.org/archive/$name-$version.tar.xz)
+name=wayland
+version=1.15.0
+release=1
+source=(https://wayland.freedesktop.org/releases/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	patch -Np1 -i $KEEP/mesa/glx_ro_text_segm.patch
-	patch -Np1 -i $KEEP/mesa/musl-fix-includes.patch
-	patch -Np1 -i $KEEP/mesa/drmdeps.patch
-	./autogen.sh
-	./configure CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-lLLVM" $BUILDFLAGS \
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--with-gallium-drivers=r300,r600,svga,swrast,radeonsi,nouveau  \
-		--with-platforms=x11,drm,wayland \
-		--with-vulkan-drivers=intel,radeon \
-		--enable-gles1 \
-		--enable-gles2 \
-		--enable-glx-tls \
-		--enable-llvm \
-		--enable-llvm-shared-libs \
-		--enable-osmesa \
-		--enable-texture-float \
-		--enable-vdpau \
-		--enable-xa
+		--disable-documentation
 	make
 	make DESTDIR=$PKG install
 
