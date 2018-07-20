@@ -1,31 +1,21 @@
-# Description: X.org fonts
+# Description: Create an index of X font files in a directory
 # URL:         https://xorg.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  fontconfig xcursor-themes encodings mkfontdir
+# Depends on:  bash util-macros mkfontscale
 
-name=xorg-fonts
-version=2018.07.20
-release=2
+name=mkfontdir
+version=1.0.7
+release=1
+source=(https://www.x.org/pub/individual/app/$name-$version.tar.bz2)
 
 build() {
-	install -d -m755 $PKG/usr/share/fonts
-
-	export PATH="$PATH:$PKG/usr/bin"
-
-	for a in font-alias-1.0.3  font-adobe-utopia-type1-1.0.4 font-bh-ttf-1.0.3 font-bh-type1-1.0.3 font-ibm-type1-1.0.3 font-misc-ethiopic-1.0.3 font-xfree86-type1-1.0.4; do
-		curl -C - -O -L https://www.x.org/pub/individual/font/$a.tar.bz2
-		tar -xf $a.tar.bz2
-		cd $a
-		./configure \
-			--prefix=/usr \
-			--sysconfdir=/etc \
-			--localstatedir=/var
-		make
-		make DESTDIR=$PKG install
-		cd ..
-	done
-
-	rm -rf $PKG/var
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+	make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
