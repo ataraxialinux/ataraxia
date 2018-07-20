@@ -1,0 +1,2 @@
+#!/bin/sh
+fc-cache
