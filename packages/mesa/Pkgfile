@@ -13,9 +13,8 @@ build() {
 	patch -Np1 -i $KEEP/mesa/glx_ro_text_segm.patch
 	patch -Np1 -i $KEEP/mesa/musl-fix-includes.patch
 	patch -Np1 -i $KEEP/mesa/drmdeps.patch
-	export CFLAGS="$CFLAGS -D_XOPEN_SOURCE=700"
-	export LDFLAGS="$LDFLAGS -lLLVM"
-	./configure $BUILDFLAGS \
+	./autogen.sh
+	./configure CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-lLLVM" $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
@@ -30,8 +29,7 @@ build() {
 		--enable-osmesa \
 		--enable-texture-float \
 		--enable-vdpau \
-		--enable-xa \
-		--disable-dependency-tracking
+		--enable-xa
 	make
 	make DESTDIR=$PKG install
 
