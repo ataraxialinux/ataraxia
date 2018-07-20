@@ -1,11 +1,11 @@
 # Description: Userspace setup tool for transparent encryption of block devices using dm-crypt
 # URL:         https://gitlab.com/cryptsetup/cryptsetup/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl lvm2 popt json-c
+# Depends on:  nettle lvm2 popt json-c
 
 name=cryptsetup
 version=2.0.3
-release=1
+release=2
 source=(https://www.kernel.org/pub/linux/utils/cryptsetup/v2.0/$name-$version.tar.xz)
 
 build() {
@@ -13,7 +13,7 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
-		--with-crypto_backend=openssl
+		--with-crypto_backend=nettle
 	make
 	make DESTDIR=$PKG install
 
