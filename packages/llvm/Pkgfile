@@ -4,20 +4,14 @@
 # Depends on:  cmake python2 libffi
 
 name=llvm
-version=5.0.1
+version=6.0.1
 release=1
 source=(http://releases.llvm.org/$version/llvm-$version.src.tar.xz
 	http://releases.llvm.org/$version/compiler-rt-$version.src.tar.xz)
 
 build() {
 	cd llvm-$version.src
-	patch -Np1 -i $KEEP/llvm/cmake-fix-libLLVM-name.patch
-	patch -Np1 -i $KEEP/llvm/0001-Disable-dynamic-lib-tests-for-musl-s-dlclose-is-noop.patch
-	patch -Np1 -i $KEEP/llvm/fix-CheckAtomic.cmake.patch
-	patch -Np1 -i $KEEP/llvm/dynamiclibrary-fix-build-musl.patch
-	patch -Np1 -i $KEEP/llvm/fix-memory-mf_exec-on-aarch64.patch
-
-	tar -xf ../compiler-rt-$version.src.tar.xz -C projects
+	tar -xf ../../../compiler-rt-$version.src.tar.xz -C projects
 	mv projects/compiler-rt-$version.src projects/compiler-rt
 
 	mkdir build
@@ -47,7 +41,7 @@ build() {
 		-DLLVM_LINK_LLVM_DYLIB=ON \
 		-DLLVM_CCACHE_BUILD=OFF \
 		-DLLVM_TARGETS_TO_BUILD="host;AMDGPU" \
-		-DCOMPILER_RT_INCLUDE_TESTS=ON \
+		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-Wno-dev ..
