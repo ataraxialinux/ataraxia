@@ -41,7 +41,7 @@ then
 fi
 
 : > /var/run/utmp
-/rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
 (cd /var/run && find . -name "*.pid" -delete)
 (cd /var/lock && find . ! -type d -delete)
 (cd /tmp && find . ! -name . -delete)
