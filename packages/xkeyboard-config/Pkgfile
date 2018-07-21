@@ -5,17 +5,15 @@
 
 name=xkeyboard-config
 version=2.24
-release=1
+release=2
 source=(https://www.x.org/pub/individual/data/xkeyboard-config/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
 	./configure \
 		--prefix=/usr \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--with-xkb-rules-symlink=xorg \
-		--disable-nls
+		--with-xkb-base=/usr/share/X11/xkb \
+		--with-xkb-rules-symlink=xorg
 	make
 	make DESTDIR=$PKG install
 
