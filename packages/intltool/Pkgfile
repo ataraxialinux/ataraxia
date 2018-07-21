@@ -1,27 +1,20 @@
-# Description: Pico editor clone with enhancements
-# URL:         http://www.nano-editor.org/
+# Description: The internationalization tool collection
+# URL:         https://launchpad.net/intltool
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses file
+# Depends on:  xml-parser
 
-name=nano
-version=2.9.8
-release=2
-source=(https://www.nano-editor.org/dist/v${version%.*}/$name-$version.tar.xz)
-BOOTSTRAP=yes
+name=intltool
+version=0.51.0
+release=1
+source=(https://launchpad.net/intltool/trunk/$version/+download/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
+	sed -i 's:\\\${:\\\$\\{:' intltool-update.in
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--sysconfdir=/etc \
-		--enable-color \
-		--enable-multibuffer \
-		--enable-nanorc \
-		--enable-utf8
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
-
-	install -Dm644 doc/sample.nanorc $PKG/etc/nanorc
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
