@@ -1,19 +1,35 @@
-# Description: Perfect hash function generator
-# URL:         http://www.gnu.org/software/gperf
+# Description: The userspace dev tools (udev) forked by Gentoo
+# URL:         http://www.gentoo.org/proj/en/eudev/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-linux kmod
 
-name=gperf
-version=3.1
+name=eudev
+version=3.2.5
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.gz)
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
+	sed -i '/^Libs:/s/-ludev/-ludev -lrt/' src/libudev/libudev.pc.in
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--with-rootprefix=/usr \
+		--sysconfdir=/etc \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--with-rootprefix= \
+		--with-firmware-path=/usr/lib/firmware \
+		--enable-split-usr \
+		--disable-introspection \
+		--disable-manpages
 	make
 	make DESTDIR=$PKG install
+
+	install -d $PKG/usr/lib/{firmware,udev/devices/{pts,shm}}
+	install -d $PKG/usr/{lib,bin}
+	install -d $PKG/run
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

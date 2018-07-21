@@ -2,11 +2,18 @@
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
 
-clear
+stty onlcr 0>&1
 
 hwclock -u -w
 
 sv down /var/service/*
+
+read -r < /proc/sys/kernel/random/poolsize size || size=2048
+
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=${size} 2> /dev/null
+
+unset size
+chmod 600 /etc/random-seed
 
 sync
 
