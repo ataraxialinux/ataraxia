@@ -14,6 +14,11 @@ build() {
 		curl -C - -O -L https://www.x.org/pub/individual/app/$a.tar.bz2
 		tar -xf $a.tar.bz2
 		cd $a
+		case $a in
+			sessreg*)
+				patch -Np1 -i $KEEP/xorg-apps/missing_path_wtmpx.patch
+				;;
+		esac
 		./configure \
 			--prefix=/usr \
 			--sysconfdir=/etc \
