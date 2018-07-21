@@ -1,19 +1,22 @@
-# Description: Convert X font from Bitmap Distribution Format to Portable Compiled Format
-# URL:         https://xorg.freedesktop.org/
+# Description: Linux kernel module management tools and library
+# URL:         http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=summary
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  util-macros xorgproto libxfont
+# Depends on:  zlib xz
 
-name=bdftopcf
-version=1.1
+name=kmod
+version=25
 release=1
-source=(https://www.x.org/pub/individual/app/$name-$version.tar.bz2)
+source=(https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz)
+BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
-	./configure \
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--localstatedir=/var
+		--with-xz \
+		--with-zlib \
+		--disable-manpages
 	make
 	make DESTDIR=$PKG install
 

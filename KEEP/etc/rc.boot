@@ -12,23 +12,11 @@ mkdir -p /dev/pts /dev/shm
 mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
 mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 
-echo /sbin/mdev > /proc/sys/kernel/hotplug
-mdev -s
-
-if grep -q cgroup /proc/filesystems
-then
-	if test -d /sys/fs/cgroup
-	then
-		mount -n -t tmpfs cgroup_root /sys/fs/cgroup
-		mount -n -t cgroup cgroup /sys/fs/cgroup
-	fi
-fi
-
-if type lvm > /dev/null 2>&1
-then
-	vgscan --mknodes --ignorelockingfailure 2> /dev/null && \
-	vgchange --ignorelockingfailure -a y
-fi
+udevd --daemon
+udevadm trigger --action=add --type=subsystems
+udevadm trigger --action=add --type=devices
+udevadm trigger --action=change --type=devices
+udevadm settle
 
 mount -o remount,ro /
 
@@ -47,6 +35,18 @@ swapon -a
 
 mount -a
 
+if [[ -f '/etc/sysctl.conf' ]]
+then
+	sysctl -w -p /etc/sysctl.conf
+fi
+
+: > /var/run/utmp
+/rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+(cd /var/run && find . -name "*.pid" -delete)
+(cd /var/lock && find . ! -type d -delete)
+(cd /tmp && find . ! -name . -delete)
+mkdir -m 1777 /tmp/.ICE-unix
+
 if [[ -f '/etc/hostname' ]]
 then
 	hostname -F /etc/hostname
@@ -54,7 +54,23 @@ else
 	hostname localhost
 fi
 
-hwclock -u -s
+hwclock --hctosys --utc
+
+if [[ -f '/etc/font.conf' ]]
+then
+	export FONT="$(cat /etc/font.conf)"
+	setfont $FONT
+else
+	setfont default
+fi
+
+if [[ -f '/etc/kmap.conf' ]]
+then
+	export KEYMAP="$(cat /etc/kmap.conf)"
+	loadkeys -q $KEYMAP
+else
+	loadkeys -q us
+fi
 
 ifup -a
 
