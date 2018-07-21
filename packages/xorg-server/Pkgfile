@@ -9,35 +9,32 @@ release=2
 source=(https://www.x.org/pub/individual/xserver/$name-$version.tar.bz2)
 
 build() {
+	export xfontroot=/usr/share/fonts
 	cd $name-$version
 	sed -i '/^#include <asm\/page.h>/d' Xext/xf86bigfont.c
 	./configure CPPFLAGS="-D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t" \
 		--prefix=/usr \
-		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--with-default-font-path="/usr/share/fonts/X11/misc,/usr/share/fonts/X11/Type1,/usr/share/fonts/X11/100dpi:unscaled,/usr/share/fonts/X11/75dpi:unscaled,/usr/share/fonts/X11/cyrillic,/usr/share/fonts/X11/TTF,/usr/share/fonts/X11/OTF" \
-		--with-fontrootdir=/usr/share/fonts/X11 \
-		--with-module-dir=/usr/lib/xorg/modules \
+		--with-fontrootdir="$xfontroot" \
+		--with-default-font-path="$xfontroot/misc,$xfontroot/100dpi:unscaled,$xfontroot/75dpi:unscaled,$xfontroot/TTF,$xfontroot/Type1" \
 		--with-os-vendor="januslinux" \
-		--with-xkb-path=/etc/X11/xkb \
 		--with-xkb-output=/var/lib/xkb \
 		--with-sha1=libcrypto \
 		--enable-config-udev \
 		--enable-dmx \
 		--enable-dri \
-		--enable-dri2 \
-		--enable-dri3 \
 		--enable-glamor \
 		--enable-install-setuid \
+		--enable-ipv6 \
 		--enable-kdrive \
 		--enable-suid-wrapper \
 		--enable-tslib \
 		--enable-xcsecurity \
-		--enable-xf86bigfont \
-		--disable-systemd-logind \
-		--disable-xfake
+		--disable-systemd-logind
 	make
 	make DESTDIR=$PKG install
+
+	rmdir $PKG/var/log
 
 	install -m 755 -d $PKG/etc/X11/xorg.conf.d
 
@@ -49,4 +46,5 @@ build() {
 	cd $PKG
 	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf {,usr/}lib/charset.alias
+	unset xfontroot
 }
