@@ -1,11 +1,11 @@
 # Description: Xorg X server
 # URL:         https://xorg.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  util-linux busybox libdmx libxaw libxcomposite libxcursor libxfont2 libxft libxinerama libxkbfile libxrandr libxres libxtst libxxf86dga font-util mkfontdir mkfontscale xcb-util xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm xcb-util-cursor xorg-fonts xkeyboard-config pixman wayland-protocols libepoxy tslib bdftopcf
+# Depends on:  util-linux eudev busybox libdmx libxaw libxcomposite libxcursor libxfont2 libxft libxinerama libxkbfile libxrandr libxres libxtst libxxf86dga font-util mkfontdir mkfontscale xcb-util xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm xcb-util-cursor xorg-apps xorg-fonts xkeyboard-config pixman wayland-protocols libepoxy tslib
 
 name=xorg-server
 version=1.20.0
-release=1
+release=2
 source=(https://www.x.org/pub/individual/xserver/$name-$version.tar.bz2)
 
 build() {
@@ -18,11 +18,11 @@ build() {
 		--with-default-font-path="/usr/share/fonts/X11/misc,/usr/share/fonts/X11/Type1,/usr/share/fonts/X11/100dpi:unscaled,/usr/share/fonts/X11/75dpi:unscaled,/usr/share/fonts/X11/cyrillic,/usr/share/fonts/X11/TTF,/usr/share/fonts/X11/OTF" \
 		--with-fontrootdir=/usr/share/fonts/X11 \
 		--with-module-dir=/usr/lib/xorg/modules \
-		--with-os-name="GNU/Linux" \
-		--with-os-vendor="janus" \
+		--with-os-vendor="januslinux" \
 		--with-xkb-path=/etc/X11/xkb \
 		--with-xkb-output=/var/lib/xkb \
 		--with-sha1=libcrypto \
+		--enable-config-udev \
 		--enable-dmx \
 		--enable-dri \
 		--enable-dri2 \
@@ -34,7 +34,6 @@ build() {
 		--enable-tslib \
 		--enable-xcsecurity \
 		--enable-xf86bigfont \
-		--disable-config-udev \
 		--disable-systemd-logind \
 		--disable-xfake
 	make
