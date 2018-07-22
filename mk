@@ -101,6 +101,13 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
+		i686)
+			printmsg "Using configuration for i686"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i686-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS=
+			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
