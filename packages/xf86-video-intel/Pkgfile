@@ -1,17 +1,19 @@
-# Description: An alternative implementation of Linux sound support
-# URL:         http://www.alsa-project.org/
+# Description: X.org Intel i810/i830/i915/945G/G965+ video drivers
+# URL:         https://01.org/linuxgraphics
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xcb-util xorg-server
 
-name=alsa-lib
-version=1.1.6
+name=xf86-video-intel
+version=20180223
 release=1
-source=(ftp://ftp.alsa-project.org/pub/lib/$name-$version.tar.bz2)
+source=(http://anduin.linuxfromscratch.org/BLFS/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--without-debug
+		--enable-kms-only \
+		--enable-uxa
 	make
 	make DESTDIR=$PKG install
 
