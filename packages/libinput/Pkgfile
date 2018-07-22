@@ -1,19 +1,26 @@
-# Description: An alternative implementation of Linux sound support
-# URL:         http://www.alsa-project.org/
+# Description: Input device management and event handling library
+# URL:         https://www.freedesktop.org/wiki/Software/libinput/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson eudev libevdev mtdev
 
-name=alsa-lib
-version=1.1.6
+name=libinput
+version=1.11.2
 release=1
-source=(ftp://ftp.alsa-project.org/pub/lib/$name-$version.tar.bz2)
+source=(https://www.freedesktop.org/software/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
+	mkdir build
+	cd build
+	meson .. \
 		--prefix=/usr \
-		--without-debug
-	make
-	make DESTDIR=$PKG install
+		-Dudev-dir=/usr/lib/udev \
+		-Ddebug-gui=false \
+		-Dtests=false \
+		-Ddocumentation=false \
+		-Dlibwacom=false
+	ninja
+	DESTDIR=$PKG ninja install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
