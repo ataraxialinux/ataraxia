@@ -10,12 +10,10 @@ source=(https://github.com/neovim/neovim/archive/v$version.tar.gz)
 
 build() {
 	cd $name-$version
-	alias $(cc -dumpmachine)-ar="ar"
-
 	make CMAKE_EXTRA_FLAGS=" \
 		-DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_INSTALL_PREFIX=/usr"
-	make DESTDIR=$PKG install
+		-DCMAKE_INSTALL_PREFIX=$PKG/usr"
+	make install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
@@ -25,5 +23,4 @@ build() {
 	cd $PKG
 	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf {,usr/}lib/charset.alias
-	unset $(cc -dumpmachine)-ar
 }
