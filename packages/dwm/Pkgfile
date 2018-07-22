@@ -1,19 +1,21 @@
-# Description: An alternative implementation of Linux sound support
-# URL:         http://www.alsa-project.org/
+# Description: A dynamic window manager for X
+# URL:         http://dwm.suckless.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  freetype libx11 libxft libxinerama st dmenu
 
-name=alsa-lib
-version=1.1.6
+name=dwm
+version=6.1
 release=1
-source=(ftp://ftp.alsa-project.org/pub/lib/$name-$version.tar.bz2)
+source=(http://dl.suckless.org/$name/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--without-debug
-	make
-	make DESTDIR=$PKG install
+	cp $KEEP/dwm/config.h config.h
+	make X11INC=/usr/include/X11 X11LIB=/usr/lib/X11 FREETYPEINC=/usr/include/freetype2
+	make PREFIX=/usr DESTDIR=$PKG install
+
+	# Thanks archlinux
+	install -m644 -D $KEEP/dwm/dwm.desktop $PKG/usr/share/xsessions/dwm.desktop
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

@@ -1,17 +1,18 @@
-# Description: An alternative implementation of Linux sound support
-# URL:         http://www.alsa-project.org/
+# Description: X.Org Wacom tablet driver
+# URL:         http://xorg.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server
 
-name=alsa-lib
-version=1.1.6
+name=xf86-input-wacom
+version=0.36.1
 release=1
-source=(ftp://ftp.alsa-project.org/pub/lib/$name-$version.tar.bz2)
+source=(https://www.x.org/pub/individual/driver/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--without-debug
+		--with-systemd-unit-dir=no
 	make
 	make DESTDIR=$PKG install
 
