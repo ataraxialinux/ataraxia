@@ -1,20 +1,20 @@
-# Description: Fork of Vim aiming to improve user experience, plugins, and GUIs
-# URL:         https://neovim.io/
+# Description: Network utility to retrieve files from the Web
+# URL:         http://www.gnu.org/software/wget
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gperf cmake ninja
+# Depends on:  libressl ca-certificates
 
-name=neovim
-version=0.3.1
-release=1
-source=(https://github.com/neovim/neovim/archive/v$version.tar.gz)
+name=wget
+version=1.19.5
+release=3
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	alias $(cc -dumpmachine)-ar="ar"
-
-	make CMAKE_EXTRA_FLAGS=" \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DCMAKE_INSTALL_PREFIX=/usr"
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-ssl=openssl
+	make
 	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
@@ -25,5 +25,4 @@ build() {
 	cd $PKG
 	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
 	rm -rf {,usr/}lib/charset.alias
-	unset $(cc -dumpmachine)-ar
 }
