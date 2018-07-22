@@ -4,19 +4,13 @@
 # Depends on:  zlib readline libressl expat libffi
 
 name=python
-version=3.6.5
+version=3.7.0
 release=1
 source=(https://www.python.org/ftp/python/$version/Python-$version.tar.xz)
 
 build() {
 	cd Python-$version
-	patch -Np1 -i $KEEP/python/musl-find_library.patch
-	patch -Np1 -i $KEEP/python/fix-xattrs-glibc.patch
-	patch -Rp1 < $KEEP/python/bpo-30353.patch
-	patch -Np1 -i $KEEP/python/libressl.patch
-	patch -Np1 -i $KEEP/python/libressl-2.7.patch
-
-	rm -r Modules/expat \
+	rm -rf Modules/expat \
 		Modules/zlib \
 		Modules/_ctypes/darwin* \
 		Modules/_ctypes/libffi*
@@ -30,11 +24,11 @@ build() {
 		--with-threads \
 		--enable-ipv6 \
 		--enable-shared
-	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
-	make -j1 DESTDIR=$PKG install
+	make
+	make DESTDIR=$PKG install
 
-	chmod 755 $PKG/usr/lib/libpython3.6m.so
-	chmod 755 $PKG/usr/lib/libpython3.so
+	chmod 755 $PKG/usr/lib/libpython${version%.*}.so
+	chmod 755 $PKG/usr/lib/libpython${version%.*%.*}.so
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
