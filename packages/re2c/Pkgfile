@@ -1,17 +1,18 @@
-# Description: Small build system with a focus on speed
-# URL:         https://ninja-build.org/
+# Description: A tool for generating C-based recognizers from regular expressions
+# URL:         http://re2c.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  re2c python
 
-name=ninja
-version=1.8.2
-release=2
-source=(https://github.com/ninja-build/ninja/archive/v$version.tar.gz)
+name=re2c
+version=1.0.3
+release=1
+source=(https://github.com/skvadrik/re2c/releases/download/$version/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	python3 configure.py --bootstrap
-	install -m755 -D ninja $PKG/usr/bin/ninja
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
