@@ -14,6 +14,11 @@ build() {
 			export GOARCH=amd64
 			export GOOS=linux
 			;;
+		i686)
+			export GOARCH=386
+			export GO386=387
+			export GOOS=linux
+			;;
 		*)
 			echo "Unsupported architecture"
 			exit 1
@@ -28,7 +33,7 @@ build() {
 
 	cd bootstrap/$name
 	cd src
-	GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 ./make.bash
+	CGO_ENABLED=0 ./make.bash
 
 	cd ../../../$name
 	cd src
@@ -36,7 +41,7 @@ build() {
 	export GOROOT_FINAL=/usr/lib/go
 	export GOROOT_BOOTSTRAP=$XBOOTSTRAP/go
 
-	GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 ./make.bash
+	CGO_ENABLED=0 ./make.bash
 
 	install -d -m 755 $PKG/usr/bin
 	install -d -m 755 $PKG/usr/lib/go/pkg/tool
