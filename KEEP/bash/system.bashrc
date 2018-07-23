@@ -20,3 +20,5 @@ case ${TERM} in
 esac
 
 [ -r /usr/share/bash-completion/bash_completion   ] && . /usr/share/bash-completion/bash_completion
+
+export KEEP="/usr/janus/KEEP"
