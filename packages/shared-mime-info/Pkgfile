@@ -11,9 +11,10 @@ source=(https://people.freedesktop.org/~hadess/$name-$version.tar.xz)
 build() {
 	cd $name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR=$PKG install
+		--prefix=/usr \
+		--disable-update-mimedb
+	make -j1
+	make -j1 DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
