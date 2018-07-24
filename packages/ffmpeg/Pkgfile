@@ -1,11 +1,11 @@
 # Description: Complete solution to record, convert and stream audio and video
 # URL:         http://ffmpeg.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  yasm zlib alsa-lib
+# Depends on:  yasm zlib libressl alsa-lib libass fdk-aac freetype lame libtheora libvorbis libvpx opus x264 x265
 
 name=ffmpeg
 version=4.0.2
-release=1
+release=2
 source=(http://ffmpeg.org/releases/$name-$version.tar.xz)
 
 build() {
@@ -15,7 +15,19 @@ build() {
 		--enable-gpl \
 		--enable-nonfree \
 		--enable-version3 \
-		--disable-debug
+		--enable-libass \
+		--enable-libfdk-aac \
+		--enable-libfreetype \
+		--enable-libmp3lame \
+		--enable-libopus \
+		--enable-libtheora \
+		--enable-libvorbis \
+		--enable-libvpx \
+		--enable-libx264 \
+		--enable-libx265 \
+		--enable-openssl \
+		--disable-debug \
+		--disable-doc
 	make
 	make DESTDIR=$PKG install
 
