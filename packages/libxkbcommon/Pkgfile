@@ -1,28 +1,19 @@
-# Description: A free, open source, and cross-platform media player
-# URL:         https://mpv.io/
+# Description: X11 keyboard handling library
+# URL:         https://xorg.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python2 lua ffmpeg libass mesa libxscrnsaver libxkbcommon xorg-server wayland-protocols
+# Depends on:  libxcb
 
-name=mpv
-version=0.29.0
+name=libxkbcommon
+version=0.8.0
 release=1
-source=(https://github.com/mpv-player/mpv/archive/v$version.tar.gz)
+source=(http://xkbcommon.org/download/$name-$version.tar.xz)
 
 build() {
-	unset CC CXX AR AS LD RANLIB
 	cd $name-$version
-	./bootstrap.py
-
-	export CFLAGS="-D_GNU_SOURCE $CFLAGS"
-
-	./waf configure \
-		--prefix=/usr \
-		--confdir=/etc/mpv \
-		--enable-gl \
-		--enable-wayland \
-		--enable-x11
-	./waf build -j$JOBS
-	./waf install --destdir=$PKG
+	./configure \
+		--prefix=/usr
+	make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
