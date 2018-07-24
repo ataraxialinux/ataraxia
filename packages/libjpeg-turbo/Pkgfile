@@ -9,13 +9,12 @@ release=1
 source=(https://downloads.sourceforge.net/$name/$name-$version.tar.gz)
 
 build() {
-	unset CC CXX AR AS RANLIB LD
 	cd $name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \	
-		--with-jpeg8
+	unset CC CXX AR AS RANLIB LD
+	./configure \
+		--prefix=/usr
 	make
-	make DESTDIR=$PKG install
+	make -j1 DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
