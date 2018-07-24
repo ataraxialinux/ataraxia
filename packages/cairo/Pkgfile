@@ -1,0 +1,33 @@
+# Description: 2D graphics library with support for multiple output devices
+# URL:         https://cairographics.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libpng pixman fontconfig glib libxext libxrender xcb-util
+
+name=cairo
+version=1.15.12
+release=1
+source=(https://cairographics.org/snapshots/cairo-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--enable-ps \
+		--enable-pdf \
+		--enable-tee \
+		--enable-xcb \
+		--disable-gtk-doc
+	make
+	make DESTDIR=$PKG install
+
+	rm -rf $PKG/usr/share
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
