@@ -4,17 +4,21 @@
 # Depends on:  yasm
 
 name=libvpx
-version=1.7.0
+version=1.6.0
 release=1
 source=(https://github.com/webmproject/libvpx/archive/v$version/$name-$version.tar.gz)
 
 build() {
-	export LD="$CXX"
+	unset CC CXX AS AR LD RANLIB
 	cd $name-$version
-	sed -i 's/cp -p/cp/' build/make/Makefile
-	mkdir abuild && cd abuild
-	../configure \
-		--prefix=/usr
+	export CROSS=" "
+	./configure \
+		--prefix=/usr \
+		--enable-pic \
+		--enable-postproc \
+		--enable-runtime-cpu-detect \
+		--enable-shared \
+		--enable-spatial-svc
 	make
 	make DESTDIR=$PKG install
 
