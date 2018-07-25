@@ -1,0 +1,17 @@
+diff --git a/src/liblibc/src/unix/mod.rs b/src/liblibc/src/unix/mod.rs
+index 134f44c5a..7e5c9b6c5 100644
+--- a/src/liblibc/src/unix/mod.rs
++++ b/src/liblibc/src/unix/mod.rs
+@@ -277,11 +277,7 @@ cfg_if! {
+         // cargo build, don't pull in anything extra as the libstd dep
+         // already pulls in all libs.
+     } else if #[cfg(target_env = "musl")] {
+-        #[cfg_attr(feature = "stdbuild",
+-                   link(name = "c", kind = "static",
+-                        cfg(target_feature = "crt-static")))]
+-        #[cfg_attr(feature = "stdbuild",
+-                   link(name = "c", cfg(not(target_feature = "crt-static"))))]
++        #[link(name = "c")]
+         extern {}
+     } else if #[cfg(target_os = "emscripten")] {
+         #[link(name = "c")]
