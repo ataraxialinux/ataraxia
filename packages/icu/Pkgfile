@@ -1,23 +1,19 @@
-# Description: OpenType text shaping engine
-# URL:         http://www.freedesktop.org/wiki/Software/HarfBuzz
+# Description: The interface definitions of accessibility infrastructure
+# URL:         https://git.gnome.org/browse/atk
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib freetype cairo icu
 
-name=harfbuzz
-version=1.8.1
+name=icu
+version=62.1
 release=1
-source=(https://www.freedesktop.org/software/harfbuzz/release/$name-$version.tar.bz2)
+source=(http://download.icu-project.org/files/icu4c/$version/icu4c-${pkgver//./_}-src.tgz)
 
 build() {
-	cd $name-$version
-	./configure $BUILDFLAGS \
+	cd $name/source
+	./configure \
 		--prefix=/usr \
-		--with-cairo \
-		--with-freetype \
-		--with-glib \
-		--with-icu \
-		--disable-gtk-doc \
-		--disable-nls
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man
 	make
 	make DESTDIR=$PKG install
 
