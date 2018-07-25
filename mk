@@ -101,10 +101,10 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
-		i686)
-			printmsg "Using configuration for i686"
+		i586)
+			printmsg "Using configuration for i586"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
+			export XTARGET="i586-linux-musl"
 			export XKARCH="i386"
 			export GCCOPTS=
 			;;
@@ -233,12 +233,17 @@ LABEL boot
 	INITRD rootfs.cpio.xz
 CEOF
 
-	mkdir -p $IMAGE/efi/boot
+	case $BARCH in
+		x86_64)
+mkdir -p $IMAGE/efi/boot
 cat << CEOF > $IMAGE/efi/boot/startup.nsh
 echo -off
 echo januslinux starting...
 \\vmlinuz quiet initrd=\\rootfs.cpio.xz
 CEOF
+			;;
+		*)
+	esac
 
 	genisoimage \
 		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
