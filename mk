@@ -101,13 +101,6 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
-		i686)
-			printmsg "Using configuration for i686"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
-			export XKARCH="i386"
-			export GCCOPTS=
-			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -129,12 +122,19 @@ setup_architecture() {
 			export XKARCH="arm"
 			export GCCOPTS="--with-arch=armv6 --with-fpu=vfp --with-float=hard"
 			;;
-		ppc64le)
-			printmsg "Using configuration for ppc64le"
+		mipsel)
+			printmsg "Using configuration for mipsel"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64le-linux-musl"
-			export XKARCH="powerpc"
-			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			export XTARGET="mipsel-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv --without-fp"
+			;;
+		mips)
+			printmsg "Using configuration for mips"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --without-fp"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
@@ -162,9 +162,10 @@ setup_environment() {
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CFLAGS="-Os -g0 -pipe"
-	export CXXFLAGS="-Os -g0 -pipe"
-	export LDFLAGS="-s"
+	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
+	export CFLAGS="-g0 -Os -pipe -fstack-protector-strong -fno-plt"
+	export CXXFLAGS="-g0 -Os -pipe -fstack-protector-strong -fno-plt"
+	export LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now -s"
 }
 
 make_environment() {
