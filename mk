@@ -127,14 +127,14 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mipsel-linux-musl"
 			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv --without-fp"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv"
 			;;
 		mips)
 			printmsg "Using configuration for mips"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mips-linux-musl"
 			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --without-fp"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
