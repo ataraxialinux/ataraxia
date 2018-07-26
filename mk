@@ -105,7 +105,7 @@ setup_architecture() {
 			printmsg "Using configuration for i586"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i586-linux-musl"
-			export XKARCH="x86_64"
+			export XKARCH="i386"
 			export GCCOPTS=
 			;;
 		aarch64)
