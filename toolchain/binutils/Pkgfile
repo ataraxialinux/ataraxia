@@ -1,0 +1,22 @@
+name=binutils
+version=2.31.1
+release=1
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+BOOTSTRAP=yes
+
+build() {
+	cd $name-$version
+	mkdir build
+	cd build
+	../configure \
+		--prefix= \
+		--target=$XTARGET \
+		--with-sysroot=$ROOTFS \
+		--enable-deterministic-archives \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make configure-host
+	make
+	make DESTDIR=$PKG install
+}
