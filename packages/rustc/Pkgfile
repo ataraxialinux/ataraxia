@@ -11,10 +11,14 @@ source=(https://static.rust-lang.org/dist/$name-$version-src.tar.gz)
 build() {
 	mkdir -p $(pwd)/bootstrap
 	export BOOTSTRAP="$(pwd)/bootstrap"
+	export PATH="$BOOTSTRAP/bin:$PATH"
 
 	case $BARCH in
 		x86_64)
 			export RUSTTARGET="x86_64-unknown-linux-musl"
+			;;
+		i586)
+			export RUSTTARGET="i586-unknown-linux-musl"
 			;;
 		aarch64)
 			export RUSTTARGET="aarch64-unknown-linux-musl"
@@ -31,6 +35,9 @@ build() {
 		mips)
 			export RUSTTARGET="mips-unknown-linux-musl"
 			;;
+		*)
+			echo "Unsupported architecture"
+			exit 1
 	esac
 
 	curl https://static.rust-lang.org/rustup.sh | sh -s -- \
