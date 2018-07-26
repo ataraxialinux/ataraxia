@@ -101,13 +101,6 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
-		i586)
-			printmsg "Using configuration for i586"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i586-linux-musl"
-			export XKARCH="i386"
-			export GCCOPTS=
-			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -165,10 +158,12 @@ setup_environment() {
 
 	export LC_ALL="POSIX"
 	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
 	export CFLAGS="-g0 -Os -pipe"
-	export CXXFLAGS="$CFLAGS"
+	export CXXFLAGS="-g0 -Os -pipe"
 	export LDFLAGS="-s"
 }
 
@@ -275,7 +270,7 @@ CEOF
 
 generate_iso() {
 	case $BARCH in
-		x86_64|i586)
+		x86_64)
 			generate_iso_x86
 			;;
 		aarch64|armv7h)
