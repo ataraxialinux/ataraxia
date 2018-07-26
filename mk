@@ -101,6 +101,13 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
+		i586)
+			printmsg "Using configuration for i586"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i586-linux-musl"
+			export XKARCH="x86_64"
+			export GCCOPTS=
+			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -162,10 +169,9 @@ setup_environment() {
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-g0 -Os -pipe -fstack-protector-strong -fno-plt"
-	export CXXFLAGS="-g0 -Os -pipe -fstack-protector-strong -fno-plt"
-	export LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now -s"
+	export CFLAGS="-g0 -Os -pipe"
+	export CXXFLAGS="$CFLAGS"
+	export LDFLAGS="-s"
 }
 
 make_environment() {
