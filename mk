@@ -165,8 +165,6 @@ setup_environment() {
 
 	export LC_ALL="POSIX"
 	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
-	export HOSTCC="gcc"
-	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
 	export CFLAGS="-g0 -Os -pipe"
