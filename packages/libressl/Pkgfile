@@ -10,10 +10,11 @@ BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
-	export CFLAGS="-L$ROOTFS/usr/lib $CFLAGS"
+	autoreconf -fi
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--with-openssldir=/etc/ssl
+		--with-openssldir=/etc/ssl \
+		--disable-hardening
 	make
 	make DESTDIR=$PKG install
 
