@@ -4,7 +4,7 @@
 
 name=busybox
 version=1.28.4
-release=13
+release=14
 source=(http://busybox.net/downloads/$name-$version.tar.bz2)
 BOOTSTRAP=yes
 
@@ -17,7 +17,7 @@ build() {
 	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
 	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
-	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS"
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" CONFIG_STATIC=y
 	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" busybox.links
 
 	install -D busybox $PKG/usr/bin/busybox
