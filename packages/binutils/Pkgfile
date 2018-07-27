@@ -34,9 +34,6 @@ build() {
 	make tooldir=/usr
 	make tooldir=/usr DESTDIR=$PKG install-strip
 
-	rm -rf $PKG/usr/bin/ld
-	ln -s ld.bfd $PKG/usr/bin/ld
-
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
