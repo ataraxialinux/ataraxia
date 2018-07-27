@@ -162,8 +162,8 @@ setup_environment() {
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CFLAGS="-g0 -Os -pipe"
-	export CXXFLAGS="-g0 -Os -pipe"
+	export CFLAGS="-Os -g0 -pipe"
+	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s"
 }
 
