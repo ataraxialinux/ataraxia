@@ -5,7 +5,7 @@
 
 name=binutils
 version=2.30
-release=1
+release=2
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
@@ -17,18 +17,25 @@ build() {
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
+		--with-pic \
 		--with-system-zlib \
 		--enable-deterministic-archives \
 		--enable-gold \
 		--enable-ld=default \
+		--enable-lto \
 		--enable-plugins \
+		--enable-relro \
 		--enable-shared \
+		--enable-threads \
 		--disable-multilib \
 		--disable-nls \
 		--disable-werror
 	make configure-host
 	make tooldir=/usr
 	make tooldir=/usr DESTDIR=$PKG install-strip
+
+	rm -rf $PKG/usr/bin/ld
+	ln -s ld.bfd $PKG/usr/bin/ld
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
