@@ -10,6 +10,16 @@ source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
 build() {
+	export CFLAGS_FOR_TARGET="$CFLAGS"
+	export CXXFLAGS_FOR_TARGET="$CXXFLAGS"
+	export LDFLAGS_FOR_TARGET="$LDFLAGS"
+
+	export CFLAGS_FOR_BUILD="$CFLAGS"
+	export CXXFLAGS_FOR_BUILD="$CXXFLAGS"
+	export LDFLAGS_FOR_BUILD="$LDFLAGS"
+
+	unset CFLAGS CXXFLAGS LDFLAGS
+
 	cd $name-$version
 	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
 	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
