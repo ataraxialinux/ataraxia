@@ -3,7 +3,7 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=linux
-version=4.17.10
+version=4.17.11
 release=6
 source=(https://cdn.kernel.org/pub/linux/kernel/v4.x/$name-$version.tar.xz)
 BOOTSTRAP=yes
@@ -42,6 +42,11 @@ build() {
 	case $BARCH in
 		x86_64)
 			yconfig 64BIT UNWINDER_FRAME_POINTER PCI BLK_DEV_SD ATA ATA_SFF ATA_BMDMA ATA_PIIX \
+				E1000 SERIAL_8250 SERIAL_8250_CONSOLE=y CONFIG_RTC_CLASS \
+				IA32_EMULATION EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS CRYPTO_AES_X86_64 KVM_INTEL KVM_AMD
+				;;
+		i686)
+			yconfig MPENTIUMII UNWINDER_FRAME_POINTER PCI BLK_DEV_SD ATA ATA_SFF ATA_BMDMA ATA_PIIX \
 				E1000 SERIAL_8250 SERIAL_8250_CONSOLE=y CONFIG_RTC_CLASS \
 				IA32_EMULATION EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS CRYPTO_AES_X86_64 KVM_INTEL KVM_AMD
 				;;
@@ -290,7 +295,7 @@ build() {
 
 	mkdir -p $PKG/boot
 	case $BARCH in
-		x86_64)
+		x86_64|i686)
 			cp arch/x86/boot/bzImage $PKG/boot/vmlinuz
 			;;
 		aarch64)
