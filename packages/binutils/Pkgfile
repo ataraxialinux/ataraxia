@@ -10,17 +10,32 @@ source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
 BOOTSTRAP=yes
 
 build() {
+	if [ "$BARCH" = "x86_64" ]; then
+		CONFIGOPTS="--enable-targets=x86_64-pep"
+	fi
+
+	case $BARCH in
+		mips*)
+			export HASHING="--enable-default-hash-style=sysv"
+			;;
+		*)
+			export HASHING="--enable-default-hash-style=gnu"
+			;;
+	esac
+
 	cd $name-$version
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
 	mkdir build
 	cd build
-	../configure $TOOLFLAGS \
+	../configure $TOOLFLAGS $CONFIGOPTS $HASHING \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
 		--with-pic \
 		--with-system-zlib \
+		--enable-64-bit-bfd \
 		--enable-deterministic-archives \
-		--enable-gold \
+		--enable-gold=yes \
 		--enable-ld=default \
 		--enable-lto \
 		--enable-plugins \
