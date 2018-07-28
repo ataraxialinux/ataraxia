@@ -20,9 +20,6 @@ build() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox $PKG/busybox/bin/$applet || true; done
 
-	mkdir -p $PKG/usr/bin
-	ln -sf /busybox/bin/busybox $PKG/usr/bin/sh
-
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
