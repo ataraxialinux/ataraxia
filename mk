@@ -231,7 +231,7 @@ enter_chroot() {
 
 	mountall
 
-	chroot $ROOTFS /usr/bin/env -i \
+	chroot $ROOTFS /busybox/bin/env -i \
 		TERM="$TERM" \
 		PS1='(januslinux chroot) \u:\w\$ ' \
 		PATH="/busybox/bin:/usr/local/sbin:/usr/local/bin:/usr/bin" \
