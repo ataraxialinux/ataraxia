@@ -1,38 +1,15 @@
-name=binutils-bootstrap
-version=2.30
+name=zlib-bootstrap
+version=1.2.11
 release=1
-source=(http://ftpmirror.gnu.org/gnu/binutils/binutils-$version.tar.xz)
+source=(https://zlib.net/zlib-$version.tar.xz)
 BOOTSTRAP=yes
 
 build() {
-	if [ "$BARCH" = "x86_64" ]; then
-		CONFIGOPTS="--enable-targets=x86_64-pep"
-	fi
-
-	cd binutils-$version
-	mkdir build
-	cd build
-	../configure $TOOLFLAGS $CONFIGOPTS \
-		--prefix=/usr \
-		--libdir=/usr/lib \
-		--libexecdir=/usr/lib \
-		--with-pic \
-		--with-system-zlib \
-		--enable-64-bit-bfd \
-		--enable-deterministic-archives \
-		--enable-gold=yes \
-		--enable-ld=default \
-		--enable-lto \
-		--enable-plugins \
-		--enable-relro \
-		--enable-shared \
-		--enable-threads \
-		--disable-multilib \
-		--disable-nls \
-		--disable-werror
-	make configure-host
-	make tooldir=/usr
-	make tooldir=/usr DESTDIR=$PKG install-strip
+	cd zlib-$version
+	./configure \
+		--prefix=/usr
+	make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
