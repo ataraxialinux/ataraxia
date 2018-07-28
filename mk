@@ -197,7 +197,7 @@ build_toolchain() {
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap busybox-bootstrap file-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
+	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap file-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
 OPT="$1"
