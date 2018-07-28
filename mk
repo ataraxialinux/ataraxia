@@ -200,6 +200,132 @@ bootstrap_rootfs() {
 	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
+mountall() {
+	mount --bind $BUILD/packages $ROOTFS/output/packages
+	mount --bind $BUILD/sources $ROOTFS/output/sources
+	mount --bind $BUILD/stage $ROOTFS/output/stage
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd
+}
+
+umountall() {
+	umount $ROOTFS/output/sources $ROOTFS/output/packages
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd
+}
+
+enter_chroot() {
+	mkdir -p $ROOTFS/output/{stage,initrd}
+	mkdir -p $ROOTFS/usr/janus/{KEEP,packages,toolchain}
+
+	mount --bind /proc $ROOTFS/proc
+	mount --bind /sys $ROOTFS/sys
+	mount --bind /dev $ROOTFS/dev
+	mount --bind /tmp $ROOTFS/tmp
+
+	mount --bind $CWD/KEEP $ROOTFS/usr/janus/KEEP
+	mount --bind $CWD/packages $ROOTFS/usr/janus/packages
+	mount --bind $CWD/toolchain $ROOTFS/usr/janus/toolchain
+
+	mountall
+
+	chroot $ROOTFS /usr/bin/env -i \
+		TERM="$TERM" \
+		PS1='(januslinux chroot) \u:\w\$ ' \
+		PATH="/busybox/bin:/usr/local/sbin:/usr/local/bin:/usr/bin" \
+		/usr/bin/bash --login +h
+
+	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain
+	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp
+	umountall
+}
+
+generate_stage_archive() {
+	printmsg "Building stage archive"
+
+	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
+
+	cd $STAGE
+	tar jcfv $CWD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
+}
+
+generate_initrd() {
+	printmsg "Building initrd archive"
+
+	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses shadow util-linux procps-ng e2fsprogs coreutils readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
+
+	cd $INITRD
+	rm -rf usr/include
+	find . | cpio -R root:root -H newc -o | xz -9 --check=none > $IMAGE/rootfs.cpio.xz
+
+	cp boot/vmlinuz* $IMAGE/vmlinuz
+}
+
+generate_iso_x86() {
+	printmsg "Building *.iso image"
+	cd $SOURCES
+	curl -C - -O -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
+	tar -xf syslinux-6.03.tar.xz
+
+	cp syslinux-6.03/bios/core/isolinux.bin $IMAGE/isolinux.bin
+	cp syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 $IMAGE/ldlinux.c32
+
+cat << CEOF > $IMAGE/syslinux.cfg
+PROMPT 1
+TIMEOUT 50
+DEFAULT boot
+LABEL boot
+	LINUX vmlinuz
+	APPEND quiet
+	INITRD rootfs.cpio.xz
+CEOF
+
+	mkdir -p $IMAGE/efi/boot
+cat << CEOF > $IMAGE/efi/boot/startup.nsh
+echo -off
+echo januslinux starting...
+\\vmlinuz quiet initrd=\\rootfs.cpio.xz
+CEOF
+
+	genisoimage \
+		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
+		-b isolinux.bin \
+		-c boot.cat \
+		-input-charset UTF-8 \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		$IMAGE
+}
+
+generate_iso_arm() {
+	mkdir -p $IMAGE/efi/boot
+cat << CEOF > $IMAGE/efi/boot/startup.nsh
+echo -off
+echo januslinux starting...
+\\vmlinuz quiet initrd=\\rootfs.cpio.xz
+CEOF
+
+	genisoimage \
+		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
+		-input-charset UTF-8 \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		$IMAGE
+}
+
+generate_iso() {
+	case $BARCH in
+		x86_64|i686)
+			generate_iso_x86
+			;;
+		aarch64|armv7h)
+			generate_iso_arm
+			;;
+		*)
+			printmsgerror "Unsupported for $BARCH"
+	esac
+}
+
 OPT="$1"
 JPKG="$2"
 
@@ -220,7 +346,26 @@ case "$OPT" in
 		bootstrap_rootfs
 		;;
 	enter-chroot)
-		echo "In development"
+		check_for_root
+		setup_environment
+		enter_chroot
+		;;
+	stage)
+		check_for_root
+		setup_architecture
+		setup_environment
+		mountall
+		generate_stage_archive
+		umountall
+		;;
+	image)
+		check_for_root
+		setup_architecture
+		setup_environment
+		mountall
+		generate_initrd
+		generate_iso
+		umountall
 		;;
 	usage|*)
 		mkusage
