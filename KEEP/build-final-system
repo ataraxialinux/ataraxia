@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/busybox/bin/sh
+
+set -e
 
 printmsg() {
 	local msg=$(echo $1 | tr -s / /)
@@ -23,7 +25,7 @@ pkginstall() {
 	done
 }
 
-buildonlt() {
+buildonly() {
 	local pkg="$@"
 	for mergepkg in $pkg; do
 		printmsg "Building $mergepkg"
@@ -48,7 +50,82 @@ setup_environment() {
 	export REPO="/usr/janus/packages"
 }
 
+build_final_system() {
+	for PKG in linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano libnl wpa_supplicant curl libarchive git npkg prt-get; do
+		case "$PKG" in
+			linux-headers)
+				buildonly linux-headers
+				pkgrm linux-headers-bootstrap
+				installonly linux-headers
+				;;
+			musl)
+				buildonly musl
+				pkgrm musl-bootstrap
+				installonly musl
+				;;
+			zlib)
+				buildonly zlib
+				pkgrm zlib-bootstrap
+				installonly zlib
+				;;
+			binutils)
+				buildonly binutils
+				pkgrm binutils-headers-bootstrap
+				installonly binutils
+				;;
+			gcc)
+				buildonly gcc
+				pkgrm gcc-bootstrap
+				installonly gcc
+				;;
+			make)
+				buildonly make
+				pkgrm make-bootstrap
+				installonly make
+				;;
+			ncurses)
+				buildonly ncurses
+				pkgrm ncurses-bootstrap
+				installonly ncurses
+				;;
+			bash)
+				buildonly bash
+				pkgrm bash-bootstrap
+				installonly bash
+				;;
+			file)
+				buildonly file
+				pkgrm file-bootstrap
+				installonly file
+				;;
+			libarchive)
+				buildonly libarchive
+				pkgrm libarchive-bootstrap
+				installonly libarchive
+				;;
+			libressl)
+				buildonly libressl
+				pkgrm libressl-bootstrap
+				installonly libressl
+				;;
+			curl)
+				buildonly curl
+				pkgrm curl-bootstrap
+				installonly curl
+				;;
+			npkg)
+				buildonly npkg
+				pkgrm npkg-bootstrap
+				installonly npkg
+				;;
+			*)
+				pkginstall $PKG
+		esac
+	done
+}
+
 setup_environment
+build_final_system
 
 exit 0
 
