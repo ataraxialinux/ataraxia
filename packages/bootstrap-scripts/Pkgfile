@@ -4,14 +4,7 @@ release=1
 BOOTSTRAP=yes
 
 build() {
-	mdir -p $PKG/usr/bin
-
-cat > $PKG/usr/bin/build-final-system << "EOF"
-#!/bin/sh
-echo In developemnt
-EOF
-
-	chmod +x $PKG/usr/bin/build-final-system
+	install -m755 $KEEP/build-final-system $PKG/usr/bin
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
