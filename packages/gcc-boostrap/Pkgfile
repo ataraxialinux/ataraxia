@@ -1,0 +1,89 @@
+name=gcc-bootstrap
+version=7-20180726
+gmpver=6.1.2
+mpfrver=4.0.1
+mpcver=1.1.0
+islver=0.19
+release=1
+source=(http://mirror.linux-ia64.org/gnu/gcc/snapshots/$version/gcc-$version.tar.xz
+	http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
+	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
+	http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
+BOOTSTRAP=yes
+
+build() {
+	export CPPFLAGS_FOR_BUILD=" "
+	export CFLAGS_FOR_BUILD=" "
+	export CXXFLAGS_FOR_BUILD=" "
+	export LDFLAGS_FOR_BUILD=" "
+	export CPPFLAGS_FOR_TARGET=" "
+	export CFLAGS_FOR_TARGET=" "
+	export CXXFLAGS_FOR_TARGET=" "
+	export LDFLAGS_FOR_TARGET=" "
+
+	cd gcc-$version
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
+	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
+	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
+	patch -Np1 -i $KEEP/gcc/0003-cilkrts.patch
+	patch -Np1 -i $KEEP/gcc/0004-libatomic-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0005-libgomp-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0006-libitm-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0007-libvtv-test-fix.patch
+	patch -Np1 -i $KEEP/gcc/0008-Revert-PR-driver-81523-Make-static-override-pie.patch
+	patch -Np1 -i $KEEP/gcc/0009-Revert-RS6000-linux-startfile-endfile.patch
+	patch -Np1 -i $KEEP/gcc/0010-static-pie-support.patch
+	patch -Np1 -i $KEEP/gcc/0011-j2.patch
+	patch -Np1 -i $KEEP/gcc/0012-s390x-muslldso.patch
+	patch -Np1 -i $KEEP/gcc/0013-microblaze-pr65649.patch
+	patch -Np1 -i $KEEP/gcc/0014-ldbl128-config.patch
+	patch -Np1 -i $KEEP/gcc/0015-m68k.patch
+	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
+	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	mkdir build
+	cd build
+	../configure $TOOLFLAGS $GCCOPTS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--with-pkgversion="januslinux edition" \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-install-libiberty \
+		--enable-languages=c,c++,lto \
+		--enable-libstdcxx-time \
+		--enable-linker-build-id \
+		--enable-lto \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror
+	make
+	make DESTDIR=$PKG install-strip
+
+	ln -s gcc $PKG/usr/bin/cc
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
