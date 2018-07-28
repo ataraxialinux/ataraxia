@@ -1,18 +1,10 @@
 name=bash-bootstrap
-version=4.4.023
-_basever=4.4
-_stripped_basever="$(echo ${_basever} | tr -d '.')"
-release=4
-source=(http://ftpmirror.gnu.org/gnu/bash/bash-${_basever}.tar.gz)
+version=4.4
+source=(http://ftpmirror.gnu.org/gnu/bash/bash-$version.tar.gz)
 BOOTSTRAP=yes
 
 build() {
-	cd bash-${_basever}
-
-	for a in 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018 019 020 021 022 023; do
-		curl -O -L http://ftpmirror.gnu.org/gnu/bash/bash-${_basever}-patches/$name${_stripped_basever}-$a
-		patch -p0 -i bash${_stripped_basever}-$a
-	done
+	cd bash-$version
 
 cat > config.cache << EOF
 ac_cv_func_mmap_fixed_mapped=yes
@@ -44,13 +36,6 @@ EOF
 	make DESTDIR=$PKG install
 
 	ln -s bash $PKG/usr/bin/sh
-
-	mkdir -p $PKG/etc/skel
-	install -Dm644 $KEEP/bash/system.bashrc $PKG/etc/bash.bashrc
-	install -Dm644 $KEEP/bash/system.bash_logout $PKG/etc/bash.bash_logout
-	install -m644 $KEEP/bash/dot.bashrc $PKG/etc/skel/.bashrc
-	install -m644 $KEEP/bash/dot.bash_profile $PKG/etc/skel/.bash_profile
-	install -m644 $KEEP/bash/dot.bash_logout $PKG/etc/skel/.bash_logout
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
