@@ -200,6 +200,10 @@ bootstrap_rootfs() {
 	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
+clean_packages() {
+	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
+}
+
 mountall() {
 	mount --bind $BUILD/packages $ROOTFS/output/packages
 	mount --bind $BUILD/sources $ROOTFS/output/sources
@@ -344,6 +348,7 @@ case "$OPT" in
 		make_environment
 		build_toolchain
 		bootstrap_rootfs
+		clean_packages
 		;;
 	enter-chroot)
 		check_for_root
