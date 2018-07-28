@@ -6,13 +6,12 @@ name=libelf
 version=0.152c001
 release=1
 source=(http://ftp.barfooze.de/pub/sabotage/tarballs/libelf-compat-$version.tar.bz2)
-BOOTSTRAP=yes
 
 build() {
 	cd libelf-compat-$version
 	echo "CFLAGS += $CFLAGS -fPIC" > config.mak
 	sed -i 's@HEADERS = src/libelf.h@HEADERS = src/libelf.h src/gelf.h@' Makefile
-	make CC="$CC" HOSTCC="$HOSTCC"
+	make
 	make prefix=/usr DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
