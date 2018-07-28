@@ -4,13 +4,24 @@
 # Depends on:  readline
 
 name=bc
-version=1.06.95
+version=1.07.1
 release=1
-source=(http://alpha.gnu.org/gnu/$name/$name-$version.tar.bz2)
-BOOTSTRAP=yes
+source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
+cat > bc/fix-libmath_h << "EOF"
+#!/bin/sh
+sed -e '1   s/^/{"/' \
+    -e     's/$/",/' \
+    -e '2,$ s/^/"/'  \
+    -e   '$ d'       \
+    -i libmath.h
+
+sed -e '$ s/$/0}/' \
+    -i libmath.h
+EOF
+	sed -i -e '/flex/s/as_fn_error/: ;; # &/' configure
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-readline

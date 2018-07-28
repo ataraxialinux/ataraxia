@@ -188,7 +188,7 @@ build_toolchain() {
 	toolpkginstall pkgconf
 	toolpkginstall binutils
 	toolpkginstall gcc-static
-	pkginstall linux-headers musl
+	pkginstall linux-headers-bootstrap musl-bootstrap
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
@@ -197,95 +197,7 @@ build_toolchain() {
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano libnl wpa_supplicant curl libarchive git npkg prt-get
-}
-
-generate_stage_archive() {
-	printmsg "Building stage archive"
-
-	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
-
-	cd $STAGE
-	tar jcfv $CWD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
-}
-
-generate_initrd() {
-	printmsg "Building initrd archive"
-
-	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses shadow util-linux procps-ng e2fsprogs coreutils readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
-
-	cd $INITRD
-	rm -rf usr/include
-	find . | cpio -R root:root -H newc -o | xz -9 --check=none > $IMAGE/rootfs.cpio.xz
-
-	cp boot/vmlinuz* $IMAGE/vmlinuz
-}
-
-generate_iso_x86() {
-	printmsg "Building *.iso image"
-	cd $SOURCES
-	curl -C - -O -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
-	tar -xf syslinux-6.03.tar.xz
-
-	cp syslinux-6.03/bios/core/isolinux.bin $IMAGE/isolinux.bin
-	cp syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 $IMAGE/ldlinux.c32
-
-cat << CEOF > $IMAGE/syslinux.cfg
-PROMPT 1
-TIMEOUT 50
-DEFAULT boot
-LABEL boot
-	LINUX vmlinuz
-	APPEND quiet
-	INITRD rootfs.cpio.xz
-CEOF
-
-	mkdir -p $IMAGE/efi/boot
-cat << CEOF > $IMAGE/efi/boot/startup.nsh
-echo -off
-echo januslinux starting...
-\\vmlinuz quiet initrd=\\rootfs.cpio.xz
-CEOF
-
-	genisoimage \
-		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
-		-b isolinux.bin \
-		-c boot.cat \
-		-input-charset UTF-8 \
-		-no-emul-boot \
-		-boot-load-size 4 \
-		-boot-info-table \
-		$IMAGE
-}
-
-generate_iso_arm() {
-	mkdir -p $IMAGE/efi/boot
-cat << CEOF > $IMAGE/efi/boot/startup.nsh
-echo -off
-echo januslinux starting...
-\\vmlinuz quiet initrd=\\rootfs.cpio.xz
-CEOF
-
-	genisoimage \
-		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
-		-input-charset UTF-8 \
-		-no-emul-boot \
-		-boot-load-size 4 \
-		-boot-info-table \
-		$IMAGE
-}
-
-generate_iso() {
-	case $BARCH in
-		x86_64|i686)
-			generate_iso_x86
-			;;
-		aarch64|armv7h)
-			generate_iso_arm
-			;;
-		*)
-			printmsgerror "Unsupported for $BARCH"
-	esac
+	pkginstall binutils-bootstrap gcc-bootstrap busybox-bootstrap file-bootstrap libarchive-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
 OPT="$1"
@@ -307,42 +219,8 @@ case "$OPT" in
 		build_toolchain
 		bootstrap_rootfs
 		;;
-	stage)
-		check_for_root
-		setup_architecture
-		setup_environment
-		generate_stage_archive
-		;;
-	image)
-		check_for_root
-		setup_architecture
-		setup_environment
-		generate_initrd
-		generate_iso
-		;;
-	package)
-		check_for_root
-		setup_architecture
-		setup_environment
-		pkginstall $JPKG
-		;;
-	host-package)
-		check_for_root
-		setup_architecture
-		setup_environment
-		toolpkginstall $JPKG
-		;;
-	package-update)
-		check_for_root
-		setup_architecture
-		setup_environment
-		pkgupdate $JPKG
-		;;
-	host-package-update)
-		check_for_root
-		setup_architecture
-		setup_environment
-		toolpkgupdate $JPKG
+	enter-chroot)
+		echo "In development"
 		;;
 	usage|*)
 		mkusage
