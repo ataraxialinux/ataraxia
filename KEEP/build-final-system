@@ -1,0 +1,146 @@
+#!/busybox/bin/sh
+
+set -e
+
+printmsg() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[32m==>\e[0m $msg\n"
+	sleep 1
+}
+
+printmsgerror() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[31m==!\e[0m $msg\n"
+	sleep 1
+	exit 1
+}
+
+pkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Building and installing $mergepkg"
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz  || true
+	done
+}
+
+buildonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Building $mergepkg"
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
+	done
+}
+
+installonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Installing $mergepkg"
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz || true
+	done
+}
+
+setup_environment() {
+	export PATH="/usr/bin:/busybox/bin"
+
+	export OUTDIR="/output"
+	export PKGSDIR="$OUTDIR/packages"
+	export REPO="/usr/janus/packages"
+	export KEEP="/usr/janus/KEEP"
+}
+
+build_final_system() {
+	for PKG in linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux e2fsprogs libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano libnl wpa_supplicant curl libarchive git npkg prt-get; do
+		case "$PKG" in
+			linux-headers)
+				buildonly linux-headers
+				pkgrm linux-headers-bootstrap || true
+				installonly linux-headers
+				;;
+			musl)
+				buildonly musl
+				pkgrm musl-bootstrap || true
+				installonly musl
+				;;
+			zlib)
+				buildonly zlib
+				pkgrm zlib-bootstrap || true
+				installonly zlib
+				;;
+			binutils)
+				buildonly binutils
+				pkgrm binutils-bootstrap || true
+				installonly binutils
+				;;
+			gcc)
+				buildonly gcc
+				pkgrm gcc-bootstrap || true
+				installonly gcc
+				;;
+			perl)
+				buildonly perl
+				pkgrm perl-bootstrap || true
+				installonly perl
+				;;
+			make)
+				buildonly make
+				pkgrm make-bootstrap || true
+				installonly make
+				;;
+			xz)
+				buildonly xz
+				pkgrm xz-bootstrap || true
+				installonly xz
+				;;
+			ncurses)
+				buildonly ncurses
+				pkgrm ncurses-bootstrap || true
+				installonly ncurses
+				;;
+			bash)
+				buildonly bash
+				pkgrm bash-bootstrap || true
+				rm -rf /usr/bin/sh
+				installonly bash
+				;;
+			file)
+				buildonly file
+				pkgrm file-bootstrap || true
+				installonly file
+				;;
+			libarchive)
+				buildonly libarchive
+				pkgrm libarchive-bootstrap || true
+				installonly libarchive
+				;;
+			libressl)
+				buildonly libressl
+				pkgrm libressl-bootstrap || true
+				installonly libressl
+				;;
+			curl)
+				buildonly curl
+				pkgrm curl-bootstrap || true
+				installonly curl
+				;;
+			patch)
+				buildonly patch
+				pkgrm patch-bootstrap || true
+				installonly patch
+				;;
+			npkg)
+				buildonly npkg
+				;;
+			*)
+				pkginstall $PKG
+		esac
+	done
+}
+
+setup_environment
+build_final_system
+
+exit 0
+

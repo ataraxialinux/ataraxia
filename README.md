@@ -1,4 +1,4 @@
-# Welcome to januslinux - Fast and mini Linux distribution which uses musl libc.
+# Welcome to januslinux - Fast and compact Linux distribution which uses musl libc.
 ```
 
                                        ________________
@@ -13,25 +13,18 @@
                                         \  |              |
                                          \ |              |
                                           \|______________|
-                           Fast and mini Linux distribution which uses musl libc.
+                           Fast and compact Linux distribution which uses musl libc.
 ```
 
+
 ## What is this?
+januslinux is a fast and compact [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/). This distribution is made from scratch. Its goal is to be optimized and compact. It uses a package manager called "npkg". It's a fork of [CRUX's](https://crux.nu/) package manager called "pkgutils". januslinux is oriented for general use, but it is designed for advanced Linux users. januslinux was compiled with a hardened toolchain for better security. januslinux is a rolling distribution, it allows you to get the latest software. Also, januslinux have pretty good hardware support.
 
-januslinux is fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/) and [busybox](https://www.busybox.net/) userland tools. It is designed for maximum performance and small size. It is including basic system programs, development tools, web browser and ssh client(will be added more!). januslinux uses [LibreSSL](https://www.libressl.org/) as SSL engine because it is small and clean.
 
-## For who?
+## How can I get it?
+You can download the [first pre-release version of Beta 4](https://github.com/JanusLinux/janus/releases/tag/180710) of januslinux which was compiled on 10th July of 2018. It has bugs.
 
-januslinux was made for people who like CLI interface and to get Linux knowledge. It allows call januslinux: distribution for beginners.
 
-## What hardware I can run it?
+## How can I contact and help you with development?
 
-You can run it on x86_64, aarch64, armv7l, armv6l, mips, mipsel and ppc64le.
-
-## Where I can get it?
-
-You can download [first pre-release version of Beta 4](https://github.com/JanusLinux/janus/releases/tag/180710) of januslinux which compiled on 10th July of 2018. It have bugs.
-
-## How I can contact and help you with development?
-
-You can write me on [email](mailto:nagakamira@gmail.com) and give some suggestions or help me on [GitHub](https://github.com/JanusLinux/janus). Also you can help submit it on DistroWatch, click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We are have own Discord server, click [here](https://discord.gg/a329dDz). We have an IRC channel on freenode.net: #januslinux. Also you can subscribe on our mailing lists, click [here](https://www.freelists.org/list/januslinux).
+You can [email](mailto:nagakamira@gmail.com) me and give some suggestions or help me to contribute to this project on [GitHub](https://github.com/JanusLinux/janus). Also, you can help submit it on DistroWatch, just click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We have own Discord server, to access just click [here](https://discord.gg/a329dDz). We have an IRC channel on freenode.net: #januslinux. Don't forget to subscribe to our mailing lists, click [here](https://www.freelists.org/list/januslinux).
