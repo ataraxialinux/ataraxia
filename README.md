@@ -20,10 +20,6 @@
 
 januslinux is a fast and mini [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/) and [busybox](https://www.busybox.net/) userland tools. It is designed for maximum performance and small size. It is including basic system programs, development tools. januslinux uses [LibreSSL](https://www.libressl.org/) as an SSL engine because it is small and clean.
 
-## For who?
-
-januslinux was made for people who like CLI interface and to get Linux knowledge. It allows call januslinux: distribution for beginners.
-
 ## What hardware I can run it?
 
 You can run it on x86_64, aarch64, armv7l, armv6l, mips, mipsel and ppc64le.
