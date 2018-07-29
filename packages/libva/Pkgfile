@@ -1,33 +1,17 @@
-# Description: Complete solution to record, convert and stream audio and video
-# URL:         http://ffmpeg.org/
+# Description: Video Acceleration (VA) API for Linux
+# URL:         https://01.org/linuxmedia/vaapi
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  yasm zlib libressl libass fdk-aac freetype lame libtheora libvorbis libvpx opus x264 x265 alsa-lib libva libvdpau
+# Depends on:  libdrm mesa
 
-name=ffmpeg
-version=4.0.2
-release=4
-source=(http://ffmpeg.org/releases/$name-$version.tar.xz)
+name=libva
+version=2.2.0
+release=1
+source=(https://github.com/intel/libva/releases/download/$version/libva-$version.tar.bz2)
 
 build() {
 	cd $name-$version
 	./configure \
-		--prefix=/usr \
-		--enable-gpl \
-		--enable-nonfree \
-		--enable-version3 \
-		--enable-libass \
-		--enable-libfdk-aac \
-		--enable-libfreetype \
-		--enable-libmp3lame \
-		--enable-libopus \
-		--enable-libtheora \
-		--enable-libvorbis \
-		--enable-libvpx \
-		--enable-libx264 \
-		--enable-libx265 \
-		--enable-openssl \
-		--disable-debug \
-		--disable-doc
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
 
