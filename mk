@@ -192,7 +192,7 @@ build_toolchain() {
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
-	rmpkg file pkgconf binutils gcc
+	rmpkg file pkgconf binutils gcc gcc-static
 }
 
 bootstrap_rootfs() {
