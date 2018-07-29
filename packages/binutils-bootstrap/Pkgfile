@@ -16,14 +16,23 @@ build() {
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
+		--with-pic \
 		--with-system-zlib \
+		--enable-64-bit-bfd \
 		--enable-deterministic-archives \
+		--enable-gold=yes \
+		--enable-ld=default \
+		--enable-lto \
+		--enable-plugins \
+		--enable-relro \
+		--enable-shared \
+		--enable-threads \
 		--disable-multilib \
 		--disable-nls \
 		--disable-werror
-	make configure-host MAKEINFO="true"
-	make tooldir=/usr MAKEINFO="true"
-	make tooldir=/usr MAKEINFO="true" DESTDIR=$PKG install-strip
+	make configure-host
+	make tooldir=/usr
+	make tooldir=/usr DESTDIR=$PKG install-strip
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
