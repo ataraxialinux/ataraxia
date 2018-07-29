@@ -101,12 +101,26 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
+		x86_64-vishera)
+			printmsg "Using configuration for x86_64-vishera"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=bdver2"
+			;;
 		i686)
 			printmsg "Using configuration for i686"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
 			export GCCOPTS=
+			;;
+		i686-vishera)
+			printmsg "Using configuration for i686-vishera"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i686-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS="--with-arch=bdver2"
 			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
@@ -141,7 +155,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mips-linux-musl"
 			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv"
 			;;
 		*)
 			printmsgerror "BARCH variable isn't set!"
@@ -175,6 +189,11 @@ setup_environment() {
 }
 
 make_environment() {
+	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain || true
+	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp || true
+	umount $ROOTFS/output/sources $ROOTFS/output/packages || true
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd || true
+
 	rm -rf $BUILD
 	mkdir -p $BUILD $SOURCES $ROOTFS $INITRD $STAGE $TOOLS $PACKAGES $IMAGE
 
@@ -188,22 +207,70 @@ build_toolchain() {
 	toolpkginstall pkgconf
 	toolpkginstall binutils
 	toolpkginstall gcc-static
-	pkginstall linux-headers musl
+	pkginstall linux-headers-bootstrap musl-bootstrap
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
-	rmpkg file pkgconf binutils gcc
+	rmpkg file pkgconf binutils gcc gcc-static
 }
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano libnl wpa_supplicant curl libarchive git npkg prt-get
+	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap patch-bootstrap bootstrap-scripts
+}
+
+clean_packages() {
+	printmsg "Cleaning"
+	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap patch-bootstrap bootstrap-scripts
+}
+
+mountall() {
+	mount --bind $BUILD/packages $ROOTFS/output/packages || true
+	mount --bind $BUILD/sources $ROOTFS/output/sources || true
+	mount --bind $BUILD/stage $ROOTFS/output/stage || true
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd || true
+}
+
+umountall() {
+	umount $ROOTFS/output/sources $ROOTFS/output/packages || true
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd || true
+}
+
+enter_chroot() {
+	set +e
+	mkdir -p $ROOTFS/output/{stage,initrd}
+	mkdir -p $ROOTFS/usr/janus/{KEEP,packages,toolchain}
+
+	mount --bind /proc $ROOTFS/proc
+	mount --bind /sys $ROOTFS/sys
+	mount --bind /dev $ROOTFS/dev
+	mount --bind /tmp $ROOTFS/tmp
+
+	mount --bind $CWD/KEEP $ROOTFS/usr/janus/KEEP
+	mount --bind $CWD/packages $ROOTFS/usr/janus/packages
+	mount --bind $CWD/toolchain $ROOTFS/usr/janus/toolchain
+
+	mount --bind $BUILD/packages $ROOTFS/output/packages
+	mount --bind $BUILD/sources $ROOTFS/output/sources
+	mount --bind $BUILD/stage $ROOTFS/output/stage
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd
+
+	chroot $ROOTFS /busybox/bin/env -i \
+		TERM="$TERM" \
+		PS1='(januslinux chroot) \u:\w\$ ' \
+		PATH="/busybox/bin:/usr/local/sbin:/usr/local/bin:/usr/bin" \
+		/usr/bin/bash --login +h
+
+	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain
+	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp
+	umount $ROOTFS/output/sources $ROOTFS/output/packages
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd
 }
 
 generate_stage_archive() {
 	printmsg "Building stage archive"
 
-	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux procps-ng e2fsprogs coreutils libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
+	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux e2fsprogs libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
 
 	cd $STAGE
 	tar jcfv $CWD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
@@ -212,7 +279,7 @@ generate_stage_archive() {
 generate_initrd() {
 	printmsg "Building initrd archive"
 
-	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses shadow util-linux procps-ng e2fsprogs coreutils readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
+	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses shadow util-linux e2fsprogs readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
 
 	cd $INITRD
 	rm -rf usr/include
@@ -277,7 +344,7 @@ CEOF
 
 generate_iso() {
 	case $BARCH in
-		x86_64|i686)
+		x86_64*|i686*)
 			generate_iso_x86
 			;;
 		aarch64|armv7h)
@@ -306,43 +373,29 @@ case "$OPT" in
 		make_environment
 		build_toolchain
 		bootstrap_rootfs
+		clean_packages
+		;;
+	enter-chroot)
+		check_for_root
+		setup_environment
+		enter_chroot
 		;;
 	stage)
 		check_for_root
 		setup_architecture
 		setup_environment
+		mountall
 		generate_stage_archive
+		umountall
 		;;
 	image)
 		check_for_root
 		setup_architecture
 		setup_environment
+		mountall
 		generate_initrd
 		generate_iso
-		;;
-	package)
-		check_for_root
-		setup_architecture
-		setup_environment
-		pkginstall $JPKG
-		;;
-	host-package)
-		check_for_root
-		setup_architecture
-		setup_environment
-		toolpkginstall $JPKG
-		;;
-	package-update)
-		check_for_root
-		setup_architecture
-		setup_environment
-		pkgupdate $JPKG
-		;;
-	host-package-update)
-		check_for_root
-		setup_architecture
-		setup_environment
-		toolpkgupdate $JPKG
+		umountall
 		;;
 	usage|*)
 		mkusage

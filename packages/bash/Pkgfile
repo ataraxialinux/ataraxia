@@ -7,9 +7,8 @@ name=bash
 version=4.4.023
 _basever=4.4
 _stripped_basever="$(echo ${_basever} | tr -d '.')"
-release=4
+release=5
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}.tar.gz)
-BOOTSTRAP=yes
 
 build() {
 	cd $name-${_basever}
@@ -19,21 +18,6 @@ build() {
 		patch -p0 -i $name${_stripped_basever}-$a
 	done
 
-cat > config.cache << EOF
-ac_cv_func_mmap_fixed_mapped=yes
-ac_cv_func_strcoll_works=yes
-ac_cv_func_working_mktime=yes
-bash_cv_func_sigsetjmp=present
-bash_cv_getcwd_malloc=yes
-bash_cv_job_control_missing=present
-bash_cv_printf_a_format=yes
-bash_cv_sys_named_pipes=present
-bash_cv_ulimit_maxfds=yes
-bash_cv_under_sys_siglist=yes
-bash_cv_unusable_rtsigs=no
-gt_cv_int_divbyzero_sigfpe=yes
-EOF
-
 	_bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/usr/local/sbin:/usr/local/bin:/usr/bin\"\'
 			-DSTANDARD_UTILS_PATH=\'\"/usr/bin\"\'
 			-DSYS_BASHRC=\'\"/etc/bash.bashrc\"\'
@@ -42,16 +26,15 @@ EOF
 	CFLAGS="$CFLAGS ${_bashconfig[@]}" \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--cache-file=config.cache \
 		--without-bash-malloc \
-		--with-curses \
-		--enable-readline \
+		--with-installed-readline \
 		--enable-static-link \
 		--disable-nls
-	make
-	make DESTDIR=$PKG install
+	make -j1
+	install -D -m 755 bash $PKG/usr/bin/bash
 
 	ln -s bash $PKG/usr/bin/sh
+	ln -s bash $PKG/usr/bin/rbash
 
 	mkdir -p $PKG/etc/skel
 	install -Dm644 $KEEP/bash/system.bashrc $PKG/etc/bash.bashrc

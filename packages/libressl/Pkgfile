@@ -6,12 +6,16 @@ name=libressl
 version=2.7.4
 release=1
 source=(https://fastly.cdn.openbsd.org/pub/OpenBSD/LibreSSL/$name-$version.tar.gz)
-BOOTSTRAP=yes
 
 build() {
+	case $BARCH in
+		i686*)
+			export CONFIGOPTS="--disable-hardening"
+			;;
+	esac
 	cd $name-$version
 	autoreconf -fi
-	./configure $BUILDFLAGS \
+	./configure $BUILDFLAGS $CONFIGOPTS \
 		--prefix=/usr \
 		--with-openssldir=/etc/ssl
 	make
