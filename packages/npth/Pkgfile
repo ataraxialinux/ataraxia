@@ -1,22 +1,16 @@
-# Description: The basic file, shell and text manipulation utilities of the GNU operating system
-# URL:         http://www.gnu.org/software/coreutils
+# Description: New portable threads library
+# URL:         http://git.gnupg.org/cgi-bin/gitweb.cgi?p=npth.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp acl libcap
 
-name=coreutils
-version=8.30
+name=npth
+version=1.6
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+source=(https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-
-	export FORCE_UNSAFE_CONFIGURE=1
-
-	./configure $BUILDFLAGS LDFLAGS="$LDFLAGS -static" \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--enable-no-install-program=kill,uptime,hostname
+	./configure \
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
 

@@ -1,22 +1,17 @@
-# Description: The basic file, shell and text manipulation utilities of the GNU operating system
-# URL:         http://www.gnu.org/software/coreutils
+# Description: A CMS and X.509 access library
+# URL:         https://www.gnupg.org/related_software/libksba/index.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp acl libcap
+# Depends on:  libgpg-error
 
-name=coreutils
-version=8.30
+name=libksba
+version=1.3.5
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+source=(https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-
-	export FORCE_UNSAFE_CONFIGURE=1
-
-	./configure $BUILDFLAGS LDFLAGS="$LDFLAGS -static" \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--enable-no-install-program=kill,uptime,hostname
+	./configure \
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
 
