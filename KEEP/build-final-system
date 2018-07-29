@@ -21,7 +21,7 @@ pkginstall() {
 		printmsg "Building and installing $mergepkg"
 		cd $REPO/$mergepkg
 		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
-		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz  || true
 	done
 }
 
@@ -38,7 +38,7 @@ installonly() {
 	local pkg="$@"
 	for mergepkg in $pkg; do
 		printmsg "Installing $mergepkg"
-		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz || true
 	done
 }
 
@@ -56,72 +56,72 @@ build_final_system() {
 		case "$PKG" in
 			linux-headers)
 				buildonly linux-headers
-				pkgrm linux-headers-bootstrap
+				pkgrm linux-headers-bootstrap || true
 				installonly linux-headers
 				;;
 			musl)
 				buildonly musl
-				pkgrm musl-bootstrap
+				pkgrm musl-bootstrap || true
 				installonly musl
 				;;
 			zlib)
 				buildonly zlib
-				pkgrm zlib-bootstrap
+				pkgrm zlib-bootstrap || true
 				installonly zlib
 				;;
 			binutils)
 				buildonly binutils
-				pkgrm binutils-headers-bootstrap
+				pkgrm binutils-bootstrap || true
 				installonly binutils
 				;;
 			gcc)
 				buildonly gcc
-				pkgrm gcc-bootstrap
+				pkgrm gcc-bootstrap || true
 				installonly gcc
 				;;
 			perl)
 				buildonly perl
-				pkgrm perl-bootstrap
+				pkgrm perl-bootstrap || true
 				installonly perl
 				;;
 			make)
 				buildonly make
-				pkgrm make-bootstrap
+				pkgrm make-bootstrap || true
 				installonly make
 				;;
 			xz)
 				buildonly xz
-				pkgrm xz-bootstrap
+				pkgrm xz-bootstrap || true
 				installonly xz
 				;;
 			ncurses)
 				buildonly ncurses
-				pkgrm ncurses-bootstrap
+				pkgrm ncurses-bootstrap || true
 				installonly ncurses
 				;;
 			bash)
 				buildonly bash
-				pkgrm bash-bootstrap
+				pkgrm bash-bootstrap || true
 				installonly bash
 				;;
 			file)
 				buildonly file
-				pkgrm file-bootstrap
+				pkgrm file-bootstrap || true
 				installonly file
 				;;
 			libarchive)
 				buildonly libarchive
-				pkgrm libarchive-bootstrap
+				pkgrm libarchive-bootstrap || true
 				installonly libarchive
 				;;
 			libressl)
 				buildonly libressl
-				pkgrm libressl-bootstrap
+				pkgrm libressl-bootstrap || true
 				installonly libressl
 				;;
 			curl)
 				buildonly curl
-				pkgrm curl-bootstrap
+				pkgrm curl-bootstrap || true
 				installonly curl
 				;;
 			npkg)

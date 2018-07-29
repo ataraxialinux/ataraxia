@@ -1,22 +1,17 @@
-# Description: The basic file, shell and text manipulation utilities of the GNU operating system
-# URL:         http://www.gnu.org/software/coreutils
+# Description: General purpose cryptographic library based on the code from GnuPG
+# URL:         http://www.gnupg.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp acl libcap
+# Depends on:  libgpg-error
 
-name=coreutils
-version=8.30
+name=libgcrypt
+version=1.8.3
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+source=(https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-
-	export FORCE_UNSAFE_CONFIGURE=1
-
-	./configure $BUILDFLAGS LDFLAGS="$LDFLAGS -static" \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--enable-no-install-program=kill,uptime,hostname
+	./configure \
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
 

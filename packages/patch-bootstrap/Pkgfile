@@ -1,22 +1,14 @@
-# Description: The basic file, shell and text manipulation utilities of the GNU operating system
-# URL:         http://www.gnu.org/software/coreutils
-# Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp acl libcap
-
-name=coreutils
-version=8.30
+name=patch-bootstrap
+version=2.7.6
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+source=(http://ftpmirror.gnu.org/gnu/patch/patch-$version.tar.xz)
+BOOTSTRAP=yes
 
 build() {
-	cd $name-$version
-
-	export FORCE_UNSAFE_CONFIGURE=1
-
-	./configure $BUILDFLAGS LDFLAGS="$LDFLAGS -static" \
+	cd patch-$version
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--enable-no-install-program=kill,uptime,hostname
+		--disable-nls
 	make
 	make DESTDIR=$PKG install
 
