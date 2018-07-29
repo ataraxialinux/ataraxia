@@ -7,14 +7,12 @@ name=libcap
 version=2.25
 release=1
 source=(https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$version.tar.xz)
-BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
 	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
 	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
-	make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
-		prefix=/usr lib=lib PAM_CAP=no
+	make CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" prefix=/usr lib=lib PAM_CAP=no
 	make prefix=/usr lib=lib DESTDIR=$PKG PAM_CAP=no RAISE_SETFCAP=no install
 	chmod 0755 $PKG/usr/lib/libcap.so.$version
 

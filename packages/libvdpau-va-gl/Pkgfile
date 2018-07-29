@@ -1,24 +1,17 @@
-# Description: The basic file, shell and text manipulation utilities of the GNU operating system
-# URL:         http://www.gnu.org/software/coreutils
+# Description: VDPAU driver with OpenGL/VAAPI backend
+# URL:         https://github.com/i-rinat/libvdpau-va-gl
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp libcap
+# Depends on:  cmake ffmpeg libvdpau libva mesa
 
-name=coreutils
-version=8.30
+name=libvdpau-va-gl
+version=0.4.2
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
-BOOTSTRAP=yes
+source=(https://github.com/i-rinat/libvdpau-va-gl/archive/v$version/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	autoreconf -fiv
-
-	export FORCE_UNSAFE_CONFIGURE=1
-
-	./configure $BUILDFLAGS LDFLAGS="$LDFLAGS -static" \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--enable-no-install-program=kill,uptime,hostname
+	mkdir -p build && cd build
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ..
 	make
 	make DESTDIR=$PKG install
 

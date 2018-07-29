@@ -4,15 +4,14 @@
 # Depends on:  libarchive curl
 
 name=npkg
-version=0.1.1
+version=0.1.2
 release=2
 source=(https://github.com/protonesso/npkg/archive/$version.tar.gz
 	pkgmk.conf)
-BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
-	make PREFIX=/usr DESTDIR=$PKG install
+	make -f Makefile.static PREFIX=/usr DESTDIR=$PKG install
 
 	rm -rf $PKG/etc/pkgmk.conf
 	cp $SRC/pkgmk.conf $PKG/etc/pkgmk.conf
