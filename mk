@@ -225,18 +225,19 @@ clean_packages() {
 }
 
 mountall() {
-	mount --bind $BUILD/packages $ROOTFS/output/packages
-	mount --bind $BUILD/sources $ROOTFS/output/sources
-	mount --bind $BUILD/stage $ROOTFS/output/stage
-	mount --bind $BUILD/initrd $ROOTFS/output/initrd
+	mount --bind $BUILD/packages $ROOTFS/output/packages || true
+	mount --bind $BUILD/sources $ROOTFS/output/sources || true
+	mount --bind $BUILD/stage $ROOTFS/output/stage || true
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd || true
 }
 
 umountall() {
-	umount $ROOTFS/output/sources $ROOTFS/output/packages
-	umount $ROOTFS/output/stage $ROOTFS/output/initrd
+	umount $ROOTFS/output/sources $ROOTFS/output/packages || true
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd || true
 }
 
 enter_chroot() {
+	set +e
 	mkdir -p $ROOTFS/output/{stage,initrd}
 	mkdir -p $ROOTFS/usr/janus/{KEEP,packages,toolchain}
 
