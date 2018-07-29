@@ -6,7 +6,6 @@ name=musl
 version=1.1.19
 release=1
 source=(http://www.musl-libc.org/releases/$name-$version.tar.gz)
-BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
@@ -19,6 +18,10 @@ build() {
 
 	mkdir -p $PKG/usr/bin
 	ln -sf ../lib/libc.so $PKG/usr/bin/ldd
+
+	for file in getconf getent iconv; do
+		gcc --sysroot=$PKG -I$PKG/usr/include $CFLAGS -no-pie -fno-PIE $LDFLAGS -static $KEEP/musl/${file}.c -o $PKG/usr/bin/$file
+	done
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

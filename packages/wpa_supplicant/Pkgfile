@@ -7,7 +7,6 @@ name=wpa_supplicant
 version=2.6
 release=1
 source=(https://w1.fi/releases/$name-$version.tar.gz)
-BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
@@ -21,8 +20,7 @@ build() {
 	make BINDIR=/usr/bin DESTDIR=$PKG install
 
 	mkdir -p $PKG/etc
-	cp -p wpa_supplicant_template.conf $PKG/etc/wpa_supplicant.conf
-	cp -p wpa_supplicant.conf $PKG/etc/wpa_supplicant-sample.conf
+	cp -p wpa_supplicant.conf $PKG/etc/wpa_supplicant.conf
 	chmod 644 $PKG/etc/*.conf
 
 	install -Dm0755 $KEEP/services/wpa_supplicant $PKG/etc/service/wpa_supplicant/run

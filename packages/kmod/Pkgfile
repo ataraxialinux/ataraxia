@@ -5,9 +5,8 @@
 
 name=kmod
 version=25
-release=1
+release=2
 source=(https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz)
-BOOTSTRAP=yes
 
 build() {
 	cd $name-$version
@@ -19,6 +18,12 @@ build() {
 		--disable-manpages
 	make
 	make DESTDIR=$PKG install
+
+	for target in depmod insmod lsmod modinfo modprobe rmmod; do
+		ln -sf kmod $PKG/usr/bin/$target
+	done
+
+	ln -sf kmod $PKG/usr/bin/lsmod
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
