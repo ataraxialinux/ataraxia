@@ -25,6 +25,6 @@ januslinux is a fast and compact [Linux](https://www.kernel.org/) distribution w
 You can download the [first pre-release version of Beta 4](https://github.com/JanusLinux/janus/releases/tag/180710) of januslinux which was compiled on 10th July of 2018. It has bugs.
 
 
-## How I can contact and help you with development?
+## How can I contact and help you with development?
 
 You can [email](mailto:nagakamira@gmail.com) me and give some suggestions or help me to contribute to this project on [GitHub](https://github.com/JanusLinux/janus). Also, you can help submit it on DistroWatch, just click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We have own Discord server, to access just click [here](https://discord.gg/a329dDz). We have an IRC channel on freenode.net: #januslinux. Don't forget to subscribe to our mailing lists, click [here](https://www.freelists.org/list/januslinux).
