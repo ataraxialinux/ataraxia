@@ -211,12 +211,12 @@ build_toolchain() {
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
+	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
 clean_packages() {
 	printmsg "Cleaning"
-	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
+	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
 mountall() {
@@ -244,7 +244,10 @@ enter_chroot() {
 	mount --bind $CWD/packages $ROOTFS/usr/janus/packages
 	mount --bind $CWD/toolchain $ROOTFS/usr/janus/toolchain
 
-	mountall
+	mount --bind $BUILD/packages $ROOTFS/output/packages
+	mount --bind $BUILD/sources $ROOTFS/output/sources
+	mount --bind $BUILD/stage $ROOTFS/output/stage
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd
 
 	chroot $ROOTFS /busybox/bin/env -i \
 		TERM="$TERM" \
@@ -254,7 +257,8 @@ enter_chroot() {
 
 	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain
 	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp
-	umountall
+	umount $ROOTFS/output/sources $ROOTFS/output/packages
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd
 }
 
 generate_stage_archive() {
