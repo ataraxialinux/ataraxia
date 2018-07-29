@@ -5,9 +5,12 @@ source=(https://fastly.cdn.openbsd.org/pub/OpenBSD/LibreSSL/libressl-$version.ta
 BOOTSTRAP=yes
 
 build() {
-	if [ "$BARCH" = "i686" ]; then
-		CONFIGOPTS="--disable-hardening"
-	fi
+	case $BARCH in
+		i686*)
+			export CONFIGOPTS="--disable-hardening
+			;;
+		*)
+	esac
 	cd libressl-$version
 	autoreconf -fi
 	./configure $BUILDFLAGS $CONFIGOPTS \
