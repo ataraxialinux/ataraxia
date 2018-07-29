@@ -189,6 +189,11 @@ setup_environment() {
 }
 
 make_environment() {
+	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain || true
+	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp || true
+	umount $ROOTFS/output/sources $ROOTFS/output/packages || true
+	umount $ROOTFS/output/stage $ROOTFS/output/initrd || true
+
 	rm -rf $BUILD
 	mkdir -p $BUILD $SOURCES $ROOTFS $INITRD $STAGE $TOOLS $PACKAGES $IMAGE
 
@@ -211,12 +216,12 @@ build_toolchain() {
 
 bootstrap_rootfs() {
 	printmsg "Bootstraping root filesystem"
-	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
+	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap patch-bootstrap bootstrap-scripts
 }
 
 clean_packages() {
 	printmsg "Cleaning"
-	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
+	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap patch-bootstrap bootstrap-scripts
 }
 
 mountall() {

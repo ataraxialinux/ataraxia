@@ -1,22 +1,18 @@
-# Description: The basic file, shell and text manipulation utilities of the GNU operating system
-# URL:         http://www.gnu.org/software/coreutils
+# Description: Collection of simple PIN or passphrase entry dialogs which utilize the Assuan protocol
+# URL:         http://gnupg.org/related_software/pinentry/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp acl libcap
+# Depends on:  libcap libgpg-error libassuan
 
-name=coreutils
-version=8.30
+name=pinentry
+version=1.1.0
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+source=(https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-
-	export FORCE_UNSAFE_CONFIGURE=1
-
-	./configure $BUILDFLAGS LDFLAGS="$LDFLAGS -static" \
+	./configure \
 		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--enable-no-install-program=kill,uptime,hostname
+		--enable-pinentry-tty
 	make
 	make DESTDIR=$PKG install
 
