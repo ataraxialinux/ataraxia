@@ -19,7 +19,7 @@ cp -a $KEEP/ca-certificates/certdata2pem.c mozilla/certdata2pem.c
 
 cat > mozilla/Makefile << EOF
 all:
-	$HOSTCC -Wall certdata2pem.c -o certdata2pem
+	gcc -Wall certdata2pem.c -o certdata2pem
 	./certdata2pem
 clean:
 	-rm -f *.crt
@@ -31,7 +31,7 @@ EOF
 
 	make
 
-	$CC $KEEP/ca-certificates/c_rehash.c -o c_rehash -L$ROOTFS/usr/lib -lssl -lcrypto -lz $CPPFLAGS $CFLAGS $LDFLAGS
+	gcc $KEEP/ca-certificates/c_rehash.c -o c_rehash -L$ROOTFS/usr/lib -lssl -lcrypto -lz $CPPFLAGS $CFLAGS $LDFLAGS
 
 	make DESTDIR=$PKG SBINDIR=/usr/bin install
 

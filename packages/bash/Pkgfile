@@ -7,7 +7,7 @@ name=bash
 version=4.4.023
 _basever=4.4
 _stripped_basever="$(echo ${_basever} | tr -d '.')"
-release=4
+release=5
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-${_basever}.tar.gz)
 
 build() {
@@ -30,10 +30,11 @@ build() {
 		--with-installed-readline \
 		--enable-static-link \
 		--disable-nls
-	make
-	make DESTDIR=$PKG install
+	make -j1
+	install -D -m 755 bash $PKG/usr/bin/bash
 
 	ln -s bash $PKG/usr/bin/sh
+	ln -s bash $PKG/usr/bin/rbash
 
 	mkdir -p $PKG/etc/skel
 	install -Dm644 $KEEP/bash/system.bashrc $PKG/etc/bash.bashrc
