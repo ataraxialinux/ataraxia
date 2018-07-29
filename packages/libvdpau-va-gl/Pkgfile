@@ -1,33 +1,17 @@
-# Description: Complete solution to record, convert and stream audio and video
-# URL:         http://ffmpeg.org/
+# Description: VDPAU driver with OpenGL/VAAPI backend
+# URL:         https://github.com/i-rinat/libvdpau-va-gl
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  yasm zlib libressl libass fdk-aac freetype lame libtheora libvorbis libvpx opus x264 x265 alsa-lib libva libvdpau
+# Depends on:  cmake ffmpeg libvdpau libva mesa
 
-name=ffmpeg
-version=4.0.2
-release=4
-source=(http://ffmpeg.org/releases/$name-$version.tar.xz)
+name=libvdpau-va-gl
+version=0.4.2
+release=1
+source=(https://github.com/i-rinat/libvdpau-va-gl/archive/v$version/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	./configure \
-		--prefix=/usr \
-		--enable-gpl \
-		--enable-nonfree \
-		--enable-version3 \
-		--enable-libass \
-		--enable-libfdk-aac \
-		--enable-libfreetype \
-		--enable-libmp3lame \
-		--enable-libopus \
-		--enable-libtheora \
-		--enable-libvorbis \
-		--enable-libvpx \
-		--enable-libx264 \
-		--enable-libx265 \
-		--enable-openssl \
-		--disable-debug \
-		--disable-doc
+	mkdir -p build && cd build
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ..
 	make
 	make DESTDIR=$PKG install
 
