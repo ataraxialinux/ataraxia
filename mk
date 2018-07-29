@@ -334,7 +334,7 @@ CEOF
 
 generate_iso() {
 	case $BARCH in
-		x86_64|i686)
+		x86_64*|i686*)
 			generate_iso_x86
 			;;
 		aarch64|armv7h)
