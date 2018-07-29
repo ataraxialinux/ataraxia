@@ -216,7 +216,7 @@ bootstrap_rootfs() {
 
 clean_packages() {
 	printmsg "Cleaning"
-	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap xz-bootstrap npkg-bootstrap bootstrap-scripts
+	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap bootstrap-scripts
 }
 
 mountall() {
