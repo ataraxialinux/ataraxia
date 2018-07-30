@@ -1,30 +1,18 @@
-# Description: A free, open source, and cross-platform media player
-# URL:         https://mpv.io/
+# Description: Data structures useful in parsing HTML
+# URL:         http://search.cpan.org/dist/HTML-Parser
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python2 lua ffmpeg libass mesa libxscrnsaver libxkbcommon xorg-server wayland-protocols libvdpau-va-gl gtk2
+# Depends on:  perl html-tagset
 
-name=mpv
-version=0.29.0
+name=html-parser
+version=3.72
 release=1
-source=(https://github.com/mpv-player/mpv/archive/v$version.tar.gz)
+source=(https://www.cpan.org/authors/id/G/GA/GAAS/HTML-Parser-$version.tar.gz)
 
 build() {
-	cd $name-$version
-	./bootstrap.py
-
-	export CFLAGS="-D_GNU_SOURCE $CFLAGS"
-
-	./waf configure \
-		--prefix=/usr \
-		--confdir=/etc/mpv \
-		--enable-dynamic-plugins \
-		--enable-gl \
-		--enable-gui \
-		--enable-menu \
-		--enable-wayland \
-		--enable-x11
-	./waf build -j$JOBS
-	./waf install --destdir=$PKG
+	cd HTML-Parser-$version
+	perl Makefile.PL INSTALLDIRS=vendor
+	make
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
