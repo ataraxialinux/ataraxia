@@ -268,6 +268,7 @@ enter_chroot() {
 }
 
 generate_stage_archive() {
+	set +e
 	printmsg "Building stage archive"
 
 	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux e2fsprogs libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
@@ -277,6 +278,7 @@ generate_stage_archive() {
 }
 
 generate_initrd() {
+	set +e
 	printmsg "Building initrd archive"
 
 	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses shadow util-linux e2fsprogs readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
@@ -289,6 +291,7 @@ generate_initrd() {
 }
 
 generate_iso_x86() {
+	set +e
 	printmsg "Building *.iso image"
 	cd $SOURCES
 	curl -C - -O -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
