@@ -1,30 +1,35 @@
-# Description: A free, open source, and cross-platform media player
-# URL:         https://mpv.io/
+# Description: Embeddable Javascript engine
+# URL:         http://duktape.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python2 lua ffmpeg libass mesa libxscrnsaver libxkbcommon xorg-server wayland-protocols libvdpau-va-gl gtk2 desktop-file-utils
+# Depends on:  setconf
 
-name=mpv
-version=0.29.0
+name=duktape
+version=2.2.1
 release=1
-source=(https://github.com/mpv-player/mpv/archive/v$version.tar.gz)
+source=(http://duktape.org/duktape-$version.tar.xz)
 
 build() {
+	install -d $PKG/usr/lib $PKG/usr/include/pkgconfig
+
+cat > $PKG/usr/lib/pkgconfig/duktape.pc << "EOF"
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: duktape
+Description: Embeddable Javascript engine
+Version: $version
+Libs: -L${libdir} -lduktape
+Cflags: -I${includedir}
+EOF
+
 	cd $name-$version
-	./bootstrap.py
-
-	export CFLAGS="-D_GNU_SOURCE $CFLAGS"
-
-	./waf configure \
-		--prefix=/usr \
-		--confdir=/etc/mpv \
-		--enable-dynamic-plugins \
-		--enable-gl \
-		--enable-gui \
-		--enable-menu \
-		--enable-wayland \
-		--enable-x11
-	./waf build -j$JOBS
-	./waf install --destdir=$PKG
+	mv Makefile.sharedlibrary Makefile
+	sed 's/-Wall -Wextra/$(CFLAGS)/g' -i Makefile
+	setconf Makefile INSTALL_PREFIX=$PKG/usr
+	CFLAGS="$CFLAGS -D DUK_USE_FASTINT -w" make
+	make install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
