@@ -16,6 +16,11 @@ build() {
 	make
 	make DESTDIR=$PKG install
 
+	install -Dm0755 $KEEP/services/transmission $PKG/etc/service/transmission/run
+	install -Dm0755 $KEEP/services/transmission-log $PKG/etc/service/nsd/transmission/run
+
+	mkdir -p $PKG/var/log/transmission
+
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
