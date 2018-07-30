@@ -9,7 +9,28 @@ source=(http://busybox.net/downloads/$name-$version.tar.bz2)
 BOOTSTRAP=yes
 
 build() {
+	case $BARCH in
+		x86_64*)
+			export XKARCH="x86_64"
+			;;
+		i686*)
+			export XKARCH="i386"
+			;;
+		aarch64)
+			export XKARCH="arm64"
+			;;
+		armv7h|armv6h)
+			export XKARCH="arm"
+			;;
+		mips*)
+			export XKARCH="mips"
+			;;
+		*)
+			echo "BARCH variable isn't set!"
+			exit 1
+	esac
 	cd $name-$version
+	patch -p1 < $KEEP/busybox/busybox_lzip.patch
 	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE defconfig
 	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
 	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
