@@ -106,7 +106,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=bdver2"
+			export GCCOPTS="--with-arch=bdver2 --with-tune=bdver2"
 			;;
 		i686)
 			printmsg "Using configuration for i686"
@@ -120,7 +120,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
-			export GCCOPTS="--with-arch=bdver2"
+			export GCCOPTS="--with-arch=bdver2 --with-tune=bdver2"
 			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
