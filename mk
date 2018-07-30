@@ -271,7 +271,7 @@ generate_stage_archive() {
 	set +e
 	printmsg "Building stage archive"
 
-	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap pkgconf ncurses shadow util-linux e2fsprogs libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
+	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool perl readline autoconf automake bash bc file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano curl libarchive git npkg prt-get
 
 	cd $STAGE
 	tar jcfv $CWD/januslinux-1.0-beta4-$BARCH.tar.bz2 *
@@ -281,7 +281,7 @@ generate_initrd() {
 	set +e
 	printmsg "Building initrd archive"
 
-	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap ncurses shadow util-linux e2fsprogs readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
+	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap sed ncurses shadow util-linux e2fsprogs readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux nano libnl wpa_supplicant curl
 
 	cd $INITRD
 	rm -rf usr/include
