@@ -108,19 +108,19 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=bdver2 --with-tune=bdver2"
 			;;
+		x86_64-ryzen)
+			printmsg "Using configuration for x86_64-vishera"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=znver1 --with-tune=znver1"
+			;;
 		i686)
 			printmsg "Using configuration for i686"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			export XKARCH="i386"
 			export GCCOPTS=
-			;;
-		i686-vishera)
-			printmsg "Using configuration for i686-vishera"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
-			export XKARCH="i386"
-			export GCCOPTS="--with-arch=bdver2 --with-tune=bdver2"
 			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
