@@ -10,7 +10,11 @@ source=(http://dl.suckless.org/$name/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	cp $KEEP/dwm/config.h config.h
+	if [ -f $KEEP/dwm/config.h ]; then
+		cp $KEEP/dwm/config.h config.h
+	else
+		cp $KEEP/dwm/config.def.h config.h
+	fi
 	make X11INC=/usr/include/X11 X11LIB=/usr/lib/X11 FREETYPEINC=/usr/include/freetype2
 	make PREFIX=/usr DESTDIR=$PKG install
 
