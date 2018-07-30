@@ -42,6 +42,14 @@ installonly() {
 	done
 }
 
+installonlyforce() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		printmsg "Installing $mergepkg"
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz -f || true
+	done
+}
+
 setup_environment() {
 	export PATH="/usr/bin:/busybox/bin"
 
@@ -103,7 +111,7 @@ build_final_system() {
 				buildonly bash
 				pkgrm bash-bootstrap || true
 				rm -rf /usr/bin/sh
-				installonly bash
+				installonlyforce bash
 				;;
 			file)
 				buildonly file
@@ -143,4 +151,3 @@ setup_environment
 build_final_system
 
 exit 0
-
