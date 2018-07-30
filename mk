@@ -317,7 +317,8 @@ echo januslinux starting...
 \\vmlinuz quiet initrd=\\rootfs.cpio.xz
 CEOF
 
-	genisoimage \
+	xorriso \
+		-as mkisofs \
 		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
 		-b isolinux.bin \
 		-c boot.cat \
@@ -326,6 +327,8 @@ CEOF
 		-boot-load-size 4 \
 		-boot-info-table \
 		$IMAGE
+
+	isohybrid -u $CWD/januslinux-1.0-beta4-$BARCH.iso 2>/dev/null || true
 }
 
 generate_iso_arm() {
@@ -336,13 +339,16 @@ echo januslinux starting...
 \\vmlinuz quiet initrd=\\rootfs.cpio.xz
 CEOF
 
-	genisoimage \
+	xorriso \
+		-as mkisofs \
 		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
 		-input-charset UTF-8 \
 		-no-emul-boot \
 		-boot-load-size 4 \
 		-boot-info-table \
 		$IMAGE
+
+	isohybrid -u $CWD/januslinux-1.0-beta4-$BARCH.iso 2>/dev/null || true
 }
 
 generate_iso() {
