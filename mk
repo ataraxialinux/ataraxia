@@ -183,9 +183,10 @@ setup_environment() {
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CFLAGS="-Os -g0 -pipe"
+	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
+	export CFLAGS="-Os -pipe -fstack-protector-strong -fno-plt"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s"
+	export LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
 }
 
 make_environment() {
