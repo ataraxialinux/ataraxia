@@ -1,17 +1,23 @@
-# Description: The interface definitions of accessibility infrastructure
-# URL:         https://git.gnome.org/browse/atk
+# Description: A library that implements Perl 5-style regular expressions. 2nd version
+# URL:         http://www.pcre.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib gobject-introspection
+# Depends on:  zlib readline
 
-name=atk
-version=3.28.0
+name=pcre2
+version=10.31
 release=1
-source=(http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz)
+source=(https://ftp.pcre.org/pub/pcre/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-	./configure \
-		--prefix=/usr
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-unicode-properties \
+		--enable-pcre16 \
+		--enable-pcre32 \
+		--enable-pcregrep-libz \
+		--enable-pcretest-libreadline \
+		--enable-jit
 	make
 	make DESTDIR=$PKG install
 

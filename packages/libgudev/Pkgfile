@@ -1,17 +1,18 @@
-# Description: The interface definitions of accessibility infrastructure
-# URL:         https://git.gnome.org/browse/atk
+# Description: GObject bindings for libudev
+# URL:         https://wiki.gnome.org/Projects/libgudev
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib gobject-introspection
+# Depends on:  eudev glib
 
-name=atk
-version=3.28.0
+name=libgudev
+version=232
 release=1
-source=(http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz)
+source=(http://ftp.gnome.org/pub/gnome/sources/$name/$version/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
 	./configure \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-umockdev
 	make
 	make DESTDIR=$PKG install
 

@@ -1,17 +1,22 @@
-# Description: The interface definitions of accessibility infrastructure
-# URL:         https://git.gnome.org/browse/atk
+# Description: GStreamer Multimedia Framework Base Plugins
+# URL:         https://gstreamer.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib gobject-introspection
+# Depends on:  gstreamer alsa-lib cdparanoia-iii gobject-introspection iso-codes libogg libtheora libvorbis libsm libice expat
 
-name=atk
-version=3.28.0
+name=gst-plugins-base
+version=1.14.2
 release=1
-source=(http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz)
+source=(https://gstreamer.freedesktop.org/src/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
 	./configure \
-		--prefix=/usr
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--libexecdir=/usr/lib \
+		--with-package-name="GStreamer (januslinux)" \
+		--with-package-origin="https://januslinux.github.io/"
 	make
 	make DESTDIR=$PKG install
 
