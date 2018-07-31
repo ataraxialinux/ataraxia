@@ -10,11 +10,15 @@ source=(https://github.com/irssi/irssi/releases/download/$version/$name-$version
 
 build() {
 	cd $name-$version
+	patch -Np0 -i $KEEP/irssi/patch-src_core_network-openssl_c
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
+		--with-bot \
+		--with-perl-lib=vendor \
 		--with-proxy \
-		--with-perl-lib=vendor
+		--with-socks \
+		--enable-true-color
 	make
 	make DESTDIR=$PKG install
 
