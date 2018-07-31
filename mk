@@ -186,7 +186,7 @@ setup_environment() {
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 	export CFLAGS="-Os -pipe -fstack-protector-strong -fno-plt"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s -Wl,-z,relro,-z,now"
+	export LDFLAGS="-s"
 }
 
 make_environment() {
