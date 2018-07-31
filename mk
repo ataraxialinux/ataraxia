@@ -101,27 +101,6 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS=
 			;;
-		x86_64-vishera)
-			printmsg "Using configuration for x86_64-vishera"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="x86_64-linux-musl"
-			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=bdver2 --with-tune=bdver2"
-			;;
-		x86_64-ryzen)
-			printmsg "Using configuration for x86_64-vishera"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="x86_64-linux-musl"
-			export XKARCH="x86_64"
-			export GCCOPTS="--with-arch=znver1 --with-tune=znver1"
-			;;
-		i686)
-			printmsg "Using configuration for i686"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
-			export XKARCH="i386"
-			export GCCOPTS=
-			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -186,7 +165,7 @@ setup_environment() {
 	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 	export CFLAGS="-Os -pipe -fstack-protector-strong -fno-plt"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s"
+	export LDFLAGS="-s -Wl,-z,relro,-z,now"
 }
 
 make_environment() {
