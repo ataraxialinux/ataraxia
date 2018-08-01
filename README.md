@@ -22,7 +22,7 @@ januslinux is a fast and compact [Linux](https://www.kernel.org/) distribution w
 
 
 ## How can I get it?
-You can download the [first pre-release version of Beta 4](https://github.com/JanusLinux/janus/releases/tag/180710) of januslinux which was compiled on 10th July of 2018. It has bugs.
+You can download the [Beta 4](https://github.com/JanusLinux/janus/releases/tag/1.0-beta4) of januslinux which was compiled on 1st August of 2018. It has less bugs.
 
 
 ## How can I contact and help you with development?
