@@ -3,11 +3,13 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=linux-headers
-version=3.12.6-6
+version=4.17.11
 release=1
-source=(http://ftp.barfooze.de/pub/sabotage/tarballs/kernel-headers-$version.tar.xz)
+source=(https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$version.tar.xz)
+BOOTSTRAP=yes
 
 build() {
+	cd linux-$version
 	case $BARCH in
 		x86_64*)
 			export XKARCH="x86_64"
@@ -28,6 +30,7 @@ build() {
 			echo "BARCH variable isn't set!"
 			exit 1
 	esac
-	cd kernel-headers-$version
-	make ARCH=$XKARCH prefix=/usr DESTDIR=$PKG install
+	make mrproper $MKOPTS
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$PKG/usr headers_install
+	find $PKG/usr/include -name .install -or -name ..install.cmd | xargs rm -rf
 }

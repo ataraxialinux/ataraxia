@@ -187,7 +187,7 @@ build_toolchain() {
 	toolpkginstall pkgconf
 	toolpkginstall binutils
 	toolpkginstall gcc-static
-	pkginstall linux-headers-bootstrap musl-bootstrap
+	pkginstall linux-headers musl-bootstrap
 	toolpkginstall gcc
 
 	printmsg "Cleaning"
