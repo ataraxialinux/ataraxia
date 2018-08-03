@@ -36,8 +36,10 @@ build() {
 		DESTDIR=$PKG \
 		install
 
-	install -Dm644 frontends/gtk/res/$pkgname.xpm $PKG/usr/share/pixmaps/$pkgname.xpm
-	install -Dm644 frontends/gtk/res/$pkgname-gtk.desktop $PKG/usr/share/applications/$pkgname.desktop
+	install -Dm644 frontends/gtk/res/$name.xpm $PKG/usr/share/pixmaps/$name.xpm
+	install -Dm644 frontends/gtk/res/$name-gtk.desktop $PKG/usr/share/applications/$name.desktop
+
+	ln -sf netsurf-gtk3 $PKG/usr/bin/netsurf
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
