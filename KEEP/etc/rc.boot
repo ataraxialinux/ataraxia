@@ -26,7 +26,7 @@ fsck -ATa
 if [ $? -eq 1 ]; then
 	clear
 	echo Filesystem errors exist, fix manually.
-	sleep 15
+	sleep 1
 	sh
 	halt -r
 fi
@@ -45,7 +45,6 @@ fi
 : > /var/run/utmp
 rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
 (cd /var/run && find . -name "*.pid" -delete)
-(cd /var/lock && find . ! -type d -delete)
 (cd /tmp && find . ! -name . -delete)
 mkdir -m 1777 /tmp/.ICE-unix
 
