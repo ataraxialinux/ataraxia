@@ -1,15 +1,15 @@
-# Description: A free, open source, and cross-platform media player
+# Description: A free, open source, and cross-platform media player with GUI
 # URL:         https://mpv.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python2 lua ffmpeg libass mesa
+# Depends on:  python2 lua ffmpeg libass mesa xorg-server wayland-protocols libxscrnsaver libxkbcommon
 
 name=mpv
 version=0.29.0
-release=2
+release=1
 source=(https://github.com/mpv-player/mpv/archive/v$version.tar.gz)
 
 build() {
-	cd $name-$version
+	cd mpv-$version
 	./bootstrap.py
 
 	export CFLAGS="-D_GNU_SOURCE $CFLAGS"
@@ -17,7 +17,9 @@ build() {
 	./waf configure \
 		--prefix=/usr \
 		--confdir=/etc/mpv \
-		--enable-gl
+		--enable-gl \
+		--enable-wayland \
+		--enable-x11
 	./waf build -j$JOBS
 	./waf install --destdir=$PKG
 
