@@ -1,7 +1,7 @@
 # Description: Fast, easy, and free BitTorrent client
 # URL:         http://www.transmissionbt.com/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  intltool curl libevent gtk
+# Depends on:  intltool curl libevent gtk inotify protonesso-favorite-headers
 
 name=transmission
 version=2.94
@@ -10,8 +10,13 @@ source=(https://raw.githubusercontent.com/transmission/transmission-releases/mas
 
 build() {
 	cd $name-$version
-	./configure \
-		--prefix=/usr
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-inotify \
+		--enable-cli \
+		--enable-utp
 	make
 	make DESTDIR=$PKG install
 
