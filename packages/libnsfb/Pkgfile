@@ -1,19 +1,18 @@
-# Description: Data structures useful in parsing HTML
-# URL:         http://search.cpan.org/dist/HTML-Parser
+# Description: Framebuffer abstraction library
+# URL:         http://www.netsurf-browser.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  perl html-tagset
+# Depends on:  netsurf-buildsystem sdl
 
-name=html-parser
-version=3.72
-release=2
-source=(https://www.cpan.org/authors/id/G/GA/GAAS/HTML-Parser-$version.tar.gz)
+name=libnsfb
+version=0.1.5
+release=1
+source=(http://git.netsurf-browser.org/$name.git/snapshot/release/$version.tar.bz2)
 
 build() {
-	cd HTML-Parser-$version
-	perl Makefile.PL INSTALLDIRS=vendor
-	make
-	make DESTDIR=$PKG install
-	rm -rf $PKG/usr/lib/perl5/*/*/perllocal.pod
+	cd release/$version
+	make LIBDIR=lib INCLUDEDIR=include PREFIX=/usr COMPONENT_TYPE="lib-shared"
+	make LIBDIR=lib INCLUDEDIR=include PREFIX=/usr COMPONENT_TYPE="lib-shared" \
+		DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
