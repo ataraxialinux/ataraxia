@@ -10,6 +10,7 @@ source=(http://git.netsurf-browser.org/$name.git/snapshot/release/$version.tar.b
 
 build() {
 	cd release/$version
+	sed -i Makefile -e 's:-Werror::g'
 	make LIBDIR=lib INCLUDEDIR=include PREFIX=/usr COMPONENT_TYPE="lib-shared"
 	make LIBDIR=lib INCLUDEDIR=include PREFIX=/usr COMPONENT_TYPE="lib-shared" \
 		DESTDIR=$PKG install
