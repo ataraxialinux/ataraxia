@@ -1,34 +1,25 @@
-# Description: The GNU Debugger
-# URL:         http://www.gnu.org/software/gdb
+# Description: Enhanced vaersion of the Berkeley C shell0
+# URL:         http://www.tcsh.org/Welcome
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib readline python
+# Depends on:  ncurses
 
-name=gdb
-version=8.1.1
-release=2
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.xz)
+name=tcsh
+version=6.20.00
+release=1
+source=(http://fossies.org/linux/misc/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
-	./configure $TOOLFLAGS \
-		--prefix=/usr \
-		--with-system-gdbinit=/etc/gdb/gdbinit \
-		--with-system-readline \
-		--with-system-zlib \
-		--disable-gdbserver \
-		--disable-multilib \
-		--disable-nls \
-		--disable-werror
-	make MAKEINFO="true"
-	make MAKEINFO="true" DESTDIR=$PKG install
+	patch -p1 < $KEEP/tcsh/001-sysmalloc.patch
+	patch -p1 < $KEEP/tcsh/002-test_123-posix_fix.patch
+	sed -i 's|SVID_SOURCE|DEFAULT_SOURCE|g' config/linux
+	sed -i 's|BSD_SOURCE|DEFAULT_SOURCE|g' config/linux
+	./configure \
+		--prefix=/usr
+	make
+	make DESTDIR=$PKG install
 
-	install -dm755 $PKG/etc/gdb
-	touch $PKG/etc/gdb/gdbinit
-
-	rm $PKG/usr/include/{ansidecl,bfd,bfdlink,dis-asm,plugin-api,symcat}.h
-	rm $PKG/usr/share/info/bfd.info
-	rm $PKG/usr/lib/{libbfd,libopcodes}.a
+	ln -sf tcsh $PKG/usr/bin/csh
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
