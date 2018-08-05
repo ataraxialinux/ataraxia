@@ -1,24 +1,19 @@
-# Description: GObject-based multi-platform GUI toolkit (legacy)
-# URL:         https://www.gtk.org/
+# Description: Window navigator construction kit
+# URL:         https://git.gnome.org/browse/atk
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libxcursor xorg-libxinerama libxrandr libxcomposite atk gdk-pixbuf pango hicolor-icon-theme
+# Depends on:  gtk2 startup-notification
 
-name=gtk2
-version=2.24.32
+name=libwnck
+version=2.30.7
 release=1
-source=(http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz)
+source=(http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz)
 
 build() {
-	cd gtk+-$version
-	sed -e 's#l \(gtk-.*\).sgml#& -o \1#' \
-		-i docs/{faq,tutorial}/Makefile.in
+	cd $name-$version
 	./configure \
-		--prefix=/usr \
-		--sysconfdir=/etc
+		--prefix=/usr
 	make
 	make DESTDIR=$PKG install
-
-	rm $PKG/usr/bin/gtk-update-icon-cache
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
