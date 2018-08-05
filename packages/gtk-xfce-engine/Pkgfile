@@ -1,24 +1,21 @@
-# Description: GObject-based multi-platform GUI toolkit (legacy)
-# URL:         https://www.gtk.org/
+# Description: A simple client-server configuration storage and query system
+# URL:         http://www.xfce.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libxcursor xorg-libxinerama libxrandr libxcomposite atk gdk-pixbuf pango hicolor-icon-theme
+# Depends on:  gtk gtk2
 
-name=gtk2
-version=2.24.32
+name=gtk-xfce-engine
+version=3.2.0
 release=1
-source=(http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz)
+source=(http://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2)
 
 build() {
-	cd gtk+-$version
-	sed -e 's#l \(gtk-.*\).sgml#& -o \1#' \
-		-i docs/{faq,tutorial}/Makefile.in
+	cd $name-$version
+	sed -i 's/\xd6/\xc3\x96/' gtk-3.0/xfce_style_types.h
 	./configure \
 		--prefix=/usr \
-		--sysconfdir=/etc
+		--enable-gtk3
 	make
 	make DESTDIR=$PKG install
-
-	rm $PKG/usr/bin/gtk-update-icon-cache
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
