@@ -1,18 +1,20 @@
-# Description: A powerful, 8-bit clean, text editor. Supports ISO-8859-15 and ASCII.
-# URL:         http://www.gnu.org/software/moe
+# Description: Plugin to switch keyboard layouts for the Xfce4 panel
+# URL:         http://goodies.xfce.org/projetcs/panel-plugins/xfce4-xkb-plugin
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses
+# Depends on:  xfce4-panel librsvg libxklavier libwnck
 
-name=moe
-version=1.9
+name=xfce4-xkb-plugin
+version=0.8.1
 release=1
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.lz)
+source=(http://archive.xfce.org/src/panel-plugins/$name/${version%.*}/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
+	./configure \
 		--prefix=/usr \
-		--sysconfdir=/etc
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var
 	make
 	make DESTDIR=$PKG install
 
@@ -22,6 +24,6 @@ build() {
 	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
 	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
 	cd $PKG
-	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc} usr/lib/locale
 	rm -rf {,usr/}lib/charset.alias
 }
