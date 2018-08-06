@@ -12,6 +12,18 @@ build() {
 	export ARFLAGS=rv
 	export CFLAGS="$CFLAGS -fPIC"
 	cd $name-$version
+	patch -Np1 -i $KEEP/qemu/0001-elfload-load-PIE-executables-to-right-address.patch
+	patch -Np1 -i $KEEP/qemu/0006-linux-user-signal.c-define-__SIGRTMIN-MAX-for-non-GN.patch
+	patch -Np1 -i $KEEP/qemu/0001-linux-user-fix-build-with-musl-on-aarch64.patch
+	patch -Np1 -i $KEEP/qemu/musl-F_SHLCK-and-F_EXLCK.patch
+	patch -Np1 -i $KEEP/qemu/fix-sigevent-and-sigval_t.patch
+	patch -Np1 -i $KEEP/qemu/xattr_size_max.patch
+	patch -Np1 -i $KEEP/qemu/ncurses.patch
+	patch -Np1 -i $KEEP/qemu/ignore-signals-33-and-64-to-allow-golang-emulation.patch
+	patch -Np1 -i $KEEP/qemu/0001-linux-user-fix-build-with-musl-on-ppc64le.patch
+	patch -Np1 -i $KEEP/qemu/fix-sockios-header.patch
+	patch -Np1 -i $KEEP/qemu/test-crypto-ivgen-skip-essiv.patch
+	patch -Np1 -i $KEEP/qemu/0001-ui-add-x_keymap.o-to-modules.patch
 	mkdir -p build && cd build
 	../configure \
 		--prefix=/usr \
