@@ -9,6 +9,8 @@ release=1
 source=(http://download.qemu-project.org/$name-$version.tar.bz2)
 
 build() {
+	export ARFLAGS=rv
+	export CFLAGS="$CFLAGS -fPIC"
 	cd $name-$version
 	mkdir -p build && cd build
 	../configure \
@@ -20,10 +22,12 @@ build() {
 		--smbd=/usr/bin/smbd \
 		--audio-drv-list=alsa \
 		--with-gtkabi=3.0 \
-		--with-sdlabi=2.0
+		--with-sdlabi=2.0 \
+		--enable-modules
 	make
 	make DESTDIR=$PKG install
 
+	mkdir -p $PKG/usr/lib/udev/rules.d
 cat > $PKG/usr/lib/udev/rules.d/65-kvm.rules << "EOF"
 KERNEL=="kvm", GROUP="kvm", MODE="0660"
 EOF
