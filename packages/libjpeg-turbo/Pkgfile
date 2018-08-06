@@ -1,7 +1,7 @@
 # Description: JPEG image codec with accelerated baseline compression and decompression
 # URL:         https://libjpeg-turbo.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  nasm
+# Depends on:  nasm cmake
 
 name=libjpeg-turbo
 version=2.0.0
@@ -10,11 +10,18 @@ source=(https://downloads.sourceforge.net/$name/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-	unset CC CXX AR AS RANLIB LD
-	./configure \
-		--prefix=/usr
+	mkdir -p build && cd build
+	cmake -DCMAKE_INSTALL_PREFIX=/usr ..
 	make
-	make -j1 DESTDIR=$PKG install
+	make DESTDIR=$PKG install
+
+	# yes
+	case $BARCH in
+		x86_64|aarch64)
+			cd $PKG/usr
+			mv lib64 lib
+			;;
+	esac
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
