@@ -5,16 +5,18 @@
 
 name=npkg
 version=0.1.2
-release=4
+release=5
 source=(https://github.com/protonesso/npkg/archive/$version.tar.gz
-	pkgmk.conf)
+	pkgmk.conf
+	pkgadd.conf)
 
 build() {
 	cd $name-$version
 	make -f Makefile.static PREFIX=/usr DESTDIR=$PKG install
 
-	rm -rf $PKG/etc/pkgmk.conf
+	rm -rf $PKG/etc/pkgmk.conf $PKG/etc/pkgadd.conf
 	cp $SRC/pkgmk.conf $PKG/etc/pkgmk.conf
+	cp $SRC/pkgadd.conf $PKG/etc/pkgadd.conf
 
 	sed -i $PKG/etc/pkgmk.conf \
 		-e "s|@BARCH[@]|$BARCH|g" \
