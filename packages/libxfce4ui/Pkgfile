@@ -4,7 +4,7 @@
 # Depends on:  gtk gtk2 xfconf startup-notification
 
 name=libxfce4ui
-version=4.13.4
+version=4.12.1
 release=1
 source=(http://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2)
 
@@ -13,16 +13,9 @@ build() {
 	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--with-verndor-info="januslinux" \
-		--enable-introspection=no
+		--with-verndor-info='januslinux'
 	make
 	make DESTDIR=$PKG install
-
-	mkdir -p $PKG/usr/share/xfce4
-
-cat > $PKG/usr/share/xfce4/vendorinfo << "EOF"
-a
-EOF
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
