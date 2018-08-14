@@ -30,5 +30,5 @@ You can download the [Beta 4](https://github.com/JanusLinux/janus/releases/tag/1
 You can [email](mailto:nagakamira@gmail.com) me and give some suggestions or help me to contribute to this project on [GitHub](https://github.com/JanusLinux/janus). Also, you can help submit it on DistroWatch, just click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We have own Discord server, to access just click [here](https://discord.gg/a329dDz). We have an IRC channel on freenodwithe.net: #januslinux. Don't forget to subscribe to our mailing lists, click [here](https://www.freelists.org/list/januslinux).
 
 ## User gallery
-Sumbit your screenshot with januslinux installed on: nagakamira@gmail.com and we probarly publish it on this page!
+Submit your screenshot with januslinux installed on: nagakamira@gmail.com and we probarly publish it on this page!
 ![screenshot from protonesso](/doc/protonesso.png)
