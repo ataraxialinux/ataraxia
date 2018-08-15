@@ -4,19 +4,29 @@
 
 name=go
 version=1.10.3
-bootstrapver=20171003
+bootstrapver=1.8
 release=1
 source=(https://storage.googleapis.com/golang/go$version.src.tar.gz)
 
 build() {
+	export GOOS=linux
 	case "$BARCH" in
 		x86_64*)
 			export GOARCH=amd64
-			export GOOS=linux
 			;;
 		i686*)
-			export GOARCH="386"
-			export GO386=387
+			export GOARCH=386
+			;;
+		aarch64)
+			export GOARCH=arm64
+			;;
+		armv7h)
+			export GOARCH=arm
+			export GOARM=7
+			;;
+		armv6h)
+			export GOARCH=arm
+			export GOARM=6
 			;;
 		*)
 			echo "Unsupported architecture"
@@ -25,17 +35,10 @@ build() {
 
 	mkdir -p bootstrap
 
-	export XBOOTSTRAP="$(pwd)/bootstrap"
+	export XBOOTSTRAP="$(pwd)/go-$GOOS-$GOARCH-bootstrap"
 
-	curl -C - -L -O https://dl.google.com/go/go1.4-bootstrap-$bootstrapver.tar.gz
-	tar -xf go1.4-bootstrap-$bootstrapver.tar.gz -C bootstrap
-
-	cd bootstrap/$name
-	cd src
-	CGO_ENABLED=0 ./make.bash
-
-	cd ../../../$name
-	cd src
+	curl -C - -L -O https://dev.gentoo.org/~williamh/dist/go-$GOOS-$GOARCH-bootstrap-$bootstrapver.tbz
+	tar -xf go-$GOOS-$GOARCH-bootstrap-$bootstrapver.tbz
 
 	export GOROOT_FINAL=/usr/lib/go
 	export GOROOT_BOOTSTRAP=$XBOOTSTRAP/go
