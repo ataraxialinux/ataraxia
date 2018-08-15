@@ -1,0 +1,36 @@
+From 7fceddea2b70f3d0e898c8be820cd2d7fb4dfc32 Mon Sep 17 00:00:00 2001
+From: Samuel Holland <samuel@sholland.org>
+Date: Sat, 2 Dec 2017 17:25:44 -0600
+Subject: [PATCH 6/8] Fix rustdoc for cross targets
+
+musl can't handle wrong-architecture libraries in LD_LIBRARY_PATH.
+---
+ src/bootstrap/bin/rustdoc.rs | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/src/bootstrap/bin/rustdoc.rs b/src/bootstrap/bin/rustdoc.rs
+index 389b504c64..b7b77eb431 100644
+--- a/src/bootstrap/bin/rustdoc.rs
++++ b/src/bootstrap/bin/rustdoc.rs
+@@ -34,9 +34,6 @@ fn main() {
+         Err(_) => 0,
+     };
+ 
+-    let mut dylib_path = bootstrap::util::dylib_path();
+-    dylib_path.insert(0, PathBuf::from(libdir));
+-
+     let mut cmd = Command::new(rustdoc);
+     cmd.args(&args)
+         .arg("--cfg")
+@@ -46,7 +43,7 @@ fn main() {
+         .arg("--sysroot")
+         .arg(sysroot)
+         .env(bootstrap::util::dylib_path_var(),
+-             env::join_paths(&dylib_path).unwrap());
++             PathBuf::from(libdir));
+ 
+     // Force all crates compiled by this compiler to (a) be unstable and (b)
+     // allow the `rustc_private` feature to link to other unstable crates
+-- 
+2.16.1
+
