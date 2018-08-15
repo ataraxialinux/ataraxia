@@ -2,6 +2,12 @@
 
 set -e
 
+if [ "$SNAPSHOT" = "1" ]; then
+	export RELEASE="$(date +%y%m%d)"
+else
+	export RELEASE="1.0-beta5"
+fi
+
 printmsg() {
 	local msg=$(echo $1 | tr -s / /)
 	printf "\e[1m\e[32m==>\e[0m $msg\n"
@@ -254,7 +260,7 @@ generate_stage_archive() {
 	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool bzip2 perl readline autoconf automake mksh bash bc diffutils file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano vim lzip lzo zstd btrfs-progs xfsprogs curl wget libarchive git npkg prt-get
 
 	cd $STAGE
-	tar -cJf $CWD/januslinux-1.0-beta4-$BARCH.tar.xz .
+	tar -cJf $CWD/januslinux-$RELEASE-$BARCH.tar.xz .
 }
 
 generate_initrd() {
@@ -299,7 +305,7 @@ CEOF
 
 	xorriso \
 		-as mkisofs \
-		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
+		-J -r -o $CWD/januslinux-$RELEASE-$BARCH.iso \
 		-b isolinux.bin \
 		-c boot.cat \
 		-input-charset UTF-8 \
@@ -308,7 +314,7 @@ CEOF
 		-boot-info-table \
 		$IMAGE
 
-	isohybrid -u $CWD/januslinux-1.0-beta4-$BARCH.iso 2>/dev/null || true
+	isohybrid -u $CWD/januslinux-$RELEASE-$BARCH.iso 2>/dev/null || true
 }
 
 generate_iso_arm() {
@@ -321,14 +327,14 @@ CEOF
 
 	xorriso \
 		-as mkisofs \
-		-J -r -o $CWD/januslinux-1.0-beta4-$BARCH.iso \
+		-J -r -o $CWD/januslinux-$RELEASE-$BARCH.iso \
 		-input-charset UTF-8 \
 		-no-emul-boot \
 		-boot-load-size 4 \
 		-boot-info-table \
 		$IMAGE
 
-	isohybrid -u $CWD/januslinux-1.0-beta4-$BARCH.iso 2>/dev/null || true
+	isohybrid -u $CWD/januslinux-$RELEASE-$BARCH.iso 2>/dev/null || true
 }
 
 generate_iso() {
