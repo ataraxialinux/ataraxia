@@ -270,6 +270,7 @@ generate_initrd() {
 	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap sed ncurses shadow util-linux e2fsprogs bzip2 readline mksh bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux lzo zstd btrfs-progs xfsprogs nano libnl wpa_supplicant curl lzip
 
 	cd $INITRD
+	ln -sf busybox usr/bin/wget
 	rm -rf usr/include
 	find . | cpio -R root:root -H newc -o | xz -9 --check=none > $IMAGE/rootfs.cpio.xz
 
