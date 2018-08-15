@@ -33,15 +33,13 @@ build() {
 			exit 1
 	esac
 
-	mkdir -p bootstrap
-
 	export XBOOTSTRAP="$(pwd)/go-$GOOS-$GOARCH-bootstrap"
 
 	curl -C - -L -O https://dev.gentoo.org/~williamh/dist/go-$GOOS-$GOARCH-bootstrap-$bootstrapver.tbz
 	tar -xf go-$GOOS-$GOARCH-bootstrap-$bootstrapver.tbz
 
 	export GOROOT_FINAL=/usr/lib/go
-	export GOROOT_BOOTSTRAP=$XBOOTSTRAP/go
+	export GOROOT_BOOTSTRAP=$XBOOTSTRAP
 
 	cd go/src
 	CGO_ENABLED=0 ./make.bash
