@@ -24,8 +24,10 @@ build() {
 	patch -Np1 -i $KEEP/qemu/fix-sockios-header.patch
 	patch -Np1 -i $KEEP/qemu/test-crypto-ivgen-skip-essiv.patch
 	patch -Np1 -i $KEEP/qemu/0001-ui-add-x_keymap.o-to-modules.patch
+	sed -i 's/^VL_LDFLAGS=$/VL_LDFLAGS=-Wl,-z,execheap/' \
+		Makefile.target
 	mkdir -p build && cd build
-	../configure \
+	CFLAGS="${CFLAGS/-Os/-O2}" ../configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
@@ -35,7 +37,10 @@ build() {
 		--audio-drv-list=alsa \
 		--with-gtkabi=3.0 \
 		--with-sdlabi=2.0 \
-		--enable-modules
+		--enable-kvm \
+		--enable-modules \
+		--enable-pie \
+		--disable-linux-user
 	make
 	make DESTDIR=$PKG install
 
