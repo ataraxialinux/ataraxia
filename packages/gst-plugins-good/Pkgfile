@@ -1,43 +1,24 @@
-# Description: Password and account management tool suite with support for shadow files
-# URL:         https://github.com/shadow-maint/shadow
+# Description: GStreamer Multimedia Framework Base Plugins
+# URL:         https://gstreamer.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  acl
+# Depends on:  gstreamer alsa-lib cdparanoia gobject-introspection iso-codes libogg libtheora libvorbis libsm libice expat
 
-name=shadow
-version=4.6
-release=2
-source=(https://github.com/shadow-maint/shadow/releases/download/$version/$name-$version.tar.xz)
+name=gst-plugins-base
+version=1.14.2
+release=1
+source=(https://gstreamer.freedesktop.org/src/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	patch -Np0 -i $KEEP/shadow/shadow-manpages
-	patch -Np0 -i $KEEP/shadow/shadow-no_rlogin
-	./configure $BUILDFLAGS \
+	./configure \
 		--prefix=/usr \
-		--bindir=/usr/bin \
-		--sbindir=/usr/bin \
-		--libdir=/usr/lib \
 		--sysconfdir=/etc \
-		--with-group-name-max-length=32 \
-		--with-sha-crypt \
-		--without-audit \
-		--without-libcrack \
-		--without-libpam \
-		--without-nscd \
-		--without-selinux \
-		--disable-man \
-		--disable-nls \
-		--disable-shared
+		--localstatedir=/var \
+		--libexecdir=/usr/lib \
+		--with-package-name="GStreamer (januslinux)" \
+		--with-package-origin="https://januslinux.github.io/"
 	make
 	make DESTDIR=$PKG install
-
-	install -Dm644 $KEEP/shadow/useradd.defaults $PKG/etc/default/useradd
-	install -Dm644 $KEEP/shadow/login.defs $PKG/etc/login.defs
-
-	rm $PKG/usr/sbin/logoutd
-
-	mv $PKG/usr/sbin/* $PKG/usr/bin
-	rm -rf $PKG/usr/sbin
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
