@@ -1,0 +1,697 @@
+diff -Naur node-v4.6.1.orig/lib/_tls_wrap.js node-v4.6.1/lib/_tls_wrap.js
+--- node-v4.6.1.orig/lib/_tls_wrap.js	2017-04-12 12:40:43.517228944 -0700
++++ node-v4.6.1/lib/_tls_wrap.js	2017-04-12 12:49:51.155877106 -0700
+@@ -165,30 +165,33 @@
+     if (err)
+       return self.destroy(err);
+ 
+-    self._handle.endParser();
+-  });
+-}
+-
+-
+-function oncertcb(info) {
+-  var self = this;
+-  var servername = info.servername;
+-
+-  loadSNI(self, servername, function(err, ctx) {
+-    if (err)
+-      return self.destroy(err);
+-    requestOCSP(self, info, ctx, function(err) {
++    // Servername came from SSL session
++    // NOTE: TLS Session ticket doesn't include servername information
++    //
++    // Another note, From RFC3546:
++    //
++    //   If, on the other hand, the older
++    //   session is resumed, then the server MUST ignore extensions appearing
++    //   in the client hello, and send a server hello containing no
++    //   extensions; in this case the extension functionality negotiated
++    //   during the original session initiation is applied to the resumed
++    //   session.
++    //
++    // Therefore we should account session loading when dealing with servername
++    var servername = session && session.servername || hello.servername;
++    loadSNI(self, servername, function(err, ctx) {
+       if (err)
+         return self.destroy(err);
+ 
+-      if (!self._handle)
+-        return self.destroy(new Error('Socket is closed'));
++      requestOCSP(self, info, ctx, function(err) {
++        if (err)
++          return self.destroy(err);
++
++        if (!self._handle)
++          return self.destroy(new Error('Socket is closed'));
+ 
+-      try {
+-        self._handle.certCbDone();
+-      } catch (e) {
+-        self.destroy(e);
+-      }
++        self._handle.endParser();
++      });
+     });
+   });
+ }
+@@ -410,18 +413,15 @@
+     ssl.onhandshakestart = () => onhandshakestart.call(this);
+     ssl.onhandshakedone = () => onhandshakedone.call(this);
+     ssl.onclienthello = (hello) => onclienthello.call(this, hello);
+-    ssl.oncertcb = (info) => oncertcb.call(this, info);
+     ssl.onnewsession = (key, session) => onnewsession.call(this, key, session);
+     ssl.lastHandshakeTime = 0;
+     ssl.handshakes = 0;
+ 
+-    if (this.server) {
+-      if (this.server.listenerCount('resumeSession') > 0 ||
+-          this.server.listenerCount('newSession') > 0) {
+-        ssl.enableSessionCallbacks();
+-      }
+-      if (this.server.listenerCount('OCSPRequest') > 0)
+-        ssl.enableCertCb();
++    if (this.server &&
++        (this.server.listenerCount('resumeSession') > 0 ||
++         this.server.listenerCount('newSession') > 0 ||
++         this.server.listenerCount('OCSPRequest') > 0)) {
++      ssl.enableSessionCallbacks();
+     }
+   } else {
+     ssl.onhandshakestart = function() {};
+@@ -463,7 +463,7 @@
+        options.server._contexts.length)) {
+     assert(typeof options.SNICallback === 'function');
+     this._SNICallback = options.SNICallback;
+-    ssl.enableCertCb();
++    ssl.enableHelloParser();
+   }
+ 
+   if (process.features.tls_npn && options.NPNProtocols)
+diff -Naur node-v4.6.1.orig/src/env.h node-v4.6.1/src/env.h
+--- node-v4.6.1.orig/src/env.h	2017-04-12 12:40:43.536229174 -0700
++++ node-v4.6.1/src/env.h	2017-04-12 12:50:02.055009418 -0700
+@@ -57,7 +57,6 @@
+   V(bytes_read_string, "bytesRead")                                           \
+   V(callback_string, "callback")                                              \
+   V(change_string, "change")                                                  \
+-  V(oncertcb_string, "oncertcb")                                              \
+   V(onclose_string, "_onclose")                                               \
+   V(code_string, "code")                                                      \
+   V(compare_string, "compare")                                                \
+diff -Naur node-v4.6.1.orig/src/node.cc node-v4.6.1/src/node.cc
+--- node-v4.6.1.orig/src/node.cc     2017-06-08 05:31:34.000000000 -0500
++++ node-v4.6.1/src/node.cc     2017-06-30 10:26:59.945166636 -0500
+@@ -202,7 +202,7 @@
+         false;
+ #endif
+
+-# if NODE_FIPS_MODE
++# if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+ // used by crypto module
+ bool enable_fips_crypto = false;
+ bool force_fips_crypto = false;
+@@ -3676,7 +3676,7 @@
+          " (default)"
+ #endif
+          "\n"
+-#if NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+          "  --enable-fips              enable FIPS crypto at startup\n"
+          "  --force-fips               force FIPS crypto (cannot be disabled)\n"
+ #endif  /* NODE_FIPS_MODE */
+@@ -3926,7 +3926,7 @@
+     } else if (strncmp(arg, "--use-bundled-ca", 16) == 0) {
+       use_bundled_ca = true;
+       ssl_openssl_cert_store = false;
+-#if NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+     } else if (strcmp(arg, "--enable-fips") == 0) {
+       enable_fips_crypto = true;
+     } else if (strcmp(arg, "--force-fips") == 0) {
+@@ -4624,7 +4624,7 @@
+     if (SafeGetenv("NODE_EXTRA_CA_CERTS", &extra_ca_certs))
+       crypto::UseExtraCaCerts(extra_ca_certs);
+   }
+-#ifdef NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+   // In the case of FIPS builds we should make sure
+   // the random source is properly initialized first.
+   OPENSSL_init();
+diff -Naur node-v4.6.1.orig/src/node_crypto.cc node-v4.6.1/src/node_crypto.cc
+--- node-v4.6.1.orig/src/node_crypto.cc	2017-04-12 12:40:43.541229235 -0700
++++ node-v4.6.1/src/node_crypto.cc	2017-04-12 12:52:59.371161636 -0700
+@@ -160,8 +160,6 @@
+ #endif
+ 
+ template void SSLWrap<TLSWrap>::DestroySSL();
+-template int SSLWrap<TLSWrap>::SSLCertCallback(SSL* s, void* arg);
+-template void SSLWrap<TLSWrap>::WaitForCertCb(CertCb cb, void* arg);
+ 
+ 
+ static void crypto_threadid_cb(CRYPTO_THREADID* tid) {
+@@ -525,8 +523,7 @@
+     for (int i = 0; i < sk_X509_num(extra_certs); i++) {
+       X509* ca = sk_X509_value(extra_certs, i);
+ 
+-      // NOTE: Increments reference count on `ca`
+-      r = SSL_CTX_add1_chain_cert(ctx, ca);
++      r = SSL_CTX_add_extra_chain_cert(ctx, ca);
+ 
+       if (!r) {
+         ret = 0;
+@@ -717,7 +717,7 @@
+ }
+
+
+-#if OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_IS_BORINGSSL)
++#if (OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_IS_BORINGSSL)) || defined(LIBRESSL_VERSION_NUMBER)
+ // This section contains OpenSSL 1.1.0 functions reimplemented for OpenSSL
+ // 1.0.2 so that the following code can be written without lots of #if lines.
+
+@@ -725,11 +725,12 @@
+   CRYPTO_add(&store->references, 1, CRYPTO_LOCK_X509_STORE);
+   return 1;
+ }
+-
++#if !defined(LIBRESSL_VERSION_NUMBER)
+ static int X509_up_ref(X509* cert) {
+   CRYPTO_add(&cert->references, 1, CRYPTO_LOCK_X509);
+   return 1;
+ }
++#endif
+ #endif  // OPENSSL_VERSION_NUMBER < 0x10100000L && !OPENSSL_IS_BORINGSSL
+
+
+@@ -1194,7 +1194,7 @@
+   SecureContext* wrap;
+   ASSIGN_OR_RETURN_UNWRAP(&wrap, args.Holder());
+
+-  wrap->ctx_->freelist_max_len = args[0]->Int32Value();
++  //wrap->ctx_->freelist_max_len = args[0]->Int32Value();
+ #endif
+ }
+
+@@ -1188,7 +1185,6 @@
+   env->SetProtoMethod(t, "verifyError", VerifyError);
+   env->SetProtoMethod(t, "getCurrentCipher", GetCurrentCipher);
+   env->SetProtoMethod(t, "endParser", EndParser);
+-  env->SetProtoMethod(t, "certCbDone", CertCbDone);
+   env->SetProtoMethod(t, "renegotiate", Renegotiate);
+   env->SetProtoMethod(t, "shutdownSSL", Shutdown);
+   env->SetProtoMethod(t, "getTLSTicket", GetTLSTicket);
+@@ -2411,126 +2411,6 @@
+
+
+ template <class Base>
+-void SSLWrap<Base>::WaitForCertCb(CertCb cb, void* arg) {
+-  cert_cb_ = cb;
+-  cert_cb_arg_ = arg;
+-}
+-
+-
+-template <class Base>
+-int SSLWrap<Base>::SSLCertCallback(SSL* s, void* arg) {
+-  Base* w = static_cast<Base*>(SSL_get_app_data(s));
+-
+-  if (!w->is_server())
+-    return 1;
+-
+-  if (!w->is_waiting_cert_cb())
+-    return 1;
+-
+-  if (w->cert_cb_running_)
+-    return -1;
+-
+-  Environment* env = w->env();
+-  HandleScope handle_scope(env->isolate());
+-  Context::Scope context_scope(env->context());
+-  w->cert_cb_running_ = true;
+-
+-  Local<Object> info = Object::New(env->isolate());
+-
+-  const char* servername = SSL_get_servername(s, TLSEXT_NAMETYPE_host_name);
+-  if (servername == nullptr) {
+-    info->Set(env->servername_string(), String::Empty(env->isolate()));
+-  } else {
+-    Local<String> str = OneByteString(env->isolate(), servername,
+-                                      strlen(servername));
+-    info->Set(env->servername_string(), str);
+-  }
+-
+-  bool ocsp = false;
+-#ifdef NODE__HAVE_TLSEXT_STATUS_CB
+-  ocsp = s->tlsext_status_type == TLSEXT_STATUSTYPE_ocsp;
+-#endif
+-
+-  info->Set(env->ocsp_request_string(), Boolean::New(env->isolate(), ocsp));
+-
+-  Local<Value> argv[] = { info };
+-  w->MakeCallback(env->oncertcb_string(), arraysize(argv), argv);
+-
+-  if (!w->cert_cb_running_)
+-    return 1;
+-
+-  // Performing async action, wait...
+-  return -1;
+-}
+-
+-
+-template <class Base>
+-void SSLWrap<Base>::CertCbDone(const FunctionCallbackInfo<Value>& args) {
+-  Base* w;
+-  ASSIGN_OR_RETURN_UNWRAP(&w, args.Holder());
+-  Environment* env = w->env();
+-
+-  CHECK(w->is_waiting_cert_cb() && w->cert_cb_running_);
+-
+-  Local<Object> object = w->object();
+-  Local<Value> ctx = object->Get(env->sni_context_string());
+-  Local<FunctionTemplate> cons = env->secure_context_constructor_template();
+-
+-  // Not an object, probably undefined or null
+-  if (!ctx->IsObject())
+-    goto fire_cb;
+-
+-  if (cons->HasInstance(ctx)) {
+-    SecureContext* sc;
+-    ASSIGN_OR_RETURN_UNWRAP(&sc, ctx.As<Object>());
+-    w->sni_context_.Reset();
+-    w->sni_context_.Reset(env->isolate(), ctx);
+-
+-    int rv;
+-
+-    // NOTE: reference count is not increased by this API methods
+-    X509* x509 = SSL_CTX_get0_certificate(sc->ctx_);
+-    EVP_PKEY* pkey = SSL_CTX_get0_privatekey(sc->ctx_);
+-    STACK_OF(X509)* chain;
+-
+-    rv = SSL_CTX_get0_chain_certs(sc->ctx_, &chain);
+-    if (rv)
+-      rv = SSL_use_certificate(w->ssl_, x509);
+-    if (rv)
+-      rv = SSL_use_PrivateKey(w->ssl_, pkey);
+-    if (rv && chain != nullptr)
+-      rv = SSL_set1_chain(w->ssl_, chain);
+-    if (rv)
+-      rv = w->SetCACerts(sc);
+-    if (!rv) {
+-      unsigned long err = ERR_get_error();  // NOLINT(runtime/int)
+-      if (!err)
+-        return env->ThrowError("CertCbDone");
+-      return ThrowCryptoError(env, err);
+-    }
+-  } else {
+-    // Failure: incorrect SNI context object
+-    Local<Value> err = Exception::TypeError(env->sni_context_err_string());
+-    w->MakeCallback(env->onerror_string(), 1, &err);
+-    return;
+-  }
+-
+- fire_cb:
+-  CertCb cb;
+-  void* arg;
+-
+-  cb = w->cert_cb_;
+-  arg = w->cert_cb_arg_;
+-
+-  w->cert_cb_running_ = false;
+-  w->cert_cb_ = nullptr;
+-  w->cert_cb_arg_ = nullptr;
+-
+-  cb(arg);
+-}
+-
+-
+-template <class Base>
+ void SSLWrap<Base>::SSLGetter(Local<String> property,
+                               const PropertyCallbackInfo<Value>& info) {
+   Base* base;
+@@ -2232,10 +2105,6 @@
+ 
+ template <class Base>
+ int SSLWrap<Base>::SetCACerts(SecureContext* sc) {
+-  int err = SSL_set1_verify_cert_store(ssl_, SSL_CTX_get_cert_store(sc->ctx_));
+-  if (err != 1)
+-    return err;
+-
+   STACK_OF(X509_NAME)* list = SSL_dup_CA_list(
+       SSL_CTX_get_client_CA_list(sc->ctx_));
+ 
+@@ -2329,10 +2198,6 @@
+     DEBUG_PRINT("[%p] SSL: %s want read\n", ssl_, func);
+     return 0;
+ 
+-  } else if (err == SSL_ERROR_WANT_X509_LOOKUP) {
+-    DEBUG_PRINT("[%p] SSL: %s want x509 lookup\n", ssl_, func);
+-    return 0;
+-
+   } else if (err == SSL_ERROR_ZERO_RETURN) {
+     HandleScope scope(ssl_env()->isolate());
+ 
+@@ -2875,7 +2755,8 @@
+   SSL* ssl = static_cast<SSL*>(
+       X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx()));
+
+-  if (SSL_is_server(ssl))
++  //if (SSL_is_server(ssl))
++  if(ssl->server)
+     return CHECK_OK;
+
+   // Client needs to check if the server cert is listed in the
+@@ -2540,7 +2405,7 @@
+ 
+     // Call the SNI callback and use its return value as context
+     if (!conn->sniObject_.IsEmpty()) {
+-      conn->sni_context_.Reset();
++      conn->sniContext_.Reset();
+ 
+       Local<Object> sni_obj = PersistentToLocal(env->isolate(),
+                                                 conn->sniObject_);
+@@ -2918,7 +2799,7 @@
+       Local<FunctionTemplate> secure_context_constructor_template =
+           env->secure_context_constructor_template();
+       if (secure_context_constructor_template->HasInstance(ret)) {
+-        conn->sni_context_.Reset(env->isolate(), ret);
++        conn->sniContext_.Reset(env->isolate(), ret);
+         SecureContext* sc;
+         ASSIGN_OR_RETURN_UNWRAP(&sc, ret.As<Object>(), SSL_TLSEXT_ERR_NOACK);
+         conn->SetSNIContext(sc);
+@@ -2594,8 +2459,6 @@
+ 
+   InitNPN(sc);
+ 
+-  SSL_set_cert_cb(conn->ssl_, SSLWrap<Connection>::SSLCertCallback, conn);
+-
+ #ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+   if (is_server) {
+     SSL_CTX_set_tlsext_servername_callback(sc->ctx_, SelectSNIContextCallback_);
+@@ -3335,7 +3335,7 @@
+                       int key_buf_len) {
+   HandleScope scope(env()->isolate());
+
+-#ifdef NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+   if (FIPS_mode()) {
+     return env()->ThrowError(
+         "crypto.createCipher() is not supported in FIPS mode.");
+@@ -4185,7 +4185,7 @@
+   if (pkey == nullptr || 0 != ERR_peek_error())
+     goto exit;
+
+-#ifdef NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+   /* Validate DSA2 parameters from FIPS 186-4 */
+   if (FIPS_mode() && EVP_PKEY_DSA == pkey->type) {
+     size_t L = BN_num_bits(pkey->pkey.dsa->p);
+@@ -6132,7 +6132,7 @@
+   CRYPTO_set_locking_callback(crypto_lock_cb);
+   CRYPTO_THREADID_set_callback(crypto_threadid_cb);
+
+-#ifdef NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+   /* Override FIPS settings in cnf file, if needed. */
+   unsigned long err = 0;  // NOLINT(runtime/int)
+   if (enable_fips_crypto || force_fips_crypto) {
+@@ -6201,16 +6201,20 @@
+ #endif  // !OPENSSL_NO_ENGINE
+
+ void GetFipsCrypto(const FunctionCallbackInfo<Value>& args) {
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+   if (FIPS_mode()) {
+     args.GetReturnValue().Set(1);
+   } else {
+     args.GetReturnValue().Set(0);
+   }
++#else
++  args.GetReturnValue().Set(0);
++#endif
+ }
+
+ void SetFipsCrypto(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+-#ifdef NODE_FIPS_MODE
++#if NODE_FIPS_MODE && !defined(LIBRESSL_VERSION_NUMBER)
+   bool mode = args[0]->BooleanValue();
+   if (force_fips_crypto) {
+     return env->ThrowError(
+diff -Naur node-v4.6.1.orig/src/node_crypto.h node-v4.6.1/src/node_crypto.h
+--- node-v4.6.1.orig/src/node_crypto.h	2017-04-12 12:40:43.541229235 -0700
++++ node-v4.6.1/src/node_crypto.h	2017-04-12 12:55:08.867710808 -0700
+@@ -179,10 +179,7 @@
+         kind_(kind),
+         next_sess_(nullptr),
+         session_callbacks_(false),
+-        new_session_wait_(false),
+-        cert_cb_(nullptr),
+-        cert_cb_arg_(nullptr),
+-        cert_cb_running_(false) {
++        new_session_wait_(false) {
+     ssl_ = SSL_new(sc->ctx_);
+     env_->isolate()->AdjustAmountOfExternalAllocatedMemory(kExternalSize);
+     CHECK_NE(ssl_, nullptr);
+@@ -200,9 +200,6 @@
+       next_sess_ = nullptr;
+     }
+
+-#ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+-    sni_context_.Reset();
+-#endif
+
+ #ifdef NODE__HAVE_TLSEXT_STATUS_CB
+     ocsp_response_.Reset();
+@@ -212,11 +206,8 @@
+   inline bool is_server() const { return kind_ == kServer; }
+   inline bool is_client() const { return kind_ == kClient; }
+   inline bool is_waiting_new_session() const { return new_session_wait_; }
+-  inline bool is_waiting_cert_cb() const { return cert_cb_ != nullptr; }
+ 
+  protected:
+-  typedef void (*CertCb)(void* arg);
+-
+   // Size allocated by OpenSSL: one for SSL structure, one for SSL3_STATE and
+   // some for buffers.
+   // NOTE: Actually it is much more than this
+@@ -244,7 +235,6 @@
+   static void VerifyError(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void GetCurrentCipher(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void EndParser(const v8::FunctionCallbackInfo<v8::Value>& args);
+-  static void CertCbDone(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Renegotiate(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void Shutdown(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void GetTLSTicket(const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -273,12 +263,10 @@
+                                      void* arg);
+ #endif  // OPENSSL_NPN_NEGOTIATED
+   static int TLSExtStatusCallback(SSL* s, void* arg);
+-  static int SSLCertCallback(SSL* s, void* arg);
+   static void SSLGetter(v8::Local<v8::String> property,
+                         const v8::PropertyCallbackInfo<v8::Value>& info);
+ 
+   void DestroySSL();
+-  void WaitForCertCb(CertCb cb, void* arg);
+   void SetSNIContext(SecureContext* sc);
+   int SetCACerts(SecureContext* sc);
+ 
+@@ -293,11 +281,6 @@
+   bool session_callbacks_;
+   bool new_session_wait_;
+ 
+-  // SSL_set_cert_cb
+-  CertCb cert_cb_;
+-  void* cert_cb_arg_;
+-  bool cert_cb_running_;
+-
+   ClientHelloParser hello_parser_;
+ 
+ #ifdef NODE__HAVE_TLSEXT_STATUS_CB
+@@ -309,10 +292,6 @@
+   v8::Persistent<v8::Value> selected_npn_proto_;
+ #endif  // OPENSSL_NPN_NEGOTIATED
+ 
+-#ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+-  v8::Persistent<v8::Value> sni_context_;
+-#endif
+-
+   friend class SecureContext;
+ };
+ 
+@@ -324,6 +303,7 @@
+   ~Connection() override {
+ #ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+     sniObject_.Reset();
++    sniContext_.Reset();
+     servername_.Reset();
+ #endif
+   }
+@@ -338,6 +318,7 @@
+ 
+ #ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+   v8::Persistent<v8::Object> sniObject_;
++  v8::Persistent<v8::Value> sniContext_;
+   v8::Persistent<v8::String> servername_;
+ #endif
+ 
+diff -Naur node-v4.6.1.orig/src/tls_wrap.cc node-v4.6.1/src/tls_wrap.cc
+--- node-v4.6.1.orig/src/tls_wrap.cc	2017-04-12 12:40:43.557229429 -0700
++++ node-v4.6.1/src/tls_wrap.cc	2017-04-12 13:36:49.323009154 -0700
+@@ -141,8 +141,6 @@
+ 
+   InitNPN(sc_);
+ 
+-  SSL_set_cert_cb(ssl_, SSLWrap<TLSWrap>::SSLCertCallback, this);
+-
+   if (is_server()) {
+     SSL_set_accept_state(ssl_);
+   } else if (is_client()) {
+@@ -353,7 +351,6 @@
+     case SSL_ERROR_NONE:
+     case SSL_ERROR_WANT_READ:
+     case SSL_ERROR_WANT_WRITE:
+-    case SSL_ERROR_WANT_X509_LOOKUP:
+       break;
+     case SSL_ERROR_ZERO_RETURN:
+       return scope.Escape(env()->zero_return_string());
+@@ -769,6 +766,11 @@
+         "EnableSessionCallbacks after destroySSL");
+   }
+   wrap->enable_session_callbacks();
++  EnableHelloParser(args);
++}
++
++void TLSWrap::EnableHelloParser(const FunctionCallbackInfo<Value>& args) {
++  TLSWrap* wrap = Unwrap<TLSWrap>(args.Holder());
+   NodeBIO::FromBIO(wrap->enc_in_)->set_initial(kMaxHelloLength);
+   wrap->hello_parser_.Start(SSLWrap<TLSWrap>::OnClientHello,
+                             OnClientHelloParseEnd,
+@@ -833,13 +833,6 @@
+ }
+ 
+ 
+-void TLSWrap::EnableCertCb(const FunctionCallbackInfo<Value>& args) {
+-  TLSWrap* wrap;
+-  ASSIGN_OR_RETURN_UNWRAP(&wrap, args.Holder());
+-  wrap->WaitForCertCb(OnClientHelloParseEnd, wrap);
+-}
+-
+-
+ void TLSWrap::OnClientHelloParseEnd(void* arg) {
+   TLSWrap* c = static_cast<TLSWrap*>(arg);
+   c->Cycle();
+@@ -896,8 +892,8 @@
+   env->SetProtoMethod(t, "start", Start);
+   env->SetProtoMethod(t, "setVerifyMode", SetVerifyMode);
+   env->SetProtoMethod(t, "enableSessionCallbacks", EnableSessionCallbacks);
++  env->SetProtoMethod(t, "enableHelloParser", EnableHelloParser);
+   env->SetProtoMethod(t, "destroySSL", DestroySSL);
+-  env->SetProtoMethod(t, "enableCertCb", EnableCertCb);
+ 
+   StreamBase::AddMethods<TLSWrap>(env, t, StreamBase::kFlagHasWritev);
+   SSLWrap<TLSWrap>::AddMethods(env, t);
+diff -Naur node-v4.6.1.orig/src/tls_wrap.h node-v4.6.1/src/tls_wrap.h
+--- node-v4.6.1.orig/src/tls_wrap.h	2017-04-12 12:40:43.558229441 -0700
++++ node-v4.6.1/src/tls_wrap.h	2017-04-12 13:35:51.214213644 -0700
+@@ -132,7 +132,7 @@
+   static void SetVerifyMode(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void EnableSessionCallbacks(
+       const v8::FunctionCallbackInfo<v8::Value>& args);
+-  static void EnableCertCb(
++  static void EnableHelloParser(
+       const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void DestroySSL(const v8::FunctionCallbackInfo<v8::Value>& args);
+ 
+@@ -160,6 +160,10 @@
+   // If true - delivered EOF to the js-land, either after `close_notify`, or
+   // after the `UV_EOF` on socket.
+   bool eof_;
++
++#ifdef SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
++  v8::Persistent<v8::Value> sni_context_;
++#endif  // SSL_CTRL_SET_TLSEXT_SERVERNAME_CB
+ };
+ 
+ }  // namespace node
+diff -Naur node-v4.6.1.orig/test/parallel/test-tls-cnnic-whitelist.js node-v4.6.1/test/parallel/test-tls-cnnic-whitelist.js
+--- node-v4.6.1.orig/test/parallel/test-tls-cnnic-whitelist.js	2017-04-12 12:40:43.865233168 -0700
++++ node-v4.6.1/test/parallel/test-tls-cnnic-whitelist.js	2017-04-12 12:58:14.901936343 -0700
+@@ -53,7 +53,9 @@
+       port: undefined,
+       rejectUnauthorized: true
+     },
+-    errorCode: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY'
++    // LibreSSL returns CERT_UNTRUSTED in this case, OpenSSL UNABLE_TO_GET_ISSUER_CERT_LOCALLY.
++    errorCode: 'CERT_UNTRUSTED'
++    // errorCode: 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY'
+   }
+ ];
+ 
+diff -Naur node-v4.6.1.orig/test/parallel/test-tls-sni-server-client.js node-v4.6.1/test/parallel/test-tls-sni-server-client.js
+--- node-v4.6.1.orig/test/parallel/test-tls-sni-server-client.js	2017-04-12 12:40:43.878233326 -0700
++++ node-v4.6.1/test/parallel/test-tls-sni-server-client.js	2017-04-12 13:00:18.804418594 -0700
+@@ -56,39 +56,37 @@
+   'asterisk.test.com': {
+     key: loadPEM('agent3-key'),
+     cert: loadPEM('agent3-cert')
+-  },
+-  'chain.example.com': {
+-    key: loadPEM('agent6-key'),
+-    // NOTE: Contains ca3 chain cert
+-    cert: loadPEM('agent6-cert')
+   }
+ };
+ 
+ const clientsOptions = [{
+   port: undefined,
++  key: loadPEM('agent1-key'),
++  cert: loadPEM('agent1-cert'),
+   ca: [loadPEM('ca1-cert')],
+   servername: 'a.example.com',
+   rejectUnauthorized: false
+ }, {
+   port: undefined,
++  key: loadPEM('agent2-key'),
++  cert: loadPEM('agent2-cert'),
+   ca: [loadPEM('ca2-cert')],
+   servername: 'b.test.com',
+   rejectUnauthorized: false
+ }, {
+   port: undefined,
++  key: loadPEM('agent2-key'),
++  cert: loadPEM('agent2-cert'),
+   ca: [loadPEM('ca2-cert')],
+   servername: 'a.b.test.com',
+   rejectUnauthorized: false
+ }, {
+   port: undefined,
++  key: loadPEM('agent3-key'),
++  cert: loadPEM('agent3-cert'),
+   ca: [loadPEM('ca1-cert')],
+   servername: 'c.wrong.com',
+   rejectUnauthorized: false
+-}, {
+-  port: undefined,
+-  ca: [loadPEM('ca1-cert')],
+-  servername: 'chain.example.com',
+-  rejectUnauthorized: false
+ }];
+ 
+ const serverResults = [];
+@@ -80,7 +78,6 @@
+ 
+ server.addContext('a.example.com', SNIContexts['a.example.com']);
+ server.addContext('*.test.com', SNIContexts['asterisk.test.com']);
+-server.addContext('chain.example.com', SNIContexts['chain.example.com']);
+ 
+ server.listen(0, startTest);
+
+@@ -128,8 +126,7 @@
+
+ process.on('exit', function() {
+   assert.deepStrictEqual(serverResults, [
+-    'a.example.com', 'b.test.com', 'a.b.test.com', 'c.wrong.com',
+-    'chain.example.com'
++    'a.example.com', 'b.test.com', 'a.b.test.com', 'c.wrong.com'
+   ]);
+-  assert.deepStrictEqual(clientResults, [true, true, false, false, true]);
++  assert.deepStrictEqual(clientResults, [true, true, false, false]);
+ });
