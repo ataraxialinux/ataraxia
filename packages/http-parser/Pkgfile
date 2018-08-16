@@ -1,33 +1,17 @@
-# Description: Evented I/O for V8 javascript
-# URL:         http://www.gnu.org/software/m4
+# Description: Parser for HTTP Request/Response written in C
+# URL:         https://gtihub.com/nodejs/http-parser
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libressl python c-ares icu http-parser libuv
 
-name=nodejs
-version=10.7.0
+name=http-parser
+version=2.8.1
 release=1
-source=(https://github.com/nodejs/node/archive/v$version.tar.gz)
+source=(https://github.com/nodejs/http-parser/archive/v$version.tar.gz)
 
 build() {
-	cd node-$version
-	find -type f -exec sed \
-		-e 's_^#!/usr/bin/env python$_&2_' \
-		-e 's_^\(#!/usr/bin/python2\).[45]$_\1_' \
-		-e 's_^#!/usr/bin/python$_&2_' \
-		-e 's_^\( *exec \+\)python\( \+.*\)$_\1python2\2_'\
-		-e 's_^\(.*\)python\( \+-c \+.*\)$_\1python2\2_'\
-		-e "s_'python'_'python2'_" -i {} \;
-	find test/ -type f -exec sed 's_python _python2 _' -i {} \;
-	./configure \
-		--prefix=/usr \
-		--with-intl=system-icu \
-		--shared-cares \
-		--shared-http-parser \
-		--shared-libuv \
-		--shared-openssl \
-		--shared-zlib
-	make
-	make DESTDIR=$PKG install
+	cd $name-$version
+	sed -i 's|-Werror||' Makefile
+	make library
+	make PREFIX=$PKG/usr install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
