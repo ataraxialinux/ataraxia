@@ -1,23 +1,15 @@
 # Description: Evented I/O for V8 javascript
 # URL:         http://www.gnu.org/software/m4
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libressl python c-ares icu http-parser libuv
+# Depends on:  zlib libressl python2 c-ares icu http-parser libuv
 
 name=nodejs
-version=10.7.0
+version=10.9.0
 release=1
 source=(https://github.com/nodejs/node/archive/v$version.tar.gz)
 
 build() {
 	cd node-$version
-	find -type f -exec sed \
-		-e 's_^#!/usr/bin/env python$_&2_' \
-		-e 's_^\(#!/usr/bin/python2\).[45]$_\1_' \
-		-e 's_^#!/usr/bin/python$_&2_' \
-		-e 's_^\( *exec \+\)python\( \+.*\)$_\1python2\2_'\
-		-e 's_^\(.*\)python\( \+-c \+.*\)$_\1python2\2_'\
-		-e "s_'python'_'python2'_" -i {} \;
-	find test/ -type f -exec sed 's_python _python2 _' -i {} \;
 	./configure \
 		--prefix=/usr \
 		--with-intl=system-icu \
