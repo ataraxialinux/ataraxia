@@ -1,7 +1,7 @@
 # Description: Systems programming language focused on safety, speed and concurrency
 # URL:         https://www.rust-lang.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  curl cmake ninja python2 libssh2 llvm http-parser
+# Depends on:  curl cmake python2 libssh2 llvm http-parser
 
 name=rustc
 version=1.27.2
@@ -36,6 +36,9 @@ build() {
 		mips)
 			export RUSTTARGET="mips-unknown-linux-musl"
 			;;
+		*)
+			echo "Unsupported architecture"
+			exit 1
 	esac
 
 	curl -C - -L -O https://portage.smaeul.xyz/distfiles/rust-$bootver-$RUSTTARGET.tar.xz
@@ -60,25 +63,21 @@ build() {
 	patch -Np1 -i $KEEP/rustc/0010-llvm.patch
 	patch -Np1 -i $KEEP/rustc/rust-1.27.0-libressl-2.7.0.patch
 	patch -Np1 -i $KEEP/rustc/static-pie.patch
-cat <<EOF > config.toml
-[llvm]
-ninja = true
-[build]
-cargo = "$BOOTSTRAP/bin/cargo"
-rustc = "$BOOTSTRAP/bin/rustc"
-python = "python2.7"
-extended = true
-sanitizers = false
-[install]
-prefix = "/usr"
-[rust]
-codegen-units = 1
-deny-warnings = false
-channel = "stable"
-rpath = false
-quiet-tests = false
-codegen-tests = false
-EOF
+	./configure \
+		--build=$RUSTTARGET \
+		--host=$RUSTTARGET \
+		--target=$RUSTTARGET \
+		--prefix=/usr \
+		--release-channel="stable" \
+		--enable-local-rust \
+		--local-rust-root=$BOOTSTRAP \
+		--enable-extended \
+		--enable-llvm-link-shared \
+		--enable-locked-deps \
+		--enable-option-checking \
+		--enable-vendor \
+		--disable-docs \
+		--disable-jemalloc
 	./x.py build -v --jobs ${JOBS:-2}
 	DESTDIR=$PKG ./x.py install -v
 
