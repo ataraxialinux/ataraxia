@@ -1,0 +1,28 @@
+name=host-binutils
+version=2.31.1
+release=1
+source=(http://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz
+	binutils-ld-fix-static-linking.patch)
+
+build() {
+	cd binutils-$version
+	patch -Np1 -i $SRC/binutils-ld-fix-static-linking.patch
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
+	if [ "$BARCH" = "x86_64" ]; then
+		ARCHCONFIGURE="--enable-targets=x86_64-pep"
+	fi
+	mkdir build
+	cd build
+	../configure $ARCHCONFIGURE \
+		--prefix='' \
+		--target=$XTARGET \
+		--with-bugurl=https://github.com/JanusLinux/janus/issues \
+		--with-sysroot=$ROOTFS \
+		--with-lib-path=/tools/lib \
+		--enable-deterministic-archives \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make MAKEINFO="true"
+	make MAKEINFO="true" DESTDIR=$PKG install
+}
