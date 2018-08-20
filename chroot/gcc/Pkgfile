@@ -1,0 +1,76 @@
+name=chroot-gcc
+version=8.2.0
+patchver=1.2
+gmpver=6.1.2
+mpfrver=4.0.1
+mpcver=1.1.0
+release=1
+source=(http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
+	http://distfiles.gentoo.org/distfiles/gcc-$version-patches-$patchver.tar.bz2
+	http://ftp.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
+	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
+	https://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz)
+
+build() {
+	cd gcc-$version
+	patch -Np1 -i ../patch/10_all_default-fortify-source.patch
+	patch -Np1 -i ../patch/11_all_default-warn-format-security.patch
+	patch -Np1 -i ../patch/12_all_default-warn-trampolines.patch
+	patch -Np1 -i ../patch/13_all_default-ssp-fix.patch
+	patch -Np1 -i ../patch/25_all_alpha-mieee-default.patch
+	patch -Np1 -i ../patch/34_all_ia64_note.GNU-stack.patch
+	patch -Np1 -i ../patch/35_all_i386_libgcc_note.GNU-stack.patch
+	patch -Np1 -i ../patch/50_all_libiberty-asprintf.patch
+	patch -Np1 -i ../patch/51_all_libiberty-pic.patch
+	patch -Np1 -i ../patch/54_all_nopie-all-flags.patch
+	patch -Np1 -i ../patch/55_all_extra-options.patch
+	patch -Np1 -i ../patch/90_all_pr55930-dependency-tracking.patch
+	patch -Np1 -i ../patch/92_all_sh-drop-sysroot-suffix.patch
+	patch -Np1 -i ../patch/94_all_mips-o32-asan.patch
+	patch -Np1 -i ../patch/95_all_ia64-TEXTREL.patch
+	patch -Np1 -i ../patch/97_all_disable-systemtap-switch.patch
+	patch -Np1 -i ../patch/98_all_sh_textrel-on-libitm.patch
+	patch -Np1 -i ../patch/99_all_m68k-textrel-on-libgcc.patch
+	patch -Np1 -i ../patch/100_all_isl-include.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	mkdir build
+	cd build
+	../configure $GCCOPTS \
+		--prefix=/tools \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--with-bugurl=https://github.com/JanusLinux/janus/issues \
+		--with-local-prefix=/usr \
+		--with-native-system-header-dir=/usr/include \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-languages=c,c++ \
+		--enable-default-ssp \
+		--enable-default-pie \
+		--enable-install-libiberty \
+		--enable-libstdcxx-time \
+		--enable-linker-build-id \
+		--enable-lto \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror \
+		libat_cv_have_ifunc=no
+	make
+	make DESTDIR=$PKG install
+}

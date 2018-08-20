@@ -1,0 +1,64 @@
+#!/bin/sh
+
+set -e
+
+
+pkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz  || true
+	done
+}
+
+buildonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
+	done
+}
+
+installonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz || true
+	done
+}
+
+installonlyforce() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz -f || true
+	done
+}
+
+setup_env() {
+	export PATH="/usr/bin:/tools/bin"
+	export REPO="/usr/janus/packages"
+	export PKGSDIR="/output/packages"
+}
+
+build_final_system() {
+	for PKG in linux-headers musl zlib; do
+		case "$PKG" in
+			linux-headers)
+				installonly linux-headers || true
+				;;
+			musl)
+				buildonly musl
+				installonlyforce musl || true
+				;;
+			*)
+				pkginstall $PKG
+		esac
+	done
+}
+
+
+setup_env
+build_final_system
+
+exit 0
+
