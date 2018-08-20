@@ -1,0 +1,20 @@
+name=chroot-make
+version=4.2.1
+release=1
+source=(http://ftp.gnu.org/gnu/make/make-$version.tar.bz2
+	fix-atexit-exit.patch
+	fix-glob-dtype.patch)
+
+build() {
+	cd make-$version
+	patch -Np1 -i ../fix-atexit-exit.patch
+	patch -Np1 -i ../fix-glob-dtype.patch
+	./configure \
+		--prefix=/tools \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make
+	make DESTDIR=$PKG install
+}
+

@@ -1,0 +1,20 @@
+name=chroot-musl
+version=1.1.19
+release=1
+source=(https://www.musl-libc.org/releases/musl-$version.tar.gz)
+
+build() {
+	cd musl-$version
+	CROSS_COMPILE=$XTARGET- \
+	./configure \
+		--prefix=/tools \
+		--libdir=/tools/lib \
+		--syslibdir=/tools/lib \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--enable-optimize=size \
+		--disable-debug
+	make
+	make DESTDIR=$PKG install
+}

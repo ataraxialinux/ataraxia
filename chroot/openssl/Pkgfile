@@ -1,0 +1,27 @@
+name=chroot-openssl
+version=1.1.0i
+release=1
+source=(https://www.openssl.org/source/openssl-$version.tar.gz)
+
+build() {
+	cd openssl-$version
+	unset CC CXX CPP LD AS AR RANLIB STRIP
+	export CROSS_COMPILE="$CROSS_COMPILE"
+	case $BARCH in
+		x86_64)
+			export ATGT="linux-x86_64"
+			export AOPTS="enable-ec_nistp_64_gcc_128"
+			;;
+		i686)
+			export ATGT="linux-elf"
+			;;
+	esac
+	perl ./Configure $ATGT --prefix=/tools \
+		--libdir=lib \
+		--openssldir=/tools/etc/ssl \
+		shared zlib $AOPTS \
+		-DOPENSSL_NO_ASYNC \
+		$CFLAGS -Wa,--noexecstack
+	make
+	make DESTDIR=$PKG install
+}

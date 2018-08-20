@@ -1,0 +1,15 @@
+name=chroot-patch
+version=2.7.6
+release=1
+source=(http://ftp.gnu.org/gnu/patch/patch-$version.tar.xz)
+
+build() {
+	cd patch-$version
+	./configure \
+		--prefix=/tools \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--disable-nls
+	make
+	make DESTDIR=$PKG install
+}

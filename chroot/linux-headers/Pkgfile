@@ -1,0 +1,18 @@
+name=chroot-linux-headers
+version=4.18.3
+release=1
+source=(https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$version.tar.xz)
+
+build() {
+	cd linux-$version
+	case $BARCH in
+		x86_64)
+			export XKARCH="x86_64"
+			;;
+		i686)
+			export XKARCH="i386"
+			;;
+	esac
+	make mrproper
+	make ARCH=$XKARCH INSTALL_HDR_PATH=$PKG/tools headers_install
+}
