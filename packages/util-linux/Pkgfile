@@ -1,0 +1,49 @@
+# Description: Miscellaneous system utilities for Linux
+# URL:         https://www.kernel.org/pub/linux/utils/util-linux/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib ncurses
+
+name=util-linux
+version=2.32.1
+case $version in
+	*.*.*) _v=${version%.*};;
+	*.*) _v=$version;;
+esac
+release=1
+source=(https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	./configure ADJTIME_PATH=/var/lib/hwclock/adjtime \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--localstatedir=/var \
+		--with-btrfs \
+		--without-python \
+		--without-systemd \
+		--without-systemdsystemunitdir \
+		--enable-fs-paths-default=/usr/bin \
+		--enable-write \
+		--disable-chfn-chsh \
+		--disable-login \
+		--disable-nls \
+		--disable-nologin \
+		--disable-pylibmount \
+		--disable-runuser \
+		--disable-setpriv \
+		--disable-su \
+		--disable-tls \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install-strip
+
+	cd $PKG
+	mv usr/sbin/* usr/bin
+	rm -rf bin sbin usr/sbin
+
+	mkdir -p $PKG/var/lib/hwclock
+
+	clean-package $PKG
+}
