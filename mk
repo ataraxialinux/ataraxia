@@ -172,14 +172,26 @@ make_symlinks() {
 
 	ln -sf /tools/lib/libc.so $ROOTFS/usr/lib/libc.so
 
-	# TODO
-	ln -sf /tools/lib/libc.so $ROOTFS/usr/lib/ld-musl-$XKARCH.so.1
+	case $BARCH in
+		x86_64)
+			export ALINKER="ld-musl-x86_64.so.1"
+			;;
+		aarch64)
+			export ALINKER="ld-musl-aarch64.so.1"
+			;;
+	esac
+
+	ln -sf /tools/lib/libc.so $ROOTFS/usr/lib/$ALINKER
 }
 
 enter_chroot() {
 	set +e
 	mkdir -p $ROOTFS/output/{stage,initrd,packages,sources}
 	mkdir -p $ROOTFS/usr/janus/packages
+
+	rm -rf $ROOTFS/etc/resolv.conf
+	touch $ROOTFS/etc/resolv.conf
+	cat $(realpath /etc/resolv.conf) >> $ROOTFS/etc/resolv.conf
 
 	mount --bind /proc $ROOTFS/proc
 	mount --bind /sys $ROOTFS/sys
@@ -201,9 +213,14 @@ enter_chroot() {
 		/tools/bin/ash --login
 
 	umount $ROOTFS/usr/janus/packages
-	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp
-	umount $ROOTFS/output/sources $ROOTFS/output/packages
-	umount $ROOTFS/output/stage $ROOTFS/output/initrd
+	umount $ROOTFS/proc
+	umount $ROOTFS/sys
+	umount $ROOTFS/dev
+	umount $ROOTFS/tmp
+	umount $ROOTFS/output/sources
+	umount $ROOTFS/output/packages
+	umount $ROOTFS/output/stage
+	umount $ROOTFS/output/initrd
 	set -e
 }
 
