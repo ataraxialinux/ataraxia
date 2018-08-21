@@ -1,0 +1,19 @@
+# Description: Library for the arithmetic of complex numbers with arbitrarily high precision
+# URL:         http://www.multiprecision.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gmp mpfr
+
+name=mpc
+version=1.1.0
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install-strip
+	clean-package
+}
