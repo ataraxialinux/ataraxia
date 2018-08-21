@@ -60,12 +60,6 @@ setup_architecture() {
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
 			;;
-		i686)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
-			export XKARCH="i386"
-			export GCCOPTS="--with-arch=i686 --with-tune=generic"
-			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
