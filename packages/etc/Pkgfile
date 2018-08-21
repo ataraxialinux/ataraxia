@@ -1,0 +1,32 @@
+# Description: Essential configuration files for januslinux
+# URL:         https://januslinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=etc
+version=1.0
+release=1
+source=(fstab
+	group
+	host.conf
+	hostname
+	hosts
+	issue
+	motd
+	os-release
+	passwd
+	profile
+	protocols
+	resolv.conf
+	securetty
+	services
+	shadow
+	shells)
+
+build() {
+	mkdir -p $PKG/etc
+	for f in fstab group host.conf hostname hosts issue motd os-release passwd profile protocols resolv.conf securetty services shells; do
+		install -m644 $SRC/$f $PKG/etc
+	done
+
+	install -m600 $SRC/shadow $PKG/etc
+}
