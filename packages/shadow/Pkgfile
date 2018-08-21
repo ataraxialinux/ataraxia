@@ -1,0 +1,44 @@
+# Description: Password and account management tool suite with support for shadow files
+# URL:         https://github.com/shadow-maint/shadow
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  acl
+
+name=shadow
+version=4.6
+release=1
+source=(https://github.com/shadow-maint/shadow/releases/download/$version/$name-$version.tar.xz
+	shadow-manpages
+	shadow-no_rlogin)
+
+build() {
+	cd $name-$version
+	patch -Np0 -i $SRC/shadow-manpages
+	patch -Np0 -i $SRC/shadow-no_rlogin
+	./configure \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--libdir=/usr/lib \
+		--sysconfdir=/etc \
+		--with-group-name-max-length=32 \
+		--with-sha-crypt \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--disable-man \
+		--disable-nls \
+		--disable-shared \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	mv $PKG/usr/sbin/* $PKG/usr/bin
+	rm -rf $PKG/usr/sbin
+
+	sed -i 's/1000/100/' $PKG/etc/default/useradd
+	sed -i 's@SHELL=/bin/bash@SHELL=/bin/ksh@' $PKG/etc/default/useradd
+
+	clean-package $PKG
+}

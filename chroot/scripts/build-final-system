@@ -41,7 +41,8 @@ setup_env() {
 }
 
 build_final_system() {
-	for PKG in etc linux-headers musl zlib m4 bison flex libelf gmp mpfr mpc binutils gcc; do
+	for PKG in etc linux-headers musl zlib m4 bison flex libelf gmp mpfr mpc binutils gcc attr acl libcap sed pkgconf \
+			ncurses shadow util-linux procps-ng e2fsprogs coreutils; do
 		case "$PKG" in
 			linux-headers)
 				installonly linux-headers || true
@@ -56,6 +57,18 @@ build_final_system() {
 			gcc)
 				buildonly gcc
 				installonlyforce gcc || true
+				;;
+			sed)
+				buildonly sed
+				installonlyforce sed || true
+				;;
+			util-linux)
+				buildonly util-linux
+				installonlyforce util-linux || true
+				;;
+			coreutils)
+				buildonly coreutils
+				installonlyforce coreutils || true
 				;;
 			*)
 				pkginstall $PKG
