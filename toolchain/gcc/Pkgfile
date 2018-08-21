@@ -4,12 +4,14 @@ patchver=1.2
 gmpver=6.1.2
 mpfrver=4.0.1
 mpcver=1.1.0
+islver=0.19
 release=1
 source=(http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
 	http://distfiles.gentoo.org/distfiles/gcc-$version-patches-$patchver.tar.bz2
 	http://ftp.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
 	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
-	https://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz)
+	https://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
 
 build() {
 	cd gcc-$version
@@ -35,12 +37,14 @@ build() {
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
 	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
+	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	echo -en '\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"\n' >> gcc/config/linux.h
 	echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n' >> gcc/config/linux.h
 	mv ../gmp-$gmpver gmp
 	mv ../mpfr-$mpfrver mpfr
 	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
 	mkdir build
 	cd build
 	../configure $GCCOPTS \
