@@ -1,0 +1,42 @@
+# Description: A set of programs to assemble and manipulate binary and object files
+# URL:         http://www.gnu.org/software/binutils
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=binutils
+version=2.31.1
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz
+	binutils-ld-fix-static-linking.patch)
+
+build() {
+	cd $name-$version
+	patch -Np1 -i $SRC/binutils-ld-fix-static-linking.patch
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
+	if [ "$BARCH" = "x86_64" ]; then
+		ARCHCONFIGURE="--enable-targets=x86_64-pep"
+	fi
+	mkdir build
+	cd build
+	../configure $ARCHCONFIGURE \
+		--build=$(cc -dumpmachine) \
+		--prefix=/usr \
+		--with-bugurl=https://github.com/JanusLinux/janus/issues \
+		--with-pic \
+		--with-system-zlib \
+		--enable-64-bit-bfd \
+		--enable-deterministic-archives \
+		--enable-gold=yes \
+		--enable-ld=default \
+		--enable-lto \
+		--enable-plugins \
+		--enable-relro \
+		--enable-shared \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make tooldir=/usr MAKEINFO="true"
+	make tooldir=/usr MAKEINFO="true" DESTDIR=$PKG install-strip
+	clean-package
+}
