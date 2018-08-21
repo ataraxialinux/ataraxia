@@ -41,7 +41,7 @@ setup_env() {
 }
 
 build_final_system() {
-	for PKG in linux-headers musl zlib; do
+	for PKG in linux-headers musl zlib m4 bison flex libelf gmp mpfr mpc binutils gcc; do
 		case "$PKG" in
 			linux-headers)
 				installonly linux-headers || true
@@ -49,6 +49,10 @@ build_final_system() {
 			musl)
 				buildonly musl
 				installonlyforce musl || true
+				;;
+			gcc)
+				buildonly gcc
+				installonlyforce gcc || true
 				;;
 			*)
 				pkginstall $PKG
