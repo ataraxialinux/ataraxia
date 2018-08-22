@@ -5,6 +5,8 @@
 name=chroot-etc
 version=2018.08
 release=1
+source=(group
+	passwd)
 
 build() {
 	mkdir -p $PKG/etc
@@ -13,4 +15,8 @@ cat > $PKG/etc/profile << "EOF"
 PATH="/usr/bin:/tools/bin"
 export PATH
 EOF
+
+	for f in group passwd; do
+		install -m644 $SRC/$f $PKG/etc
+	done
 }
