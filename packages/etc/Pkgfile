@@ -23,10 +23,33 @@ source=(fstab
 	shells)
 
 build() {
-	mkdir -p $PKG/etc
+	mkdir -p $PKG/etc/{sysctl.d,network}
 	for f in fstab group host.conf hostname hosts issue motd os-release passwd profile protocols resolv.conf securetty services shells; do
 		install -m644 $SRC/$f $PKG/etc
 	done
 
 	install -m600 $SRC/shadow $PKG/etc
+
+	cat > $PKG/etc/sysctl.d/00-alpine.conf <<-EOF
+		net.ipv4.tcp_syncookies = 1
+		net.ipv4.conf.default.rp_filter = 1
+		net.ipv4.conf.all.rp_filter = 1
+		net.ipv4.ping_group_range=999 59999
+		net.ipv4.conf.all.accept_redirects = 0
+		net.ipv4.conf.all.secure_redirects = 1
+		net.ipv6.conf.all.accept_redirects = 0
+		net.ipv4.conf.all.accept_source_route = 0
+		net.ipv6.conf.all.accept_source_route = 0
+		net.ipv4.tcp_rfc1337 = 1
+		net.ipv6.conf.default.use_tempaddr = 2
+		net.ipv6.conf.all.use_tempaddr = 2
+		kernel.panic = 120
+		fs.protected_hardlinks = 1
+		fs.protected_symlinks = 1
+	EOF
+
+	cat > $PKG/etc/network/interfaces <<-EOF
+		auto lo
+		iface lo inet loopback
+	EOF
 }
