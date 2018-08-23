@@ -92,10 +92,9 @@ setup_environment() {
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -g0 -fstack-protector-strong -pipe"
+	export CFLAGS="-Os -g0 -pipe"
 	export CXXFLAGS="$CFLAGS"
-	export LDFLAGS="-s -Wl,-z,relro,-z,now"
+	export LDFLAGS="-s"
 }
 
 build_environment() {
