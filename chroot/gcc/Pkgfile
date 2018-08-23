@@ -56,7 +56,7 @@ build() {
 		--with-system-zlib \
 		--enable-__cxa_atexit \
 		--enable-checking=release \
-		--enable-languages=c,c++ \
+		--enable-languages=c,c++,lto \
 		--enable-default-ssp \
 		--enable-default-pie \
 		--enable-install-libiberty \
@@ -77,4 +77,7 @@ build() {
 		libat_cv_have_ifunc=no
 	make
 	make DESTDIR=$PKG install
+
+	install -dm755 $PKG/tools/lib/bfd-plugins
+	ln -sf /tools/lib/gcc/$XTARGET/${version%%+*}/liblto_plugin.so $PKG/tools/lib/bfd-plugins/liblto_plugin.so
 }
