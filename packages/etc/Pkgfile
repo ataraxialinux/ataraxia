@@ -23,7 +23,7 @@ source=(fstab
 	shells)
 
 build() {
-	mkdir -p $PKG/etc/{sysctl.d,network}
+	mkdir -p $PKG/etc/{sysctl.d}
 	for f in fstab group host.conf hostname hosts issue motd os-release passwd profile protocols resolv.conf securetty services shells; do
 		install -m644 $SRC/$f $PKG/etc
 	done
@@ -46,5 +46,7 @@ build() {
 		kernel.panic = 120
 		fs.protected_hardlinks = 1
 		fs.protected_symlinks = 1
+		fs.inotify.max_user_instances = 1024
+		fs.inotify.max_user_watches = 524288
 	EOF
 }
