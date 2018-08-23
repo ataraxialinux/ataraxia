@@ -1,39 +1,42 @@
 name=host-gcc
 version=8.2.0
-patchver=1.2
 gmpver=6.1.2
 mpfrver=4.0.1
 mpcver=1.1.0
 islver=0.19
 release=1
 source=(http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
-	http://distfiles.gentoo.org/distfiles/gcc-$version-patches-$patchver.tar.bz2
 	http://ftp.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
 	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
 	https://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
-	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz
+	0001-ssp_nonshared.patch
+	0002-posix_memalign.patch
+	0003-libatomic-test-fix.patch
+	0004-libgomp-test-fix.patch
+	0005-libitm-test-fix.patch
+	0006-libvtv-test-fix.patch
+	0007-j2.patch
+	0008-s390x-muslldso.patch
+	0009-microblaze-pr65649.patch
+	0010-ldbl128-config.patch
+	0011-m68k.patch
+	0012-static-pie.patch)
 
 build() {
 	cd gcc-$version
-	patch -Np1 -i ../patch/10_all_default-fortify-source.patch
-	patch -Np1 -i ../patch/11_all_default-warn-format-security.patch
-	patch -Np1 -i ../patch/12_all_default-warn-trampolines.patch
-	patch -Np1 -i ../patch/13_all_default-ssp-fix.patch
-	patch -Np1 -i ../patch/25_all_alpha-mieee-default.patch
-	patch -Np1 -i ../patch/34_all_ia64_note.GNU-stack.patch
-	patch -Np1 -i ../patch/35_all_i386_libgcc_note.GNU-stack.patch
-	patch -Np1 -i ../patch/50_all_libiberty-asprintf.patch
-	patch -Np1 -i ../patch/51_all_libiberty-pic.patch
-	patch -Np1 -i ../patch/54_all_nopie-all-flags.patch
-	patch -Np1 -i ../patch/55_all_extra-options.patch
-	patch -Np1 -i ../patch/90_all_pr55930-dependency-tracking.patch
-	patch -Np1 -i ../patch/92_all_sh-drop-sysroot-suffix.patch
-	patch -Np1 -i ../patch/94_all_mips-o32-asan.patch
-	patch -Np1 -i ../patch/95_all_ia64-TEXTREL.patch
-	patch -Np1 -i ../patch/97_all_disable-systemtap-switch.patch
-	patch -Np1 -i ../patch/98_all_sh_textrel-on-libitm.patch
-	patch -Np1 -i ../patch/99_all_m68k-textrel-on-libgcc.patch
-	patch -Np1 -i ../patch/100_all_isl-include.patch
+	patch -Np1 -i $SRC/0001-ssp_nonshared.patch
+	patch -Np1 -i $SRC/0002-posix_memalign.patch
+	patch -Np1 -i $SRC/0003-libatomic-test-fix.patch
+	patch -Np1 -i $SRC/0004-libgomp-test-fix.patch
+	patch -Np1 -i $SRC/0005-libitm-test-fix.patch
+	patch -Np1 -i $SRC/0006-libvtv-test-fix.patch
+	patch -Np1 -i $SRC/0007-j2.patch
+	patch -Np1 -i $SRC/0008-s390x-muslldso.patch
+	patch -Np1 -i $SRC/0009-microblaze-pr65649.patch
+	patch -Np1 -i $SRC/0010-ldbl128-config.patch
+	patch -Np1 -i $SRC/0011-m68k.patch
+	patch -Np1 -i $SRC/0012-static-pie.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
 	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
 	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h

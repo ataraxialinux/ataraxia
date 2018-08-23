@@ -1,0 +1,34 @@
+From a0934d40a8ed3b6e82abb31d2f8d7c60548d4a05 Mon Sep 17 00:00:00 2001
+From: Szabolcs Nagy <nsz@port70.net>
+Date: Fri, 26 Jan 2018 20:25:11 +0000
+Subject: [PATCH 09/12] microblaze-pr65649
+
+---
+ gcc/config/microblaze/microblaze.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/config/microblaze/microblaze.c b/gcc/config/microblaze/microblaze.c
+index 9a4a287be23..60aadaf51f7 100644
+--- a/gcc/config/microblaze/microblaze.c
++++ b/gcc/config/microblaze/microblaze.c
+@@ -2399,7 +2399,7 @@ print_operand (FILE * file, rtx op, int letter)
+ 	  unsigned long value_long;
+ 	  REAL_VALUE_TO_TARGET_SINGLE (*CONST_DOUBLE_REAL_VALUE (op),
+ 				       value_long);
+-	  fprintf (file, HOST_WIDE_INT_PRINT_HEX, value_long);
++	  fprintf (file, "0x%lx", value_long);
+ 	}
+       else
+ 	{
+@@ -2458,7 +2458,7 @@ print_operand (FILE * file, rtx op, int letter)
+       print_operand_address (file, XEXP (op, 0));
+     }
+   else if (letter == 'm')
+-    fprintf (file, HOST_WIDE_INT_PRINT_DEC, (1L << INTVAL (op)));
++    fprintf (file, "%ld", (1L << INTVAL (op)));
+   else
+     output_addr_const (file, op);
+ }
+-- 
+2.17.1
+
