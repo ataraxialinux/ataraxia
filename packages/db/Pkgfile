@@ -1,0 +1,37 @@
+# Description: The Berkeley DB embedded database system
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=db
+version=6.2.32
+release=1
+source=(http://download.oracle.com/berkeley-db/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version/build_unix
+	../dist/configure \
+		--prefix=/usr \
+		--enable-compat185 \
+		--enable-cxx \
+		--enable-dbm \
+		--enable-stl \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	rm -rf $PKG/usr/docs
+
+	chown -R root:root \
+		$PKG/usr/bin/db_* \
+		$PKG/usr/include/db{,_185,_cxx}.h \
+		$PKG/usr/lib/libdb*.{so,la}
+
+	find $PKG -type f | xargs file | \
+		awk '/ELF/ && /executable/ || /shared object/' | \
+		cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+	find $PKG -type f | xargs file | awk '/current ar archive/' | \
+		cut -f 1 -d : | xargs strip --strip-debug 2> /dev/null || true
+
+	clean-package $PKG
+}
