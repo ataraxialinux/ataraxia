@@ -42,13 +42,11 @@ setup_env() {
 
 build_final_system() {
 	for PKG in etc linux-headers musl zlib m4 bison flex libelf gmp mpfr mpc binutils gcc attr acl libcap sed pkgconf \
-			ncurses shadow util-linux procps-ng e2fsprogs coreutils slibtool; do
+			ncurses shadow util-linux procps-ng e2fsprogs coreutils slibtool iproute2 bzip2 gdbm db perl \
+			readline autoconf automake; do
 		case "$PKG" in
 			linux-headers)
 				installonly linux-headers || true
-				;;
-			etc)
-				buildonly etc
 				;;
 			musl)
 				buildonly musl
@@ -85,6 +83,13 @@ build_final_system() {
 			loksh)
 				buildonly loksh
 				installonlyforce loksh || true
+				;;
+			perl)
+				buildonly perl
+				installonlyforce perl || true
+				;;
+			etc)
+				buildonly etc
 				;;
 			npkg)
 				buildonly npkg
