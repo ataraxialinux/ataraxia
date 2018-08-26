@@ -1,11 +1,12 @@
 # Description: An arbitrary precision calculator language
 # URL:         http://www.gnu.org/software/bc
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline
 
 name=bc
 version=1.07.1
 release=1
-source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz)
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
@@ -26,7 +27,7 @@ EOF
 		--infodir=/usr/share/info \
 		--with-readline \
 		--build=$(cc -dumpmachine)
-	make -j1
-	make DESTDIR=$PKG install
+	make MAKEINFO="true" -j1
+	make MAKEINFO="true" DESTDIR=$PKG install
 	clean-package $PKG
 }
