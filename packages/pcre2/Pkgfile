@@ -1,0 +1,26 @@
+# Description: A library that implements Perl 5-style regular expressions. 2nd version
+# URL:         http://www.pcre.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 readline bash
+
+name=pcre2
+version=10.31
+release=1
+source=(https://ftp.pcre.org/pub/pcre/$name-$version.tar.bz2)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--enable-jit \
+		--enable-pcre2grep-libbz2 \
+		--enable-pcre2test-libreadline \
+		--enable-pcre2grep-libz \
+		--enable-pcre2-16 \
+		--enable-pcre2-32 \
+		--enable-unicode-properties \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}

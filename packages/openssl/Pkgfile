@@ -1,0 +1,31 @@
+# Description: The Open Source toolkit for Secure Sockets Layer and Transport Layer Securit
+# URL:         https://www.openssl.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=openssl
+version=1.1.0i
+release=1
+source=(https://www.openssl.org/source/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	case $BARCH in
+		x86_64)
+			export ATGT="linux-x86_64"
+			export AOPTS="enable-ec_nistp_64_gcc_128"
+			;;
+		aarch64)
+			export ATGT="linux-aarch64"
+			;;
+	esac
+	perl ./Configure $ATGT --prefix=/usr \
+		--libdir=lib \
+		--openssldir=/etc/ssl \
+		shared zlib $AOPTS \
+		-DOPENSSL_NO_ASYNC \
+		$CFLAGS -Wa,--noexecstack
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}
