@@ -1,0 +1,18 @@
+# Description: A C library for manipulating pipelines of subprocesses in a flexible and convenient way
+# URL:         https://libpipeline.nongnu.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=libpipeline
+version=1.5.0
+release=1
+source=(https://download.savannah.gnu.org/releases/$name/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}
