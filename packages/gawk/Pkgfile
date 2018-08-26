@@ -1,0 +1,22 @@
+# Description: The GNU awk
+# URL:         http://www.gnu.org/software/gawk
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gmp mpfr
+
+name=gawk
+version=4.2.1
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	sed -i 's/extras//' Makefile.in
+	./configure \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}
