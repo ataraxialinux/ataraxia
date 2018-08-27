@@ -1,0 +1,30 @@
+# Description: Common CA certificates
+# URL:         https://januslinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  openssl
+
+name=ca-certs
+version=0.9.1
+release=1
+source=(https://github.com/protonesso/ca-certs/archive/$version.tar.gz
+	http://www.cacert.org/certs/root.crt
+	http://www.cacert.org/certs/class3.crt)
+
+build() {
+	mkdir -p $PKG/etc/ssl/certs
+	mkdir -p $PKG/etc/ssl/local
+
+	openssl x509 -in $SRC/root.crt -text -fingerprint -setalias "CAcert Class 1 root" \
+		-addtrust serverAuth -addtrust emailProtection -addtrust codeSigning \
+		> $PKG/etc/ssl/local/CAcert_Class_1_root.pem &&
+	openssl x509 -in $SRC/class3.crt -text -fingerprint -setalias "CAcert Class 3 root" \
+		-addtrust serverAuth -addtrust emailProtection -addtrust codeSigning \
+		> $PKG/etc/ssl/local/CAcert_Class_3_root.pem
+
+	cd $name-$version
+	make XDESTDIR=$PKG install
+
+	DEST=$PKG $PKG/usr/bin/make-ca -g
+
+	clean-package $PKG
+}

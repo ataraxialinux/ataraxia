@@ -1,0 +1,28 @@
+# Description: Linux kernel module management tools and library
+# URL:         http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=summary
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib xz
+
+name=kmod
+version=25
+release=1
+source=(https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-xz \
+		--with-zlib \
+		--disable-manpages \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	for target in depmod insmod lsmod modinfo modprobe rmmod; do
+		ln -sf kmod $PKG/usr/bin/$target
+	done
+
+	clean-package $PKG
+}

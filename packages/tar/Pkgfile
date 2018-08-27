@@ -1,0 +1,21 @@
+# Description: Utility used to store, backup, and transport files
+# URL:         http://www.gnu.org/software/tar
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  acl
+
+name=tar
+version=1.30
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	FORCE_UNSAFE_CONFIGURE=1 \
+	./configure \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/tar \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}
