@@ -3,7 +3,7 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=etc
-version=1.0.1
+version=1.0.2
 release=1
 source=(fstab
 	group
@@ -24,11 +24,11 @@ source=(fstab
 
 build() {
 	mkdir -p $PKG/etc/sysctl.d
-	for f in fstab group host.conf hostname hosts issue motd os-release passwd profile protocols resolv.conf securetty services shells; do
+	for f in fstab group host.conf hostname hosts issue motd os-release passwd profile protocols resolv.conf securetty services shadow shells; do
 		install -m644 $SRC/$f $PKG/etc
 	done
 
-	install -m600 $SRC/shadow $PKG/etc
+	chmod 0600 $PKG/etc/shadow
 
 cat > $PKG/etc/sysctl.d/00-default.conf <<-EOF
 net.ipv4.tcp_syncookies = 1
