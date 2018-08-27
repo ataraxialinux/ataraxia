@@ -16,10 +16,6 @@ mountpoint -q /dev/shm || mount -o mode=1777,nosuid,nodev -n -t tmpfs shm /dev/s
 mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
 mountpoint -q /sys/fs/cgroup || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
 
-for f in $(kmod static-nodes 2>/dev/null|awk '/Module/ {print $2}'); do
-	modprobe -bq $f 2>/dev/null
-done
-
 udevd --daemon
 udevadm trigger --action=add --type=subsystems
 udevadm trigger --action=add --type=devices
