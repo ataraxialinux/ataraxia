@@ -1,12 +1,10 @@
 name=chroot-binutils
-version=2.31.1
+version=2.30
 release=1
-source=(http://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz
-	binutils-ld-fix-static-linking.patch)
+source=(http://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz)
 
 build() {
 	cd binutils-$version
-	patch -Np1 -i $SRC/binutils-ld-fix-static-linking.patch
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
 	if [ "$BARCH" = "x86_64" ]; then
 		ARCHCONFIGURE="--enable-targets=x86_64-pep"
@@ -25,6 +23,7 @@ build() {
 		--enable-64-bit-bfd \
 		--enable-deterministic-archives \
 		--enable-gold=yes \
+		--enable-ld=default \
 		--enable-lto \
 		--enable-plugins \
 		--enable-relro \
@@ -33,6 +32,7 @@ build() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-werror
+	make configure-host MAKEINFO="true"
 	make MAKEINFO="true"
 	make MAKEINFO="true" DESTDIR=$PKG install
 
