@@ -64,7 +64,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
-			export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by 'mk'"
