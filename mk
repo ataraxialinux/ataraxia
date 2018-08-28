@@ -59,13 +59,50 @@ setup_architecture() {
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			export QEMUARCH="x86_64"
 			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			export QEMUARCH="aarch64"
 			;;
+		armv7hf)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+			export QEMUARCH="arm"
+			;;
+		powerpc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
+			export QEMUARCH="ppc"
+			;;
+		powerpc64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			export QEMUARCH="ppc64"
+			;;
+		powerpc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			;;
+			export QEMUARCH="ppc64le"
+		s390x)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="s390x-linux-musl"
+			export XKARCH="s390"
+			export GCCOPTS="--with-arch=z196 --with-tune=zEC12 --with-zarch --with-long-double-128 --enable-decimal-float"
+			;;
+			export QEMUARCH="s390x"
 		*)
 			echo "Architecture is not set or is not supported by 'mk'"
 			exit 1
@@ -180,6 +217,21 @@ make_symlinks() {
 		aarch64)
 			export ALINKER="ld-musl-aarch64.so.1"
 			;;
+		armv7hf)
+			export ALINKER="ld-musl-armhf.so.1"
+			;;
+		powerpc)
+			export ALINKER="ld-musl-powerpc.so.1"
+			;;
+		powerpc64)
+			export ALINKER="ld-musl-powerpc64.so.1"
+			;;
+		powerpc64le)
+			export ALINKER="ld-musl-powerpc64le.so.1"
+			;;
+		s390x)
+			export ALINKER="ld-musl-s390x.so.1"
+			;;
 	esac
 
 	ln -sf /tools/lib/libc.so $ROOTFS/usr/lib/$ALINKER
@@ -225,6 +277,32 @@ enter_chroot() {
 	set -e
 }
 
+enter_proot() {
+	set +e
+	mkdir -p $ROOTFS/output/{stage,initrd,packages,sources}
+	mkdir -p $ROOTFS/usr/janus/packages
+
+	rm -rf $ROOTFS/etc/resolv.conf
+	touch $ROOTFS/etc/resolv.conf
+	cat $(realpath /etc/resolv.conf) >> $ROOTFS/etc/resolv.conf
+
+	mount --bind $CWD/packages $ROOTFS/usr/janus/packages
+
+	mount --bind $BUILD/packages $ROOTFS/output/packages
+	mount --bind $BUILD/sources $ROOTFS/output/sources
+	mount --bind $BUILD/stage $ROOTFS/output/stage
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd
+
+	proot -S $ROOTFS -q qemu-$QEMUARCH-static
+
+	umount $ROOTFS/usr/janus/packages
+	umount $ROOTFS/output/sources
+	umount $ROOTFS/output/packages
+	umount $ROOTFS/output/stage
+	umount $ROOTFS/output/initrd
+	set -e
+}
+
 case "$1" in
 	toolchain)
 		check_for_root
@@ -249,6 +327,11 @@ case "$1" in
 		check_for_root
 		setup_environment
 		enter_chroot
+		;;
+	enter-proot)
+		check_for_root
+		setup_environment
+		enter_proot
 		;;
 	usage|*)
 		echo "In development"
