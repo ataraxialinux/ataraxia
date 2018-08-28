@@ -293,7 +293,7 @@ enter_proot() {
 	mount --bind $BUILD/stage $ROOTFS/output/stage
 	mount --bind $BUILD/initrd $ROOTFS/output/initrd
 
-	proot -S $ROOTFS -q qemu-$QEMUARCH-static
+	proot -S $ROOTFS -q "qemu-$QEMUARCH-static -cpu max"
 
 	umount $ROOTFS/usr/janus/packages
 	umount $ROOTFS/output/sources
