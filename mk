@@ -330,6 +330,7 @@ case "$1" in
 		;;
 	enter-proot)
 		check_for_root
+		setup_architecture
 		setup_environment
 		enter_proot
 		;;
