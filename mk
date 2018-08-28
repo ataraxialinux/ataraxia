@@ -94,15 +94,15 @@ setup_architecture() {
 			export XTARGET="powerpc64le-linux-musl"
 			export XKARCH="powerpc"
 			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
-			;;
 			export QEMUARCH="ppc64le"
+			;;
 		s390x)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="s390x-linux-musl"
 			export XKARCH="s390"
 			export GCCOPTS="--with-arch=z196 --with-tune=zEC12 --with-zarch --with-long-double-128 --enable-decimal-float"
-			;;
 			export QEMUARCH="s390x"
+			;;
 		*)
 			echo "Architecture is not set or is not supported by 'mk'"
 			exit 1
