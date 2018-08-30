@@ -29,7 +29,6 @@ build() {
 		--without-selinux \
 		--disable-man \
 		--disable-nls \
-		--disable-shared \
 		--build=$(cc -dumpmachine)
 	make
 	make DESTDIR=$PKG install
@@ -38,7 +37,6 @@ build() {
 	rm -rf $PKG/usr/sbin
 
 	sed -i 's/1000/100/' $PKG/etc/default/useradd
-	sed -i 's@SHELL=/bin/bash@SHELL=/bin/ksh@' $PKG/etc/default/useradd
 
 	clean-package $PKG
 }
