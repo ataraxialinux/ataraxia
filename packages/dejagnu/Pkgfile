@@ -1,0 +1,19 @@
+# Description: Framework for testing other programs
+# URL:         http://www.gnu.org/software/dejagnu/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  expect
+
+name=dejagnu
+version=1.6.1
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}

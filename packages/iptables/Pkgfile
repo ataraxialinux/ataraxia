@@ -5,32 +5,32 @@
 name=iptables
 version=1.6.2
 release=1
-source=(https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2)
+source=(http://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2
+	iptables
+	iptables-finish
+	ip6tables
+	ip6tables-finish)
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
+	rm include/linux/types.h
+	./configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--sbindir=/usr/bin \
 		--libexecdir=/usr/lib/iptables \
 		--with-xtlibdir=/usr/lib/iptables \
-		--disable-nftables
+		--enable-libipq \
+		--disable-nftables \
+		--build=$(cc -dumpmachine)
 	make
 	make DESTDIR=$PKG install
 
-	mkdir -p $PKG/var/log/iptables
+	install -D -m755 $SRC/iptables $PKG/etc/sv/iptables/run
+	install -D -m755 $SRC/iptables-finish $PKG/etc/sv/iptables/finsh
 
-	install -Dm0755 $KEEP/services/iptables $PKG/etc/service/iptables/run
-	install -Dm0755 $KEEP/services/iptables-finish $PKG/etc/service/iptables/finish
-	install -Dm0755 $KEEP/services/iptables-log $PKG/etc/service/iptables/log/run
+	install -D -m755 $SRC/ip6tables $PKG/etc/sv/ip6tables/run
+	install -D -m755 $SRC/ip6tables-finish $PKG/etc/sv/ip6tables/finsh
 
-	echo "Stripping $name package..."
-	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
-	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
-	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
-	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
-	cd $PKG
-	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
-	rm -rf {,usr/}lib/charset.alias
+	clean-package $PKG
 }
