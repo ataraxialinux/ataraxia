@@ -1,0 +1,26 @@
+# Description: Lightweight SSH server
+# URL:         https://matt.ucc.asn.au/dropbear/dropbear.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=dropbear
+version=2018.76
+release=1
+source=(https://matt.ucc.asn.au/$name/releases/$name-$version.tar.bz2
+	dropbear)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--enable-zlib \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	install -Dm755 $SRC/dropbear $PKG/etc/sv/dropbear/run
+
+	clean-package $PKG
+}

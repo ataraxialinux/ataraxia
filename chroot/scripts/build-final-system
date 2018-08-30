@@ -1,0 +1,120 @@
+#!/bin/sh
+
+set -e
+
+
+pkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz  || true
+	done
+}
+
+buildonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf /etc/pkgmk.conf
+	done
+}
+
+installonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz || true
+	done
+}
+
+installonlyforce() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		pkgadd $PKGSDIR/$mergepkg#*.pkg.tar.xz -f || true
+	done
+}
+
+setup_env() {
+	export LD_LIBRARY_PATH="/usr/lib:/tools/lib"
+	export PATH="/usr/bin:/tools/bin"
+	export REPO="/usr/janus/packages"
+	export PKGSDIR="/output/packages"
+}
+
+build_final_system() {
+	for PKG in etc linux-headers musl zlib m4 bison flex libelf \
+			gmp mpfr mpc binutils gcc attr acl libcap sed pkgconf \
+			ncurses shadow util-linux procps-ng e2fsprogs coreutils \
+			slibtool iproute2 bzip2 gdbm db perl \
+			readline autoconf automake bash bc diffutils file gawk \
+			findutils gettext expat xml-parser intltool pcre grep less gzip \
+			inetutils net-tools kbd libpipeline make \
+			xz kmod patch psmisc runit socklog tar gperf eudev \
+			openssl ca-certs linux hwids pciutils libusb usbutils which \
+			nano lzip dhcpcd libnl wireless-tools wpa_supplicant \
+			curl wget pcre2 git libarchive npkg prt-get; do
+		case "$PKG" in
+			linux-headers)
+				installonly linux-headers || true
+				;;
+			musl)
+				buildonly musl
+				installonlyforce musl || true
+				;;
+			gcc)
+				buildonly gcc
+				installonlyforce gcc || true
+				;;
+			sed)
+				buildonly sed
+				installonlyforce sed || true
+				;;
+			util-linux)
+				buildonly util-linux
+				installonlyforce util-linux || true
+				;;
+			coreutils)
+				buildonly coreutils
+				installonlyforce coreutils || true
+				;;
+			gawk)
+				buildonly gawk
+				installonlyforce gawk || true
+				;;
+			grep)
+				buildonly grep
+				installonlyforce grep || true
+				;;
+			bash)
+				buildonly bash
+				installonlyforce bash || true
+				;;
+			perl)
+				buildonly perl
+				installonlyforce perl || true
+				;;
+			file)
+				buildonly file
+				installonlyforce file || true
+				;;
+			etc)
+				buildonly etc
+				;;
+			npkg)
+				buildonly npkg
+				;;
+			prt-get)
+				buildonly prt-get
+				;;
+			*)
+				pkginstall $PKG
+		esac
+	done
+}
+
+
+setup_env
+build_final_system
+
+exit 0
+

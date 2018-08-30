@@ -2,81 +2,6 @@
 
 set -e
 
-if [ "$SNAPSHOT" = "1" ]; then
-	export RELEASE="$(date +%y%m%d)"
-else
-	export RELEASE="1.0-beta5"
-fi
-
-printmsg() {
-	local msg=$(echo $1 | tr -s / /)
-	printf "\e[1m\e[32m==>\e[0m $msg\n"
-	sleep 1
-}
-
-printmsgerror() {
-	local msg=$(echo $1 | tr -s / /)
-	printf "\e[1m\e[31m==!\e[0m $msg\n"
-	sleep 1
-	exit 1
-}
-
-pkginstall() {
-	local pkg="$@"
-	for mergepkg in $pkg; do
-		printmsg "Building and installing $mergepkg"
-		cd $REPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS
-	done
-}
-
-pkginstallstage() {
-	local pkg="$@"
-	for mergepkg in $pkg; do
-		printmsg "Installing $mergepkg"
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $STAGE
-	done
-}
-
-pkginstallinitrd() {
-	local pkg="$@"
-	for mergepkg in $pkg; do
-		printmsg "Installing $mergepkg"
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $INITRD
-	done
-}
-
-toolpkginstall() {
-	local pkg="$@"
-	for mergepkg in $pkg; do
-		printmsg "Building and installing $mergepkg"
-		cd $TCREPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f
-	done
-}
-
-pkgupdate() {
-	local pkg="$@"
-	for mergepkg in $pkg; do
-		printmsg "Building and updating $mergepkg"
-		cd $REPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $REPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS -u
-	done
-}
-
-toolpkgupdate() {
-	local pkg="$@"
-	for mergepkg in $pkg; do
-		printmsg "Building and updating $mergepkg"
-		cd $TCREPO/$mergepkg
-		pkgmk -d -if -im -is -ns -cf $TCREPO/pkgmk.conf
-		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $TOOLS -f -u
-	done
-}
-
 initdb() {
 	local dir="$@"
 	for dbindir in $dir; do
@@ -85,317 +10,332 @@ initdb() {
 	done
 }
 
-rmpkg() {
-	local rmpkg="$@"
-	for rmpack in $rmpkg; do
-		rm -rf $PACKAGES/$rmpack#*
+pkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf $CHREPO/pkgmk.conf
+		pkgadd $PACKAGES/$mergepkg#*.pkg.tar.xz --root $ROOTFS
+	done
+}
+
+pkgbuildonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		pkgmk -d -if -im -is -cf $CHREPO/pkgmk.conf
+	done
+}
+
+pkgchinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $CHREPO/$mergepkg
+		pkgmk -d -if -im -is -cf $CHREPO/pkgmk.conf
+		pkgadd $PACKAGES/chroot-$mergepkg#*.pkg.tar.xz --root $ROOTFS -f
+	done
+}
+
+pkgtcinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $TCREPO/$mergepkg
+		pkgmk -d -if -im -is -cf $TCREPO/pkgmk.conf
+		pkgadd $PACKAGES/host-$mergepkg#*.pkg.tar.xz --root $TOOLS -f
 	done
 }
 
 check_for_root() {
 	if [[ $EUID -ne 0 ]]; then
-		printmsgerror "This script must be run as root" 
+		echo "This script must be run as root"
+		exit 1 
 	fi
 }
 
 setup_architecture() {
 	case $BARCH in
 		x86_64)
-			printmsg "Using configuration for x86_64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
-			export GCCOPTS=
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			export QEMUARCH="x86_64"
 			;;
 		aarch64)
-			printmsg "Using configuration for aarch64"
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			export XKARCH="arm64"
 			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64"
+			export QEMUARCH="aarch64"
 			;;
-		armv7h)
-			printmsg "Using configuration for armv7h"
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="armv7l-linux-musleabihf"
-			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv7-a --with-fpu=vfpv3 --with-float=hard"
-			;;
-		armv6h)
-			printmsg "Using configuration for armv6h"
+		armv7hf)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			export XKARCH="arm"
-			export GCCOPTS="--with-arch=armv6 --with-fpu=vfp --with-float=hard"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+			export QEMUARCH="arm"
 			;;
-		mipsel)
-			printmsg "Using configuration for mipsel"
+		powerpc)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mipsel-linux-musl"
-			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv"
+			export XTARGET="powerpc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
+			export QEMUARCH="ppc"
 			;;
-		mips)
-			printmsg "Using configuration for mips"
+		powerpc64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips-linux-musl"
-			export XKARCH="mips"
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv"
+			export XTARGET="powerpc64-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			export QEMUARCH="ppc64"
+			;;
+		powerpc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			export QEMUARCH="ppc64le"
+			;;
+		s390x)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="s390x-linux-musl"
+			export XKARCH="s390"
+			export GCCOPTS="--with-arch=z196 --with-tune=zEC12 --with-zarch --with-long-double-128 --enable-decimal-float"
+			export QEMUARCH="s390x"
 			;;
 		*)
-			printmsgerror "BARCH variable isn't set!"
+			echo "Architecture is not set or is not supported by 'mk'"
+			exit 1
 	esac
 }
 
 setup_environment() {
-	printmsg "Setting up build environment"
 	export CWD="$(pwd)"
-	export KEEP="$CWD/KEEP"
 	export BUILD="$CWD/build"
-	export REPO="$CWD/packages"
-	export TCREPO="$CWD/toolchain"
 	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
 	export ROOTFS="$BUILD/rootfs"
 	export TOOLS="$BUILD/tools"
-	export PACKAGES="$BUILD/packages"
-	export IMAGE="$BUILD/image"
+	export ISODIR="$BUILD/isodir"
 	export INITRD="$BUILD/initrd"
 	export STAGE="$BUILD/stage"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export CHREPO="$CWD/chroot"
 
 	export LC_ALL="POSIX"
-	export PATH="$KEEP/bin:$TOOLS/bin:$PATH"
+	export PATH="$TOOLS/bin:$PATH"
 	export HOSTCC="gcc"
 	export HOSTCXX="g++"
 	export MKOPTS="-j$(expr $(nproc) + 1)"
 
-	export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	export CFLAGS="-Os -pipe -fstack-protector-strong"
+	export CFLAGS="-Os -g0 -pipe"
 	export CXXFLAGS="$CFLAGS"
 	export LDFLAGS="-s"
 }
 
-make_environment() {
-	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain || true
-	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp || true
-	umount $ROOTFS/output/sources $ROOTFS/output/packages || true
-	umount $ROOTFS/output/stage $ROOTFS/output/initrd || true
-
+build_environment() {
 	rm -rf $BUILD
-	mkdir -p $BUILD $SOURCES $ROOTFS $INITRD $STAGE $TOOLS $PACKAGES $IMAGE
+	mkdir -p $BUILD $SOURCES $PACKAGES $ROOTFS $TOOLS $ISODIR $INITRD $STAGE
 
-	initdb $ROOTFS $TOOLS $INITRD $STAGE
+	initdb $TOOLS $ROOTFS $INITRD $STAGE
 }
 
 build_toolchain() {
-	printmsg "Building cross-toolchain for $BARCH"
-	pkginstall filesystem
-	toolpkginstall file
-	toolpkginstall pkgconf
-	toolpkginstall binutils
-	toolpkginstall gcc-static
-	pkginstall linux-headers musl-bootstrap
-	toolpkginstall gcc
+	pkgtcinstall file
+	pkgtcinstall pkgconf
+	pkgtcinstall binutils
+	pkgtcinstall gcc-static
+	pkgchinstall linux-headers
+	pkgchinstall musl
+	pkgtcinstall gcc
+}
 
-	printmsg "Cleaning"
-	rmpkg file pkgconf binutils gcc gcc-static
+cleanup_toolchain() {
+	rm -rf $PACKAGES/host*
 }
 
 bootstrap_rootfs() {
-	printmsg "Bootstraping root filesystem"
-	pkginstall zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap patch-bootstrap bootstrap-scripts
+	pkginstall filesystem
+	pkgchinstall etc
+	pkgchinstall busybox
+	pkgchinstall zlib
+	pkgchinstall binutils
+	pkgchinstall gcc
+	pkgchinstall make
+	pkgchinstall file
+	pkgchinstall ncurses
+	pkgchinstall bash
+	pkgchinstall xz
+	pkgchinstall patch
+	pkgchinstall perl
+	pkgchinstall openssl
+	pkgchinstall curl
+	pkgchinstall libarchive
+	pkgchinstall npkg
+	pkgchinstall scripts
+	pkgbuildonly linux-headers
 }
 
-clean_packages() {
-	printmsg "Cleaning"
-	rmpkg linux-headers-bootstrap musl-bootstrap zlib-bootstrap binutils-bootstrap gcc-bootstrap make-bootstrap busybox-bootstrap ncurses-bootstrap bash-bootstrap file-bootstrap perl-bootstrap xz-bootstrap libarchive-bootstrap libressl-bootstrap curl-bootstrap npkg-bootstrap patch-bootstrap bootstrap-scripts
+cleanup_bootstrap() {
+	rm -rf $PACKAGES/chroot*
+	find $ROOTFS -name \*.la -delete
 }
 
-mountall() {
-	mount --bind $BUILD/packages $ROOTFS/output/packages || true
-	mount --bind $BUILD/sources $ROOTFS/output/sources || true
-	mount --bind $BUILD/stage $ROOTFS/output/stage || true
-	mount --bind $BUILD/initrd $ROOTFS/output/initrd || true
-}
+make_symlinks() {
+	for file in awk cat dd echo env file grep ln ls pwd rm sed stty; do
+		ln -sf /tools/bin/${file} $ROOTFS/usr/bin
+	done
 
-umountall() {
-	umount $ROOTFS/output/sources $ROOTFS/output/packages || true
-	umount $ROOTFS/output/stage $ROOTFS/output/initrd || true
+	for file in bash sh; do
+		ln -sf /tools/bin/bash $ROOTFS/usr/bin/${file}
+	done
+
+	ln -sf gcc $ROOTFS/tools/bin/cc
+	ln -sf /tools/bin/perl $ROOTFS/usr/bin
+	ln -sf /tools/bin/install $ROOTFS/usr/bin
+
+	ln -sf /tools/lib/libgcc_s.so $ROOTFS/usr/lib
+	ln -sf /tools/lib/libgcc_s.so.1 $ROOTFS/usr/lib
+
+	ln -sf /tools/lib/libstdc++.so $ROOTFS/usr/lib
+	ln -sf /tools/lib/libstdc++.so.6 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libstdc++.a $ROOTFS/usr/lib
+
+	ln -sf /tools/lib/libssp.so $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.so.0 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.so.0.0.0 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.a $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp_nonshared.a $ROOTFS/usr/lib
+
+	ln -sf /tools/lib/libc.so $ROOTFS/usr/lib/libc.so
+
+	case $BARCH in
+		x86_64)
+			export ALINKER="ld-musl-x86_64.so.1"
+			;;
+		aarch64)
+			export ALINKER="ld-musl-aarch64.so.1"
+			;;
+		armv7hf)
+			export ALINKER="ld-musl-armhf.so.1"
+			;;
+		powerpc)
+			export ALINKER="ld-musl-powerpc.so.1"
+			;;
+		powerpc64)
+			export ALINKER="ld-musl-powerpc64.so.1"
+			;;
+		powerpc64le)
+			export ALINKER="ld-musl-powerpc64le.so.1"
+			;;
+		s390x)
+			export ALINKER="ld-musl-s390x.so.1"
+			;;
+	esac
+
+	ln -sf /tools/lib/libc.so $ROOTFS/usr/lib/$ALINKER
 }
 
 enter_chroot() {
 	set +e
-	mkdir -p $ROOTFS/output/{stage,initrd}
-	mkdir -p $ROOTFS/usr/janus/{KEEP,packages,toolchain}
+	mkdir -p $ROOTFS/output/{stage,initrd,packages,sources}
+	mkdir -p $ROOTFS/usr/janus/packages
+
+	rm -rf $ROOTFS/etc/resolv.conf
+	touch $ROOTFS/etc/resolv.conf
+	cat $(realpath /etc/resolv.conf) >> $ROOTFS/etc/resolv.conf
 
 	mount --bind /proc $ROOTFS/proc
 	mount --bind /sys $ROOTFS/sys
 	mount --bind /dev $ROOTFS/dev
 	mount --bind /tmp $ROOTFS/tmp
 
-	mount --bind $CWD/KEEP $ROOTFS/usr/janus/KEEP
 	mount --bind $CWD/packages $ROOTFS/usr/janus/packages
-	mount --bind $CWD/toolchain $ROOTFS/usr/janus/toolchain
 
 	mount --bind $BUILD/packages $ROOTFS/output/packages
 	mount --bind $BUILD/sources $ROOTFS/output/sources
 	mount --bind $BUILD/stage $ROOTFS/output/stage
 	mount --bind $BUILD/initrd $ROOTFS/output/initrd
 
-	chroot $ROOTFS /busybox/bin/env -i \
+	chroot $ROOTFS /usr/bin/env -i \
 		TERM="$TERM" \
 		PS1='(januslinux chroot) \u:\w\$ ' \
-		PATH="/busybox/bin:/usr/local/sbin:/usr/local/bin:/usr/bin" \
-		/usr/bin/bash --login +h
+		PATH="/usr/bin:/tools/bin" \
+		LD_LIBRARY_PATH="/usr/lib:/tools/lib" \
+		/tools/bin/ash --login
 
-	umount $ROOTFS/usr/janus/KEEP $ROOTFS/usr/janus/packages $ROOTFS/usr/janus/toolchain
-	umount $ROOTFS/proc $ROOTFS/sys $ROOTFS/dev $ROOTFS/tmp
-	umount $ROOTFS/output/sources $ROOTFS/output/packages
-	umount $ROOTFS/output/stage $ROOTFS/output/initrd
+	umount $ROOTFS/usr/janus/packages
+	umount $ROOTFS/proc
+	umount $ROOTFS/sys
+	umount $ROOTFS/dev
+	umount $ROOTFS/tmp
+	umount $ROOTFS/output/sources
+	umount $ROOTFS/output/packages
+	umount $ROOTFS/output/stage
+	umount $ROOTFS/output/initrd
+	set -e
 }
 
-generate_stage_archive() {
+enter_proot() {
 	set +e
-	printmsg "Building stage archive"
+	mkdir -p $ROOTFS/output/{stage,initrd,packages,sources}
+	mkdir -p $ROOTFS/usr/janus/packages
 
-	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool bzip2 perl readline autoconf automake bash bc diffutils file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano vim lzip lzo zstd btrfs-progs xfsprogs curl wget libarchive git npkg prt-get
+	rm -rf $ROOTFS/etc/resolv.conf
+	touch $ROOTFS/etc/resolv.conf
+	cat $(realpath /etc/resolv.conf) >> $ROOTFS/etc/resolv.conf
 
-	cd $STAGE
-	tar -cJf $CWD/januslinux-$RELEASE-$BARCH.tar.xz .
+	mount --bind $CWD/packages $ROOTFS/usr/janus/packages
+
+	mount --bind $BUILD/packages $ROOTFS/output/packages
+	mount --bind $BUILD/sources $ROOTFS/output/sources
+	mount --bind $BUILD/stage $ROOTFS/output/stage
+	mount --bind $BUILD/initrd $ROOTFS/output/initrd
+
+	proot -S $ROOTFS -q "qemu-$QEMUARCH-static -cpu max"
+
+	umount $ROOTFS/usr/janus/packages
+	umount $ROOTFS/output/sources
+	umount $ROOTFS/output/packages
+	umount $ROOTFS/output/stage
+	umount $ROOTFS/output/initrd
+	set -e
 }
 
-generate_initrd() {
-	set +e
-	printmsg "Building initrd archive"
-
-	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap sed ncurses shadow util-linux e2fsprogs bzip2 readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux lzo zstd btrfs-progs xfsprogs nano libnl wpa_supplicant curl lzip
-
-	cd $INITRD
-	ln -sf busybox usr/bin/wget
-	rm -rf usr/include
-	find . | cpio -R root:root -H newc -o | xz -9 --check=none > $IMAGE/rootfs.cpio.xz
-
-	cp boot/vmlinuz* $IMAGE/vmlinuz
-}
-
-generate_iso_x86() {
-	set +e
-	printmsg "Building *.iso image"
-	cd $SOURCES
-	curl -C - -O -L https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz
-	tar -xf syslinux-6.03.tar.xz
-
-	cp syslinux-6.03/bios/core/isolinux.bin $IMAGE/isolinux.bin
-	cp syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 $IMAGE/ldlinux.c32
-
-cat << CEOF > $IMAGE/syslinux.cfg
-PROMPT 1
-TIMEOUT 50
-DEFAULT boot
-LABEL boot
-	LINUX vmlinuz
-	APPEND quiet
-	INITRD rootfs.cpio.xz
-CEOF
-
-	mkdir -p $IMAGE/efi/boot
-cat << CEOF > $IMAGE/efi/boot/startup.nsh
-echo -off
-echo januslinux starting...
-\\vmlinuz quiet initrd=\\rootfs.cpio.xz
-CEOF
-
-	xorriso \
-		-as mkisofs \
-		-J -r -o $CWD/januslinux-$RELEASE-$BARCH.iso \
-		-b isolinux.bin \
-		-c boot.cat \
-		-input-charset UTF-8 \
-		-no-emul-boot \
-		-boot-load-size 4 \
-		-boot-info-table \
-		$IMAGE
-
-	isohybrid -u $CWD/januslinux-$RELEASE-$BARCH.iso 2>/dev/null || true
-}
-
-generate_iso_arm() {
-	mkdir -p $IMAGE/efi/boot
-cat << CEOF > $IMAGE/efi/boot/startup.nsh
-echo -off
-echo januslinux starting...
-\\vmlinuz quiet initrd=\\rootfs.cpio.xz
-CEOF
-
-	xorriso \
-		-as mkisofs \
-		-J -r -o $CWD/januslinux-$RELEASE-$BARCH.iso \
-		-input-charset UTF-8 \
-		-no-emul-boot \
-		-boot-load-size 4 \
-		-boot-info-table \
-		$IMAGE
-
-	isohybrid -u $CWD/januslinux-$RELEASE-$BARCH.iso 2>/dev/null || true
-}
-
-generate_iso() {
-	case $BARCH in
-		x86_64*|i686*)
-			generate_iso_x86
-			;;
-		aarch64|armv7h)
-			generate_iso_arm
-			;;
-		*)
-			printmsgerror "Unsupported for $BARCH"
-	esac
-}
-
-OPT="$1"
-JPKG="$2"
-
-case "$OPT" in
+case "$1" in
 	toolchain)
 		check_for_root
 		setup_architecture
 		setup_environment
-		make_environment
+		build_environment
 		build_toolchain
+		cleanup_toolchain
 		;;
 	bootstrap)
 		check_for_root
 		setup_architecture
 		setup_environment
-		make_environment
+		build_environment
 		build_toolchain
+		cleanup_toolchain
 		bootstrap_rootfs
-		clean_packages
+		cleanup_bootstrap
+		make_symlinks
 		;;
 	enter-chroot)
 		check_for_root
 		setup_environment
 		enter_chroot
 		;;
-	stage)
+	enter-proot)
 		check_for_root
 		setup_architecture
 		setup_environment
-		mountall
-		generate_stage_archive
-		umountall
-		;;
-	image)
-		check_for_root
-		setup_architecture
-		setup_environment
-		mountall
-		generate_initrd
-		generate_iso
-		umountall
+		enter_proot
 		;;
 	usage|*)
-		mkusage
+		echo "In development"
 esac
 
 exit 0
-

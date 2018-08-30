@@ -1,0 +1,22 @@
+# Description: IP Routing Utilities
+# URL:         https://git.kernel.org/pub/scm/network/iproute2/iproute2.git
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libelf
+
+name=iproute2
+version=4.18.0
+release=1
+source=(https://www.kernel.org/pub/linux/utils/net/$name/$name-$version.tar.xz
+	0001-make-iproute2-fhs-compliant.patch)
+
+build() {
+	cd $name-$version
+	sed -i '/^TARGETS=/s: arpd : :' misc/Makefile
+	sed -i 's:/usr/local:/usr:' tc/m_ipt.c include/iptables.h
+	sed -i -e 's:=/share:=/usr/share:' \
+		-e 's:-Werror::' Makefile
+	./configure
+	make CCOPTS="-D_GNU_SOURCE $CFLAGS"
+	make DESTDIR=$PKG SBINDIR=/usr/bin install
+	clean-package $PKG
+}

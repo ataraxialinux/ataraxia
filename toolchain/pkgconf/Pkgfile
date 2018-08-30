@@ -1,19 +1,17 @@
-name=pkgconf
-version=1.5.1
+name=host-pkgconf
+version=1.5.3
 release=1
-source=(http://distfiles.dereferenced.org/pkgconf/$name-$version.tar.xz)
-BOOTSTRAP=yes
+source=(http://distfiles.dereferenced.org/pkgconf/pkgconf-$version.tar.xz)
 
 build() {
-	cd $name-$version
-	LDFLAGS="-s -static" \
+	cd pkgconf-$version
+	LDFLAGS="-static" \
 	./configure \
-		--prefix= \
-		--host=$XTARGET \
+		--prefix='' \
 		--with-sysroot=$ROOTFS \
-		--with-pkg-config-dir="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+		--with-pkg-config-dir="$ROOTFS/tools/lib/pkgconfig:$ROOTFS/tools/share/pkgconfig"
 	make
 	make DESTDIR=$PKG install
-	ln -s pkgconf $PKG/bin/pkg-config
-	ln -s pkgconf $PKG/bin/$XTARGET-pkg-config
+	ln -sf pkgconf $PKG/bin/pkg-config
+	ln -sf pkgconf $PKG/bin/$XTARGET-pkg-config
 }
