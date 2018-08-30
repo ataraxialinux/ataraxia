@@ -1,0 +1,29 @@
+# Description: The GNU macro processor
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=wpa_supplicant
+version=2.6
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz
+	wpa_supplicant-2.6-upstream_fixes-2.patch
+	config
+	wpa_supplicant
+	wpa_supplicant.conf)
+
+build() {
+	cd $name-$version
+	patch -Np1 -i $SRC/wpa_supplicant-2.6-upstream_fixes-2.patch
+
+	cd $name
+	cp $SRC/config .config
+	make BINDIR=/usr/bin
+	make BINDIR=/usr/bin DESTDIR=$PKG install
+
+	mkdir -p $PKG/etc/wpa_supplicant/
+	install -m644 $SRC/wpa_supplicant.conf $PKG/etc/wpa_supplicant/
+
+	install -Dm755 $SRC/wpa_supplicant $PKG/etc/sv/wpa_supplicant/run
+
+	clean-package $PKG
+}

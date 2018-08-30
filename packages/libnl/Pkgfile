@@ -1,0 +1,20 @@
+# Description: Library for applications dealing with netlink sockets
+# URL:         https://github.com/thom311/libnl/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=libnl
+version=3.4.0
+release=1
+source=(https://github.com/thom311/libnl/releases/download/libnl${version//./_}/${name}-${version}.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--sbindir=/usr/bin \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}

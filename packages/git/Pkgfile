@@ -1,0 +1,32 @@
+# Description: A fast distributed version control system
+# URL:         https://git-scm.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl expat pcre2
+
+name=git
+version=2.18.0
+release=1
+source=(https://www.kernel.org/pub/software/scm/$name/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	make prefix=/usr gitexecdir=/usr/lib/git \
+		NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
+		CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
+		NO_CROSS_DIRECTORY_HARDLINKS=1 NO_REGEX="NeedsStartEnd" \
+		MAN_BOLD_LITERAL=1 \
+		NO_TCLTK=1 \
+		NO_PYTHON=1 \
+		NO_GETTEXT=1 \
+		all
+	make prefix=/usr gitexecdir=/usr/lib/git \
+		NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
+		CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
+		NO_CROSS_DIRECTORY_HARDLINKS=1 NO_REGEX="NeedsStartEnd" \
+		MAN_BOLD_LITERAL=1 \
+		NO_TCLTK=1 \
+		NO_PYTHON=1 \
+		NO_GETTEXT=1 \
+		DESTDIR=$PKG install
+	clean-package $PKG
+}
