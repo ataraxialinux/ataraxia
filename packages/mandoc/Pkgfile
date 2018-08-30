@@ -1,0 +1,26 @@
+# Description: A suite of tools compiling mdoc from the OpenBSD project
+# URL:         http://mdocml.bsd.lv/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=mandoc
+version=1.14.4
+release=1
+source=(https://mandoc.bsd.lv/snapshots/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+cat > configure.local << "EOF"
+CFLAGS="$CFLAGS"
+LDFLAGS="$LDFLAGS"
+MANPATH_DEFAULT='/usr/local/share/man:/usr/share/man'
+PREFIX='/usr'
+SBINDIR='/usr/bin'
+MANDIR='/usr/share/man'
+BUILD_CATMAN=1
+EOF
+	./configure
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}
