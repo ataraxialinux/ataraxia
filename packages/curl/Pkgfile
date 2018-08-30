@@ -1,0 +1,26 @@
+# Description: An URL retrieval utility and library
+# URL:         https://curl.haxx.se
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  openssl ca-certs
+
+name=curl
+version=7.61.0
+release=1
+source=(https://curl.haxx.se/download/$name-$version.tar.xz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--with-ca-bundle=/etc/ssl/ca-bundle.crt \
+		--with-random=/dev/urandom \
+		--enable-ipv6 \
+		--enable-threaded-resolver \
+		--enable-versioned-symbols \
+		--disable-manual \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+	clean-package $PKG
+}

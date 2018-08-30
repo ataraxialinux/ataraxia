@@ -1,0 +1,28 @@
+# Description: A daemon for delivering ACPI power management events with netlink support
+# URL:         https://sourceforge.net/projects/acpid2/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=acpid
+version=2.0.30
+release=1
+source=(https://downloads.sourceforge.net/sourceforge/acpid2/$name-$version.tar.xz
+	acpid
+	anything
+	handler.sh)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	install -Dm644 $SRC/anything $PKG/etc/acpi/events/anything
+	install -Dm755 $SRC/handler.sh $PKG/etc/acpi/handler.sh
+
+	install -Dm755 $SRC/acpid $PKG/etc/sv/acpid/run
+
+	clean-package $PKG
+}

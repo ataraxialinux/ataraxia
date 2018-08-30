@@ -1,0 +1,25 @@
+# Description: Vi Improved, a highly configurable, improved version of the vi text editor
+# URL:         https://www.vim.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib acl ncurses pcre
+
+name=vim
+version=8.1.0338
+release=1
+source=(https://github.com/vim/vim/archive/v$version.tar.gz)
+
+build() {
+	cd $name-$version
+	echo '#define SYS_VIMRC_FILE "/etc/vimrc"' >> src/feature.h
+	./configure \
+		--prefix=/usr \
+		--with-tlib=ncursesw \
+		--enable-multibyte \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	ln -sf vim $PKG/usr/bin/vi
+
+	clean-package $PKG
+}
