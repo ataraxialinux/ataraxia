@@ -1,0 +1,47 @@
+# Description: The Tcl scripting language
+# URL:         http://tcl.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=tcl
+version=8.6.8
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz)
+
+build() {
+	cd tcl$version/unix
+	case $BARCH in
+		x86_64) EXTRACONF="--enable-64bit";;
+	esac
+
+	./configure \
+		--prefix=/usr \
+		--enable-threads \
+		--build=$(cc -dumpmachine) $EXTRACONF
+	make
+	make INSTALL_ROOT=$PKG install install-private-headers
+
+	ln -sf tclsh${pkgver%.*} $PKG/usr/bin/tclsh
+	ln -sf libtcl${pkgver%.*}.so $PKG/usr/lib/libtcl.so
+
+	install -Dm644 tcl.m4 -t $PKG/usr/share/aclocal
+
+	sed -e "s#${srcdir}/tcl${pkgver}/unix#/usr/lib#" \
+		-e "s#${srcdir}/tcl${pkgver}#/usr/include#" \
+		-i $PKG/usr/lib/tclConfig.sh
+
+	tdbcver=tdbc1.0.6
+	sed -e "s#${srcdir}/tcl${pkgver}/unix/pkgs/$tdbcver#/usr/lib/$tdbcver#" \
+		-e "s#${srcdir}/tcl${pkgver}/pkgs/$tdbcver/generic#/usr/include#" \
+		-e "s#${srcdir}/tcl${pkgver}/pkgs/$tdbcver/library#/usr/lib/tcl${pkgver%.*}#" \
+		-e "s#${srcdir}/tcl${pkgver}/pkgs/$tdbcver#/usr/include#" \
+		-i $PKG/usr/lib/$tdbcver/tdbcConfig.sh
+
+	itclver=itcl4.1.1
+	sed -e "s#${srcdir}/tcl${pkgver}/unix/pkgs/$itclver#/usr/lib/$itclver#" \
+		-e "s#${srcdir}/tcl${pkgver}/pkgs/$itclver/generic#/usr/include#" \
+		-e "s#${srcdir}/tcl${pkgver}/pkgs/$itclver#/usr/include#" \
+		-i $PKG/usr/lib/$itclver/itclConfig.sh
+
+	clean-package $PKG
+}

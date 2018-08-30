@@ -1,0 +1,45 @@
+# Description: The GNU GRand Unified Bootloader
+# URL:         http://www.gnu.org/software/grub
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xz
+
+name=grub
+version=2.02
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz
+	0008-Fix-packed-not-aligned-error-on-GCC-8.patch
+	100-grub_setup_root.patch
+	101-disable-gettext-check-macro-version.patch
+	200-fix-gets-removal.patch
+	300-CVE-2015-8370.patch
+	default)
+
+build() {
+	cd $name-$version
+	patch -Np1 -i $SRC/0008-Fix-packed-not-aligned-error-on-GCC-8.patch
+	patch -Np1 -i $SRC/100-grub_setup_root.patch
+	patch -Np1 -i $SRC/101-disable-gettext-check-macro-version.patch
+	patch -Np1 -i $SRC/200-fix-gets-removal.patch
+	patch -Np1 -i $SRC/300-CVE-2015-8370.patch
+
+	sh ./autogen.sh
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-nls \
+		--disable-werror \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG \
+		bashcompletiondir=/usr/share/bash-completion/completions \
+		install-strip
+
+	mkdir -p $PKG/boot/grub/ $PKG/etc/default
+
+	cp -p $SRC/default $PKG/etc/default/grub
+	chmod 644 $PKG/etc/default/grub
+
+	clean-package $PKG
+
+	mkdir -p $PKG/usr/share/locale
+}

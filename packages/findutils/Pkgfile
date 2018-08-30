@@ -1,0 +1,24 @@
+# Description: The GNU utilities to locate files
+# URL:         http://www.gnu.org/software/findutils
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=findutils
+version=4.6.0
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--disable-nls \
+		--build=$(cc -dumpmachine)
+	make
+	make DESTDIR=$PKG install
+
+	rm -rf $PKG/usr/bin/{updatedb,locate}
+	rm -rf $PKG/usr/share/man/man1/{updatedb.1,locate.1}
+	rm -rf $PKG/usr/{libexec,var,share/{info,man/man5}}
+
+	clean-package $PKG
+}

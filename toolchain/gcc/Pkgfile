@@ -1,54 +1,67 @@
-name=gcc
-version=7.3.0
+name=host-gcc
+version=8.2.0
 gmpver=6.1.2
 mpfrver=4.0.1
 mpcver=1.1.0
-islver=0.19
+islver=0.20
 release=1
-source=(http://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
-	http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
+source=(http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz
+	http://ftp.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
 	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
-	http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
-	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
-BOOTSTRAP=yes
+	https://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz
+	0001-ssp_nonshared.patch
+	0002-posix_memalign.patch
+	0003-libatomic-test-fix.patch
+	0004-libgomp-test-fix.patch
+	0005-libitm-test-fix.patch
+	0006-libvtv-test-fix.patch
+	0007-j2.patch
+	0008-s390x-muslldso.patch
+	0009-microblaze-pr65649.patch
+	0010-ldbl128-config.patch
+	0011-m68k.patch
+	0012-static-pie.patch)
 
 build() {
 	cd gcc-$version
+	patch -Np1 -i $SRC/0001-ssp_nonshared.patch
+	patch -Np1 -i $SRC/0002-posix_memalign.patch
+	patch -Np1 -i $SRC/0003-libatomic-test-fix.patch
+	patch -Np1 -i $SRC/0004-libgomp-test-fix.patch
+	patch -Np1 -i $SRC/0005-libitm-test-fix.patch
+	patch -Np1 -i $SRC/0006-libvtv-test-fix.patch
+	patch -Np1 -i $SRC/0007-j2.patch
+	patch -Np1 -i $SRC/0008-s390x-muslldso.patch
+	patch -Np1 -i $SRC/0009-microblaze-pr65649.patch
+	patch -Np1 -i $SRC/0010-ldbl128-config.patch
+	patch -Np1 -i $SRC/0011-m68k.patch
+	patch -Np1 -i $SRC/0012-static-pie.patch
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
+	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+	echo -en '\n#undef STANDARD_STARTFILE_PREFIX_1\n#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"\n' >> gcc/config/linux.h
+	echo -en '\n#undef STANDARD_STARTFILE_PREFIX_2\n#define STANDARD_STARTFILE_PREFIX_2 ""\n' >> gcc/config/linux.h
 	mv ../gmp-$gmpver gmp
 	mv ../mpfr-$mpfrver mpfr
 	mv ../mpc-$mpcver mpc
 	mv ../isl-$islver isl
-	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
-	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
-	patch -Np1 -i $KEEP/gcc/0003-cilkrts.patch
-	patch -Np1 -i $KEEP/gcc/0004-libatomic-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0005-libgomp-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0006-libitm-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0007-libvtv-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0008-Revert-PR-driver-81523-Make-static-override-pie.patch
-	patch -Np1 -i $KEEP/gcc/0009-Revert-RS6000-linux-startfile-endfile.patch
-	patch -Np1 -i $KEEP/gcc/0010-static-pie-support.patch
-	patch -Np1 -i $KEEP/gcc/0011-j2.patch
-	patch -Np1 -i $KEEP/gcc/0012-s390x-muslldso.patch
-	patch -Np1 -i $KEEP/gcc/0013-microblaze-pr65649.patch
-	patch -Np1 -i $KEEP/gcc/0014-ldbl128-config.patch
-	patch -Np1 -i $KEEP/gcc/0015-m68k.patch
-	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
-	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
-	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
 	mkdir build
 	cd build
 	../configure $GCCOPTS \
-		--prefix= \
+		--prefix='' \
 		--build=$XHOST \
 		--host=$XHOST \
 		--target=$XTARGET \
-		--with-pkgversion="januslinux edition" \
+		--with-bugurl=https://github.com/JanusLinux/janus/issues \
 		--with-sysroot=$ROOTFS \
+		--with-local-prefix=$ROOTFS/tools \
+		--with-native-system-header-dir=/tools/include \
 		--enable-__cxa_atexit \
 		--enable-checking=release \
-		--enable-languages=c,c++,lto \
+		--enable-languages=c,c++ \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -61,7 +74,8 @@ build() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
-		--disable-werror
+		--disable-werror \
+		libat_cv_have_ifunc=no
 	make
 	make DESTDIR=$PKG install
 }
