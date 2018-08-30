@@ -1,48 +1,79 @@
 # Description: The GNU Compiler Collection
 # URL:         http://gcc.gnu.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  binutils gmp mpfr mpc isl
+# Depends on:  zlib libelf gmp mpfr mpc binutils
 
 name=gcc
-version=7.3.0
-release=2
-source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz)
+version=8.2.0
+islver=0.20
+release=1
+source=(http://ftp.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz
+	0001-ssp_nonshared.patch
+	0002-posix_memalign.patch
+	0003-libatomic-test-fix.patch
+	0004-libgomp-test-fix.patch
+	0005-libitm-test-fix.patch
+	0006-libvtv-test-fix.patch
+	0007-j2.patch
+	0008-s390x-muslldso.patch
+	0009-microblaze-pr65649.patch
+	0010-ldbl128-config.patch
+	0011-m68k.patch
+	0012-static-pie.patch
+	c89
+	c99)
 
 build() {
+	LANGS="c,c++"
+
+	if [ "$OBJC" = "yes" ]; then
+		LANGS="$LANGS,objc"
+	fi
+
+	if [ "$OBJCXX" = "yes" ]; then
+		LANGS="$LANGS,obj-c++"
+	fi
+
+	if [ "$FORTRAN" = "yes" ]; then
+		LANGS="$LANGS,fortran"
+	fi
+
 	cd $name-$version
-	patch -Np1 -i $KEEP/gcc/0001-ssp_nonshared.patch
-	patch -Np1 -i $KEEP/gcc/0002-posix_memalign.patch
-	patch -Np1 -i $KEEP/gcc/0003-cilkrts.patch
-	patch -Np1 -i $KEEP/gcc/0004-libatomic-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0005-libgomp-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0006-libitm-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0007-libvtv-test-fix.patch
-	patch -Np1 -i $KEEP/gcc/0008-Revert-PR-driver-81523-Make-static-override-pie.patch
-	patch -Np1 -i $KEEP/gcc/0009-Revert-RS6000-linux-startfile-endfile.patch
-	patch -Np1 -i $KEEP/gcc/0010-static-pie-support.patch
-	patch -Np1 -i $KEEP/gcc/0011-j2.patch
-	patch -Np1 -i $KEEP/gcc/0012-s390x-muslldso.patch
-	patch -Np1 -i $KEEP/gcc/0013-microblaze-pr65649.patch
-	patch -Np1 -i $KEEP/gcc/0014-ldbl128-config.patch
-	patch -Np1 -i $KEEP/gcc/0015-m68k.patch
+	patch -Np1 -i $SRC/0001-ssp_nonshared.patch
+	patch -Np1 -i $SRC/0002-posix_memalign.patch
+	patch -Np1 -i $SRC/0003-libatomic-test-fix.patch
+	patch -Np1 -i $SRC/0004-libgomp-test-fix.patch
+	patch -Np1 -i $SRC/0005-libitm-test-fix.patch
+	patch -Np1 -i $SRC/0006-libvtv-test-fix.patch
+	patch -Np1 -i $SRC/0007-j2.patch
+	patch -Np1 -i $SRC/0008-s390x-muslldso.patch
+	patch -Np1 -i $SRC/0009-microblaze-pr65649.patch
+	patch -Np1 -i $SRC/0010-ldbl128-config.patch
+	patch -Np1 -i $SRC/0011-m68k.patch
+	patch -Np1 -i $SRC/0012-static-pie.patch
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-	patch -Np1 -i $KEEP/gcc/gcc-pure64.patch
-	patch -Np1 -i $KEEP/gcc/gcc-pure64-mips.patch
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i 's/lib64/lib/' gcc/config/i386/linux64.h
+	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" {libiberty,gcc}/configure
+	mv ../isl-$islver isl
 	mkdir build
 	cd build
-	../configure $TOOLFLAGS $GCCOPTS \
+	../configure $GCCOPTS \
+		--build=$(cc -dumpmachine) \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
-		--with-pkgversion="januslinux edition" \
+		--with-bugurl=https://github.com/JanusLinux/janus/issues \
+		--with-isl \
 		--with-system-zlib \
 		--enable-__cxa_atexit \
 		--enable-checking=release \
-		--enable-default-pie \
+		--enable-languages=$LANGS \
 		--enable-default-ssp \
+		--enable-default-pie \
 		--enable-install-libiberty \
-		--enable-languages=c,c++,lto \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -56,18 +87,18 @@ build() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-symvers \
-		--disable-werror
+		--disable-werror \
+		libat_cv_have_ifunc=no
 	make
 	make DESTDIR=$PKG install-strip
 
-	ln -s gcc $PKG/usr/bin/cc
+	ln -sf gcc $PKG/usr/bin/cc
 
-	echo "Stripping $name package..."
-	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
-	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
-	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
-	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
-	cd $PKG
-	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
-	rm -rf {,usr/}lib/charset.alias
+	install -Dm755 $SRC/c89 $PKG/usr/bin/c89
+	install -Dm755 $SRC/c99 $PKG/usr/bin/c99
+
+	install -dm755 $PKG/usr/lib/bfd-plugins
+	ln -sf /usr/lib/gcc/$(cc -dumpmachine)/${version%%+*}/liblto_plugin.so $PKG/usr/lib/bfd-plugins/liblto_plugin.so
+
+	clean-package $PKG
 }

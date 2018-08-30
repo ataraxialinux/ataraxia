@@ -1,16 +1,14 @@
-# Description: Filesystem layout and configuration files
+# Description: Filesystem layout
 # URL:         https://januslinux.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=filesystem
-version=20180816
+version=2018.08
 release=1
-BOOTSTRAP=yes
 
 build() {
 	cd $PKG
-
-	for d in boot dev etc/{skel,service,profile.d} home mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d} home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -20,17 +18,9 @@ build() {
 	install -d -m1777 tmp
 	install -d -m555 -g 11 srv/ftp
 
-	ln -s /proc/mounts $PKG/etc/mtab
+	ln -s ../proc/self/mounts etc/mtab
 
-	mkdir -p \
-		$PKG/etc/network/if-down.d \
-		$PKG/etc/network/if-post-down.d \
-		$PKG/etc/network/if-post-up.d \
-		$PKG/etc/network/if-pre-down.d \
-		$PKG/etc/network/if-pre-up.d \
-		$PKG/etc/network/if-up.d
-
-	for d in cache/{sources,packages} local opt log/old lib/misc empty service; do
+	for d in cache local opt log/old lib/misc empty; do
 		install -d -m755 var/$d
 	done
 
@@ -41,7 +31,7 @@ build() {
 	ln -s ../run var/run
 	ln -s ../run/lock var/lock
 
-	for d in bin include lib/{modules,firmware} share/misc src; do
+	for d in bin include lib/{modules,firmware} share/misc; do
 		install -d -m755 usr/$d
 	done
 
@@ -51,12 +41,7 @@ build() {
 	ln -s usr/bin sbin
 	ln -s bin usr/sbin
 
-	for d in bin etc games include lib man sbin share src; do
+	for d in bin etc games include lib man sbin share; do
 		install -d -m755 usr/local/$d
 	done
-
-	cp -a $KEEP/etc/* etc/
-	chmod 0600 etc/shadow
-
-	cp -a $KEEP/{genfstab,runsvdir-start,zzz,recovinit} usr/bin
 }
