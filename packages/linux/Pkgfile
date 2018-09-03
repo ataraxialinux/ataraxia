@@ -22,14 +22,14 @@ build() {
 			exit 1
 	esac
 
-	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE syncconfig
+	yes '' | make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE syncconfig
 	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE
 	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE INSTALL_MOD_PATH=$PKG/usr modules_install
 
 	mkdir -p $PKG/boot
 	case $BARCH in
 		x86_64)
-			cp arch/x86/boot/bzImage $PKG/boot/vmlinuz
+			cp arch/x86/boot/bzImage $PKG/boot/vmlinuz-$version
 			;;
 		*)
 			echo "Unsupported"
