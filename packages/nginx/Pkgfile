@@ -1,0 +1,58 @@
+# Description: Lightweight HTTP server and IMAP/POP3 proxy server
+# URL:         https://nginx.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl pcre
+
+name=nginx
+version=1.15.1
+release=2
+source=(https://nginx.org/download/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--sbin-path=/usr/bin/nginx \
+		--conf-path=/etc/nginx/nginx.conf \
+		--error-log-path=/var/log/nginx/error.log \
+		--http-client-body-temp-path=/var/spool/nginx/body \
+		--http-fastcgi-temp-path=/var/spool/nginx/fastcgi \
+		--http-log-path=/var/log/nginx/access.log \
+		--http-proxy-temp-path=/var/spool/nginx/proxy \
+		--http-scgi-temp-path=/var/spool/nginx/scgi \
+		--http-uwsgi-temp-path=/var/spool/nginx/uwsgi \
+		--lock-path=/var/lock/nginx.lock \
+		--pid-path=/var/run/nginx.pid \
+		--with-threads
+	make
+	make DESTDIR=$PKG install
+
+	install -d $PKG/usr/share/nginx
+	mv $PKG/usr/html $PKG/usr/share/nginx/
+
+	install -d $PKG/etc/nginx/conf.d
+	install -d $PKG/etc/nginx/sites-available
+	install -d $PKG/etc/nginx/sites-enabled
+	install -m 0644 $KEEP/nginx/99-default $PKG/etc/nginx/sites-available/
+	install -m 0644 $KEEP/nginx/nginx.conf $PKG/etc/nginx/
+
+	find $PKG/etc -name "*.default" -delete
+	rm -rf $PKG/var
+	rm -rf $PKG/proc
+
+	install -Dm0755 $KEEP/services/nginx $PKG/etc/service/nginx/run
+	install -Dm0755 $KEEP/services/nginx-log $PKG/etc/service/nginx/log/run
+
+	mkdir -p $PKG/var/log/nginx
+	
+	install -d $PKG/var/spool/nginx/body
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}

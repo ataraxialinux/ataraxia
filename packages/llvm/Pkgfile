@@ -1,0 +1,58 @@
+# Description: Next generation of the python high-level scripting language
+# URL:         http://www.python.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib binutils cmake python2 libffi
+
+name=llvm
+version=6.0.1
+release=1
+source=(http://releases.llvm.org/$version/llvm-$version.src.tar.xz
+	http://releases.llvm.org/$version/compiler-rt-$version.src.tar.xz)
+
+build() {
+	cd llvm-$version.src
+	tar -xf $PKGMK_SOURCE_DIR/compiler-rt-$version.src.tar.xz -C projects
+	mv projects/compiler-rt-$version.src projects/compiler-rt
+
+	mkdir build
+	cd build
+	CC=$CC CXX=$CXX \
+	cmake \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_VERBOSE_MAKEFILE=NO \
+		-DLLVM_BINUTILS_INCDIR=/usr/include \
+		-DLLVM_BUILD_DOCS=OFF \
+		-DLLVM_BUILD_EXAMPLES=OFF \
+		-DLLVM_BUILD_LLVM_DYLIB=ON \
+		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_DYLIB_EXPORT_ALL=ON \
+		-DLLVM_ENABLE_ASSERTIONS=OFF \
+		-DLLVM_ENABLE_CXX1Y=ON \
+		-DLLVM_ENABLE_FFI=ON \
+		-DLLVM_ENABLE_LIBCXX=OFF \
+		-DLLVM_ENABLE_PIC=ON \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_ENABLE_SPHINX=OFF \
+		-DLLVM_ENABLE_TERMINFO=ON \
+		-DLLVM_ENABLE_ZLIB=ON \
+		-DLLVM_INCLUDE_EXAMPLES=OFF \
+		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-DLLVM_CCACHE_BUILD=OFF \
+		-DLLVM_TARGETS_TO_BUILD="host;AMDGPU" \
+		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
+		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+		-DCOMPILER_RT_BUILD_XRAY=OFF \
+		-Wno-dev ..
+	make
+	make DESTDIR=$PKG install
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
