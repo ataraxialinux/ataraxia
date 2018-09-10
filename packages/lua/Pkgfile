@@ -1,0 +1,56 @@
+# Description: Powerful lightweight programming language designed for extending applications
+# URL:         http://www.lua.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline
+
+name=lua
+version=5.3.4
+release=1
+source=(http://www.lua.org/ftp/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+
+cat > lua.pc << "EOF"
+V=5.3
+R=5.3.4
+
+prefix=/usr
+INSTALL_BIN=${prefix}/bin
+INSTALL_INC=${prefix}/include
+INSTALL_LIB=${prefix}/lib
+INSTALL_MAN=${prefix}/share/man/man1
+INSTALL_LMOD=${prefix}/share/lua/${V}
+INSTALL_CMOD=${prefix}/lib/lua/${V}
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: Lua
+Description: An Extensible Extension Language
+Version: ${R}
+Requires:
+Libs: -L${libdir} -llua -lm -ldl
+Cflags: -I${includedir}
+EOF
+
+	sed -i '/#define LUA_ROOT/s:/usr/local/:/usr/:' src/luaconf.h
+
+	make MYCFLAGS="$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$LDFLAGS" linux
+	make \
+		INSTALL_DATA="cp -d" \
+		INSTALL_TOP=$PKG/usr \
+		INSTALL_MAN=$PKG/usr/share/man/man1 \
+		install
+
+	install -m644 -D lua.pc $PKG/usr/lib/pkgconfig/lua.pc
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
