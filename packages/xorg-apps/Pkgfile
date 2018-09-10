@@ -1,0 +1,41 @@
+# Description: X.org applicantions
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libpng xcb-util xbitmaps mesa libxfont
+
+name=xorg-apps
+version=2018.07.21
+release=2
+
+build() {
+	export PATH="$PATH:$PKG/usr/bin"
+
+	for a in iceauth-1.0.8 luit-1.1.1 sessreg-1.1.1 setxkbmap-1.3.1 smproxy-1.0.6 x11perf-1.6.0 xauth-1.0.10 xbacklight-1.2.2 xcmsdb-1.0.5 xdpyinfo-1.3.2 xdriinfo-1.0.6 xev-1.2.2 xgamma-1.0.6 xhost-1.0.7 xinput-1.6.2 xkbevd-1.1.4 xkbutils-1.0.4 xkill-1.0.5 xlsatoms-1.1.2 xlsclients-1.1.4 xmessage-1.0.5 xmodmap-1.0.9 xpr-1.0.5 xprop-1.2.3 xrandr-1.5.0 xrdb-1.1.1 xrefresh-1.0.6 xset-1.2.4 xsetroot-1.1.2 xvinfo-1.1.3 xwd-1.0.7 xwininfo-1.1.4 xwud-1.0.5 bdftopcf-1.1; do
+		busybox wget -c https://www.x.org/pub/individual/app/$a.tar.bz2
+		tar -xf $a.tar.bz2
+		cd $a
+		case $a in
+			sessreg*)
+				patch -Np1 -i $KEEP/xorg-apps/missing_path_wtmpx.patch
+				;;
+		esac
+		./configure \
+			--prefix=/usr \
+			--sysconfdir=/etc \
+			--localstatedir=/var
+		make
+		make DESTDIR=$PKG install
+		cd ..
+	done
+
+	rm -rf $PKG/var
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}

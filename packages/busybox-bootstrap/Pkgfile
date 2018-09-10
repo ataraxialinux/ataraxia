@@ -1,0 +1,54 @@
+name=busybox-bootstrap
+version=1.29.2
+release=1
+source=(http://busybox.net/downloads/busybox-$version.tar.bz2)
+BOOTSTRAP=yes
+
+build() {
+	case $BARCH in
+		x86_64*)
+			export XKARCH="x86_64"
+			;;
+		i686*)
+			export XKARCH="i386"
+			;;
+		aarch64)
+			export XKARCH="arm64"
+			;;
+		armv7h|armv6h)
+			export XKARCH="arm"
+			;;
+		mips*)
+			export XKARCH="mips"
+			;;
+		*)
+			echo "BARCH variable isn't set!"
+			exit 1
+	esac
+	cd busybox-$version
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE defconfig
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" CONFIG_STATIC=y
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" busybox.links
+
+	install -D busybox $PKG/busybox/bin/busybox
+
+	mkdir -p $PKG/usr/bin
+	ln -s /busybox/bin/busybox $PKG/usr/bin/sh
+
+	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox $PKG/busybox/bin/$applet || true; done
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}

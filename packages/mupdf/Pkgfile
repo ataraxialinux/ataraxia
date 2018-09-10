@@ -1,0 +1,28 @@
+# Description: A lightweight PDF and XPS viewer
+# URL:         https://www.mupdf.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib curl glu
+
+name=mupdf
+version=1.13.0
+release=1
+source=(http://www.mupdf.com/downloads/archive/mupdf-$version-source.tar.gz)
+
+build() {
+	cd mupdf-$version-source
+	rm -rf thirdparty/zlib
+	rm -rf thirdparty/curl
+	make build=release
+	make build=release prefix=$PKG/usr install
+
+	ln -s $name-x11 $PKG/usr/bin/$name
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
