@@ -35,11 +35,13 @@ build() {
 		--with-pkgversion="januslinux edition" \
 		--with-system-zlib \
 		--enable-__cxa_atexit \
+		--enable-bootstrap \
 		--enable-checking=release \
+		--enable-clocale=generic \
 		--enable-default-pie \
 		--enable-default-ssp \
-		--enable-install-libiberty \
 		--enable-languages=c,c++,lto \
+		--enable-install-libiberty \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -57,7 +59,15 @@ build() {
 	make
 	make DESTDIR=$PKG install-strip
 
-	ln -s gcc $PKG/usr/bin/cc
+	ln -sf gcc $PKG/usr/bin/cc
+
+	ln -sf $PKG/usr/bin/cpp /usr/lib
+
+	install -dm755 /usr/lib/bfd-plugins
+	ln -sf /usr/lib/gcc/$(cc -dumpmachine)/$version/liblto_plugin.so $PKG/usr/lib/bfd-plugins/
+
+	mkdir -p $PKG/usr/share/gdb/auto-load/usr/lib
+	mv $PKG/usr/lib/*gdb.py $PKG/usr/share/gdb/auto-load/usr/lib
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
