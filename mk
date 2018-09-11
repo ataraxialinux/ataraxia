@@ -286,15 +286,36 @@ generate_iso_x86() {
 
 	cp syslinux-6.03/bios/core/isolinux.bin $IMAGE/isolinux.bin
 	cp syslinux-6.03/bios/com32/elflink/ldlinux/ldlinux.c32 $IMAGE/ldlinux.c32
+	cp syslinux-6.03/bios/com32/libutil/libutil.c32 $IMAGE/libutil.c32
+	cp syslinux-6.03/bios/com32/menu/menu.c32 $IMAGE/menu.c32
 
 cat << CEOF > $IMAGE/syslinux.cfg
-PROMPT 1
-TIMEOUT 50
-DEFAULT boot
-LABEL boot
+UI menu.c32
+PROMPT 0
+
+TIMEOUT 10
+DEFAULT default
+
+MENU TITLE januslinux boot menu:
+MENU MARGIN 10 
+MENU VSHIFT 5
+MENU ROWS 5
+MENU TABMSGROW 14
+MENU TABMSG Press ENTER to boot, TAB to edit, or press F1 for more information.
+MENU HELPMSGROW 15
+MENU HELPMSGENDROW -3
+MENU AUTOBOOT BIOS default device boot in # second{,s}...
+
+LABEL default
+        MENU LABEL januslinux
+	TEXT HELP
+	Fast and compact Linux distribution which uses musl libc.
+	Coded and built by januslinux Inc. 2016-2018
+	ENDTEXT
 	LINUX vmlinuz
-	APPEND quiet
 	INITRD rootfs.cpio.xz
+	APPEND quiet
+
 CEOF
 
 	mkdir -p $IMAGE/efi/boot
@@ -315,7 +336,7 @@ CEOF
 		-boot-info-table \
 		$IMAGE
 
-	isohybrid -u $CWD/januslinux-$RELEASE-$BARCH.iso 2>/dev/null || true
+	isohybrid $CWD/januslinux-$RELEASE-$BARCH.iso
 }
 
 generate_iso_arm() {
