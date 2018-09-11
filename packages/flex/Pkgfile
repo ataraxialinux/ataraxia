@@ -5,7 +5,7 @@
 
 name=flex
 version=2.6.4
-release=1
+release=2
 source=(http://github.com/westes/flex/releases/download/v$version/$name-$version.tar.gz)
 
 build() {
@@ -15,6 +15,8 @@ build() {
 		--disable-nls
 	make
 	make DESTDIR=$PKG install-strip
+
+	ln -sf flex $PKG/usr/bin/lex
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
