@@ -2,11 +2,7 @@
 
 set -e
 
-if [ "$SNAPSHOT" = "1" ]; then
-	export RELEASE="$(date +%y%m%d)"
-else
-	export RELEASE="1.0-beta5"
-fi
+export RELEASE="$(date +%y%m%d)"
 
 printmsg() {
 	local msg=$(echo $1 | tr -s / /)
