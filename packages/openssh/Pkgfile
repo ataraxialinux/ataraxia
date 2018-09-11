@@ -4,15 +4,12 @@
 # Depends on:  zlib libressl
 
 name=openssh
-version=7.7p1
+version=7.8p1
 release=1
 source=(https://fastly.cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
-
-	export LD="$CC"
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc/ssh \
@@ -24,8 +21,7 @@ build() {
 		--with-pid-dir=/run \
 		--with-privsep-path=/var/empty \
 		--with-privsep-user=nobody \
-		--with-ssl-engine \
-		--disable-strip
+		--with-ssl-engine
 	make
 	make DESTDIR=$PKG install
 
