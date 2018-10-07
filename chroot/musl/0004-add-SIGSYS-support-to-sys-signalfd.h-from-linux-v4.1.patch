@@ -1,0 +1,33 @@
+From 0d51831d4dbe1fc3de1511fb6c15b2e6ea6f0e8f Mon Sep 17 00:00:00 2001
+From: Szabolcs Nagy <nsz@port70.net>
+Date: Wed, 22 Aug 2018 16:39:20 +0000
+Subject: [PATCH 4/8] add SIGSYS support to sys/signalfd.h from linux v4.18
+
+new in linux commit 76b7f670730e87974f71df9f6129811e2769666e
+
+in struct signalfd_siginfo the pad member is changed to __pad to keep
+the namespace clean, it's not part of the public api.
+---
+ include/sys/signalfd.h | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/include/sys/signalfd.h b/include/sys/signalfd.h
+index 55431b91..e881e2cf 100644
+--- a/include/sys/signalfd.h
++++ b/include/sys/signalfd.h
+@@ -35,7 +35,11 @@ struct signalfd_siginfo {
+ 	uint64_t  ssi_stime;
+ 	uint64_t  ssi_addr;
+ 	uint16_t  ssi_addr_lsb;
+-	uint8_t   pad[128-12*4-4*8-2];
++	uint16_t  __pad2;
++	int32_t   ssi_syscall;
++	uint64_t  ssi_call_addr;
++	uint32_t  ssi_arch;
++	uint8_t   __pad[128-14*4-5*8-2*2];
+ };
+ 
+ #ifdef __cplusplus
+-- 
+2.17.1
+
