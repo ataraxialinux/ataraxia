@@ -1,0 +1,76 @@
+pkgname=host-gcc
+pkgver=8+20181005
+gmpver=6.1.2
+mpfrver=4.0.1
+mpcver=1.1.0
+islver=0.20
+pkgrel=1
+arch=('any')
+source=(http://mirror.linux-ia64.org/gnu/gcc/snapshots/gcc-${pkgver/+/-}/gcc-${pkgver/+/-}.tar.xz
+	http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz
+	http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz
+	http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz
+	http://isl.gforge.inria.fr/isl-$islver.tar.xz)
+
+prepare() {
+	cd gcc-${pkgver/+/-}
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i '/lp64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+
+	for file in gcc/config/linux.h gcc/config/i386/linux.h gcc/config/i386/linux64.h \
+			gcc/config/aarch64/aarch64-linux.h; do
+		cp -u $file{,.orig}
+		sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+			-e 's@/usr@/tools@g' $file.orig > $file
+		echo '
+	#undef STANDARD_STARTFILE_PREFIX_1
+	#undef STANDARD_STARTFILE_PREFIX_2
+	#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
+	#define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
+		touch $file.orig
+	done
+
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
+
+	mkdir build
+}
+
+build() {
+	cd gcc-${pkgver/+/-}
+	cd build
+	../configure \
+		--prefix='' \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET $GCCOPTS \
+		--with-pkgversion='januslinux' \
+		--with-bugurl='https://github.com/januslinux/janus/issues' \
+		--with-sysroot=$ROOTFS \
+		--with-local-prefix=$ROOTFS/tools \
+		--with-native-system-header-dir=/tools/include \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-languages=c,c++ \
+		--enable-shared \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers
+	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
+}
+
+package() {
+	cd gcc-${pkgver/+/-}
+	cd build
+	make -j1 DESTDIR=$pkgdir install
+}
