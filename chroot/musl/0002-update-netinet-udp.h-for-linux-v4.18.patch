@@ -1,0 +1,30 @@
+From 71b5cb373895464a7a311479de361c73d29a05a5 Mon Sep 17 00:00:00 2001
+From: Szabolcs Nagy <nsz@port70.net>
+Date: Tue, 21 Aug 2018 22:34:08 +0000
+Subject: [PATCH 2/8] update netinet/udp.h for linux v4.18
+
+add UDP_NO_CHECK6_* to restrict zero UDP6 checksums, new in linux commit
+1c19448c9ba6545b80ded18488a64a7f3d8e6998 (pre-v4.18 change, was missed)
+add UDP_SEGMENT to support generic segmentation offload for udp datagrams,
+bec1f6f697362c5bc635dacd7ac8499d0a10a4e7 (new in v4.18)
+---
+ include/netinet/udp.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/netinet/udp.h b/include/netinet/udp.h
+index 030e8fb2..993c3478 100644
+--- a/include/netinet/udp.h
++++ b/include/netinet/udp.h
+@@ -24,6 +24,9 @@ struct udphdr {
+ 
+ #define UDP_CORK	1
+ #define UDP_ENCAP	100
++#define UDP_NO_CHECK6_TX 101
++#define UDP_NO_CHECK6_RX 102
++#define UDP_SEGMENT	103
+ 
+ #define UDP_ENCAP_ESPINUDP_NON_IKE 1
+ #define UDP_ENCAP_ESPINUDP	2
+-- 
+2.17.1
+
