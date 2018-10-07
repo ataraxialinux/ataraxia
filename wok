@@ -1,0 +1,491 @@
+#!/bin/sh
+#
+
+set -e
+
+initdb() {
+	local dir="$@"
+	for dbindir in $dir; do
+		mkdir -p $dbindir/var/lib/pacman
+	done
+}
+
+pkginstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $REPO/$mergepkg
+		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums -f
+		pacman -U $PACKAGES/$mergepkg-*.pkg.tar.xz --root $ROOTFS --arch $BARCH --noconfirm
+	done
+}
+
+pkgchinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $CHREPO/$mergepkg
+		makepkg --config $BUILD/target-makepkg.conf -d -c -C -f --skipchecksums -f
+		pacman -U $PACKAGES/chroot-$mergepkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH --noconfirm
+		rm -rf $PACKAGES/chroot-$mergepkg-*.pkg.tar.xz
+	done
+}
+
+pkgchtwoinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $CHREPO/$mergepkg
+		makepkg --config $BUILD/host-makepkg.conf -d -c -C -f --skipchecksums -f
+		pacman -U $PACKAGES/chroot-$mergepkg*.pkg.tar.xz --root $ROOTFS --arch $BARCH --noconfirm
+		rm -rf $PACKAGES/chroot-$mergepkg-*.pkg.tar.xz
+	done
+}
+
+pkgtcinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd $TCREPO/$mergepkg
+		makepkg --config $BUILD/host-makepkg.conf -d -c -C -f --skipchecksums -f
+		pacman -U $PACKAGES/host-$mergepkg*.pkg.tar.xz --root $TOOLS --force --noconfirm
+		rm -rf $PACKAGES/host-$mergepkg-*.pkg.tar.xz
+	done
+}
+
+pkgnativeinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativebuild() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+	done
+}
+
+pkgnativeinstallforce() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativeinstallforcenodeps() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --force -dd --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativeinstallnodeps() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativeinstallonly() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativeinstallonlyforce() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativeinstallonlyforcenodeps() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --force -dd --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativeinstallonlynodeps() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgnativereinstall() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C -f
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --noconfirm --arch $BARCH
+	done
+}
+
+pkgnativerebuild() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C -f
+	done
+}
+
+pkgnativereinstallforce() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --force --noconfirm --arch $BARCH
+	done
+}
+
+pkgnativereinstallforcenodeps() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz --force -dd --noconfirm --arch $BARCH
+	done
+}
+
+pkgnativereinstallnodeps() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg --config /etc/makepkg.conf -d -c -C || true
+		pacman -U /output/packages/$mergepkg-*.pkg.tar.xz -dd --noconfirm --arch $BARCH
+	done
+}
+
+pkgnativeremove() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		pacman -R $mergepkg --noconfirm
+	done
+}
+
+viewsums() {
+	local pkg="$@"
+	for mergepkg in $pkg; do
+		cd /var/repo/$mergepkg
+		makepkg -g
+	done
+}
+
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		echo "'wok' must be run as root"
+		exit 1
+	fi
+}
+
+setup_architecture() {
+	case $BARCH in
+		x86_64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic --with-linker-hash-style=gnu"
+			export BINUTILSOPTS="--enable-targets=x86_64-pep"
+			;;
+		i586)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i586-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS="--with-arch=i586 --with-tune=generic --with-linker-hash-style=gnu"
+			export BINUTILSOPTS=''
+			;;
+		aarch64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-linux-musl"
+			export XKARCH="arm64"
+			export GCCOPTS="--with-arch=armv8-a --with-abi=lp64 --with-linker-hash-style=gnu"
+			export BINUTILSOPTS=''
+			;;
+		*)
+			echo "Architecture is not set or is not supported by 'wok'"
+			exit 1
+	esac
+}
+
+setup_environment() {
+	export CWD="$(pwd)"
+	export BUILD="$CWD/build"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export ISODIR="$BUILD/isodir"
+	export INITRD="$BUILD/initrd"
+	export STAGE="$BUILD/stage"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export CHREPO="$CWD/chroot"
+
+	export PATH="$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
+	export MKOPTS="-j$(expr $(nproc) + 1)"
+
+	export CFLAGS="-O2 -pipe"
+	export CXXFLAGS="$CFLAGS"
+}
+
+build_environment() {
+	rm -rf $BUILD
+	mkdir -p $BUILD $SOURCES $PACKAGES $ROOTFS $TOOLS $ISODIR $INITRD $STAGE
+
+	initdb $TOOLS $ROOTFS $INITRD $STAGE
+
+	cp -a $TCREPO/makepkg.conf $BUILD/host-makepkg.conf
+	cp -a $CHREPO/makepkg.conf $BUILD/target-makepkg.conf
+
+	for files in $BUILD/host-makepkg.conf $BUILD/target-makepkg.conf; do
+		sed -i $files \
+			-e "s|@CARCH[@]|$BARCH|g" \
+			-e "s|@CHOST[@]|$XTARGET|g" \
+			-e "s|@CFLAGS[@]|$CFLAGS|g" \
+			-e "s|@CXXFLAGS[@]|$CXXFLAGS|g" \
+			-e "s|@MKOPTS[@]|$MKOPTS|g" \
+			-e "s|@PKGS[@]|$PACKAGES|g" \
+			-e "s|@SOURCES[@]|$SOURCES|g" \
+			-e "s|@ROOTFS[@]|$ROOTFS|g" \
+			-e "s|@TOOLS[@]|$TOOLS|g" \
+			-e "s|@XHOST[@]|$XHOST|g" \
+			-e "s|@XTARGET[@]|$XTARGET|g" \
+			-e "s|@XKARCH[@]|$XKARCH|g" \
+			-e "s|@GCCOPTS[@]|$GCCOPTS|g" \
+			-e "s|@BINUTILSOPTS[@]|$BINUTILSOPTS|g" \
+			-e "s|@HOSTCC[@]|$HOSTCC|g" \
+			-e "s|@HOSTCXX[@]|$HOSTCXX|g" \
+			-e "s|@PATH[@]|$PATH|g"
+	done
+}
+
+build_toolchain() {
+	pkginstall filesystem
+	pkgtcinstall file
+	pkgtcinstall pkgconf
+	pkgchtwoinstall linux-headers
+	pkgtcinstall binutils
+	pkgtcinstall gcc-static
+	pkgchtwoinstall musl
+	pkgtcinstall gcc
+}
+
+build_bootstrap() {
+	pkgchinstall libz
+	pkgchinstall binutils
+	pkgchinstall gcc
+	pkgchinstall ncurses
+	pkgchinstall bash
+	pkgchinstall make
+	pkgchinstall file
+	pkgchinstall perl
+	pkgchinstall xz
+	pkgchinstall patch
+	pkgchinstall busybox
+	pkgchinstall libressl
+	pkgchinstall curl
+	pkgchinstall libarchive
+	pkgchinstall attr
+	pkgchinstall acl
+	pkgchinstall libcap
+	pkgchinstall fakeroot
+	pkgchinstall pacman
+}
+
+build_symlinks() {
+	for file in awk bash cat curl dd du echo env fakeroot file grep install ln ls makepkg pacman perl pwd rm sed sh stty; do
+		ln -sf /tools/bin/${file} $ROOTFS/bin
+	done
+
+	ln -sf /tools/lib/libgcc_s.so  $ROOTFS/usr/lib
+	ln -sf /tools/lib/libgcc_s.so.1 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libstdc++.so $ROOTFS/usr/lib
+	ln -sf /tools/lib/libstdc++.so.6 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libstdc++.a  $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.so $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.so.0 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.so.0.0.0 $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp.a $ROOTFS/usr/lib
+	ln -sf /tools/lib/libssp_nonshared.a  $ROOTFS/usr/lib
+
+	case $BARCH in
+		x86_64|aarch64)
+			ln -sf lib $ROOTFS/tools/lib64
+			;;
+	esac
+}
+
+update_wok() {
+	cp $CWD/wok $ROOTFS/usr/bin
+
+	rm -rf $ROOTFS/var/order
+	cp $REPO/order $ROOTFS/var/order
+}
+
+enter_chroot() {
+	set +e
+
+	mkdir -p $ROOTFS/output/{stage,initrd,sources,packages}
+	mkdir -p $ROOTFS/var/repo
+
+	mount --bind /proc $ROOTFS/proc
+	mount --bind /sys $ROOTFS/sys
+	mount --bind /dev $ROOTFS/dev
+	mount --bind /tmp $ROOTFS/tmp
+	mount --bind $REPO $ROOTFS/var/repo
+	mount --bind $PACKAGES $ROOTFS/output/packages
+	mount --bind $SOURCES $ROOTFS/output/sources
+	mount --bind $STAGE $ROOTFS/output/stage
+	mount --bind $INITRD $ROOTFS/output/initrd
+
+	chroot $ROOTFS /usr/bin/env -i \
+		TERM="$TERM" \
+		LD_LIBRARY_PATH="/usr/lib:/tools/lib" \
+		PATH="/usr/bin:/tools/bin" \
+		PS1='(chroot) \u:\w\$ ' \
+		BARCH="$BARCH" \
+		/usr/bin/sh
+
+	umount $ROOTFS/var/repo
+	umount $ROOTFS/proc
+	umount $ROOTFS/sys
+	umount $ROOTFS/dev
+	umount $ROOTFS/tmp
+	umount $ROOTFS/output/sources
+	umount $ROOTFS/output/packages
+	umount $ROOTFS/output/stage
+	umount $ROOTFS/output/initrd
+
+	set -e
+}
+
+adjust_toolchain() {
+	echo "Please, wait..."
+	sleep 1
+
+	mv /tools/bin/ld /tools/bin/ld-old
+	mv /tools/$(cc -dumpmachine)/bin/ld /tools/$(cc -dumpmachine)/bin/ld-old
+	mv /tools/bin/ld-new /tools/bin/ld
+	ln -sf /tools/bin/ld /tools/$(cc -dumpmachine)/bin/ld
+
+	rm -rf /tools/bin/ld-old
+	rm -rf /tools/$(cc -dumpmachine)/bin/ld-old
+
+	gcc -dumpspecs | sed -e 's@/tools@@g' \
+		-e '/\*startfile_prefix_spec:/{n;s@.*@/usr/lib/ @}' \
+		-e '/\*cpp:/{n;s@$@ -isystem /usr/include@}' > \
+		`dirname $(gcc --print-libgcc-file-name)`/specs
+
+	echo "Toolchain adjust is done"
+}
+
+build_final_system() {
+	for finalpkg in $(cat /var/order); do
+		case $finalpkg in
+			musl)
+				pkgnativeinstallnodeps musl
+				wok adjust-toolchain
+				;;
+			*)
+				pkgnativeinstall $finalpkg
+		esac
+	done
+
+	pkgnativebuild meta
+
+	rm -rf /output/packages/*debug*.pkg*
+}
+
+case "$1" in
+	toolchain)
+		check_for_root
+		setup_architecture
+		setup_environment
+		build_environment
+		build_toolchain
+		;;
+	bootstrap)
+		check_for_root
+		setup_architecture
+		setup_environment
+		build_environment
+		build_toolchain
+		build_bootstrap
+		build_symlinks
+		update_wok
+		;;
+	final-system)
+		build_final_system
+		;;
+	enter-chroot)
+		check_for_root
+		setup_environment
+		enter_chroot
+		;;
+	host-package|host-pkg)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkgtcinstall "$2"
+		;;
+	chroot-package|chroot-pkg)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkgchinstall "$2"
+		;;
+	chroota-package|chroota-pkg)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkgchtwoinstall "$2"
+		;;
+	chrootb-package|chrootb-pkg)
+		check_for_root
+		setup_architecture
+		setup_environment
+		pkginstall "$2"
+		;;
+	package|pkg)
+		pkgnativeinstall $2
+		;;
+	update-package|uppkg)
+		rm -rf /output/packages/$2-*.pkg*
+		pkgnativereinstallforcenodeps $2
+		rm -rf /output/packages/*debug*.pkg*
+		;;
+	view-sums)
+		viewsums $2
+		;;
+	adjust-toolchain)
+		if test -x /tools/bin/ld-new; then
+			adjust_toolchain
+		fi
+		;;
+	update-wok)
+		check_for_root
+		setup_architecture
+		setup_environment
+		update_wok
+		;;
+	*|usage)
+		echo "In developemnt"
+esac
+
+exit 0
+
