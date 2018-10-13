@@ -1,0 +1,50 @@
+# Description: Freedesktop.org message bus system
+# URL:         https://wiki.freedesktop.org/www/Software/dbus/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  expat
+
+name=dbus
+version=1.12.8
+release=1
+source=(https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz)
+
+build() {
+	cd $name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/dbus \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-console-auth-dir=/var/run/console \
+		--with-dbus-daemondir=/usr/bin \
+		--with-init-scripts=none \
+		--with-system-pid-file=/var/run/dbus/dbus.pid \
+		--with-system-socket=/var/run/dbus/system_bus_socket \
+		--with-session-socket-dir=/tmp \
+		--with-dbus-user=messagebus \
+		--with-xml=expat \
+		--without-systemdsystemunitdir \
+		--without-x \
+		--enable-inotify \
+		--disable-doxygen-docs \
+		--disable-selinux \
+		--disable-systemd \
+		--disable-x11-autolaunch \
+		--disable-xml-docs
+	make
+	make DESTDIR=$PKG install
+
+	mkdir -p $PKG/var/log/dbus
+
+	install -Dm0755 $KEEP/services/dbus $PKG/etc/service/dbus/run
+	install -Dm0755 $KEEP/services/dbus-log $PKG/etc/service/dbus/log/run
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}

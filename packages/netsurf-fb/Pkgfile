@@ -1,0 +1,34 @@
+# Description: Lightweight and fast web browser
+# URL:         http://www.netsurf-browser.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  netsurf-buildsystem html-parser nsgenbind curl libcss libdom libnsbmp libnsgif libnsutils libutf8proc libjpeg-turbo libhubbub libwapcaplet libparserutils libnsfb
+
+name=netsurf-fb
+version=3.7
+release=1
+source=(http://download.netsurf-browser.org/netsurf/releases/source-full/netsurf-all-$version.tar.gz)
+
+build() {
+	cd netsurf-all-$version/netsurf
+	CFLAGS="$CFLAGS -w -Os -funroll-loops" make \
+		TARGET=framebuffer \
+		LIBDIR=lib \
+		INCLUDEDIR=include \
+		PREFIX=/usr
+	make \
+		TARGET=framebuffer \
+		LIBDIR=lib \
+		INCLUDEDIR=include \
+		PREFIX=/usr \
+		DESTDIR=$PKG \
+		install
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
