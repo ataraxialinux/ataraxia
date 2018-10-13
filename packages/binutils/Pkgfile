@@ -43,6 +43,11 @@ build() {
 	make tooldir=/usr MAKEINFO="true"
 	make tooldir=/usr MAKEINFO="true" DESTDIR=$PKG install-strip
 
+	export JHOST="$(cc -dumpmachine)"
+	for f in $pkgdir/usr/bin/*; do
+		ln -s ${f##*/} $pkgdir/usr/bin/${JHOST:-${JHOST}}-${f##*/}
+	done
+
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
 	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
