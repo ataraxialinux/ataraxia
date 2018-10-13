@@ -9,6 +9,14 @@ source=(http://www.musl-libc.org/releases/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
+	patch -Np1 -i $KEEP/musl/0001-update-netinet-tcp.h-for-linux-v4.18.patch
+	patch -Np1 -i $KEEP/musl/0002-update-netinet-udp.h-for-linux-v4.18.patch
+	patch -Np1 -i $KEEP/musl/0003-add-AF_XDP-to-sys-socket.h-from-linux-v4.18.patch
+	patch -Np1 -i $KEEP/musl/0004-add-SIGSYS-support-to-sys-signalfd.h-from-linux-v4.1.patch
+	patch -Np1 -i $KEEP/musl/0005-add-TRAP_UNK-si_code-to-signal.h-from-linux-v4.18.patch
+	patch -Np1 -i $KEEP/musl/0006-add-io_pgetevents-and-rseq-syscall-numbers-from-linu.patch
+	patch -Np1 -i $KEEP/musl/0007-add-AT_MINSIGSTKSZ-to-elf.h-from-linux-v4.18.patch
+	patch -Np1 -i $KEEP/musl/0008-add-NT_VMCOREDD-to-elf.h-from-linux-v4.18.patch
 	./configure $TOOLFLAGS \
 		--prefix=/usr \
 		--syslibdir=/usr/lib \
