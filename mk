@@ -266,6 +266,7 @@ generate_initrd() {
 	cd $INITRD
 	ln -sf busybox usr/bin/wget
 	rm -rf usr/include
+	rm -rf usr/lib/*.a*
 	find . | cpio -R root:root -H newc -o | xz -9 --check=none > $IMAGE/rootfs.cpio.xz
 
 	cp boot/vmlinuz* $IMAGE/vmlinuz
