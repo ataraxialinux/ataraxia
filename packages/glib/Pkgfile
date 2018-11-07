@@ -1,7 +1,7 @@
 # Description: Low level core library
 # URL:         https://wiki.gnome.org/Projects/GLib
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python pcre
+# Depends on:  python pcre meson
 
 name=glib
 version=2.58.1
@@ -10,15 +10,18 @@ source=(http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versio
 
 build() {
 	cd $name-$version
-	./configure $BUILDFLAGS \
+	mkdir -p build
+	cd build
+	meson \
 		--prefix=/usr \
 		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
-		--with-pcre=system \
-		--with-python=/usr/bin/python3 \
-		--disable-gtk-doc
-	make
-	make DESTDIR=$PKG install
+		-Dman=false \
+		-Dselinux=false
+	ninja
+	DESTDIR=$PKG ninja install
 
 	rm -rf $PKG/usr/lib/locale
 	rm -rf $PKG/usr/share/locale
