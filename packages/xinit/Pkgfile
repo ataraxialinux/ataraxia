@@ -5,11 +5,12 @@
 
 name=xinit
 version=1.4.0
-release=1
+release=2
 source=(https://www.x.org/pub/individual/app/$name-$version.tar.bz2)
 
 build() {
 	cd $name-$version
+	sed -e '/$serverargs $vtarg/ s/serverargs/: #&/' -i startx.cpp
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc
