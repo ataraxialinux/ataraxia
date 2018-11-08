@@ -1,7 +1,7 @@
 # Description: Complete solution to record, convert and stream audio and video
 # URL:         http://ffmpeg.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  yasm zlib libressl libass fdk-aac freetype lame libtheora libvorbis libvpx opus x264 x265 alsa-lib neon flac
+# Depends on:  yasm zlib libressl libass fdk-aac freetype lame libtheora libvorbis libvpx opus x264 x265 alsa-lib neon flac sdl2 libva libvdpau
 
 name=ffmpeg
 version=4.1
@@ -10,8 +10,10 @@ source=(http://ffmpeg.org/releases/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
+	sed -i 's/-lflite"/-lflite -lasound"/' configure
 	./configure \
 		--prefix=/usr \
+		--enable-avresample \
 		--enable-gpl \
 		--enable-nonfree \
 		--enable-version3 \
@@ -26,6 +28,9 @@ build() {
 		--enable-libx264 \
 		--enable-libx265 \
 		--enable-openssl \
+		--enable-pic \
+		--enable-pthreads \
+		--enable-shared \
 		--disable-debug \
 		--disable-doc
 	make
