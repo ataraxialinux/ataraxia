@@ -1,17 +1,16 @@
-# Description: Zstandard - Fast real-time compression algorithm
-# URL:         http://www.zstd.net/
+# Description: "Generate Your Projects" Meta-Build system
+# URL:         https://gyp.gsrc.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib xz 
+# Depends on:  python2
 
-name=zstd
-version=1.3.7
+name=gyp
+version=81286d388abf5c8f946f3f4be274bd987a690952
 release=1
-source=(https://github.com/facebook/zstd/archive/v$version/$name-v$version.tar.gz)
+source=(https://chromium.googlesource.com/external/gyp/+archive/$version.tar.gz)
 
 build() {
-	cd $name-$version
-	make
-	make PREFIX=/usr DESTDIR=$PKG install
+	python2 setup.py build
+	python2 setup.py install --root=$PKG --optimize=1 --skip-build
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true

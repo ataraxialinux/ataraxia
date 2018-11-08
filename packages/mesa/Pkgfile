@@ -5,33 +5,35 @@
 
 name=mesa
 version=18.2.4
-release=3
+release=4
 source=(https://mesa.freedesktop.org/archive/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	./autogen.sh
-	./configure CFLAGS="-O2" CXXFLAGS="-O2" LDFLAGS="-lLLVM" $BUILDFLAGS \
+	./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="-lLLVM" $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--with-gallium-drivers=r300,r600,svga,swrast,radeonsi,nouveau  \
-		--with-platforms=x11,drm,wayland \
-		--with-vulkan-drivers=intel,radeon \
+		--with-gallium-drivers="i915,r600,nouveau,radeonsi,svga,swrast"  \
+		--with-platforms="x11,drm,wayland" \
+		--with-vulkan-drivers="amd,intel" \
+		--enable-gallium-extra-hud \
+		--enable-gbm \
 		--enable-gles1 \
 		--enable-gles2 \
+		--enable-glx="dri" \
 		--enable-glx-tls \
 		--enable-llvm \
 		--enable-llvm-shared-libs \
+		--enable-nine \
 		--enable-osmesa \
 		--enable-texture-float \
+		--enable-shared-glapi \
 		--enable-vdpau \
-		--enable-xa
+		--enable-xa \
+		--enable-xlib-lease
 	make
-	make DESTDIR=$PKG install
-
-	rm -rf $PKG/usr/lib/libwayland-egl*.so*
-	rm -rf $PKG/usr/lib/pkgconfig/wayland-egl.pc
+	make DESTDIR=$PKG install-strip
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
