@@ -1,17 +1,29 @@
-# Description: Zstandard - Fast real-time compression algorithm
-# URL:         http://www.zstd.net/
+# Description: Netscape Portable Runtime
+# URL:         https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSPR
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib xz 
 
-name=zstd
-version=1.3.7
+name=nspr
+version=4.20
 release=1
-source=(https://github.com/facebook/zstd/archive/v$version/$name-v$version.tar.gz)
+source=(https://archive.mozilla.org/pub/nspr/releases/v$version/src/$name-$version.tar.gz)
 
 build() {
+	case $BARCH in
+		x86_64|aarch64)
+			export conf="--enable-64bit"
+			;;
+	esac
+
 	cd $name-$version
+	./configure $BUILDFLAGS $conf \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--with-mozilla \
+		--with-pthreads \
+		--enable-optimize \
+		--disable-debug
 	make
-	make PREFIX=/usr DESTDIR=$PKG install
+	make DESTDIR=$PKG install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
