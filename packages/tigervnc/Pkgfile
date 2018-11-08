@@ -42,8 +42,11 @@ build() {
 		--disable-static --enable-dri3  \
 		--without-dtrace --enable-dri2 --enable-glx
 	make
+
+	cd hw/vnc
 	make DESTDIR=$PKG install
 
+	cd $SRC/$name-$version
 cat > $PKG/usr/share/applications/vncviewer.desktop << "EOF"
 [Desktop Entry]
 Type=Application
@@ -55,10 +58,6 @@ Terminal=false
 StartupNotify=false
 Categories=Network;RemoteAccess;
 EOF
-
-	install -Dm644 ../media/icons/tigervnc_24.png $PKG/usr/share/pixmaps
-	ln -sf tigervnc_24.png $PKG/usr/share/pixmaps/tigervnc.png
-
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
