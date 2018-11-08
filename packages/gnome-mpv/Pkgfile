@@ -1,33 +1,20 @@
-# Description: X.org fonts
-# URL:         https://xorg.freedesktop.org/
+# Description: Simple GTK+ frontend for mpv
+# URL:         https://gnome-mpv.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  fontconfig xcursor-themes encodings mkfontdir xorg-apps
+# Depends on:  meson gtk mpv
 
-name=xorg-fonts
-version=2018.11.08
-release=2
+name=gnome-mpv
+version=0.15
+release=1
+source=(https://github.com/gnome-mpv/$name/releases/download/v$version/$name-$version.tar.xz)
 
 build() {
-	install -d -m755 $PKG/usr/share/fonts
-
-	export PATH="$PATH:$PKG/usr/bin"
-
-	for a in font-alias-1.0.3 font-adobe-utopia-type1-1.0.4 font-bh-ttf-1.0.3 font-bh-type1-1.0.3 font-ibm-type1-1.0.3 font-misc-ethiopic-1.0.3 font-xfree86-type1-1.0.4 font-adobe-100dpi-1.0.3 font-adobe-75dpi-1.0.3 font-jis-misc-1.0.3 font-daewoo-misc-1.0.3 font-isas-misc-1.0.3; do
-		busybox wget -c https://www.x.org/pub/individual/font/$a.tar.bz2
-		tar -xf $a.tar.bz2
-		cd $a
-		./configure \
-			--prefix=/usr \
-			--sysconfdir=/etc \
-			--localstatedir=/var
-		make
-		make DESTDIR=$PKG install
-		cd ..
-	done
-
-	rm -rf $PKG/var
-
-	rm -rf $PKG/usr/share/fonts/*/fonts.dir
+	cd $name-$version
+	mkdir -p build
+	cd build
+	meson--prefix=/usr ..
+	ninja
+	DESTDIR=$PKG ninja install
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
