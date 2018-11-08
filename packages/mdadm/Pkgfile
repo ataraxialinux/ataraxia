@@ -3,14 +3,14 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=mdadm
-version=4.0
+version=4.1
 release=1
 source=(https://www.kernel.org/pub/linux/utils/raid/mdadm/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
 	patch -Np0 -i $KEEP/mdadm/disable-werror.patch
-	make CXFLAGS="$CFLAGS" BINDIR=/usr/bin UDEVDIR=/usr/lib/udev
+	make BINDIR=/usr/bin UDEVDIR=/usr/lib/udev
 	make MDASSEMBLE_AUTO=1 mdassemble
 	make INSTALL=/usr/bin/install BINDIR=/usr/bin DESTDIR=$PKG UDEVDIR=/usr/lib/udev install
 	install -D -m755 mdassemble $pkgdir/usr/bin/mdassemble
