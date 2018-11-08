@@ -10,10 +10,25 @@ source=(http://fltk.org/pub/$name/$version/$name-$version-source.tar.gz)
 
 build() {
 	cd $name-$version
+	patch -p1 -i $KEEP/fltk/config-dynlibs.patch
+	patch -p1 -i $KEEP/fltk/libpng.patch
+	patch -p1 -i $KEEP/fltk/pkgconf.patch
+	sed -e 's/class Fl_XFont_On_Demand/class FL_EXPORT Fl_XFont_On_Demand/' \
+		-i FL/x.H
+	sed -e 's/x-fluid.desktop/fluid.desktop/' \
+		-i fluid/Makefile
+	sed -e 's/$(LINKFLTK)/$(LINKSHARED)/' \
+		-e 's/$(LINKFLTKIMG)/$(LINKSHARED)/' \
+		-i test/Makefile
+	./autogen.sh
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--enable-threads \
+		--enable-xft \
+		--enable-shared
 	make
 	make DESTDIR=$PKG install
+	make DESTDIR=$PKG -C fluid install install-linux
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
