@@ -5,15 +5,19 @@
 
 name=neon
 version=0.30.2
-release=1
+release=2
 source=(https://fossies.org/linux/www/$name-$version.tar.gz)
 
 build() {
 	cd $name-$version
+	patch -Np1 -i $KEEP/neon/libressl.patch
+	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
+		--with-expat \
 		--with-ssl \
-		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt
+		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+		--enable-threadsafe-ssl=posix
 	make
 	make DESTDIR=$PKG install
 
