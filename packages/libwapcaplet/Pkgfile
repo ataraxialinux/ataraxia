@@ -4,12 +4,13 @@
 # Depends on:  netsurf-buildsystem
 
 name=libwapcaplet
-version=0.4.0
+version=0.4.1
 release=1
 source=(http://git.netsurf-browser.org/$name.git/snapshot/release/$version.tar.bz2)
 
 build() {
 	cd release/$version
+	sed -i 's:_BSD_SOURCE:_DEFAULT_SOURCE:;s:rns:rns -w:' Makefile
 	make LIBDIR=lib INCLUDEDIR=include PREFIX=/usr COMPONENT_TYPE="lib-shared"
 	make LIBDIR=lib INCLUDEDIR=include PREFIX=/usr COMPONENT_TYPE="lib-shared" \
 		DESTDIR=$PKG install
