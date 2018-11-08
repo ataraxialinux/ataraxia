@@ -1,0 +1,77 @@
+# Description: Suite of VNC servers and clients. Based on the VNC 4 branch of TightVNC.
+# URL:         http://www.tigervnc.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake fltk gnutls libgcrypt libjpeg-turbo pixman imagemagick xorg-server
+
+name=tigervnc
+version=1.9.0
+xorgsrvver=1.20.3
+release=1
+source=(https://github.com/TigerVNC/tigervnc/archive/v$version/$name-$version.tar.gz
+	https://www.x.org/pub/individual/xserver/xorg-server-$xorgsrvver.tar.bz2)
+
+build() {
+	export xfontroot=/usr/share/fonts
+
+	cd $name-$version
+
+	pushd unix/xserver
+		tar -xf $DIR/xorg-server-$xorgsrvver.tar.bz2 --strip-components=1 &&
+		patch -Np1 -i ../xserver120.patch
+	popd
+
+	cmake \
+		-G "Unix Makefiles" \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=Release \
+		-Wno-dev
+	make
+	make DESTDIR=$PKG install
+
+	pushd unix/xserver
+		sed -i '/^#include <asm\/page.h>/d' Xext/xf86bigfont.c
+		autoreconf -fiv
+
+			CPPFLAGS="-D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t" CFLAGS="$CFLAGS -I/usr/include/drm" \
+			./configure --prefix=/usr --libexecdir=/usr/lib --localstatedir=/var \
+				--with-fontrootdir="$xfontroot" --with-default-font-path="$xfontroot/misc,$xfontroot/100dpi:unscaled,$xfontroot/75dpi:unscaled,$xfontroot/TTF,$xfontroot/Type1" \
+				--with-os-vendor="januslinux" --with-xkb-output=/var/lib/xkb \
+				--disable-xwayland --disable-dri --disable-dmx \
+				--disable-xorg --disable-xnest --disable-xvfb \
+				--disable-xwin --disable-xephyr --disable-kdrive \
+				--disable-devel-docs --disable-config-hal --disable-config-udev \
+				--disable-unit-tests --disable-selective-werror  \
+				--disable-static --enable-dri3  \
+				--without-dtrace --enable-dri2 --enable-glx
+		make
+	popd
+
+	pushd unix/xserver/hw/vnc
+		make install
+	popd
+
+cat > $PKG/usr/share/applications/vncviewer.desktop << "EOF"
+[Desktop Entry]
+Type=Application
+Name=TigerVNC Viewer
+Comment=VNC client
+Exec=/usr/bin/vncviewer
+Icon=tigervnc
+Terminal=false
+StartupNotify=false
+Categories=Network;RemoteAccess;
+EOF
+
+	install -Dm644 ../media/icons/tigervnc_24.png $PKG/usr/share/pixmaps
+	ln -sf tigervnc_24.png $PKG/usr/share/pixmaps/tigervnc.png
+
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
