@@ -12,6 +12,8 @@ build() {
 	export CFLAGS="$CFLAGS -fno-stack-protector"
 	export CXXFLAGS="$CFLAGS"
 	cd audacious-plugins-$version
+	aclocal -I m4 && autoheader && autoconf
+	sed -e "/touch/s/0001010000/200001010000/g" -i configure
 	TPUT=/bin/true ./configure \
 		--prefix=/usr \
 		--disable-wavpack
