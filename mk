@@ -309,7 +309,7 @@ LABEL default
 	ENDTEXT
 	LINUX vmlinuz
 	INITRD rootfs.cpio.xz
-	APPEND quiet
+	APPEND quiet loglevel=4
 
 CEOF
 
@@ -317,7 +317,7 @@ CEOF
 cat << CEOF > $IMAGE/efi/boot/startup.nsh
 echo -off
 echo januslinux starting...
-\\vmlinuz quiet initrd=\\rootfs.cpio.xz
+\\vmlinuz quiet loglevel=4 initrd=\\rootfs.cpio.xz
 CEOF
 
 	xorriso \
