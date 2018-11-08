@@ -1,11 +1,11 @@
 # Description: Image manipulation wizard
 # URL:         http://www.imagemagick.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  util-linux libxt perl zlib tiff librsvg libpng libjpeg-turbo fontconfig bzip2 lcms
+# Depends on:  util-linux libxt perl zlib tiff librsvg libpng libjpeg-turbo fontconfig bzip2 lcms libxml2 libx11 libxext
 
 name=imagemagick
 version=7.0.8-14
-release=1
+release=2
 source=(https://github.com/ImageMagick/ImageMagick/archive/$version.tar.gz)
 
 build() {
@@ -13,20 +13,34 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--enable-hdri=yes \
-		--enable-shared=yes \
-		--with-modules=yes \
-		--with-perl=yes \
-		--with-freetype=yes \
-		--with-fontconfig=yes \
-		--with-jpeg=yes \
-		--with-lcms=yes \
-		--with-png=yes \
-		--with-rsvg=yes \
-		--with-tiff=yes \
-		--with-zlib=yes
+		--enable-hdri \
+		--enable-shared \
+		--with-dejavu-font-dir=/usr/share/fonts/TTF \
+		--with-gs-font-dir=/usr/share/fonts/gsfonts \
+		--with-modules \
+		--with-threads \
+		--with-perl \
+		--with-freetype \
+		--with-fontconfig \
+		--with-jpeg \
+		--with-lcms \
+		--with-png \
+		--with-rsvg \
+		--with-tiff \
+		--with-x \
+		--with-xml \
+		--with-zlib \
+		--without-autotrace \
+		--without-djvu \
+		--without-dps \
+		--without-fftw \
+		--without-fpx \
+		--without-gcc-arch \
+		--without-gvc
 	make
 	make DESTDIR=$PKG install
+
+	find $PKG -name '.packlist' -o -name 'perllocal.pod' -o -name '*.bs' -delete
 
 	echo "Stripping $name package..."
 	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
