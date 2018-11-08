@@ -251,7 +251,7 @@ generate_stage_archive() {
 	set +e
 	printmsg "Building stage archive"
 
-	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool bzip2 perl readline autoconf automake bash bc diffutils file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano vim lzip lzo zstd btrfs-progs xfsprogs curl wget libarchive git npkg prt-get
+	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool bzip2 perl readline autoconf automake bash bc diffutils file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano vim lzip lzo lz4 zstd btrfs-progs xfsprogs curl wget libarchive git npkg prt-get
 
 	cd $STAGE
 	tar -cJf $CWD/januslinux-$RELEASE-$BARCH.tar.xz .
@@ -261,7 +261,7 @@ generate_initrd() {
 	set +e
 	printmsg "Building initrd archive"
 
-	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap sed ncurses shadow util-linux e2fsprogs bzip2 readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux lzo zstd btrfs-progs xfsprogs nano libnl wpa_supplicant curl lzip
+	pkginstallinitrd filesystem linux-headers musl zlib attr acl libcap sed ncurses shadow util-linux e2fsprogs bzip2 readline bash file kbd xz kmod busybox libressl ca-certificates dosfstools eudev linux lzo lz4 zstd btrfs-progs xfsprogs nano libnl wpa_supplicant curl lzip
 
 	cd $INITRD
 	ln -sf busybox usr/bin/wget

@@ -1,18 +1,28 @@
-# Description: Userspace interface to kernel DRM services
-# URL:         http://dri.freedesktop.org/
+# Description: A popular and easy to use graphical IRC (chat) client
+# URL:         https://hexchat.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson libpciaccess
+# Depends on:  meson glib gtk2 lua
 
-name=libdrm
-version=2.4.96
-release=2
-source=(https://dri.freedesktop.org/libdrm/libdrm-$version.tar.bz2)
+name=hexchat
+version=2.14.2
+release=1
+source=(https://dl.hexchat.net/$name/$name-$version.tar.xz)
 
 build() {
 	cd $name-$version
-	mkdir build
+	mkdir -p build
 	cd build
-	meson --prefix=/usr
+
+	meson \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		-Dwith-libproxy=false \
+		-Dwith-lua=lua \
+		..
 	ninja
 	DESTDIR=$PKG ninja install
 
