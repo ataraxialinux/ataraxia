@@ -5,7 +5,7 @@
 
 name=gcc
 version=8.2.0
-release=3
+release=4
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz)
 
 build() {
@@ -26,7 +26,7 @@ build() {
 		--enable-bootstrap \
 		--enable-checking=release \
 		--enable-clocale=generic \
-		--enable-languages=c,c++,lto \
+		--enable-languages=c,c++,fortran,lto \
 		--enable-install-libiberty \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -46,6 +46,7 @@ build() {
 	make DESTDIR=$PKG install-strip
 
 	ln -sf gcc $PKG/usr/bin/cc
+	ln -sf gfortran $PKG/usr/bin/f95
 
 	ln -sf ../bin/cpp /usr/lib
 
