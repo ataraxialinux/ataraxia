@@ -33,9 +33,10 @@ build() {
 		--with-sysroot=$ROOTFS \
 		--enable-__cxa_atexit \
 		--enable-checking=release \
+		--enable-clocale=generic \
 		--enable-languages=c,c++ \
-		--enable-libstdcxx-time \
 		--enable-linker-build-id \
+		--enable-shared \
 		--enable-threads=posix \
 		--enable-tls \
 		--disable-gnu-indirect-function \
@@ -44,8 +45,7 @@ build() {
 		--disable-libsanitizer \
 		--disable-multilib \
 		--disable-nls \
-		--disable-symvers \
-		--disable-werror
-	make
+		--disable-symvers
+	make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
 	make DESTDIR=$PKG install
 }
