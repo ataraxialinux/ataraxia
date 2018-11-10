@@ -258,7 +258,7 @@ generate_stage_archive() {
 	set +e
 	printmsg "Building stage archive"
 
-	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool bzip2 perl readline autoconf automake bash bc diffutils file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux nano vim lzip lzo lz4 zstd btrfs-progs xfsprogs curl wget libarchive git npkg prt-get
+	pkginstallstage filesystem linux-headers musl zlib m4 bison flex libelf binutils gmp mpfr mpc isl gcc attr acl libcap sed pkgconf ncurses shadow util-linux e2fsprogs libtool bzip2 perl readline autoconf automake bash bc diffutils file gettext kbd make xz kmod patch busybox libressl ca-certificates dosfstools gperf eudev linux texinfo nano vim lzip lzo lz4 zstd btrfs-progs xfsprogs curl wget libarchive git npkg prt-get
 
 	cd $STAGE
 	tar -cJf $CWD/januslinux-$RELEASE-$BARCH.tar.xz .
