@@ -5,7 +5,7 @@
 
 name=gcc
 version=8.2.0
-release=2
+release=3
 source=(http://ftpmirror.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz)
 
 build() {
@@ -27,11 +27,13 @@ build() {
 		--enable-checking=release \
 		--enable-clocale=generic \
 		--enable-languages=c,c++,lto \
-		--enable-libstdcxx-time \
+		--enable-install-libiberty \
 		--enable-linker-build-id \
 		--enable-lto \
+		--enable-shared \
 		--enable-threads=posix \
 		--enable-tls \
+		--disable-bootstrap \
 		--disable-gnu-indirect-function \
 		--disable-libmpx \
 		--disable-libmudflap \
@@ -39,8 +41,7 @@ build() {
 		--disable-libstdcxx-pch \
 		--disable-multilib \
 		--disable-nls \
-		--disable-symvers \
-		--disable-werror
+		--disable-symvers
 	make
 	make DESTDIR=$PKG install-strip
 
