@@ -11,6 +11,7 @@ release=1
 source=(https://static.rust-lang.org/dist/rustc-$version-src.tar.gz)
 
 build() {
+	export CARGO_HOME="$(pwd)/.cargo"
 	export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 	export LD_LIBRARY_PATH="$(pwd)/stage0/lib"
 	export PATH="$(pwd)/stage0/bin:$PATH"
@@ -27,6 +28,9 @@ build() {
 			echo "Unsupported architecure!"
 			exit 1
 	esac
+
+	mkdir -p $CARGO_HOME
+	echo "[build]\ntarget = \"$RTARGET\"" > $CARGO_HOME/config
 
 	wget https://alpha.de.repo.voidlinux.org/distfiles/rustc-$distver-$RTARGET.tar.xz
 	wget https://alpha.de.repo.voidlinux.org/distfiles/rust-std-$distver-$RTARGET.tar.xz
