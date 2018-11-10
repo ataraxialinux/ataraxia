@@ -1,0 +1,34 @@
+# Description: An object-oriented language for quick and easy programming
+# URL:         http://www.ruby-lang.org/en/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gmp gdbm libffi libressl zlib
+
+name=ruby
+version=2.5.3
+release=1
+source=(https://cache.ruby-lang.org/pub/ruby/${version:0:3}/ruby-${version}.tar.xz)
+
+build() {
+	cd $name-$version
+	patch -Np1 -i $KEEP/ruby/rubygems-avoid-platform-specific-gems.patch
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/ruby \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--sharedstatedir=/var/lib \
+		--with-dbm-type=gdbm_compat \
+		--enable-shared \
+		--disable-rpath
+	make
+	make DESTDIR=$PKG install
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
