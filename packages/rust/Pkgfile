@@ -1,0 +1,76 @@
+# Description: Systems programming language focused on safety, speed and concurrency
+# URL:         https://www.rust-lang.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl cmake libssh2 llvm python libffi ncurses libxml2 zlib
+
+name=rust
+version=1.30.1
+distver=1.29.2
+cargover=0.31.1
+release=1
+source=(https://static.rust-lang.org/dist/$name-$version-src.tar.gz)
+
+build() {
+	export CARGO_HOME="$SRC/.cargo"
+	export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+	export LD_LIBRARY_PATH="$(pwd)/stage0/lib"
+	export PATH="$(pwd)/stage0/bin:$PATH"
+	export MUSL_ROOT=/usr
+	export RUST_BACKTRACE=1
+	export RUSTFLAGS="-C linker=gcc"
+
+	case $BARCH in
+		x86_64)
+			export LLVMTARGET="X86"
+			export RTARGET="x86_64-unknown-linux-musl"
+			;;
+		*)
+			echo "Unsupported architecure!"
+			exit 1
+	esac
+
+	mkdir -p stage0
+
+	wget https://alpha.de.repo.voidlinux.org/distfiles/rustc-$distver-$RTARGET.tar.xz
+	tar -xf rustc-$distver-$RTARGET.tar.xz -C stage0
+	wget https://alpha.de.repo.voidlinux.org/distfiles/rust-std-$distver-$RTARGET.tar.xz
+	tar -xf rust-std-$distver-$RTARGET.tar.xz -C stage0
+	wget https://alpha.de.repo.voidlinux.org/distfiles/cargo-$cargover-$RTARGET-libressl-2.8.tar.gz
+	tar -xf cargo-$cargover-$RTARGET-libressl-2.8.tar.gz -C stage0
+
+	cd $name-$version-src
+	patch -Np1 -i $srcdir/libunwind.patch
+	patch -Np1 -i $srcdir/link-musl-dynamically.patch
+	patch -Np1 -i $srcdir/llvm-with-ffi.patch
+	patch -Np1 -i $srcdir/musl-dont-use-crt-static.patch
+	patch -Np1 -i $srcdir/use-correct-llvm-when-cross.patch
+
+	rm -rf src/llvm
+
+	./configure \
+		--prefix=/usr \
+		--host=$RTARGET \
+		--target=$RTARGET \
+		--build=$XTARGET \
+		--disable-docs \
+		--release-channel=stable \
+		--disable-codegen-tests \
+		--disable-full-bootstrap \
+		--disable-jemalloc \
+		--disable-rpath \
+		--llvm-root=/usr \
+		--set=target.$RTARGET.llvm-config=/usr/bin/llvm-config \
+		--set=target.$RTARGET.musl-root=/usr \
+		--local-rust-root=$(pwd)/../stage0
+	python3 x.py build -v --jobs ${JOBS:-2}
+	DESTDIR=$PKG python3 x.py install -v
+
+	echo "Stripping $name package..."
+	find $PKG -type f | xargs file 2>/dev/null | grep "LSB executable"       | cut -f 1 -d : | xargs $STRIP --strip-all			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "shared object"        | cut -f 1 -d : | xargs $STRIP --strip-unneeded		2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "current ar archive"   | cut -f 1 -d : | xargs $STRIP --strip-debug			2>/dev/null || true
+	find $PKG -type f | xargs file 2>/dev/null | grep "libtool library file" | cut -f 1 -d : | xargs rm -rf					2>/dev/null || true
+	cd $PKG
+	rm -rf {,usr/}{,local/}{,share/}{doc,man,info,locale} usr{,/local}{,/share},opt/*}/{man,info} usr/{,local/}{,share/}{doc,gtk-doc} opt/*/{doc,gtk-doc}
+	rm -rf {,usr/}lib/charset.alias
+}
