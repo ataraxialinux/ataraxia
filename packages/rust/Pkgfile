@@ -29,18 +29,17 @@ build() {
 			exit 1
 	esac
 
-	mkdir -p stage0
-
 	wget https://alpha.de.repo.voidlinux.org/distfiles/rustc-$distver-$RTARGET.tar.xz
-	tar -xf rustc-$distver-$RTARGET.tar.xz -C stage0
-	mv stage0/rustc-$distver-$RTARGET/rustc/* stage0/
 	wget https://alpha.de.repo.voidlinux.org/distfiles/rust-std-$distver-$RTARGET.tar.xz
-	tar -xf rust-std-$distver-$RTARGET.tar.xz -C stage0
-	mv stage0/rust-std-$distver-$RTARGET/rust-std-$RTARGET
-	cd stage0/rust-std-$distver-$RTARGET/rust-std-$RTARGET && tar -cJf ../../../aaa.tar.xz .
-	cd ../../.. && tar -xf aaa.tar.xz -C stage0
 	wget https://alpha.de.repo.voidlinux.org/distfiles/cargo-$cargover-$RTARGET-libressl-2.8.tar.gz
-	tar -xf cargo-$cargover-$RTARGET-libressl-2.8.tar.gz -C stage0/bin
+	tar -xf rustc-$distver-$RTARGET.tar.xz
+	tar -xf rust-std-$distver-$RTARGET.tar.xz
+	tar -xf cargo-$cargover-$RTARGET-libressl-2.8.tar.gz
+	
+	mkdir -p stage0
+	cp -bflr rustc-*/rustc/* stage0
+	cp -bflr rust-std-*/rust-std-*/* stage0
+	cp -bflr cargo stage0/bin
 
 	cd rustc-$version-src
 	patch -Np1 -i $KEEP/rust/libunwind.patch
@@ -48,6 +47,8 @@ build() {
 	patch -Np1 -i $KEEP/rust/llvm-with-ffi.patch
 	patch -Np1 -i $KEEP/rust/musl-dont-use-crt-static.patch
 	patch -Np1 -i $KEEP/rust/use-correct-llvm-when-cross.patch
+
+	sed -i /LD_LIBRARY_PATH/d src/bootstrap/bootstrap.py
 
 	rm -rf src/llvm
 
