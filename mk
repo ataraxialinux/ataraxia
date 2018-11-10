@@ -101,7 +101,14 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			export XKARCH="x86_64"
-			export GCCOPTS=
+			export GCCOPTS=''
+			;;
+		i486)
+			printmsg "Using configuration for i486"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i486-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS="--with-arch=i486 --with-tune=generic"
 			;;
 		aarch64)
 			printmsg "Using configuration for aarch64"
