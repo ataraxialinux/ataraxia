@@ -1,17 +1,15 @@
 # Description: Systems programming language focused on safety, speed and concurrency
 # URL:         https://www.rust-lang.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  curl cmake libssh2 llvm python libffi ncurses libxml2 zlib libgit2
+# Depends on:  curl cmake libssh2 llvm python libffi ncurses libxml2 zlib libgit2 http-parser
 
 name=rust
-version=1.30.1
-distver=1.29.2
-cargover=0.31.0
-release=1
+version=nightly
+distver=1.28.0
+release=20181101
 source=(https://static.rust-lang.org/dist/rustc-$version-src.tar.gz)
 
 build() {
-	export CARGO_HOME="$(pwd)/.cargo"
 	export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 	export LD_LIBRARY_PATH="$(pwd)/stage0/lib"
 	export PATH="$(pwd)/stage0/bin:$PATH"
@@ -21,28 +19,23 @@ build() {
 
 	case $BARCH in
 		x86_64)
-			export LLVMTARGET="X86"
 			export RTARGET="x86_64-unknown-linux-musl"
+			;;
+		aarch64)
+			export RTARGET="aarch64-unknown-linux-musl"
+			;;
+		armv7h)
+			export RTARGET="armv7-unknown-linux-musleabihf"
+			;;
+		armv6h)
+			export RTARGET="arm-unknown-linux-musleabihf"
 			;;
 		*)
 			echo "Unsupported architecure!"
 			exit 1
 	esac
 
-	mkdir -p $CARGO_HOME
-	touch $CARGO_HOME/config
-
-	wget https://alpha.de.repo.voidlinux.org/distfiles/rustc-$distver-$RTARGET.tar.xz
-	wget https://alpha.de.repo.voidlinux.org/distfiles/rust-std-$distver-$RTARGET.tar.xz
-	wget https://alpha.de.repo.voidlinux.org/distfiles/cargo-$cargover-$RTARGET-libressl-2.8.tar.gz
-	tar -xf rustc-$distver-$RTARGET.tar.xz
-	tar -xf rust-std-$distver-$RTARGET.tar.xz
-	tar -xf cargo-$cargover-$RTARGET-libressl-2.8.tar.gz
-	
-	mkdir -p stage0
-	cp -a rustc-*/rustc/* stage0/
-	cp -a rust-std-*/rust-std-*/* stage0/
-	cp -a cargo stage0/bin
+	wget https://portage.smaeul.xyz/distfiles/rust-$distver-$RTARGET.tar.xz
 
 	cd rustc-$version-src
 	patch -Np1 -i $KEEP/rust/libunwind.patch
@@ -61,7 +54,7 @@ build() {
 		--target=$RTARGET \
 		--build=$XTARGET \
 		--disable-docs \
-		--release-channel=stable \
+		--release-channel=nightly \
 		--disable-codegen-tests \
 		--disable-full-bootstrap \
 		--disable-jemalloc \
