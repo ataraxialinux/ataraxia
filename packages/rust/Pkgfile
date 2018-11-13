@@ -35,7 +35,15 @@ build() {
 			exit 1
 	esac
 
+	mkdir -p stage0
+
 	wget https://portage.smaeul.xyz/distfiles/rust-$distver-$RTARGET.tar.xz
+	tar -xf rust-$distver-$RTARGET.tar.xz
+	rust-$distver-$RTARGET/install.sh" \
+		--destdir="$(pwd)/stage0" \
+		--prefix=/ \
+		--components=rust-std-$RTARGET,rustc,cargo \
+		--disable-ldconfig
 
 	cd rustc-$version-src
 	patch -Np1 -i $KEEP/rust/libunwind.patch
