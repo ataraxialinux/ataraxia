@@ -1,3 +1,20 @@
+# IMPORTANT INFO!
+Since that januslinux wasn't developed for months, we made another Linux distribution called [Blaze](https://github.com/projectblaze/distribution).
+QnA:
+
+Q: Will be januslinux developed in future?
+
+A: Main work will be focused on [Blaze](https://github.com/projectblaze/distribution) but I will develop it if I will have free time.
+
+Q: Can I fork your work and continue development?
+
+A: Yes, you can **BUT DON'T ERASE ME FROM "AUTHORS" file >:C**
+
+Q: Can I participate in [Blaze](https://github.com/projectblaze/distribution) development?
+
+A: Yes, thanks!
+
+
 # Welcome to januslinux - Fast and compact Linux distribution which uses musl libc.
 ```
 
