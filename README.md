@@ -14,6 +14,8 @@ Q: Can I participate in [Blaze](https://github.com/projectblaze/distribution) de
 
 A: Yes, thanks!
 
+**BLAZE WOULD BE MERGED WITH JANUSLINUX PROBABLY**
+
 
 # Welcome to januslinux - Fast and compact Linux distribution which uses musl libc.
 ```
