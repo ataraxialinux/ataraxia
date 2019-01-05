@@ -12,9 +12,9 @@ build() {
 
 	CROSS_COMPILE=$XTARGET- \
 	./configure \
-		--prefix='' \
-		--libdir=/lib \
-		--syslibdir=/lib \
+		--prefix=/tools \
+		--libdir=/tools/lib \
+		--syslibdir=/tools/lib \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--target=$XTARGET \
@@ -26,8 +26,8 @@ package() {
 	cd "$srcdir"/musl-$pkgver
 	make DESTDIR="$pkgdir" install
 
-	cp libssp_nonshared.a "$pkgdir"/lib
+	cp libssp_nonshared.a "$pkgdir"/tools/lib
 
-	mkdir -p "$pkgdir"/bin
-	ln -sf ../lib/libc.so "$pkgdir"/bin/ldd
+	mkdir -p "$pkgdir"/tools/bin
+	ln -sf ../lib/libc.so "$pkgdir"/tools/bin/ldd
 }
