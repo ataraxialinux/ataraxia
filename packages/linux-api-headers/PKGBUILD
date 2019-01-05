@@ -1,18 +1,17 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
 pkgname=linux-api-headers
-pkgver=4.20+gnu
-lbasever=${pkgver%*+gnu}
+pkgver=4.20
 pkgrel=1
 pkgdesc="Kernel headers sanitized for use in userspace"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
 url="https://www.kernel.org/"
 license=('GPL-2.0-only')
-source=("http://linux-libre.fsfla.org/pub/linux-libre/releases/${pkgver/+/-}/linux-libre-${pkgver/+/-}.tar.xz")
-md5sums=('41845cdee287c68cf71b7725f9736453')
+source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz")
+md5sums=('d39dd4ba2d5861c54b90d49be19eaf31')
 
 build() {
-	cd "$srcdir"/linux-$lbasever
+	cd "$srcdir"/linux-$pkgver
 	make mrproper
 }
 
@@ -41,7 +40,7 @@ package() {
 			exit 1
 	esac
 
-	cd "$srcdir"/linux-$lbasever
+	cd "$srcdir"/linux-$pkgver
 	make ARCH=$XKARCH INSTALL_HDR_PATH="$pkgdir" headers_install
 
 	rm -r "$pkgdir"/include/drm
