@@ -1,0 +1,15 @@
+pkgname=chroot-musl-tools
+pkgver=current
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=('getconf.c'
+	'getent.c'
+	'iconv.c')
+
+package() {
+	mkdir -p "$pkgdir"/bin
+
+	for file in getconf getent iconv; do
+		$CC $CFLAGS "$srcdir"/${file}.c -o "$pkgdir"/bin/$file
+	done
+}

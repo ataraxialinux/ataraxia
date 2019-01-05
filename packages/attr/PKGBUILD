@@ -1,0 +1,30 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=attr
+pkgver=2.4.48
+pkgrel=1
+pkgdesc="Extended attribute support library for ACL support"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://savannah.nongnu.org/projects/attr"
+license=('GPL-2.0-or-later LGPL-2.0-or-later')
+depends=('musl')
+makedepends=('gettext')
+backup=('etc/xattr.conf')
+source=("https://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('bc1e5cb5c96d99b24886f1f527d3bb3d')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--libdir=/lib \
+		--libexecdir=/lib \
+		--sysconfdir=/etc \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

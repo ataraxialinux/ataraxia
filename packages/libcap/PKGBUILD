@@ -1,0 +1,32 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libcap
+pkgver=2.26
+pkgrel=1
+pkgdesc="POSIX 1003.1e capabilities"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://sites.google.com/site/fullycapable/"
+license=('GPL')
+depends=('musl' 'attr')
+makedepends=('linux-api-headers')
+source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$pkgname-$pkgver.tar.xz")
+md5sums=('968ac4d42a1a71754313527be2ab5df3')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
+	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i 's@/bin/bash@/bin/sh@g' progs/capsh.c
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make KERNEL_HEADERS=/usr/include
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make prefix='' lib=/lib DESTDIR="$pkgdir" RAISE_SETFCAP=no install
+}

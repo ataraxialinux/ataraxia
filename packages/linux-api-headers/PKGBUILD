@@ -1,0 +1,50 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=linux-api-headers
+pkgver=4.20+gnu
+lbasever=${pkgver%*+gnu}
+pkgrel=1
+pkgdesc="Kernel headers sanitized for use in userspace"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.kernel.org/"
+license=('GPL-2.0-only')
+source=("http://linux-libre.fsfla.org/pub/linux-libre/releases/${pkgver/+/-}/linux-libre-${pkgver/+/-}.tar.xz")
+md5sums=('41845cdee287c68cf71b7725f9736453')
+
+build() {
+	cd "$srcdir"/linux-$lbasever
+	make mrproper
+}
+
+package() {
+	case $CARCH in
+		x86_64)
+			export XKARCH="x86_64"
+			;;
+		x86)
+			export XKARCH="i386"
+			;;
+		arm64)
+			export XKARCH="arm64"
+			;;
+		armv7l|armv5tel)
+			export XKARCH="arm"
+			;;
+		mips64|mips)
+			export XKARCH="mips"
+			;;
+		ppc64le|ppc64|ppc)
+			export XKARCH="powerpc"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by 'bootstrap' script"
+			exit 1
+	esac
+
+	cd "$srcdir"/linux-$lbasever
+	make ARCH=$XKARCH INSTALL_HDR_PATH="$pkgdir" headers_install
+
+	rm -r "$pkgdir"/include/drm
+
+	find "$pkgdir" \( -name .install -o -name ..install.cmd \) -delete
+}

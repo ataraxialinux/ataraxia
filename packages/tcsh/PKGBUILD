@@ -1,0 +1,50 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=tcsh
+pkgver=6.20.00
+pkgrel=1
+pkgdesc="Enhanced version of the Berkeley C shell."
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.tcsh.org/Welcome"
+license=('BSD-3-Clause')
+depends=('musl' 'netbsd-curses')
+backup=('etc/csh.cshrc'
+	'etc/csh.login')
+install=$pkgname.install
+source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz"
+	'001-sysmalloc.patch'
+	'002-test_123-posix_fix.patch'
+	'csh.cshrc'
+	'csh.login')
+md5sums=('59d40ef40a68e790d95e182069431834'
+         '02097ce08f6b1976cfb92daf71a4c5fc'
+         'a1ce269217b26edf5d4454c14c402603'
+         '85644b70254f602fe87be0b9c8a20b93'
+         '71c4c4a2c6a2e78e284c361b50f99feb')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/001-sysmalloc.patch
+	patch -Np1 -i "$srcdir"/002-test_123-posix_fix.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--bindir=/bin \
+		--sysconfdir=/etc \
+		--disable-rpath \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	ln -sf tcsh "$pkgdir"/bin/csh
+
+	install -Dm0644 "$srcdir"/csh.cshrc "$pkgdir"/etc/csh.cshrc
+	install -Dm0644 "$srcdir"/csh.login "$pkgdir"/etc/csh.login
+}

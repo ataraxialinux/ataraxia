@@ -1,0 +1,28 @@
+umask 022
+
+export PATH="/local/sbin:/local/bin:/bin"
+
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+
+NORMAL="\[\e[0m\]"
+RED="\[\e[1;31m\]"
+GREEN="\[\e[1;32m\]"
+if [[ $EUID == 0 ]] ; then
+	PS1="$RED\u [ $NORMAL\w$RED ]# $NORMAL"
+else
+	PS1="$GREEN\u [ $NORMAL\w$GREEN ]\$ $NORMAL"
+fi
+
+unset RED GREEN NORMAL
+
+if test -d /etc/profile.d/; then
+	for profile in /etc/profile.d/*.sh; do
+		test -r "$profile" && . "$profile"
+	done
+	unset profile
+fi
+
+unset TERMCAP
+
+unset MANPATH

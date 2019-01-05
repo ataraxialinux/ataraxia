@@ -1,0 +1,27 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=acl
+pkgver=2.2.53
+pkgrel=1
+pkgdesc="Access control list utilities, libraries and headers"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://savannah.nongnu.org/projects/acl"
+license=('LGPL-2.1-or-later AND GPL-2.0-or-later')
+depends=('musl' 'attr')
+source=("https://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('007aabf1dbb550bcddde52a244cd1070')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--libdir=/lib \
+		--libexecdir=/lib \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,30 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=bash-completion
+pkgver=2.8
+pkgrel=1
+pkgdesc="Programmable completion for the bash shell"
+arch=('any')
+url="https://github.com/scop/bash-completion"
+license=('GPL-2.0-or-later')
+depends=('bash')
+source=("https://github.com/scop/bash-completion/releases/download/$pkgver/$pkgname-$pkgver.tar.xz")
+md5sums=('201b6ae62f7d5fb5b1b25e34427db919')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm "$pkgdir"/etc/profile.d/bash_completion.sh
+	rm "$pkgdir"/share/bash-completion/completions/makepkg
+	rm "$pkgdir"/share/bash-completion/completions/{u,}mount
+}

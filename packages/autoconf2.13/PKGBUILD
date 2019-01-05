@@ -1,0 +1,37 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=autoconf2.13
+pkgver=2.13
+pkgrel=1
+pkgdesc="A GNU tool for automatically configuring source code (Legacy 2.1x version)"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/autoconf/"
+license=('GPL-2.0')
+depends=('perl')
+source=("http://ftpmirror.gnu.org/gnu/autoconf/autoconf-$pkgver.tar.gz"
+	'musl.patch')
+md5sums=('9de56d4a161a723228220b0f425dc711'
+         'f264769f9794c01be4e1834fe5a724ba')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Npi -i "$srcdir"/musl.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--infodir=/share/info \
+		--program-suffix=-2.13 \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make prefix="$pkgdir" infodir="$pkgdir"/share/info install
+
+	mv "$pkgdir"/share/info/autoconf{,-2.13}.info
+	mv "$pkgdir"/share/info/standards{,-2.13}.info
+}

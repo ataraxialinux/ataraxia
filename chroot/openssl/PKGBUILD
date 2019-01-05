@@ -1,0 +1,65 @@
+pkgname=chroot-openssl
+pkgver=1.1.1a
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("https://openssl.org/source/openssl-$pkgver.tar.gz")
+
+build() {
+	unset CC CXX AS AR LD STRIP RANLIB
+
+	cd "$srcdir"/openssl-$pkgver
+	case $CARCH in
+		x86_64)
+			export OPENSSLTARGET="linux-x86_64"
+			export OPENSSLOPTS="enable-ec_nistp_64_gcc_128"
+			;;
+		x86)
+			export OPENSSLTARGET="linux-elf"
+			export OPENSSLOPTS=''
+			;;
+		arm64)
+			export OPENSSLTARGET="linux-aarch64"
+			export OPENSSLOPTS=''
+			;;
+		armv7l|armv5tel)
+			export OPENSSLTARGET="linux-armv4"
+			export OPENSSLOPTS=''
+			;;
+		mips64)
+			export OPENSSLTARGET="linux64-mips64"
+			export OPENSSLOPTS=''
+			;;
+		mips)
+			export OPENSSLTARGET="linux-mips32"
+			export OPENSSLOPTS="-mips32"
+			;;
+		ppc64le)
+			export OPENSSLTARGET="linux-ppc64le"
+			export OPENSSLOPTS=''
+			;;
+		ppc64)
+			export OPENSSLTARGET="linux-ppc64"
+			export OPENSSLOPTS="no-asm"
+			;;
+		ppc)
+			export OPENSSLTARGET="linux-ppc"
+			export OPENSSLOPTS=''
+			;;
+		*)
+			echo "Architecture is not set or is not supported"
+			exit 1
+	esac
+
+	./Configure $OPENSSLTARGET \
+		--prefix=/ \
+		--libdir=lib \
+		--openssldir=/etc/ssl \
+		shared no-ssl3-method $OPENSSLOPTS \
+		$CFLAGS -Wa,--noexecstack
+	make
+}
+
+package() {
+	cd "$srcdir"/openssl-$pkgver
+	make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,31 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=pkgconf
+pkgver=1.5.4
+pkgrel=2
+pkgdesc="Package compiler and linker metadata toolkit"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/pkgconf/pkgconf"
+license=('ISC')
+depends=('musl' 'bash')
+source=("http://distfiles.dereferenced.org/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('a7846cfd1f53664a4ef983bae8355309')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--with-pkg-config-dir="/lib/pkgconfig:/share/pkgconfig" \
+		--with-system-libdir="/lib" \
+		--with-system-includedir="/include" \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	ln -sf pkgconf "$pkgdir"/bin/pkg-config
+}
