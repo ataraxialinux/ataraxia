@@ -1,0 +1,26 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=file
+pkgver=5.35
+pkgrel=1
+pkgdesc="File type identification utility"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.darwinsys.com/file/"
+license=('BSD-2-Clause')
+depends=('musl' 'libz')
+source=("ftp://ftp.astron.com/pub/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('5f10fb45bdaffd729a572e563783b78e')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--disable-libseccomp \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

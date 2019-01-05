@@ -1,0 +1,19 @@
+pkgname=chroot-file
+pkgver=5.35
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("ftp://ftp.astron.com/pub/file/file-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir"/file-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$XHOST \
+		--host=$XTARGET
+	make
+}
+
+package() {
+	cd "$srcdir"/file-$pkgver
+	make DESTDIR="$pkgdir" install
+}

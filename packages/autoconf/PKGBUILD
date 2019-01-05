@@ -1,0 +1,43 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=autoconf
+pkgver=2.69
+pkgrel=1
+pkgdesc="A GNU tool for automatically configuring source code"
+arch=('any')
+url="http://www.gnu.org/software/autoconf"
+license=('GPL-2.0-or-later')
+depends=('m4' 'bash' 'mawk' 'diffutils')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
+	'autoconf-2.69-perl-5.22-autoscan.patch'
+	'autoconf-2.69-perl-5.28.patch'
+	'autoconf-2.69-libtool-compatibility.patch'
+	'musl.patch')
+md5sums=('50f97f4159805e374639a73e2636f22e'
+         '711f332f9f7e8e2942ab98271c3f72db'
+         '3129a6892cec78c78e98fb0cb29ee839'
+         '8fb37711ff2fc765cc32b552d6df3aa5'
+         '75618be2d5fd0515a61ccbfdefe74527')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -p1 -i "$srcdir"/autoconf-2.69-perl-5.22-autoscan.patch
+	patch -p1 -i "$srcdir"/autoconf-2.69-perl-5.28.patch
+	patch -p1 -i "$srcdir"/autoconf-2.69-libtool-compatibility.patch
+	patch -Npi -i "$srcdir"/musl.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm -f "$pkgdir"/share/info/standards.info
+}

@@ -1,0 +1,50 @@
+pkgname=chroot-pacman
+pkgver=5.1.2
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("https://sources.archlinux.org/other/pacman/pacman-$pkgver.tar.gz"
+	'makepkg.conf')
+
+prepare() {
+	cd "$srcdir"/pacman-$pkgver
+	sed -i -e 's/EUID == 0/EUID == -1/' scripts/makepkg.sh.in
+}
+
+
+build() {
+	cd "$srcdir"/pacman-$pkgver
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-scriptlet-shell=/bin/bash \
+		--disable-doc \
+		--disable-nls \
+		--disable-shared \
+		DUFLAGS="-sk" \
+		SEDINPLACEFLAGS="-i"
+	make
+}
+
+package() {
+	cd "$srcdir"/pacman-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	mkdir -p "$pkgdir"/storage
+
+	install -m644 "$srcdir"/makepkg.conf "$pkgdir"/storage
+
+	sed -i 's/CheckSpace/#CheckSpace/' "$pkgdir"/etc/pacman.conf
+
+	sed -i "$pkgdir"/storage/makepkg.conf \
+		-e "s|@CARCH[@]|$CARCH|g" \
+		-e "s|@CHOST[@]|$CHOST|g" \
+		-e "s|@CFLAGS[@]|$CFLAGS|g" \
+		-e "s|@CXXFLAGS[@]|$CXXFLAGS|g" \
+		-e "s|@PKGS[@]|/storage/packages|g" \
+		-e "s|@SOURCES[@]|/storage/sources|g" \
+		-e "s|@MKOPTS[@]|$MAKEFLAGS|g" \
+		-e "s|@LC_ALL[@]|$LC_ALL|g"
+}

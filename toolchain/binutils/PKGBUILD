@@ -1,0 +1,43 @@
+pkgname=host-binutils
+pkgver=2.31.1
+pkgrel=1
+arch=('any')
+source=(http://ftpmirror.gnu.org/gnu/binutils/binutils-$pkgver.tar.xz
+	gold-mips.patch)
+
+prepare() {
+	cd "$srcdir"/binutils-$pkgver
+	patch -Np1 -i "$srcdir"/gold-mips.patch
+
+	mkdir build
+}
+
+build() {
+	cd "$srcdir"/binutils-$pkgver
+	cd build
+	../configure \
+		--prefix="$TOOLS" \
+		--target=$XTARGET $BINUTILSOPTS \
+		--with-sysroot="$ROOTFS" \
+		--with-lib-path="$ROOTFS/lib" \
+		--with-pic \
+		--with-system-zlib \
+		--enable-64-bit-bfd \
+		--enable-deterministic-archives \
+		--enable-gold=yes \
+		--enable-ld=default \
+		--enable-plugins \
+		--enable-relro \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make MAKEINFO="true" configure-host
+	make MAKEINFO="true"
+}
+
+package() {
+	cd "$srcdir"/binutils-$pkgver
+	cd build
+	make MAKEINFO="true" install
+}

@@ -1,0 +1,39 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=musl
+pkgver=de7dc1318f493184b20f7661bc12b1829b957b67
+pkgrel=1
+pkgdesc="The musl c library (libc) implementation"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.musl-libc.org/"
+license=('MIT')
+depends=('base-files')
+makedepends=('linux-api-headers' 'fortify-headers')
+source=("http://git.musl-libc.org/cgit/musl/snapshot/$pkgname-$pkgver.tar.gz"
+	'__stack_chk_fail_local.c')
+md5sums=('49b6c6c4f7442c2459a5050b39b3e9aa'
+         '0df687757221bbb0fc1aa67f1bd646f9')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	cc $CFLAGS -c "$srcdir"/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
+	ar r libssp_nonshared.a __stack_chk_fail_local.o
+
+	./configure \
+		--prefix='' \
+		--libdir=/lib \
+		--syslibdir=/lib \
+		--enable-optimize=size \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	cp libssp_nonshared.a "$pkgdir"/lib
+
+	mkdir -p "$pkgdir"/bin
+	ln -sf ../lib/libc.so "$pkgdir"/bin/ldd
+}

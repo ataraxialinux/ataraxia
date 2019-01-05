@@ -1,0 +1,77 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=bash
+lbasever=4.4
+patchlevel=023
+stripped_lbasever="$(echo ${lbasever} | tr -d '.')"
+pkgver=${lbasever}.${patchlevel}
+pkgrel=1
+pkgdesc="The GNU Bourne Again shell"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/bash/bash.html"
+license=('GPL-3.0-or-later')
+depends=('musl' 'libedit')
+source=("http://ftpmirror.gnu.org/gnu/bash/bash-${lbasever}.tar.gz")
+for patch in $(seq 1 ${patchlevel}); do
+	source=(${source[@]} "http://ftpmirror.gnu.org/gnu/bash/bash-${lbasever}-patches/bash${stripped_lbasever}-$(printf "%03d" ${patch})")
+done
+md5sums=('148888a7c95ac23705559b6f477dfe25'
+         '817d01a6c0af6f79308a8b7b649e53d8'
+         '765e14cff12c7284009772e8e24f2fe0'
+         '49e7da93bf07f510a2eb6bb43ac3e5a2'
+         '4557d674ab5831a5fa98052ab19edaf4'
+         'cce96dd77cdd1d293beec10848f6cbb5'
+         'd3379f8d8abce5c6ee338f931ad008d5'
+         'ec38c76ca439ca7f9c178e9baede84fc'
+         'e0ba18c1e3b94f905da9b5bf9d38b58b'
+         'e952d4f44e612048930c559d90eb99bb'
+         '57b5b35955d68f9a09dbef6b86d2c782'
+         'cc896e1fa696b93ded568e557e2392d5'
+         'fa47fbfa56fb7e9e5367f19a9df5fc9e'
+         '5e6a20166efe166267972cc78025417b'
+         '00a8877a8787dbd78d97767db1115b0a'
+         '2409586fd19e3104197ead86ce549eca'
+         '4b31183db086daf8be8943d7f7ea7526'
+         'c15c8844f1eb87bdbcde71417c9bd342'
+         'b25e3373fc8de00523116dfe151ac4e0'
+         '8f43e1d277b02f3319a34c1cd4a4ff3e'
+         '5217ff08c444446ec306dce60437c288'
+         '282c7d9b38da8005d25b4f816328a2f4'
+         '0b709c9d7f8e6cf267a8b863efb899f7'
+         'fe2e0ca4cf9409ff0e9428e1236f983e')
+
+prepare() {
+	cd "$srcdir"/$pkgname-${lbasever}
+
+	for patch in $(seq 1 ${patchlevel}); do
+		patch -p0 -i "${srcdir}/bash${stripped_lbasever}-$(printf "%03d" ${patch})"
+	done
+}
+
+build() {
+	cd "$srcdir"/$pkgname-${lbasever}
+	_bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/local/sbin:/local/bin:/bin\"\'
+		-DSTANDARD_UTILS_PATH=\'\"/bin\"\'
+		-DSYS_BASHRC=\'\"/etc/bash.bashrc\"\'
+		-DSYS_BASH_LOGOUT=\'\"/etc/bash.bash_logout\"\'
+		-DNON_INTERACTIVE_LOGIN_SHELLS)
+	export CFLAGS="${CFLAGS} ${_bashconfig[@]}"
+
+	LIBS="-ledit -lterminfo" \
+	./configure \
+		--prefix='' \
+		--with-curses \
+		--with-installed-readline \
+		--without-bash-malloc \
+		--enable-readline \
+		--build=$CHOST
+	make y.tab.c && make builtins/libbuiltins.a && make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-${lbasever}
+	make DESTDIR="$pkgdir" install
+
+	ln -sf bash "$pkgdir"/bin/rbash
+	ln -sf bash "$pkgdir"/bin/sh
+}

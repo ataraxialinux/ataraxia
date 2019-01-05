@@ -1,0 +1,25 @@
+pkgname=chroot-netbsd-curses
+pkgver=0.2.2
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("http://ftp.barfooze.de/pub/sabotage/tarballs/netbsd-curses-$pkgver.tar.xz")
+
+build() {
+	cd "$srcdir"/netbsd-curses-$pkgver
+cat << EOF > config.mak
+CC=$CC
+HOSTCC=$HOSTCC
+AR=$AR
+RANLIB=$RANLIB
+CFLAGS=-fPIC $CFLAGS
+LDFLAGS=
+PREFIX=''
+DESTDIR="$pkgdir"
+EOF
+	make
+}
+
+package() {
+	cd "$srcdir"/netbsd-curses-$pkgver
+	make install
+}

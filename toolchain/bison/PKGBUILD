@@ -1,0 +1,19 @@
+pkgname=host-bison
+pkgver=3.2.4
+pkgrel=1
+arch=('any')
+source=(http://ftpmirror.gnu.org/gnu/bison/bison-$pkgver.tar.xz)
+
+build() {
+	cd "$srcdir"/bison-$pkgver
+	./configure \
+		--prefix=''
+	make
+}
+
+package() {
+	cd "$srcdir"/bison-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm -rf "$pkgdir"/bin/yacc
+}

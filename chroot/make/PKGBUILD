@@ -1,0 +1,27 @@
+pkgname=chroot-make
+pkgver=4.2.1
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("http://ftpmirror.gnu.org/gnu/make/make-$pkgver.tar.bz2"
+	'fix-atexit-exit.patch'
+	'fix-glob-dtype.patch')
+
+prepare() {
+	cd "$srcdir"/make-$pkgver
+	patch -Np1 -i "$srcdir"/fix-atexit-exit.patch
+	patch -Np1 -i "$srcdir"/fix-glob-dtype.patch
+}
+
+build() {
+	cd "$srcdir"/make-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$XHOST \
+		--host=$XTARGET
+	make
+}
+
+package() {
+	cd "$srcdir"/make-$pkgver
+	make DESTDIR="$pkgdir" install
+}

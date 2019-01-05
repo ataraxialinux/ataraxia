@@ -1,0 +1,23 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=bc
+pkgver=1.0_rc7
+pkgrel=1
+pkgdesc="An arbitrary precision numeric processing language (calculator)"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/gavinhoward/bc"
+license=('BSD-0-Clause')
+depends=('musl')
+source=("https://github.com/gavinhoward/bc/releases/download/${pkgver/_/-}/bc-${pkgver/_/-}.tar.xz")
+md5sums=('add588ca817a2d6f8f01d10490b8421e')
+
+build() {
+	cd "$srcdir"/bc-${pkgver/_/-}
+	make PREFIX=''
+}
+
+package() {
+	cd "$srcdir"/bc-${pkgver/_/-}
+	make PREFIX='' DESTDIR="$pkgdir" install
+
+}

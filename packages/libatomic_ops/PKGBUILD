@@ -1,0 +1,26 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libatomic_ops
+pkgver=7.6.8
+pkgrel=1
+pkgdesc="Provides semi-portable access to hardware provided atomic memory operations"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/ivmai/libatomic_ops"
+license=('GPL-2.0-or-later MIT')
+depends=('musl')
+source=("https://github.com/ivmai/libatomic_ops/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
+md5sums=('99128f05e3e3f4e0cd39aa23f23bbe0c')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--enable-shared \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}
