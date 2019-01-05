@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libtool
+pkgver=2.4.6
+pkgrel=1
+pkgdesc="A generic library support script"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/libtool"
+license=('LGPL-2.0+')
+depends=('musl' 'bash')
+provides=("libltdl=$pkgver")
+conflicts=('libltdl')
+replaces=('libltdl')
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('1bfb9b923f2c1339b4d2ce1807064aa5')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--disable-static \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

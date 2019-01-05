@@ -1,0 +1,25 @@
+pkgname=chroot-busybox
+pkgver=1.30.0
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("https://busybox.net/downloads/busybox-$pkgver.tar.bz2")
+
+build() {
+	cd "$srcdir"/busybox-$pkgver
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE defconfig
+	sed -i 's/\(CONFIG_\)\(.*\)\(INETD\)\(.*\)=y/# \1\2\3\4 is not set/g' .config
+	sed -i 's/\(CONFIG_IFPLUGD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_WTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_FEATURE_UTMP\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_UDPSVD\)=y/# \1 is not set/' .config
+	sed -i 's/\(CONFIG_TCPSVD\)=y/# \1 is not set/' .config
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" CONFIG_STATIC=y
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" busybox.links
+}
+
+package() {
+	cd "$srcdir"/busybox-$pkgver
+	install -D busybox "$pkgdir"/bin/busybox
+
+	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$pkgdir"/bin/$applet || true; done
+}

@@ -1,0 +1,33 @@
+pkgname=chroot-musl
+pkgver=de7dc1318f493184b20f7661bc12b1829b957b67
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+source=("http://git.musl-libc.org/cgit/musl/snapshot/musl-$pkgver.tar.gz"
+	'__stack_chk_fail_local.c')
+
+build() {
+	cd "$srcdir"/musl-$pkgver
+	$XTARGET-gcc $CFLAGS -c "$srcdir"/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
+	$XTARGET-ar r libssp_nonshared.a __stack_chk_fail_local.o
+
+	CROSS_COMPILE=$XTARGET- \
+	./configure \
+		--prefix='' \
+		--libdir=/lib \
+		--syslibdir=/lib \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET \
+		--enable-optimize=size
+	make
+}
+
+package() {
+	cd "$srcdir"/musl-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	cp libssp_nonshared.a "$pkgdir"/lib
+
+	mkdir -p "$pkgdir"/bin
+	ln -sf ../lib/libc.so "$pkgdir"/bin/ldd
+}

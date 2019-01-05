@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=expat
+pkgver=2.2.6
+pkgrel=1
+pkgdesc="An XML parser library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://libexpat.github.io/"
+license=('MIT')
+depends=('musl')
+source=("https://github.com/libexpat/libexpat/releases/download/R_${pkgver//./_}/expat-${pkgver}.tar.bz2")
+md5sums=('ca047ae951b40020ac831c28859161b2')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

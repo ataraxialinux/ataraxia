@@ -1,0 +1,34 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=fish
+pkgver=9b980f5e6e6d586bbfc48ca8b2f695389574323e
+pkgrel=1
+pkgdesc="Smart and user friendly shell intended mostly for interactive use"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://fishshell.com/"
+license=('GPL-2.0')
+depends=('gcc-libs' 'bc' 'ncurses' 'pcre2' 'which' 'iputils' 'net-tools')
+install=$pkgname.install
+source=("https://github.com/fish-shell/fish-shell/archive/$pkgver.tar.gz")
+md5sums=('dd88feb54298e1b72ae9d62583f24e27')
+
+prepare() {
+	cd "$srcdir"/fish-shell-$pkgver
+	echo ${pkgver} > version
+	autoreconf -fiv
+}
+
+build() {
+	cd "$srcdir"/fish-shell-$pkgver
+	LIBS="-lterminfo" \
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/fish-shell-$pkgver
+	make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,86 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=openssl
+pkgver=1.1.1a
+pkgrel=1
+pkgdesc="The Open Source toolkit for Secure Sockets Layer and Transport Layer Security"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="Toolkit for Transport Layer Security (TLS)"
+license=('OpenSSL')
+depends=('musl')
+makedepends=('perl')
+backup=('etc/ssl/openssl.cnf')
+source=("https://openssl.org/source/$pkgname-$pkgver.tar.gz"
+	'ca-dir.patch'
+	'no-rpath.patch'
+	'c_rehash.c')
+md5sums=('963deb2272d6be7d4c2458afd2517b73'
+         'c05499fb5f149323c72d72481bf013d3'
+         'a2a2f70a832ca555887129e809077e99'
+         'eba0f9b8d993f21c900a12ca03301344')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -p0 -i "$srcdir"/no-rpath.patch
+	patch -p0 -i "$srcdir"/ca-dir.patch
+}
+
+build() {
+	case $CARCH in
+		x86_64)
+			export OPENSSLTARGET="linux-x86_64"
+			export OPENSSLOPTS="enable-ec_nistp_64_gcc_128"
+			;;
+		x86)
+			export OPENSSLTARGET="linux-elf"
+			export OPENSSLOPTS=''
+			;;
+		arm64)
+			export OPENSSLTARGET="linux-aarch64"
+			export OPENSSLOPTS=''
+			;;
+		armv7l|armv5tel)
+			export OPENSSLTARGET="linux-armv4"
+			export OPENSSLOPTS=''
+			;;
+		mips64)
+			export OPENSSLTARGET="linux64-mips64"
+			export OPENSSLOPTS=''
+			;;
+		mips)
+			export OPENSSLTARGET="linux-mips32"
+			export OPENSSLOPTS="-mips32"
+			;;
+		ppc64le)
+			export OPENSSLTARGET="linux-ppc64le"
+			export OPENSSLOPTS=''
+			;;
+		ppc64)
+			export OPENSSLTARGET="linux-ppc64"
+			export OPENSSLOPTS="no-asm"
+			;;
+		ppc)
+			export OPENSSLTARGET="linux-ppc"
+			export OPENSSLOPTS=''
+			;;
+		*)
+			echo "Architecture is not set or is not supported"
+			exit 1
+	esac
+
+	cd "$srcdir"/$pkgname-$pkgver
+	./Configure $OPENSSLTARGET \
+		--prefix=/ \
+		--libdir=lib \
+		--openssldir=/etc/ssl \
+		shared no-ssl3-method $OPENSSLOPTS \
+		$CFLAGS -Wa,--noexecstack
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	gcc --sysroot="$pkgdir" "$srcdir"/c_rehash.c -o "$pkgdir"/bin/c_rehash -lssl -lcrypto -lz $CFLAGS
+}

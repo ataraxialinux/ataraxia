@@ -1,0 +1,23 @@
+pkgname=host-pkgconf
+pkgver=1.5.4
+pkgrel=1
+arch=('any')
+source=(http://distfiles.dereferenced.org/pkgconf/pkgconf-$pkgver.tar.xz)
+
+build() {
+	cd "$srcdir"/pkgconf-$pkgver
+	LDFLAGS="-static" \
+	./configure \
+		--prefix='' \
+		--with-sysroot="$ROOTFS" \
+		--with-pkg-config-dir="$ROOTFS/lib/pkgconfig:$ROOTFS/share/pkgconfig"
+	make
+}
+
+package() {
+	cd "$srcdir"/pkgconf-$pkgver
+	make DESTDIR="$pkgdir" install
+	ln -sf pkgconf "$pkgdir"/bin/pkg-config
+	ln -sf pkgconf "$pkgdir"/bin/$XTARGET-pkg-config
+	ln -sf pkgconf "$pkgdir"/bin/$XTARGET-pkgconf
+}
