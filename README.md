@@ -11,7 +11,7 @@ januslinux is a rolling Linux distribution, then it have no releases. To downloa
 
 ## How can I contact and help you with development?
 
-You can [email](mailto:nagakamira@gmail.com) me and give some suggestions or help me to contribute to this project on [GitHub](https://github.com/JanusLinux/janus). Also, you can help submit it on DistroWatch, just click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We have own Discord server, to access just click [here](https://discord.gg/a329dDz). We have an IRC channel on freenodwithe.net: #januslinux. Don't forget to subscribe to our mailing lists, click [here](https://www.freelists.org/list/januslinux).
+You can [email](mailto:januslinux@protonmail.ch) us and give some suggestions or help me to contribute to this project on [GitHub](https://github.com/JanusLinux/janus). Also, you can help submit it on DistroWatch, just click [here](http://distrowatch.org/dwres.php?waitingdistro=444&resource=links#new). We have an IRC channel on freenodwithe.net: #januslinux. Don't forget to subscribe to our mailing lists, click [here](https://www.freelists.org/list/januslinux).
 
 ## Financial support
 januslinux is not a commercial company! We'll glad for your financial support. We are using Ethereum cryptocurrency to recieve your donations.
