@@ -7,6 +7,26 @@ msg() {
 	printf "\e[1m\e[32m==>\e[0m $msg\n"
 }
 
+adjust_toolchain() {
+	msg "Please, wait..."
+	sleep 1
+
+	mv /tools/bin/ld /tools/bin/ld-old
+	mv /tools/$(cc -dumpmachine)/bin/ld /tools/$(cc -dumpmachine)/bin/ld-old
+	mv /tools/bin/ld-new /tools/bin/ld
+	ln -sf /tools/bin/ld /tools/$(cc -dumpmachine)/bin/ld
+
+	rm -rf /tools/bin/ld-old
+	rm -rf /tools/$(cc -dumpmachine)/bin/ld-old
+
+	gcc -dumpspecs | sed -e 's@/tools@@g' \
+		-e '/\*startfile_prefix_spec:/{n;s@.*@/usr/lib/ @}' \
+		-e '/\*cpp:/{n;s@$@ -isystem /usr/include@}' > \
+		`dirname $(gcc --print-libgcc-file-name)`/specs
+
+	msg "Toolchain adjust is done"
+}
+
 pkgstagetwo() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
@@ -23,20 +43,8 @@ pkgstagetwo() {
 	done
 }
 
-pkgstagetwob() {
-	local pkg="$@"
-	for emergepkg in $pkg; do
-		msg "Emerging '"$emergepkg"' package"
-		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
-		cd /storage/repository/$emergepkg
-		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
-		fi
-		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
-	done
-}
 
-pkgstagetwoc() {
+pkgstagetwob() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
@@ -47,7 +55,7 @@ pkgstagetwoc() {
 	done
 }
 
-pkgstagetwod() {
+pkgstagetwoc() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
@@ -119,34 +127,8 @@ for package in linux-api-headers fortify-headers musl musl-tools libz file netbs
 		fish xz lz4 lzip lzo p7zip unrar unzip zip zstd libarchive; do
 	case $package in
 		musl)
-			pkgstagetwob musl
-			;;
-		libz)
-			pkgstagetwob libz
-			;;
-		openssl)
-			pkgstagetwob openssl
-			;;
-		libarchive)
-			pkgstagetwob libarchive
-			;;
-		curl)
-			pkgstagetwob curl
-			;;
-		xz)
-			pkgstagetwob xz
-			;;
-		bzip2)
-			pkgstagetwob bzip2
-			;;
-		bash)
-			pkgstagebuildonly bash
-			;;
-		autoconf)
-			pkgstagetwod autoconf
-			;;
-		autoconf2.13)
-			pkgstagetwod autoconf2.13
+			pkgstagetwo musl
+			adjust_toolchain
 			;;
 		*)
 			pkgstagetwo $package

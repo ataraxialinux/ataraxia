@@ -15,17 +15,17 @@ build() {
 	cd "$srcdir"/perl-$pkgver
 	./configure \
 		--target=$XTARGET \
-		--prefix='' \
+		--prefix=/tools \
 		--all-static \
 		-Dldflags="-static" \
-		-Dprivlib=/lib/perl5 \
-		-Dsitelib=/lib/perl5/site_perl
+		-Dprivlib=/tools/lib/perl5 \
+		-Dsitelib=/tools/lib/perl5/site_perl
 	make
 }
 
 package() {
 	cd "$srcdir"/perl-$pkgver
-	mkdir -p -- "$pkgdir"/bin "$pkgdir"/lib/perl5
-	cp -f perl cpan/podlators/scripts/pod2man "$pkgdir"/bin
-	cp -R lib/* "$pkgdir"/lib/perl5
+	mkdir -p -- "$pkgdir"/tools/bin "$pkgdir"/tools/lib/perl5
+	cp -f perl cpan/podlators/scripts/pod2man "$pkgdir"/tools/bin
+	cp -R lib/* "$pkgdir"/tools/lib/perl5
 }

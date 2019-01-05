@@ -253,6 +253,19 @@ build_chrootchain() {
 	done
 }
 
+build_symlinks() {
+	for file in awk bash cat dd echo env file grep ln ls pwd rm sed sh stty install perl; do
+		ln -sf /tools/bin/${file} "$ROOTFS"/bin
+	done
+
+	ln -sf /tools/lib/libgcc_s.so "$ROOTFS"/lib
+	ln -sf /tools/lib/libgcc_s.so.1 "$ROOTFS"/lib
+	ln -sf /tools/lib/libstdc++.so "$ROOTFS"/lib
+	ln -sf /tools/lib/libstdc++.so.6 "$ROOTFS"/lib
+	ln -sf /tools/lib/libstdc++.a "$ROOTFS"/lib
+	ln -sf /tools/lib/libssp_nonshared.a "$ROOTFS"/lib
+}
+
 binfmt_helper() {
 	case $BARCH in
 		x86_64)
@@ -311,7 +324,7 @@ enter_chroot() {
 	chroot "$ROOTFS" /bin/env -i \
 		TERM="$TERM" \
 		LD_LIBRARY_PATH="/lib:/local/lib" \
-		PATH="/storage/scripts:/local/sbin:/local/bin:/bin" \
+		PATH="/storage/scripts:/tools/bin:/local/sbin:/local/bin:/bin" \
 		BARCH="$BARCH" \
 		/bin/bash --login +h
 
@@ -344,6 +357,7 @@ case "$1" in
 		build_environment
 		build_toolchain
 		build_chrootchain
+		build_symlinks
 		;;
 	enter-chroot)
 		check_for_root
