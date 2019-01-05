@@ -166,6 +166,7 @@ setup_environment() {
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
 	export CHREPO="$CWD/chroot"
+	export BSPREPO="$CWD/bsp"
 	export SCRIPTS="$CWD/scripts"
 
 	export LC_ALL="POSIX"
@@ -242,7 +243,7 @@ build_toolchain() {
 
 build_chrootchain() {
 	msg "Building chroot-toolchain for '"$BARCH"' platform"
-	mkdir -p ""$ROOTFS""/storage/{sources,packages,repository,scripts}
+	mkdir -p ""$ROOTFS""/storage/{sources,packages,repository,scripts,bsp}
 
 	for package in musl-tools libz binutils gcc netbsd-curses bash \
 			bzip2 diffutils file gettext-tiny grep gzip make ed patch \
@@ -299,6 +300,7 @@ enter_chroot() {
 	mount --bind "$SOURCES"   "$ROOTFS"/storage/sources
 	mount --bind "$PACKAGES"  "$ROOTFS"/storage/packages
 	mount --bind "$REPO"      "$ROOTFS"/storage/repository
+	mount --bind "$BSPREPO"   "$ROOTFS"/storage/bsp
 	mount --bind "$SCRIPTS"   "$ROOTFS"/storage/scripts
 
 	mount --bind /proc "$ROOTFS"/proc
@@ -316,6 +318,7 @@ enter_chroot() {
 	umount -l "$ROOTFS"/storage/sources
 	umount -l "$ROOTFS"/storage/packages
 	umount -l "$ROOTFS"/storage/repository
+	umount -l "$ROOTFS"/storage/bsp
 	umount -l "$ROOTFS"/storage/scripts
 
 	umount -l "$ROOTFS"/proc
