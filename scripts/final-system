@@ -71,6 +71,22 @@ pkgstagetwoc() {
 	done
 }
 
+pkgstagetwod() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
+		cd /storage/repository/$emergepkg
+		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
+			makepkg --config /storage/makepkg.conf -dd -c -C
+		fi
+		if [ ! -z "$unemergechrootpkg" ]; then
+			pacman -R $unemergechrootpkg -dd --noconfirm
+		fi
+		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
+	done
+}
+
 pkgstagebuildonly() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
@@ -138,6 +154,9 @@ for package in linux-api-headers fortify-headers musl musl-tools libz file netbs
 			;;
 		autoconf2.13)
 			pkgstagetwod autoconf2.13
+			;;
+		perl)
+			pkgstagetwod perl
 			;;
 		*)
 			pkgstagetwo $package
