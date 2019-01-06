@@ -17,12 +17,12 @@ build() {
 		--prefix='' \
 		--sysconfdir=/etc \
 		--build=$CHOST
-	make
+	make -j1
 }
 
 package() {
 	cd "$srcdir"/$pkgname-$pkgver
-	make DESTDIR="$pkgdir" install
+	make -j1 DESTDIR="$pkgdir" install
 
 	rm "$pkgdir"/etc/profile.d/bash_completion.sh
 	rm "$pkgdir"/share/bash-completion/completions/makepkg
