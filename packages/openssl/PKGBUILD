@@ -79,5 +79,6 @@ package() {
 	cd "$srcdir"/$pkgname-$pkgver
 	make DESTDIR="$pkgdir" install
 
-	gcc --sysroot="$pkgdir" "$srcdir"/c_rehash.c -o "$pkgdir"/bin/c_rehash -lssl -lcrypto -lz $CFLAGS
+	gcc -L"$pkgdir"/lib -I"$pkgdir"/include \
+		"$srcdir"/c_rehash.c -o "$pkgdir"/bin/c_rehash -lssl -lcrypto -lz $CFLAGS
 }
