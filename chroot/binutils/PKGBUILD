@@ -43,4 +43,10 @@ package() {
 	cd "$srcdir"/binutils-$pkgver
 	cd build
 	make MAKEINFO="true" tooldir=/tools DESTDIR="$pkgdir" install
+
+	mkdir -p ld-new-dir
+	make -C ld clean
+	make -C ld LIB_PATH=/lib
+	make -C ld LIB_PATH=/lib DESTDIR="$(pwd)"/ld-new-dir install
+	cp ld-new-dir/tools/bin/ld "$pkgdir"/tools/bin/ld-new
 }
