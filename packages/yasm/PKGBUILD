@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=yasm
+pkgver=1.3.0
+pkgrel=1
+pkgdesc="A rewrite of NASM to allow for multiple syntax supported (NASM, TASM, GAS, etc.)"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.tortall.net/projects/yasm/"
+license=('BSD')
+depends=('musl')
+source=("http://www.tortall.net/projects/$pkgname/releases/$pkgname-$pkgver.tar.gz")
+md5sums=('fc9e586751ff789b34b1f21d572d96af')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

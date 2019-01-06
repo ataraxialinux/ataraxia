@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=nasm
+pkgver=2.14
+pkgrel=1
+pkgdesc="80x86 assembler designed for portability and modularity"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.nasm.us"
+license=('BSD-2-Clause')
+depends=('musl')
+source=("https://www.nasm.us/pub/nasm/releasebuilds/$pkgver/$pkgname-$pkgver.tar.xz")
+md5sums=('7d0f554cacd6c5021b3cda3ba9f2474c')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}
