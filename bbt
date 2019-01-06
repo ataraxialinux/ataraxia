@@ -254,7 +254,7 @@ build_chrootchain() {
 }
 
 build_symlinks() {
-	for file in awk bash cat dd echo env file grep ln ls pwd rm sed sh stty install perl curl fakeroot; do
+	for file in awk bash cat dd echo env file grep ln ls pwd rm sed sh stty install perl curl fakeroot du sed; do
 		ln -sf /tools/bin/${file} "$ROOTFS"/bin
 	done
 
@@ -323,10 +323,10 @@ enter_chroot() {
 
 	chroot "$ROOTFS" /bin/env -i \
 		TERM="$TERM" \
-		LD_LIBRARY_PATH="/lib:/local/lib" \
+		LD_LIBRARY_PATH="/tools/lib:/lib:/local/lib" \
 		PATH="/storage/scripts:/tools/bin:/local/sbin:/local/bin:/bin" \
 		BARCH="$BARCH" \
-		/bin/bash --login +h
+		/tools/bin/ash
 
 	umount -l "$ROOTFS"/storage/sources
 	umount -l "$ROOTFS"/storage/packages
