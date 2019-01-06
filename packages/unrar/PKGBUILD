@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=unrar
+pkgver=5.6.8
+pkgrel=1
+pkgdesc="RAR uncompression program"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.rarlab.com/rar_add.htm"
+license=('custom')
+depends=('gcc-libs')
+source=("https://www.rarlab.com/rar/unrarsrc-$pkgver.tar.gz"
+	'makefile.patch')
+md5sums=('def579782da17dc85940cda559b92287'
+         'a7c5ea1e92f0c1307b7e5b2323b32e44')
+
+prepare() {
+	cd "$srcdir"/$pkgname
+	patch -Np1 -i "$srcdir"/makefile.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname
+	make STRIP="true"
+}
+
+package() {
+	cd "$srcdir"/$pkgname
+	make DESTDIR="$pkgdir" install
+}
