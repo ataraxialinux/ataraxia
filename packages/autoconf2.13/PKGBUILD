@@ -14,12 +14,12 @@ md5sums=('9de56d4a161a723228220b0f425dc711'
          'f264769f9794c01be4e1834fe5a724ba')
 
 prepare() {
-	cd "$srcdir"/$pkgname-$pkgver
-	patch -Npi -i "$srcdir"/musl.patch
+	cd "$srcdir"/autoconf-$pkgver
+	patch -Np1 -i "$srcdir"/musl.patch
 }
 
 build() {
-	cd "$srcdir"/$pkgname-$pkgver
+	cd "$srcdir"/autoconf-$pkgver
 	./configure \
 		--prefix='' \
 		--infodir=/share/info \
@@ -29,7 +29,7 @@ build() {
 }
 
 package() {
-	cd "$srcdir"/$pkgname-$pkgver
+	cd "$srcdir"/autoconf-$pkgver
 	make prefix="$pkgdir" infodir="$pkgdir"/share/info install
 
 	mv "$pkgdir"/share/info/autoconf{,-2.13}.info
