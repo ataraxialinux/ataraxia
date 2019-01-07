@@ -134,7 +134,7 @@ pkgbsp() {
 	done
 }
 
-pkgstageremove() {
+pkgremove() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Unemerging '"$emergepkg"' package"
@@ -145,66 +145,126 @@ pkgstageremove() {
 	done
 }
 
-for package in linux-api-headers fortify-headers musl musl-tools libz file netbsd-curses libedit \
-		m4 byacc bison flex bc gmp mpfr mpc binutils gcc nasm yasm sqlite \
-		tcl expect dejagnu ccache libatomic_ops gc bzip2 pkgconf attr acl libcap ed pcre pcre2 popt bash \
-		bash-completion dash gdbm zsh mksh tcsh loksh which libtool db gperf expat \
-		perl perl-xml-parser intltool openssl autoconf automake autoconf2.13 autoconf-archive \
-		xz lz4 lzip lzo p7zip unrar unzip zip zstd libarchive; do
-	case $package in
-		musl)
-			pkgstagebuildonly musl
-			pkgstageinstallonlyb musl
-			if test -x /tools/bin/ld-new; then
-				adjust_toolchain
-			fi
-			;;
-		libz)
-			pkgstagebuildonly libz
-			pkgstageinstallonly libz
-			;;
-		bzip2)
-			pkgstagebuildonly bzip2
-			pkgstageinstallonly bzip2
-			;;
-		xz)
-			pkgstagebuildonly xz
-			pkgstageinstallonly xz
-			;;
-		openssl)
-			pkgstagebuildonly openssl
-			pkgstageinstallonly openssl
-			;;
-		curl)
-			pkgstagebuildonly curl
-			pkgstageinstallonly curl
-			;;
-		libarchive)
-			pkgstagebuildonly libarchive
-			pkgstageinstallonly libarchive
-			;;
-		pacman)
-			pkgstagebuildonly pacman
-			pkgstageinstallonly pacman
-			;;
-		bash)
-			pkgstagebuildonly bash
-			;;
-		autoconf)
-			pkgstagetwoc autoconf
-			;;
-		perl)
-			pkgstagetwod perl
-			;;
-		gcc)
-			pkgstagetwod gcc
-			;;
-		file)
-			pkgstagetwod file
-			;;
-		*)
-			pkgstagetwo $package
-	esac
-done
+pkgupdate() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
+		cd /storage/repository/$emergepkg
+		rm -rf -f /storage/packages/$emergepkg-*.pkg.tar.xz
+		makepkg --config /storage/makepkg.conf -dd -c -C
+		if [ ! -z "$unemergechrootpkg" ]; then
+			pacman -R $unemergechrootpkg -dd --noconfirm
+		fi
+		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
+	done
+}
+
+pkgbspupdate() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
+		cd /storage/bsp/$emergepkg
+		rm -rf -f /storage/packages/$emergepkg-*.pkg.tar.xz
+		makepkg --config /storage/makepkg.conf -dd -c -C
+		if [ ! -z "$unemergechrootpkg" ]; then
+			pacman -R $unemergechrootpkg -dd --noconfirm
+		fi
+		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
+	done
+}
+
+final_system() {
+	for package in linux-api-headers fortify-headers musl musl-tools libz file netbsd-curses libedit \
+			m4 byacc bison flex bc gmp mpfr mpc binutils gcc nasm yasm sqlite \
+			tcl expect dejagnu ccache libatomic_ops gc bzip2 pkgconf attr acl libcap ed pcre pcre2 popt bash \
+			bash-completion dash gdbm zsh mksh tcsh loksh which libtool db gperf expat \
+			perl perl-xml-parser intltool openssl autoconf automake autoconf2.13 autoconf-archive \
+			xz lz4 lzip lzo p7zip unrar unzip zip zstd libarchive; do
+		case $package in
+			musl)
+				pkgstagebuildonly musl
+				pkgstageinstallonlyb musl
+				if test -x /tools/bin/ld-new; then
+					adjust_toolchain
+				fi
+				;;
+			libz)
+				pkgstagebuildonly libz
+				pkgstageinstallonly libz
+				;;
+			bzip2)
+				pkgstagebuildonly bzip2
+				pkgstageinstallonly bzip2
+				;;
+			xz)
+				pkgstagebuildonly xz
+				pkgstageinstallonly xz
+				;;
+			openssl)
+				pkgstagebuildonly openssl
+				pkgstageinstallonly openssl
+				;;
+			curl)
+				pkgstagebuildonly curl
+				pkgstageinstallonly curl
+				;;
+			libarchive)
+				pkgstagebuildonly libarchive
+				pkgstageinstallonly libarchive
+				;;
+			pacman)
+				pkgstagebuildonly pacman
+				pkgstageinstallonly pacman
+				;;
+			bash)
+				pkgstagebuildonly bash
+				;;
+			autoconf)
+				pkgstagetwoc autoconf
+				;;
+			perl)
+				pkgstagetwod perl
+				;;
+			gcc)
+				pkgstagetwod gcc
+				;;
+			file)
+				pkgstagetwod file
+				;;
+			*)
+				pkgstagetwo $package
+		esac
+	done
+}
+
+COMMAND="${1}"
+PACKAGE="${*:2}"
+
+case "$COMMAND" in
+	emerge)
+		for toemergepkg in "$PACKAGE"; do
+			pkgstagetwo $toemergepkg
+		done
+		;;
+	emergeup)
+		for toemergepkg in "$PACKAGE"; do
+			pkgupdate $toemergepkg
+		done
+		;;
+	emergebsp)
+		for toemergepkg in "$PACKAGE"; do
+			pkgbsp $toemergepkg
+		done
+		;;
+	emergebspup)
+		for toemergepkg in "$PACKAGE"; do
+			pkgbspupdate $toemergepkg
+		done
+		;;
+	*|final-system)
+		final_system
+esac
 
 exit 0
