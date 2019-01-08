@@ -1,0 +1,72 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=python2
+pkgver=2.7.15
+pkgrel=1
+_pybasever=${pkgver%.*}
+pkgdesc="A high-level scripting language"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.python.org/"
+license=('custom')
+depends=('musl' 'libz' 'libedit'  'sqlite' 'bzip2' 'gdbm' 'openssl' 'expat' 'libffi')
+source=("https://www.python.org/ftp/python/${pkgver%rc*}/Python-$pkgver.tar.xz")
+md5sums=('a80ae3cc478460b922242f43a1b4094d')
+
+prepare() {
+	cd "$srcdir"/Python-$pkgver
+	sed -i "/progname =/s/python/python${_pybasever}/" Python/pythonrun.c
+	sed -i "/SQLITE_OMIT_LOAD_EXTENSION/d" setup.py
+	sed -i -e "s|^#.* /usr/local/bin/python|#!/bin/python2|" Lib/cgi.py
+	sed -i "s/python2.3/python2/g" Lib/distutils/tests/test_build_scripts.py \
+		Lib/distutils/tests/test_install_scripts.py
+	rm -r Modules/expat Modules/_ctypes/libffi* Modules/zlib
+	find . -name '*.py' | \
+		xargs sed -i "s|#[ ]*![ ]*/usr/bin/env python$|#!/bin/env python2|"
+	touch Include/Python-ast.h Python/Python-ast.c Python/opcode_targets.h
+}
+
+build() {
+	cd "$srcdir"/Python-$pkgver
+	export OPT="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
+
+	./configure \
+		--prefix='' \
+		--with-dbmliborder=gdbm:ndbm \
+		--with-lto \
+		--with-system-expat \
+		--with-system-ffi \
+		--with-system-zlib \
+		--with-threads \
+		--enable-ipv6 \
+		--enable-shared \
+		--enable-unicode=ucs4 \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/Python-$pkgver
+	sed -i 's/^all:.*$/all: build_all/' Makefile
+
+	make DESTDIR="$pkgdir" altinstall
+
+	ln -sf python${_pybasever}        "$pkgdir"/bin/python2
+	ln -sf python${_pybasever}-config "$pkgdir"/bin/python2-config
+	ln -sf python${_pybasever}.1      "$pkgdir"/share/man/man1/python2.1
+
+	ln -sf python-${_pybasever}.pc    "$pkgdir"/lib/pkgconfig/python2.pc
+
+	ln -sf ../../libpython${_pybasever}.so "$pkgdir"/lib/python${_pybasever}/config/libpython${_pybasever}.so
+
+	mv "$pkgdir"/bin/smtpd.py "$pkgdir"/lib/python${_pybasever}/
+
+	install -dm755 "$pkgdir"/lib/python${_pybasever}/Tools/{i18n,scripts}
+	install -m755 Tools/i18n/{msgfmt,pygettext}.py "$pkgdir"/lib/python${_pybasever}/Tools/i18n/
+	install -m755 Tools/scripts/{README,*py} "$pkgdir"/lib/python${_pybasever}/Tools/scripts/
+
+	mv "$pkgdir"/bin/idle{,2}
+	mv "$pkgdir"/bin/pydoc{,2}
+	mv "$pkgdir"/bin/2to3{,-2.7}
+
+	sed -i "s#${srcdir}/Python-${pkgver}:##" "$pkgdir"/lib/python${_pybasever}/config/Makefile
+}
