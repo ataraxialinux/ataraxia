@@ -1,0 +1,39 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=kmod
+pkgver=25
+pkgrel=1
+pkgdesc="Linux kernel module management tools and library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=summary"
+license=('GPL-2.0-or-later')
+depends=('musl' 'libz' 'xz')
+options=('strip' 'debug')
+source=("https://www.kernel.org/pub/linux/utils/kernel/$pkgname/$pkgname-$pkgver.tar.xz"
+	'depmod-search.conf')
+md5sums=('34f325cab568f842fdde4f8b2182f220'
+         'dd9f04879dc9703338f40395e3d56f80')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--with-xz \
+		--with-zlib \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
+		ln -sf kmod "$pkgdir"/bin/$tool
+	done
+
+	install -dm755 "$pkgdir"/{etc,lib}/{depmod,modprobe}.d
+
+	install -Dm644 "$srcdir"/depmod-search.conf "$pkgdir"/lib/depmod.d/search.conf
+}
