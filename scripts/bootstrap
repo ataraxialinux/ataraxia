@@ -35,6 +35,7 @@ pkgstagetwo() {
 		cd /storage/repository/$emergepkg
 		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			makepkg --config /storage/makepkg.conf -dd -c -C
+			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		fi
 		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
@@ -43,14 +44,19 @@ pkgstagetwo() {
 	done
 }
 
-
 pkgstagetwob() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
+		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
 		cd /storage/repository/$emergepkg
-		rm -rf /storage/packages/$emergepkg-*.pkg.tar.xz
-		makepkg --config /storage/makepkg.conf -dd -c -C -f
+		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
+			makepkg --config /storage/makepkg.conf -dd -c -C
+			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		fi
+		if [ ! -z "$unemergechrootpkg" ]; then
+			pacman -R $unemergechrootpkg -dd --noconfirm
+		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
 	done
 }
@@ -63,22 +69,7 @@ pkgstagetwoc() {
 		cd /storage/repository/$emergepkg
 		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			makepkg --config /storage/makepkg.conf -dd -c -C
-		fi
-		if [ ! -z "$unemergechrootpkg" ]; then
-			pacman -R $unemergechrootpkg -dd --noconfirm
-		fi
-		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
-	done
-}
-
-pkgstagetwod() {
-	local pkg="$@"
-	for emergepkg in $pkg; do
-		msg "Emerging '"$emergepkg"' package"
-		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
-		cd /storage/repository/$emergepkg
-		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
+			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		fi
 		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
@@ -94,6 +85,7 @@ pkgstagebuildonly() {
 		cd /storage/repository/$emergepkg
 		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			makepkg --config /storage/makepkg.conf -dd -c -C
+			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		fi
 	done
 }
@@ -114,6 +106,7 @@ pkgstageinstallonlyb() {
 		msg "Emerging '"$emergepkg"' package"
 		if [ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
+			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		fi
 	done
 }
@@ -126,6 +119,7 @@ pkgbsp() {
 		cd /storage/bsp/$emergepkg
 		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			makepkg --config /storage/makepkg.conf -dd -c -C
+			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		fi
 		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
@@ -153,6 +147,7 @@ pkgupdate() {
 		cd /storage/repository/$emergepkg
 		rm -rf -f /storage/packages/$emergepkg-*.pkg.tar.xz
 		makepkg --config /storage/makepkg.conf -dd -c -C
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
@@ -168,6 +163,7 @@ pkgbspupdate() {
 		cd /storage/bsp/$emergepkg
 		rm -rf -f /storage/packages/$emergepkg-*.pkg.tar.xz
 		makepkg --config /storage/makepkg.conf -dd -c -C
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
@@ -177,11 +173,15 @@ pkgbspupdate() {
 
 final_system() {
 	for package in linux-api-headers fortify-headers musl musl-tools libz file netbsd-curses libedit \
-			m4 byacc bison flex bc gmp mpfr mpc binutils gcc nasm yasm sqlite \
-			tcl expect dejagnu ccache libatomic_ops gc bzip2 pkgconf attr acl libcap ed pcre pcre2 popt bash \
+			m4 byacc bison flex bc gmp mpfr mpc binutils gcc nasm yasm sqlite tcl expect dejagnu \
+			ccache libatomic_ops gc bzip2 pkgconf attr acl libcap ed pcre pcre2 popt bash \
 			bash-completion dash gdbm zsh mksh tcsh loksh which libtool db gperf expat \
 			perl perl-xml-parser intltool openssl autoconf automake autoconf2.13 autoconf-archive \
-			xz lz4 lzip lzo p7zip unrar unzip zip zstd libarchive; do
+			xz lz4 lzip lzo p7zip unrar unzip zip zstd libarchive \
+			kmod gettext-tiny libelf libffi python python2 python-six yaml ruby iso-codes \
+			gdb strace valgrind libsigsegv libffcall clisp re2c ninja meson icu \
+			libxml2 libxslt sgml-common docbook-xml docbook-xsl docbook-sgml xmlto asciidoc asciidoctor \
+			dialog check diffutils groff swig libcap-ng audit kexec-tools util-linux sharutils busybox; do
 		case $package in
 			musl)
 				pkgstagebuildonly musl
@@ -222,16 +222,16 @@ final_system() {
 				pkgstagebuildonly bash
 				;;
 			autoconf)
-				pkgstagetwoc autoconf
+				pkgstagetwob autoconf
 				;;
 			perl)
-				pkgstagetwod perl
+				pkgstagetwoc perl
 				;;
 			gcc)
-				pkgstagetwod gcc
+				pkgstagetwoc gcc
 				;;
 			file)
-				pkgstagetwod file
+				pkgstagetwoc file
 				;;
 			*)
 				pkgstagetwo $package
