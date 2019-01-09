@@ -9,8 +9,15 @@ url="http://www.ruby-lang.org/en/"
 license=('Ruby BSD-2-Clause')
 depends=('musl' 'libz' 'gmp' 'gdbm' 'db' 'libedit' 'openssl' 'libffi' 'yaml')
 options=('!emptydirs')
-source=("https://cache.ruby-lang.org/pub/ruby/${pkgver:0:3}/ruby-${pkgver}.tar.xz")
-md5sums=('0b77dc26b379a0088be45488e0eda60c')
+source=("https://cache.ruby-lang.org/pub/ruby/${pkgver:0:3}/ruby-${pkgver}.tar.xz"
+	'rubygems-avoid-platform-specific-gems.patch')
+md5sums=('0b77dc26b379a0088be45488e0eda60c'
+         'd7224759494b53ba032a654dad348bad')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/rubygems-avoid-platform-specific-gems.patch
+}
 
 build() {
 	export CFLAGS="${CFLAGS/-fomit-frame-pointer}"

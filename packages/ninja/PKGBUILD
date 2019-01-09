@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=ninja
+pkgver=1.8.2
+pkgrel=1
+pkgdesc="Small build system with a focus on speed"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://ninja-build.org/"
+license=('Apache-2.0')
+depends=('gcc-libs')
+makedepends=('python' 're2c')
+source=("https://github.com/martine/ninja/archive/v$pkgver.tar.gz")
+md5sums=('5fdb04461cc7f5d02536b3bfc0300166')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	python3 configure.py --bootstrap
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+
+	install -m755 -D ninja "$pkgdir"/bin/ninja
+
+	install -m644 -D misc/ninja.vim "$pkgdir"/share/vim/vimfiles/syntax/ninja.vim
+
+	install -m644 -D misc/bash-completion "$pkgdir"/share/bash-completion/completions/ninja
+	install -m644 -D misc/zsh-completion "$pkgdir"/share/zsh/site-functions/_ninja
+}

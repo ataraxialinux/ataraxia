@@ -1,0 +1,26 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=strace
+pkgver=4.26
+pkgrel=1
+pkgdesc="A diagnostic, debugging and instructional userspace tracer"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://strace.io/"
+license=('BSD-3-Clause')
+depends=('musl')
+source=("https://github.com/strace/strace/releases/download/v$pkgver/$pkgname-$pkgver.tar.xz")
+md5sums=('daa51acc0c7c696221ec03cf0b30a7af')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--enable-mpers=no \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}
