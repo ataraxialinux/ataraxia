@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libffcall
+pkgver=2.1
+pkgrel=1
+pkgdesc="C library for implementing foreign function calls in embedded interpreters"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/libffcall/"
+license=('GPL-2.0-or-later')
+depends=('musl')
+options=('!makeflags')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('0bc45ab055d40ba617f47e117084499f')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--mandir=/share/man \
+		--disable-shared \
+		--build=$CHOST
+	make -j1
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	install -d "$pkgdir"/share/{man,doc/ffcall}
+	make DESTDIR="$pkgdir" htmldir=/share/doc/ffcall install
+}

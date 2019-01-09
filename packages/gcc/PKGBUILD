@@ -5,7 +5,7 @@ pkgname=('gcc' 'gcc-libs')
 pkgver=8+20190104
 gccver=8.2.1
 islver=0.20
-pkgrel=2
+pkgrel=3
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
 url="http://gcc.gnu.org"
 license=('GPL LGPL')
@@ -229,6 +229,7 @@ package_gcc() {
 package_gcc-libs() {
 	pkgdesc='Runtime libraries shipped by GCC'
 	depends=('musl')
+	options+=('!strip')
 
 	cd "$srcdir"/$pkgbase-${pkgver/+/-}/build
 	make -j1 DESTDIR="$pkgdir" install

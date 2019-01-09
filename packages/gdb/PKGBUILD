@@ -1,0 +1,39 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gdb
+pkgver=8.2.1
+pkgrel=1
+pkgdesc="The GNU Debugger"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/gdb/"
+license=('GPL-3.0')
+depends=('musl' 'libz' 'libedit' 'mpfr' 'expat' 'xz' 'python')
+backup=('etc/gdb/gdbinit')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('f8b2562e830a4098dd5b5ea9e9296c70')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--with-python=/usr/bin/python3 \
+		--with-system-gdbinit=/etc/gdb/gdbinit \
+		--with-system-readline \
+		--with-system-zlib \
+		--enable-plugins \
+		--disable-rpath \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm $pkgdir/usr/include/{ansidecl,bfd,bfdlink,dis-asm,symcat,diagnostics,plugin-api}.h
+	rm -r $pkgdir/usr/share/info
+	rm $pkgdir/usr/lib/{libbfd,libopcodes}.a
+
+	install -dm755 $pkgdir/etc/gdb
+	touch $pkgdir/etc/gdb/gdbinit
+}
