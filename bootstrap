@@ -342,22 +342,31 @@ enter_chroot() {
 	set -e
 }
 
-case "$1" in
-	stage0)
-		check_for_root
-		setup_architecture
-		setup_environment
-		build_environment
-		build_toolchain
-		;;
-	stage1)
-		check_for_root
-		setup_architecture
-		setup_environment
-		build_environment
-		build_toolchain
-		build_chrootchain
-		build_symlinks
+COMMAND="$1"
+STAGE="$2"
+
+case "$COMMAND" in
+	stage)
+		case $STAGE in
+			0)
+				check_for_root
+				setup_architecture
+				setup_environment
+				build_environment
+				build_toolchain
+				;;
+			1)
+				check_for_root
+				setup_architecture
+				setup_environment
+				build_environment
+				build_toolchain
+				build_chrootchain
+				build_symlinks
+				;;
+			*)
+				die "Stage number was not selected or is not supported"
+		esac
 		;;
 	enter-chroot)
 		check_for_root
@@ -365,7 +374,7 @@ case "$1" in
 		setup_environment
 		enter_chroot
 		;;
-	*|usage)
+	usage|*)
 		msg "In development!"
 esac
 
