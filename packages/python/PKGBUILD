@@ -2,7 +2,7 @@
 
 pkgname=python
 pkgver=3.7.2
-pkgrel=2
+pkgrel=3
 _pybasever=${pkgver%.*}
 pkgdesc="A high-level scripting language"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
@@ -17,8 +17,6 @@ md5sums=('df6ec36011808205beda239c72f947cb')
 
 prepare() {
 	cd "$srcdir"/Python-$pkgver
-	sed -i -e "s|testCongestion|disabled_&|" Lib/test/test_socket.py
-	sed -i -e "s|^#.* /usr/local/bin/python|#!/bin/python|" Lib/cgi.py
 	sed -i -e "s|-flto |-flto=4 |g" configure configure.ac
 
 	rm -r Modules/expat \
@@ -32,6 +30,7 @@ build() {
 		--prefix=/ \
 		--with-computed-gotos \
 		--with-dbmliborder=gdbm:ndbm \
+		--with-ensurepip=yes \
 		--with-lto \
 		--with-system-expat \
 		--with-system-ffi \
@@ -46,16 +45,8 @@ build() {
 
 package() {
 	cd "$srcdir"/Python-$pkgver
-	sed -i 's/^all:.*$/all: build_all/' Makefile
-
 	make DESTDIR="$pkgdir" install
 
-	ln -sf python3 "$pkgdir"/bin/python
-	ln -sf python3-config "$pkgdir"/bin/python-config
-	ln -sf idle3 "$pkgdir"/bin/idle
-	ln -sf pydoc3 "$pkgdir"/bin/pydoc
-
-	install -dm755 "$pkgdir"/lib/python${_pybasever}/Tools/{i18n,scripts}
-	install -m755 Tools/i18n/{msgfmt,pygettext}.py "$pkgdir"/lib/python${_pybasever}/Tools/i18n/
-	install -m755 Tools/scripts/{README,*py} "$pkgdir"/lib/python${_pybasever}/Tools/scripts/
+	chmod 755 "$pkgdir"/lib/libpython3.7m.so
+	chmod 755 "$pkgdir"/lib/libpython3.so
 }

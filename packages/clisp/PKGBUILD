@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=clisp
+pkgver=2.49_20181112_df3b9f6fd
+pkgrel=1
+pkgdesc="The GNU macro processor"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/m4"
+license=('GPL-3.0+')
+depends=('musl' 'libedit' 'libsigsegv')
+makedepends=('libffcall')
+options=('!makeflags' '!emptydirs')
+source=("http://mirror.yandex.ru/slackware/slackware64-current/source/d/clisp/$pkgname-$pkgver.tar.xz")
+md5sums=('90b0c75ffa77cb35d0f358e293be5db8')
+
+build() {
+	export FORCE_UNSAFE_CONFIGURE=1
+
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}
