@@ -7,7 +7,7 @@ pkgdesc="The GNU Debugger"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
 url="http://www.gnu.org/software/gdb/"
 license=('GPL-3.0')
-depends=('musl' 'libz' 'libedit' 'mpfr' 'expat' 'xz' 'python3')
+depends=('musl' 'libz' 'netbsd-curses' 'mpfr' 'expat' 'xz' 'python3')
 backup=('etc/gdb/gdbinit')
 source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
 	'ppc-musl.patch'
@@ -27,12 +27,10 @@ prepare() {
 
 build() {
 	cd "$srcdir"/$pkgname-$pkgver
-	LIBS="-lterminfo" \
 	./configure \
 		--prefix='' \
 		--with-python=/bin/python3 \
 		--with-system-gdbinit=/etc/gdb/gdbinit \
-		--with-system-readline \
 		--with-system-zlib \
 		--enable-plugins \
 		--disable-rpath \
