@@ -1,0 +1,61 @@
+Submitted By: Ken Moffat <ken at linuxfromscratch dot org>
+Date: 2018-09-28
+Initial Package Version: 2.7.8
+Upstream Status: BLFS-specific
+Origin: BLFS
+Description: For a while we have been using a sed to allow graphviz
+to be treated as optional instead of required. With new releases it
+becomes hard to determine what changes to make so that the sed will
+do the right thing. In this case a patch shows what we want to
+achieve, and often (e.g. from 0.40.8 to 0.42.0) applies with only
+an offset.
+
+diff -Naur vala-0.42.0.orig/configure.ac vala-0.42.0/configure.ac
+--- vala-0.42.0.orig/configure.ac	2018-08-20 17:17:35.000000000 +0100
++++ vala-0.42.0/configure.ac	2018-09-28 20:21:07.645337464 +0100
+@@ -119,32 +119,12 @@
+ AC_SUBST(GMODULE_CFLAGS)
+ AC_SUBST(GMODULE_LIBS)
+ 
+-PKG_CHECK_MODULES(LIBGVC, libgvc >= $LIBGVC_REQUIRED)
+ AC_MSG_CHECKING([for CGRAPH])
+ cgraph_tmp_LIBADD="$LIBADD"
+ cgraph_tmp_CFLAGS="$CFLAGS"
+ LIBADD="$LIBADD $LIBGVC_LIBS"
+ CFLAGS="$CFLAGS $LIBGVC_CFLAGS"
+-AC_RUN_IFELSE(
+-	[AC_LANG_SOURCE([
+-		#include <gvc.h>
+-
+-		int main(void) {
+-			#ifdef WITH_CGRAPH
+-				return 0;
+-			#else
+-				return -1;
+-			#endif
+-		}
+-	])], [
+-		AC_MSG_RESULT([yes])
+-		VALAFLAGS="$VALAFLAGS -D WITH_CGRAPH"
+-		have_cgraph=yes
+-	], [
+-		AC_MSG_RESULT([no])
+ 		have_cgraph=no
+-	]
+-)
+ LIBADD="$cgraph_tmp_LIBADD"
+ CFLAGS="$cgraph_tmp_CFLAGS"
+ AM_CONDITIONAL(HAVE_CGRAPH, test "$have_cgraph" = "yes")
+diff -Naur vala-0.42.0.orig/configure.ac.orig vala-0.42.0/configure.ac.orig
+diff -Naur vala-0.42.0.orig/Makefile.am vala-0.42.0/Makefile.am
+--- vala-0.42.0.orig/Makefile.am	2018-08-20 17:17:34.000000000 +0100
++++ vala-0.42.0/Makefile.am	2018-09-28 20:21:07.645337464 +0100
+@@ -13,8 +13,6 @@
+ 	doc \
+ 	gobject-introspection \
+ 	vapigen \
+-	libvaladoc \
+-	valadoc \
+ 	$(NULL)
+ 
+ if ENABLE_UNVERSIONED
