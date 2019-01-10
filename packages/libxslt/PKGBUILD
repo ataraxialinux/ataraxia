@@ -1,0 +1,27 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libxslt
+pkgver=1.1.33
+pkgrel=1
+pkgdesc="XML stylesheet transformation library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/m4"
+license=('custom')
+depends=('musl' 'libxml2' 'libgcrypt')
+makedepends=('python3')
+source=("ftp://xmlsoft.org/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('b3bd254a03e46d58f8ad1e4559cd2c2f')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--with-python=/bin/python3 \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

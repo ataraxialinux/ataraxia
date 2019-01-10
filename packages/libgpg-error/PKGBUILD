@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libgpg-error
+pkgver=1.33
+pkgrel=1
+pkgdesc="General purpose cryptographic library based on the code from GnuPG"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnupg.org"
+license=('GPL-2.0-or-later LGPL-2.1-or-later')
+depends=('musl' 'bash')
+source=("https://gnupg.org/ftp/gcrypt/$pkgname/$pkgname-$pkgver.tar.bz2")
+md5sums=('680495572d5d4c700ea73a2f793ce531')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

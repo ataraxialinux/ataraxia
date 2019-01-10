@@ -1,0 +1,46 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gobject-introspection
+pkgver=1.58.3
+pkgrel=1
+pkgdesc="Introspection system for GObject-based libraries"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://wiki.gnome.org/Projects/GObjectIntrospection"
+license=('LGPL-2.0+ GPL-2.0+ MIT')
+depends=('musl' 'glib2' 'libffi')
+makedepends=('python3' 'meson')
+options=('!emptydirs')
+source=("http://ftp.gnome.org/pub/gnome/sources/$pkgname/${pkgver%.*}/$pkgname-$pkgver.tar.xz")
+md5sums=('182432c1f33886be8f4da073218b597d')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	mkdir -p build
+	cd build
+
+	meson "$srcdir"/$pkgname-$pkgver \
+		--prefix / \
+		--libdir /lib \
+		--libexecdir /lib \
+		--bindir /bin \
+		--sbindir /bin \
+		--includedir /include \
+		--datadir /share \
+		--mandir /share/man \
+		--infodir /share/info \
+		--localedir /share/locale \
+		--sysconfdir /etc \
+		--localstatedir /var \
+		--sharedstatedir /var/lib \
+		--buildtype release \
+		--auto-features enabled \
+		--wrap-mode nofallback \
+		-D b_lto=true \
+		-D gtk_doc=false
+	ninja
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver/build
+	DESTDIR="$pkgdir" ninja install
+}
