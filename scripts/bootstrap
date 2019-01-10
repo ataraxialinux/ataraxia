@@ -83,10 +83,19 @@ pkgstagebuildonly() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd /storage/repository/$emergepkg
-		if [ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
+		if [ ! -f /storage/packages/$emergepkg*-*.pkg.tar.xz ]; then
 			makepkg --config /storage/makepkg.conf -dd -c -C
 			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 		fi
+	done
+}
+
+pkgstagebuildonlyb() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd /storage/repository/$emergepkg
+		makepkg --config /storage/makepkg.conf -dd -c -C || true
 	done
 }
 
@@ -234,7 +243,7 @@ final_system() {
 				pkgstagetwoc file
 				;;
 			python-six)
-				pkgstagebuildonly python-six
+				pkgstagebuildonlyb python-six
 				pkgstageinstallonly python3-six
 				pkgstageinstallonly python2-six
 				;;
