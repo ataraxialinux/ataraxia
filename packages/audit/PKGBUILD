@@ -1,0 +1,64 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=audit
+pkgver=2.8.4
+pkgrel=1
+pkgdesc="Userspace components of the audit framework"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+url="https://people.redhat.com/sgrubb/audit"
+license=('GPL-2.0-or-later')
+depends=('musl' 'libcap-ng')
+makedepends=('linux-api-headers' 'swig')
+backup=('etc/libaudit.conf'
+	'etc/audit/audit-stop.rules'
+	'etc/audit/auditd.conf'
+	'etc/audisp/audispd.conf'
+	'etc/audisp/audisp-remote.conf'
+	'etc/audisp/plugins.d/af_unix.conf'
+	'etc/audisp/plugins.d/au-remote.conf'
+	'etc/audisp/plugins.d/syslog.conf')
+source=("https://people.redhat.com/sgrubb/audit/$pkgname-$pkgver.tar.gz"
+	'fix.patch'
+	'confd'
+	'initd')
+md5sums=('ec9510312564c3d9483bccf8dbda4779'
+         'bf867e95d9fe3bafd584652affed868b'
+         'cab8e70ac003606e50141e7fd5661964'
+         '6ba34f722f6661e5ea7c511987979477')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/fix.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--libexecdir=/lib/audit \
+		--sbindir=/bin \
+		--sysconfdir=/etc \
+		--without-python \
+		--without-python3 \
+		--enable-shared=audit \
+		--disable-zos-remote \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" INSTALL='install -p' install
+
+	install -d "$pkgdir"/var/log/audit
+
+	sed -ri 's|/sbin|/bin|' \
+		"$pkgdir"/etc/audit/*.conf \
+		"$pkgdir"/etc/audisp/plugins.d/*.conf
+
+	install -D -m644 "$srcdir"/confd "$pkgdir"/etc/conf.d/auditd
+	install -D -m755 "$srcdir"/initd "$pkgdir"/etc/init.d/auditd
+
+	rm -rf "$pkgdir"/etc/rc.d
+	rm -rf "$pkgdir"/etc/sysconfig
+}
