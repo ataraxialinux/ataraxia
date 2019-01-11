@@ -2,7 +2,7 @@
 
 pkgname=kexec-tools
 pkgver=2.0.18
-pkgrel=1
+pkgrel=2
 pkgdesc="Load another kernel from the currently executing Linux kernel"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
 url="http://kernel.org/pub/linux/utils/kernel/kexec/"
@@ -14,8 +14,8 @@ source=("https://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git/snaps
 	'initd')
 md5sums=('5152b48f4f439f60cc47614435c72547'
          '38f5ddfede0a08cdcaee2f503c7b78d2'
-         'a46febb756d3aadee069ac7ed309b4a5'
-         'ad393d06b7ee0b5775602ff9adb722ac')
+         'd2f64d835ccfd86dfc0946d219f72902'
+         '88ae6be867798e629979b2f6633274c4')
 
 prepare() {
 	cd "$srcdir"/$pkgname-$pkgver
@@ -38,6 +38,6 @@ package() {
 	cd "$srcdir"/$pkgname-$pkgver
 	make DESTDIR="$pkgdir" install
 
-	install -D -m644 "$srcdir"/confd "$pkgdir"/etc/conf.d/kexec
+	install -D -m755 "$srcdir"/confd "$pkgdir"/etc/conf.d/kexec
 	install -D -m755 "$srcdir"/initd "$pkgdir"/etc/init.d/kexec
 }
