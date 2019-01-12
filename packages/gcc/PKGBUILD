@@ -6,7 +6,7 @@ pkgver=8+20190104
 gccver=8.2.1
 islver=0.20
 pkgrel=4
-arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64el' 'mipsel' 'ppc64le' 'ppc64' 'ppc')
 url="http://gcc.gnu.org"
 license=('GPL LGPL')
 source=("ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/$pkgbase-${pkgver/+/-}.tar.xz"
@@ -42,7 +42,7 @@ source=("ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/$pkgbase-${pkgve
 	'0011-m68k.patch'
 	'0012-static-pie.patch'
 	'gcc-pure64.patch'
-	'gcc-pure64-mips.patch'
+	'gcc-pure64-mipsel.patch'
 	'c89'
 	'c99')
 md5sums=('4ebeb0484ca737899cbe4d4d3c6af2a5'
@@ -117,7 +117,7 @@ prepare() {
 	patch -Np1 -i "$srcdir"/0011-m68k.patch
 	patch -Np1 -i "$srcdir"/0012-static-pie.patch
 	patch -Np1 -i "$srcdir"/gcc-pure64.patch
-	patch -Np1 -i "$srcdir"/gcc-pure64-mips.patch
+	patch -Np1 -i "$srcdir"/gcc-pure64-mipsel.patch
 
 	mv ../isl-$islver isl
 
@@ -141,11 +141,11 @@ build() {
 		armv5tel)
 			export GCCOPTS="--with-arch=armv5te --with-float=soft"
 			;;
-		mips64)
-			export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64 --with-linker-hash-style=sysv"
+		mips64el)
+			export GCCOPTS="--with-arch=mipsel3 --with-tune=mips64el --with-mipsel-plt --with-float=soft --with-abi=64 --with-linker-hash-style=sysv"
 			;;
-		mips)
-			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
+		mipsel)
+			export GCCOPTS="--with-arch=mipsel32 --with-mipsel-plt --with-float=soft --with-abi=32 --with-linker-hash-style=sysv"
 			;;
 		ppc64le)
 			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"

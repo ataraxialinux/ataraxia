@@ -3,9 +3,9 @@
 pkgname=eudev
 pkgver=3.2.7
 udevinitscriptver=32
-pkgrel=1
+pkgrel=3
 pkgdesc="The userspace dev tools (udev) forked by Gentoo"
-arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64el' 'mipsel' 'ppc64le' 'ppc64' 'ppc')
 url="http://www.gentoo.org/proj/en/eudev/"
 license=('GPL-2.0')
 depends=('musl' 'kmod' 'openrc' 'util-linux' 'hwids')
@@ -14,10 +14,16 @@ options=('!libtool' '!staticlibs')
 install=$pkgname.install
 source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
 	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$udevinitscriptver.tar.gz"
-	'udev-hwdb.hook')
+	'udev-hwdb.hook'
+	'udev-postmount'
+	'initcpio_hooks'
+	'initcpio_install')
 md5sums=('c75d99910c1791dd9430d26ab76059c0'
          'a8098437126a0ecdc23f83e923de3644'
-         '1f6bc084dc207da22ce1125554f6908e')
+         '1f6bc084dc207da22ce1125554f6908e'
+         'b87d36663caeefc5b54735acae27778a'
+         '26a426a25b53b2902eb43397d8926dde'
+         '24da96933f1355ea24445c9d973c383e')
 
 prepare() {
 	cd "$srcdir"/$pkgname-$pkgver
@@ -52,6 +58,11 @@ package() {
 	make DESTDIR="$pkgdir" sharepkgconfigdir=/lib/pkgconfig install
 
 	install -Dm644 "$srcdir"/udev-hwdb.hook "$pkgdir"/share/libalpm/hooks/udev-hwdb.hook
+
+	install -Dm755 "$srcdir"/udev-postmount "$pkgdir"/etc/init.d/udev-postmount
+
+	install -Dm644 "$srcdir"/initcpio_hooks "$pkgdir"/lib/initcpio/hooks/udev
+	install -Dm644 "$srcdir"/initcpio_install "$pkgdir"/lib/initcpio/install/udev
 
 	cd "$srcdir"/udev-init-scripts-$udevinitscriptver
 	make PREFIX='' DESTDIR=$pkgdir install
