@@ -6,7 +6,7 @@ mpfrver=4.0.1
 mpcver=1.1.0
 islver=0.20
 pkgrel=1
-arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64' 'mips' 'ppc64le' 'ppc64' 'ppc')
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64el' 'mipsel' 'ppc64le' 'ppc64' 'ppc')
 options=('!emptydirs')
 provides=('gcc-runtime')
 source=(ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/gcc-${pkgver/+/-}.tar.xz
@@ -45,7 +45,7 @@ source=(ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/gcc-${pkgver/+/-}
 	0011-m68k.patch
 	0012-static-pie.patch
 	gcc-pure64.patch
-	gcc-pure64-mips.patch)
+	gcc-pure64-mipsel.patch)
 
 prepare() {
 	cd "$srcdir"/gcc-${pkgver/+/-}
@@ -82,12 +82,12 @@ prepare() {
 	patch -Np1 -i "$srcdir"/0011-m68k.patch
 	patch -Np1 -i "$srcdir"/0012-static-pie.patch
 	patch -Np1 -i "$srcdir"/gcc-pure64.patch
-	patch -Np1 -i "$srcdir"/gcc-pure64-mips.patch
+	patch -Np1 -i "$srcdir"/gcc-pure64-mipsel.patch
 
 	for file in  gcc/config/linux.h gcc/config/i386/linux.h gcc/config/i386/linux64.h \
 			gcc/config/aarch64/aarch64-linux.h \
 			gcc/config/arm/linux-eabi.h gcc/config/arm/linux-elf.h \
-			gcc/config/mips/linux.h \
+			gcc/config/mipsel/linux.h \
 			gcc/config/rs6000/linux64.h gcc/config/rs6000/sysv4.h; do
 		cp -u $file{,.orig}
 		sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
