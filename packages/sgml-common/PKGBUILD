@@ -1,0 +1,35 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=sgml-common
+pkgver=0.6.3
+pkgrel=1
+pkgdesc="Tools for maintaining centralized SGML catalogs"
+arch=('any')
+url="http://www.docbook.org/xml/"
+license=('GPL')
+depends=('bash')
+install=$pkgname.install
+source=("ftp://sources.redhat.com/pub/docbook-tools/new-trials/SOURCES/$pkgname-$pkgver.tgz"
+	'man-fix.patch')
+md5sums=('103c9828f24820df86e55e7862e28974'
+         '17e2928822ea2f4a39fb8d0a6e427d17')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/man-fix.patch
+	autoreconf -vfi
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

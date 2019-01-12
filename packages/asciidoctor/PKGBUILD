@@ -1,0 +1,24 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=asciidoctor
+pkgver=1.5.8
+pkgrel=1
+pkgdesc="An implementation of AsciiDoc in Ruby"
+arch=('any')
+url="http://asciidoctor.org"
+license=('MIT')
+depends=('ruby')
+source=("https://rubygems.org/downloads/$pkgname-$pkgver.gem")
+noextract=("$pkgname-$pkgver.gem")
+md5sums=('5f55200cab8d1cfcf561e66d3f477159')
+
+package() {
+	local _gemdir="$(ruby -e 'puts Gem.default_dir')"
+
+	gem install --ignore-dependencies --no-user-install --verbose \
+		-i "$pkgdir/$_gemdir" -n "$pkgdir/bin" \
+		"$pkgname-$pkgver.gem"
+
+	rm "$pkgdir"/$_gemdir/cache/$pkgname-$pkgver.gem
+	rm -rf "$pkgdir"/$_gemdir/gems/$pkgname-$pkgver/man
+}
