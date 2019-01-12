@@ -1,0 +1,37 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=asciidoc
+pkgver=8.6.10
+pkgrel=1
+pkgdesc="Text document format for short documents, articles, books and UNIX man pages"
+arch=('any')
+url="http://www.methods.co.nz/asciidoc/"
+license=('GPL2')
+depends=('python2' 'docbook-xsl')
+source=("https://github.com/asciidoc/asciidoc/archive/$pkgver.tar.gz"
+	'nonet.patch')
+md5sums=('4e69960f4d431780e9828f53417d8d7a'
+         '444d3fc8127009f5c34c07d283d1a027')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/nonet.patch
+	sed -i -e 's#python a2x.py#python2 a2x.py#' Makefile.in
+	autoconf
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--sysconfdir=/etc \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	install -Dm644 asciidocapi.py "$pkgdir"/lib/python2.7/site-packages/asciidocapi.py
+}
