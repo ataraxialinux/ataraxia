@@ -279,6 +279,12 @@ final_system() {
 	done
 }
 
+update_kernel() {
+	for kernelpkg in linux-api-headers linux linux-api-headers; do
+		pkgupdate $kernelpkg
+	done
+}
+
 COMMAND="${1}"
 PACKAGE="${*:2}"
 
@@ -302,6 +308,9 @@ case "$COMMAND" in
 		for toemergepkg in "$PACKAGE"; do
 			pkgbspupdate $toemergepkg
 		done
+		;;
+	kernelup)
+		update_kernel
 		;;
 	*|final-system)
 		final_system
