@@ -1,0 +1,26 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libgcrypt
+pkgver=1.8.4
+pkgrel=1
+pkgdesc="General purpose cryptographic library based on the code from GnuPG"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnupg.org"
+license=('LGPL')
+depends=('musl' 'libgpg-error')
+options=('!emptydirs')
+source=("https://gnupg.org/ftp/gcrypt/$pkgname/$pkgname-$pkgver.tar.bz2")
+md5sums=('fbfdaebbbc6d7e5fbbf6ffdb3e139573')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,28 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=bison
+pkgver=3.2.4
+pkgrel=1
+pkgdesc="The GNU general-purpose parser generator"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.gnu.org/software/bison/bison.html"
+license=('GPL')
+depends=('musl' 'm4' 'byacc' 'bash')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('4c8cec0ca8b637d46f24902d032b9296')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--datadir=/share \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm -rf "$pkgdir"/bin/yacc
+}

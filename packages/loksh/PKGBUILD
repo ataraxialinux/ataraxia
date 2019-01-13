@@ -1,0 +1,23 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=loksh
+pkgver=6.4
+pkgrel=1
+pkgdesc="A Linux port of OpenBSD's ksh"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/dimkr/loksh"
+license=('GPL-3.0+')
+depends=('musl')
+install=$pkgname.install
+source=("https://github.com/dimkr/loksh/archive/$pkgver.tar.gz")
+md5sums=('18d991fc62dfa1f76f4e5de1521df58e')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make BIN_DIR=/bin MAN_DIR=/share/man DOC_DIR=/share/doc/loksh DESTDIR="$pkgdir" install
+}

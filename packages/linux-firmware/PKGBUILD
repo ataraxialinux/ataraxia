@@ -1,0 +1,19 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=linux-firmware
+pkgver=20181218
+gitver=0f22c8527439eaaf5c3fcf87b31c89445b6fa84d
+pkgrel=1
+pkgdesc="Firmware files for Linux"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://git.kernel.org/?p=linux/kernel/git/firmware/linux-firmware.git;a=summary"
+license=('custom:multiple')
+options=('!strip')
+source=("https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/snapshot/linux-firmware-$gitver.tar.gz")
+md5sums=('65d53a9cce3ee7eff48b2bbd877255cf')
+
+package() {
+	cd "$srcdir"/$pkgname-$gitver
+	make DESTDIR="$pkgdir" FIRMWAREDIR=/lib/firmware install
+	rm -rf "$pkgdir"/lib/firmware/{Makefile,README,configure,GPL-3}
+}

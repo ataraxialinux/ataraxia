@@ -1,0 +1,62 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=unzip
+pkgver=6.0
+_pkgver=${pkgver/./}
+pkgrel=1
+pkgdesc="For extracting and viewing files in .zip archives"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.info-zip.org/UnZip.html"
+license=('custom')
+depends=('musl' 'bash')
+source=("http://downloads.sourceforge.net/infozip/${pkgname}${_pkgver}.tar.gz"
+	'10-unzip-handle-pkware-verify.patch'
+	'20-unzip-uidgid-fix.patch'
+	'unzip-6.0-heap-overflow-infloop.patch'
+	'CVE-2014-8140.patch'
+	'CVE-2014-8141.patch'
+	'CVE-2014-9636.patch'
+	'CVE-2014-9913.patch'
+	'CVE-2016-9844.patch'
+	'CVE-2018-1000035.patch'
+	'fix-CVE-2014-8139.patch')
+md5sums=('62b490407489521db863b523a7f86375'
+         'b860a1557b48b2c3fa52541f9260ed72'
+         '3de9dee957cb83615cdcb165375d00bd'
+         '4ff9673cf8337e80220e46c7eb95ac61'
+         '1d6ff24a03f0cbc358ec421360e948fd'
+         '2a7d530eccafd83264bf9006a264f0c4'
+         '4265920b8374a592e8cd79c473ae3974'
+         'ea8113177791221c10273422cf4abe7f'
+         '94e47d4ae4be891bd01041789dd21db9'
+         '704269930d2904b31f36c163e21b668c'
+         '59be754afe10cfd288d80fdab1f5fdfc')
+
+prepare() {
+	cd "$srcdir"/${pkgname}${_pkgver}
+	patch -Np1 -i "$srcdir"/10-unzip-handle-pkware-verify.patch
+	patch -Np1 -i "$srcdir"/20-unzip-uidgid-fix.patch
+	patch -Np1 -i "$srcdir"/unzip-6.0-heap-overflow-infloop.patch
+	patch -Np1 -i "$srcdir"/CVE-2014-8140.patch
+	patch -Np1 -i "$srcdir"/CVE-2014-8141.patch
+	patch -Np1 -i "$srcdir"/CVE-2014-9636.patch
+	patch -Np1 -i "$srcdir"/CVE-2014-9913.patch
+	patch -Np1 -i "$srcdir"/CVE-2016-9844.patch
+	patch -Np1 -i "$srcdir"/CVE-2018-1000035.patch
+	patch -Np1 -i "$srcdir"/fix-CVE-2014-8139.patch
+}
+
+build() {
+	cd "$srcdir"/${pkgname}${_pkgver}
+	make -f unix/Makefile \
+		CC="gcc" \
+		LOCAL_ZIP="$CFLAGS" \
+		prefix='' generic
+}
+
+package() {
+	cd "$srcdir"/${pkgname}${_pkgver}
+	make -f unix/Makefile \
+		MANDIR="$pkgdir"/share/man/man1/ \
+		prefix="$pkgdir" install
+}

@@ -1,0 +1,58 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=openrc
+pkgver=0.40.3
+pkgrel=5
+pkgdesc="Dependency based init system"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/OpenRC/openrc/"
+license=('BSD-2-Clause')
+depends=('musl' 'busybox' 'bash' 'util-linux' 'kbd')
+backup=(etc/rc.conf
+	etc/conf.d/{bootmisc,consolefont,devfs,dmesg,fsck,hostname,hwclock,keymaps}
+	etc/conf.d/{killprocs,localmount,modules,netmount,network,staticroute})
+source=("https://github.com/OpenRC/openrc/archive/$pkgver.tar.gz"
+	'musl.patch'
+	'sysctl.patch'
+	'logrotate')
+md5sums=('79ec210de5508041fcf79951e9b8e783'
+         '6519ab2d731c17f5e23c98b437424fb7'
+         'a62fe12cab1e5d06ea957af748a97b7e'
+         'd83df5513f08f09fa9e7353327701bf7')
+
+PURPLE='\033[1;35m'
+NC='\033[0m'
+
+_makeargs=(BRANDING="${PURPLE}januslinux${NC}")
+_makeargs+=(MKSELINUX=no)
+_makeargs+=(MKTERMCAP=ncurses)
+_makeargs+=(PKG_PREFIX="")
+_makeargs+=(LIBDIR=/lib)
+_makeargs+=(PREFIX=/)
+_makeargs+=(LIBMODE=0644)
+_makeargs+=(SHLIBDIR=/lib)
+_makeargs+=(LIBEXECDIR=/lib/openrc)
+_makeargs+=(SYSCONFDIR=/etc)
+_makeargs+=(BINDIR=/bin)
+_makeargs+=(SBINDIR=/bin)
+_makeargs+=(MKBASHCOMP=yes)
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/musl.patch
+	patch -Np1 -i "$srcdir"/sysctl.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make "${_makeargs[@]}"
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" "${_makeargs[@]}" install
+
+	install -Dm0644 "$srcdir"/logrotate "$pkgdir"/etc/logrotate.d/$pkgname
+
+	rm -rf "$pkgdir"/etc/inittab
+}

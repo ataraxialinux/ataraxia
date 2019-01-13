@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gpgme
+pkgver=1.12.0
+pkgrel=1
+pkgdesc="A C wrapper library for GnuPG"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnupg.org/related_software/gpgme/"
+license=('GPL')
+depends=('musl' 'gpgme')
+makedepends=('python3' 'python2' 'swig')
+optdepends=('python3: Python 3 bindings for GPGme'
+            'python2: Python 2 bindings for GPGme')
+options=('!emptydirs')
+source=("https://gnupg.org/ftp/gcrypt/$pkgname/$pkgname-$pkgver.tar.bz2")
+md5sums=('902fca3a94907efe4e929b2ade545a7c')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

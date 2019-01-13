@@ -1,0 +1,31 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gdbm
+pkgver=1.18.1
+pkgrel=1
+pkgdesc="GNU database library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/gdbm/gdbm.html"
+license=('GPL')
+depends=('musl' 'bash')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('988dc82182121c7570e0cb8b4fcd5415')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--enable-libgdbm-compat \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	install -dm755 "$pkgdir"/include/gdbm
+	ln -sf ../gdbm.h "$pkgdir"/include/gdbm/gdbm.h
+	ln -sf ../ndbm.h "$pkgdir"/include/gdbm/ndbm.h
+	ln -sf ../dbm.h  "$pkgdir"/include/gdbm/dbm.h
+}

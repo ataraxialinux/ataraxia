@@ -1,0 +1,30 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libxml2
+pkgver=2.9.9
+pkgrel=1
+pkgdesc="XML parsing library, version 2"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.xmlsoft.org/"
+license=('MIT')
+depends=('musl' 'libz' 'libedit' 'xz' 'icu')
+makedepends=('python2' 'python3')
+source=("ftp://xmlsoft.org/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('c04a5a0a042eaa157e8e8c9eabe76bd6')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--with-history \
+		--with-icu \
+		--with-python=/bin/python3 \
+		--with-threads \
+		--build=$CHOST
+	PYTHONHASHSEED=0 make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

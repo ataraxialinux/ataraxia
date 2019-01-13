@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=byacc
+pkgver=20180609
+pkgrel=1
+pkgdesc="The Berkeley Yacc general-purpose parser generator"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://invisible-island.net/byacc/byacc.html"
+license=('Public-Domain')
+depends=('musl')
+source=("ftp://ftp.invisible-island.net/$pkgname/$pkgname-$pkgver.tgz")
+md5sums=('2d35fe8f66a089d884c67568b47aa190')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

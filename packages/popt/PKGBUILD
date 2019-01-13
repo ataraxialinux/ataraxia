@@ -1,0 +1,33 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=popt
+pkgver=1.16
+pkgrel=1
+pkgdesc="A commandline option parser"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://rpm5.org"
+license=('custom')
+depends=('musl')
+source=("http://rpm5.org/files/$pkgname/$pkgname-$pkgver.tar.gz"
+	'musl.patch')
+md5sums=('3743beefa3dd6247a73f8f7a32c14c33'
+         'a50420117b66359d958125e290f94228')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/musl.patch
+}
+
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

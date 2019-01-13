@@ -1,0 +1,39 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=intltool
+pkgver=0.51.0
+pkgrel=1
+pkgdesc="The internationalization tool collection"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://launchpad.net/intltool"
+license=('GPL2')
+depends=('perl-xml-parser')
+source=("https://launchpad.net/intltool/trunk/${pkgver}/+download/${pkgname}-${pkgver}.tar.gz"
+	'intltool-0.51.0-perl-5.26.patch'
+	'intltool-merge-Create-cache-file-atomically.patch'
+	'intltool_distcheck-fix.patch')
+md5sums=('12e517cac2b57a0121cda351570f1e63'
+         'f4861a0a20b53ee1c4142daf150035fb'
+         '952a747f8f6bd511f407a33329d27936'
+         'bd277c4e508786a7c2ca74150ed03a45')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/intltool-0.51.0-perl-5.26.patch
+	patch -Np1 -i "$srcdir"/intltool-merge-Create-cache-file-atomically.patch
+	patch -Np1 -i "$srcdir"/intltool_distcheck-fix.patch
+}
+
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

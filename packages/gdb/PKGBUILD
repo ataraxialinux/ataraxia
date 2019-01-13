@@ -1,0 +1,53 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gdb
+pkgver=8.2.1
+pkgrel=2
+pkgdesc="The GNU Debugger"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/gdb/"
+license=('GPL-3.0')
+depends=('musl' 'libz' 'ncurses' 'mpfr' 'expat' 'xz' 'python3')
+backup=('etc/gdb/gdbinit')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
+	'ppc-musl.patch'
+	'ppc-ptregs.patch'
+	'aarch64-headers.patch')
+md5sums=('f8b2562e830a4098dd5b5ea9e9296c70'
+         'ec63f79a7c0a47b41355115e1c3bf963'
+         'd0148931a2def008a44bb7b494712b4d'
+         '99d3dd6cb70ee8102447405ce98bd372')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/ppc-musl.patch
+	patch -Np1 -i "$srcdir"/ppc-ptregs.patch
+	patch -Np1 -i "$srcdir"/aarch64-headers.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--with-python=/bin/python3 \
+		--with-system-gdbinit=/etc/gdb/gdbinit \
+		--with-system-zlib \
+		--enable-plugins \
+		--disable-rpath \
+		--disable-werror \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm -f "$pkgdir"/share/info/bfd.info
+	rm -f "$pkgdir"/share/info/dir
+	rm -rf "$pkgdir"/include
+	rm -rf "$pkgdir"/lib
+
+	install -dm755 $pkgdir/etc/gdb
+	touch $pkgdir/etc/gdb/gdbinit
+}

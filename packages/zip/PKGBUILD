@@ -1,0 +1,36 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=zip
+pkgver=3.0
+_pkgver=${pkgver/./}
+pkgrel=1
+pkgdesc="Compressor/archiver for creating and modifying zipfiles"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.info-zip.org/Zip.html"
+license=('custom')
+depends=('musl')
+source=("https://downloads.sourceforge.net/infozip/${pkgname}${_pkgver}.tar.gz"
+	'10-zip-3.0-build.patch'
+	'20-zip-3.0-exec-stack.patch'
+	'30-zip-3.0-pic.patch')
+md5sums=('7b74551e63f8ee6aab6fbc86676c0d37'
+         'c56454742a8273c2264f87f2e69aee79'
+         '24aa8c89371f67e6b31105844780dbc3'
+         '1395f053d2bcee85b96c94dfd7813b8d')
+
+prepare() {
+	cd "$srcdir"/${pkgname}${_pkgver}
+	patch -Np1 -i "$srcdir"/10-zip-3.0-build.patch
+	patch -Np1 -i "$srcdir"/20-zip-3.0-exec-stack.patch
+	patch -Np1 -i "$srcdir"/30-zip-3.0-pic.patch
+}
+
+build() {
+	cd "$srcdir"/${pkgname}${_pkgver}
+	make -f unix/Makefile LOCAL_ZIP="$CFLAGS" prefix='' generic
+}
+
+package() {
+	cd "$srcdir"/${pkgname}${_pkgver}
+	make -f unix/Makefile prefix="$pkgdir" MANDIR="$pkgdir"/share/man/man1 install
+}
