@@ -4,8 +4,8 @@ pkgbase=linux
 pkgname=('linux' 'linux-headers')
 pkgver=4.20.1
 zerover=$pkgver
-pkgrel=2
-arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'mips64el' 'mipsel' 'ppc64le' 'ppc64' 'ppc')
+pkgrel=3
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://www.kernel.org/"
 license=('GPL-2.0')
 makedepends=('kmod' 'bc' 'libelf' 'xz' 'lz4' 'openssl' 'busybox')
@@ -14,30 +14,24 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz"
 	'arm64-config'
 	'armv5tel-config'
 	'armv7l-config'
-	'mips64el-config'
-	'mipsel-config'
 	'ppc64-config'
 	'ppc64le-config'
 	'ppc-config'
 	'x86_64-config'
 	'x86-config'
 	'60-linux.hook'
-	'90-linux.hook'
-	'linux.preset')
+	'90-linux.hook')
 md5sums=('210b8d108b502c462eeaec435c8e1a57'
-         '856de58b0cebc0d892e46bd0b5bfeb8d'
-         '0afa45a80ad3c4fb9c77150c1b888991'
-         'a051b862540b978978208e43cd6b7203'
-         '623494f2b86c2e0fac2f676fc96d6f30'
-         '623494f2b86c2e0fac2f676fc96d6f30'
-         '9b7f34d4604b9a45fef5be4fbf5d21c8'
-         '3a70e75c3a0623136835077d17a96437'
-         '3a54d28483259861a022e9787cd11c94'
-         '64f84910e7b02174107120d09ebbaa4e'
-         '0be1f4c4f12ff9fcfee996eba520ee15'
+         'e931b5b5eab9ea9915a336b77a7ed165'
+         '6b5d412762a98237318e155cb6b6723f'
+         'bf25ef9d67e7df1d3dd3a43206c8482d'
+         '0ef212155b5a8d174ee4eab30f736b17'
+         'c6eca45e392083c7e304280c9c9c4567'
+         'a6579317f78f978ee90af556147aeadf'
+         '300c09bea322dfad3b35d77c177ed7c2'
+         'f829f58ec9de8e27412c423632045299'
          '8db6621a703e3da323af92896853af6a'
-         'f53360592c2a97907f0ea00e2e8fb454'
-         'a329f9581060d555dc7358483de9760a')
+         'f0ee3ffbe89101c0de258518ede0da9c')
 
 prepare() {
 	cd "$srcdir"/$pkgbase-$pkgver
@@ -56,9 +50,6 @@ prepare() {
 			;;
 		armv7l|armv5tel)
 			export XKARCH="arm"
-			;;
-		mips64el|mipsel)
-			export XKARCH="mips"
 			;;
 		ppc64le|ppc64|ppc)
 			export XKARCH="powerpc"
@@ -90,9 +81,6 @@ build() {
 		armv7l|armv5tel)
 			export XKARCH="arm"
 			;;
-		mips64el|mipsel)
-			export XKARCH="mips"
-			;;
 		ppc64le|ppc64|ppc)
 			export XKARCH="powerpc"
 			;;
@@ -106,7 +94,7 @@ build() {
 
 package_linux() {
 	pkgdesc="The Linux kernel"
-	depends=('mkinitcpio' 'busybox' 'kmod')
+	depends=('dracut' 'busybox' 'kmod')
 
 	msg "Installing the kernel"
 
@@ -127,10 +115,6 @@ package_linux() {
 		armv7l|armv5tel)
 			export XKARCH="arm"
 			export IMG="arch/arm/boot/zImage"
-			;;
-		mips64el|mipsel)
-			export XKARCH="mips"
-			export IMG="vmlinux"
 			;;
 		ppc64le|ppc64|ppc)
 			export XKARCH="powerpc"
@@ -153,21 +137,16 @@ package_linux() {
 
 	case $CARCH in
 		arm64|armv7l|armv5tel)
-			make ARCH=$XKARCH INSTALL_DTBS_PATH=$PKG/boot/dtbs dtbs_install
+			make ARCH=$XKARCH INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs dtbs_install
 			;;
 	esac
 
 	install -dm755 "$pkgdir"/share/libalpm/hooks/
-	install -m644 $srcdir/*linux.hook "$pkgdir"/share/libalpm/hooks/
+	install -m644 "$srcdir"/*linux.hook "$pkgdir"/share/libalpm/hooks/
 
 	local subst="
-		s|%PKGBASE%|$pkgbase|g
-		s|%KERNVER%|$zerover|g
+		s|%KVER%|$zerover|g
 	"
-
-	sed "$subst" ../linux.preset  | install -Dm644 /dev/stdin "$pkgdir"/etc/mkinitcpio.d/$pkgbase.preset
-	sed "$subst" ../60-linux.hook | install -Dm644 /dev/stdin "$pkgdir"/share/libalpm/hooks/60-$pkgbase.hook
-	sed "$subst" ../90-linux.hook | install -Dm644 /dev/stdin "$pkgdir"/share/libalpm/hooks/90-$pkgbase.hook
 
 	sed -i "$subst" "$pkgdir"/share/libalpm/hooks/60-linux.hook
 	sed -i "$subst" "$pkgdir"/share/libalpm/hooks/90-linux.hook
@@ -197,9 +176,6 @@ package_linux-headers() {
 			;;
 		armv7l|armv5tel)
 			export XKARCH="arm"
-			;;
-		mips64el|mipsel)
-			export XKARCH="mips"
 			;;
 		ppc64le|ppc64|ppc)
 			export XKARCH="powerpc"
