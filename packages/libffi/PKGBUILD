@@ -1,0 +1,36 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libffi
+pkgver=3.2.1
+pkgrel=1
+pkgdesc="Portable foreign function interface library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://sourceware.org/libffi/"
+license=('MIT')
+depends=('musl')
+source=("ftp://sourceware.org/pub/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('83b89587607e3eb65c70d361f13bab43')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	sed -e '/^includesdir/ s/$(libdir).*$/$(includedir)/' \
+		-i include/Makefile.in
+	sed -e '/^includedir/ s/=.*$/=@includedir@/' \
+		-e 's/^Cflags: -I${includedir}/Cflags:/' \
+		-i libffi.pc.in
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--enable-pax_emutramp \
+		--disable-static \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

@@ -1,0 +1,50 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=ncurses
+pkgver=6.1
+pkgrel=1
+pkgdesc="System V Release 4.0 curses emulation library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://invisible-island.net/ncurses/ncurses.html"
+license=('MIT')
+depends=('gcc-runtime')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('98c889aaf8d23910d2b92d65be2e737a')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix=/ \
+		--includedir=/include \
+		--mandir=/share/man \
+		--with-pkg-config-libdir=/lib/pkgconfig \
+		--with-cxx-binding \
+		--with-cxx-shared \
+		--with-normal \
+		--with-shared \
+		--without-ada \
+		--without-debug \
+		--without-tests \
+		--enable-pc-files \
+		--enable-widec \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	for lib in ncurses ncurses++ form panel menu; do
+		echo "INPUT(-l${lib}w)" > "$pkgdir"/lib/lib${lib}.so
+		ln -sf ${lib}w.pc "$pkgdir"/lib/pkgconfig/${lib}.pc
+	done
+
+	for lib in tic tinfo; do
+		echo "INPUT(libncursesw.so.${pkgver:0:1})" > "$pkgdir"/lib/lib${lib}.so
+		ln -sf libncursesw.so.${pkgver:0:1} "$pkgdir"/lib/lib${lib}.so.${pkgver:0:1}
+	done
+
+	echo 'INPUT(-lncursesw)' > "$pkgdir"/lib/libcursesw.so
+	ln -sf libncurses.so "$pkgdir"/lib/libcurses.so
+}

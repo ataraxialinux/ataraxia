@@ -1,0 +1,27 @@
+pkgname=chroot-ncurses
+pkgver=6.1
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=("http://ftp.gnu.org/gnu/ncurses/ncurses-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir"/ncurses-$pkgver
+	./configure \
+		--prefix=/tools \
+		--includedir=/tools/include \
+		--mandir=/tools/share/man \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--with-build-cc=$HOSTCC \
+		--with-shared \
+		--without-ada \
+		--without-debug \
+		--enable-overwrite \
+		--disable-stripping
+	make
+}
+
+package() {
+	cd "$srcdir"/ncurses-$pkgver
+	make DESTDIR=$pkgdir install
+}

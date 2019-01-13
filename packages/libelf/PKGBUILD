@@ -1,0 +1,38 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libelf
+pkgver=0.8.13
+pkgrel=1
+pkgdesc="A ELF object file access library"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.mr511.de/software"
+license=('LGPL-2.0-or-later')
+depends=('musl')
+source=("http://www.mr511.de/software/$pkgname-$pkgver.tar.gz"
+	'libelf-0.8.13-build.patch')
+md5sums=('4136d7b4c04df68b686570afa26988ac'
+         '4debeb172a5cc8041d72ade132027d19')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/libelf-0.8.13-build.patch
+}
+
+build() {
+	export mr_cv_target_elf=yes
+
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--enable-shared \
+		--disable-debug \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make -j1 install install-compat \
+		prefix="$pkgdir" \
+		libdir="$pkgdir"/lib
+}

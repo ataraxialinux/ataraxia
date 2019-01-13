@@ -1,0 +1,62 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=eudev
+pkgver=3.2.7
+udevinitscriptver=32
+pkgrel=4
+pkgdesc="The userspace dev tools (udev) forked by Gentoo"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gentoo.org/proj/en/eudev/"
+license=('GPL-2.0')
+depends=('musl' 'kmod' 'openrc' 'util-linux' 'hwids')
+backup=('etc/udev/udev.conf')
+options=('!libtool' '!staticlibs')
+install=$pkgname.install
+source=("https://dev.gentoo.org/~blueness/eudev/$pkgname-$pkgver.tar.gz"
+	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$udevinitscriptver.tar.gz"
+	'udev-hwdb.hook'
+	'udev-postmount')
+md5sums=('c75d99910c1791dd9430d26ab76059c0'
+         'a8098437126a0ecdc23f83e923de3644'
+         '1f6bc084dc207da22ce1125554f6908e'
+         'b87d36663caeefc5b54735acae27778a')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	sed -e 's/GROUP="dialout"/GROUP="uucp"/' \
+		-e 's/GROUP="tape"/GROUP="storage"/' \
+		-e 's/GROUP="cdrom"/GROUP="optical"/' \
+		-i rules/*.rules
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--with-rootprefix='' \
+		--libdir=/lib \
+		--sbindir=/bin \
+		--sysconfdir=/etc \
+		--enable-hwdb \
+		--enable-kmod \
+		--enable-split-usr \
+		--disable-introspection \
+		--disable-manpages \
+		--build=$CHOST
+	make
+
+	cd "$srcdir"/udev-init-scripts-$udevinitscriptver
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" sharepkgconfigdir=/lib/pkgconfig install
+
+	install -Dm644 "$srcdir"/udev-hwdb.hook "$pkgdir"/share/libalpm/hooks/udev-hwdb.hook
+
+	install -Dm755 "$srcdir"/udev-postmount "$pkgdir"/etc/init.d/udev-postmount
+
+	cd "$srcdir"/udev-init-scripts-$udevinitscriptver
+	make PREFIX='' DESTDIR=$pkgdir install
+}

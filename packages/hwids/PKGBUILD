@@ -1,0 +1,18 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=hwids
+pkgver=20180917
+pkgrel=1
+pkgdesc="Hardware identification databases"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/gentoo/hwids"
+license=('GPL-2.0+')
+source=("https://github.com/gentoo/hwids/archive/$pkgname-$pkgver.tar.gz")
+md5sums=('4d455e802edd4df308e0fb0199f7ee27')
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgname-$pkgver
+	for ids in pci.ids usb.ids; do
+		install -Dm644 $ids "$pkgdir"/share/hwdata/$ids
+	done
+}

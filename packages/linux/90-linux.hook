@@ -1,0 +1,12 @@
+[Trigger]
+Type = File
+Operation = Install
+Operation = Upgrade
+Target = boot/vmlinuz-linux
+Target = lib/modules/%KVER%/*
+Target = lib/modules/%KVER%/extra/*
+
+[Action]
+Description = Updating Linux initramfs...
+When = PostTransaction
+Exec = /bin/dracut --force --lz4 -q boot/initramfs-linux.img %KVER%

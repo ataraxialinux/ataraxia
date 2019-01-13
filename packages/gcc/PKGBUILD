@@ -1,0 +1,237 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgbase=gcc
+pkgname=('gcc' 'gcc-runtime')
+pkgver=8+20190111
+gccver=8.2.1
+islver=0.20
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://gcc.gnu.org"
+license=('GPL LGPL')
+source=("ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/$pkgbase-${pkgver/+/-}.tar.xz"
+	"http://isl.gforge.inria.fr/isl-$islver.tar.xz"
+	'0001-gcc-Ensure-SSP-is-always-present.patch'
+	'002_all_default-relro.patch'
+	'003_all_default-fortify-source.patch'
+	'005_all_default-as-needed.patch'
+	'gcc-as-needed-gold.patch'
+	'gcc-as-needed-push-pop.patch'
+	'011_all_default-warn-format-security.patch'
+	'012_all_default-warn-trampolines.patch'
+	'013_all_default-ssp-fix.patch'
+	'020_all_msgfmt-libstdc++-link.patch'
+	'050_all_libiberty-asprintf.patch'
+	'051_all_libiberty-pic.patch'
+	'053_all_libitm-no-fortify-source.patch'
+	'090_all_pr55930-dependency-tracking.patch'
+	'0003-gcc-poison-system-directories.patch'
+	'gcc-4.9-musl-fortify.patch'
+	'gcc-6.1-musl-libssp.patch'
+	'libgcc-always-build-gcceh.a.patch'
+	'cpu_indicator.patch'
+	'0002-posix_memalign.patch'
+	'0003-libatomic-test-fix.patch'
+	'0004-libgomp-test-fix.patch'
+	'0005-libitm-test-fix.patch'
+	'0006-libvtv-test-fix.patch'
+	'0007-j2.patch'
+	'0008-s390x-muslldso.patch'
+	'0009-microblaze-pr65649.patch'
+	'0010-ldbl128-config.patch'
+	'0011-m68k.patch'
+	'0012-static-pie.patch'
+	'gcc-pure64.patch'
+	'gcc-pure64-mipsel.patch'
+	'c89'
+	'c99')
+md5sums=('1bfbbecd6923128d17c8b89ae072c914'
+         '2ee25141b7d1688afb63e5bf3ac12999'
+         'aab3bee329858e7fb1c26d6e055a26e1'
+         '28ca9eac639e88869ac975d593ff7a89'
+         'b7235f279097e28295b6bbaa0804302f'
+         'd256d11046bd6e6f4b896b052149a8a8'
+         '97a36ea131f3c59e7e3610fcb440f055'
+         '2c7f68c34a220f909125f43e1ca8dd99'
+         '985662123a68a9b441d3e96e08da91aa'
+         'd761d480744208495367f3a4cef98374'
+         '81099ae8955a012f5c376c622f7ff5c6'
+         'c324e6e3204a39334aa559329592bde3'
+         'a99126f384a2899ff2716ad7389b784b'
+         'd8692c56f04b92667096f59d843e95c5'
+         '9cb2d475322dc61a1fe35054257001c5'
+         '7d4c5c1becd11ab4fe0ef9088f96e638'
+         '027578c4484829977d3af260955a52e9'
+         '9e658e590bc51be611f39945183f6aa2'
+         '32c40cd9c22a01621c2b7d60ac4255a0'
+         '504c7dd8651c5d98229892c4cd9ea591'
+         'd6a989517d3be36772c5218abe56be06'
+         'f621c8986aea15920e3d469b961d99c3'
+         '17e449ba987696c37c889942512b00d8'
+         'd954eb624cb5af2536b3e8f94bbd599c'
+         'ccc206bf6517d2ecb05e9617725869be'
+         '6de40c98d810b248edb14f8fd91a6b5a'
+         'dc04431b020225d02cd0db3b7642e484'
+         'd55b646d62a51d3bf61abce736498d30'
+         '9814bc63efc80ab48c22cc0cfdd1741a'
+         '197be97dd40ea8051453037141a88ab6'
+         '9f732161e05d4395f328b5d5265b247e'
+         '6220c41b7cb4aba1faf204ba77e30023'
+         'b4a5842c4a3b23e28239743aa7355948'
+         '8ca0a8447a05037d82956841aeb51047'
+         '3d333df77302ed89e06a4a8539943b7d'
+         'da96f545b863e57c6ab2598c1ea9a740')
+
+prepare() {
+	cd "$srcdir"/$pkgbase-${pkgver/+/-}
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+
+	patch -Np1 -i "$srcdir"/0001-gcc-Ensure-SSP-is-always-present.patch
+	patch -Np1 -i "$srcdir"/002_all_default-relro.patch
+	patch -Np1 -i "$srcdir"/003_all_default-fortify-source.patch
+	patch -Np1 -i "$srcdir"/005_all_default-as-needed.patch
+	patch -Np1 -i "$srcdir"/gcc-as-needed-gold.patch
+	patch -Np1 -i "$srcdir"/gcc-as-needed-push-pop.patch
+	patch -Np1 -i "$srcdir"/011_all_default-warn-format-security.patch
+	patch -Np1 -i "$srcdir"/012_all_default-warn-trampolines.patch
+	patch -Np1 -i "$srcdir"/013_all_default-ssp-fix.patch
+	patch -Np1 -i "$srcdir"/020_all_msgfmt-libstdc++-link.patch
+	patch -Np1 -i "$srcdir"/050_all_libiberty-asprintf.patch
+	patch -Np1 -i "$srcdir"/051_all_libiberty-pic.patch
+	patch -Np1 -i "$srcdir"/053_all_libitm-no-fortify-source.patch
+	patch -Np1 -i "$srcdir"/090_all_pr55930-dependency-tracking.patch
+	patch -Np1 -i "$srcdir"/0003-gcc-poison-system-directories.patch
+	patch -Np1 -i "$srcdir"/gcc-4.9-musl-fortify.patch
+	patch -Np1 -i "$srcdir"/gcc-6.1-musl-libssp.patch
+	patch -Np1 -i "$srcdir"/libgcc-always-build-gcceh.a.patch
+	patch -Np1 -i "$srcdir"/cpu_indicator.patch
+	patch -Np1 -i "$srcdir"/0002-posix_memalign.patch
+	patch -Np1 -i "$srcdir"/0003-libatomic-test-fix.patch
+	patch -Np1 -i "$srcdir"/0004-libgomp-test-fix.patch
+	patch -Np1 -i "$srcdir"/0005-libitm-test-fix.patch
+	patch -Np1 -i "$srcdir"/0006-libvtv-test-fix.patch
+	patch -Np1 -i "$srcdir"/0007-j2.patch
+	patch -Np1 -i "$srcdir"/0008-s390x-muslldso.patch
+	patch -Np1 -i "$srcdir"/0009-microblaze-pr65649.patch
+	patch -Np1 -i "$srcdir"/0010-ldbl128-config.patch
+	patch -Np1 -i "$srcdir"/0011-m68k.patch
+	patch -Np1 -i "$srcdir"/0012-static-pie.patch
+	patch -Np1 -i "$srcdir"/gcc-pure64.patch
+	patch -Np1 -i "$srcdir"/gcc-pure64-mipsel.patch
+
+	mv ../isl-$islver isl
+
+	mkdir build
+}
+
+build() {
+	case $CARCH in
+		x86_64)
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			;;
+		x86)
+			export GCCOPTS="--with-arch=i686 --with-tune=generic"
+			;;
+		arm64)
+			export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+			;;
+		armv7l)
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+			;;
+		armv5tel)
+			export GCCOPTS="--with-arch=armv5te --with-float=soft"
+			;;
+		ppc64le)
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			;;
+		ppc64)
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			;;
+		ppc)
+			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
+			;;
+		*)
+			die "Architecture is not set or is not supported by 'bootstrap' script"
+	esac
+
+	cd "$srcdir"/$pkgbase-${pkgver/+/-}
+	cd build
+	../configure \
+		--prefix='' \
+		--libdir="/lib" \
+		--libexecdir="/lib" \
+		--build=$CHOST $GCCOPTS \
+		--with-isl \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-bootstrap \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-install-libiberty \
+		--enable-languages=c,c++,fortran,lto \
+		--enable-libstdcxx-time \
+		--enable-linker-build-id \
+		--enable-lto \
+		--enable-plugin \
+		--enable-shared \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror \
+		libat_cv_have_ifunc=no
+	make
+}
+
+package_gcc() {
+	pkgdesc='The GNU Compiler Collection'
+	depends=('musl' 'gcc-runtime' 'binutils' 'mpc')
+
+	cd "$srcdir"/$pkgbase-${pkgver/+/-}/build
+	make -j1 DESTDIR="$pkgdir" install
+
+	install -Dm755 "$srcdir"/c89 "$pkgdir"/bin/c89
+	install -Dm755 "$srcdir"/c99 "$pkgdir"/bin/c99
+
+	ln -sf gcc "$pkgdir"/bin/cc
+
+	ln -sf gfortran "$pkgdir"/bin/g77
+	ln -sf gfortran "$pkgdir"/bin/f77
+	ln -sf gfortran "$pkgdir"/bin/g95
+	ln -sf gfortran "$pkgdir"/bin/f95
+
+	ln -sf ../bin/cpp "$pkgdir"/lib
+
+	install -dm755 "$pkgdir"/lib/bfd-plugins
+	ln -sf /lib/gcc/$(gcc -dumpmachine)/$gccver/liblto_plugin.so "$pkgdir"/lib/bfd-plugins/
+
+	mkdir -p "$pkgdir"/share/gdb/auto-load/lib
+	mv "$pkgdir"/lib/*gdb.py "$pkgdir"/share/gdb/auto-load/lib
+
+	rm -rf "$pkgdir"/lib/*.so{,.*}
+}
+
+package_gcc-runtime() {
+	pkgdesc='Runtime libraries shipped by GCC'
+	depends=('musl')
+	options+=('!strip')
+
+	cd "$srcdir"/$pkgbase-${pkgver/+/-}/build
+	make -j1 DESTDIR="$pkgdir" install
+
+	mkdir "$srcdir"/libs
+	mv "$pkgdir"/lib/*.so{,.*} "$srcdir"/libs
+	rm -rf "$pkgdir/"*
+	mkdir -p "$pkgdir"/lib/
+	mv "$srcdir"/libs/* "$pkgdir"/lib/
+	rm -rf "$pkgdir"/lib/*gdb.py
+}

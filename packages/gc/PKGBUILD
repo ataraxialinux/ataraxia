@@ -1,0 +1,28 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gc
+pkgver=8.0.2
+pkgrel=1
+pkgdesc="A garbage collector for C and C++"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.hboehm.info/gc/"
+license=('GPL')
+depends=('gcc-runtime' 'libatomic_ops')
+source=("https://github.com/ivmai/bdwgc/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
+md5sums=('0c3e5a2de567a4f199dc07740bbf21d1')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--enable-cplusplus \
+		--enable-threads=posix \
+		--disable-static \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

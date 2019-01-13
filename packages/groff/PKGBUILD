@@ -1,0 +1,31 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=groff
+pkgver=1.22.4
+pkgrel=1
+pkgdesc="GNU troff text-formatting system"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.gnu.org/software/groff/groff.html"
+license=('GPL')
+depends=('gcc-runtime' 'perl')
+options=('!docs' '!emptydirs' '!makeflags')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('08fb04335e2f5e73f23ea4c3adbf0c5f')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--without-x \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	ln -sf eqn "$pkgdir"/bin/geqn
+	ln -sf tbl "$pkgdir"/bin/gtbl
+	ln -sf soelim "$pkgdir"/bin/zsoelim
+}

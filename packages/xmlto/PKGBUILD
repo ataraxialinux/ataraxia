@@ -1,0 +1,28 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=xmlto
+pkgver=0.0.28
+pkgrel=1
+pkgdesc="Convert xml to many other formats"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://pagure.io/xmlto/"
+license=('GPL2+')
+depends=('musl' 'libxslt')
+makedepends=('docbook-xsl')
+source=("https://releases.pagure.org/xmlto/$pkgname-$pkgver.tar.bz2")
+md5sums=('93bab48d446c826399d130d959fe676f')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	BASH=/bin/bash \
+	./configure \
+		--prefix='' \
+		--mandir=/share/man \
+		--build=$CHOST
+	make -j1
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make -j1 DESTDIR="$pkgdir" install
+}

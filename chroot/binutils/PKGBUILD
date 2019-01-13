@@ -1,0 +1,52 @@
+pkgname=chroot-binutils
+pkgver=2.31.1
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=(http://ftp.gnu.org/gnu/binutils/binutils-$pkgver.tar.xz
+	gold-mipsel.patch)
+
+prepare() {
+	cd "$srcdir"/binutils-$pkgver
+	patch -Np1 -i "$srcdir"/gold-mipsel.patch
+
+	mkdir build
+}
+
+build() {
+	cd "$srcdir"/binutils-$pkgver
+	cd build
+	../configure \
+		--prefix=/tools \
+		--build=$XHOST \
+		--host=$XTARGET \
+		--target=$XTARGET $BINUTILSOPTS \
+		--with-lib-path="/tools/lib" \
+		--with-pic \
+		--with-system-zlib \
+		--enable-64-bit-bfd \
+		--enable-deterministic-archives \
+		--enable-gold=yes \
+		--enable-ld=default \
+		--enable-lto \
+		--enable-plugins \
+		--enable-relro \
+		--enable-shared \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make MAKEINFO="true" configure-host
+	make MAKEINFO="true"
+}
+
+package() {
+	cd "$srcdir"/binutils-$pkgver
+	cd build
+	make MAKEINFO="true" DESTDIR="$pkgdir" install
+
+	mkdir -p ld-new-dir
+	make -C ld clean
+	make -C ld LIB_PATH=/lib
+	make -C ld LIB_PATH=/lib DESTDIR="$(pwd)"/ld-new-dir install
+	cp ld-new-dir/tools/bin/ld "$pkgdir"/tools/bin/ld-new
+}

@@ -1,0 +1,47 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=python2
+pkgver=2.7.15
+pkgrel=3
+_pybasever=${pkgver%.*}
+pkgdesc="A high-level scripting language"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.python.org/"
+license=('custom')
+depends=('musl' 'libz' 'libedit'  'sqlite' 'bzip2' 'gdbm' 'openssl' 'expat' 'libffi')
+source=("https://www.python.org/ftp/python/${pkgver%rc*}/Python-$pkgver.tar.xz")
+md5sums=('a80ae3cc478460b922242f43a1b4094d')
+
+prepare() {
+	cd "$srcdir"/Python-$pkgver
+	rm -r Modules/expat Modules/_ctypes/libffi* Modules/zlib
+}
+
+build() {
+	cd "$srcdir"/Python-$pkgver
+	export OPT="$CFLAGS -DTHREAD_STACK_SIZE=0x100000"
+
+	./configure \
+		--prefix=/ \
+		--with-dbmliborder=gdbm:ndbm \
+		--with-ensurepip=yes \
+		--with-lto \
+		--with-system-expat \
+		--with-system-ffi \
+		--with-system-zlib \
+		--with-threads \
+		--enable-ipv6 \
+		--enable-shared \
+		--enable-unicode=ucs4 \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/Python-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	chmod 755 "$pkgdir"/lib/libpython2.7.so.1.0
+
+	rm -rf "$pkgdir"/bin/2to3
+}

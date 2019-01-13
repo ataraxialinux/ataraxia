@@ -1,0 +1,23 @@
+pkgname=host-m4
+pkgver=1.4.18
+pkgrel=1
+arch=('any')
+source=(http://ftp.gnu.org/gnu/m4/m4-$pkgver.tar.xz)
+
+prepare() {
+	cd "$srcdir"/m4-$pkgver
+	sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' lib/*.c
+	echo "#define _IO_IN_BACKUP 0x100" >> lib/stdio-impl.h
+}
+
+build() {
+	cd "$srcdir"/m4-$pkgver
+	./configure \
+		--prefix=''
+	make
+}
+
+package() {
+	cd "$srcdir"/m4-$pkgver
+	make DESTDIR="$pkgdir" install
+}

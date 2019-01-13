@@ -1,0 +1,104 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+_vers=(4.{2..5})
+
+pkgname=docbook-xml
+pkgver=${_vers[-1]}
+pkgrel=1
+pkgdesc="A widely used XML scheme for writing documentation and help"
+arch=('any')
+url="https://www.oasis-open.org/docbook/"
+license=('MIT')
+depends=('libxml2')
+source=("https://docbook.org/xml/4.1.2/docbkx412.zip")
+noextract=("docbkx412.zip")
+md5sums=('900d7609fb7e6d78901b357e4acfbc17'
+         '73fe50dfe74ca631c1602f558ed8961f'
+         'ab200202b9e136a144db1e0864c45074'
+         'cbb04e9a700955d88c50962ef22c1634'
+         '03083e288e87a7e829e437358da7ef9e')
+
+for _ver in ${_vers[@]}; do
+	source+=("https://docbook.org/xml/$_ver/docbook-xml-$_ver.zip")
+	noextract+=("docbook-xml-$_ver.zip")
+done
+
+package() {
+	local ver xml
+
+	mkdir -p "$pkgdir/etc/xml"
+	xmlcatalog --noout --create "$pkgdir/etc/xml/docbook-xml"
+
+	mkdir docbook-xml-4.1.2
+	bsdtar -C docbook-xml-4.1.2 -xf docbkx412.zip
+	for ver in ${_vers[@]}; do
+		mkdir docbook-xml-$ver
+		bsdtar -C docbook-xml-$ver -xf docbook-xml-$ver.zip
+	done
+
+	for ver in 4.1.2 ${_vers[@]}; do
+		pushd docbook-xml-$ver
+		mkdir -p "$pkgdir/share/xml/docbook/xml-dtd-$ver"
+		cp -dr docbook.cat *.dtd ent/ *.mod \
+			"$pkgdir/share/xml/docbook/xml-dtd-$ver"
+		popd
+
+		xml=
+		case $ver in
+		4.1.2) xml=' XML' ;;&
+		*)
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//DTD DocBook XML V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/docbookx.dtd" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//DTD DocBook$xml CALS Table Model V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/calstblx.dtd" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//DTD XML Exchange Table Model 19990315//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/soextblx.dtd" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//ELEMENTS DocBook$xml Information Pool V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/dbpoolx.mod" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//ELEMENTS DocBook$xml Document Hierarchy V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/dbhierx.mod" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//ENTITIES DocBook$xml Additional General Entities V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/dbgenent.mod" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//ENTITIES DocBook$xml Notations V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/dbnotnx.mod" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//ENTITIES DocBook$xml Character Entities V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/dbcentx.mod" \
+			"$pkgdir/etc/xml/docbook-xml"
+		;;&
+		4.[45])
+		xmlcatalog --noout --add "public" \
+			"-//OASIS//ELEMENTS DocBook XML HTML Tables V$ver//EN" \
+			"http://www.oasis-open.org/docbook/xml/$ver/htmltblx.mod" \
+			"$pkgdir/etc/xml/docbook-xml"
+		;;&
+		*)
+		xmlcatalog --noout --add "rewriteSystem" \
+			"http://www.oasis-open.org/docbook/xml/$ver" \
+			"/share/xml/docbook/xml-dtd-$ver" \
+			"$pkgdir/etc/xml/docbook-xml"
+		xmlcatalog --noout --add "rewriteURI" \
+			"http://www.oasis-open.org/docbook/xml/$ver" \
+			"/share/xml/docbook/xml-dtd-$ver" \
+			"$pkgdir/etc/xml/docbook-xml"
+		;;&
+		esac
+	done
+
+	find "$pkgdir" -type f -exec chmod -c a-x {} +
+	chmod -Rc u=rwX,go=rX "$pkgdir"
+}

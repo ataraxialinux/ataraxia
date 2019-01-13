@@ -1,0 +1,24 @@
+pkgname=host-flex
+pkgver=2.6.4
+pkgrel=1
+arch=('any')
+source=(https://github.com/westes/flex/releases/download/v$pkgver/flex-$pkgver.tar.gz)
+
+prepare() {
+	cd "$srcdir"/flex-$pkgver
+	sed -i "/math.h/a #include <malloc.h>" src/flexdef.h
+}
+
+build() {
+	cd "$srcdir"/flex-$pkgver
+	./configure \
+		--prefix=''
+	make
+}
+
+package() {
+	cd "$srcdir"/flex-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	ln -sf flex "$pkgdir"/bin/lex
+}

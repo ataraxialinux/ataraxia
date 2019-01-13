@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=iso-codes
+pkgver=4.1
+pkgrel=1
+pkgdesc="Lists of the country, language, and currency names"
+arch=('any')
+url="https://salsa.debian.org/iso-codes-team/iso-codes"
+license=('LGPL-2.1-or-later')
+makedepends=('gettext-tiny' 'python3')
+source=("http://http.debian.net/debian/pool/main/i/$pkgname/${pkgname}_${pkgver}.orig.tar.xz")
+md5sums=('7d994bab4b0b7156e82ee7e117eb686b')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" pkgconfigdir=/lib/pkgconfig install
+}

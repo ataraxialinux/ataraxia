@@ -1,0 +1,14 @@
+pkgname=chroot-gettext-tiny
+pkgver=0.3.1
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+provides=('gettext-tiny')
+source=("http://ftp.barfooze.de/pub/sabotage/tarballs/gettext-tiny-$pkgver.tar.xz")
+
+package() {
+	cd "$srcdir"/gettext-tiny-$pkgver
+	make -j1 \
+		LIBINTL=MUSL \
+		CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$CFLAGS" \
+		prefix="$pkgdir"/tools install
+}

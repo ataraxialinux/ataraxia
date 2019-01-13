@@ -1,0 +1,23 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=aspell-en
+pkgver=2018.04.16
+pkgrel=1
+pkgdesc="English dictionary for aspell"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://aspell.net/"
+license=('custom')
+depends=('aspell')
+source=("ftp://ftp.gnu.org/gnu/aspell/dict/en/aspell6-en-$pkgver-0.tar.bz2")
+md5sums=('6149dca1933cf5cd136e214957561292')
+
+build() {
+	cd "$srcdir"/aspell6-en-$pkgver-0
+	./configure
+	make
+}
+
+package() {
+	cd "$srcdir"/aspell6-en-$pkgver-0
+	make DESTDIR="$pkgdir" install
+}

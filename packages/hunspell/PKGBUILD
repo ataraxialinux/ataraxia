@@ -1,0 +1,37 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=hunspell
+pkgver=1.7.0
+pkgrel=1
+pkgdesc="Spell checker and morphological analyzer library and program"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://hunspell.github.io/"
+license=('GPL2+ LGPL2+ MPL 1.1')
+depends=('gcc-runtime' 'ncurses')
+optdepends=('perl: for ispellaff2myspell')
+source=("https://github.com/hunspell/hunspell/archive/v$pkgver.tar.gz")
+md5sums=('b2399a4aa927e8b3e171d9ea6737cc02')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	autoreconf -vfi
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--with-ui \
+		--disable-static \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	pushd "$pkgdir"/lib
+		ln -s libhunspell-?.?.so libhunspell.so
+	popd
+}

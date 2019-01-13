@@ -1,0 +1,57 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=binutils
+pkgver=2.31.1
+pkgrel=1
+pkgdesc="Tools necessary to build programs"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.gnu.org/software/binutils/"
+license=('GPL-2.0 GPL-3.0-or-later LGPL-2.0 BSD')
+depends=('musl' 'libz')
+options=('!distcc' '!ccache')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
+	'gold-mipsel.patch')
+md5sums=('5b7c9d4ce96f507d95c1b9a255e52418'
+         '030ab638472f037a57f0d6ec839e39b0')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/gold-mipsel.patch
+
+	mkdir build
+}
+
+build() {
+	if [ "$CARCH" = "x86_64" ]; then
+		export BINUTILSOPTS="--enable-targets=x86_64-pep"
+	fi
+
+	cd "$srcdir"/$pkgname-$pkgver
+	cd build
+	../configure \
+		--prefix='' \
+		--build=$CHOST $BINUTILSOPTS \
+		--with-lib-path="/lib:/local/lib" \
+		--with-pic \
+		--with-system-zlib \
+		--enable-64-bit-bfd \
+		--enable-deterministic-archives \
+		--enable-gold=yes \
+		--enable-ld=default \
+		--enable-lto \
+		--enable-plugins \
+		--enable-relro \
+		--enable-shared \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make tooldir='' configure-host
+	make tooldir=''
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	cd build
+	make tooldir='' DESTDIR="$pkgdir" install
+}

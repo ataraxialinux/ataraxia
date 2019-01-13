@@ -1,0 +1,35 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=valgrind
+pkgver=3.14.0
+pkgrel=1
+pkgdesc="Tool to help find memory-management problems in programs"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://valgrind.org/"
+license=('GPL-2.0-or-later')
+depends=('musl' 'perl')
+options=('!emptydirs' '!strip')
+source=("ftp://sourceware.org/pub/$pkgname/$pkgname-$pkgver.tar.bz2")
+md5sums=('74175426afa280184b62591b58c671b3')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	CFLAGS=${CFLAGS/-fstack-protector-strong/}
+	CXXFLAGS=${CXXFLAGS/-fstack-protector-strong/}
+
+	export CFLAGS="$CFLAGS -fno-stack-protector -no-pie"
+	export CXXFLAGS="$CXXFLAGS -fno-stack-protector -no-pie"
+
+	./configure \
+		--prefix='' \
+		--mandir=/share/man \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	find "$pkgdir"/bin -type f -executable -exec strip $STRIP_BINARIES {} + || true
+}
