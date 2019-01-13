@@ -1,0 +1,23 @@
+pkgname=chroot-findutils
+pkgver=4.6.0
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=("http://ftp.gnu.org/gnu/findutils/findutils-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir"/findutils-$pkgver
+	echo "gl_cv_func_wcwidth_works=yes" > config.cache
+	echo "ac_cv_func_fnmatch_gnu=yes" >> config.cache
+
+	./configure \
+		--prefix=/tools \
+		--cache-file=config.cache \
+		--build=$XHOST \
+		--host=$XTARGET
+	make
+}
+
+package() {
+	cd "$srcdir"/findutils-$pkgver
+	make DESTDIR="$pkgdir" install
+}
