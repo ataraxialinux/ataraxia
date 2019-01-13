@@ -1,11 +1,13 @@
+# args: <group> [options]
 _addgroup() {
-	if ! getent group "$1" >/dev/null && addgroup "$@" >/dev/null; then
+	if ! getent group "$1" >/dev/null && groupadd "$@" >/dev/null; then
 		need_group_update=1
 	fi
 }
 
+# args: <group> [options]
 _adduser() {
-	if ! getent passwd "$1" >/dev/null && adduser "$@" >/dev/null; then
+	if ! getent passwd "$1" >/dev/null && useradd "$@" >/dev/null; then
 		need_passwd_update=1
 	fi
 }
@@ -24,14 +26,14 @@ post_upgrade() {
 	_addgroup uucp    -g 14
 	_addgroup proc    -g 26
 	_addgroup http    -g 33
-	_adduser  http    -u 33 -h /srv/http -g http -s /bin/nologin
+	_adduser  http    -u 33 -d /srv/http -g http -s /bin/nologin
 	_addgroup scanner -g 96
 	_addgroup rfkill  -g 24
 	_addgroup lock    -g 54
 	_addgroup uuidd   -g 68
-	_adduser uuidd    -u 68 -h / -g uuidd -s /bin/nologin
+	_adduser uuidd    -u 68 -d / -g uuidd -s /bin/nologin
 	_addgroup dbus    -g 81
-	_adduser dbus     -u 81 -h / -g dbus -s /bin/nologin
+	_adduser dbus     -u 81 -d / -g dbus -s /bin/nologin
 	_addgroup input   -g 97
 
 	# update shadow files if needed
@@ -43,6 +45,10 @@ post_upgrade() {
 		pwconv >/dev/null
 	fi
 
+	if ! grep -q '^include /etc/ld.so.conf.d/\*.conf$' etc/ld.so.conf; then
+		echo 'include /etc/ld.so.conf.d/*.conf' >> etc/ld.so.conf
+	fi
+
 	# set "Last password change" > 0; otherwise su $user wont work
 	for user in bin daemon mail ftp http nobody; do
 		if LANG=C chage -l ${user} | grep -q 'password must be changed'; then
@@ -50,4 +56,3 @@ post_upgrade() {
 		fi
 	done
 }
-

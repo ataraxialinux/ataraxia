@@ -1,0 +1,37 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=iputils
+pkgver=s20180629
+pkgrel=1
+pkgdesc="Network monitoring tools"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.skbuff.net/iputils/"
+license=('GPL')
+depends=('musl' 'libcap' 'openssl' 'libidn2')
+options=('strip' 'debug')
+source=("https://github.com/iputils/iputils/archive/$pkgver.tar.gz")
+md5sums=('866547f2ffb17b67049472c770703c83')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make USE_NETTLE=no USE_GNUTLS=no USE_GCRYPT=no CCOPTOPT="$CFLAGS"
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	mkdir -p "$pkgdir"/bin
+	install -m755 ping $pkgdir/bin
+	install -m755 clockdiff $pkgdir/bin
+	install -m755 rdisc $pkgdir/bin
+	install -m755 tracepath $pkgdir/bin
+	install -m755 ping $pkgdir/bin
+	install -m755 arping $pkgdir/bin
+	install -m755 ipg $pkgdir/bin
+	install -m755 rarpd $pkgdir/bin
+	install -m755 traceroute6 $pkgdir/bin
+	ln -sf ping $pkgdir/bin/ping4
+	ln -sf ping $pkgdir/bin/ping6
+	ln -sf tracepath $pkgdir/bin/tracepath6
+
+	chmod u+s "$pkgdir"/bin/ping{,6} "$pkgdir"/bin/traceroute6
+}
