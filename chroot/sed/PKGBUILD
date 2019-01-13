@@ -1,0 +1,19 @@
+pkgname=chroot-sed
+pkgver=4.7
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=("http://ftp.gnu.org/gnu/sed/sed-$pkgver.tar.xz")
+
+build() {
+	cd "$srcdir"/sed-$pkgver
+	./configure \
+		--prefix=/tools \
+		--build=$XHOST \
+		--host=$XTARGET
+	make
+}
+
+package() {
+	cd "$srcdir"/sed-$pkgver
+	make DESTDIR="$pkgdir" install
+}
