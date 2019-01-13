@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=psmisc
+pkgver=23.2
+pkgrel=1
+pkgdesc="Miscellaneous procfs tools"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://psmisc.sourceforge.net/"
+license=('BSD GPL')
+depends=('musl' 'ncurses')
+source=("https://downloads.sourceforge.net/psmisc/$pkgname-$pkgver.tar.xz")
+md5sums=('0524258861f00be1a02d27d39d8e5e62')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

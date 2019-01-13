@@ -1,0 +1,28 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=coreutils
+pkgver=8.30
+pkgrel=1
+pkgdesc="The basic file, shell and text manipulation utilities of the GNU operating system"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.gnu.org/software/coreutils/"
+license=('GPL-3.0-or-later')
+depends=('musl' 'gmp' 'acl' 'libcap' 'openssl')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('ab06d68949758971fe744db66b572816')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--libexecdir=/lib \
+		--with-openssl \
+		--enable-no-install-program=groups,hostname,kill,uptime \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}
