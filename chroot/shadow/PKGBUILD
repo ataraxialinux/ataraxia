@@ -1,0 +1,24 @@
+pkgname=chroot-shadow
+pkgver=4.6
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=("https://github.com/shadow-maint/shadow/releases/download/$pkgver/shadow-$pkgver.tar.xz")
+
+build() {
+	cd "$srcdir"/shadow-$pkgver
+	./configure \
+		--prefix=/tools \
+		--sysconfdir=/tools/etc \
+		--without-audit \
+		--without-nscd \
+		--without-selinux \
+		--with-group-name-max-length=32 \
+		--build=$XHOST \
+		--host=$XTARGET
+	make
+}
+
+package() {
+	cd "$srcdir"/shadow-$pkgver
+	make DESTDIR="$pkgdir" install
+}
