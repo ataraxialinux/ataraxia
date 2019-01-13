@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=gzip
+pkgver=1.10
+pkgrel=1
+pkgdesc="GNU compression utility"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.gnu.org/software/gzip/"
+license=('GPL-2.0')
+depends=('musl' 'bash' 'less')
+source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
+md5sums=('691b1221694c3394f1c537df4eee39d3')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make prefix="$pkgdir" install
+}
