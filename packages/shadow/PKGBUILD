@@ -1,0 +1,65 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=shadow
+pkgver=4.6
+pkgrel=1
+pkgdesc="Password and account management tool suite"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/shadow-maint/shadow"
+license=('BSD')
+depends=('musl' 'acl' 'bash')
+backup=('etc/login.defs'
+	'etc/default/useradd')
+options=('strip' 'debug')
+source=("https://github.com/shadow-maint/shadow/releases/download/$pkgver/$pkgname-$pkgver.tar.xz"
+	'shadow-no_rlogin'
+	'shadow-strncpy-usage.patch'
+	'xstrdup.patch'
+	'useradd')
+md5sums=('b491fecbf1232632c32ff8f1437fd60e'
+         'b77ce286e251d3acbdf892b65214ec92'
+         '4bec94ece669c942296ba2da3d411ce5'
+         '12ccfbd10012d02d5667e0f6e8e5b0f9'
+         '5c2fb7814137de810046884202e0dcd8')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -p0 -i "$srcdir"/shadow-no_rlogin
+	patch -p0 -i "$srcdir"/shadow-strncpy-usage.patch
+	patch -p0 -i "$srcdir"/xstrdup.patch
+
+	sed -i -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD SHA512@' etc/login.defs
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--bindir=/bin \
+		--sbindir=/bin \
+		--libdir=/lib \
+		--mandir=/share/man \
+		--sysconfdir=/etc \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--with-group-name-max-length=32 \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	install -Dm644 "$srcdir"/useradd "$pkgdir"/etc/default/useradd
+
+	rm "$pkgdir"/sbin/logoutd
+
+	mv "$pkgdir"/bin/{newgrp,sg}
+
+	mv "$pkgdir"/sbin/* "$pkgdir"/bin
+	rmdir "$pkgdir"/sbin
+}
