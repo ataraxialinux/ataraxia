@@ -1,0 +1,24 @@
+pkgname=chroot-libcap
+pkgver=2.25
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=("https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-$pkgver.tar.xz")
+
+prepare() {
+	cd "$srcdir"/libcap-$pkgver
+	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
+	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i 's@/bin/bash@/tools/bin/bash@g' progs/capsh.c
+}
+
+build() {
+	cd "$srcdir"/libcap-$pkgver
+	make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS"
+}
+
+package() {
+	cd "$srcdir"/libcap-$pkgver
+	make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" PAM_CAP=no RAISE_SETFCAP=no lib=lib prefix=/tools DESTDIR=$pkgdir install
+}
