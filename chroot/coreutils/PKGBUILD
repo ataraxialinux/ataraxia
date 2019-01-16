@@ -9,7 +9,7 @@ build() {
 	./configure \
 		--prefix=/tools \
 		--cache-file=config.cache \
-		--enable-install-program=hostname,groups \
+		--enable-install-program=hostname \
 		--build=$XHOST \
 		--host=$XTARGET
 	sed -i -e 's/^man1_MANS/#man1_MANS/' Makefile
@@ -19,4 +19,6 @@ build() {
 package() {
 	cd "$srcdir"/coreutils-$pkgver
 	make DESTDIR="$pkgdir" install
+
+	rm -rf "$pkgdir"/tools/bin/groups
 }
