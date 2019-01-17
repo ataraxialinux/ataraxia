@@ -2,9 +2,9 @@
 
 pkgbase=linux
 pkgname=('linux' 'linux-headers')
-pkgver=4.20.2
+pkgver=4.20.3
 zerover=$pkgver
-pkgrel=2
+pkgrel=1
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://www.kernel.org/"
 license=('GPL-2.0')
@@ -20,8 +20,9 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz"
 	'x86_64-config'
 	'x86-config'
 	'60-linux.hook'
-	'90-linux.hook')
-md5sums=('ed9100092ab66970f68680c6c96af97b'
+	'90-linux.hook'
+	'linux.preset')
+md5sums=('924f2e6769a5e2e6e67b47ed8ce2b52f'
          'b5f17f04d2ed633f4052c8c5e79c4ff4'
          'bd3134e40be4ddf22885a3ca183b3242'
          '54386aefff3445d873dfb26f59804a0e'
@@ -30,8 +31,9 @@ md5sums=('ed9100092ab66970f68680c6c96af97b'
          'b725885181d29bf68080ee21f86e54ee'
          '80db0ad37cb1a798f79c9ad28212f0b4'
          '802d27f5260b6745ace920d74ed5a745'
-         '8db6621a703e3da323af92896853af6a'
-         'f0ee3ffbe89101c0de258518ede0da9c')
+         '7f0025b3cef91b164ed09cf8a7a8db5a'
+         '83b7b07f761573e178cddcf1da1988a7'
+         'a329f9581060d555dc7358483de9760a')
 
 prepare() {
 	unset CFLAGS CXXFLAGS
@@ -97,7 +99,7 @@ build() {
 
 package_linux() {
 	pkgdesc="The Linux kernel"
-	depends=('dracut' 'coreutils' 'kmod')
+	depends=('mkinitcpio' 'coreutils' 'kmod')
 
 	msg "Installing the kernel"
 
@@ -146,13 +148,16 @@ package_linux() {
 
 	install -dm755 "$pkgdir"/share/libalpm/hooks/
 	install -m644 "$srcdir"/*linux.hook "$pkgdir"/share/libalpm/hooks/
+	install -Dm644 "$srcdir"/linux.preset "$pkgdir"/etc/mkinitcpio.d/$pkgbase.preset
 
 	local subst="
-		s|%KVER%|$zerover|g
+		s|%PKGBASE%|$pkgbase|g
+		s|%KERNVER%|$zerover|g
 	"
 
 	sed -i "$subst" "$pkgdir"/share/libalpm/hooks/60-linux.hook
 	sed -i "$subst" "$pkgdir"/share/libalpm/hooks/90-linux.hook
+	sed -i "$subst" "$pkgdir"/etc/mkinitcpio.d/$pkgbase.preset
 
 	cd "$pkgdir"/lib/modules/$zerover
 	rm -f source build
