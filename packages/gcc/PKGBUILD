@@ -5,7 +5,7 @@ pkgname=('gcc' 'gcc-runtime')
 pkgver=8+20190111
 gccver=8.2.1
 islver=0.20
-pkgrel=1
+pkgrel=2
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="http://gcc.gnu.org"
 license=('GPL LGPL')
@@ -41,6 +41,8 @@ source=("ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/$pkgbase-${pkgve
 	'0010-ldbl128-config.patch'
 	'0011-m68k.patch'
 	'0012-static-pie.patch'
+	'musl-ada.patch'
+	'ada-shared.patch'
 	'gcc-pure64.patch'
 	'gcc-pure64-mips.patch'
 	'c89'
@@ -77,6 +79,8 @@ md5sums=('1bfbbecd6923128d17c8b89ae072c914'
          '197be97dd40ea8051453037141a88ab6'
          '9f732161e05d4395f328b5d5265b247e'
          '6220c41b7cb4aba1faf204ba77e30023'
+         'd4590974563d1cd16bc85496dd21340a'
+         '8525123af27a44895c12f340a68176c6'
          'b4a5842c4a3b23e28239743aa7355948'
          '8ca0a8447a05037d82956841aeb51047'
          '3d333df77302ed89e06a4a8539943b7d'
@@ -116,6 +120,8 @@ prepare() {
 	patch -Np1 -i "$srcdir"/0010-ldbl128-config.patch
 	patch -Np1 -i "$srcdir"/0011-m68k.patch
 	patch -Np1 -i "$srcdir"/0012-static-pie.patch
+	patch -Np0 -i "$srcdir"/musl-ada.patch
+	patch -Np0 -i "$srcdir"/ada-shared.patch
 	patch -Np1 -i "$srcdir"/gcc-pure64.patch
 	patch -Np1 -i "$srcdir"/gcc-pure64-mips.patch
 
@@ -170,7 +176,7 @@ build() {
 		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-install-libiberty \
-		--enable-languages=c,c++,fortran,lto \
+		--enable-languages=c,c++,fortran,ada,lto \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
