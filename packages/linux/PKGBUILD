@@ -4,36 +4,51 @@ pkgbase=linux
 pkgname=('linux' 'linux-headers')
 pkgver=4.20.3
 zerover=$pkgver
-pkgrel=1
+pkgrel=2
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://www.kernel.org/"
 license=('GPL-2.0')
-makedepends=('kmod' 'bc' 'libelf' 'xz' 'openssl')
+makedepends=('kmod' 'bc' 'libelf' 'xz' 'lz4' 'openssl')
 options=('!strip')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz"
-	'arm64-config'
-	'armv5tel-config'
-	'armv7l-config'
-	'ppc64-config'
-	'ppc64le-config'
-	'ppc-config'
-	'x86_64-config'
-	'x86-config'
 	'60-linux.hook'
 	'90-linux.hook'
 	'linux.preset')
 md5sums=('924f2e6769a5e2e6e67b47ed8ce2b52f'
-         'b5f17f04d2ed633f4052c8c5e79c4ff4'
-         'bd3134e40be4ddf22885a3ca183b3242'
-         '54386aefff3445d873dfb26f59804a0e'
-         'ebf43d72da74d4ac40c5a370b92229a6'
-         'f43c3dc1f9187bd50d3b557274c64ec1'
-         'b725885181d29bf68080ee21f86e54ee'
-         '80db0ad37cb1a798f79c9ad28212f0b4'
-         '802d27f5260b6745ace920d74ed5a745'
          '7f0025b3cef91b164ed09cf8a7a8db5a'
          '83b7b07f761573e178cddcf1da1988a7'
          'a329f9581060d555dc7358483de9760a')
+
+msg() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[32m==>\e[0m $msg\n"
+}
+
+yconfig() {
+	FU="$1"
+	msg "Setting 'CONFIG_"$FU"' to y"
+	./scripts/config --enable "$FU"
+}
+
+mconfig() {
+	FU="$1"
+	msg "Setting 'CONFIG_"$FU"' to m"
+	./scripts/config --module "$FU"
+}
+
+nconfig() {
+	FU="$1"
+	msg "Setting 'CONFIG_"$FU"' to n"
+	./scripts/config --disable "$FU"
+}
+
+varconfig() {
+	FUONE="$1"
+	FUTWO="$2"
+
+	msg "Setting 'CONFIG_"$FUONE"' variable to '"$FUTWO"'"
+	./scripts/config --set-val "$FUONE" '"$FUTWO"'
+}
 
 prepare() {
 	unset CFLAGS CXXFLAGS
@@ -45,27 +60,48 @@ prepare() {
 	case $CARCH in
 		x86_64)
 			export XKARCH="x86_64"
+			export DEFCONFIG="x86_64_defconfig"
 			;;
 		x86)
 			export XKARCH="i386"
+			export DEFCONFIG="i386_defconfig"
 			;;
 		arm64)
 			export XKARCH="arm64"
+			export DEFCONFIG="defconfig"
 			;;
-		armv7l|armv5tel)
+		armv7l)
 			export XKARCH="arm"
+			export DEFCONFIG="multi_v7_defconfig"
 			;;
-		ppc64le|ppc64|ppc)
+		armv5tel)
+			export XKARCH="arm"
+			export DEFCONFIG="multi_v5_defconfig"
+			;;
+		ppc64le)
 			export XKARCH="powerpc"
+			export DEFCONFIG="powernv_defconfig"
+			;;
+		ppc64)
+			export XKARCH="powerpc"
+			export DEFCONFIG="g5_defconfig"
+			;;
+		ppc)
+			export XKARCH="powerpc"
+			export DEFCONFIG="pmac32_defconfig"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by 'bootstrap' script"
 			exit 1
 	esac
 
-	cp "$srcdir"/$CARCH-config .config
+	make ARCH=$XKARCH $DEFCONFIG
 
-	make ARCH=$XKARCH olddefconfig
+	case $CARCH in
+		ppc64le)
+				yconfig POWER8
+				;;
+	esac
 }
 
 build() {
@@ -99,7 +135,7 @@ build() {
 
 package_linux() {
 	pkgdesc="The Linux kernel"
-	depends=('mkinitcpio' 'coreutils' 'kmod')
+	depends=('coreutils' 'kmod')
 
 	msg "Installing the kernel"
 
