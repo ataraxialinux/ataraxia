@@ -1,0 +1,52 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=e2fsprogs
+pkgver=1.44.5
+pkgrel=1
+pkgdesc="Ext2/3/4 filesystem utilities"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://e2fsprogs.sourceforge.net"
+license=('GPL-2.0-or-later LGPL-2.0 BSD-3-Clause MIT')
+depends=('musl' 'util-linux' 'bash')
+backup=('etc/mke2fs.conf')
+source=("https://downloads.sourceforge.net/project/$pkgname/$pkgname/v$pkgver/$pkgname-$pkgver.tar.gz")
+md5sums=('8d78b11d04d26c0b2dd149529441fa80')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	sed -i '/init\.d/s|^|#|' misc/Makefile.in
+
+	for i in misc/fsck.c misc/mke2fs.c e2fsck/unix.c; do
+		sed -i 's@sbin@bin@g' $i
+	done
+
+	mkdir build
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver/build
+	../configure \
+		--prefix='' \
+		--libdir=/lib \
+		--sbindir=/bin \
+		--with-root-prefix='' \
+		--enable-elf-shlibs \
+		--enable-symlink-install \
+		--disable-fsck \
+		--disable-libblkid \
+		--disable-libuuid \
+		--disable-uuidd \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver/build
+	make DESTDIR="$pkgdir" install
+	make DESTDIR="$pkgdir" install-libs
+
+	sed -i -e 's/^AWK=.*/AWK=awk/' "$pkgdir"/bin/compile_et
+
+	sed -i -e 's#^SS_DIR=.*#SS_DIR="/share/ss"#' "$pkgdir"/bin/mk_cmds
+	sed -i -e 's#^ET_DIR=.*#ET_DIR="/share/et"#' "$pkgdir"/bin/compile_et
+}
