@@ -208,7 +208,9 @@ final_system() {
 			kexec-tools openrc procps-ng util-linux hwids eudev glib2 gobject-introspection vala \
 			libgpg-error libgcrypt libassuan libksba npth libsecret pinentry gnupg gpgme \
 			icu libxml2 libxslt sgml-common docbook-xml docbook-xsl xmlto asciidoc asciidoctor \
-			aspell aspell-en aspell-ru hunspell hunspell-en_US; do
+			aspell aspell-en aspell-ru hunspell hunspell-en_US \
+			e2fsprogs xfsprogs btrfs-progs f2fs-tools dosfstools fuse fuse2 ntfs-3g \
+			squashfs-tools libburn libisofs libisoburn; do
 		case $package in
 			musl)
 				pkgstagebuildonly musl
@@ -268,7 +270,6 @@ final_system() {
 				;;
 			gcc)
 				pkgstagetwoc gcc
-				rm -rf /lib/libgnat-8.so
 				;;
 			file)
 				pkgstagetwoc file
@@ -309,11 +310,9 @@ final_system() {
 }
 
 update_kernel() {
-	for kernelpkg in linux-api-headers linux; do
+	for kernelpkg in linux-api-headers linux linux-api-headers; do
 		pkgupdate $kernelpkg
 	done
-
-	pkgstagetwo linux-api-headers
 }
 
 COMMAND="${1}"
