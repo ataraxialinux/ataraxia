@@ -1,0 +1,44 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=xfsprogs
+pkgver=4.19.0
+pkgrel=1
+pkgdesc="XFS filesystem utilities"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://xfs.org"
+license=('GPL-3.0+')
+depends=('musl' 'libedit' 'util-linux')
+source=("https://www.kernel.org/pub/linux/utils/fs/xfs/$pkgname/$pkgname-$pkgver.tar.gz"
+	'fix-mmap.patch'
+	'musl-MAP_SYNC-fix.patch')
+md5sums=('955b3dad9cbe01d6b21a562cc0100e04'
+         'dc0972aece8c3fa988d01c9a0ee4d339'
+         '20f1897016255f16aa404cb5428eab1a')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/fix-mmap.patch
+	patch -Np1 -i "$srcdir"/musl-MAP_SYNC-fix.patch
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	export DEBUG=-DNDEBUG
+	export OPTIMIZER="$CFLAGS"
+
+	./configure \
+		--prefix='' \
+		--libexecdir=/lib \
+		--sbindir=/bin \
+		--enable-readline \
+		--build=$CHOST
+	make SHELL=/bin/bash
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make -j1 DIST_ROOT="$pkgdir" PKG_ROOT_SBIN_DIR="/bin" install install-dev
+
+	chown -R root "$pkgdir"
+	chgrp -R root "$pkgdir"
+}
