@@ -2,10 +2,10 @@
 
 pkgbase=gcc
 pkgname=('gcc' 'gcc-runtime')
-pkgver=8+20190111
+pkgver=8+20190118
 gccver=8.2.1
 islver=0.20
-pkgrel=2
+pkgrel=1
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="http://gcc.gnu.org"
 license=('GPL LGPL')
@@ -47,7 +47,7 @@ source=("ftp://ftp.gwdg.de/pub/misc/gcc/snapshots/${pkgver/+/-}/$pkgbase-${pkgve
 	'gcc-pure64-mips.patch'
 	'c89'
 	'c99')
-md5sums=('1bfbbecd6923128d17c8b89ae072c914'
+md5sums=('b4584ac75a00f8ee58da31b0f7f868e8'
          '2ee25141b7d1688afb63e5bf3ac12999'
          'aab3bee329858e7fb1c26d6e055a26e1'
          '28ca9eac639e88869ac975d593ff7a89'
@@ -223,7 +223,17 @@ package_gcc() {
 	mkdir -p "$pkgdir"/share/gdb/auto-load/lib
 	mv "$pkgdir"/lib/*gdb.py "$pkgdir"/share/gdb/auto-load/lib
 
+	rm -f "$pkgdir"/lib/gcc/$CHOST/$gccver/adalib/libgna{rl,t}.so
+
 	rm -rf "$pkgdir"/lib/*.so{,.*}
+
+	case $CARCH in
+		x86_64|x86|arm64|armv7l|armv5tel|ppc64le|ppc64|ppc)
+			cd "$pkgdir"/bin
+			mv go gcc-go
+			mv gofmt gcc-gofmt
+			;;
+	esac
 }
 
 package_gcc-runtime() {
@@ -233,6 +243,10 @@ package_gcc-runtime() {
 
 	cd "$srcdir"/$pkgbase-${pkgver/+/-}/build
 	make -j1 DESTDIR="$pkgdir" install
+
+	mv "$pkgdir"/lib/gcc/$CHOST/$gccver/adalib/libgna{rl,t}-$gccver.so "$pkgdir"/lib
+	ln -sf libgnarl-$gccver.so "$pkgdir"/lib/libgnarl.so
+	ln -sf libgnat-$gccver.so "$pkgdir"/lib/libgnat.so
 
 	mkdir "$srcdir"/libs
 	mv "$pkgdir"/lib/*.so{,.*} "$srcdir"/libs
