@@ -8,7 +8,7 @@ arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://btrfs.wiki.kernel.org"
 license=('GPL-2.0-or-later LGPL-3.0-or-later')
 depends=('musl' 'util-linux' 'e2fsprogs' 'lzo' 'libz' 'zstd')
-makedepends=('asciidoc' 'xmlto' 'python3')
+makedepends=('python3')
 optdepends=('python3: libbtrfsutil python bindings')
 options=('!staticlibs')
 source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$pkgname/$pkgname-v$pkgver.tar.xz")
@@ -18,6 +18,8 @@ build() {
 	cd "$srcdir"/$pkgname-v$pkgver
 	./configure \
 		--prefix='' \
+		--disable-backtrace \
+		--disable-documentation \
 		--build=$CHOST
 	make
 }
