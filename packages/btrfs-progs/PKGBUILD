@@ -8,8 +8,6 @@ arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://btrfs.wiki.kernel.org"
 license=('GPL-2.0-or-later LGPL-3.0-or-later')
 depends=('musl' 'util-linux' 'e2fsprogs' 'lzo' 'libz' 'zstd')
-makedepends=('python3')
-optdepends=('python3: libbtrfsutil python bindings')
 options=('!staticlibs')
 source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$pkgname/$pkgname-v$pkgver.tar.xz")
 md5sums=('1aaf4f4a306358a0d8c9afd238933589')
@@ -26,7 +24,7 @@ build() {
 
 package() {
 	cd "$srcdir"/$pkgname-v$pkgver
-	make DESTDIR="$pkgdir" install install_python
+	make DESTDIR="$pkgdir" install
 
 	install -Dm644 btrfs-completion "$pkgdir"/share/bash-completion/completions/btrfs
 }
