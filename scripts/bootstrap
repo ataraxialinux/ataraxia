@@ -110,6 +110,7 @@ pkgstagebuildonlyb() {
 		msg "Emerging '"$emergepkg"' package"
 		cd /storage/repository/$emergepkg
 		makepkg --config /storage/makepkg.conf -dd -c -C || true
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 	done
 }
 
@@ -129,7 +130,16 @@ pkgstageinstallonlyb() {
 		msg "Emerging '"$emergepkg"' package"
 		if [ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		fi
+	done
+}
+
+pkgstageinstallonlyc() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		if [ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
+			pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
 		fi
 	done
 }
@@ -210,7 +220,7 @@ final_system() {
 			icu libxml2 libxslt sgml-common docbook-xml docbook-xsl xmlto asciidoc asciidoctor \
 			aspell aspell-en aspell-ru hunspell hunspell-en_US \
 			e2fsprogs xfsprogs btrfs-progs f2fs-tools dosfstools fuse fuse2 ntfs-3g \
-			squashfs-tools libburn libisofs libisoburn; do
+			libburn libisofs libisoburn; do
 		case $package in
 			musl)
 				pkgstagebuildonly musl
@@ -257,7 +267,7 @@ final_system() {
 				;;
 			shadow)
 				pkgstagebuildonly shadow
-				pkgstageinstallonly shadow
+				pkgstageinstallonlyc shadow
 				;;
 			bash)
 				pkgstagebuildonly bash
