@@ -2,7 +2,7 @@
 
 pkgname=btrfs-progs
 pkgver=4.20
-pkgrel=1
+pkgrel=2
 pkgdesc='Btrfs filesystem utilities'
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://btrfs.wiki.kernel.org"
@@ -11,12 +11,8 @@ depends=('musl' 'util-linux' 'e2fsprogs' 'lzo' 'libz' 'zstd')
 makedepends=('asciidoc' 'xmlto' 'python3')
 optdepends=('python3: libbtrfsutil python bindings')
 options=('!staticlibs')
-source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$pkgname/$pkgname-v$pkgver.tar.xz"
-	'initcpio-install-btrfs'
-	'initcpio-hook-btrfs')
-md5sums=('1aaf4f4a306358a0d8c9afd238933589'
-         'c6dca7145b3cd80bee0d2b665d8259e8'
-         'a4abe62409b04f89ebfda88248f1f765')
+source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$pkgname/$pkgname-v$pkgver.tar.xz")
+md5sums=('1aaf4f4a306358a0d8c9afd238933589')
 
 build() {
 	cd "$srcdir"/$pkgname-v$pkgver
@@ -31,8 +27,4 @@ package() {
 	make DESTDIR="$pkgdir" install install_python
 
 	install -Dm644 btrfs-completion "$pkgdir"/share/bash-completion/completions/btrfs
-
-	cd "$srcdir"
-	install -Dm644 initcpio-install-btrfs "$pkgdir"/lib/initcpio/install/btrfs
-	install -Dm644 initcpio-hook-btrfs "$pkgdir"/lib/initcpio/hooks/btrfs
 }
