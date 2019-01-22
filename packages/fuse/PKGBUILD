@@ -47,9 +47,6 @@ package_fuse-common() {
 
 	mv "$pkgdir"/bin/mount.fuse3 "$pkgdir"/bin/mount.fuse
 
-	mv "$pkgdir"/usr/* "$pkgdir"/
-	rmdir "$pkgdir"/usr
-
 	install -Dm755 "$srcdir"/initd "$pkgdir"/etc/init.d/fuse
 }
 
@@ -65,6 +62,8 @@ package_fuse() {
 	rm "$pkgdir"/etc/fuse.conf
 
 	rm -r "$pkgdir"/dev
+
+	rm -rf "$pkgdir"/lib/udev/rules.d/99-fuse3.rules
 
 	rm -rf "$pkgdir"/usr
 	rm "$pkgdir"/share/man/man8/mount.fuse3.8 "$pkgdir"/bin/mount.fuse3
