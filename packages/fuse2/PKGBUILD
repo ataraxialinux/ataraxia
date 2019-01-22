@@ -1,25 +1,37 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgname=m4
-pkgver=1.4.18
+pkgname=fuse2
+pkgver=2.9.9
 pkgrel=1
-pkgdesc="The GNU macro processor"
+pkgdesc="A library that makes it possible to implement a filesystem in a userspace program"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
-url="http://www.gnu.org/software/m4"
-license=('GPL-3.0+')
-depends=('musl' 'bash')
-source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
-md5sums=('730bb15d96fffe47e148d1e09235af82')
+url="https://github.com/libfuse/libfuse"
+license=('GPL-2.0-only LGPL-2.1-only')
+depends=('musl' 'fuse-common')
+options=('!emptydirs')
+source=("https://github.com/libfuse/libfuse/releases/download/fuse-$pkgver/fuse-$pkgver.tar.gz")
+md5sums=('8000410aadc9231fd48495f7642f3312')
 
 build() {
-	cd "$srcdir"/$pkgname-$pkgver
+	cd "$srcdir"/fuse-$pkgver
+
+	export MOUNT_FUSE_PATH=/bin
 	./configure \
 		--prefix='' \
+		--libdir=/usr/lib \
+		--enable-lib \
+		--enable-util \
+		--disable-example \
 		--build=$CHOST
 	make
 }
 
 package() {
-	cd "$srcdir"/$pkgname-$pkgver
+	cd "$srcdir"/fuse-$pkgver
 	make DESTDIR="$pkgdir" install
+
+	rm -r "$pkgdir"/etc/init.d
+	rm -rf "$pkgdir"/etc/udev
+	rm -r "$pkgdir"/dev
+	rm "$pkgdir"/share/man/man8/mount.fuse.8 "$pkgdir"/bin/mount.fuse
 }
