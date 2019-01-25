@@ -10,7 +10,7 @@ pkgdesc="The GNU Bourne Again shell"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="http://www.gnu.org/software/bash/bash.html"
 license=('GPL-3.0-or-later')
-depends=('musl' 'libedit')
+depends=('musl' 'readline')
 install=$pkgname.install
 source=("http://ftp.gnu.org/gnu/bash/bash-${lbasever}.tar.gz")
 for patch in $(seq 1 ${patchlevel}); do
@@ -30,7 +30,6 @@ prepare() {
 
 build() {
 	cd "$srcdir"/$pkgname-${lbasever}
-	LIBS="-ledit" \
 	./configure \
 		--prefix='' \
 		--with-curses \
