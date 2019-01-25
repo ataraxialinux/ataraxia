@@ -232,8 +232,8 @@ build_chrootchain() {
 	mkdir -p ""$ROOTFS""/storage/{sources,packages,repository,scripts,bsp}
 
 	for package in musl-tools libz binutils gcc attr acl libcap ncurses bash shadow \
-			bzip2 coreutils diffutils file findutils mawk \
-			gettext-tiny grep gzip make ed patch perl sed texinfo xz lzip util-linux \
+			bzip2 diffutils file mawk gettext-tiny grep gzip \
+			make ed patch perl sed texinfo xz lzip util-linux sbase ubase \
 			openssl curl libarchive fakeroot pacman; do
 		pkgstageone $package
 	done
@@ -252,7 +252,7 @@ build_symlinks() {
 	ln -sf /tools/lib/libssp_nonshared.a "$ROOTFS"/lib
 	ln -sf /tools/lib/gcc/$XTARGET/8.2.1/adalib/libgnat-8.so "$ROOTFS"/lib
 
-	sed -i 's,/bin/dash,/bin/bash,g' "$ROOTFS"/etc/passwd
+	sed -i 's,/bin/mksh,/bin/bash,g' "$ROOTFS"/etc/passwd
 }
 
 binfmt_helper() {
