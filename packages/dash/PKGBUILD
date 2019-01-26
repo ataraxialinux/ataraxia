@@ -2,12 +2,12 @@
 
 pkgname=dash
 pkgver=0.5.10.2
-pkgrel=3
+pkgrel=2
 pkgdesc="POSIX compliant shell that aims to be as small as possible"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="http://gondor.apana.org.au/~herbert/dash/"
 license=('GPL-2.0-or-later')
-depends=('musl')
+depends=('musl' 'libedit')
 install=$pkgname.install
 source=("http://gondor.apana.org.au/~herbert/$pkgname/files/$pkgname-$pkgver.tar.gz")
 md5sums=('8f485f126c05d0ab800e85abfe1987aa')
@@ -16,6 +16,7 @@ build() {
 	cd "$srcdir"/$pkgname-$pkgver
 	./configure \
 		--prefix='' \
+		--with-libedit \
 		--build=$CHOST
 	make
 }
@@ -23,4 +24,6 @@ build() {
 package() {
 	cd "$srcdir"/$pkgname-$pkgver
 	make DESTDIR="$pkgdir" install
+
+	ln -sf dash "$pkgdir"/bin/sh
 }
