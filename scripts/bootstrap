@@ -205,8 +205,7 @@ pkgbspupdate() {
 }
 
 final_system() {
-	for package in linux-api-headers fortify-headers protonesso-favorite-headers \
-			musl musl-tools libz file ncurses libedit \
+	for package in linux-api-headers fortify-headers musl musl-tools libz file ncurses libedit \
 			m4 byacc bison flex bc gmp mpfr mpc binutils gcc nasm yasm sqlite tcl expect dejagnu \
 			ccache libatomic_ops gc bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre pcre2 grep popt bash \
 			bash-completion dash gdbm zsh mksh tcsh loksh which fish libtool db gperf expat \
@@ -220,7 +219,7 @@ final_system() {
 			libgpg-error libgcrypt libassuan libksba npth libsecret pinentry gnupg gpgme \
 			icu libxml2 libxslt sgml-common docbook-xml docbook-xsl xmlto asciidoc asciidoctor \
 			aspell aspell-en aspell-ru hunspell hunspell-en_US \
-			e2fsprogs xfsprogs btrfs-progs f2fs-tools dosfstools fuse fuse2 ntfs-3g \
+			e2fsprogs xfsprogs btrfs-progs protonesso-favorite-headers f2fs-tools dosfstools fuse fuse2 ntfs-3g \
 			libburn libisofs libisoburn; do
 		case $package in
 			musl)
@@ -316,6 +315,10 @@ final_system() {
 				;;
 			linux)
 				pkgstagetwod linux
+				;;
+			f2fs-tools)
+				pkgstagetwo f2fs-tools
+				pkgrm protonesso-favorite-headers
 				;;
 			*)
 				pkgstagetwo $package
