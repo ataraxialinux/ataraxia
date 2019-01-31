@@ -9,15 +9,16 @@ url="https://github.com/thom311/libnl/"
 license=('GPL')
 depends=('musl')
 backup=('etc/libnl/classid'
-		'etc/libnl/pktloc')
+	'etc/libnl/pktloc')
 source=("https://github.com/thom311/libnl/releases/download/libnl${pkgver//./_}/${pkgname}-${pkgver}.tar.gz"
-		'musl.patch')
+	'musl.patch')
 md5sums=('8f71910c03db363b41e2ea62057a4311'
          'bc872c3dfdc7e73c332adeb5034ccee2')
 
 prepare() {
 	cd "$srcdir"/$pkgname-$pkgver
 	patch -Np1 -i "$srcdir"/musl.patch
+	autoreconf -vif
 }
 
 build() {
