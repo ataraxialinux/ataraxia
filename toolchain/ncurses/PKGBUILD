@@ -1,0 +1,21 @@
+pkgname=host-ncurses
+pkgver=6.1
+pkgrel=1
+arch=('any')
+source=("http://ftpmirror.gnu.org/gnu/ncurses/ncurses-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir"/ncurses-$pkgver
+	./configure \
+		--prefix='' \
+		--without-debug
+	make -C include
+	make -C progs tic
+}
+
+package() {
+	mkdir -p "$pkgdir"/bin
+
+	cd "$srcdir"/ncurses-$pkgver
+	install -m755 progs/tic "$pkgdir"/bin
+}
