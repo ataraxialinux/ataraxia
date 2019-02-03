@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # januslinux - Fast and compact Linux distribution which uses musl libc.
 
 ## Introduction to the distribution
@@ -42,3 +43,6 @@ To be written
 
 ## Conclusion
 So this document describes januslinux build system, how to use it. Thanks for attention!
+=======
+# srcpakie
+>>>>>>> project-a/master
