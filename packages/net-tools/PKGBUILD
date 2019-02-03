@@ -1,25 +1,29 @@
 # Maintainer: nee-san <nagakamira@gmail.com>
 
-pkgname=m4
-pkgver=1.4.18
+pkgname=net-tools
+pkgver=0eebece8c964e3cfa8a018f42b2e7e751a7009a0
 pkgrel=1
-pkgdesc="The GNU macro processor"
+pkgdesc="Configuration tools for Linux networking"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
-url="http://www.gnu.org/software/m4"
-license=('GPL-3.0+')
-depends=('musl' 'bash')
-source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz")
-md5sums=('730bb15d96fffe47e148d1e09235af82')
+url="http://net-tools.sourceforge.net/"
+license=('GPL2')
+depends=('musl')
+makedepends=('unzip')
+source=("https://sourceforge.net/code-snapshots/git/n/ne/net-tools/code.git/net-tools-code-$pkgver.zip")
+md5sums=('91301780a363690dffa6ee07084e80b0')
 
 build() {
-	cd "$srcdir"/$pkgname-$pkgver
-	./configure \
-		--prefix='' \
-		--build=$CHOST
-	make
+	cd "$srcdir"/net-tools-code-$pkgver
+	yes "" | make config
 }
 
 package() {
-	cd "$srcdir"/$pkgname-$pkgver
-	make DESTDIR="$pkgdir" install
+	cd "$srcdir"/net-tools-code-$pkgver
+	make \
+		BINDIR=/bin SBINDIR=/sbin \
+		DESTDIR="$pkgdir" install
+
+	rm -rf "$pkgdir"/bin/{hostname,dnsdomainname,ifconfig,domainname,nisdomainname,ypdomainname}
+
+	rm -rf "$pkgdir"/usr
 }
