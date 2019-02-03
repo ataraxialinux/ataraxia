@@ -15,16 +15,14 @@ build() {
 	cd "$srcdir"/pacman-$pkgver
 	./configure \
 		--prefix=/tools \
-		--sysconfdir=/etc \
+		--sysconfdir=/tools/etc \
 		--localstatedir=/var \
 		--build=$XHOST \
 		--host=$XTARGET \
 		--with-scriptlet-shell=/tools/bin/bash \
 		--disable-doc \
 		--disable-nls \
-		--disable-shared \
-		DUFLAGS="-sk" \
-		SEDINPLACEFLAGS="-i"
+		--disable-shared
 	make
 }
 
@@ -36,7 +34,7 @@ package() {
 
 	install -m644 "$srcdir"/makepkg.conf "$pkgdir"/storage
 
-	sed -i 's/CheckSpace/#CheckSpace/' "$pkgdir"/etc/pacman.conf
+	sed -i 's/CheckSpace/#CheckSpace/' "$pkgdir"/tools/etc/pacman.conf
 
 	sed -i "$pkgdir"/storage/makepkg.conf \
 		-e "s|@CARCH[@]|$CARCH|g" \

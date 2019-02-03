@@ -33,11 +33,9 @@ pkgstagetwo() {
 		msg "Emerging '"$emergepkg"' package"
 		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
 		cd /storage/repository/$emergepkg
-		if [[ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		fi
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		makepkg --config /storage/makepkg.conf -dd -c -C || true
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
@@ -50,11 +48,9 @@ pkgstagetwob() {
 		msg "Emerging '"$emergepkg"' package"
 		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
 		cd /storage/repository/$emergepkg
-		if [[ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		fi
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		makepkg --config /storage/makepkg.conf -dd -c -C || true
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
@@ -67,11 +63,9 @@ pkgstagetwoc() {
 		msg "Emerging '"$emergepkg"' package"
 		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
 		cd /storage/repository/$emergepkg
-		if [[ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		fi
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		makepkg --config /storage/makepkg.conf -dd -c -C || true
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
@@ -85,7 +79,8 @@ pkgstagetwod() {
 		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
 		cd /storage/repository/$emergepkg
 		makepkg --config /storage/makepkg.conf -dd -c -C || true
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
@@ -97,19 +92,8 @@ pkgstagebuildonly() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd /storage/repository/$emergepkg
-		if [[ ! -f /storage/packages/$emergepkg*-*.pkg.tar.xz ]]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		fi
-	done
-}
-
-pkgstagebuildonlyb() {
-	local pkg="$@"
-	for emergepkg in $pkg; do
-		msg "Emerging '"$emergepkg"' package"
-		cd /storage/repository/$emergepkg
 		makepkg --config /storage/makepkg.conf -dd -c -C || true
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
 	done
 }
 
@@ -117,7 +101,7 @@ pkgstageinstallonly() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
-		if [[ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]]; then
+		if [ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
 		fi
 	done
@@ -127,9 +111,18 @@ pkgstageinstallonlyb() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
-		if [[ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]]; then
+		if [ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
 			pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --force --noconfirm --needed --arch $BARCH
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		fi
+	done
+}
+
+pkgstageinstallonlyc() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		if [ -f /storage/packages/$emergepkg-*.pkg.tar.xz ]; then
+			pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz -dd --noconfirm --needed --arch $BARCH
 		fi
 	done
 }
@@ -140,11 +133,9 @@ pkgbsp() {
 		msg "Emerging '"$emergepkg"' package"
 		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "chroot-$emergepkg")"
 		cd /storage/bsp/$emergepkg
-		if [[ ! -f /storage/packages/$emergepkg-*.pkg.tar.xz ]]; then
-			makepkg --config /storage/makepkg.conf -dd -c -C
-			rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		fi
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		makepkg --config /storage/makepkg.conf -dd -c -C || true
+		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --needed --arch $BARCH
@@ -156,7 +147,7 @@ pkgremove() {
 	for emergepkg in $pkg; do
 		msg "Unemerging '"$emergepkg"' package"
 		local unemergechrootpkg="$(pacman -Q | cut -f 1 -d " " | grep "$emergepkg")"
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 	done
@@ -171,7 +162,7 @@ pkgupdate() {
 		rm -rf -f /storage/packages/$emergepkg-*.pkg.tar.xz
 		makepkg --config /storage/makepkg.conf -dd -c -C
 		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --arch $BARCH
@@ -187,7 +178,7 @@ pkgbspupdate() {
 		rm -rf -f /storage/packages/$emergepkg-*.pkg.tar.xz
 		makepkg --config /storage/makepkg.conf -dd -c -C
 		rm -rf /storage/packages/*-debug-*.pkg.tar.xz
-		if [[ ! -z "$unemergechrootpkg" ]]; then
+		if [ ! -z "$unemergechrootpkg" ]; then
 			pacman -R $unemergechrootpkg -dd --noconfirm
 		fi
 		pacman -U /storage/packages/$emergepkg-*.pkg.tar.xz --noconfirm --arch $BARCH
@@ -197,17 +188,21 @@ pkgbspupdate() {
 final_system() {
 	for package in linux-api-headers fortify-headers musl musl-tools libz file ncurses libedit \
 			m4 byacc bison flex bc gmp mpfr mpc binutils gcc nasm yasm sqlite tcl expect dejagnu \
-			ccache libatomic_ops gc bzip2 pkgconf attr acl libcap ed pcre pcre2 popt bash \
+			ccache libatomic_ops gc bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre pcre2 grep popt bash \
 			bash-completion dash gdbm zsh mksh tcsh loksh which fish libtool db gperf expat \
-			perl perl-xml-parser intltool openssl autoconf automake autoconf2.13 autoconf-archive musl-fts \
+			perl perl-xml-parser intltool openssl libidn libunistring libidn2 inetutils \
+			autoconf automake autoconf2.13 autoconf-archive \
 			xz lz4 lzip lzo p7zip unrar unzip zip zstd libarchive \
 			kmod gettext-tiny libelf libffi python3 python2 python-six yaml ruby iso-codes \
 			gdb strace valgrind libsigsegv libffcall clisp re2c ninja meson \
-			dialog check diffutils groff swig libcap-ng audit kexec-tools openrc util-linux hwids eudev \
-			glib2 gobject-introspection vala \
+			coreutils debianutils dialog diffutils mawk check findutils less gzip texinfo groff swig libcap-ng audit \
+			kexec-tools openrc procps-ng util-linux hwids eudev glib2 gobject-introspection vala \
 			libgpg-error libgcrypt libassuan libksba npth libsecret pinentry gnupg gpgme \
 			icu libxml2 libxslt sgml-common docbook-xml docbook-xsl xmlto asciidoc asciidoctor \
-			aspell aspell-en aspell-ru hunspell hunspell-en_US; do
+			aspell aspell-en aspell-ru hunspell hunspell-en_US \
+			e2fsprogs xfsprogs btrfs-progs protonesso-favorite-headers f2fs-tools dosfstools fuse fuse2 ntfs-3g \
+			libburn libisofs libisoburn pciutils libusb libusb-compat usbutils \
+			libaio lvm2 argon2 json-c cryptsetup mdadm libnl quota; do
 		case $package in
 			musl)
 				pkgstagebuildonly musl
@@ -240,12 +235,27 @@ final_system() {
 				pkgstagebuildonly libarchive
 				pkgstageinstallonly libarchive
 				;;
+			acl)
+				pkgstagebuildonly acl
+				pkgstageinstallonly acl
+				;;
+			attr)
+				pkgstagebuildonly attr
+				pkgstageinstallonly attr
+				;;
 			pacman)
 				pkgstagebuildonly pacman
 				pkgstageinstallonly pacman
 				;;
+			shadow)
+				pkgstagebuildonly shadow
+				pkgstageinstallonlyc shadow
+				;;
 			bash)
 				pkgstagebuildonly bash
+				;;
+			dash)
+				pkgstagebuildonly dash
 				;;
 			autoconf)
 				pkgstagetwob autoconf
@@ -259,8 +269,20 @@ final_system() {
 			file)
 				pkgstagetwoc file
 				;;
+			sed)
+				pkgstagetwoc sed
+				;;
+			grep)
+				pkgstagetwoc grep
+				;;
+			coreutils)
+				pkgstagetwoc coreutils
+				;;
+			mawk)
+				pkgstagetwoc mawk
+				;;
 			python-six)
-				pkgstagebuildonlyb python-six
+				pkgstagebuildonly python-six
 				pkgstageinstallonly python3-six
 				pkgstageinstallonly python2-six
 				;;
@@ -269,6 +291,13 @@ final_system() {
 				;;
 			openrc)
 				pkgstagetwob openrc
+				;;
+			fish)
+				pkgstagetwob fish
+				;;
+			f2fs-tools)
+				pkgstagetwo f2fs-tools
+				pkgremove protonesso-favorite-headers
 				;;
 			*)
 				pkgstagetwo $package

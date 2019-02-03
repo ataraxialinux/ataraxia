@@ -1,0 +1,27 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=kbd
+pkgver=2.0.4
+pkgrel=1
+pkgdesc="Keytable files and keyboard utilities"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.kbd-project.org"
+license=('GPL-2.0-or-later')
+depends=('musl')
+source=("https://www.kernel.org/pub/linux/utils/${pkgname}/${pkgname}-${pkgver}.tar.gz")
+md5sums=('c69fce737a5fd0fa686cbfc4f611a220')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix=/ \
+		--disable-nls \
+		--disable-vlock \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

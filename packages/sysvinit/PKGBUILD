@@ -1,0 +1,52 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=sysvinit
+pkgver=2.93
+pkgrel=1
+pkgdesc="The GNU macro processor"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://www.gnu.org/software/m4"
+license=('GPL')
+depends=('musl' 'procps-ng')
+source=("http://download.savannah.gnu.org/releases/$pkgname/$pkgname-$pkgver.tar.xz"
+	'consolidated.patch')
+md5sums=('041dbe36a5dd80b2108aff305bc10620'
+         'aaa84675e717504d7d3da452c8c2eaf1')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	if [ "$(grep 'execv("/sbin/mount", args);' < src/killall5.c | wc -l)" = 1 ]; then
+		sed -i 's:execv("/bin/mount", args);::' src/killall5.c
+	fi
+	sed -i 's|/bin:/sbin:/usr/bin:/usr/sbin|/bin|' src/init.h src/shutdown.c
+	sed -i 's|/sbin:/usr/sbin:/bin:/usr/bin|/bin|' src/init.h src/shutdown.c
+	sed -i 's|/bin:/usr/bin:/sbin:/usr/sbin|/bin|' src/init.h src/shutdown.c
+	sed -i 's:/sbin/:/bin/:g' contrib/notify-pam-dead.patch man/*.{1,5,8} src/*.{c,h}
+	sed -i 's:/bin/:/bin/:g' contrib/notify-pam-dead.patch man/*.{1,5,8} src/*.{c,h}
+	sed -i 's:/usr/usr/:/:g' contrib/notify-pam-dead.patch man/*.{1,5,8} src/*.{c,h}
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DISTRO=januslinux
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	mkdir -p "$pkgdir/__temp__"
+	make DISTRO=januslinux ROOT="$pkgdir/__temp__" install
+	cd "$pkgdir/__temp__"
+	rm -r bin usr/bin usr/share/man/man*/{mesg,last,pidof}.* usr/share/man/man1
+	find . | while read file; do
+		if [ -d "$file" ]; then
+			mkdir -p ".$file"
+		else
+			cp "$file" ".$file"
+		fi
+	done
+	cd ..
+	rm -r "__temp__"
+	mv "$pkgdir"/sbin "$pkgdir"/bin
+	mv "$pkgdir"/usr/* "$pkgdir"/
+	rmdir "$pkgdir"/usr
+}

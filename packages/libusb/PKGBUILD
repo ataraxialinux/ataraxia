@@ -1,0 +1,25 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=libusb
+pkgver=1.0.22
+pkgrel=1
+pkgdesc="Library that provides generic access to USB devices"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://libusb.info/"
+license=('LGPL-2.0-or-later')
+depends=('musl')
+source=("https://github.com/libusb/libusb/releases/download/v$pkgver/$pkgname-$pkgver.tar.bz2")
+md5sums=('466267889daead47674df933cea9cacb')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

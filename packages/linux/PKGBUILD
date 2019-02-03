@@ -1,73 +1,112 @@
 # Maintainer: protonesso <nagakamira@gmail.com>
 
-pkgbase=linux
-pkgname=('linux' 'linux-headers')
-pkgver=4.20.2
+pkgname=linux
+pkgver=4.20.6
 zerover=$pkgver
-pkgrel=1
+pkgrel=2
+pkgdesc="The Linux kernel"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://www.kernel.org/"
 license=('GPL-2.0')
-makedepends=('kmod' 'bc' 'libelf' 'xz' 'lz4' 'openssl' 'busybox')
+depends=('coreutils' 'kmod')
+makedepends=('kmod' 'bc' 'libelf' 'xz' 'openssl')
 options=('!strip')
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-$pkgver.tar.xz"
-	'arm64-config'
-	'armv5tel-config'
-	'armv7l-config'
-	'ppc64-config'
-	'ppc64le-config'
-	'ppc-config'
-	'x86_64-config'
-	'x86-config'
-	'60-linux.hook'
-	'90-linux.hook')
-md5sums=('ed9100092ab66970f68680c6c96af97b'
-         '63f68ef62e465b92a4e56e9d04eb1965'
-         '622a3580f5968f14dc7334cf4349b22a'
-         'f9b0c91a6be260dc3bd8276aa4ed061b'
-         'be389f427732b192006a593073e80358'
-         '5ebbf01c8ec714a168a43cd34fd1e1b3'
-         'edbb4d9ffb7721efb7d75d31b18e1408'
-         '0570735b1a72b0d00eb16eff48f95228'
-         '617ae0d56187f0d01fb221481fa7558e'
-         '8db6621a703e3da323af92896853af6a'
-         'f0ee3ffbe89101c0de258518ede0da9c')
+	'60-linux.hook')
+md5sums=('43cb8498de6830c9ed8021d3ab52741c'
+         '78005a058be10c53daa5e4b620411c0e')
+
+yconfig() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=y/" .config
+		grep ^"CONFIG_$1=y" .config || echo "CONFIG_$1=y" >> .config
+		shift 1
+	done
+}
+
+nconfig() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/# CONFIG_$1  is not set/" .config
+		grep ^"# CONFIG_$1  is not set" .config || echo "# CONFIG_$1  is not set" >> .config
+		shift 1
+	done
+}
+
+varconfig() {
+	FUONE="$1"
+	FUTWO="$2"
+
+	./scripts/config --set-val "$FUONE" "$FUTWO"
+}
+
+strconfig() {
+	FUONE="$1"
+	FUTWO="$2"
+
+	./scripts/config --set-str "$FUONE" "$FUTWO"
+}
 
 prepare() {
-	cd "$srcdir"/$pkgbase-$pkgver
+	set +x
+
+	cd "$srcdir"/$pkgname-$pkgver
 	msg "Preparing the kernel"
 	make mrproper
 
 	case $CARCH in
 		x86_64)
 			export XKARCH="x86_64"
+			export DEFCONFIG="x86_64_defconfig"
 			;;
 		x86)
 			export XKARCH="i386"
+			export DEFCONFIG="i386_defconfig"
 			;;
 		arm64)
 			export XKARCH="arm64"
+			export DEFCONFIG="defconfig"
 			;;
-		armv7l|armv5tel)
+		armv7l)
 			export XKARCH="arm"
+			export DEFCONFIG="multi_v7_defconfig"
 			;;
-		ppc64le|ppc64|ppc)
+		armv5tel)
+			export XKARCH="arm"
+			export DEFCONFIG="multi_v5_defconfig"
+			;;
+		ppc64le)
 			export XKARCH="powerpc"
+			export DEFCONFIG="powernv_defconfig"
+			;;
+		ppc64)
+			export XKARCH="powerpc"
+			export DEFCONFIG="g5_defconfig"
+			;;
+		ppc)
+			export XKARCH="powerpc"
+			export DEFCONFIG="pmac32_defconfig"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by 'bootstrap' script"
 			exit 1
 	esac
 
-	cp "$srcdir"/$CARCH-config .config
+	make ARCH=$XKARCH $DEFCONFIG
 
-	make ARCH=$XKARCH olddefconfig
+	case $CARCH in
+		ppc64le)
+				yconfig POWER8
+				;;
+	esac
+
+	yes '' | make ARCH=$XKARCH oldconfig
 }
 
 build() {
 	msg "Building the kernel"
+	unset CFLAGS CXXFLAGS
 
-	cd "$srcdir"/$pkgbase-$pkgver
+	cd "$srcdir"/$pkgname-$pkgver
 	case $CARCH in
 		x86_64)
 			export XKARCH="x86_64"
@@ -92,13 +131,10 @@ build() {
 	make ARCH=$XKARCH
 }
 
-package_linux() {
-	pkgdesc="The Linux kernel"
-	depends=('dracut' 'busybox' 'kmod')
-
+package() {
 	msg "Installing the kernel"
 
-	cd "$srcdir"/$pkgbase-$pkgver
+	cd "$srcdir"/$pkgname-$pkgver
 	case $CARCH in
 		x86_64)
 			export XKARCH="x86_64"
@@ -132,8 +168,6 @@ package_linux() {
 
 	mkdir -p "$pkgdir"/boot
 	cp -i $IMG "$pkgdir"/boot/vmlinuz-linux
-	cp -i System.map "$pkgdir"/boot/System.map-linux
-	cp -i .config "$pkgdir"/boot/config-linux
 
 	case $CARCH in
 		arm64|armv7l|armv5tel)
@@ -145,127 +179,13 @@ package_linux() {
 	install -m644 "$srcdir"/*linux.hook "$pkgdir"/share/libalpm/hooks/
 
 	local subst="
-		s|%KVER%|$zerover|g
+		s|%pkgname%|$pkgname|g
+		s|%KERNVER%|$zerover|g
 	"
 
 	sed -i "$subst" "$pkgdir"/share/libalpm/hooks/60-linux.hook
-	sed -i "$subst" "$pkgdir"/share/libalpm/hooks/90-linux.hook
 
 	cd "$pkgdir"/lib/modules/$zerover
 	rm -f source build
 	ln -sf ../../../src/linux build
-}
-
-package_linux-headers() {
-	pkgdesc="Development files of Linux kernel to build various modules"
-
-	msg "Installing kernel's development files"
-
-	cd "$srcdir"/$pkgbase-$pkgver
-	case $CARCH in
-		x86_64)
-			export KARCH="x86"
-			export SUBKARCH="x86_64"
-			;;
-		x86)
-			export KARCH="x86"
-			export SUBKARCH="i386"
-			;;
-		arm64)
-			export XKARCH="arm64"
-			;;
-		armv7l|armv5tel)
-			export XKARCH="arm"
-			;;
-		ppc64le|ppc64|ppc)
-			export XKARCH="powerpc"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by 'bootstrap' script"
-			exit 1
-	esac
-
-	install -Dm644 Makefile "$pkgdir"/src/linux/Makefile
-	install -Dm644 kernel/Makefile "$pkgdir"/src/linux/kernel/Makefile
-	install -Dm644 .config "$pkgdir"/src/linux/.config
-	mkdir -p "$pkgdir"/src/linux/include
-
-	for i in acpi asm-generic config crypto drm generated linux math-emu \
-		media net pcmcia scsi sound trace uapi video xen; do
-		if [ -d include/$i ]; then
-			cp -a include/$i "$pkgdir"/src/linux/include
-		fi
-	done
-
-	mkdir -p "$pkgdir"/src/linux/arch/$KARCH
-	cp -a arch/$KARCH/include "$pkgdir"/src/linux/arch/$KARCH
-
-	cp Module.symvers "$pkgdir"/src/linux
-	cp -a scripts "$pkgdir"/src/linux
-
-	mkdir -p "$pkgdir"/src/linux/arch/$KARCH/kernel
-	cp arch/$KARCH/Makefile "$pkgdir"/src/linux/arch/$KARCH
-	if [ "$SUBKARCH" = "i386" ]; then
-		mkdir -p "$pkgdir"/src/linux/arch/x86
-		cp arch/x86/Makefile_32.cpu "$pkgdir"/src/linux/arch/x86
-	fi
-	if [ "$KARCH" = "x86" ]; then
-		mkdir -p "$pkgdir"/src/linux/arch/x86/kernel
-		cp arch/x86/kernel/asm-offsets.s "$pkgdir"/src/linux/arch/x86/kernel
-	fi
-
-	for i in bt8xx cx88 saa7134; do
-		mkdir -p "$pkgdir"/src/linux/drivers/media/pci/${i}
-		cp -a drivers/media/pci/${i}/*.h "$pkgdir"/src/linux/drivers/media/pci/${i}
-	done
-	for i in cpia2 em28xx pwc; do
-		mkdir -p "$pkgdir"/src/linux/drivers/media/usb/${i}
-		cp -a drivers/media/usb/${i}/*.h "$pkgdir"/src/linux/drivers/media/usb/${i}
-	done
-	mkdir -p "$pkgdir"/src/linux/drivers/media/i2c
-	cp drivers/media/i2c/*.h "$pkgdir"/src/linux/drivers/media/i2c
-	for i in cx25840; do
-		mkdir -p "$pkgdir"/src/linux/drivers/media/i2c/${i}
-		cp -a drivers/media/i2c/${i}/*.h "$pkgdir"/src/linux/drivers/media/i2c/${i}
-	done
-
-	mkdir -p "$pkgdir"/src/linux/drivers/md
-	cp drivers/md/*.h "$pkgdir"/src/linux/drivers/md
-
-	mkdir -p "$pkgdir"/src/linux/include/linux
-	cp include/linux/inotify.h "$pkgdir"/src/linux/include/linux
-
-	mkdir -p "$pkgdir"/src/linux/net/mac80211/
-	cp net/mac80211/*.h "$pkgdir"/src/linux/net/mac80211
-
-	mkdir -p "$pkgdir"/src/linux/include/config/dvb/
-	cp include/config/dvb/*.h "$pkgdir"/src/linux/include/config/dvb/
-
-	mkdir -p "$pkgdir"/src/linux/drivers/media/dvb-frontends
-	cp drivers/media/dvb-frontends/lgdt330x.h \
-		"$pkgdir"/src/linux/drivers/media/dvb-frontends/
-	cp drivers/media/i2c/msp3400-driver.h "$pkgdir"/src/linux/drivers/media/i2c/
-
-	mkdir -p "$pkgdir"/src/linux/drivers/media/usb/dvb-usb
-	cp drivers/media/usb/dvb-usb/*.h "$pkgdir"/src/linux/drivers/media/usb/dvb-usb/
-	mkdir -p "$pkgdir"/src/linux/drivers/media/dvb-frontends
-	cp drivers/media/dvb-frontends/*.h "$pkgdir"/src/linux/drivers/media/dvb-frontends/
-	mkdir -p "$pkgdir"/src/linux/drivers/media/tuners
-	cp drivers/media/tuners/*.h "$pkgdir"/src/linux/drivers/media/tuners/
-
-	mkdir -p "$pkgdir"/src/linux/fs/xfs/libxfs
-	mkdir -p "$pkgdir"/src/linux/mm
-	cp fs/xfs/libxfs/xfs_sb.h "$pkgdir"/src/linux/fs/xfs/libxfs/xfs_sb.h
-
-	case "$CHOST" in
-		x86_64*)
-			mkdir -p "$pkgdir"/src/linux/tools/objtool
-			cp tools/objtool/objtool "$pkgdir"/src/linux/tools/objtool
-			;;
-	esac
-
-	for i in $(find . -name "Kconfig*"); do
-		mkdir -p "$pkgdir"/src/linux/$(echo $i | sed 's|/Kconfig.*||')
-		cp $i "$pkgdir"/src/linux/$i
-	done
 }
