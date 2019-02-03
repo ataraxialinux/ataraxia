@@ -1,0 +1,38 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=procps-ng
+pkgver=3.3.15
+pkgrel=1
+pkgdesc="Utilities for monitoring your system and its processes"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://gitlab.com/procps-ng/procps"
+license=('GPL-2.0 LGPL-2.1+')
+depends=('musl' 'ncurses')
+source=("https://downloads.sourceforge.net/project/$pkgname/Production/${pkgname}-${pkgver}.tar.xz")
+md5sums=('2b0717a7cb474b3d6dfdeedfbad2eccc')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	sed 's:<ncursesw/:<:g' -i watch.c
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--exec-prefix=/ \
+		--sysconfdir=/etc \
+		--libdir=/lib \
+		--bindir=/bin \
+		--sbindir=/bin \
+		--enable-watch8bit \
+		--without-systemd \
+		--disable-kill \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+}

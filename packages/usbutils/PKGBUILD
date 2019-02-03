@@ -1,0 +1,29 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=usbutils
+pkgver=010
+pkgrel=1
+pkgdesc="USB Device Utilities"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="http://linux-usb.sourceforge.net/"
+license=('GPL-2.0-or-later')
+depends=('musl' 'hwids' 'libusb')
+source=("http://www.kernel.org/pub/linux/utils/usb/usbutils/$pkgname-$pkgver.tar.xz")
+md5sums=('938e3707593974be99a0dd6d1de76671')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	./configure \
+		--prefix='' \
+		--datadir=/share/hwdata \
+		--disable-zlib \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make DESTDIR="$pkgdir" install
+
+	rm -rf "$pkgdir"/{share/hwdata,sbin}
+}

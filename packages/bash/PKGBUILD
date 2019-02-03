@@ -2,30 +2,24 @@
 
 pkgname=bash
 lbasever=5.0
-patchlevel=0
+patchlevel=002
 stripped_lbasever="$(echo ${lbasever} | tr -d '.')"
 pkgver=${lbasever}.${patchlevel}
-pkgrel=3
+pkgrel=5
 pkgdesc="The GNU Bourne Again shell"
 arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="http://www.gnu.org/software/bash/bash.html"
 license=('GPL-3.0-or-later')
 depends=('musl' 'libedit')
-source=("http://ftp.gnu.org/gnu/bash/bash-${lbasever}.tar.gz"
-	'dot.bashrc'
-	'dot.bash_profile'
-	'dot.bash_logout'
-	'system.bashrc'
-	'system.bash_logout')
+source=("http://ftpmirror.gnu.org/gnu/bash/bash-${lbasever}.tar.gz"
+	'personalize.sh')
 for patch in $(seq 1 ${patchlevel}); do
-	source=(${source[@]} "http://ftp.gnu.org/gnu/bash/bash-${lbasever}-patches/bash${stripped_lbasever}-$(printf "%03d" ${patch})")
+	source=(${source[@]} "http://ftpmirror.gnu.org/gnu/bash/bash-${lbasever}-patches/bash${stripped_lbasever}-$(printf "%03d" ${patch})")
 done
 md5sums=('2b44b47b905be16f45709648f671820b'
-         '798c923fa053c6a05acb12b1d0351b75'
-         '2902e0fee7a9168f3a4fd2ccd60ff047'
-         'ab308f7c926b21d7f3a0ad75ea4c031b'
-         'd8f3f334e72c0e30032eae1a1229aef1'
-         '440dd10c4a4174055d085397bff7ed41')
+         '47bd5370069f4a1d64159e3fdb8dff7a'
+         'b026862ab596a5883bb4f0d1077a3819'
+         '2f4a7787365790ae57f36b311701ea7e')
 
 prepare() {
 	cd "$srcdir"/$pkgname-${lbasever}
@@ -37,13 +31,6 @@ prepare() {
 
 build() {
 	cd "$srcdir"/$pkgname-${lbasever}
-	_bashconfig=(-DDEFAULT_PATH_VALUE=\'\"/local/sbin:/local/bin:/bin\"\'
-		-DSTANDARD_UTILS_PATH=\'\"/bin\"\'
-		-DSYS_BASHRC=\'\"/etc/bash.bashrc\"\'
-		-DSYS_BASH_LOGOUT=\'\"/etc/bash.bash_logout\"\'
-		-DNON_INTERACTIVE_LOGIN_SHELLS)
-	export CFLAGS="${CFLAGS} ${_bashconfig[@]}"
-
 	LIBS="-ledit" \
 	./configure \
 		--prefix='' \
@@ -63,10 +50,5 @@ package() {
 	ln -sf bash "$pkgdir"/bin/sh
 
 	cd "$srcdir"
-	install -Dm644 system.bashrc "$pkgdir"/etc/bash.bashrc
-	install -Dm644 system.bash_logout "$pkgdir"/etc/bash.bash_logout
-	install -dm755 "$pkgdir"/etc/skel/
-	install -m644 dot.bashrc "$pkgdir"/etc/skel/.bashrc
-	install -m644 dot.bash_profile "$pkgdir"/etc/skel/.bash_profile
-	install -m644 dot.bash_logout "$pkgdir"/etc/skel/.bash_logout
+	install -D -m755 "$srcdir"/personalize.sh "$pkgdir"/etc/profile.d/00-personalize.sh
 }

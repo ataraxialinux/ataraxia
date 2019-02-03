@@ -1,0 +1,84 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=lvm2
+pkgver=2.03.02
+pkgrel=1
+pkgdesc="Logical Volume Manager 2 utilities"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://sourceware.org/lvm2/"
+license=('GPL-2.0-only, LGPL-2.1-only')
+depends=('musl' 'bash' 'util-linux' 'eudev' 'libaio')
+backup=('etc/lvm/lvm.conf'
+	'etc/lvm/lvmlocal.conf')
+install=$pkgname.install
+source=("ftp://sources.redhat.com/pub/lvm2/LVM2.${pkgver}.tgz"
+	'fix-stdio-usage.patch'
+	'mallinfo.patch'
+	'library_dir-default-config.patch'
+	'mlockall-default-config.patch'
+	'device-mapper.confd'
+	'device-mapper.initd'
+	'dmeventd.initd'
+	'lvm.confd'
+	'lvmetad.initd'
+	'lvm.initd'
+	'lvmlockd.initd'
+	'lvm-monitoring.initd')
+md5sums=('5fc07da5461a3794a751dcfc355827d5'
+         'a2855e2d4d1d3aeb6d505732a18fa56d'
+         '41ff458fc4823f91daeebbeed2b83604'
+         'f03bb61fb1fd532cf30e3d661945c4c0'
+         'dd19d7dfb6b6a846f79693efd4b4d6f3'
+         'a29b32f6c94542805984dbd0322f7e51'
+         '0e06961de6c24824f6fb37f8f45ce925'
+         '3508ec88f3fbe733d355f431b573b7ef'
+         'd65330456e67609a43e2175ab56e4d6c'
+         'ebb49c417f238f16235023a2c872bea1'
+         '88abab70a9e0263413d08a0bc2c831bb'
+         'b7d042660fee7eb48c372f8355677c8e'
+         'eea6bbf74139e77e2ce92fede5d11e2b')
+
+prepare() {
+	cd "$srcdir"/LVM2.${pkgver}
+	patch -Np1 -i "$srcdir"/fix-stdio-usage.patch
+	patch -Np1 -i "$srcdir"/mallinfo.patch
+	patch -Np1 -i "$srcdir"/library_dir-default-config.patch
+	patch -Np1 -i "$srcdir"/mlockall-default-config.patch
+}
+
+build() {
+	cd "$srcdir"/LVM2.${pkgver}
+	./configure \
+		--prefix='' \
+		--sbindir=/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-default-dm-run-dir=/run \
+		--with-default-locking-dir=/run/lock/lvm \
+		--with-default-pid-dir=/run \
+		--with-default-run-dir=/run/lvm \
+		--with-cache=internal \
+		--with-thin=internal \
+		--with-udev-prefix='' \
+		--enable-cmdlib \
+		--enable-dmeventd \
+		--enable-pkgconfig \
+		--enable-udev_rules \
+		--enable-udev_sync \
+		--disable-readline \
+		--build=$CHOST
+	make
+}
+
+package() {
+	cd "$srcdir"/LVM2.${pkgver}
+	make DESTDIR="$pkgdir" install
+
+	for initd in device-mapper dmeventd lvmetad lvm lvmlockd lvm-monitoring; do
+		install -D -m755 "$srcdir"/${initd}.initd "$pkgdir"/etc/init.d/$initd
+	done
+
+	for confd in device-mapper lvm; do
+		install -D -m644 "$srcdir"/${confd}.confd "$pkgdir"/etc/conf.d/$confd
+	done
+}

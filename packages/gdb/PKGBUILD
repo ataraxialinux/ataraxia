@@ -9,7 +9,7 @@ url="http://www.gnu.org/software/gdb/"
 license=('GPL-3.0')
 depends=('musl' 'libz' 'ncurses' 'mpfr' 'expat' 'xz' 'python3')
 backup=('etc/gdb/gdbinit')
-source=("http://ftp.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
+source=("http://ftpmirror.gnu.org/gnu/$pkgname/$pkgname-$pkgver.tar.xz"
 	'ppc-musl.patch'
 	'ppc-ptregs.patch'
 	'aarch64-headers.patch')
@@ -36,12 +36,12 @@ build() {
 		--disable-rpath \
 		--disable-werror \
 		--build=$CHOST
-	make
+	make MAKEINFO="true"
 }
 
 package() {
 	cd "$srcdir"/$pkgname-$pkgver
-	make DESTDIR="$pkgdir" install
+	make MAKEINFO="true" DESTDIR="$pkgdir" install
 
 	rm -f "$pkgdir"/share/info/bfd.info
 	rm -f "$pkgdir"/share/info/dir

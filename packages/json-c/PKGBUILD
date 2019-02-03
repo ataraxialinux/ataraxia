@@ -1,0 +1,33 @@
+# Maintainer: protonesso <nagakamira@gmail.com>
+
+pkgname=json-c
+pkgver=0.13.1
+pkgrel=1
+pkgdesc="A JSON implementation in C"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://github.com/json-c/json-c/wiki"
+license=('MIT')
+depends=('musl')
+source=("https://s3.amazonaws.com/${pkgname}_releases/releases/$pkgname-${pkgver}.tar.gz")
+md5sums=('04969ad59cc37bddd83741a08b98f350')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	export CFLAGS="$CFLAGS -Wno-error=unused-but-set-variable"
+
+	./configure \
+		--prefix='' \
+		--enable-threading \
+		--build=$CHOST
+	make -j1
+}
+
+package() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make -j1 DESTDIR="$pkgdir" install
+}
