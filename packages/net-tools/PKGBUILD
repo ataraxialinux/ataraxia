@@ -15,6 +15,7 @@ md5sums=('91301780a363690dffa6ee07084e80b0')
 build() {
 	cd "$srcdir"/net-tools-code-$pkgver
 	yes "" | make config
+	make
 }
 
 package() {
@@ -22,6 +23,9 @@ package() {
 	make \
 		BINDIR=/bin SBINDIR=/sbin \
 		DESTDIR="$pkgdir" install
+
+	mv "$pkgdir"/sbin/* "$pkgdir"/bin/
+	rm -rf "$pkgdir"/sbin
 
 	rm -rf "$pkgdir"/bin/{hostname,dnsdomainname,ifconfig,domainname,nisdomainname,ypdomainname}
 
