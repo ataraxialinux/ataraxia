@@ -1,0 +1,18 @@
+pkgname=chroot-pigz
+pkgver=2.4
+pkgrel=1
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+source=("https://www.zlib.net/pigz/pigz-$pkgver.tar.gz")
+
+build() {
+	cd "$srcdir"/pigz-$pkgver
+	make CFLAGS="$CFLAGS" CC="$CC" HOSTCC="$HOSTCC"
+}
+
+package() {
+	install -Dm755 "$srcdir"/pigz-$pkgver/pigz "$pkgdir"/tools/bin/pigz
+
+	for i in unpigz gzip gunzip zcat; do
+		ln -sf pigz "$pkgdir"/tools/bin/$i
+	done
+}
