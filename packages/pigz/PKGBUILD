@@ -1,0 +1,25 @@
+# Maintainer: nee-san <nagakamira@gmail.com>
+
+pkgname=pigz
+pkgver=2.4
+pkgrel=1
+pkgdesc="Parallel implementation of the gzip file compressor"
+arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
+url="https://www.zlib.net/pigz"
+license=('zlib')
+depends=('musl' 'libz')
+source=("https://www.zlib.net/$pkgname/$pkgname-$pkgver.tar.gz")
+md5sums=('def2f6e19d9d8231445adc1349d346df')
+
+build() {
+	cd "$srcdir"/$pkgname-$pkgver
+	make CFLAGS="$CFLAGS"
+}
+
+package() {
+	install -Dm755 "$srcdir"/$pkgname-$pkgver/$pkgname "$pkgdir"/bin/pigz
+
+	for i in unpigz gzip gunzip zcat; do
+		ln -sf pigz "$pkgdir"/bin/$i
+	done
+}
