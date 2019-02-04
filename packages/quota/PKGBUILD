@@ -12,14 +12,30 @@ backup=('etc/warnquota.conf'
 	'etc/quotatab'
 	'etc/quotagrpadmins')
 options=('!emptydirs')
-source=("http://downloads.sourceforge.net/sourceforge/linuxquota/$pkgname-$pkgver.tar.gz")
-md5sums=('f46f3b0b5141f032f25684005dac49d3')
+source=("http://downloads.sourceforge.net/sourceforge/linuxquota/$pkgname-$pkgver.tar.gz"
+	'fcntl.patch'
+	'remove_non_posix_types.patch'
+	'replace_getrpcbynumber_r.patch')
+md5sums=('f46f3b0b5141f032f25684005dac49d3'
+         'a352236baf35720a4abf4bd4306aada7'
+         '86dc2f671739035fefabdd6eae3dc0c7'
+         'ad16189a2ad61b51c1e1a668c4505351')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -p1 < "$srcdir"/fcntl.patch
+	patch -p1 < "$srcdir"/remove_non_posix_types.patch
+	patch -p1 < "$srcdir"/replace_getrpcbynumber_r.patch
+}
 
 build() {
 	cd "$srcdir"/$pkgname-$pkgver
 	./configure \
 		--prefix='' \
 		--sysconfdir=/etc \
+		--disable-ldapmail \
+		--disable-rpc \
+		--disable-werror \
 		--build=$CHOST
 	make
 }
