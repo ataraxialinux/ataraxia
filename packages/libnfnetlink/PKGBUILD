@@ -8,8 +8,15 @@ arch=('x86_64' 'x86' 'arm64' 'armv7l' 'armv5tel' 'ppc64le' 'ppc64' 'ppc')
 url="https://www.netfilter.org/projects/libnfnetlink/"
 license=('GPL-2')
 depends=('musl')
-source=("https://www.netfilter.org/projects/$pkgname/files/$pkgname-$pkgver.tar.bz2")
-md5sums=('98927583d2016a9fb1936fed992e2c5e')
+source=("https://www.netfilter.org/projects/$pkgname/files/$pkgname-$pkgver.tar.bz2"
+	'musl.patch')
+md5sums=('98927583d2016a9fb1936fed992e2c5e'
+         'ac8de3455a7115daf712e1b385717f5d')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/musl.patch
+}
 
 build() {
 	cd "$srcdir"/$pkgname-$pkgver
