@@ -9,8 +9,15 @@ url="http://www.tcpdump.org/"
 license=('BSD')
 depends=('musl' 'libusb' 'libnl')
 makedepends=('flex')
-source=("https://www.tcpdump.org/release/$pkgname-$pkgver.tar.gz")
-md5sums=('dffd65cb14406ab9841f421732eb0f33')
+source=("https://www.tcpdump.org/release/$pkgname-$pkgver.tar.gz"
+	'includes.patch')
+md5sums=('dffd65cb14406ab9841f421732eb0f33'
+         '744842865889c2be69f2908ba298e051')
+
+prepare() {
+	cd "$srcdir"/$pkgname-$pkgver
+	patch -Np1 -i "$srcdir"/includes.patch
+}
 
 build() {
 	cd "$srcdir"/$pkgname-$pkgver
