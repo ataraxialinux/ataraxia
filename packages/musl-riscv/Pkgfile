@@ -1,0 +1,38 @@
+# Description: The standard C library for RISC V
+# URL:         http://www.musl-libc.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=musl-riscv
+version=staging
+release=1
+source=("https://github.com/riscv/riscv-musl/archive/$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	case $BARCH in
+		riscv64|riscv32)
+			true
+			;;
+		*)
+			echo "RISC V only"
+			exit 1
+			;;
+	esac
+
+	cd "$SRC"/riscv-musl-$version
+	${CROSS_COMPILE}cc $CFLAGS -c "$KEEP"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
+	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
+
+	./configure $TOOLFLAGS \
+		--prefix='' \
+		--libdir=/lib \
+		--syslibdir=/lib \
+		--enable-optimize=size
+	make
+	make DESTDIR="$PKG" install
+
+	cp libssp_nonshared.a "$PKG"/lib
+
+	mkdir -p "$PKG"/bin
+	ln -sf ../lib/libc.so "$PKG"/bin/ldd
+}
