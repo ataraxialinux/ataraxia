@@ -29,9 +29,9 @@ pkginstall() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
-		cd "$REPO"/$mergepkg
+		cd "$REPO"/$emergepkg
 		pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
-		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
 	done
 }
 
@@ -39,9 +39,9 @@ pkginstalltwo() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
-		cd "$REPO"/$mergepkg
+		cd "$REPO"/$emergepkg
 		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
 	done
 }
 
@@ -49,9 +49,9 @@ pkghostinstall() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
-		cd "$TCREPO"/$mergepkg
+		cd "$TCREPO"/$emergepkg
 		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$TOOLS" -f
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$TOOLS" -f
 	done
 }
 
@@ -59,7 +59,7 @@ pkginstallstage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$STAGEFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$STAGEFS"
 	done
 }
 
@@ -67,7 +67,7 @@ pkginstallinitrd() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$INITRAMFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$INITRAMFS"
 	done
 }
 
@@ -248,11 +248,11 @@ export BINUTILSOPTS="$BINUTILSOPTS"
 export HOSTCC="$HOSTCC"
 export HOSTCXX="$HOSTCXX"
 export PATH="$PATH"
+PKGMK_SOURCE_DIR="$SOURCES"
+PKGMK_PACKAGE_DIR="$PACKAGES"
 PKGMK_DOWNLOAD_PROG="curl"
 PKGMK_CURL_OPTS="-k -O -C - -L"
 # PKGMK_SOURCE_MIRRORS=()
-# PKGMK_SOURCE_DIR="$PWD"
-# PKGMK_PACKAGE_DIR="$PWD"
 # PKGMK_WORK_DIR="$PWD/work"
 # PKGMK_DOWNLOAD="no"
 # PKGMK_IGNORE_SIGNATURE="yes"
@@ -290,11 +290,11 @@ export PERLFLAGS="--target=$XTARGET"
 export HOSTCC="$HOSTCC"
 export HOSTCXX="$HOSTCXX"
 export PATH="$PATH"
+PKGMK_SOURCE_DIR="$SOURCES"
+PKGMK_PACKAGE_DIR="$PACKAGES"
 PKGMK_DOWNLOAD_PROG="curl"
 PKGMK_CURL_OPTS="-k -O -C - -L"
 # PKGMK_SOURCE_MIRRORS=()
-# PKGMK_SOURCE_DIR="$PWD"
-# PKGMK_PACKAGE_DIR="$PWD"
 # PKGMK_WORK_DIR="$PWD/work"
 # PKGMK_DOWNLOAD="no"
 # PKGMK_IGNORE_SIGNATURE="yes"
@@ -308,7 +308,7 @@ CEOF
 }
 
 build_toolchain() {
-	:
+	pkginstalltwo base-files
 }
 
 build_target() {
