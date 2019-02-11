@@ -52,6 +52,7 @@ pkghostinstall() {
 		cd "$TCREPO"/$emergepkg
 		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
 		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$TOOLS" -f
+		rm -rf "$PACKAGES"/$emergepkg#*.pkg.tar.xz
 	done
 }
 
@@ -308,7 +309,38 @@ CEOF
 }
 
 build_toolchain() {
+	msg "Building cross-toolchain for '"$BARCH"' platform"
+
+	case $BARCH in
+		riscv64|riscv32)
+			MUSLPKG="musl-riscv"
+			;;
+		*)
+			MUSLPKG="musl"
+			;;
+	esac
+
 	pkginstalltwo base-files
+	pkghostinstall file
+	pkghostinstall pkgconf
+	pkghostinstall gettext-tiny
+	pkghostinstall m4
+	pkghostinstall bison
+	pkghostinstall byacc
+	pkghostinstall flex
+	pkghostinstall bc
+	pkghostinstall ncurses
+	pkginstalltwo linux-api-headers
+	pkginstalltwo fortify-headers
+	pkghostinstall binutils
+	pkghostinstall gcc-static
+	pkginstalltwo $MUSLPKG
+	pkghostinstall gcc
+
+	msg "Cleaning up"
+	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
 }
 
 build_target() {
