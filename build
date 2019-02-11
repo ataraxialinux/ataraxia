@@ -1,0 +1,369 @@
+#!/bin/bash
+
+set -e
+
+if [ "$SNAPSHOT" = "1" ]; then
+	export RELEASE="$(date +%y%m%d)"
+else
+	export RELEASE="1.0-beta5"
+fi
+
+msg() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[32m==>\e[0m $msg\n"
+}
+
+die() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[31m==!\e[0m $msg\n"
+	exit 1
+}
+
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die "'bootstrap' script must be run as root"
+	fi
+}
+
+pkginstall() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$REPO"/$mergepkg
+		pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
+		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$ROOTFS"
+	done
+}
+
+pkginstalltwo() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$REPO"/$mergepkg
+		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
+		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$ROOTFS"
+	done
+}
+
+pkghostinstall() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$TCREPO"/$mergepkg
+		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
+		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$TOOLS" -f
+	done
+}
+
+pkginstallstage() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$STAGEFS"
+	done
+}
+
+pkginstallinitrd() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$mergepkg#*.pkg.tar.xz --root "$INITRAMFS"
+	done
+}
+
+initdb() {
+	local dir="$@"
+	for dbindir in $dir; do
+		mkdir -p "$dbindir"/var/lib/pkg
+		touch "$dbindir"/var/lib/pkg/db
+	done
+}
+
+rmpkg() {
+	local rmpkg="$@"
+	for rmpack in $rmpkg; do
+		rm -rf "$PACKAGES"/$rmpack#*
+	done
+}
+
+setup_architecture() {
+	case $BARCH in
+		x86_64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			export XKARCH="x86_64"
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			export BINUTILSOPTS="--enable-targets=x86_64-pep"
+			;;
+		i686)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i686-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS="--with-arch=i686 --with-tune=generic"
+			export BINUTILSOPTS=''
+			;;
+		i586)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i586-linux-musl"
+			export XKARCH="i386"
+			export GCCOPTS="--with-arch=i586 --with-tune=generic"
+			export BINUTILSOPTS=''
+			;;
+		aarch64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-linux-musl"
+			export XKARCH="arm64"
+			export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+			export BINUTILSOPTS=''
+			;;
+		armv7l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="armv7l-linux-musleabihf"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+			export BINUTILSOPTS=''
+			;;
+		armv6l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="armv6l-linux-musleabihf"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv6 --with-float=hard --with-fpu=vfp"
+			export BINUTILSOPTS=''
+			;;
+		armv5tel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="armv5tel-linux-musleabi"
+			export XKARCH="arm"
+			export GCCOPTS="--with-arch=armv5te --with-float=soft"
+			export BINUTILSOPTS=''
+			;;
+		ppc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			export BINUTILSOPTS=''
+			;;
+		ppc64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			export BINUTILSOPTS=''
+			;;
+		ppc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			export XKARCH="powerpc"
+			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
+			export BINUTILSOPTS=''
+			;;
+		riscv64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv64-linux-musl"
+			export XKARCH="riscv"
+			export GCCOPTS=''
+			export BINUTILSOPTS=''
+			;;
+		riscv32)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv32-linux-musl"
+			export XKARCH="riscv"
+			export GCCOPTS=''
+			export BINUTILSOPTS=''
+			;;
+		sh4)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="sh4-linux-musl"
+			export XKARCH="sh"
+			export GCCOPTS=''
+			export BINUTILSOPTS=''
+			;;
+		sh4a)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="sh4a-linux-musl"
+			export XKARCH="sh"
+			export GCCOPTS=''
+			export BINUTILSOPTS=''
+			;;
+		*)
+			die "Architecture is not set or is not supported by 'bootstrap' script"
+	esac
+}
+
+setup_environment() {
+	msg "Setting up the build environment"
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$BARCH"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STAGEFS="$BUILD/stage"
+	export INITRAMFS="$BUILD/initramfs"
+	export IMAGEFS="$BUILD/image"
+	export ISOBUILD="$BUILD/iso"
+	export KEEP="$CWD/KEEP"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export BSPREPO="$CWD/bsp"
+	export SCRIPTS="$CWD/scripts"
+
+	export LC_ALL="POSIX"
+	export PATH="$SCRIPTS:$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
+
+	if [ -z $MKJOBS ]; then
+		export MKJOBS="$(expr $(nproc) + 1)"
+	fi
+
+	export MKOPTS="-j$MKJOBS"
+
+	export CFLAGS="-D_FORTIFY_SOURCE=2 -Os -fomit-frame-pointer -fstack-protector-strong -Wl,-z,relro,-z,now -pipe"
+	export CXXFLAGS="$CFLAGS"
+}
+
+build_environment() {
+	msg "Building the build environment"
+
+	rm -rf "$BUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD"
+
+	initdb "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS"
+
+cat << CEOF > "$BUILD"/host-pkgmk.conf
+export CROSS="yes"
+export LC_ALL="$LC_ALL"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+export JOBS="$MKJOBS"
+export MAKEFLAGS="-j $JOBS"
+export XHOST="$XHOST"
+export XTARGET="$XTARGET"
+export XKARCH="$XKARCH"
+export GCCOPTS="$GCCOPTS"
+export BINUTILSOPTS="$BINUTILSOPTS"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export PATH="$PATH"
+PKGMK_DOWNLOAD_PROG="curl"
+PKGMK_CURL_OPTS="-k -O -C - -L"
+# PKGMK_SOURCE_MIRRORS=()
+# PKGMK_SOURCE_DIR="$PWD"
+# PKGMK_PACKAGE_DIR="$PWD"
+# PKGMK_WORK_DIR="$PWD/work"
+# PKGMK_DOWNLOAD="no"
+# PKGMK_IGNORE_SIGNATURE="yes"
+# PKGMK_IGNORE_MD5SUM="yes"
+# PKGMK_IGNORE_FOOTPRINT="yes"
+# PKGMK_IGNORE_NEW="no"
+# PKGMK_NO_STRIP="no"
+# PKGMK_WGET_OPTS=""
+# PKGMK_COMPRESSION_MODE="xz"
+CEOF
+
+cat << CEOF > "$BUILD"/target-pkgmk.conf
+export CROSS="yes"
+export LC_ALL="$LC_ALL"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+export JOBS="$MKJOBS"
+export MAKEFLAGS="-j $JOBS"
+export XHOST="$XHOST"
+export XTARGET="$XTARGET"
+export XKARCH="$XKARCH"
+export GCCOPTS="$GCCOPTS"
+export BINUTILSOPTS="$BINUTILSOPTS"
+export CROSS_COMPILE="$XTARGET-"
+export CC="$XTARGET-gcc"
+export CXX="$XTARGET-g++"
+export AR="$XTARGET-ar"
+export AS="$XTARGET-as"
+export RANLIB="$XTARGET-ranlib"
+export LD="$XTARGET-ld"
+export STRIP="$XTARGET-strip"
+export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+export PERLFLAGS="--target=$XTARGET"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export PATH="$PATH"
+PKGMK_DOWNLOAD_PROG="curl"
+PKGMK_CURL_OPTS="-k -O -C - -L"
+# PKGMK_SOURCE_MIRRORS=()
+# PKGMK_SOURCE_DIR="$PWD"
+# PKGMK_PACKAGE_DIR="$PWD"
+# PKGMK_WORK_DIR="$PWD/work"
+# PKGMK_DOWNLOAD="no"
+# PKGMK_IGNORE_SIGNATURE="yes"
+# PKGMK_IGNORE_MD5SUM="yes"
+# PKGMK_IGNORE_FOOTPRINT="yes"
+# PKGMK_IGNORE_NEW="no"
+# PKGMK_NO_STRIP="no"
+# PKGMK_WGET_OPTS=""
+# PKGMK_COMPRESSION_MODE="xz"
+CEOF
+}
+
+build_toolchain() {
+	:
+}
+
+build_target() {
+	:
+}
+
+build_image() {
+	:
+}
+
+COMMAND="$1"
+STAGE="$2"
+
+case "$COMMAND" in
+	stage)
+		case $STAGE in
+		0)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			;;
+		1)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			build_target
+			;;
+		1a)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_target
+			;;
+		2)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_image
+			;;
+		*)
+			die "Stage number was not selected or is not supported"
+		esac
+		;;
+	enter-chroot)
+		check_for_root
+		setup_architecture
+		setup_environment
+		enter_chroot
+		;;
+	usage|*)
+		msg "In development!"
+esac
+
+exit 0
