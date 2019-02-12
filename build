@@ -321,6 +321,7 @@ build_toolchain() {
 	pkghostinstall flex
 	pkghostinstall bc
 	pkghostinstall ncurses
+	pkghostinstall gperf
 	pkginstalltwo linux-api-headers
 	pkginstalltwo fortify-headers
 	pkghostinstall binutils
@@ -335,7 +336,13 @@ build_toolchain() {
 }
 
 build_target() {
-	:
+	msg "Building rootfs for '"$BARCH"' platform"
+
+	for myrootpkgs in sad; do
+		pkginstall musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
+			bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash which libtool db \
+			gperf expat
+	done
 }
 
 build_image() {
