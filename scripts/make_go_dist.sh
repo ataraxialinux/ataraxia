@@ -5,7 +5,7 @@
 # Copyright 2019 protonesso <nagakamira@gmail.com>
 #
 
-GOVER=1.11.4
+GOVER=1.11.5
 GOTAR="go$GOVER.src.tar.gz"
 GOURL="https://dl.google.com/go/$GOTAR"
 BARCH="$1"
@@ -28,15 +28,20 @@ setup_architecture() {
 		x86_64)
 			export GOARCH="amd64"
 			;;
-		x86)
+		i686|i586)
 			export GOARCH="386"
+			export GO386="387"
 			;;
-		arm64)
+		aarch64)
 			export GOARCH="arm64"
 			;;
 		armv7l)
 			export GOARCH="arm"
 			export GOARM="7"
+			;;
+		armv6l)
+			export GOARCH="arm"
+			export GOARM="6"
 			;;
 		armv5tel)
 			export GOARCH="arm"
@@ -57,13 +62,13 @@ setup_architecture() {
 	export BUILD="$(pwd)/OUT.$BARCH"
 	export SRC="$BUILD/sources"
 
-	mkdir -p $SRC
+	mkdir -p "$SRC"
 }
 
 get_go_src() {
 	msg "Getting Go sources"
 
-	cd $SRC
+	cd "$SRC"
 	curl -C - -L -O $GOURL
 	rm -rf go
 	tar -xvf $GOTAR
@@ -71,11 +76,14 @@ get_go_src() {
 
 build_go() {
 	msg "Building Go for '"$BARCH"' platform"
-	cd $SRC/go/src
+	cd "$SRC"/go/src
 
 	case $BARCH in
-		armv7l|armv5tel)
+		armv7l|armv6l|armv5tel)
 			GOOS=linux GOARCH=$GOARCH GOARM=$GOARM ./bootstrap.bash
+			;;
+		i686|i586)
+			GOOS=linux GOARCH=$GOARCH GO386=$GO386 ./bootstrap.bash
 			;;
 		*)
 			GOOS=linux GOARCH=$GOARCH ./bootstrap.bash
