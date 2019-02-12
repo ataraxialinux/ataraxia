@@ -311,15 +311,6 @@ CEOF
 build_toolchain() {
 	msg "Building cross-toolchain for '"$BARCH"' platform"
 
-	case $BARCH in
-		riscv64|riscv32)
-			MUSLPKG="musl-riscv"
-			;;
-		*)
-			MUSLPKG="musl"
-			;;
-	esac
-
 	pkginstalltwo base-files
 	pkghostinstall file
 	pkghostinstall pkgconf
@@ -334,7 +325,7 @@ build_toolchain() {
 	pkginstalltwo fortify-headers
 	pkghostinstall binutils
 	pkghostinstall gcc-static
-	pkginstall $MUSLPKG
+	pkginstall musl
 	pkghostinstall gcc
 
 	msg "Cleaning up"
