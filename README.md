@@ -16,6 +16,8 @@ januslinux is ported on many CPU architectures. There are about 8 of them:
  * armv7l       - for 32-bit ARM CPUs beggining at ARMv7-a (hard-float)
  * armv6l       - for 32-bit ARM CPUs beggining at ARMv6-a (hard-float)
  * armv5tel     - for 32-bit ARM CPUs beggining at ARMv5 (soft-float)
+ * mips         - for 32-bit MIPS CPUs beggining at MIPS Release 2 (big-endian)
+ * mipsel       - for 32-bit MIPS CPUs beggining at MIPS Release 2 (little-endian)
  * ppc64le      - for 64-bit PowerPC CPUs (little-endian)
  * ppc64        - for 64-bit PowerPC CPUs (big-endian)
  * ppc          - for 32-bit PowerPC CPUs (big-endian)
