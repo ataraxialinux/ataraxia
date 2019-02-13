@@ -10,7 +10,10 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure.sh
+	PREFIX='' ./configure.sh
 	make PREFIX=''
 	make PREFIX='' DESTDIR="$PKG" install
+
+	mv "$PKG"/usr/local/* "$PKG"/
+	rm -rf "$PKG"/usr
 }

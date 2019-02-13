@@ -30,8 +30,11 @@ pkginstall() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd "$REPO"/$emergepkg
-		pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		if [ ! -f "$PACKAGES/$emergepkg#*.pkg.tar.xz" ]; then
+			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
+			UPDATE="-u"
+		fi
+		pkgadd $UPDATE "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
 	done
 }
 
@@ -40,8 +43,11 @@ pkginstalltwo() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd "$REPO"/$emergepkg
-		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		if [ ! -f "$PACKAGES/$emergepkg#*.pkg.tar.xz" ]; then
+			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
+			UPDATE="-u"
+		fi
+		pkgadd $UPDATE "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
 	done
 }
 
