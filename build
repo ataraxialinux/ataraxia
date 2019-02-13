@@ -138,6 +138,20 @@ setup_architecture() {
 			export GCCOPTS="--with-arch=armv5te --with-float=soft"
 			export BINUTILSOPTS=''
 			;;
+		mips)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft"
+			export BINUTILSOPTS=''
+			;;
+		mipsel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mipsel-linux-musl"
+			export XKARCH="mips"
+			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv"
+			export BINUTILSOPTS=''
+			;;
 		ppc64le)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="powerpc64le-linux-musl"
@@ -340,7 +354,7 @@ build_target() {
 
 	for myrootpkgs in sad; do
 		pkginstall musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
-			bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash which libtool db \
+			bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool db \
 			gperf expat
 	done
 }

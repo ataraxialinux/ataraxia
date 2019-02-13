@@ -1,0 +1,53 @@
+# Description: Tools necessary to build programs
+# URL:         https://www.gnu.org/software/binutils/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libz
+
+name=binutils
+version=2.32
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/binutils/gold-mips.patch
+
+	mkdir build
+	cd build
+
+	if [ "$BARCH" = "x86_64" ]; then
+		export BINUTILSOPTS="--enable-targets=x86_64-pep"
+	fi
+
+	../configure $TOOLFLAGS $BINUTILSOPTS \
+		--prefix='' \
+		--with-bugurl="https://github.com/JanusLinux/janus/issues" \
+		--with-lib-path="/lib:/local/lib" \
+		--with-pic \
+		--with-system-zlib \
+		--enable-64-bit-bfd \
+		--enable-deterministic-archives \
+		--enable-gold \
+		--enable-ld=default \
+		--enable-lto \
+		--enable-plugins \
+		--enable-relro \
+		--enable-shared \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make MAKEINFO="true" tooldir='' configure-host
+	make MAKEINFO="true" tooldir=''
+	make MAKEINFO="true" tooldir='' DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/bin/ld
+
+	for f in "$PKG"/bin/*; do
+		ln -sf ${f##*/} "$PKG"/bin/${XTARGET:-${XTARGET}}-${f##*/}
+	done
+
+	ln -sf ld.bfd "$PKG"/bin/ld
+	ln -sf ld.bfd "$PKG"/bin/$XTARGET-ld
+}
