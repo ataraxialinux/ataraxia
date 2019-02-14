@@ -23,8 +23,6 @@ januslinux is ported on many CPU architectures. There are about 8 of them:
  * ppc          - for 32-bit PowerPC CPUs (big-endian)
  * riscv64      - for 64-bit RISC V CPUs
  * riscv32      - for 32-bit RISC V CPUs
- * sh4          - for 32-bit SuperH 4 CPUs
- * sh4a         - for 32-bit SuperH 4 CPUs
 ```
  
 ## Index of source packages

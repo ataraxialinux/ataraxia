@@ -1,17 +1,26 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: The Berkeley DB embedded database system
+# URL:         http://www.oracle.com/technology/software/products/berkeley-db/index.html
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=db
+version=6.2.32
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://download.oracle.com/berkeley-db/$name-$version.tar.gz")
 BOOTSTRAP=yes
 
 build() {
-	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=''
+	cd "$SRC"/$name-$version/build_unix
+	../dist/configure $BUILDFLAGS \
+		--prefix='' \
+		--enable-compat185 \
+		--enable-cxx \
+		--enable-dbm \
+		--disable-static
 	make
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/docs
+
+	chown -R root:root \
+		"$PKG"/*
 }
