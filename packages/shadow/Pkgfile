@@ -1,17 +1,44 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Password and account management tool suite
+# URL:         https://github.com/shadow-maint/shadow
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depend on:   acl
 
-name=m4
-version=1.4.18
+name=shadow
+version=4.6
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://github.com/shadow-maint/shadow/releases/download/$version/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -p0 -i "$KEEP"/shadow/shadow-no_rlogin
+	patch -p0 -i "$KEEP"/shadow/shadow-strncpy-usage.patch
+	patch -p0 -i "$KEEP"/shadow/xstrdup.patch
+
+	sed -i -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD SHA512@' etc/login.defs
+
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--bindir=/bin \
+		--sbindir=/bin \
+		--libdir=/lib \
+		--mandir=/share/man \
+		--sysconfdir=/etc \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--with-group-name-max-length=32
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$KEEP"/shadow/useradd "$PKG"/etc/default/useradd
+
+	rm "$PKG"/sbin/logoutd
+
+	mv "$PKG"/bin/{newgrp,sg}
+
+	mv "$PKG"/sbin/* "$PKG"/bin
+	rmdir "$PKG"/sbin
 }

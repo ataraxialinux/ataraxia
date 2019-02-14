@@ -1,17 +1,27 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: POSIX 1003.1e capabilities
+# URL:         http://sites.google.com/site/fullycapable/
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  attr
 
-name=m4
-version=1.4.18
+name=libcap
+version=2.26
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=''
-	make
-	make DESTDIR="$PKG" install
+	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
+	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i 's@/bin/bash@/bin/sh@g' progs/capsh.c
+
+	if [ "$CROSS" = "yes" ]; then
+		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/include
+	else
+		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS=/include
+	fi
+
+	make prefix='' lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 }

@@ -1,17 +1,23 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Package compiler and linker metadata toolkit
+# URL:         https://github.com/pkgconf/pkgconf
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=pkgconf
+version=1.6.0
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://distfiles.dereferenced.org/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--sysconfdir=/etc \
+		--with-pkg-config-dir="/lib/pkgconfig:/share/pkgconfig" \
+		--with-system-libdir="/lib" \
+		--with-system-includedir="/include"
 	make
 	make DESTDIR="$PKG" install
+
+	ln -sf pkgconf "$PKG"/bin/pkg-config
 }

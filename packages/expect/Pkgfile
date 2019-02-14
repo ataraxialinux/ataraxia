@@ -1,16 +1,24 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: A tool for automating interactive applications
+# URL:         http://www.nist.gov/el/msid/expect.cfm
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  tcl
 
-name=m4
-version=1.4.18
+name=expect
+version=5.45.4
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://downloads.sourceforge.net/project/expect/Expect/$version/expect${version}.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/expect${version}
+	cp "$KEEP"/config.guess tclconfig/config.guess
+	cp "$KEEP"/config.sub tclconfig/config.sub
+
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--mandir=/share/man \
+		--with-tcl=/lib \
+		--with-tclinclude=/include \
+		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
 }

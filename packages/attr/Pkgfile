@@ -1,17 +1,20 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Extended attribute support library for ACL support
+# URL:         http://savannah.nongnu.org/projects/attr
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=attr
+version=2.4.48
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://download.savannah.gnu.org/releases/$name/$name-$version.tar.gz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--libdir=/lib \
+		--libexecdir=/lib \
+		--sysconfdir=/etc
 	make
 	make DESTDIR="$PKG" install
 }
