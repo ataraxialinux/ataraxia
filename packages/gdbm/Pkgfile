@@ -1,16 +1,23 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: GNU database library
+# URL:         http://www.gnu.org/software/gdbm/gdbm.html
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=gdbm
+version=1.18.1
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--enable-libgdbm-compat
 	make
 	make DESTDIR="$PKG" install
+
+	install -dm755 "$PKG"/include/gdbm
+	ln -sf ../gdbm.h "$PKG"/include/gdbm/gdbm.h
+	ln -sf ../ndbm.h "$PKG"/include/gdbm/ndbm.h
+	ln -sf ../dbm.h "$PKG"/include/gdbm/dbm.h
 }

@@ -1,16 +1,18 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: POSIX compliant shell that aims to be as small as possible
+# URL:         http://gondor.apana.org.au/~herbert/dash/
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libedit
 
-name=m4
-version=1.4.18
+name=dash
+version=0.5.10.2
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://gondor.apana.org.au/~herbert/$name/files/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--with-libedit
 	make
 	make DESTDIR="$PKG" install
 }

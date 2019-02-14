@@ -17,6 +17,7 @@ build() {
 
 	sed -i -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD SHA512@' etc/login.defs
 
+	LDFLAGS='-static' \
 	./configure $BUILDFLAGS \
 		--prefix='' \
 		--bindir=/bin \
@@ -29,7 +30,8 @@ build() {
 		--without-libpam \
 		--without-nscd \
 		--without-selinux \
-		--with-group-name-max-length=32
+		--with-group-name-max-length=32 \
+		--disable-shared
 	make
 	make DESTDIR="$PKG" install
 
