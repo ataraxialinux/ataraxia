@@ -1,16 +1,14 @@
-# Description: The GNU macro processor
+# Description: A Linux port of OpenBSD's ksh
 # URL:         http://www.gnu.org/software/m4
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=loksh
+version=6.4
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://github.com/dimkr/loksh/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=''
 	make
-	make DESTDIR="$PKG" install
+	make BIN_DIR=/bin MAN_DIR=/share/man DOC_DIR=/share/doc/loksh DESTDIR="$PKG" install
 }

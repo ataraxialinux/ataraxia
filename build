@@ -33,7 +33,11 @@ pkginstall() {
 		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
 			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
 		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		if [[ -n "$(pkginfo -i --root $ROOTFS | awk '{print $1}' | grep $emergepkg)" ]]; then
+			pkgadd -u "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		else
+			pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		fi
 	done
 }
 
@@ -45,7 +49,23 @@ pkginstalltwo() {
 		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
 			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
 		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		if [[ -n "$(pkginfo -i --root $ROOTFS | awk '{print $1}' | grep $emergepkg)" ]]; then
+			pkgadd -u "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		else
+			pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
+		fi
+	done
+}
+
+pkginstallthree() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$REPO"/$emergepkg
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
+			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
+		fi
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS" || true
 	done
 }
 
@@ -188,20 +208,6 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="riscv32-linux-musl"
 			export XKARCH="riscv"
-			export GCCOPTS=''
-			export BINUTILSOPTS=''
-			;;
-		sh4)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="sh4-linux-musl"
-			export XKARCH="sh"
-			export GCCOPTS=''
-			export BINUTILSOPTS=''
-			;;
-		sh4a)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="sh4a-linux-musl"
-			export XKARCH="sh"
 			export GCCOPTS=''
 			export BINUTILSOPTS=''
 			;;
@@ -356,10 +362,16 @@ build_toolchain() {
 build_target() {
 	msg "Building rootfs for '"$BARCH"' platform"
 
-	for myrootpkgs in sad; do
-		pkginstall musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
-			bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool db \
-			gperf expat
+	for myrootpkgs in musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
+						bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
+						gperf expat; do
+		case $myrootpkgs in
+			ed)
+				pkginstallthree ed
+				;;
+			*)
+				pkginstall $myrootpkgs
+		esac
 	done
 }
 
