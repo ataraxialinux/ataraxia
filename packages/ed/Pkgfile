@@ -1,17 +1,34 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: A POSIX-compliant line-oriented text editor
+# URL:         http://www.gnu.org/software/ed/ed.html
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=ed
+version=1.15
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.lz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=''
+
+	if [ "$CROSS" = "yes" ]; then
+		./configure \
+			CC="$CC" CXX="$CXX" \
+			AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP"  \
+			CFLAGS="$CFLAGS" \
+			--prefix='' \
+			--bindir=/bin \
+			--mandir=/share/man \
+			--infodir=/share/info
+	else
+		./configure \
+			CFLAGS="$CFLAGS" \
+			--prefix='' \
+			--bindir=/bin \
+			--mandir=/share/man \
+			--infodir=/share/info
+	fi
+
 	make
 	make DESTDIR="$PKG" install
 }
