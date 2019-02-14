@@ -33,11 +33,7 @@ pkginstall() {
 		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
 			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
 		fi
-		if [[ -n "$(pkginfo -i --root $ROOTFS | awk '{print $1}' | grep $emergepkg)" ]]; then
-			pkgadd -u "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
-		else
-			pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
-		fi
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS" || true
 	done
 }
 
@@ -48,22 +44,6 @@ pkginstalltwo() {
 		cd "$REPO"/$emergepkg
 		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
 			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		fi
-		if [[ -n "$(pkginfo -i --root $ROOTFS | awk '{print $1}' | grep $emergepkg)" ]]; then
-			pkgadd -u "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
-		else
-			pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS"
-		fi
-	done
-}
-
-pkginstallthree() {
-	local pkg="$@"
-	for emergepkg in $pkg; do
-		msg "Emerging '"$emergepkg"' package"
-		cd "$REPO"/$emergepkg
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
-			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
 		fi
 		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS" || true
 	done
@@ -365,13 +345,7 @@ build_target() {
 	for myrootpkgs in musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
 						bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
 						gperf expat; do
-		case $myrootpkgs in
-			ed)
-				pkginstallthree ed
-				;;
-			*)
-				pkginstall $myrootpkgs
-		esac
+		pkginstall $myrootpkgs
 	done
 }
 
