@@ -1,16 +1,46 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: The Tcl scripting language
+# URL:         http://tcl.sourceforge.net/
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  sqlite
 
-name=m4
-version=1.4.18
+name=tcl
+version=8.6.9
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://downloads.sourceforge.net/sourceforge/$name/tcl${version}-src.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/tcl${version}/unix
+	rm -rf pkgs/sqlite3*
+
+	case "$BARCH" in
+		x86_64) _64bit="--enable-64bit";;
+	esac
+
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--mandir=/share/man \
+		--enable-threads ${_64bit}
 	make
-	make DESTDIR="$PKG" install
+	make INSTALL_ROOT="$PKG" install install-private-headers
+
+	ln -sf tclsh${version%.*} "$PKG"/bin/tclsh
+	ln -sf libtcl${version%.*}.so "$PKG"/lib/libtcl.so
+	install -Dm644 tcl.m4 -t "$PKG"/share/aclocal
+
+	sed -e "s#${SRC}/tcl${version}/unix#/lib#" \
+		-e "s#${SRC}/tcl${version}#/include#" \
+		-i "$PKG"/lib/tclConfig.sh
+
+	tdbcver=tdbc1.1.0
+	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$tdbcver#/lib/$tdbcver#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/generic#/include#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/library#/lib/tcl${version%.*}#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver#/include#" \
+		-i "$PKG"/lib/$tdbcver/tdbcConfig.sh
+
+	itclver=itcl4.1.2
+	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$itclver#/lib/$itclver#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$itclver/generic#/include#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$itclver#/include#" \
+		-i "$PKG"/lib/$itclver/itclConfig.sh
 }

@@ -1,16 +1,29 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Compiler cache that speeds up recompilation by caching previous compilations
+# URL:         https://ccache.samba.org/
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libz
 
-name=m4
-version=1.4.18
+name=ccache
+version=3.5
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://www.samba.org/ftp/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=''
+		--prefix='' \
+		--sysconfdir=/etc
 	make
-	make DESTDIR="$PKG" install
+
+	install -Dm 755 ccache -t "$PKG"/bin
+
+	install -d "$PKG"/lib/ccache/bin
+	local _prog
+	for _prog in gcc g++ c++; do
+		ln -sf /bin/ccache "$PKG"/lib/ccache/bin/$_prog
+		ln -sf /bin/ccache "$PKG"/lib/ccache/bin/${CHOST}-$_prog
+	done
+	for _prog in cc clang clang++; do
+		ln -sf /bin/ccache "$PKG"/lib/ccache/bin/$_prog
+	done
 }
