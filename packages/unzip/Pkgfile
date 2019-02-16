@@ -1,0 +1,31 @@
+# Description: For extracting and viewing files in .zip archives
+# URL:         http://www.info-zip.org/UnZip.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=unzip
+version=6.0
+_pkgver=${version/./}
+release=1
+source=("http://downloads.sourceforge.net/infozip/${name}${_pkgver}.tar.gz")
+
+build() {
+	cd "$SRC"/${name}${_pkgver}
+	patch -Np1 -i "$KEEP"/unzip/10-unzip-handle-pkware-verify.patch
+	patch -Np1 -i "$KEEP"/unzip/20-unzip-uidgid-fix.patch
+	patch -Np1 -i "$KEEP"/unzip/unzip-6.0-heap-overflow-infloop.patch
+	patch -Np1 -i "$KEEP"/unzip/CVE-2014-8140.patch
+	patch -Np1 -i "$KEEP"/unzip/CVE-2014-8141.patch
+	patch -Np1 -i "$KEEP"/unzip/CVE-2014-9636.patch
+	patch -Np1 -i "$KEEP"/unzip/CVE-2014-9913.patch
+	patch -Np1 -i "$KEEP"/unzip/CVE-2016-9844.patch
+	patch -Np1 -i "$KEEP"/unzip/CVE-2018-1000035.patch
+	patch -Np1 -i "$KEEP"/unzip/fix-CVE-2014-8139.patch
+
+	make -f unix/Makefile \
+		CC="cc" \
+		LOCAL_ZIP="$CFLAGS" \
+		prefix='' generic
+	make -f unix/Makefile \
+		MANDIR="$PKG"/share/man/man1/ \
+		prefix="$PKG" install
+}
