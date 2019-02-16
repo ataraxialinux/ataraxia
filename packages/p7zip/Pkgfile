@@ -1,0 +1,31 @@
+# Description: Command-line file archiver with high compression ratio
+# URL:         http://p7zip.sourceforge.net/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  nasm yasm
+
+name=p7zip
+version=16.02
+release=1
+source=("https://downloads.sourceforge.net/project/$name/$name/$version/${name}_${version}_src_all.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/p7zip/CVE-2016-9296.patch
+	patch -Np1 -i "$KEEP"/p7zip/CVE-2017-17969.patch
+	patch -Np1 -i "$KEEP"/p7zip/CVE-2018-5996.patch
+	patch -Np1 -i "$KEEP"/p7zip/CVE-2018-10115.patch
+
+	local makefile="makefile.linux_any_cpu_gcc_4.X"
+	case "$BARCH" in
+		i586|i686)    makefile="makefile.linux_x86_asm_gcc_4.X" ;;
+		x86_64)       makefile="makefile.linux_amd64_asm" ;;
+	esac
+
+	ln -sf $makefile makefile.machine
+
+	make all3 OPTFLAGS="$CFLAGS"
+	make install \
+		DEST_DIR="$PKG" \
+		DEST_HOME='' \
+		DEST_MAN=/share/man
+}
