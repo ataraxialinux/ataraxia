@@ -1,0 +1,22 @@
+# Description: GNU make utility to maintain groups of programs
+# URL:         http://www.gnu.org/software/make
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=make
+version=4.2.1
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.bz2")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/make/fix-atexit-exit.patch
+	patch -Np1 -i "$KEEP"/make/fix-glob-dtype.patch
+
+	./configure $BUILDFLAGS \
+		--prefix='' \
+		--without-dmalloc \
+		--without-guile
+	make
+	make DESTDIR="$PKG" install
+}
