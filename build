@@ -82,6 +82,14 @@ pkginstallinitrd() {
 	done
 }
 
+pkginstallimage() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$IMAGEFS"
+	done
+}
+
 initdb() {
 	local dir="$@"
 	for dbindir in $dir; do
@@ -356,6 +364,17 @@ build_target() {
 	done
 }
 
+build_stage() {
+	msg "Building stage archive for '"$BARCH"' platform"
+
+	for myrootpkgs in musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
+						ccache bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
+						gperf expat perl libressl inetutils autoconf automake xz lz4 zstd libarchive pkgutils \
+						libelf sbase ubase make patch; do
+		pkginstallstage $myrootpkgs
+	done
+}
+
 build_image() {
 	:
 }
@@ -387,15 +406,15 @@ case "$COMMAND" in
 			setup_environment
 			build_target
 			;;
-		2)
-			check_for_root
-			setup_architecture
-			setup_environment
-			build_image
-			;;
 		*)
 			die "Stage number was not selected or is not supported"
 		esac
+		;;
+	stage-archive)
+		check_for_root
+		setup_architecture
+		setup_environment
+		build_stage
 		;;
 	enter-chroot)
 		check_for_root
