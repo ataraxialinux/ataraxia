@@ -1,0 +1,34 @@
+# Description: A collection of common network programs
+# URL:         http://www.gnu.org/software/inetutils/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  ncurses libcap
+
+name=inetutils
+version=1.9.4
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+NO_EMPTY_DIRS=1
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/inetutils/inetutils-1.9-PATH_PROCNET_DEV.patch
+
+	./configure $BUILDFLAGS \
+		--prefix='' \
+		--libexec=/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-ncurses \
+		--disable-logger \
+		--disable-rcp \
+		--disable-rlogin \
+		--disable-rlogind \
+		--disable-rsh \
+		--disable-rshd \
+		--disable-talk \
+		--disable-talkd \
+		--disable-whois
+	make
+	make DESTDIR="$PKG" install
+}
