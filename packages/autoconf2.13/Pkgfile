@@ -1,0 +1,22 @@
+# Description: A GNU tool for automatically configuring source code (Legacy 2.1x version)
+# URL:         http://www.gnu.org/software/autoconf/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  perl
+
+name=autoconf2.13
+version=2.13
+release=1
+source=("http://ftp.gnu.org/gnu/autoconf/autoconf-$version.tar.gz")
+
+build() {
+	cd "$SRC"/autoconf-$version
+	cp "$KEEP"/config.guess config.guess
+	cp "$KEEP"/config.sub config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix='' \
+		--infodir=/share/info \
+		--program-suffix=-2.13
+	make
+	make DESTDIR="$PKG" infodir="$PKG"/share/info install
+}
