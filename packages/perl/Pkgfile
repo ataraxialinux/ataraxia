@@ -1,0 +1,37 @@
+# Description: A highly capable, feature-rich programming language
+# URL:         http://www.perl.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  gdbm db
+
+name=perl
+version=5.28.1
+crossver=1.2.1
+release=1
+source=("https://www.cpan.org/src/5.0/$name-$version.tar.xz"
+	"https://github.com/arsv/perl-cross/releases/download/$crossver/perl-cross-$crossver.tar.gz")
+
+build() {
+	cd "$SRC"
+	cp -f -r perl-cross-$crossver/* $name-$version/
+
+	cd $name-$version
+	./configure $PERLFLAGS \
+		--prefix=/ \
+		-Dvendorprefix=/ \
+		-Dprivlib=/lib/perl5/${version%.*} \
+		-Dsitelib=/lib/perl5/site_perl/${version%.*} \
+		-Dvendorlib=/lib/perl5/site_perl/${version%.*} \
+		-Dman1dir=/share/man/man1 \
+		-Dman3dir=/share/man/man3 \
+		-Dpager="/bin/less -isR" \
+		-Dinc_version_list=none \
+		-Dcf_by='januslinux' \
+		-Dcccdlflags='-fPIC' \
+		-Dcccdlflags='-fPIC' \
+		-Dccdlflags='-rdynamic' \
+		-Doptimize="$CFLAGS" \
+		-Duseshrplib \
+		-Dusethreads
+	make libperl.so && make
+	make DESTDIR="$PKG" install
+}
