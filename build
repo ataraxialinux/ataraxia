@@ -367,7 +367,10 @@ build_target() {
 build_stage() {
 	msg "Installing core stage packages in temporary filesystem for '"$BARCH"' platform"
 
-	for myrootpkgs in musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
+	initdb "$STAGEFS"
+
+	for myrootpkgs in base-files linux-api-headers fortify-headers musl \
+						musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
 						ccache bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
 						gperf expat perl libressl inetutils autoconf automake xz lz4 zstd libarchive pkgutils \
 						libelf sbase ubase make patch; do
@@ -376,8 +379,9 @@ build_stage() {
 
 	msg "Building stage archive for '"$BARCH"' platform"
 	cd "$STAGEFS"
-	tar -cJf . "$CWD"/januslinux-$RELEASE-$BARCH.tar.xz
+	tar -cJf "$CWD"/januslinux-$RELEASE-$BARCH.tar.xz .
 	cd $CWD
+	msg "Job done!"
 }
 
 build_image() {
