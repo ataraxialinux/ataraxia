@@ -18,14 +18,14 @@ build() {
 
 	./configure $BUILDFLAGS \
 		--prefix='' \
-		--mandir=/share/man \
+		--mandir=/usr/share/man \
 		--enable-threads ${_64bit}
 	make
 	make INSTALL_ROOT="$PKG" install install-private-headers
 
 	ln -sf tclsh${version%.*} "$PKG"/usr/bin/tclsh
 	ln -sf libtcl${version%.*}.so "$PKG"/usr/lib/libtcl.so
-	install -Dm644 tcl.m4 -t "$PKG"/share/aclocal
+	install -Dm644 tcl.m4 -t "$PKG"/usr/share/aclocal
 
 	sed -e "s#${SRC}/tcl${version}/unix#/usr/lib#" \
 		-e "s#${SRC}/tcl${version}#/usr/include#" \
