@@ -10,7 +10,6 @@ release=3
 source=("http://ftpmirror.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz"
 	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 BOOTSTRAP=yes
-NO_RUN_STRIP=1
 NO_EMPTY_DIRS=1
 
 build() {
@@ -93,7 +92,7 @@ build() {
 	patch -Np1 -i "$KEEP"/gcc/0003-gcc-poison-system-directories.patch
 	patch -Np1 -i "$KEEP"/gcc/gcc-4.9-musl-fortify.patch
 	patch -Np1 -i "$KEEP"/gcc/gcc-6.1-musl-libssp.patch
-	patch -Np1 -i "$KEEP"/gcc/usr/libgcc-always-build-gcceh.a.patch
+	patch -Np1 -i "$KEEP"/gcc/libgcc-always-build-gcceh.a.patch
 	patch -Np1 -i "$KEEP"/gcc/cpu_indicator.patch
 	patch -Np1 -i "$KEEP"/gcc/0002-posix_memalign.patch
 	patch -Np1 -i "$KEEP"/gcc/0003-libatomic-test-fix.patch
@@ -158,12 +157,6 @@ build() {
 
 	make -j1 DESTDIR="$PKG" install
 
-	mv "$PKG"/usr/lib/*.so{,.*} "$SRC"/savedlibs
-
-	run_strip "$PKG"
-
-	mv "$SRC"/savedlibs/*.so{,.*} "$PKG"/usr/lib
-
 	install -Dm755 "$KEEP"/gcc/c89 "$PKG"/bin/c89
 	install -Dm755 "$KEEP"/gcc/c99 "$PKG"/bin/c99
 
@@ -177,7 +170,7 @@ build() {
 	ln -sf ../bin/cpp "$PKG"/usr/lib
 
 	install -dm755 "$PKG"/usr/lib/bfd-plugins
-	ln -sf /usr/lib/gcc/$XTARGET/$version/usr/liblto_plugin.so "$PKG"/usr/lib/bfd-plugins/
+	ln -sf /usr/lib/gcc/$XTARGET/$version/liblto_plugin.so "$PKG"/usr/lib/bfd-plugins/
 
 	mkdir -p "$PKG"/share/gdb/auto-load/usr/lib
 	mv "$PKG"/usr/lib/*gdb.py "$PKG"/share/gdb/auto-load/usr/lib
