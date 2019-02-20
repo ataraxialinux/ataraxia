@@ -17,15 +17,15 @@ build() {
 	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
 
 	./configure $TOOLFLAGS \
-		--prefix='' \
-		--libdir=/lib \
-		--syslibdir=/lib \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--syslibdir=/usr/lib \
 		--enable-optimize=size
 	make
 	make DESTDIR="$PKG" install
 
-	cp libssp_nonshared.a "$PKG"/lib
+	cp libssp_nonshared.a "$PKG"/usr/lib
 
-	mkdir -p "$PKG"/bin
-	ln -sf ../lib/libc.so "$PKG"/bin/ldd
+	mkdir -p "$PKG"/usr/bin
+	ln -sf ../lib/libc.so "$PKG"/usr/bin/ldd
 }
