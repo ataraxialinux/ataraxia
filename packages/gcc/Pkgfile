@@ -36,19 +36,19 @@ build() {
 			export GCCOPTS="--with-arch=armv5te --with-float=soft"
 			;;
 		mips)
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft"
+			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
 			;;
 		mipsel)
-			export GCCOPTS="--with-arch=mips32r2 --with-float=soft --with-linker-hash-style=sysv"
+			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
 			;;
 		ppc64le)
-			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no --enable-targets=powerpcle-linux"
+			export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpcle-linux"
 			;;
 		ppc64)
-			export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-decimal-float=no"
+			export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpc-linux"
 			;;
 		ppc)
-			export GCCOPTS="--enable-secureplt --enable-decimal-float=no"
+			export GCCOPTS="--enable-decimal-float=no --enable-secureplt"
 			;;
 		riscv64)
 			export GCCOPTS=''
@@ -59,6 +59,11 @@ build() {
 		*)
 			echo "Architecture is not set or is not supported by januslinux"
 			exit 1
+	esac
+
+	case "$BARCH" in
+		mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
+		*)				HASHCONFIG="--with-linker-hash-style=gnu"	;;
 	esac
 
 	export CFLAGS_FOR_BUILD=" "
@@ -115,7 +120,7 @@ build() {
 	mkdir build
 	cd build
 
-	../configure $TOOLFLAGS $GCCOPTS \
+	../configure $TOOLFLAGS $GCCOPTS $HASHCONFIG \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
