@@ -1,5 +1,5 @@
 # Description: Tools necessary to build programs
-# URL:         https://www.gnu.org/software/binutils/
+# URL:         https://www.gnu.org/software/usr/binutils/
 # Maintainer:  nee-san, nagakamira at gmail dot com
 # Depends on:  libz
 
@@ -11,7 +11,7 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$KEEP"/binutils/gold-mips.patch
+	patch -Np1 -i "$KEEP"/usr/binutils/gold-mips.patch
 
 	mkdir build
 	cd build
@@ -42,12 +42,12 @@ build() {
 	make MAKEINFO="true" tooldir=''
 	make MAKEINFO="true" tooldir='' DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/bin/ld
+	rm -rf "$PKG"/usr/bin/ld
 
-	for f in "$PKG"/bin/*; do
-		ln -sf ${f##*/} "$PKG"/bin/${XTARGET:-${XTARGET}}-${f##*/}
+	for f in "$PKG"/usr/bin/*; do
+		ln -sf ${f##*/} "$PKG"/usr/bin/${XTARGET:-${XTARGET}}-${f##*/}
 	done
 
-	ln -sf ld.bfd "$PKG"/bin/ld
-	ln -sf ld.bfd "$PKG"/bin/$XTARGET-ld
+	ln -sf ld.bfd "$PKG"/usr/bin/ld
+	ln -sf ld.bfd "$PKG"/usr/bin/$XTARGET-ld
 }
