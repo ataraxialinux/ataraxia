@@ -30,13 +30,13 @@ pkginstall() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd "$REPO"/$emergepkg
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
 			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
 		fi
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
 			die "Couldn't get binary package of '"$emergepkg"'"
 		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS" || true
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$ROOTFS" || true
 	done
 }
 
@@ -45,13 +45,13 @@ pkginstalltwo() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd "$REPO"/$emergepkg
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
 			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
 		fi
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.xz ]; then
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
 			die "Couldn't get binary package of '"$emergepkg"'"
 		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$ROOTFS" || true
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$ROOTFS" || true
 	done
 }
 
@@ -61,8 +61,8 @@ pkghostinstall() {
 		msg "Emerging '"$emergepkg"' package"
 		cd "$TCREPO"/$emergepkg
 		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$TOOLS" -f
-		rm -rf "$PACKAGES"/$emergepkg#*.pkg.tar.xz
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$TOOLS" -f
+		rm -rf "$PACKAGES"/$emergepkg#*.pkg.tar.zst
 	done
 }
 
@@ -70,7 +70,7 @@ pkginstallstage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$STAGEFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$STAGEFS"
 	done
 }
 
@@ -78,7 +78,7 @@ pkginstallinitrd() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$INITRAMFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$INITRAMFS"
 	done
 }
 
@@ -86,7 +86,7 @@ pkginstallimage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.xz --root "$IMAGEFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$IMAGEFS"
 	done
 }
 
@@ -280,7 +280,7 @@ PKGMK_CURL_OPTS="-k -O -C - -L"
 # PKGMK_IGNORE_NEW="no"
 # PKGMK_NO_STRIP="no"
 # PKGMK_WGET_OPTS=""
-# PKGMK_COMPRESSION_MODE="xz"
+# PKGMK_COMPRESSION_MODE="zst"
 CEOF
 
 cat << CEOF > "$BUILD"/target-pkgmk.conf
@@ -322,7 +322,7 @@ PKGMK_CURL_OPTS="-k -O -C - -L"
 # PKGMK_IGNORE_NEW="no"
 # PKGMK_NO_STRIP="no"
 # PKGMK_WGET_OPTS=""
-# PKGMK_COMPRESSION_MODE="xz"
+# PKGMK_COMPRESSION_MODE="zst"
 CEOF
 }
 
