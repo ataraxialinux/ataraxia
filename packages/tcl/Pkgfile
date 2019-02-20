@@ -24,23 +24,23 @@ build() {
 	make INSTALL_ROOT="$PKG" install install-private-headers
 
 	ln -sf tclsh${version%.*} "$PKG"/bin/tclsh
-	ln -sf libtcl${version%.*}.so "$PKG"/lib/libtcl.so
+	ln -sf libtcl${version%.*}.so "$PKG"/usr/lib/usr/libtcl.so
 	install -Dm644 tcl.m4 -t "$PKG"/share/aclocal
 
-	sed -e "s#${SRC}/tcl${version}/unix#/lib#" \
+	sed -e "s#${SRC}/tcl${version}/unix#/usr/lib#" \
 		-e "s#${SRC}/tcl${version}#/include#" \
-		-i "$PKG"/lib/tclConfig.sh
+		-i "$PKG"/usr/lib/tclConfig.sh
 
 	tdbcver=tdbc1.1.0
-	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$tdbcver#/lib/$tdbcver#" \
+	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$tdbcver#/usr/lib/$tdbcver#" \
 		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/generic#/include#" \
-		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/library#/lib/tcl${version%.*}#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/usr/library#/usr/lib/tcl${version%.*}#" \
 		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver#/include#" \
-		-i "$PKG"/lib/$tdbcver/tdbcConfig.sh
+		-i "$PKG"/usr/lib/$tdbcver/tdbcConfig.sh
 
 	itclver=itcl4.1.2
-	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$itclver#/lib/$itclver#" \
+	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$itclver#/usr/lib/$itclver#" \
 		-e "s#${SRC}/tcl${version}/pkgs/$itclver/generic#/include#" \
 		-e "s#${SRC}/tcl${version}/pkgs/$itclver#/include#" \
-		-i "$PKG"/lib/$itclver/itclConfig.sh
+		-i "$PKG"/usr/lib/$itclver/itclConfig.sh
 }
