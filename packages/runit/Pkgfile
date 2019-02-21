@@ -14,14 +14,22 @@ build() {
 	sed -e 's,sbin/runit,usr/bin/runit,g' -i src/runit.h
 	sed -i -e 's:^char \*varservice ="/service/";$:char \*varservice ="/var/service/";:' src/sv.c
 	sed -i -e 's:short x\[4\];$:gid_t x[4];:' src/chkshsgr.c
-	echo "${CC:-cc} $CFLAGS --static -static" > src/conf-cc
+
+	if [ "$CROSS" = "yes" ]; then
+		echo "$CC $CFLAGS -static" > src/conf-cc
+		echo "$CC -s -static" > src/conf-ld
+		sed -i "s,strip,$STRIP,g" src/Makefile
+	else
+		echo "cc $CFLAGS -static" > src/conf-cc
+		echo "cc -s -static" > src/conf-ld
+	fi
 
 	make -C src
 
 	install -dm0755 "$PKG"/usr/bin
 
-	for f in $(<package/commands); do
-		install -sm0755 src/$f "$PKG"/usr/bin
+	for f in $(cat package/commands); do
+		install -Dm0755 src/$f "$PKG"/usr/bin
 	done
 
 	install -dm0755 "$PKG"/etc/sv
@@ -39,7 +47,7 @@ build() {
 		ln -sf /etc/sv/$tty "$PKG"/etc/runit/runsvdir/current/$tty
 	done
 
-	${CROSS_COMPILE}cc $CFLAGS "$KEEP"/runit/halt.c -o halt
+	${CROSS_COMPILE}cc $CFLAGS -static "$KEEP"/runit/halt.c -o halt
 
 	install -D -m755 halt "$PKG"/usr/bin/halt
 	ln -sf halt "$PKG"/usr/bin/poweroff
