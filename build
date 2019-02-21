@@ -55,6 +55,21 @@ pkginstalltwo() {
 	done
 }
 
+pkgbspinstall() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$BSPREPO"/$emergepkg
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
+			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
+		fi
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
+			die "Couldn't get binary package of '"$emergepkg"'"
+		fi
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$ROOTFS" || true
+	done
+}
+
 pkghostinstall() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
@@ -366,6 +381,7 @@ build_image() {
 
 COMMAND="$1"
 STAGE="$2"
+PACKAGE="${@:2}"
 
 case "$COMMAND" in
 	stage)
@@ -401,11 +417,21 @@ case "$COMMAND" in
 		setup_environment
 		build_stage
 		;;
-	enter-chroot)
+	emerge)
 		check_for_root
 		setup_architecture
 		setup_environment
-		enter_chroot
+		for myemerge in "$PACKAGE"; do
+			pkginstall "$myemerge"
+		done
+		;;
+	emergebsp)
+		check_for_root
+		setup_architecture
+		setup_environment
+		for myemerge in "$PACKAGE"; do
+			pkgbspinstall "$myemerge"
+		done
 		;;
 	usage|*)
 		msg "In development!"
