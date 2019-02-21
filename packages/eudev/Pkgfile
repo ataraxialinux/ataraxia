@@ -16,17 +16,37 @@ build() {
 		-e 's/GROUP="cdrom"/GROUP="optical"/' \
 		-i rules/*.rules
 
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--with-rootprefix=/usr \
-		--libdir=/usr/lib \
-		--sbindir=/usr/bin \
-		--sysconfdir=/etc \
-		--enable-hwdb \
-		--enable-kmod \
-		--enable-split-usr \
-		--disable-introspection \
-		--disable-manpages
+	if [ "$CROSS" = "yes" ]; then
+		CFLAGS="$CFLAGS -I$ROOTFS/usr/include" \
+		BLKID_CFLAGS="-I$ROOTFS/usr/include/blkid" \
+		BLKID_LIBS="-L$ROOTFS/usr/lib -lblkid" \
+		KMOD_CFLAGS="-I$ROOTFS/usr/include" \
+		KMOD_LIBS="-L$ROOTFS/usr/lib -lkmod" \
+		./configure $BUILDFLAGS \
+			--prefix=/usr \
+			--with-rootprefix=/usr \
+			--libdir=/usr/lib \
+			--sbindir=/usr/bin \
+			--sysconfdir=/etc \
+			--enable-hwdb \
+			--enable-kmod \
+			--enable-split-usr \
+			--disable-introspection \
+			--disable-manpages
+	else
+		./configure $BUILDFLAGS \
+			--prefix=/usr \
+			--with-rootprefix=/usr \
+			--libdir=/usr/lib \
+			--sbindir=/usr/bin \
+			--sysconfdir=/etc \
+			--enable-hwdb \
+			--enable-kmod \
+			--enable-split-usr \
+			--disable-introspection \
+			--disable-manpages
+	fi
+
 	make
 	make DESTDIR="$PKG" sharepkgconfigdir=/usr/lib/pkgconfig install
 }
