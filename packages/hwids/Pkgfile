@@ -1,0 +1,16 @@
+# Description: Hardware identification databases
+# URL:         https://github.com/gentoo/hwids
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=hwids
+version=20180917
+release=1
+source=("https://github.com/gentoo/hwids/archive/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$name-$version
+	for ids in pci.ids usb.ids; do
+		install -Dm644 $ids "$PKG"/usr/share/hwdata/$ids
+	done
+}
