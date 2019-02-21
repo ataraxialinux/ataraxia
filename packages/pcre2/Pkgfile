@@ -5,14 +5,19 @@
 
 name=pcre2
 version=10.32
-release=1
+release=2
 source=("https://ftp.pcre.org/pub/pcre/$name-$version.tar.bz2")
 
 build() {
+	case "$BARCH" in
+		riscv32|riscv64)	JIT="--disable-jit"	;;
+		*)		JIT="--enable-jit"	;;
+	esac
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--enable-jit \
+		$JIT \
 		--enable-pcre2-16 \
 		--enable-pcre2-32 \
 		--enable-pcre2grep-libbz2 \
