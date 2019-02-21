@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/sh
 
-export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
+export PATH="/usr/local/usr/bin:/usr/local/usr/bin:/usr/usr/bin"
 
 dmesg -n 1
 
@@ -19,6 +19,7 @@ mountpoint -q /sys/fs/cgroup || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgrou
 udevd --daemon
 udevadm trigger --action=add --type=subsystems
 udevadm trigger --action=add --type=devices
+udevadm trigger --action=change --type=devices
 udevadm settle
 
 if [[ -f '/etc/font.conf' ]]
@@ -41,15 +42,15 @@ hwclock --hctosys --utc
 
 mount -o remount,ro /
 
-if [ -x /sbin/dmraid -o -x /bin/dmraid ]; then
+if [ -x /usr/bin/dmraid -o -x /usr/bin/dmraid ]; then
 	dmraid -i -ay
 fi
 
-if [ -x /bin/btrfs ]; then
+if [ -x /usr/bin/btrfs ]; then
 	btrfs device scan || exec sh
 fi
 
-if [ -x /sbin/vgchange -o -x /bin/vgchange ]; then
+if [ -x /usr/bin/vgchange -o -x /usr/bin/vgchange ]; then
 	vgchange --sysinit -a y || exec sh
 fi
 
