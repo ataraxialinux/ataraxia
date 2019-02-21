@@ -10,7 +10,13 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/awk-$version
-	make a.out
+
+	if [ "$CROSS" = "yes" ]; then
+		patch -Np1 -i "$KEEP"/one-true-awk/cross.patch
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" a.out
+	else
+		make CFLAGS="$CFLAGS" a.out
+	fi
 
 	install -Dm755 a.out "$PKG"/usr/bin/awk
 }
