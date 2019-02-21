@@ -1,0 +1,32 @@
+# Description: The userspace dev tools (udev) forked by Gentoo
+# URL:         http://www.gentoo.org/proj/en/eudev/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  kmod util-linux hwids
+
+name=eudev
+version=3.2.7
+release=1
+source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -e 's/GROUP="dialout"/GROUP="uucp"/' \
+		-e 's/GROUP="tape"/GROUP="storage"/' \
+		-e 's/GROUP="cdrom"/GROUP="optical"/' \
+		-i rules/*.rules
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-rootprefix=/usr \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--enable-hwdb \
+		--enable-kmod \
+		--enable-split-usr \
+		--disable-introspection \
+		--disable-manpages
+	make
+	make DESTDIR="$PKG" sharepkgconfigdir=/usr/lib/pkgconfig install
+}
