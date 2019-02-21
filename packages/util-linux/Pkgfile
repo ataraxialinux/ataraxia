@@ -4,11 +4,11 @@
 # Depends on:  libz libedit libcap-ng
 
 name=util-linux
+version=2.33.1
 case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-version=$pkgmajor.1
 release=1
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 BOOTSTRAP=yes
@@ -36,6 +36,8 @@ build() {
 		--enable-write \
 		--disable-chfn-chsh \
 		--disable-login \
+		--disable-makeinstall-chown \
+		--disable-makeinstall-setuid \
 		--disable-nologin \
 		--disable-runuser \
 		--disable-setpriv \
@@ -45,8 +47,7 @@ build() {
 
 	cd "$PKG"
 	mv usr/sbin/* usr/bin
-	mv sbin/* usr/bin
-	rm -rf sbin usr/sbin
+	rm -rf bin sbin usr/sbin
 
 	mkdir -p var/lib/hwclock
 }
