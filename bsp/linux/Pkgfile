@@ -26,6 +26,22 @@ nconfig() {
 	done
 }
 
+yconfig2() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=y/" .config
+		grep ^"CONFIG_$1=y" .config || echo "CONFIG_$1=y" >> .config
+		shift 1
+	done
+}
+
+nconfig2() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1/" .config
+		grep ^"# CONFIG_$1 is not set" .config || echo "# CONFIG_$1 is not set" >> .config
+		shift 1
+	done
+}
+
 mconfig() {
 	FU="$@"
 
@@ -116,11 +132,11 @@ generate_config() {
 		mips|mipsel)
 				yconfig CONFIG_MIPS_MALTA CPU_MIPS32_R2 SERIAL_8250 SERIAL_8250_CONSOLE PCI BLK_DEV_SD \
 				ATA ATA_SFF ATA_BMDMA ATA_PIIX NET_VENDOR_AMD PCNET32 POWER_RESET POWER_RESET_SYSCON
-				nconfig CPU_LITTLE_ENDIAN CPU_BIG_ENDIAN
+				nconfig2 CPU_LITTLE_ENDIAN CPU_BIG_ENDIAN
 				;;
 		riscv64|riscv32)
 				yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC PCI RPMSG VSOCKETS NET_9P
-				nconfig ARCH_RV32I ARCH_RV64I
+				nconfig2 ARCH_RV64I ARCH_RV32I
 				;;
 	esac
 
@@ -148,10 +164,10 @@ generate_config() {
 			yconfig POWER8
 			;;
 		riscv64)
-			yconfig ARCH_RV64I
+			yconfig2 ARCH_RV64I
 			;;
 		riscv32)
-			yconfig ARCH_RV32I
+			yconfig2 ARCH_RV32I
 			;;
 	esac
 
