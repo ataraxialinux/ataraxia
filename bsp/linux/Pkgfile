@@ -51,10 +51,10 @@ strconfig() {
 generate_config() {
 	case $BARCH in
 		x86_64)
-			export DEFCONFIG="defconfig"
+			export DEFCONFIG="x86_64_defconfig"
 			;;
 		i686|i586)
-			export DEFCONFIG="defconfig"
+			export DEFCONFIG="i386_defconfig"
 			;;
 		aarch64)
 			export DEFCONFIG="defconfig"
@@ -86,7 +86,7 @@ generate_config() {
 	esac
 
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" $DEFCONFIG
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
 	else
 		make ARCH=$XKARCH $DEFCONFIG
 	fi
@@ -229,13 +229,13 @@ build() {
 	fi
 
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-"
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE}
 	else
 		make ARCH=$XKARCH
 	fi
 
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
 		make ARCH=$XKARCH INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
@@ -248,7 +248,7 @@ build() {
 	case $BARCH in
 		aarch64|armv7l|armv5tel)
 			if [ "$CROSS" = "yes" ]; then
-				make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
 				make ARCH=$XKARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			fi
