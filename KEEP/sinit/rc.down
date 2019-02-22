@@ -2,13 +2,6 @@
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
 
-if [ -e /run/runit/reboot ]; then
-	chmod 100 /run/runit/reboot
-fi
-
-sv force-stop /var/service/*
-sv exit /var/service/*
-
 stty onlcr 0>&1
 
 hwclock --systohc --utc
@@ -38,3 +31,12 @@ umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
 mount -o remount,ro /
 
 sync
+
+case "$1" in
+	reboot)
+		/usr/bin/halt -r
+			;;
+	poweroff)
+		/usr/bin/halt -p
+		;;
+esac
