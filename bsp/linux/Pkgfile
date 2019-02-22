@@ -1,7 +1,7 @@
 # Description: The Linux kernel
 # URL:         https://www.kernel.org/
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  kmod bc libelf pigz libressl sbase
+# Depends on:  kmod bc libelf xz libressl sbase
 
 name=linux
 version=4.20.11
@@ -11,26 +11,26 @@ BOOTSTRAP=yes
 NO_RUN_STRIP=1
 
 yconfig() {
-	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=y/" .config
-		grep ^"CONFIG_$1=y" .config || echo "CONFIG_$1=y" >> .config
-		shift 1
-	done
-}
+	FU="$@"
 
-mconfig() {
-	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=m/" .config
-		grep ^"CONFIG_$1=m" .config || echo "CONFIG_$1=m" >> .config
-		shift 1
+	for internalfu in $FU; do
+		./scripts/config --enable internalfu
 	done
 }
 
 nconfig() {
-	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/# CONFIG_$1  is not set/" .config
-		grep ^"# CONFIG_$1  is not set" .config || echo "# CONFIG_$1  is not set" >> .config
-		shift 1
+	FU="$@"
+
+	for internalfu in $FU; do
+		./scripts/config --disable internalfu
+	done
+}
+
+mconfig() {
+	FU="$@"
+
+	for internalfu in $FU; do
+		./scripts/config --module internalfu
 	done
 }
 
@@ -48,54 +48,13 @@ strconfig() {
 	./scripts/config --set-str "$FUONE" "$FUTWO"
 }
 
-build() {
+generate_config() {
 	case $BARCH in
 		x86_64)
-			export XKARCH="x86_64"
-			export IMAGE="bzImage"
-			export IMAGELOC="arch/x86/boot/bzImage"
+			export DEFCONFIG="defconfig"
 			;;
 		i686|i586)
-			export XKARCH="i386"
-			export IMAGE="bzImage"
-			export IMAGELOC="arch/x86/boot/bzImage"
-			;;
-		aarch64)
-			export XKARCH="arm64"
-			export IMAGE="Image Image.gz dtbs"
-			export IMAGELOC="arch/arm64/boot/Image"
-			;;
-		armv7l|armv5tel)
-			export XKARCH="arm"
-			export IMAGE="zImage dtbs"
-			export IMAGELOC="arch/arm/boot/zImage"
-			;;
-		mips|mipsel)
-			export XKARCH="mips"
-			export IMAGE="vmlinux"
-			export IMAGELOC="vmlinux"
-			;;
-		ppc64le|ppc64|ppc)
-			export XKARCH="powerpc"
-			export IMAGE="vmlinux"
-			export IMAGELOC="vmlinux"
-			;;
-		riscv64|riscv32)
-			export XKARCH="riscv"
-			export IMAGE="vmlinux"
-			export IMAGELOC="vmlinux"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by januslinux"
-			exit 1
-	esac
-
-	case $BARCH in
-		x86_64)
-			export DEFCONFIG="x86_64_defconfig"
-			;;
-		i686|i586)
-			export DEFCONFIG="i386_defconfig"
+			export DEFCONFIG="defconfig"
 			;;
 		aarch64)
 			export DEFCONFIG="defconfig"
@@ -106,7 +65,7 @@ build() {
 		armv5tel)
 			export DEFCONFIG="multi_v5_defconfig"
 			;;
-		mips|mipsel)
+		mips|mipsel)generate_config
 			export DEFCONFIG="defconfig"
 			;;
 		ppc64le)
@@ -126,27 +85,20 @@ build() {
 			exit 1
 	esac
 
-	cd "$SRC"/$name-$version
-	unset LDFLAGS
-	make mrproper
-
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
+		make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" $DEFCONFIG
 	else
 		make ARCH=$XKARCH $DEFCONFIG
 	fi
 
 	strconfig DEFAULT_HOSTNAME miyuki
 
-	nconfig KERNEL_GZIP KERNEL_BZIP2 LZMA KERNEL_XZ KERNEL_LZO KERNEL_LZ4
-
 	case $BARCH in
 		x86_64|i686|i586)
-					yconfig UNWINDER_FRAME_POINTER PCI ATA ATA_SFF ATA_BMDMA ATA_PIIX \
+					yconfig UNWINDER_FRAME_POINTER PCI ATA ATA_SFF ATA_BMDMA ATA_PIIX PATA_PLATFORM PATA_LEGACY PATA_ACPI \
 						SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
-						IA32_EMULATION COMPAT_32BIT_TIME \
 						EFI EFI_STUB FB_EFI FRAMEBUFFER_CONSOLE EFI_VARS EFIVAR_FS \
-						KVM_INTEL KVM_AMD CRYPTO_AES_X86_64 FB_HYPERV VBOXGUEST XEN XEN_PV XEN_PV_SMP \
+						KVM_INTEL KVM_AMD FB_HYPERV VBOXGUEST XEN XEN_PV XEN_PV_SMP \
 						XEN_DOM0 XEN_PVHVM XEN_PVHVM_SMP XEN_512GB XEN_SAVE_RESTORE XEN_PVH XEN_BALLOON \
 						XEN_SELFBALLOONING XEN_BALLOON_MEMORY_HOTPLUG XEN_SCRUB_PAGES_DEFAULT \
 						XEN_DEV_EVTCHN XEN_BACKEND XENFS XEN_COMPAT_XENFS XEN_SYS_HYPERVISOR \
@@ -154,9 +106,12 @@ build() {
 						XEN_GRANT_DMA_ALLOC SWIOTLB_XEN XEN_TMEM XEN_PCIDEV_BACKEND \
 						XEN_PVCALLS_FRONTEND XEN_PVCALLS_BACKEND XEN_SCSI_BACKEND XEN_PRIVCMD \
 						XEN_ACPI_PROCESSOR XEN_MCE_LOG XEN_HAVE_PVMMU XEN_EFI XEN_AUTO_XLATE \
-						XEN_ACPI XEN_SYMS XEN_HAVE_VPMU HYPERV HYPERV_TSCPAGE HYPERV_UTILS HYPERV_BALLOON
-					nconfig XEN_DEBUG_FS
+						XEN_ACPI XEN_SYMS XEN_HAVE_VPMU HYPERV HYPERV_TSCPAGE HYPERV_UTILS HYPERV_BALLOON \
+						NUMA AMD_NUMA NODES_SPAN_OTHER_NODES \
+						NEED_MULTIPLE_NODES USE_PERCPU_NUMA_NODE_ID ACPI_NUMA
+					nconfig NUMA_EMU XEN_DEBUG_FS
 					varconfig XEN_BALLOON_MEMORY_HOTPLUG_LIMIT 512
+					varconfig NODES_SHIFT 6
 					;;
 		mips|mipsel)
 					yconfig CONFIG_MIPS_MALTA CPU_MIPS32_R2 SERIAL_8250 SERIAL_8250_CONSOLE PCI BLK_DEV_SD \
@@ -164,14 +119,14 @@ build() {
 					nconfig CPU_LITTLE_ENDIAN CPU_BIG_ENDIAN
 					;;
 		riscv64|riscv32)
-					yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC PCI  RPMSG VSOCKETS NET_9P
+					yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC PCI RPMSG VSOCKETS NET_9P
 					nconfig ARCH_RV32I ARCH_RV64I
 					;;
 	esac
 
 	case $BARCH in
 		x86_64)
-				yconfig 64BIT IA32_EMULATION X86_X32
+				yconfig 64BIT IA32_EMULATION X86_X32 X86_64_ACPI_NUMA COMPAT_32BIT_TIME CRYPTO_AES_X86_64
 				;;
 		i686)
 				yconfig M686
@@ -185,6 +140,10 @@ build() {
 		mipsel)
 				yconfig CPU_LITTLE_ENDIAN
 				;;
+		ppc64|ppc)
+				yconfig FIREWIRE FIREWIRE_NET FIREWIRE_OHCI FIREWIRE_SBP2
+				nconfig SND_FIREWIRE FIREWIRE_NOSY
+				;;
 		ppc64le)
 				yconfig POWER8
 				;;
@@ -196,16 +155,89 @@ build() {
 				;;
 	esac
 
-	if [ "$CROSS" = "yes" ]; then
-		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} oldconfig
+	nconfig KERNEL_GZIP KERNEL_BZIP2 KERNEL_LZMA KERNEL_XZ KERNEL_LZO KERNEL_LZ4 CC_OPTIMIZE_FOR_PERFORMANCE HZ_100 HZ_250 HZ_300 HZ_1000 \
+			MODULE_COMPRESS_GZIP MODULE_COMPRESS_XZ PREEMPT_NONE PREEMPT_VOLUNTARY PREEMPT
+
+	yconfig FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER LOGO_LINUX_CLUT224 KERNEL_XZ \
+			MODULES MODULE_FORCE_LOAD MODULE_UNLOAD MODULE_FORCE_UNLOAD MODULE_COMPRESS_XZ MODULE_SRCVERSION_ALL \
+			PREEMPT NO_HZ NO_HZ_FULL HZ_300 \
+			BLOCK PCI PRINTK TTY SLOB EARLY_PRINTK BINFMT_ELF BINFMT_SCRIPT HIGH_RES_TIMERS BLK_DEV BLK_DEV_INITRD BLK_DEV_LOOP \
+			HAVE_KERNEL_GZIP HAVE_KERNEL_BZIP2 HAVE_KERNEL_LZMA HAVE_KERNEL_XZ HAVE_KERNEL_LZO HAVE_KERNEL_LZ4 \
+			RD_GZIP RD_BZIP2 RD_LZMA RD_XZ RD_LZO RD_LZ4 \
+			CC_OPTIMIZE_FOR_SIZE \
+			EXT4_FS EXT4_USE_FOR_EXT2 VFAT_FS FAT_DEFAULT_UTF8 MISC_FILESYSTEMS FILE_LOCKING \
+			SQUASHFS_FILE_DIRECT SQUASHFS_DECOMP_MULTI SQUASHFS_XATTR SQUASHFS_ZLIB SQUASHFS_LZ4 SQUASHFS_LZO SQUASHFS_XZ SQUASHFS_ZSTD \
+			DEVTMPFS DEVTMPFS_MOUNT TMPFS TMPFS_POSIX_ACL \
+			NET PACKET UNIX INET IPV6 NETDEVICES NET_CORE NETCONSOLE ETHERNET NETLINK_DIAG NETWORK_FILESYSTEMS \
+			KVM KVM_GUEST
+
+	nconfig EMBEDDED SQUASHFS_FILE_CACHE SQUASHFS_DECOMP_SINGLE SQUASHFS_DECOMP_MULTI_PERCPU SQUASHFS_4K_DEVBLK_SIZE SQUASHFS_EMBEDDED \
+			HWMON LBDAF BLK_DEV_BSG
+
+	varconfig SQUASHFS_FRAGMENT_CACHE_SIZE 3
+	varconfig HZ 300
+
+	# Virtio
+	yconfig DRM_VIRTIO_GPU NET_9P_VIRTIO RPMSG_VIRTIO VIRTIO_BALLOON VIRTIO_BLK VIRTIO_CONSOLE VIRTIO_INPUT \
+			VIRTIO_MENU VIRTIO_MMIO VIRTIO_MMIO_CMDLINE_DEVICES VIRTIO_NET VIRTIO_PCI VIRTIO_PCI_LEGACY VIRTIO_VSOCKETS \
+			9P_FS 9P_FSCACHE 9P_FS_POSIX_ACL 9P_FS_SECURITY
+}
+
+build() {
+	case $BARCH in
+		x86_64)
+			export XKARCH="x86_64"
+			export IMAGELOC="arch/x86/boot/bzImage"
+			;;
+		i686|i586)
+			export XKARCH="i386"
+			export IMAGELOC="arch/x86/boot/bzImage"
+			;;
+		aarch64)
+			export XKARCH="arm64"
+			export IMAGELOC="arch/arm64/boot/Image"
+			;;
+		armv7l|armv5tel)
+			export XKARCH="arm"
+			export IMAGELOC="arch/arm/boot/zImage"
+			;;
+		mips|mipsel)
+			export XKARCH="mips"
+			export IMAGELOC="vmlinux"
+			;;
+		ppc64le|ppc64|ppc)
+			export XKARCH="powerpc"
+			export IMAGELOC="vmlinux"
+			;;
+		riscv64|riscv32)
+			export XKARCH="riscv"
+			export IMAGELOC="vmlinux"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by januslinux"
+			exit 1
+	esac
+
+	cd "$SRC"/$name-$version
+	unset LDFLAGS
+	make mrproper
+
+	if [ -f /boot/config-linux ]; then
+		cp /boot/config-linux .config
 	else
-		yes '' | make ARCH=$XKARCH oldconfig
+		generate_config
 	fi
 
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $IMAGE
+		make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-"
 	else
-		make ARCH=$XKARCH $IMAGE
+		make ARCH=$XKARCH
+	fi
+
+	if [ "$CROSS" = "yes" ]; then
+		make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_MOD_PATH="$PKG"/usr modules_install
+	else
+		make ARCH=$XKARCH INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
 	mkdir -p "$PKG"/boot
@@ -216,7 +248,7 @@ build() {
 	case $BARCH in
 		aarch64|armv7l|armv5tel)
 			if [ "$CROSS" = "yes" ]; then
-				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$XKARCH CROSS_COMPILE="$XTARGET-" INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
 				make ARCH=$XKARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			fi
