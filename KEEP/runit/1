@@ -16,6 +16,12 @@ mountpoint -q /dev/shm || mount -o mode=1777,nosuid,nodev -n -t tmpfs shm /dev/s
 mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
 mountpoint -q /sys/fs/cgroup || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
 
+for f in $(kmod static-nodes 2>/dev/null|awk '/Module/ {print $2}'); do
+	modprobe -bq $f 2>/dev/null
+done
+
+modules-load -v | tr '\n' ' ' | sed 's:insmod [^ ]*/::g; s:\.ko\(\.xz\)\? ::g'
+
 udevd --daemon
 udevadm trigger --action=add --type=subsystems
 udevadm trigger --action=add --type=devices
@@ -93,7 +99,15 @@ if [[ -f '/etc/hostname' ]]
 then
 	hostname -F /etc/hostname
 else
-	hostname localhost
+	hostname miyuki
+fi
+
+if [[ -f '/etc/timezone' ]]
+then
+	MYTZ="$(cat /etc/timezone)"
+	ln -sf /usr/share/zoneinfo/$MYTZ /etc/localtime
+else
+	ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 fi
 
 sysctl -q --system

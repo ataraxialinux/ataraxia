@@ -5,7 +5,7 @@
 
 name=kmod
 version=26
-release=1
+release=2
 source=("https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -15,12 +15,8 @@ build() {
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--with-xz \
-		--with-zlib
-
-	if [ "$CROSS" = "yes" ]; then
-		sed -i "s,/usr/include,$ROOTFS/usr/include,g" Makefile
-	fi
-
+		--with-zlib \
+		--disable-manpages
 	make
 	make DESTDIR="$PKG" install
 
@@ -33,5 +29,8 @@ build() {
 	install -Dm644 "$KEEP"/kmod/depmod-search.conf "$PKG"/usr/lib/depmod.d/search.conf
 
 	# compat
+	mkdir -p "$PKG"/etc/depmod.d/
 	ln -sf /usr/lib/depmod.d/search.conf "$PKG"/etc/depmod.d/search.conf
+
+	install -Dm755 "$KEEP"/kmod/modules-load "$PKG"/usr/bin/modules-load
 }
