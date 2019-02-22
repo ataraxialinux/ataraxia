@@ -1,0 +1,31 @@
+# Description: A powerful, 8-bit clean, text editor. Supports ISO-8859-15 and ASCII.
+# URL:         http://www.gnu.org/software/moe
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  ncurses
+
+name=moe
+version=1.9
+release=1
+source=("http://ftpmirror.gnu.org/gnu/$name/$name-$version.tar.lz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	if [ "$CROSS" = "yes" ]; then
+		./configure \
+			CC="$CC" CXX="$CXX" \
+			AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP"  \
+			CXXFLAGS="$CXXFLAGS" \
+			--prefix=/usr \
+			--sysconfdir=/etc
+	else
+		./configure \
+			CXXFLAGS="$CXXFLAGS" \
+			--prefix=/usr \
+			--sysconfdir=/etc
+	fi
+
+	make
+	make DESTDIR="$PKG" install
+}
