@@ -2,35 +2,35 @@
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
 
-stty onlcr 0>&1
+/usr/bin/stty onlcr 0>&1
 
-hwclock --systohc --utc
+/usr/bin/hwclock --systohc --utc
 
 if egrep -q -m 1 '(usr|grp)quota' /etc/fstab
 then
 	if type quotaoff > /dev/null
 	then
-		quotaoff -va
+		/usr/bin/quotaoff -va
 	fi
 fi
 
-( umask 077; bytes=$(cat /proc/sys/kernel/random/poolsize) || bytes=512; dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=$bytes >/dev/null 2>&1 )
+( umask 077; bytes=$(/usr/bin/cat /proc/sys/kernel/random/poolsize) || bytes=512; /usr/bin/dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=$bytes >/dev/null 2>&1 )
 
-halt -w
+/usr/bin/halt -w
 
-udevadm control --exit
+/usr/bin/udevadm control --exit
 
-pkill --inverse -s0,1 -TERM
-sleep 1
-pkill --inverse -s0,1 -KILL
+/usr/bin/pkill --inverse -s0,1 -TERM
+/usr/bin/sleep 1
+/usr/bin/pkill --inverse -s0,1 -KILL
 
-swapoff -a
+/usr/bin/swapoff -a
 
-umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+/usr/bin/umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
 
-mount -o remount,ro /
+/usr/bin/mount -o remount,ro /
 
-sync
+/usr/bin/sync
 
 case "$1" in
 	reboot)
