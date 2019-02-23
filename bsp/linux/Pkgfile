@@ -56,7 +56,11 @@ generate_config() {
 			exit 1
 	esac
 
-	cp -a arch/$SUBKARCH/configs/$DEFCONFIG .config
+	if [ "$CROSS" = "yes" ]; then
+		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
+	else
+		yes '' | make ARCH=$XKARCH $DEFCONFIG
+	fi
 
 	case $BARCH in
 		x86_64)
