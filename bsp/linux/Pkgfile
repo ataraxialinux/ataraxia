@@ -4,7 +4,7 @@
 # Depends on:  kmod bc libelf xz libressl sbase
 
 name=linux
-version=4.20.11
+version=4.20.12
 release=1
 source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$name-$version.tar.xz")
 BOOTSTRAP=yes
@@ -56,21 +56,17 @@ generate_config() {
 			exit 1
 	esac
 
-	if [ "$CROSS" = "yes" ]; then
-		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
-	else
-		yes '' | make ARCH=$XKARCH $DEFCONFIG
-	fi
+	cp arch/$SUBKARCH/configs/$DEFCONFIG my.config
 
 	case $BARCH in
 		x86_64)
-			cat arch/$SUBKARCH/configs/xen.config >> .config
+			cat arch/$SUBKARCH/configs/xen.config >> my.config
 			;;
 	esac
 
 	case $BARCH in
 		x86_64|i686|i586)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_PCI=y
 CONFIG_BLK_DEV_SD=y
 CONFIG_ATA=y
@@ -153,7 +149,7 @@ CONFIG_INTEL_ATOMISP2_PM=y
 EOF
 			;;
 		mips|mipsel)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_MIPS_MALTA=y
 CONFIG_CPU_MIPS32_R2=y
 CONFIG_SERIAL_8250=y
@@ -171,7 +167,7 @@ CONFIG_POWER_RESET_SYSCON=y
 EOF
 		;;
 		riscv64|riscv32)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_RISCV=y
 CONFIG_RISCV_ISA_C=y
 CONFIG_RISCV_ISA_A=y
@@ -183,7 +179,7 @@ EOF
 
 	case $BARCH in
 		x86_64)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_64BIT=y
 CONFIG_IA32_EMULATION=y
 CONFIG_X86_X32=y
@@ -241,17 +237,17 @@ CONFIG_NODES_SHIFT=6
 EOF
 			;;
 		i686)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_M686=y
 EOF
 			;;
 		i586)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_M686=y
 EOF
 			;;
 		aarch64)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_EFI=y
 CONFIG_EFI_STUB=y
 CONFIG_FB_EFI=y
@@ -260,24 +256,24 @@ CONFIG_EFI_VARS=y
 EOF
 			;;
 		mips)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_CPU_BIG_ENDIAN=y
 # CONFIG_CPU_LITTLE_ENDIAN is not set
 EOF
 			;;
 		mipsel)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 # CONFIG_CPU_BIG_ENDIAN is not set
 CONFIG_CPU_LITTLE_ENDIAN=y
 EOF
 			;;
 		ppc64le)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_POWER8_CPU=y
 EOF
 			;;
 		ppc64|ppc)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_FIREWIRE=y
 CONFIG_FIREWIRE_NET=y
 CONFIG_FIREWIRE_OHCI=y
@@ -287,26 +283,36 @@ CONFIG_FIREWIRE_SBP2=y
 EOF
 			;;
 		riscv64)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 # CONFIG_ARCH_RV32I is not set
 CONFIG_ARCH_RV64I=y
 EOF
 			;;
 		riscv32)
-			cat >> .config << EOF
+			cat >> my.config << EOF
 CONFIG_ARCH_RV32I=y
 # CONFIG_ARCH_RV64I is not set
 EOF
 			;;
 	esac
 
-	cat "$KEEP"/linux/mini.config >> .config
+	cat "$KEEP"/linux/mini.config >> my.config
 
 	if [ "$CROSS" = "yes" ]; then
-		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} oldconfig
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} KCONFIG_ALLCONFIG=my.config $DEFCONFIG
 	else
-		yes '' | make ARCH=$XKARCH oldconfig
+		make ARCH=$XKARCH KCONFIG_ALLCONFIG=my.config $DEFCONFIG
 	fi
+
+	cp .config .defconfig
+
+	if [ "$CROSS" = "yes" ]; then
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} KCONFIG_ALLCONFIG=my.config allnoconfig
+	else
+		make ARCH=$XKARCH KCONFIG_ALLCONFIG=my.config allnoconfig
+	fi
+
+	cp .config .allnoconfig
 }
 
 build() {
@@ -349,7 +355,7 @@ build() {
 	make mrproper
 
 	if [ -f /boot/config-linux ]; then
-		cp /boot/config-linux .config
+		cp /boot/config-linux my.config
 	else
 		generate_config
 	fi
@@ -369,7 +375,7 @@ build() {
 	mkdir -p "$PKG"/boot
 
 	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-linux
-	cp .config "$PKG"/boot/config-linux
+	cp my.config "$PKG"/boot/config-linux
 
 	case $BARCH in
 		aarch64|armv7l|armv5tel)
