@@ -1,0 +1,48 @@
+# Description: RISC-V Proxy Kernel
+# URL:         https://github.com/riscv/riscv-pk
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=bbl
+version=706cc77c369fd3e4734b5a6aa813d421347f1814
+release=1
+source=("https://github.com/riscv/riscv-pk/archive/$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	export CFLAGS="-fno-stack-protector"
+	export CXXFLAGS="$CFLAGS"
+
+	case $BARCH in
+		riscv64)
+			export BBLOPTS="--with-arch=rv64imac --with-abi=lp64"
+			;;
+		riscv32)
+			export BBLOPTS="--with-arch=rv32imac --with-abi=ilp32"
+			;;
+		*)
+			echo "RISC V supported only"
+			exit 1
+	esac
+
+	if [[ ! -f "$ROOTFS"/boot/vmlinuz-linux ]]; then
+		echo "Compile kernel first!"
+		exit 1
+	fi
+
+	cd "$SRC"/riscv-pk-$version
+
+	mkdir build
+	cd build
+
+	../configure $BUILDFLAGS $BBLOPTS \
+		--prefix= \
+		--with-payload="$ROOTFS/boot/vmlinuz-linux" \
+		--enable-logo \
+		--with-logo="$KEEP/bbl/logo.txt"
+	make
+
+	mkdir -p "$PKG"/boot
+	cp bbl "$PKG"/boot/bbl-linux
+}
