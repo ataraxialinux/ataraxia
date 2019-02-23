@@ -1,0 +1,45 @@
+name=binutils
+version=2.32
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	case "$BARCH" in
+		mips|mipsel)	HASHCONFIG="--enable-default-hash-style=sysv"	;;
+		*)		HASHCONFIG="--enable-default-hash-style=gnu"	;;
+	esac
+
+	if [ "$BARCH" = "x86_64" ]; then
+		export ARCHCONFIG="--enable-targets=x86_64-pep"
+	fi
+
+	mkdir build
+	cd build
+
+	../configure \
+		--prefix="$TOOLS" \
+		--target=$XTARGET $ARCHCONFIG $HASHCONFIG \
+		--with-bugurl="https://github.com/JanusLinux/janus/issues" \
+		--with-sysroot="$ROOTFS" \
+		--with-lib-path="$ROOTFS/usr/lib" \
+		--with-pic \
+		--with-system-zlib \
+		--enable-64-bit-bfd \
+		--enable-deterministic-archives \
+		--enable-gold \
+		--enable-ld=default \
+		--enable-lto \
+		--enable-plugins \
+		--enable-relro \
+		--enable-threads \
+		--disable-multilib \
+		--disable-nls \
+		--disable-werror
+	make MAKEINFO="true" configure-host
+	make MAKEINFO="true"
+	make MAKEINFO="true" install
+
+	mkdir -p "$PKG"/var/lib/db
+	touch "$PKG"/var/lib/db/installed_${name}
+}
