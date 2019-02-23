@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 export PATH="/usr/local/usr/bin:/usr/local/usr/bin:/usr/usr/bin"
 
@@ -127,4 +127,9 @@ dmesg >/var/log/dmesg.log
 : > /run/utmp
 
 echo
-/usr/bin/sh -c '/usr/bin/respawn /usr/bin/agetty 38400 tty1 linux' &>/dev/null & || exec /usr/bin/mksh
+
+exec agetty 38400 tty1 linux
+exec agetty 38400 tty2 linux
+exec agetty 38400 tty3 linux
+exec agetty 38400 tty4 linux
+exec agetty -L always ttyS0 115200 vt100
