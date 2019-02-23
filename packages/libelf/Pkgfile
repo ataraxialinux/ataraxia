@@ -1,25 +1,23 @@
-# Description: A ELF object file access library
-# URL:         http://www.mr511.de/software
+# Description: Libraries to handle ELF object files and DWARF debugging information
+# URL: https://github.com/sabotage-linux/libelf-compat
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
 name=libelf
-version=0.8.13
-release=2
-source=("http://www.mr511.de/software/$name-$version.tar.gz")
+version=0.156c001
+release=1
+source=("http://ftp.barfooze.de/pub/sabotage/tarballs/libelf-compat-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
-	cd "$SRC"/$name-$version
-	patch -Np1 -i "$KEEP"/libelf/libelf-0.8.13-build.patch
+	cd "$SRC"/libelf-compat-$version
+	echo "CFLAGS += $CFLAGS -fPIC" > config.mak
+	sed -i 's@HEADERS = src/libelf.h@HEADERS = src/libelf.h src/gelf.h@' Makefile
 
-	export mr_cv_target_elf=yes
+	if [ "$CROSS" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC"
+	else
+		make
+	fi
 
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--enable-shared \
-		--disable-debug
-	make
-	make -j1 install install-compat \
-		prefix="$PKG"/usr \
-		libdir="$PKG"/usr/lib
+	make prefix=/usr DESTDIR="$PKG" install
 }
