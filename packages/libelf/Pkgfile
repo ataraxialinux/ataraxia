@@ -1,23 +1,45 @@
-# Description: Libraries to handle ELF object files and DWARF debugging information
-# URL: https://github.com/sabotage-linux/libelf-compat
+# Description: Utilities to handle ELF object files and DWARF debugging information
+# URL:         https://sourceware.org/elfutils/
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libz bzip2 xz libuargp
 
 name=libelf
-version=0.156c001
+version=0.176
 release=1
-source=("http://ftp.barfooze.de/pub/sabotage/tarballs/libelf-compat-$version.tar.xz")
+source=("https://sourceware.org/elfutils/ftp/$version/elfutils-$version.tar.bz2")
 BOOTSTRAP=yes
 
 build() {
-	cd "$SRC"/libelf-compat-$version
-	echo "CFLAGS += $CFLAGS -fPIC" > config.mak
-	sed -i 's@HEADERS = src/libelf.h@HEADERS = src/libelf.h src/gelf.h@' Makefile
+	cd "$SRC"/elfutils-$version
+	patch -Np1 -i "$KEEP"/libelf/0001-dso-link-change.patch
+	patch -Np1 -i "$KEEP"/libelf/0002-Fix-elf_cvt_gunhash-if-dest-and-src-are-same.patch
+	patch -Np1 -i "$KEEP"/libelf/0003-fixheadercheck.patch
+	patch -Np1 -i "$KEEP"/libelf/0004-Disable-the-test-to-convert-euc-jp.patch
+	patch -Np1 -i "$KEEP"/libelf/0006-Fix-build-on-aarch64-musl.patch
+	patch -Np1 -i "$KEEP"/libelf/0007-Fix-control-path-where-we-have-str-as-uninitialized-.patch
+	patch -Np1 -i "$KEEP"/libelf/0001-libasm-may-link-with-libbz2-if-found.patch
+	patch -Np1 -i "$KEEP"/libelf/0001-libelf-elf_end.c-check-data_list.data.d.d_buf-before.patch
+	patch -Np1 -i "$KEEP"/libelf/hppa_backend.diff
+	patch -Np1 -i "$KEEP"/libelf/arm_backend.diff
+	patch -Np1 -i "$KEEP"/libelf/mips_backend.diff
+	patch -Np1 -i "$KEEP"/libelf/mips_readelf_w.patch
+	patch -Np1 -i "$KEEP"/libelf/kfreebsd_path.patch
+	patch -Np1 -i "$KEEP"/libelf/0001-Ignore-differences-between-mips-machine-identifiers.patch
+	patch -Np1 -i "$KEEP"/libelf/0002-Add-support-for-mips64-abis-in-mips_retval.c.patch
+	patch -Np1 -i "$KEEP"/libelf/0003-Add-mips-n64-relocation-format-hack.patch
+	patch -Np1 -i "$KEEP"/libelf/hurd_path.patch
+	patch -Np1 -i "$KEEP"/libelf/ignore_strmerge.diff
+	patch -Np1 -i "$KEEP"/libelf/disable_werror.patch
+	patch -Np1 -i "$KEEP"/libelf/0008-build-Provide-alternatives-for-glibc-assumptions-hel.patch
 
-	if [ "$CROSS" = "yes" ]; then
-		make HOSTCC="$HOSTCC" CC="$CC"
-	else
-		make
-	fi
+	autoreconf -fiv
 
-	make prefix=/usr DESTDIR="$PKG" install
+	./configure $TOOLFLAGS \
+		--prefix=/usr \
+		--enable-deterministic-archives
+	make
+	make -C libelf DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/pkgconfig
+	cp config/libelf.pc "$PKG"/usr/lib/pkgconfig
 }
