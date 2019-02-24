@@ -56,7 +56,11 @@ generate_config() {
 			exit 1
 	esac
 
-	cp arch/$SUBKARCH/configs/$DEFCONFIG my.config
+	if [ "$CROSS" = "yes" ]; then
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
+	else
+		make ARCH=$XKARCH $DEFCONFIG
+	fi
 
 	case $BARCH in
 		x86_64)
@@ -299,20 +303,10 @@ EOF
 	cat "$KEEP"/linux/mini.config >> my.config
 
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} KCONFIG_ALLCONFIG=my.config $DEFCONFIG
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} olddefconfig
 	else
-		make ARCH=$XKARCH KCONFIG_ALLCONFIG=my.config $DEFCONFIG
+		make ARCH=$XKARCH KCONFIG_ALLCONFIG=my.config olddefconfig
 	fi
-
-	cp .config .defconfig
-
-	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} KCONFIG_ALLCONFIG=my.config allnoconfig
-	else
-		make ARCH=$XKARCH KCONFIG_ALLCONFIG=my.config allnoconfig
-	fi
-
-	cp .config .allnoconfig
 }
 
 build() {
