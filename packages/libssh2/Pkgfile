@@ -1,0 +1,21 @@
+# Description: A library implementing the SSH2 protocol as defined by Internet Drafts
+# URL:         https://www.libssh2.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib libressl
+
+name=libssh2
+version=1.8.0
+release=1
+source=("https://www.libssh2.org/download/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	cp "$KEEP"/config.guess config.guess
+	cp "$KEEP"/config.sub config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
