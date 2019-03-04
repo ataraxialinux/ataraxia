@@ -1,0 +1,20 @@
+# Description: Extended attribute support library for ACL support
+# URL:         http://savannah.nongnu.org/projects/attr
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=attr
+version=2.4.48
+release=1
+source=("https://download.savannah.gnu.org/releases/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

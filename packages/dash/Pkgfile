@@ -1,0 +1,18 @@
+# Description: POSIX compliant shell that aims to be as small as possible
+# URL:         http://gondor.apana.org.au/~herbert/dash/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libedit
+
+name=dash
+version=0.5.10.2
+release=1
+source=("http://gondor.apana.org.au/~herbert/$name/files/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-libedit
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,179 @@
+# Description: The GNU Compiler Collection
+# URL:         http://gcc.gnu.org
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  mpc binutils
+
+name=gcc
+version=8.3.0
+islver=0.20
+release=4
+source=("http://ftp.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz"
+	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
+BOOTSTRAP=yes
+NO_RUN_STRIP=1
+NO_EMPTY_DIRS=1
+
+build() {
+	case $BARCH in
+		x86_64)
+			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			;;
+		x86_64-amd)
+			export GCCOPTS="--with-tune=znver1 --with-arch=bdver1"
+			;;
+		x86_64-intel)
+			export GCCOPTS="--with-tune=haswell --with-arch=westmere"
+			;;
+		i686)
+			export GCCOPTS="--with-arch=i686 --with-tune=generic"
+			;;
+		i586)
+			export GCCOPTS="--with-arch=i586 --with-tune=generic"
+			;;
+		aarch64)
+			export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+			;;
+		armv7l)
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+			;;
+		armv7l-neon)
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon-vfpv4"
+			;;
+		armv5tel)
+			export GCCOPTS="--with-arch=armv5te --with-float=soft"
+			;;
+		mips)
+			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+			;;
+		mipsel)
+			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+			;;
+		ppc64le)
+			export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpcle-linux"
+			;;
+		ppc64)
+			export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpc-linux"
+			;;
+		ppc)
+			export GCCOPTS="--with-long-double=64 --enable-decimal-float=no --enable-secureplt"
+			;;
+		riscv64)
+			export GCCOPTS="--with-arch=rv64imafdc"
+			;;
+		riscv32)
+			export GCCOPTS="--with-arch=rv32imafdc"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by januslinux"
+			exit 1
+	esac
+
+	case "$BARCH" in
+		mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
+		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
+	esac
+
+	export CFLAGS_FOR_BUILD=" "
+	export FFLAGS_FOR_BUILD=" "
+	export CXXFLAGS_FOR_BUILD=" "
+	export LDFLAGS_FOR_BUILD=" "
+	export CFLAGS_FOR_TARGET=" "
+	export FFLAGS_FOR_TARGET=" "
+	export CXXFLAGS_FOR_TARGET=" "
+	export LDFLAGS_FOR_TARGET=" "
+
+	cd "$SRC"/gcc-$version
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+
+	patch -Np1 -i "$KEEP"/gcc/gcc-4.9-musl-fortify.patch
+	patch -Np1 -i "$KEEP"/gcc/gcc-6.1-musl-libssp.patch
+	patch -Np1 -i "$KEEP"/gcc/libgcc-always-build-gcceh.a.patch
+	patch -Np1 -i "$KEEP"/gcc/cpu_indicator.patch
+	patch -Np1 -i "$KEEP"/gcc/0002-posix_memalign.patch
+	patch -Np1 -i "$KEEP"/gcc/0003-libatomic-test-fix.patch
+	patch -Np1 -i "$KEEP"/gcc/0004-libgomp-test-fix.patch
+	patch -Np1 -i "$KEEP"/gcc/0005-libitm-test-fix.patch
+	patch -Np1 -i "$KEEP"/gcc/0006-libvtv-test-fix.patch
+	patch -Np1 -i "$KEEP"/gcc/0007-j2.patch
+	patch -Np1 -i "$KEEP"/gcc/0008-s390x-muslldso.patch
+	patch -Np1 -i "$KEEP"/gcc/0009-microblaze-pr65649.patch
+	patch -Np1 -i "$KEEP"/gcc/0010-ldbl128-config.patch
+	patch -Np1 -i "$KEEP"/gcc/0011-m68k.patch
+	patch -Np1 -i "$KEEP"/gcc/0012-static-pie.patch
+	patch -Np1 -i "$KEEP"/gcc/0016-invalid_tls_model.patch
+	patch -Np1 -i "$KEEP"/gcc/gcc-pure64.patch
+	patch -Np1 -i "$KEEP"/gcc/gcc-pure64-mips.patch
+	patch -Np1 -i "$KEEP"/gcc/gcc-pure64-riscv.patch
+
+	mv ../isl-$islver isl
+
+	mkdir build
+	cd build
+
+	SED=sed \
+	../configure $TOOLFLAGS $GCCOPTS $HASHCONFIG \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--with-pkgversion="januslinux edition $version for $BARCH" \
+		--with-bugurl="https://github.com/JanusLinux/janus/issues" \
+		--with-isl \
+		--with-system-zlib \
+		--enable-__cxa_atexit \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-install-libiberty \
+		--enable-languages=c,c++,objc,obj-c++,fortran \
+		--enable-libstdcxx-time \
+		--enable-linker-build-id \
+		--enable-lto \
+		--enable-shared \
+		--enable-threads=posix \
+		--enable-tls \
+		--disable-bootstrap \
+		--disable-gnu-indirect-function \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdcxx-pch \
+		--disable-multilib \
+		--disable-nls \
+		--disable-symvers \
+		--disable-werror
+
+	if [ "$CROSS" = "yes" ]; then
+		make AS_FOR_TARGET="$XTARGET-as" LD_FOR_TARGET="$XTARGET-ld"
+	else
+		make
+	fi
+
+	make -j1 DESTDIR="$PKG" install
+
+	install -Dm755 "$KEEP"/gcc/c89 "$PKG"/usr/bin/c89
+	install -Dm755 "$KEEP"/gcc/c99 "$PKG"/usr/bin/c99
+
+	ln -sf gcc "$PKG"/usr/bin/cc
+
+	ln -sf gfortran "$PKG"/usr/bin/g77
+	ln -sf gfortran "$PKG"/usr/bin/f77
+	ln -sf gfortran "$PKG"/usr/bin/g95
+	ln -sf gfortran "$PKG"/usr/bin/f95
+
+	ln -sf ../bin/cpp "$PKG"/usr/lib
+
+	install -dm755 "$PKG"/usr/lib/bfd-plugins
+	ln -sf /usr/lib/gcc/$XTARGET/$version/liblto_plugin.so "$PKG"/usr/lib/bfd-plugins/
+
+	mkdir -p "$PKG"/usr/share/gdb/auto-load/usr/lib
+	mv "$PKG"/usr/lib/*gdb.py "$PKG"/usr/share/gdb/auto-load/usr/lib
+
+	mkdir -p "$SRC"/savedlibs
+	mv "$PKG"/usr/lib/*.so{,.*} "$SRC"/savedlibs
+
+	run_strip "$PKG"
+
+	mv "$SRC"/savedlibs/*.so{,.*} "$PKG"/usr/lib
+}

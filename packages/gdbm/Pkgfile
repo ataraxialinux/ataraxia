@@ -1,0 +1,23 @@
+# Description: GNU database library
+# URL:         http://www.gnu.org/software/gdbm/gdbm.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=gdbm
+version=1.18.1
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-libgdbm-compat
+	make
+	make DESTDIR="$PKG" install
+
+	install -dm755 "$PKG"/usr/include/gdbm
+	ln -sf ../gdbm.h "$PKG"/usr/include/gdbm/gdbm.h
+	ln -sf ../ndbm.h "$PKG"/usr/include/gdbm/ndbm.h
+	ln -sf ../dbm.h "$PKG"/usr/include/gdbm/dbm.h
+}

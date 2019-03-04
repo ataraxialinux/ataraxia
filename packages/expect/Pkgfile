@@ -1,0 +1,24 @@
+# Description: A tool for automating interactive applications
+# URL:         http://www.nist.gov/el/msid/expect.cfm
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  tcl
+
+name=expect
+version=5.45.4
+release=1
+source=("https://downloads.sourceforge.net/project/expect/Expect/$version/expect${version}.tar.gz")
+
+build() {
+	cd "$SRC"/expect${version}
+	cp "$KEEP"/config.guess tclconfig/config.guess
+	cp "$KEEP"/config.sub tclconfig/config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--with-tcl=/usr/lib \
+		--with-tclinclude=/usr/include \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}

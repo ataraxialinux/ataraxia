@@ -1,0 +1,30 @@
+# Description: Compiler cache that speeds up recompilation by caching previous compilations
+# URL:         https://ccache.samba.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=ccache
+version=3.5
+release=1
+source=("https://www.samba.org/ftp/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+
+	install -Dm 755 ccache -t "$PKG"/usr/bin
+
+	install -d "$PKG"/usr/lib/ccache/bin
+	local _prog
+	for _prog in gcc g++ c++; do
+		ln -sf /usr/bin/ccache "$PKG"/usr/lib/ccache/bin/$_prog
+		ln -sf /usr/bin/ccache "$PKG"/usr/lib/ccache/bin/${XTARGET}-$_prog
+	done
+	for _prog in cc clang clang++; do
+		ln -sf /usr/bin/ccache "$PKG"/usr/lib/ccache/bin/$_prog
+	done
+}

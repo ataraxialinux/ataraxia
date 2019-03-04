@@ -1,0 +1,26 @@
+# Description: The Berkeley DB embedded database system
+# URL:         http://www.oracle.com/technology/software/products/berkeley-db/index.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=db
+version=6.2.32
+release=2
+source=("http://download.oracle.com/berkeley-db/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version/build_unix
+	../dist/configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-compat185 \
+		--enable-cxx \
+		--enable-dbm \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/docs
+
+	chown -R root:root \
+		"$PKG"/*
+}

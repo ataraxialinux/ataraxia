@@ -1,0 +1,18 @@
+# Description: Netfilter library providing interface to the nf_tables subsystem
+# URL:         https://netfilter.org/projects/libnftnl/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libmnl
+
+name=libnftnl
+version=1.1.2
+release=1
+source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

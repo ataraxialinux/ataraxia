@@ -1,0 +1,19 @@
+# Description: The MirBSD Korn Shell - an enhanced version of the public domain ksh
+# URL:         https://www.mirbsd.org/mksh.htm
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=mksh
+version=R56c
+release=1
+source=("https://www.mirbsd.org/MirOS/dist/mir/mksh/$name-$version.tgz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name
+	sh Build.sh -r
+
+	install -D -m 755 mksh "$PKG"/usr/bin/mksh
+	install -D -m 644 dot.mkshrc "$PKG"/etc/skel/.mkshrc
+
+	ln -sf mksh "$PKG"/usr/bin/sh
+}

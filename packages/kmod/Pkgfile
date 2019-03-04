@@ -1,0 +1,34 @@
+# Description: Linux kernel module management tools and library
+# URL:         http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=summary
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib xz
+
+name=kmod
+version=26
+release=3
+source=("https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-xz \
+		--with-zlib \
+		--disable-manpages
+	make
+	make DESTDIR="$PKG" install
+
+	for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
+		ln -sf kmod "$PKG"/usr/bin/$tool
+	done
+
+	install -dm755 "$PKG"/{etc,usr/lib}/{depmod,modprobe}.d
+
+	install -Dm644 "$KEEP"/kmod/depmod-search.conf "$PKG"/usr/lib/depmod.d/search.conf
+
+	# compat
+	mkdir -p "$PKG"/etc/depmod.d/
+	ln -sf /usr/lib/depmod.d/search.conf "$PKG"/etc/depmod.d/search.conf
+}

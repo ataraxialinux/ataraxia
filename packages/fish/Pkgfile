@@ -1,0 +1,18 @@
+# Description: The GNU macro processor
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  bc ncurses pcre2 which inetutils which
+
+name=fish
+version=3.0.0
+release=1
+source=("https://github.com/fish-shell/fish-shell/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

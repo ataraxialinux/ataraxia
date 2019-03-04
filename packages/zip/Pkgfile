@@ -1,0 +1,19 @@
+# Description: Compressor/archiver for creating and modifying zipfiles
+# URL:         http://www.info-zip.org/Zip.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=zip
+version=3.0
+_pkgver=${version/./}
+release=1
+source=("http://downloads.sourceforge.net/infozip/${name}${_pkgver}.tar.gz")
+
+build() {
+	cd "$SRC"/${name}${_pkgver}
+	patch -Np1 -i "$KEEP"/zip/10-zip-3.0-build.patch
+	patch -Np1 -i "$KEEP"/zip/20-zip-3.0-exec-stack.patch
+	patch -Np1 -i "$KEEP"/zip/30-zip-3.0-pic.patch
+
+	make -f unix/Makefile CC="cc" LOCAL_ZIP="$CFLAGS" prefix=/usr generic
+	make -f unix/Makefile prefix="$PKG"/usr MANDIR="$PKG"/usr/share/man/man1 install
+}
