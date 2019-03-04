@@ -1,0 +1,159 @@
+#!/bin/bash
+#
+# Initrd generator for januslinux.
+#
+
+RELEASE="20190303"
+
+msg() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[32m==>\e[0m $msg\n"
+}
+
+die() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[31m==!\e[0m $msg\n"
+	exit 1
+}
+
+copylib() {
+	local file="$1"
+
+	for internalfile in "$file"; do
+		my="$(ldd $internalfile | awk '{print $1}' | sed -e "s,/lib/,,g")"
+		for my2 in $my; do
+			cp /usr/lib/$my2 usr/lib/
+		done
+	done
+}
+
+usage() {
+	cat <<EOF
+mkinitrd $RELEASE - Initrd generator for januslinux
+
+Usage:	$(basename $0) [options]
+
+	--kernel=[version|auto]		Specify kernel version to work with
+	--modules=[path|auto]	Specify modules place
+	--data=[path|auto]	Specify data plcae of mkinitrd
+	--usage				Show this message
+
+EOF
+	exit 0
+}
+
+for arg in "$@";do
+	case "$arg" in
+		--kernel=*) KERNEL="${arg#*=}";;
+		--modules=*) MODULES="${arg#*=}";;
+		--data=*) DATA="${arg#*=}";;
+        --usage) usage ;;
+    esac
+done
+
+[ -z "$KERNEL" ] && KERNEL="$(uname -r)"
+[ -z "$MODULES" ] && MODULES="/lib/modules/$KERNEL"
+[ -z "$DATA" ] && DATA="/usr/share/mkinitrd"
+
+IMAGE="/boot/initramfs-$KERNEL.img"
+
+echo "Building initramfs image for $KERNEL"
+
+TMPDIR="$(mktemp -d)"
+cd "$TMPDIR"
+
+mkdir -p usr/bin usr/lib usr/lib/firmware usr/lib/modules/$KERNEL/kernel/drivers/usb dev proc sys tmp run etc/modprobe.d
+
+ln -sf usr/bin bin
+ln -sf usr/lib lib
+ln -sf bin usr/sbin
+
+for kmoddir in crypto fs lib; do
+	if [ -d "$MODULES"/kernel/$kmoddir ]; then
+		cp -a "$MODULES/kernel/$kmoddir" usr/lib/modules/$KERNEL/kernel
+	fi
+done
+
+for kmoddir in block ata md firewire scsi message pcmcia virtio; do
+	if [ -d "$MODULES"/kernel/drivers/$kmoddir ]; then
+		cp -a "$MODULES/kernel/drivers/$kmoddir" usr/lib/modules/$KERNEL/kernel/drivers
+	fi
+done
+
+for kmoddir in host storage; do
+	if [ -d "$MODULES"/kernel/drivers/usb/$kmoddir ]; then
+		cp -a "$MODULES/kernel/drivers/usb/$kmoddir" usr/lib/modules/$KERNEL/kernel/drivers/usb
+	fi
+done
+
+if [ -d "$MODULES" ]; then
+	depmod -b "$TMPDIR" $KERNEL
+fi
+
+touch /etc/modprobe.d/modprobe.conf
+
+mkdir -p usr/lib/udev/rules.d etc/udev
+
+if [ -f /etc/udev/udev.conf ]; then
+	cp /etc/udev/udev.conf etc/udev/udev.conf
+fi
+
+for file in "$(find /usr/lib/udev/rules.d/ -type f)"; do
+	cp $file usr/lib/udev/rules.d
+done
+
+ln -sf /usr/lib/udev/rules.d etc/udev/rules.d
+
+cp "$DATA"/bins/busybox usr/bin/
+
+cp /usr/bin/bash usr/bin/
+cp /usr/bin/kmod usr/bin/
+cp /usr/bin/udevd usr/bin/
+cp /usr/bin/udevadm usr/bin/
+
+for app in bash kmod udevd udevadm; do
+	copylib /usr/bin/$app
+done
+
+ln -sf bash usr/bin/sh
+
+for kmod in {ins,ls,rm,dep}mod mod{probe,info}; do
+	ln -sf kmod usr/bin/$kmod
+done
+
+if [ -f /usr/bin/lvm ]; then
+
+	cp /usr/bin/lvm usr/bin/
+
+	copylib /usr/bin/lvm
+
+	for lvm in lvchange lvrename lvextend lvcreate lvdisplay lvscan pvchange pvck pvcreate pvdisplay pvscan vgchange vgcreate vgscan vgrename vgck; do
+		ln -sf lvm usr/bin/$lvm
+	done
+
+	cp -a /etc/lvm etc
+fi
+
+if [ -f /usr/bin/mdadm ]; then
+	cp /usr/bin/mdadm usr/bin/
+	cp /usr/bin/mdmon usr/bin/
+
+	for app in mdadm mdmon; do
+		copylib /usr/bin/$app
+	done
+
+	cp /etc/mdadm.conf etc
+fi
+
+for userland in cat cp dd killall ls mkdir mknod mount umount sed sleep ln rm uname readlink basename blkid switch_root find awk xargs tr cut uniq sort grep touch sed ash killall; do
+	ln -sf busybox usr/bin/$userland
+done
+
+install -m755 "$DATA"/init init
+
+find . | cpio -H newc -o | pigz > "$IMAGE"
+
+echo "Done."
+
+exit 0
+

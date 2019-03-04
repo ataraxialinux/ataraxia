@@ -1,0 +1,24 @@
+# Description: An internationalisation and localisation system
+# URL:         https://github.com/sabotage-linux/gettext-tiny
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=gettext-tiny
+version=0.3.1
+release=1
+source=("http://ftp.barfooze.de/pub/sabotage/tarballs/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$CROSS" = "yes" ]; then
+		make HOSTCC="$HOSTCC" HOSTAR="ar" HOSTRANLIB="ranlib"\
+			CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$CFLAGS" \
+			LIBINTL=MUSL prefix=/usr
+		make HOSTCC="$HOSTCC" HOSTAR="ar" HOSTRANLIB="ranlib"\
+			CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$CFLAGS" \
+			LIBINTL=MUSL prefix=/usr DESTDIR="$PKG" install
+	else
+		make CFLAGS="$CFLAGS" LIBINTL=MUSL prefix=/usr
+		make CFLAGS="$CFLAGS" LIBINTL=MUSL prefix=/usr DESTDIR="$PKG" install
+	fi
+}

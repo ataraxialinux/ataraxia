@@ -1,0 +1,19 @@
+# Description: Implementation of fts for musl libc
+# URL:         https://github.com/pullmoll/musl-fts
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=musl-fts
+version=1.2.7
+release=1
+source=("https://github.com/pullmoll/musl-fts/archive/v$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	bash bootstrap.sh
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

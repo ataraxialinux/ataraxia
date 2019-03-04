@@ -1,0 +1,46 @@
+# Description: The Tcl scripting language
+# URL:         http://tcl.sourceforge.net/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  sqlite
+
+name=tcl
+version=8.6.9
+release=1
+source=("http://downloads.sourceforge.net/sourceforge/$name/tcl${version}-src.tar.gz")
+
+build() {
+	cd "$SRC"/tcl${version}/unix
+	rm -rf pkgs/sqlite3*
+
+	case "$BARCH" in
+		x86_64|x86_64-amd|x86_64-intel) _64bit="--enable-64bit";;
+	esac
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--enable-threads ${_64bit}
+	make
+	make INSTALL_ROOT="$PKG" install install-private-headers
+
+	ln -sf tclsh${version%.*} "$PKG"/usr/bin/tclsh
+	ln -sf libtcl${version%.*}.so "$PKG"/usr/lib/libtcl.so
+	install -Dm644 tcl.m4 -t "$PKG"/usr/share/aclocal
+
+	sed -e "s#${SRC}/tcl${version}/unix#/usr/lib#" \
+		-e "s#${SRC}/tcl${version}#/usr/include#" \
+		-i "$PKG"/usr/lib/tclConfig.sh
+
+	tdbcver=tdbc1.1.0
+	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$tdbcver#/usr/lib/$tdbcver#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/generic#/usr/include#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver/usr/library#/usr/lib/tcl${version%.*}#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$tdbcver#/usr/include#" \
+		-i "$PKG"/usr/lib/$tdbcver/tdbcConfig.sh
+
+	itclver=itcl4.1.2
+	sed -e "s#${SRC}/tcl${version}/unix/pkgs/$itclver#/usr/lib/$itclver#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$itclver/generic#/usr/include#" \
+		-e "s#${SRC}/tcl${version}/pkgs/$itclver#/usr/include#" \
+		-i "$PKG"/usr/lib/$itclver/itclConfig.sh
+}

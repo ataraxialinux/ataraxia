@@ -1,0 +1,16 @@
+name=gperf
+version=3.1
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure \
+		--prefix="$TOOLS"
+	make
+	make install
+
+	mkdir -p "$PKG"/var/lib/db
+	touch "$PKG"/var/lib/db/installed_${name}
+}

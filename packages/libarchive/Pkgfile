@@ -1,0 +1,20 @@
+# Description: Multi-format archive and compression library
+# URL:         http://libarchive.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 acl expat libressl xz lz4 zstd
+
+name=libarchive
+version=3.3.3
+release=1
+source=("http://www.libarchive.org/downloads/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-nettle \
+		--without-xml2
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,25 @@
+# Description: FREE version of the SSL/TLS protocol forked from OpenSSL
+# URL:         http://www.libressl.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=libressl
+version=2.8.3
+release=1
+source=("https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	if [ "$BARCH" = "armv5tel" ]; then
+			BUILDFLAGS="$BUILDFLAGS --disable-asm"
+	fi
+
+	autoreconf -fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-openssldir=/etc/ssl
+	make
+	make DESTDIR="$PKG" install
+}
