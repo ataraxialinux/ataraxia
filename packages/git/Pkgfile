@@ -1,0 +1,39 @@
+# Description: the fast distributed version control system
+# URL:         https://git-scm.com/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib grep expat curl
+
+name=git
+version=2.21.0
+release=1
+source=("https://www.kernel.org/pub/software/scm/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	if [ "$CROSS" = "yes" ]; then
+		make CC="$CC" HOSTCC="$HOSTCC" \
+			prefix=/usr gitexecdir=/usr/lib/git DESTDIR="$PKG" \
+			NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
+			CFLAGS="$CFLAGS" \
+			MAN_BOLD_LITERAL=1 \
+			NO_TCLTK=1 \
+			NO_PYTHON=1 \
+			NO_GETTEXT=1 \
+			NO_LIBPCRE1_JIT=1 \
+			NO_REGEX=NeedsStartEnd \
+			all install
+	else
+		make prefix=/usr gitexecdir=/usr/lib/git DESTDIR="$PKG" \
+			NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
+			CFLAGS="$CFLAGS" \
+			MAN_BOLD_LITERAL=1 \
+			NO_TCLTK=1 \
+			NO_PYTHON=1 \
+			NO_GETTEXT=1 \
+			NO_LIBPCRE1_JIT=1 \
+			NO_REGEX=NeedsStartEnd \
+			all install
+	fi
+}
