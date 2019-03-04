@@ -7,25 +7,13 @@ name=moe
 version=1.9
 release=1
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.lz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-
-	if [ "$CROSS" = "yes" ]; then
-		./configure \
-			CC="$CC" CXX="$CXX" \
-			AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP"  \
-			CXXFLAGS="$CXXFLAGS" \
-			--prefix=/usr \
-			--sysconfdir=/etc
-	else
-		./configure \
-			CXXFLAGS="$CXXFLAGS" \
-			--prefix=/usr \
-			--sysconfdir=/etc
-	fi
-
+	./configure \
+		CXXFLAGS="$CXXFLAGS" \
+		--prefix=/usr \
+		--sysconfdir=/etc
 	make
 	make DESTDIR="$PKG" install
 }

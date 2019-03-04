@@ -1,17 +1,26 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: IP Routing Utilities
+# URL:         https://git.kernel.org/pub/scm/network/iproute2/iproute2.git
 # Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libcap libelf iptables
 
-name=m4
-version=1.4.18
+name=iproute2
+version=4.19.0
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://www.kernel.org/pub/linux/utils/net/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/iproute2/0001-Fix-includes-for-musl-libc.patch
+	patch -Np1 -i "$KEEP"/iproute2/0002-make-iproute2-fhs-compliant.patch
+	patch -Np1 -i "$KEEP"/iproute2/0003-cross.patch
+	sed -i 's:/usr/local:/usr:' tc/m_ipt.c include/iptables.h
+	sed -i -e 's:=/share:=/usr/share:' \
+		-e 's:-Werror::' Makefile
+	sed -i /ARPD/d Makefile
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
-	make DESTDIR="$PKG" install
+	make DESTDIR="$PKG" SBINDIR="/usr/bin" install
 }

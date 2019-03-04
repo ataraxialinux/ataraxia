@@ -1,15 +1,20 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Low-level library for netfilter related kernel/userspace communication
+# URL:         https://www.netfilter.org/projects/libnfnetlink/
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=libnfnetlink
+version=1.0.1
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/libnfnetlink/includes.patch
+
+	cp "$KEEP"/config.guess build-aux/config.guess
+	cp "$KEEP"/config.sub build-aux/config.sub
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make

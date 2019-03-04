@@ -3,7 +3,7 @@
 set -e
 
 if [ "$RELEASE" = "1" ]; then
-	export RELEASE="2.0-dev"
+	export RELEASE="$(date +%y%m%d)"
 else
 	export RELEASE="minefield-$(date +%y%m%d)"
 fi
@@ -126,6 +126,14 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
+		x86_64-amd)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-amd-linux-musl"
+			;;
+		x86_64-intek)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-intel-linux-musl"
+			;;
 		i686)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
@@ -141,6 +149,10 @@ setup_architecture() {
 		armv7l)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="armv7l-linux-musleabihf"
+			;;
+		armv7l-neon)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="armv7l-neon-linux-musleabihf"
 			;;
 		armv5tel)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -223,6 +235,7 @@ build_environment() {
 
 cat << CEOF > "$BUILD"/host-pkgmk.conf
 export CROSS="yes"
+export TOOL="yes"
 export LC_ALL="$LC_ALL"
 export CFLAGS="$CFLAGS"
 export CXXFLAGS="$CXXFLAGS"
@@ -300,7 +313,6 @@ build_toolchain() {
 	pkghostinstall gettext-tiny
 	pkghostinstall m4
 	pkghostinstall bison
-	pkghostinstall byacc
 	pkghostinstall flex
 	pkghostinstall bc
 	pkghostinstall ncurses
@@ -319,24 +331,18 @@ build_toolchain() {
 }
 
 build_target() {
-	msg "Building rootfs for '"$BARCH"' platform"
+	msg "Building target rootfs for '"$BARCH"' platform"
 
-#	for myrootpkgs in musl-fts musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
-#						ccache bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
-#						gperf expat perl libressl inetutils autoconf automake xz lz4 zstd libarchive pkgutils \
-#						libuargp libelf net-tools kmod gettext-tiny dialog diffutils one-true-awk findutils \
-#						less pigz zutils libcap-ng sinit procps-ng util-linux hwids eudev \
-#						libnl libmnl libnftnl libnfnetlink libnetfilter_conntrack libpcap iptables iproute2 \
-#						kbd make patch tar cpio moe sbase ubase libssh2 curl; do
-#		pkginstall $myrootpkgs
-#	done
-
-	for myrootpkgs in musl-fts musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
-						ccache bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
-						gperf expat perl libressl inetutils autoconf automake xz lz4 zstd libarchive pkgutils \
-						libuargp libelf net-tools kmod gettext-tiny dialog diffutils one-true-awk findutils \
-						less pigz zutils libcap-ng sinit procps-ng util-linux hwids eudev make patch sbase ubase; do
-		pkginstall $myrootpkgs
+	for target in musl-tools zlib file ncurses libedit m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
+			shadow sed psmisc pcre grep bash loksh which slibtool gdbm db gperf expat \
+			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
+			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
+			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			tar cpio vim-tiny runit libcap-ng procps-ng util-linux \
+			hwids eudev sdhcp; do
+		pkginstall $target
 	done
 }
 
@@ -345,36 +351,23 @@ build_stage() {
 
 	initdb "$STAGEFS"
 
-#	for myrootpkgs in base-files linux-api-headers fortify-headers musl musl-fts \
-#						musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
-#						ccache bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
-#						gperf expat perl libressl inetutils autoconf automake xz lz4 zstd libarchive pkgutils \
-#						libuargp libelf net-tools kmod gettext-tiny dialog diffutils one-true-awk findutils \
-#						less pigz zutils libcap-ng sinit procps-ng util-linux hwids eudev \
-#						libnl libmnl libnftnl libnfnetlink libnetfilter_conntrack libpcap iptables iproute2 \
-#						kbd make patch tar cpio moe sbase ubase libssh2 curl; do
-#		pkginstallstage $myrootpkgs
-#	done
-
-
-	for myrootpkgs in base-files linux-api-headers fortify-headers musl musl-fts \
-						musl-tools libz file ncurses libedit m4 byacc bison flex bc gmp mpfr mpc binutils gcc \
-						ccache bzip2 pkgconf attr acl libcap shadow ed sed psmisc pcre grep mksh bash libtool gdbm db \
-						gperf expat perl libressl inetutils autoconf automake xz lz4 zstd libarchive pkgutils \
-						libuargp libelf net-tools kmod gettext-tiny dialog diffutils one-true-awk findutils \
-						less pigz zutils libcap-ng sinit procps-ng util-linux hwids eudev make patch sbase ubase; do
-		pkginstallstage $myrootpkgs
+	for target in base-files linux-api-headers fortify-headers musl musl-tools \
+			zlib file ncurses libedit m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
+			shadow sed psmisc pcre grep bash loksh which slibtool gdbm db gperf expat \
+			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
+			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
+			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			tar cpio vim-tiny runit libcap-ng procps-ng util-linux \
+			hwids eudev sdhcp; do
+		pkginstallstage $target
 	done
 
 	msg "Building stage archive for '"$BARCH"' platform"
 	cd "$STAGEFS"
 	tar -cJf "$CWD"/januslinux-$RELEASE-$BARCH.tar.xz .
 	cd $CWD
-	msg "Job done!"
-}
-
-build_image() {
-	:
 }
 
 COMMAND="$1"
@@ -411,15 +404,23 @@ case "$COMMAND" in
 			setup_environment
 			build_target
 			;;
+		2)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_stage
+			case $BARCH in
+				x86_64|x86_64-amd|x86_64-intel|i686|i586|ppc64le|ppc64|ppc)
+					#build_grub_iso
+					;;
+				riscv64|riscv32)
+					#build_riscv_hdd
+					;;
+			esac
+			;;
 		*)
 			die "Stage number was not selected or is not supported"
 		esac
-		;;
-	stage-archive)
-		check_for_root
-		setup_architecture
-		setup_environment
-		build_stage
 		;;
 	emerge)
 		check_for_root

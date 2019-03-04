@@ -1,0 +1,21 @@
+# Description: Compression library implementing the deflate compression method found in gzip and PKZIP
+# URL:         https://www.zlib.net/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=zlib
+version=1.2.11
+release=1
+source=("https://zlib.net/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$CROSS" = "yes" ]; then
+		export CHOST="$XTARGET"
+	fi
+
+	./configure \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,7 +1,7 @@
 # Description: Miscellaneous system utilities for Linux
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  libz libedit libcap-ng
+# Depends on:  zlib libedit libcap-ng
 
 name=util-linux
 version=2.33.1
@@ -9,7 +9,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=1
+release=2
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -54,4 +54,9 @@ build() {
 	rm -rf bin sbin usr/sbin
 
 	mkdir -p var/lib/hwclock
+
+	install -Dm0755 "$KEEP"/services/uuid "$PKG"/etc/service/uuid/run
+	install -Dm0755 "$KEEP"/services/uuid-log "$PKG"/etc/service/uuid/log/run
+
+	mkdir -p "$PKG"/var/log/uuid
 }
