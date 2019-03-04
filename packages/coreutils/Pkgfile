@@ -1,0 +1,22 @@
+# Description: The basic file, shell and text manipulation utilities of the GNU operating system
+# URL:         https://www.gnu.org/software/coreutils/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  gmp acl libcap
+
+name=coreutils
+version=8.30
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	export FORCE_UNSAFE_CONFIGURE=1
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--enable-no-install-program=groups,hostname,kill,uptime
+	make
+	make DESTDIR="$PKG" install
+}

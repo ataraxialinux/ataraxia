@@ -1,17 +1,19 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Keytable files and keyboard utilities
+# URL:         http://www.kbd-project.org
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
-name=m4
-version=1.4.18
+name=kbd
+version=2.0.4
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://www.kernel.org/pub/linux/utils/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-nls \
+		--disable-vlock
 	make
 	make DESTDIR="$PKG" install
 }

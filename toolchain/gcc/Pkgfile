@@ -5,10 +5,10 @@ mpfrver=4.0.2
 mpcver=1.1.0
 islver=0.20
 release=1
-source=("http://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
-	"http://ftpmirror.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz"
+source=("http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
+	"http://ftp.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz"
 	"http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz"
-	"http://ftpmirror.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz"
+	"http://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz"
 	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 BOOTSTRAP=yes
 
@@ -16,6 +16,12 @@ build() {
 	case $BARCH in
 		x86_64)
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+			;;
+		x86_64-amd)
+			export GCCOPTS="--with-tune=znver1 --with-arch=bdver1"
+			;;
+		x86_64-intel)
+			export GCCOPTS="--with-tune=haswell --with-arch=westmere"
 			;;
 		i686)
 			export GCCOPTS="--with-arch=i686 --with-tune=generic"
@@ -28,6 +34,9 @@ build() {
 			;;
 		armv7l)
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+			;;
+		armv7l-neon)
+			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon-vfpv4"
 			;;
 		armv5tel)
 			export GCCOPTS="--with-arch=armv5te --with-float=soft"
@@ -48,10 +57,10 @@ build() {
 			export GCCOPTS="--with-long-double=64 --enable-decimal-float=no --enable-secureplt"
 			;;
 		riscv64)
-			export GCCOPTS="--with-arch=rv64imac"
+			export GCCOPTS="--with-arch=rv64imafdc"
 			;;
 		riscv32)
-			export GCCOPTS="--with-arch=rv32imac"
+			export GCCOPTS="--with-arch=rv32imafdc"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by januslinux"
