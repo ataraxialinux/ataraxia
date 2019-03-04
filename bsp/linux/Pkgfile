@@ -1,18 +1,18 @@
 # Description: The Linux kernel
 # URL:         https://www.kernel.org/
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  kmod bc libelf xz libressl sbase
+# Depends on:  kmod bc libelf xz libressl coreutils
 
 name=linux
-version=4.20.12
+version=5.0
 release=1
-source=("https://cdn.kernel.org/pub/linux/kernel/v4.x/$name-$version.tar.xz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 BOOTSTRAP=yes
 NO_RUN_STRIP=1
 
 generate_config() {
 	case $BARCH in
-		x86_64|i686|i586)
+		x86_64|x86_64-amd|x86_64-intel|i686|i586)
 			SUBKARCH="x86"
 			;;
 		*)
@@ -21,7 +21,7 @@ generate_config() {
 	esac
 
 	case $BARCH in
-		x86_64)
+		x86_64|x86_64-amd|x86_64-intel)
 			export DEFCONFIG="x86_64_defconfig"
 			;;
 		i686|i586)
@@ -30,7 +30,7 @@ generate_config() {
 		aarch64)
 			export DEFCONFIG="defconfig"
 			;;
-		armv7l)
+		armv7l|armv7l-neon)
 			export DEFCONFIG="multi_v7_defconfig"
 			;;
 		armv5tel)
@@ -62,250 +62,16 @@ generate_config() {
 		make ARCH=$XKARCH $DEFCONFIG
 	fi
 
-	case $BARCH in
-		x86_64|i686|i586)
-			cat >> .config << EOF
-CONFIG_PCI=y
-CONFIG_BLK_DEV_SD=y
-CONFIG_ATA=y
-CONFIG_ATA_SFF=y
-CONFIG_ATA_BMDMA=y
-CONFIG_ATA_PIIX=y
-CONFIG_PATA_PLATFORM=y
-CONFIG_PATA_LEGACY=y
-CONFIG_PATA_ACPI=y
-CONFIG_NET_VENDOR_INTEL=y
-CONFIG_E1000=y
-CONFIG_SERIAL_8250=y
-CONFIG_SERIAL_8250_CONSOLE=y
-CONFIG_RTC_CLASS=y
-CONFIG_EFI=y
-CONFIG_EFI_STUB=y
-CONFIG_FB_EFI=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
-CONFIG_EFI_VARS=y
-CONFIG_KVM_INTEL=y
-CONFIG_KVM_AMD=y
-CONFIG_FB_HYPERV=y
-CONFIG_VBOXGUEST=y
-CONFIG_HYPERV=y
-CONFIG_HYPERV_TSCPAGE=y
-CONFIG_HYPERV_UTILS=y
-CONFIG_HYPERV_BALLOON=y
-CONFIG_UNWINDER_FRAME_POINTER=y
-
-# stuff for laptops
-CONFIG_ACER_WIRELESS=y
-CONFIG_ACERHDF=y
-CONFIG_ASUS_LAPTOP=y
-CONFIG_DCDBAS=y
-CONFIG_DELL_SMBIOS=y
-CONFIG_ACPI=y
-CONFIG_SMO88XX=y
-CONFIG_DELL_RBTN=y
-CONFIG_DELL_RBU=y
-CONFIG_FUJITSU_LAPTOP=y
-CONFIG_FUJITSU_TABLET=y
-CONFIG_AMILO_RFKILL=y
-CONFIG_GPD_POCKET_FAN=y
-CONFIG_HP_ACCEL=y
-CONFIG_HP_WIRELESS=y
-CONFIG_MSI_LAPTOP=y
-CONFIG_PANASONIC_LAPTOP=y
-CONFIG_COMPAL_LAPTOP=y
-CONFIG_SONY_LAPTOP=y
-CONFIG_IDEAPAD_LAPTOP=y
-CONFIG_THINKPAD_ACPI=y
-CONFIG_SENSORS_HDAPS=y
-CONFIG_INTEL_MENLOW=y
-CONFIG_EEEPC_LAPTOP=y
-CONFIG_ASUS_WIRELESS=y
-CONFIG_ACPI_WMI=y
-CONFIG_OPSTAR_LAPTOP=y
-CONFIG_TOSHIBA_BT_RFKILL=y
-CONFIG_TOSHIBA_HAPS=y
-CONFIG_ACPI_CMPC=y
-CONFIG_INTEL_HID_EVENT=y
-CONFIG_INTEL_VBTN=y
-CONFIG_INTEL_IPS=y
-CONFIG_INTEL_PMC_CORE=y
-CONFIG_IBM_RTL=y
-CONFIG_SAMSUNG_LAPTOP=y
-CONFIG_INTEL_OAKTRAIL=y
-CONFIG_SAMSUNG_Q10=y
-CONFIG_APPLE_GMUX=y
-CONFIG_INTEL_RST=y
-CONFIG_INTEL_SMARTCONNECT=y
-CONFIG_PVPANIC=y
-CONFIG_INTEL_PMC_IPC=y
-CONFIG_SURFACE_PRO3_BUTTON=y
-CONFIG_INTEL_PUNIT_IPC=y
-CONFIG_MLX_PLATFORM=y
-CONFIG_INTEL_TURBO_MAX_3=y
-CONFIG_I2C_MULTI_INSTANTIATE=y
-CONFIG_INTEL_ATOMISP2_PM=y
-EOF
-			;;
-		mips|mipsel)
-			cat >> .config << EOF
-CONFIG_MIPS_MALTA=y
-CONFIG_CPU_MIPS32_R2=y
-CONFIG_SERIAL_8250=y
-CONFIG_SERIAL_8250_CONSOLE=y
-CONFIG_PCI=y
-CONFIG_BLK_DEV_SD=y
-CONFIG_ATA=y
-CONFIG_ATA_SFF=y
-CONFIG_ATA_BMDMA=y
-CONFIG_ATA_PIIX=y
-CONFIG_NET_VENDOR_AMD=y
-CONFIG_PCNET32=y
-CONFIG_POWER_RESET=y
-CONFIG_POWER_RESET_SYSCON=y
-EOF
-		;;
-		riscv64|riscv32)
-			cat >> .config << EOF
-CONFIG_RISCV=y
-CONFIG_RISCV_ISA_C=y
-CONFIG_RISCV_ISA_A=y
-CONFIG_FPU=y
-CONFIG_SIFIVE_PLIC=y
-EOF
-			;;
-	esac
-
-	case $BARCH in
-		x86_64)
-			cat >> .config << EOF
-CONFIG_64BIT=y
-CONFIG_IA32_EMULATION=y
-CONFIG_X86_X32=y
-CONFIG_X86_64_ACPI_NUMA=y
-CONFIG_COMPAT_32BIT_TIME=y
-CONFIG_CRYPTO_AES_X86_64=y
-CONFIG_XEN=y
-CONFIG_XEN_PV=y
-CONFIG_XEN_PV_SMP=y
-CONFIG_XEN_DOM0=y
-CONFIG_XEN_PVHVM=y
-CONFIG_XEN_PVHVM_SMP=y
-CONFIG_XEN_512GB=y
-CONFIG_XEN_SAVE_RESTORE=y
-CONFIG_XEN_PVH=y
-CONFIG_XEN_BALLOON=y
-CONFIG_XEN_SELFBALLOONING=y
-CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
-CONFIG_XEN_SCRUB_PAGES_DEFAULT=y
-CONFIG_XEN_DEV_EVTCHN=y
-CONFIG_XEN_BACKEND=y
-CONFIG_XENFS=y
-CONFIG_XEN_COMPAT_XENFS=y
-CONFIG_XEN_SYS_HYPERVISOR=y
-CONFIG_XEN_XENBUS_FRONTEND=y
-CONFIG_XEN_GNTDEV=y
-CONFIG_XEN_GNTDEV_DMABUF=y
-CONFIG_XEN_GRANT_DEV_ALLOC=y
-CONFIG_XEN_GRANT_DMA_ALLOC=y
-CONFIG_SWIOTLB_XEN=y
-CONFIG_XEN_TMEM=y
-CONFIG_XEN_PCIDEV_BACKEND=y
-CONFIG_XEN_PVCALLS_FRONTEND=y
-CONFIG_XEN_PVCALLS_BACKEND=y
-CONFIG_XEN_SCSI_BACKEND=y
-CONFIG_XEN_PRIVCMD=y
-CONFIG_XEN_ACPI_PROCESSOR=y
-CONFIG_XEN_MCE_LOG=y
-CONFIG_XEN_HAVE_PVMMU=y
-CONFIG_XEN_EFI=y
-CONFIG_XEN_AUTO_XLATE=y
-CONFIG_XEN_ACPI=y
-CONFIG_XEN_SYMS=y
-CONFIG_XEN_HAVE_VPMU=y
-CONFIG_NUMA=y
-CONFIG_AMD_NUMA=y
-CONFIG_NODES_SPAN_OTHER_NODES=y
-CONFIG_NEED_MULTIPLE_NODES=y
-CONFIG_USE_PERCPU_NUMA_NODE_ID=y
-CONFIG_ACPI_NUMA=y
-# CONFIG_NUMA_EMU is not set
-# CONFIG_XEN_DEBUG_FS is not set
-CONFIG_XEN_BALLOON_MEMORY_HOTPLUG_LIMIT=512
-CONFIG_NODES_SHIFT=6
-EOF
-			;;
-		i686)
-			cat >> .config << EOF
-CONFIG_M686=y
-EOF
-			;;
-		i586)
-			cat >> .config << EOF
-CONFIG_M686=y
-EOF
-			;;
-		aarch64)
-			cat >> .config << EOF
-CONFIG_EFI=y
-CONFIG_EFI_STUB=y
-CONFIG_FB_EFI=y
-CONFIG_FRAMEBUFFER_CONSOLE=y
-CONFIG_EFI_VARS=y
-EOF
-			;;
-		mips)
-			cat >> .config << EOF
-CONFIG_CPU_BIG_ENDIAN=y
-# CONFIG_CPU_LITTLE_ENDIAN is not set
-EOF
-			;;
-		mipsel)
-			cat >> .config << EOF
-# CONFIG_CPU_BIG_ENDIAN is not set
-CONFIG_CPU_LITTLE_ENDIAN=y
-EOF
-			;;
-		ppc64le)
-			cat >> .config << EOF
-CONFIG_POWER8_CPU=y
-EOF
-			;;
-		ppc64|ppc)
-			cat >> .config << EOF
-CONFIG_FIREWIRE=y
-CONFIG_FIREWIRE_NET=y
-CONFIG_FIREWIRE_OHCI=y
-CONFIG_FIREWIRE_SBP2=y
-# CONFIG_SND_FIREWIRE is not set
-# CONFIG_FIREWIRE_NOSY is not set
-EOF
-			;;
-		riscv64)
-			cat >> .config << EOF
-# CONFIG_ARCH_RV32I is not set
-CONFIG_ARCH_RV64I=y
-EOF
-			;;
-		riscv32)
-			cat >> .config << EOF
-CONFIG_ARCH_RV32I=y
-# CONFIG_ARCH_RV64I is not set
-EOF
-			;;
-	esac
-
-	cat "$KEEP"/linux/mini.config >> .config
-
 	if [ "$CROSS" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} olddefconfig
 	else
-		make ARCH=$XKARCH KCONFIG_ALLCONFIG=.config olddefconfig
+		make ARCH=$XKARCH olddefconfig
 	fi
 }
 
 build() {
 	case $BARCH in
-		x86_64)
+		x86_64|x86_64-amd|x86_64-intel)
 			export XKARCH="x86_64"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
@@ -317,7 +83,7 @@ build() {
 			export XKARCH="arm64"
 			export IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armv7l|armv5tel)
+		armv7l|armv7l-neon|armv5tel)
 			export XKARCH="arm"
 			export IMAGELOC="arch/arm/boot/zImage"
 			;;
@@ -342,8 +108,12 @@ build() {
 	unset LDFLAGS
 	make mrproper
 
-	if [ -f /boot/config-linux ]; then
-		cp /boot/config-linux .config
+	if [ "$CROSS" != "yes" ]; then
+		if [ -f /boot/config-linux ]; then
+			cp /boot/config-linux .config
+		else
+			generate_config
+		fi
 	else
 		generate_config
 	fi
@@ -361,7 +131,6 @@ build() {
 	fi
 
 	mkdir -p "$PKG"/boot
-
 	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-linux
 	cp .config "$PKG"/boot/config-linux
 
@@ -375,3 +144,4 @@ build() {
 			;;
 	esac
 }
+

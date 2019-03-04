@@ -1,7 +1,7 @@
 # Description: Tools necessary to build programs
 # URL:         https://www.gnu.org/software/binutils/
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  libz
+# Depends on:  zlib
 
 name=binutils
 version=2.32
@@ -15,9 +15,9 @@ build() {
 		*)		HASHCONFIG="--enable-default-hash-style=gnu"	;;
 	esac
 
-	if [ "$BARCH" = "x86_64" ]; then
-		export ARCHCONFIG="--enable-targets=x86_64-pep"
-	fi
+	case "$BARCH" in
+		x86_64|x86_64-amd|x86_64-intel)	ARCHCONFIG="--enable-targets=x86_64-pep"	;;
+	esac
 
 	cd "$SRC"/$name-$version
 	mkdir build

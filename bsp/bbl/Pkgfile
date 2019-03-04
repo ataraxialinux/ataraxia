@@ -3,23 +3,23 @@
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
 name=bbl
-version=706cc77c369fd3e4734b5a6aa813d421347f1814
+version=a1c125dde740f5acd1e20a341cf3426ea44af292
 release=1
 source=("https://github.com/riscv/riscv-pk/archive/$version.tar.gz")
 BOOTSTRAP=yes
 
 build() {
-	unset CFLAGS CXXFLAGS LDFLAGS
+	unset CXXFLAGS LDFLAGS
 
-	export CFLAGS="-fno-stack-protector"
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
+	export CFLAGS="-fno-PIE -fno-stack-protector -Wl,-z,norelro,-z,nonow -fno-pic $CFLAGS"
 	export CXXFLAGS="$CFLAGS"
 
 	case $BARCH in
-		riscv64)
-			export BBLOPTS="--with-arch=rv64imac --with-abi=lp64"
-			;;
-		riscv32)
-			export BBLOPTS="--with-arch=rv32imac --with-abi=ilp32"
+		riscv64|riscv32)
+			true
 			;;
 		*)
 			echo "RISC V supported only"
@@ -36,7 +36,7 @@ build() {
 	mkdir build
 	cd build
 
-	../configure $BUILDFLAGS $BBLOPTS \
+	../configure $BUILDFLAGS \
 		--prefix= \
 		--with-payload="$ROOTFS/boot/vmlinuz-linux" \
 		--enable-logo \
