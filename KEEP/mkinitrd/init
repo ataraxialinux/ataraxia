@@ -1,0 +1,75 @@
+#!/bin/bash
+
+export PATH="/usr/bin"
+
+no_mount() {
+	printf "Could not mount device %s\n" $1
+	printf "Sleeping forever. Please reboot and fix the kernel command line.\n\n"
+	printf "Maybe the device is formatted with an unsupported file system?\n\n"
+	printf "Or maybe filesystem type autodetection went wrong, in which case\n"
+	printf "you should add the rootfstype=... parameter to the kernel command line.\n\n"
+	printf "Available partitions:\n"
+
+	exec /bin/ash
+}
+
+init="/sbin/init"
+root=""
+state="ro"
+
+mkdir -p /newroot /dev /proc /sys /run
+
+mount -n -t devtmpfs devtmpfs /dev
+mount -n -t proc     proc     /proc
+mount -n -t sysfs    sysfs    /sys
+mount -n -t tmpfs    tmpfs    /run
+
+ln -sf /proc/mounts /etc/mtab
+touch /etc/fstab
+
+udevd --daemon
+udevadm trigger --action=add --type=subsystems
+udevadm trigger --action=add --type=devices
+udevadm trigger --action=change --type=devices
+udevadm settle
+
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		init=*) init="${arg#*=}" ;;
+		root=*) root="${arg#*=}" ;;
+		ro|rw) state="${arg}" ;;
+		shell) exec /bin/ash ;;
+	esac
+done
+
+case "$root" in
+		/dev/*) device="$root" ;;
+		UUID=*) device="/dev/disk/by-uuid/${root#*=}"  ;;
+		LABEL=*) device="/dev/disk/by-label/${root#*=}" ;;
+esac
+
+if [ -f /etc/mdadm.conf ]; then
+	mdadm -As
+fi
+
+if [ -f /usr/bin/vgchange ]; then
+	vgchange -a y > /dev/null
+fi
+
+rootoptions=$(grep "$root" /etc/fstab | cut -f4)
+mount -o "$state,$rootoptions" "$device" /newroot || no_mount
+
+for move in /proc /sys /dev; do
+    mount --move $move /newroot/$move || no_mount
+done
+
+if [ -e "/proc/sys/kernel/hotplug" ];then
+	echo > /proc/sys/kernel/hotplug
+fi
+
+killall -w udevd
+
+# welcome
+exec switch_root /newroot "$init" "$@" || exec /bin/ash
+
+exec /bin/ash

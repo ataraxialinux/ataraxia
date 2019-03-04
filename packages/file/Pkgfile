@@ -1,0 +1,24 @@
+# Description: File type identification utility
+# URL:         https://www.darwinsys.com/file/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=file
+mainver=36
+version=5.$mainver
+release=1
+source=("https://github.com/file/file/archive/FILE5_$mainver.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-FILE5_$mainver
+	autoreconf -vif
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--datadir=/usr/share/file \
+		--enable-fsect-man5 \
+		--disable-libseccomp
+	make
+	make DESTDIR="$PKG" install
+}

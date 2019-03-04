@@ -1,0 +1,47 @@
+# Description: Header files for Linux kernel
+# URL:         https://www.kernel.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=linux-api-headers
+version=5.0
+release=1
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/linux-$version
+	case $BARCH in
+		x86_64|x86_64-amd|x86_64-intel)
+			export XKARCH="x86_64"
+			;;
+		i686|i586)
+			export XKARCH="i386"
+			;;
+		aarch64)
+			export XKARCH="arm64"
+			;;
+		armv7l|armv7l-neon|armv5tel)
+			export XKARCH="arm"
+			;;
+		mips|mipsel)
+			export XKARCH="mips"
+			;;
+		ppc64le|ppc64|ppc)
+			export XKARCH="powerpc"
+			;;
+		riscv64|riscv32)
+			export XKARCH="riscv"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by januslinux"
+			exit 1
+	esac
+
+	make mrproper
+
+	make ARCH=$XKARCH INSTALL_HDR_PATH="$PKG"/usr headers_install
+
+	rm -r "$PKG"/usr/include/drm
+
+	find "$PKG" \( -name .install -o -name ..install.cmd \) -print0 | xargs -0 rm -rf
+}

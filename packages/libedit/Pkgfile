@@ -1,0 +1,30 @@
+# Description: Command line editor library providing generic line editing, history, and tokenization functions
+# URL:         http://thrysoee.dk/editline/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  ncurses
+
+name=libedit
+_pkgver=20181209-3.1
+version=${_pkgver/-/_}
+release=2
+source=("http://thrysoee.dk/editline/$name-${_pkgver}.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-${_pkgver}
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-widec
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf libedit.a "$PKG"/usr/lib/libreadline.a
+	ln -sf libedit.so "$PKG"/usr/lib/libreadline.so
+	ln -sf libedit.a "$PKG"/usr/lib/libhistory.a
+	ln -sf libedit.so "$PKG"/usr/lib/libhistory.so
+	mkdir -p "$PKG"/usr/include/readline
+	touch "$PKG"/usr/include/readline/history.h
+	touch "$PKG"/usr/include/readline/tilde.h
+	ln -sf ../editline/readline.h "$PKG"/usr/include/readline/readline.h
+}
+

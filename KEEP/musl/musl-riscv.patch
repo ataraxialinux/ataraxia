@@ -1,0 +1,6322 @@
+Author: Alex Suykov <alex.suykov@gmail.com>
+Author: Aric Belsito <lluixhi@gmail.com>
+Author: Michael Clark <mjc@sifive.com>
+Author: Michael Forney <mforney@mforney.org>
+
+Some modifications for musl 1.1.21 by nee-san (protonesso) <nagakamira@gmail.com>
+
+diff -ruN musl-1.1.21/arch/riscv32/atomic_arch.h musl-1.1.21-riscv/arch/riscv32/atomic_arch.h
+--- musl-1.1.21/arch/riscv32/atomic_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/atomic_arch.h	2019-02-12 16:53:44.426616950 +0000
+@@ -0,0 +1,35 @@
++#define a_barrier a_barrier
++static inline void a_barrier()
++{
++	__asm__ __volatile__ ("fence rw,rw" : : : "memory");
++}
++
++#define a_ll a_ll
++static inline int a_ll(volatile int *p)
++{
++	int v;
++	__asm__ __volatile__ ("lr.w %0, (%1)" : "=&r"(v) : "r"(p));
++	return v;
++}
++
++#define a_sc a_sc
++static inline int a_sc(volatile int *p, int v)
++{
++	int r;
++	__asm__ __volatile__ ("sc.w %0, %2, (%1)" : "=&r"(r) : "r"(p), "r"(v) : "memory");
++	return !r;
++}
++
++#define a_cas a_cas
++static inline int a_cas(volatile int *p, int t, int s)
++{
++	int old, tmp;
++	__asm__("1:  lr.w    %0, %2      \n"
++		"    bne     %0, %3, 1f  \n"
++		"    sc.w    %1, %4, %2  \n"
++		"    bnez    %1, 1b      \n"
++		"1:                      \n"
++		: "=&r"(old), "+r"(tmp), "+A"(*p)
++		: "r"(t), "r"(s));
++	return old;
++}
+diff -ruN musl-1.1.21/arch/riscv32/bits/alltypes.h.in musl-1.1.21-riscv/arch/riscv32/bits/alltypes.h.in
+--- musl-1.1.21/arch/riscv32/bits/alltypes.h.in	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/alltypes.h.in	2019-02-12 16:53:44.426616950 +0000
+@@ -0,0 +1,26 @@
++#define _Addr int
++#define _Int64 long long
++#define _Reg int
++
++TYPEDEF __builtin_va_list va_list;
++TYPEDEF __builtin_va_list __isoc_va_list;
++
++#ifndef __cplusplus
++TYPEDEF int wchar_t;
++#endif
++
++TYPEDEF float float_t;
++TYPEDEF double double_t;
++
++TYPEDEF struct { long long __ll; long double __ld; } max_align_t;
++
++TYPEDEF long time_t;
++TYPEDEF long suseconds_t;
++
++TYPEDEF struct { union { int __i[9]; volatile int __vi[9]; unsigned __s[9]; } __u; } pthread_attr_t;
++TYPEDEF struct { union { int __i[6]; volatile int __vi[6]; volatile void *volatile __p[6]; } __u; } pthread_mutex_t;
++TYPEDEF struct { union { int __i[6]; volatile int __vi[6]; volatile void *volatile __p[6]; } __u; } mtx_t;
++TYPEDEF struct { union { int __i[12]; volatile int __vi[12]; void *__p[12]; } __u; } pthread_cond_t;
++TYPEDEF struct { union { int __i[12]; volatile int __vi[12]; void *__p[12]; } __u; } cnd_t;
++TYPEDEF struct { union { int __i[8]; volatile int __vi[8]; void *__p[8]; } __u; } pthread_rwlock_t;
++TYPEDEF struct { union { int __i[5]; volatile int __vi[5]; void *__p[5]; } __u; } pthread_barrier_t;
+diff -ruN musl-1.1.21/arch/riscv32/bits/endian.h musl-1.1.21-riscv/arch/riscv32/bits/endian.h
+--- musl-1.1.21/arch/riscv32/bits/endian.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/endian.h	2019-02-12 16:53:44.426616950 +0000
+@@ -0,0 +1,5 @@
++#if __RISCVEB__
++#define __BYTE_ORDER __BIG_ENDIAN
++#else
++#define __BYTE_ORDER __LITTLE_ENDIAN
++#endif
+diff -ruN musl-1.1.21/arch/riscv32/bits/fenv.h musl-1.1.21-riscv/arch/riscv32/bits/fenv.h
+--- musl-1.1.21/arch/riscv32/bits/fenv.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/fenv.h	2019-02-12 16:53:44.426616950 +0000
+@@ -0,0 +1,18 @@
++#define FE_INVALID      16
++#define FE_DIVBYZERO    8
++#define FE_OVERFLOW     4
++#define FE_UNDERFLOW    2
++#define FE_INEXACT      1
++
++#define FE_ALL_EXCEPT   31
++
++#define FE_TONEAREST    0
++#define FE_DOWNWARD     2
++#define FE_UPWARD       3
++#define FE_TOWARDZERO   1
++
++typedef unsigned int fexcept_t;
++
++typedef unsigned int fenv_t;
++
++#define FE_DFL_ENV      ((const fenv_t *) -1)
+diff -ruN musl-1.1.21/arch/riscv32/bits/float.h musl-1.1.21-riscv/arch/riscv32/bits/float.h
+--- musl-1.1.21/arch/riscv32/bits/float.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/float.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,16 @@
++#define FLT_EVAL_METHOD 0
++
++#define LDBL_TRUE_MIN 6.47517511943802511092443895822764655e-4966L
++#define LDBL_MIN 3.36210314311209350626267781732175260e-4932L
++#define LDBL_MAX 1.18973149535723176508575932662800702e+4932L
++#define LDBL_EPSILON 1.92592994438723585305597794258492732e-34L
++
++#define LDBL_MANT_DIG 113
++#define LDBL_MIN_EXP (-16381)
++#define LDBL_MAX_EXP 16384
++
++#define LDBL_DIG 33
++#define LDBL_MIN_10_EXP (-4931)
++#define LDBL_MAX_10_EXP 4932
++
++#define DECIMAL_DIG 36
+diff -ruN musl-1.1.21/arch/riscv32/bits/ipc.h musl-1.1.21-riscv/arch/riscv32/bits/ipc.h
+--- musl-1.1.21/arch/riscv32/bits/ipc.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/ipc.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,14 @@
++struct ipc_perm {
++	key_t __ipc_perm_key;
++	uid_t uid;
++	gid_t gid;
++	uid_t cuid;
++	gid_t cgid;
++	mode_t mode;
++	unsigned short __ipc_perm_seq;
++
++	unsigned long __pad1;
++	unsigned long __pad2;
++};
++
++#define IPC_64 0
+diff -ruN musl-1.1.21/arch/riscv32/bits/limits.h musl-1.1.21-riscv/arch/riscv32/bits/limits.h
+--- musl-1.1.21/arch/riscv32/bits/limits.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/limits.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,7 @@
++#if defined(_POSIX_SOURCE) || defined(_POSIX_C_SOURCE) \
++ || defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++#define LONG_BIT 32
++#endif
++
++#define LONG_MAX  0x7fffffffL
++#define LLONG_MAX  0x7fffffffffffffffLL
+diff -ruN musl-1.1.21/arch/riscv32/bits/msg.h musl-1.1.21-riscv/arch/riscv32/bits/msg.h
+--- musl-1.1.21/arch/riscv32/bits/msg.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/msg.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,13 @@
++struct msqid_ds {
++	struct ipc_perm msg_perm;
++	time_t msg_stime;
++	time_t msg_rtime;
++	time_t msg_ctime;
++	unsigned long msg_cbytes;
++	msgqnum_t msg_qnum;
++	msglen_t msg_qbytes;
++	pid_t msg_lspid;
++	pid_t msg_lrpid;
++	unsigned long __pad1;
++	unsigned long __pad2;
++};
+diff -ruN musl-1.1.21/arch/riscv32/bits/posix.h musl-1.1.21-riscv/arch/riscv32/bits/posix.h
+--- musl-1.1.21/arch/riscv32/bits/posix.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/posix.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,2 @@
++# define _POSIX_V6_ILP32_OFFBIG 1
++# define _POSIX_V7_ILP32_OFFBIG 1
+diff -ruN musl-1.1.21/arch/riscv32/bits/reg.h musl-1.1.21-riscv/arch/riscv32/bits/reg.h
+--- musl-1.1.21/arch/riscv32/bits/reg.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/reg.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,8 @@
++#undef __WORDSIZE
++#define __WORDSIZE 32
++#define REG_PC 0
++#define REG_RA 1
++#define REG_SP 2
++#define REG_TP 4
++#define REG_S0 8
++#define REG_A0 10
+diff -ruN musl-1.1.21/arch/riscv32/bits/sem.h musl-1.1.21-riscv/arch/riscv32/bits/sem.h
+--- musl-1.1.21/arch/riscv32/bits/sem.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/sem.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,9 @@
++struct semid_ds {
++	struct ipc_perm sem_perm;
++	time_t sem_otime;
++	time_t sem_ctime;
++	unsigned short sem_nsems;
++	char __sem_nsems_pad[sizeof(time_t)-sizeof(short)];
++	time_t __unused3;
++	time_t __unused4;
++};
+diff -ruN musl-1.1.21/arch/riscv32/bits/setjmp.h musl-1.1.21-riscv/arch/riscv32/bits/setjmp.h
+--- musl-1.1.21/arch/riscv32/bits/setjmp.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/setjmp.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1 @@
++typedef unsigned long __jmp_buf[40];
+diff -ruN musl-1.1.21/arch/riscv32/bits/shm.h musl-1.1.21-riscv/arch/riscv32/bits/shm.h
+--- musl-1.1.21/arch/riscv32/bits/shm.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/shm.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,26 @@
++#define SHMLBA 4096
++
++struct shmid_ds
++{
++	struct ipc_perm shm_perm;
++	size_t shm_segsz;
++	time_t shm_atime;
++	time_t shm_dtime;
++	time_t shm_ctime;
++	pid_t shm_cpid;
++	pid_t shm_lpid;
++	unsigned long shm_nattch;
++	unsigned long __pad1;
++	unsigned long __pad2;
++};
++
++struct shminfo {
++	unsigned long shmmax, shmmin, shmmni, shmseg, shmall, __unused[4];
++};
++
++struct shm_info {
++	int __used_ids;
++	unsigned long shm_tot, shm_rss, shm_swp;
++	unsigned long __swap_attempts, __swap_successes;
++};
++
+diff -ruN musl-1.1.21/arch/riscv32/bits/signal.h musl-1.1.21-riscv/arch/riscv32/bits/signal.h
+--- musl-1.1.21/arch/riscv32/bits/signal.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/signal.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,113 @@
++#if defined(_POSIX_SOURCE) || defined(_POSIX_C_SOURCE) \
++ || defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++
++#if defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++# define MINSIGSTKSZ 2048
++# define SIGSTKSZ 8192
++#endif
++
++/* gregs[0] holds the program counter. */
++
++#if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++typedef unsigned long greg_t;
++typedef unsigned long gregset_t[32];
++
++struct __riscv_f_ext_state {
++	unsigned int f[32];
++	unsigned int fcsr;
++};
++
++struct __riscv_d_ext_state {
++	unsigned long long f[32];
++	unsigned int fcsr;
++};
++
++struct __riscv_q_ext_state {
++	unsigned long long f[64] __attribute__((aligned(16)));
++	unsigned int fcsr;
++	unsigned int reserved[3];
++};
++
++union __riscv_fp_state {
++	struct __riscv_f_ext_state f;
++	struct __riscv_d_ext_state d;
++	struct __riscv_q_ext_state q;
++};
++
++typedef union __riscv_fp_state fpregset_t;
++
++typedef struct sigcontext {
++	gregset_t gregs;
++	fpregset_t fpregs;
++} mcontext_t;
++
++#else
++typedef struct {
++	unsigned long gregs[32];
++	unsigned long long fpregs[66];
++} mcontext_t;
++#endif
++
++struct sigaltstack {
++	void *ss_sp;
++	int ss_flags;
++	size_t ss_size;
++};
++
++typedef struct __ucontext
++{
++	unsigned long uc_flags;
++	struct __ucontext *uc_link;
++	stack_t uc_stack;
++	sigset_t uc_sigmask;
++	char __unused[1024 / 8 - sizeof(sigset_t)];
++	mcontext_t uc_mcontext;
++} ucontext_t;
++
++#define SA_NOCLDSTOP 1
++#define SA_NOCLDWAIT 2
++#define SA_SIGINFO   4
++#define SA_ONSTACK   0x08000000
++#define SA_RESTART   0x10000000
++#define SA_NODEFER   0x40000000
++#define SA_RESETHAND 0x80000000
++#define SA_RESTORER  0x04000000
++
++#endif
++
++#define SIGHUP     1
++#define SIGINT     2
++#define SIGQUIT    3
++#define SIGILL     4
++#define SIGTRAP    5
++#define SIGABRT    6
++#define SIGIOT     SIGABRT
++#define SIGBUS     7
++#define SIGFPE     8
++#define SIGKILL    9
++#define SIGUSR1   10
++#define SIGSEGV   11
++#define SIGUSR2   12
++#define SIGPIPE   13
++#define SIGALRM   14
++#define SIGTERM   15
++#define SIGSTKFLT 16
++#define SIGCHLD   17
++#define SIGCONT   18
++#define SIGSTOP   19
++#define SIGTSTP   20
++#define SIGTTIN   21
++#define SIGTTOU   22
++#define SIGURG    23
++#define SIGXCPU   24
++#define SIGXFSZ   25
++#define SIGVTALRM 26
++#define SIGPROF   27
++#define SIGWINCH  28
++#define SIGIO     29
++#define SIGPOLL   SIGIO
++#define SIGPWR    30
++#define SIGSYS    31
++#define SIGUNUSED SIGSYS
++
++#define _NSIG     65
+diff -ruN musl-1.1.21/arch/riscv32/bits/socket.h musl-1.1.21-riscv/arch/riscv32/bits/socket.h
+--- musl-1.1.21/arch/riscv32/bits/socket.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/socket.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,33 @@
++#include <endian.h>
++
++struct msghdr {
++	void *msg_name;
++	socklen_t msg_namelen;
++	struct iovec *msg_iov;
++#if __BYTE_ORDER == __BIG_ENDIAN
++	int __pad1, msg_iovlen;
++#else
++	int msg_iovlen, __pad1;
++#endif
++	void *msg_control;
++#if __BYTE_ORDER == __BIG_ENDIAN
++	int __pad2;
++	socklen_t msg_controllen;
++#else
++	socklen_t msg_controllen;
++	int __pad2;
++#endif
++	int msg_flags;
++};
++
++struct cmsghdr {
++#if __BYTE_ORDER == __BIG_ENDIAN
++	int __pad1;
++	socklen_t cmsg_len;
++#else
++	socklen_t cmsg_len;
++	int __pad1;
++#endif
++	int cmsg_level;
++	int cmsg_type;
++};
+diff -ruN musl-1.1.21/arch/riscv32/bits/stat.h musl-1.1.21-riscv/arch/riscv32/bits/stat.h
+--- musl-1.1.21/arch/riscv32/bits/stat.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/stat.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,18 @@
++struct stat {
++	dev_t st_dev;
++	ino_t st_ino;
++	mode_t st_mode;
++	nlink_t st_nlink;
++	uid_t st_uid;
++	gid_t st_gid;
++	dev_t st_rdev;
++	unsigned long __pad;
++	off_t st_size;
++	blksize_t st_blksize;
++	int __pad2;
++	blkcnt_t st_blocks;
++	struct timespec st_atim;
++	struct timespec st_mtim;
++	struct timespec st_ctim;
++	unsigned __unused[2];
++};
+diff -ruN musl-1.1.21/arch/riscv32/bits/stdint.h musl-1.1.21-riscv/arch/riscv32/bits/stdint.h
+--- musl-1.1.21/arch/riscv32/bits/stdint.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/stdint.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,20 @@
++typedef int32_t int_fast16_t;
++typedef int32_t int_fast32_t;
++typedef uint32_t uint_fast16_t;
++typedef uint32_t uint_fast32_t;
++
++#define INT_FAST16_MIN  INT32_MIN
++#define INT_FAST32_MIN  INT32_MIN
++
++#define INT_FAST16_MAX  INT32_MAX
++#define INT_FAST32_MAX  INT32_MAX
++
++#define UINT_FAST16_MAX UINT32_MAX
++#define UINT_FAST32_MAX UINT32_MAX
++
++#define INTPTR_MIN      INT32_MIN
++#define INTPTR_MAX      INT32_MAX
++#define UINTPTR_MAX     UINT32_MAX
++#define PTRDIFF_MIN     INT32_MIN
++#define PTRDIFF_MAX     INT32_MAX
++#define SIZE_MAX        UINT32_MAX
+diff -ruN musl-1.1.21/arch/riscv32/bits/syscall.h.in musl-1.1.21-riscv/arch/riscv32/bits/syscall.h.in
+--- musl-1.1.21/arch/riscv32/bits/syscall.h.in	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/syscall.h.in	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,278 @@
++#define __NR_io_setup 0
++#define __NR_io_destroy 1
++#define __NR_io_submit 2
++#define __NR_io_cancel 3
++#define __NR_io_getevents 4
++#define __NR_setxattr 5
++#define __NR_lsetxattr 6
++#define __NR_fsetxattr 7
++#define __NR_getxattr 8
++#define __NR_lgetxattr 9
++#define __NR_fgetxattr 10
++#define __NR_listxattr 11
++#define __NR_llistxattr 12
++#define __NR_flistxattr 13
++#define __NR_removexattr 14
++#define __NR_lremovexattr 15
++#define __NR_fremovexattr 16
++#define __NR_getcwd 17
++#define __NR_lookup_dcookie 18
++#define __NR_eventfd2 19
++#define __NR_epoll_create1 20
++#define __NR_epoll_ctl 21
++#define __NR_epoll_pwait 22
++#define __NR_dup 23
++#define __NR_dup3 24
++#define __NR_fcntl64 25
++#define __NR_inotify_init1 26
++#define __NR_inotify_add_watch 27
++#define __NR_inotify_rm_watch 28
++#define __NR_ioctl 29
++#define __NR_ioprio_set 30
++#define __NR_ioprio_get 31
++#define __NR_flock 32
++#define __NR_mknodat 33
++#define __NR_mkdirat 34
++#define __NR_unlinkat 35
++#define __NR_symlinkat 36
++#define __NR_linkat 37
++#define __NR_umount2 39
++#define __NR_mount 40
++#define __NR_pivot_root 41
++#define __NR_nfsservctl 42
++#define __NR_statfs64 43
++#define __NR_fstatfs64 44
++#define __NR_truncate64 45
++#define __NR_ftruncate64 46
++#define __NR_fallocate 47
++#define __NR_faccessat 48
++#define __NR_chdir 49
++#define __NR_fchdir 50
++#define __NR_chroot 51
++#define __NR_fchmod 52
++#define __NR_fchmodat 53
++#define __NR_fchownat 54
++#define __NR_fchown 55
++#define __NR_openat 56
++#define __NR_close 57
++#define __NR_vhangup 58
++#define __NR_pipe2 59
++#define __NR_quotactl 60
++#define __NR_getdents64 61
++#define __NR_llseek 62
++#define __NR__llseek __NR_llseek
++#define __NR_read 63
++#define __NR_write 64
++#define __NR_readv 65
++#define __NR_writev 66
++#define __NR_pread64 67
++#define __NR_pwrite64 68
++#define __NR_preadv 69
++#define __NR_pwritev 70
++#define __NR_sendfile 71
++#define __NR_pselect6 72
++#define __NR_ppoll 73
++#define __NR_signalfd4 74
++#define __NR_vmsplice 75
++#define __NR_splice 76
++#define __NR_tee 77
++#define __NR_readlinkat 78
++#define __NR_fstatat64 79
++#define __NR_fstat64 80
++#define __NR_sync 81
++#define __NR_fsync 82
++#define __NR_fdatasync 83
++#define __NR_sync_file_range 84
++#define __NR_timerfd_create 85
++#define __NR_timerfd_settime 86
++#define __NR_timerfd_gettime 87
++#define __NR_utimensat 88
++#define __NR_acct 89
++#define __NR_capget 90
++#define __NR_capset 91
++#define __NR_personality 92
++#define __NR_exit 93
++#define __NR_exit_group 94
++#define __NR_waitid 95
++#define __NR_set_tid_address 96
++#define __NR_unshare 97
++#define __NR_futex 98
++#define __NR_set_robust_list 99
++#define __NR_get_robust_list 100
++#define __NR_nanosleep 101
++#define __NR_getitimer 102
++#define __NR_setitimer 103
++#define __NR_kexec_load 104
++#define __NR_init_module 105
++#define __NR_delete_module 106
++#define __NR_timer_create 107
++#define __NR_timer_gettime 108
++#define __NR_timer_getoverrun 109
++#define __NR_timer_settime 110
++#define __NR_timer_delete 111
++#define __NR_clock_settime 112
++#define __NR_clock_gettime 113
++#define __NR_clock_getres 114
++#define __NR_clock_nanosleep 115
++#define __NR_syslog 116
++#define __NR_ptrace 117
++#define __NR_sched_setparam 118
++#define __NR_sched_setscheduler 119
++#define __NR_sched_getscheduler 120
++#define __NR_sched_getparam 121
++#define __NR_sched_setaffinity 122
++#define __NR_sched_getaffinity 123
++#define __NR_sched_yield 124
++#define __NR_sched_get_priority_max 125
++#define __NR_sched_get_priority_min 126
++#define __NR_sched_rr_get_interval 127
++#define __NR_restart_syscall 128
++#define __NR_kill 129
++#define __NR_tkill 130
++#define __NR_tgkill 131
++#define __NR_sigaltstack 132
++#define __NR_rt_sigsuspend 133
++#define __NR_rt_sigaction 134
++#define __NR_rt_sigprocmask 135
++#define __NR_rt_sigpending 136
++#define __NR_rt_sigtimedwait 137
++#define __NR_rt_sigqueueinfo 138
++#define __NR_rt_sigreturn 139
++#define __NR_setpriority 140
++#define __NR_getpriority 141
++#define __NR_reboot 142
++#define __NR_setregid 143
++#define __NR_setgid 144
++#define __NR_setreuid 145
++#define __NR_setuid 146
++#define __NR_setresuid 147
++#define __NR_getresuid 148
++#define __NR_setresgid 149
++#define __NR_getresgid 150
++#define __NR_setfsuid 151
++#define __NR_setfsgid 152
++#define __NR_times 153
++#define __NR_setpgid 154
++#define __NR_getpgid 155
++#define __NR_getsid 156
++#define __NR_setsid 157
++#define __NR_getgroups 158
++#define __NR_setgroups 159
++#define __NR_uname 160
++#define __NR_sethostname 161
++#define __NR_setdomainname 162
++#define __NR_getrlimit 163
++#define __NR_setrlimit 164
++#define __NR_getrusage 165
++#define __NR_umask 166
++#define __NR_prctl 167
++#define __NR_getcpu 168
++#define __NR_gettimeofday 169
++#define __NR_settimeofday 170
++#define __NR_adjtimex 171
++#define __NR_getpid 172
++#define __NR_getppid 173
++#define __NR_getuid 174
++#define __NR_geteuid 175
++#define __NR_getgid 176
++#define __NR_getegid 177
++#define __NR_gettid 178
++#define __NR_sysinfo 179
++#define __NR_mq_open 180
++#define __NR_mq_unlink 181
++#define __NR_mq_timedsend 182
++#define __NR_mq_timedreceive 183
++#define __NR_mq_notify 184
++#define __NR_mq_getsetattr 185
++#define __NR_msgget 186
++#define __NR_msgctl 187
++#define __NR_msgrcv 188
++#define __NR_msgsnd 189
++#define __NR_semget 190
++#define __NR_semctl 191
++#define __NR_semtimedop 192
++#define __NR_semop 193
++#define __NR_shmget 194
++#define __NR_shmctl 195
++#define __NR_shmat 196
++#define __NR_shmdt 197
++#define __NR_socket 198
++#define __NR_socketpair 199
++#define __NR_bind 200
++#define __NR_listen 201
++#define __NR_accept 202
++#define __NR_connect 203
++#define __NR_getsockname 204
++#define __NR_getpeername 205
++#define __NR_sendto 206
++#define __NR_recvfrom 207
++#define __NR_setsockopt 208
++#define __NR_getsockopt 209
++#define __NR_shutdown 210
++#define __NR_sendmsg 211
++#define __NR_recvmsg 212
++#define __NR_readahead 213
++#define __NR_brk 214
++#define __NR_munmap 215
++#define __NR_mremap 216
++#define __NR_add_key 217
++#define __NR_request_key 218
++#define __NR_keyctl 219
++#define __NR_clone 220
++#define __NR_execve 221
++#define __NR_mmap2 222
++#define __NR_fadvise64_64 223
++#define __NR_swapon 224
++#define __NR_swapoff 225
++#define __NR_mprotect 226
++#define __NR_msync 227
++#define __NR_mlock 228
++#define __NR_munlock 229
++#define __NR_mlockall 230
++#define __NR_munlockall 231
++#define __NR_mincore 232
++#define __NR_madvise 233
++#define __NR_remap_file_pages 234
++#define __NR_mbind 235
++#define __NR_get_mempolicy 236
++#define __NR_set_mempolicy 237
++#define __NR_migrate_pages 238
++#define __NR_move_pages 239
++#define __NR_rt_tgsigqueueinfo 240
++#define __NR_perf_event_open 241
++#define __NR_accept4 242
++#define __NR_recvmmsg 243
++#define __NR_arch_specific_syscall 244
++#define __NR_wait4 260
++#define __NR_prlimit64 261
++#define __NR_fanotify_init 262
++#define __NR_fanotify_mark 263
++#define __NR_name_to_handle_at 264
++#define __NR_open_by_handle_at 265
++#define __NR_clock_adjtime 266
++#define __NR_syncfs 267
++#define __NR_setns 268
++#define __NR_sendmmsg 269
++#define __NR_process_vm_readv 270
++#define __NR_process_vm_writev 271
++#define __NR_kcmp 272
++#define __NR_finit_module 273
++#define __NR_sched_setattr 274
++#define __NR_sched_getattr 275
++#define __NR_renameat2 276
++#define __NR_seccomp 277
++#define __NR_getrandom 278
++#define __NR_memfd_create 279
++#define __NR_bpf 280
++#define __NR_execveat 281
++#define __NR_userfaultfd 282
++#define __NR_membarrier 283
++#define __NR_mlock2 284
++#define __NR_copy_file_range 285
++#define __NR_preadv2 286
++#define __NR_pwritev2 287
++#define __NR_pkey_mprotect 288
++#define __NR_pkey_alloc 289
++#define __NR_pkey_free 290
++#define __NR_sysriscv __NR_arch_specific_syscall
++
+diff -ruN musl-1.1.21/arch/riscv32/bits/user.h musl-1.1.21-riscv/arch/riscv32/bits/user.h
+--- musl-1.1.21/arch/riscv32/bits/user.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/bits/user.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,43 @@
++struct user_regs_struct {
++	unsigned long pc;
++	unsigned long ra;
++	unsigned long sp;
++	unsigned long gp;
++	unsigned long tp;
++	unsigned long t0;
++	unsigned long t1;
++	unsigned long t2;
++	unsigned long s0;
++	unsigned long s1;
++	unsigned long a0;
++	unsigned long a1;
++	unsigned long a2;
++	unsigned long a3;
++	unsigned long a4;
++	unsigned long a5;
++	unsigned long a6;
++	unsigned long a7;
++	unsigned long s2;
++	unsigned long s3;
++	unsigned long s4;
++	unsigned long s5;
++	unsigned long s6;
++	unsigned long s7;
++	unsigned long s8;
++	unsigned long s9;
++	unsigned long s10;
++	unsigned long s11;
++	unsigned long t3;
++	unsigned long t4;
++	unsigned long t5;
++	unsigned long t6;
++};
++
++struct user_fpregs_struct {
++	double f[32];
++	unsigned int fcsr;
++};
++
++#define ELF_NGREG 32
++typedef unsigned long elf_greg_t, elf_gregset_t[ELF_NGREG];
++typedef struct user_fpregs_struct elf_fpregset_t;
+diff -ruN musl-1.1.21/arch/riscv32/crt_arch.h musl-1.1.21-riscv/arch/riscv32/crt_arch.h
+--- musl-1.1.21/arch/riscv32/crt_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/crt_arch.h	2019-02-12 16:53:44.429950284 +0000
+@@ -0,0 +1,18 @@
++__asm__(
++".text\n"
++".global " START "\n"
++".type " START ",%function\n"
++START ":\n"
++".weak __global_pointer$\n"
++".hidden __global_pointer$\n\t"
++".option push\n"
++".option norelax\n\t"
++"lla gp, __global_pointer$\n"
++".option pop\n\t"
++"mv a0, sp\n"
++".weak _DYNAMIC\n"
++".hidden _DYNAMIC\n\t"
++"lla a1, _DYNAMIC\n\t"
++"andi sp, sp, -16\n\t"
++"jal " START "_c"
++);
+diff -ruN musl-1.1.21/arch/riscv32/pthread_arch.h musl-1.1.21-riscv/arch/riscv32/pthread_arch.h
+--- musl-1.1.21/arch/riscv32/pthread_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/pthread_arch.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,12 @@
++static inline struct pthread *__pthread_self()
++{
++	char *tp;
++	__asm__ __volatile__("mv %0, tp" : "=r"(tp));
++	return (void *)(tp - sizeof(struct pthread));
++}
++
++#define TLS_ABOVE_TP
++#define GAP_ABOVE_TP 0
++#define TP_ADJ(p) ((char *)p + sizeof(struct pthread))
++
++#define MC_PC gregs[0]
+diff -ruN musl-1.1.21/arch/riscv32/reloc.h musl-1.1.21-riscv/arch/riscv32/reloc.h
+--- musl-1.1.21/arch/riscv32/reloc.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/reloc.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,27 @@
++#if defined __riscv_float_abi_soft
++#define RISCV_FP_SUFFIX "-sf"
++#elif defined __riscv_float_abi_single
++#define RISCV_FP_SUFFIX "-sp"
++#elif defined __riscv_float_abi_double
++#define RISCV_FP_SUFFIX ""
++#endif
++
++#define RISCV_LDSO_HELPER(x) "riscv" #x
++#define RISCV_LDSO(x) RISCV_LDSO_HELPER(x)
++
++#define LDSO_ARCH RISCV_LDSO(__riscv_xlen) RISCV_FP_SUFFIX
++
++#define NO_LEGACY_INITFINI
++
++#define TPOFF_K 0
++
++#define REL_SYMBOLIC    R_RISCV_32
++#define REL_PLT         R_RISCV_JUMP_SLOT
++#define REL_RELATIVE    R_RISCV_RELATIVE
++#define REL_COPY        R_RISCV_COPY
++#define REL_DTPMOD      R_RISCV_TLS_DTPMOD32
++#define REL_DTPOFF      R_RISCV_TLS_DTPREL32
++#define REL_TPOFF       R_RISCV_TLS_TPREL32
++
++#define CRTJMP(pc,sp) __asm__ __volatile__( \
++	"mv sp, %1 ; jr %0" : : "r"(pc), "r"(sp) : "memory" )
+diff -ruN musl-1.1.21/arch/riscv32/syscall_arch.h musl-1.1.21-riscv/arch/riscv32/syscall_arch.h
+--- musl-1.1.21/arch/riscv32/syscall_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv32/syscall_arch.h	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,78 @@
++#define __SYSCALL_LL_E(x) \
++((union { long long ll; long l[2]; }){ .ll = x }).l[0], \
++((union { long long ll; long l[2]; }){ .ll = x }).l[1]
++#define __SYSCALL_LL_O(x) __SYSCALL_LL_E((x))
++
++#define __asm_syscall(...) \
++	__asm__ __volatile__ ("scall\n\t" \
++	: "+r"(a0) : __VA_ARGS__ : "memory"); \
++	return a0; \
++
++static inline long __syscall0(long n)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0");
++	__asm_syscall("r"(a7))
++}
++
++static inline long __syscall1(long n, long a)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	__asm_syscall("r"(a7), "0"(a0))
++}
++
++static inline long __syscall2(long n, long a, long b)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1))
++}
++
++static inline long __syscall3(long n, long a, long b, long c)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2))
++}
++
++static inline long __syscall4(long n, long a, long b, long c, long d)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	register long a3 __asm__("a3") = d;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2), "r"(a3))
++}
++
++static inline long __syscall5(long n, long a, long b, long c, long d, long e)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	register long a3 __asm__("a3") = d;
++	register long a4 __asm__("a4") = e;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(a4))
++}
++
++static inline long __syscall6(long n, long a, long b, long c, long d, long e, long f)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	register long a3 __asm__("a3") = d;
++	register long a4 __asm__("a4") = e;
++	register long a5 __asm__("a5") = f;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(a4), "r"(a5))
++}
++
++#define VDSO_USEFUL
++/* We don't have a clock_gettime function.
++#define VDSO_CGT_SYM "__vdso_clock_gettime"
++#define VDSO_CGT_VER "LINUX_2.6" */
+diff -ruN musl-1.1.21/arch/riscv64/atomic_arch.h musl-1.1.21-riscv/arch/riscv64/atomic_arch.h
+--- musl-1.1.21/arch/riscv64/atomic_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/atomic_arch.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,66 @@
++#define a_barrier a_barrier
++static inline void a_barrier()
++{
++	__asm__ __volatile__ ("fence rw,rw" : : : "memory");
++}
++
++#define a_ll a_ll
++static inline int a_ll(volatile int *p)
++{
++	int v;
++	__asm__ __volatile__ ("lr.w %0, %1" : "=&r"(v), "+A"(*p));
++	return v;
++}
++
++#define a_sc a_sc
++static inline int a_sc(volatile int *p, int v)
++{
++	int r;
++	__asm__ __volatile__ ("sc.w %0, %2, %1" : "=&r"(r), "+A"(*p) : "r"(v) : "memory");
++return !r;
++}
++
++#define a_cas a_cas
++static inline int a_cas(volatile int *p, int t, int s)
++{
++	int old, tmp;
++	__asm__("1:  lr.w    %0, %2      \n"
++		"    bne     %0, %3, 1f  \n"
++		"    sc.w    %1, %4, %2  \n"
++		"    bnez    %1, 1b      \n"
++		"1:                      \n"
++		: "=&r"(old), "+r"(tmp), "+A"(*p)
++		: "r"(t), "r"(s));
++	return old;
++}
++
++#define a_ll_p a_ll_p
++static inline void *a_ll_p(volatile void *p)
++{
++	void *v;
++	__asm__ __volatile__ ("lr.d %0, %1" : "=&r"(v), "+A"(*(long *)p));
++	return v;
++}
++
++#define a_sc_p a_sc_p
++static inline int a_sc_p(volatile int *p, void *v)
++{
++	int r;
++	__asm__ __volatile__ ("sc.d %0, %2, %1" : "=&r"(r), "+A"(*(long *)p) : "r"(v) : "memory");
++	return !r;
++}
++
++#define a_cas_p a_cas_p
++static inline void *a_cas_p(volatile void *p, void *t, void *s)
++{
++	void *old;
++	int tmp;
++	__asm__("1:  lr.d    %0, %2      \n"
++		"    bne     %0, %3, 1f  \n"
++		"    sc.d    %1, %4, %2  \n"
++		"    bnez    %1, 1b      \n"
++		"1:                      \n"
++		: "=&r"(old), "+r"(tmp), "+A"(*(long *)p)
++		: "r"(t), "r"(s));
++	return old;
++}
+diff -ruN musl-1.1.21/arch/riscv64/bits/alltypes.h.in musl-1.1.21-riscv/arch/riscv64/bits/alltypes.h.in
+--- musl-1.1.21/arch/riscv64/bits/alltypes.h.in	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/alltypes.h.in	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,29 @@
++#define _Addr long
++#define _Int64 long
++#define _Reg long
++
++TYPEDEF __builtin_va_list va_list;
++TYPEDEF __builtin_va_list __isoc_va_list;
++
++#ifndef __cplusplus
++TYPEDEF int wchar_t;
++#endif
++
++TYPEDEF int blksize_t;
++TYPEDEF unsigned int nlink_t;
++
++TYPEDEF float float_t;
++TYPEDEF double double_t;
++
++TYPEDEF struct { long long __ll; long double __ld; } max_align_t;
++
++TYPEDEF long time_t;
++TYPEDEF long suseconds_t;
++
++TYPEDEF struct { union { int __i[14]; volatile int __vi[14]; unsigned long __s[7]; } __u; } pthread_attr_t;
++TYPEDEF struct { union { int __i[10]; volatile int __vi[10]; volatile void *volatile __p[5]; } __u; } pthread_mutex_t;
++TYPEDEF struct { union { int __i[10]; volatile int __vi[10]; volatile void *volatile __p[5]; } __u; } mtx_t;
++TYPEDEF struct { union { int __i[12]; volatile int __vi[12]; void *__p[6]; } __u; } pthread_cond_t;
++TYPEDEF struct { union { int __i[12]; volatile int __vi[12]; void *__p[6]; } __u; } cnd_t;
++TYPEDEF struct { union { int __i[14]; volatile int __vi[14]; void *__p[7]; } __u; } pthread_rwlock_t;
++TYPEDEF struct { union { int __i[8]; volatile int __vi[8]; void *__p[4]; } __u; } pthread_barrier_t;
+diff -ruN musl-1.1.21/arch/riscv64/bits/endian.h musl-1.1.21-riscv/arch/riscv64/bits/endian.h
+--- musl-1.1.21/arch/riscv64/bits/endian.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/endian.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,5 @@
++#if __RISCVEB__
++#define __BYTE_ORDER __BIG_ENDIAN
++#else
++#define __BYTE_ORDER __LITTLE_ENDIAN
++#endif
+diff -ruN musl-1.1.21/arch/riscv64/bits/fcntl.h musl-1.1.21-riscv/arch/riscv64/bits/fcntl.h
+--- musl-1.1.21/arch/riscv64/bits/fcntl.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/fcntl.h	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,38 @@
++#define O_CREAT        0100
++#define O_EXCL         0200
++#define O_NOCTTY       0400
++#define O_TRUNC       01000
++#define O_APPEND      02000
++#define O_NONBLOCK    04000
++#define O_DSYNC      010000
++#define O_SYNC     04010000
++#define O_RSYNC    04010000
++#define O_DIRECTORY 0200000
++#define O_NOFOLLOW  0400000
++#define O_CLOEXEC  02000000
++
++#define O_ASYNC      020000
++#define O_DIRECT     040000
++#define O_LARGEFILE 0100000
++#define O_NOATIME  01000000
++#define O_PATH    010000000
++#define O_TMPFILE 020200000
++#define O_NDELAY O_NONBLOCK
++
++#define F_DUPFD  0
++#define F_GETFD  1
++#define F_SETFD  2
++#define F_GETFL  3
++#define F_SETFL  4
++#define F_GETLK  5
++#define F_SETLK  6
++#define F_SETLKW 7
++#define F_SETOWN 8
++#define F_GETOWN 9
++#define F_SETSIG 10
++#define F_GETSIG 11
++
++#define F_SETOWN_EX 15
++#define F_GETOWN_EX 16
++
++#define F_GETOWNER_UIDS 17
+diff -ruN musl-1.1.21/arch/riscv64/bits/fenv.h musl-1.1.21-riscv/arch/riscv64/bits/fenv.h
+--- musl-1.1.21/arch/riscv64/bits/fenv.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/fenv.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,17 @@
++#define FE_INVALID      16
++#define FE_DIVBYZERO    8
++#define FE_OVERFLOW     4
++#define FE_UNDERFLOW    2
++#define FE_INEXACT      1
++
++#define FE_ALL_EXCEPT   31
++
++#define FE_TONEAREST    0
++#define FE_DOWNWARD     2
++#define FE_UPWARD       3
++#define FE_TOWARDZERO   1
++
++typedef unsigned int fexcept_t;
++typedef unsigned int fenv_t;
++
++#define FE_DFL_ENV      ((const fenv_t *) -1)
+diff -ruN musl-1.1.21/arch/riscv64/bits/float.h musl-1.1.21-riscv/arch/riscv64/bits/float.h
+--- musl-1.1.21/arch/riscv64/bits/float.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/float.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,16 @@
++#define FLT_EVAL_METHOD 0
++
++#define LDBL_TRUE_MIN 6.47517511943802511092443895822764655e-4966L
++#define LDBL_MIN 3.36210314311209350626267781732175260e-4932L
++#define LDBL_MAX 1.18973149535723176508575932662800702e+4932L
++#define LDBL_EPSILON 1.92592994438723585305597794258492732e-34L
++
++#define LDBL_MANT_DIG 113
++#define LDBL_MIN_EXP (-16381)
++#define LDBL_MAX_EXP 16384
++
++#define LDBL_DIG 33
++#define LDBL_MIN_10_EXP (-4931)
++#define LDBL_MAX_10_EXP 4932
++
++#define DECIMAL_DIG 36
+diff -ruN musl-1.1.21/arch/riscv64/bits/ipc.h musl-1.1.21-riscv/arch/riscv64/bits/ipc.h
+--- musl-1.1.21/arch/riscv64/bits/ipc.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/ipc.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,14 @@
++struct ipc_perm {
++	key_t __ipc_perm_key;
++	uid_t uid;
++	gid_t gid;
++	uid_t cuid;
++	gid_t cgid;
++	mode_t mode;
++	unsigned short __ipc_perm_seq;
++
++	unsigned long __pad1;
++	unsigned long __pad2;
++};
++
++#define IPC_64 0
+diff -ruN musl-1.1.21/arch/riscv64/bits/limits.h musl-1.1.21-riscv/arch/riscv64/bits/limits.h
+--- musl-1.1.21/arch/riscv64/bits/limits.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/limits.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,7 @@
++#if defined(_POSIX_SOURCE) || defined(_POSIX_C_SOURCE) \
++ || defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++#define LONG_BIT 64
++#endif
++
++#define LONG_MAX  0x7fffffffffffffffL
++#define LLONG_MAX  0x7fffffffffffffffLL
+diff -ruN musl-1.1.21/arch/riscv64/bits/mman.h musl-1.1.21-riscv/arch/riscv64/bits/mman.h
+--- musl-1.1.21/arch/riscv64/bits/mman.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/mman.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1 @@
++#define MAP_32BIT       0x40
+diff -ruN musl-1.1.21/arch/riscv64/bits/msg.h musl-1.1.21-riscv/arch/riscv64/bits/msg.h
+--- musl-1.1.21/arch/riscv64/bits/msg.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/msg.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,13 @@
++struct msqid_ds {
++	struct ipc_perm msg_perm;
++	time_t msg_stime;
++	time_t msg_rtime;
++	time_t msg_ctime;
++	unsigned long msg_cbytes;
++	msgqnum_t msg_qnum;
++	msglen_t msg_qbytes;
++	pid_t msg_lspid;
++	pid_t msg_lrpid;
++	unsigned long __pad1;
++	unsigned long __pad2;
++};
+diff -ruN musl-1.1.21/arch/riscv64/bits/posix.h musl-1.1.21-riscv/arch/riscv64/bits/posix.h
+--- musl-1.1.21/arch/riscv64/bits/posix.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/posix.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,2 @@
++#define _POSIX_V6_LP64_OFF64 1
++#define _POSIX_V7_LP64_OFF64 1
+diff -ruN musl-1.1.21/arch/riscv64/bits/reg.h musl-1.1.21-riscv/arch/riscv64/bits/reg.h
+--- musl-1.1.21/arch/riscv64/bits/reg.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/reg.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,8 @@
++#undef __WORDSIZE
++#define __WORDSIZE 64
++#define REG_PC 0
++#define REG_RA 1
++#define REG_SP 2
++#define REG_TP 4
++#define REG_S0 8
++#define REG_A0 10
+diff -ruN musl-1.1.21/arch/riscv64/bits/sem.h musl-1.1.21-riscv/arch/riscv64/bits/sem.h
+--- musl-1.1.21/arch/riscv64/bits/sem.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/sem.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,9 @@
++struct semid_ds {
++	struct ipc_perm sem_perm;
++	time_t sem_otime;
++	time_t sem_ctime;
++	unsigned short sem_nsems;
++	char __sem_nsems_pad[sizeof(time_t)-sizeof(short)];
++	time_t __unused3;
++	time_t __unused4;
++};
+diff -ruN musl-1.1.21/arch/riscv64/bits/setjmp.h musl-1.1.21-riscv/arch/riscv64/bits/setjmp.h
+--- musl-1.1.21/arch/riscv64/bits/setjmp.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/setjmp.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1 @@
++typedef unsigned long __jmp_buf[28];
+diff -ruN musl-1.1.21/arch/riscv64/bits/shm.h musl-1.1.21-riscv/arch/riscv64/bits/shm.h
+--- musl-1.1.21/arch/riscv64/bits/shm.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/shm.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,26 @@
++#define SHMLBA 4096
++
++struct shmid_ds
++{
++	struct ipc_perm shm_perm;
++	size_t shm_segsz;
++	time_t shm_atime;
++	time_t shm_dtime;
++	time_t shm_ctime;
++	pid_t shm_cpid;
++	pid_t shm_lpid;
++	unsigned long shm_nattch;
++	unsigned long __pad1;
++	unsigned long __pad2;
++};
++
++struct shminfo {
++	unsigned long shmmax, shmmin, shmmni, shmseg, shmall, __unused[4];
++};
++
++struct shm_info {
++	int __used_ids;
++	unsigned long shm_tot, shm_rss, shm_swp;
++	unsigned long __swap_attempts, __swap_successes;
++};
++
+diff -ruN musl-1.1.21/arch/riscv64/bits/signal.h musl-1.1.21-riscv/arch/riscv64/bits/signal.h
+--- musl-1.1.21/arch/riscv64/bits/signal.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/signal.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,113 @@
++#if defined(_POSIX_SOURCE) || defined(_POSIX_C_SOURCE) \
++ || defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++
++#if defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++# define MINSIGSTKSZ 2048
++# define SIGSTKSZ 8192
++#endif
++
++/* gregs[0] holds the program counter. */
++
++#if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
++typedef unsigned long greg_t;
++typedef unsigned long gregset_t[32];
++
++struct __riscv_f_ext_state {
++	unsigned int f[32];
++	unsigned int fcsr;
++};
++
++struct __riscv_d_ext_state {
++	unsigned long long f[32];
++	unsigned int fcsr;
++};
++
++struct __riscv_q_ext_state {
++	unsigned long long f[64] __attribute__((aligned(16)));
++	unsigned int fcsr;
++	unsigned int reserved[3];
++};
++
++union __riscv_fp_state {
++	struct __riscv_f_ext_state f;
++	struct __riscv_d_ext_state d;
++	struct __riscv_q_ext_state q;
++};
++
++typedef union __riscv_fp_state fpregset_t;
++
++typedef struct sigcontext {
++	gregset_t gregs;
++	fpregset_t fpregs;
++} mcontext_t;
++
++#else
++typedef struct {
++	unsigned long gregs[32];
++	unsigned long long fpregs[66];
++} mcontext_t;
++#endif
++
++struct sigaltstack {
++	void *ss_sp;
++	int ss_flags;
++	size_t ss_size;
++};
++
++typedef struct __ucontext
++{
++	unsigned long uc_flags;
++	struct __ucontext *uc_link;
++	stack_t uc_stack;
++	sigset_t uc_sigmask;
++	char __unused[1024 / 8 - sizeof(sigset_t)];
++	mcontext_t uc_mcontext;
++} ucontext_t;
++
++#define SA_NOCLDSTOP 1
++#define SA_NOCLDWAIT 2
++#define SA_SIGINFO   4
++#define SA_ONSTACK   0x08000000
++#define SA_RESTART   0x10000000
++#define SA_NODEFER   0x40000000
++#define SA_RESETHAND 0x80000000
++#define SA_RESTORER  0x04000000
++
++#endif
++
++#define SIGHUP     1
++#define SIGINT     2
++#define SIGQUIT    3
++#define SIGILL     4
++#define SIGTRAP    5
++#define SIGABRT    6
++#define SIGIOT     SIGABRT
++#define SIGBUS     7
++#define SIGFPE     8
++#define SIGKILL    9
++#define SIGUSR1   10
++#define SIGSEGV   11
++#define SIGUSR2   12
++#define SIGPIPE   13
++#define SIGALRM   14
++#define SIGTERM   15
++#define SIGSTKFLT 16
++#define SIGCHLD   17
++#define SIGCONT   18
++#define SIGSTOP   19
++#define SIGTSTP   20
++#define SIGTTIN   21
++#define SIGTTOU   22
++#define SIGURG    23
++#define SIGXCPU   24
++#define SIGXFSZ   25
++#define SIGVTALRM 26
++#define SIGPROF   27
++#define SIGWINCH  28
++#define SIGIO     29
++#define SIGPOLL   SIGIO
++#define SIGPWR    30
++#define SIGSYS    31
++#define SIGUNUSED SIGSYS
++
++#define _NSIG     65
+diff -ruN musl-1.1.21/arch/riscv64/bits/socket.h musl-1.1.21-riscv/arch/riscv64/bits/socket.h
+--- musl-1.1.21/arch/riscv64/bits/socket.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/socket.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,33 @@
++#include <endian.h>
++
++struct msghdr {
++	void *msg_name;
++	socklen_t msg_namelen;
++	struct iovec *msg_iov;
++#if __BYTE_ORDER == __BIG_ENDIAN
++	int __pad1, msg_iovlen;
++#else
++	int msg_iovlen, __pad1;
++#endif
++	void *msg_control;
++#if __BYTE_ORDER == __BIG_ENDIAN
++	int __pad2;
++	socklen_t msg_controllen;
++#else
++	socklen_t msg_controllen;
++	int __pad2;
++#endif
++	int msg_flags;
++};
++
++struct cmsghdr {
++#if __BYTE_ORDER == __BIG_ENDIAN
++	int __pad1;
++	socklen_t cmsg_len;
++#else
++	socklen_t cmsg_len;
++	int __pad1;
++#endif
++	int cmsg_level;
++	int cmsg_type;
++};
+diff -ruN musl-1.1.21/arch/riscv64/bits/stat.h musl-1.1.21-riscv/arch/riscv64/bits/stat.h
+--- musl-1.1.21/arch/riscv64/bits/stat.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/stat.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,18 @@
++struct stat {
++	dev_t st_dev;
++	ino_t st_ino;
++	mode_t st_mode;
++	nlink_t st_nlink;
++	uid_t st_uid;
++	gid_t st_gid;
++	dev_t st_rdev;
++	unsigned long __pad;
++	off_t st_size;
++	blksize_t st_blksize;
++	int __pad2;
++	blkcnt_t st_blocks;
++	struct timespec st_atim;
++	struct timespec st_mtim;
++	struct timespec st_ctim;
++	unsigned __unused[2];
++};
+diff -ruN musl-1.1.21/arch/riscv64/bits/stdint.h musl-1.1.21-riscv/arch/riscv64/bits/stdint.h
+--- musl-1.1.21/arch/riscv64/bits/stdint.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/stdint.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,20 @@
++typedef int32_t int_fast16_t;
++typedef int32_t int_fast32_t;
++typedef uint32_t uint_fast16_t;
++typedef uint32_t uint_fast32_t;
++
++#define INT_FAST16_MIN  INT32_MIN
++#define INT_FAST32_MIN  INT32_MIN
++
++#define INT_FAST16_MAX  INT32_MAX
++#define INT_FAST32_MAX  INT32_MAX
++
++#define UINT_FAST16_MAX UINT32_MAX
++#define UINT_FAST32_MAX UINT32_MAX
++
++#define INTPTR_MIN      INT64_MIN
++#define INTPTR_MAX      INT64_MAX
++#define UINTPTR_MAX     UINT64_MAX
++#define PTRDIFF_MIN     INT64_MIN
++#define PTRDIFF_MAX     INT64_MAX
++#define SIZE_MAX        UINT64_MAX
+diff -ruN musl-1.1.21/arch/riscv64/bits/syscall.h.in musl-1.1.21-riscv/arch/riscv64/bits/syscall.h.in
+--- musl-1.1.21/arch/riscv64/bits/syscall.h.in	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/syscall.h.in	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,277 @@
++#define __NR_io_setup 0
++#define __NR_io_destroy 1
++#define __NR_io_submit 2
++#define __NR_io_cancel 3
++#define __NR_io_getevents 4
++#define __NR_setxattr 5
++#define __NR_lsetxattr 6
++#define __NR_fsetxattr 7
++#define __NR_getxattr 8
++#define __NR_lgetxattr 9
++#define __NR_fgetxattr 10
++#define __NR_listxattr 11
++#define __NR_llistxattr 12
++#define __NR_flistxattr 13
++#define __NR_removexattr 14
++#define __NR_lremovexattr 15
++#define __NR_fremovexattr 16
++#define __NR_getcwd 17
++#define __NR_lookup_dcookie 18
++#define __NR_eventfd2 19
++#define __NR_epoll_create1 20
++#define __NR_epoll_ctl 21
++#define __NR_epoll_pwait 22
++#define __NR_dup 23
++#define __NR_dup3 24
++#define __NR_fcntl 25
++#define __NR_inotify_init1 26
++#define __NR_inotify_add_watch 27
++#define __NR_inotify_rm_watch 28
++#define __NR_ioctl 29
++#define __NR_ioprio_set 30
++#define __NR_ioprio_get 31
++#define __NR_flock 32
++#define __NR_mknodat 33
++#define __NR_mkdirat 34
++#define __NR_unlinkat 35
++#define __NR_symlinkat 36
++#define __NR_linkat 37
++#define __NR_umount2 39
++#define __NR_mount 40
++#define __NR_pivot_root 41
++#define __NR_nfsservctl 42
++#define __NR_statfs 43
++#define __NR_fstatfs 44
++#define __NR_truncate 45
++#define __NR_ftruncate 46
++#define __NR_fallocate 47
++#define __NR_faccessat 48
++#define __NR_chdir 49
++#define __NR_fchdir 50
++#define __NR_chroot 51
++#define __NR_fchmod 52
++#define __NR_fchmodat 53
++#define __NR_fchownat 54
++#define __NR_fchown 55
++#define __NR_openat 56
++#define __NR_close 57
++#define __NR_vhangup 58
++#define __NR_pipe2 59
++#define __NR_quotactl 60
++#define __NR_getdents64 61
++#define __NR_lseek 62
++#define __NR_read 63
++#define __NR_write 64
++#define __NR_readv 65
++#define __NR_writev 66
++#define __NR_pread64 67
++#define __NR_pwrite64 68
++#define __NR_preadv 69
++#define __NR_pwritev 70
++#define __NR_sendfile 71
++#define __NR_pselect6 72
++#define __NR_ppoll 73
++#define __NR_signalfd4 74
++#define __NR_vmsplice 75
++#define __NR_splice 76
++#define __NR_tee 77
++#define __NR_readlinkat 78
++#define __NR_fstatat 79
++#define __NR_fstat 80
++#define __NR_sync 81
++#define __NR_fsync 82
++#define __NR_fdatasync 83
++#define __NR_sync_file_range 84
++#define __NR_timerfd_create 85
++#define __NR_timerfd_settime 86
++#define __NR_timerfd_gettime 87
++#define __NR_utimensat 88
++#define __NR_acct 89
++#define __NR_capget 90
++#define __NR_capset 91
++#define __NR_personality 92
++#define __NR_exit 93
++#define __NR_exit_group 94
++#define __NR_waitid 95
++#define __NR_set_tid_address 96
++#define __NR_unshare 97
++#define __NR_futex 98
++#define __NR_set_robust_list 99
++#define __NR_get_robust_list 100
++#define __NR_nanosleep 101
++#define __NR_getitimer 102
++#define __NR_setitimer 103
++#define __NR_kexec_load 104
++#define __NR_init_module 105
++#define __NR_delete_module 106
++#define __NR_timer_create 107
++#define __NR_timer_gettime 108
++#define __NR_timer_getoverrun 109
++#define __NR_timer_settime 110
++#define __NR_timer_delete 111
++#define __NR_clock_settime 112
++#define __NR_clock_gettime 113
++#define __NR_clock_getres 114
++#define __NR_clock_nanosleep 115
++#define __NR_syslog 116
++#define __NR_ptrace 117
++#define __NR_sched_setparam 118
++#define __NR_sched_setscheduler 119
++#define __NR_sched_getscheduler 120
++#define __NR_sched_getparam 121
++#define __NR_sched_setaffinity 122
++#define __NR_sched_getaffinity 123
++#define __NR_sched_yield 124
++#define __NR_sched_get_priority_max 125
++#define __NR_sched_get_priority_min 126
++#define __NR_sched_rr_get_interval 127
++#define __NR_restart_syscall 128
++#define __NR_kill 129
++#define __NR_tkill 130
++#define __NR_tgkill 131
++#define __NR_sigaltstack 132
++#define __NR_rt_sigsuspend 133
++#define __NR_rt_sigaction 134
++#define __NR_rt_sigprocmask 135
++#define __NR_rt_sigpending 136
++#define __NR_rt_sigtimedwait 137
++#define __NR_rt_sigqueueinfo 138
++#define __NR_rt_sigreturn 139
++#define __NR_setpriority 140
++#define __NR_getpriority 141
++#define __NR_reboot 142
++#define __NR_setregid 143
++#define __NR_setgid 144
++#define __NR_setreuid 145
++#define __NR_setuid 146
++#define __NR_setresuid 147
++#define __NR_getresuid 148
++#define __NR_setresgid 149
++#define __NR_getresgid 150
++#define __NR_setfsuid 151
++#define __NR_setfsgid 152
++#define __NR_times 153
++#define __NR_setpgid 154
++#define __NR_getpgid 155
++#define __NR_getsid 156
++#define __NR_setsid 157
++#define __NR_getgroups 158
++#define __NR_setgroups 159
++#define __NR_uname 160
++#define __NR_sethostname 161
++#define __NR_setdomainname 162
++#define __NR_getrlimit 163
++#define __NR_setrlimit 164
++#define __NR_getrusage 165
++#define __NR_umask 166
++#define __NR_prctl 167
++#define __NR_getcpu 168
++#define __NR_gettimeofday 169
++#define __NR_settimeofday 170
++#define __NR_adjtimex 171
++#define __NR_getpid 172
++#define __NR_getppid 173
++#define __NR_getuid 174
++#define __NR_geteuid 175
++#define __NR_getgid 176
++#define __NR_getegid 177
++#define __NR_gettid 178
++#define __NR_sysinfo 179
++#define __NR_mq_open 180
++#define __NR_mq_unlink 181
++#define __NR_mq_timedsend 182
++#define __NR_mq_timedreceive 183
++#define __NR_mq_notify 184
++#define __NR_mq_getsetattr 185
++#define __NR_msgget 186
++#define __NR_msgctl 187
++#define __NR_msgrcv 188
++#define __NR_msgsnd 189
++#define __NR_semget 190
++#define __NR_semctl 191
++#define __NR_semtimedop 192
++#define __NR_semop 193
++#define __NR_shmget 194
++#define __NR_shmctl 195
++#define __NR_shmat 196
++#define __NR_shmdt 197
++#define __NR_socket 198
++#define __NR_socketpair 199
++#define __NR_bind 200
++#define __NR_listen 201
++#define __NR_accept 202
++#define __NR_connect 203
++#define __NR_getsockname 204
++#define __NR_getpeername 205
++#define __NR_sendto 206
++#define __NR_recvfrom 207
++#define __NR_setsockopt 208
++#define __NR_getsockopt 209
++#define __NR_shutdown 210
++#define __NR_sendmsg 211
++#define __NR_recvmsg 212
++#define __NR_readahead 213
++#define __NR_brk 214
++#define __NR_munmap 215
++#define __NR_mremap 216
++#define __NR_add_key 217
++#define __NR_request_key 218
++#define __NR_keyctl 219
++#define __NR_clone 220
++#define __NR_execve 221
++#define __NR_mmap 222
++#define __NR_fadvise64 223
++#define __NR_swapon 224
++#define __NR_swapoff 225
++#define __NR_mprotect 226
++#define __NR_msync 227
++#define __NR_mlock 228
++#define __NR_munlock 229
++#define __NR_mlockall 230
++#define __NR_munlockall 231
++#define __NR_mincore 232
++#define __NR_madvise 233
++#define __NR_remap_file_pages 234
++#define __NR_mbind 235
++#define __NR_get_mempolicy 236
++#define __NR_set_mempolicy 237
++#define __NR_migrate_pages 238
++#define __NR_move_pages 239
++#define __NR_rt_tgsigqueueinfo 240
++#define __NR_perf_event_open 241
++#define __NR_accept4 242
++#define __NR_recvmmsg 243
++#define __NR_arch_specific_syscall 244
++#define __NR_wait4 260
++#define __NR_prlimit64 261
++#define __NR_fanotify_init 262
++#define __NR_fanotify_mark 263
++#define __NR_name_to_handle_at 264
++#define __NR_open_by_handle_at 265
++#define __NR_clock_adjtime 266
++#define __NR_syncfs 267
++#define __NR_setns 268
++#define __NR_sendmmsg 269
++#define __NR_process_vm_readv 270
++#define __NR_process_vm_writev 271
++#define __NR_kcmp 272
++#define __NR_finit_module 273
++#define __NR_sched_setattr 274
++#define __NR_sched_getattr 275
++#define __NR_renameat2 276
++#define __NR_seccomp 277
++#define __NR_getrandom 278
++#define __NR_memfd_create 279
++#define __NR_bpf 280
++#define __NR_execveat 281
++#define __NR_userfaultfd 282
++#define __NR_membarrier 283
++#define __NR_mlock2 284
++#define __NR_copy_file_range 285
++#define __NR_preadv2 286
++#define __NR_pwritev2 287
++#define __NR_pkey_mprotect 288
++#define __NR_pkey_alloc 289
++#define __NR_pkey_free 290
++#define __NR_sysriscv __NR_arch_specific_syscall
++
+diff -ruN musl-1.1.21/arch/riscv64/bits/user.h musl-1.1.21-riscv/arch/riscv64/bits/user.h
+--- musl-1.1.21/arch/riscv64/bits/user.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/bits/user.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,43 @@
++struct user_regs_struct {
++	unsigned long pc;
++	unsigned long ra;
++	unsigned long sp;
++	unsigned long gp;
++	unsigned long tp;
++	unsigned long t0;
++	unsigned long t1;
++	unsigned long t2;
++	unsigned long s0;
++	unsigned long s1;
++	unsigned long a0;
++	unsigned long a1;
++	unsigned long a2;
++	unsigned long a3;
++	unsigned long a4;
++	unsigned long a5;
++	unsigned long a6;
++	unsigned long a7;
++	unsigned long s2;
++	unsigned long s3;
++	unsigned long s4;
++	unsigned long s5;
++	unsigned long s6;
++	unsigned long s7;
++	unsigned long s8;
++	unsigned long s9;
++	unsigned long s10;
++	unsigned long s11;
++	unsigned long t3;
++	unsigned long t4;
++	unsigned long t5;
++	unsigned long t6;
++};
++
++struct user_fpregs_struct {
++	double f[32];
++	unsigned int fcsr;
++};
++
++#define ELF_NGREG 32
++typedef unsigned long elf_greg_t, elf_gregset_t[ELF_NGREG];
++typedef struct user_fpregs_struct elf_fpregset_t;
+diff -ruN musl-1.1.21/arch/riscv64/crt_arch.h musl-1.1.21-riscv/arch/riscv64/crt_arch.h
+--- musl-1.1.21/arch/riscv64/crt_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/crt_arch.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,18 @@
++__asm__(
++".text\n"
++".global " START "\n"
++".type " START ",%function\n"
++START ":\n"
++".weak __global_pointer$\n"
++".hidden __global_pointer$\n"
++".option push\n"
++".option norelax\n\t"
++"lla gp, __global_pointer$\n"
++".option pop\n\t"
++"mv a0, sp\n"
++".weak _DYNAMIC\n"
++".hidden _DYNAMIC\n\t"
++"lla a1, _DYNAMIC\n\t"
++"andi sp, sp, -16\n\t"
++"jal " START "_c"
++);
+diff -ruN musl-1.1.21/arch/riscv64/pthread_arch.h musl-1.1.21-riscv/arch/riscv64/pthread_arch.h
+--- musl-1.1.21/arch/riscv64/pthread_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/pthread_arch.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,12 @@
++static inline struct pthread *__pthread_self()
++{
++	char *tp;
++	__asm__ __volatile__("mv %0, tp" : "=r"(tp));
++	return (void *)(tp - sizeof(struct pthread));
++}
++
++#define TLS_ABOVE_TP
++#define GAP_ABOVE_TP 0
++#define TP_ADJ(p) ((char *)p + sizeof(struct pthread))
++
++#define MC_PC gregs[0]
+diff -ruN musl-1.1.21/arch/riscv64/reloc.h musl-1.1.21-riscv/arch/riscv64/reloc.h
+--- musl-1.1.21/arch/riscv64/reloc.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/reloc.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,27 @@
++#if defined __riscv_float_abi_soft
++#define RISCV_FP_SUFFIX "-sf"
++#elif defined __riscv_float_abi_single
++#define RISCV_FP_SUFFIX "-sp"
++#elif defined __riscv_float_abi_double
++#define RISCV_FP_SUFFIX ""
++#endif
++
++#define RISCV_LDSO_HELPER(x) "riscv" #x
++#define RISCV_LDSO(x) RISCV_LDSO_HELPER(x)
++
++#define LDSO_ARCH RISCV_LDSO(__riscv_xlen) RISCV_FP_SUFFIX
++
++#define NO_LEGACY_INITFINI
++
++#define TPOFF_K 0
++
++#define REL_SYMBOLIC    R_RISCV_64
++#define REL_PLT         R_RISCV_JUMP_SLOT
++#define REL_RELATIVE    R_RISCV_RELATIVE
++#define REL_COPY        R_RISCV_COPY
++#define REL_DTPMOD      R_RISCV_TLS_DTPMOD64
++#define REL_DTPOFF      R_RISCV_TLS_DTPREL64
++#define REL_TPOFF       R_RISCV_TLS_TPREL64
++
++#define CRTJMP(pc,sp) __asm__ __volatile__( \
++	"mv sp, %1 ; jr %0" : : "r"(pc), "r"(sp) : "memory" )
+diff -ruN musl-1.1.21/arch/riscv64/syscall_arch.h musl-1.1.21-riscv/arch/riscv64/syscall_arch.h
+--- musl-1.1.21/arch/riscv64/syscall_arch.h	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/arch/riscv64/syscall_arch.h	2019-02-12 16:53:44.433283616 +0000
+@@ -0,0 +1,76 @@
++#define __SYSCALL_LL_E(x) (x)
++#define __SYSCALL_LL_O(x) (x)
++
++#define __asm_syscall(...) \
++	__asm__ __volatile__ ("scall\n\t" \
++	: "+r"(a0) : __VA_ARGS__ : "memory"); \
++	return a0; \
++
++static inline long __syscall0(long n)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0");
++	__asm_syscall("r"(a7))
++}
++
++static inline long __syscall1(long n, long a)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	__asm_syscall("r"(a7), "0"(a0))
++}
++
++static inline long __syscall2(long n, long a, long b)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1))
++}
++
++static inline long __syscall3(long n, long a, long b, long c)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2))
++}
++
++static inline long __syscall4(long n, long a, long b, long c, long d)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	register long a3 __asm__("a3") = d;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2), "r"(a3))
++}
++
++static inline long __syscall5(long n, long a, long b, long c, long d, long e)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	register long a3 __asm__("a3") = d;
++	register long a4 __asm__("a4") = e;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(a4))
++}
++
++static inline long __syscall6(long n, long a, long b, long c, long d, long e, long f)
++{
++	register long a7 __asm__("a7") = n;
++	register long a0 __asm__("a0") = a;
++	register long a1 __asm__("a1") = b;
++	register long a2 __asm__("a2") = c;
++	register long a3 __asm__("a3") = d;
++	register long a4 __asm__("a4") = e;
++	register long a5 __asm__("a5") = f;
++	__asm_syscall("r"(a7), "0"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(a4), "r"(a5))
++}
++
++#define VDSO_USEFUL
++/* We don't have a clock_gettime function.
++#define VDSO_CGT_SYM "__vdso_clock_gettime"
++#define VDSO_CGT_VER "LINUX_2.6" */
+diff -ruN musl-1.1.21/configure musl-1.1.21-riscv/configure
+--- musl-1.1.21/configure	2019-01-21 17:30:47.000000000 +0000
++++ musl-1.1.21-riscv/configure	2019-02-12 17:22:52.656571732 +0000
+@@ -322,6 +322,8 @@
+ or1k*) ARCH=or1k ;;
+ powerpc64*|ppc64*) ARCH=powerpc64 ;;
+ powerpc*|ppc*) ARCH=powerpc ;;
++riscv32*) ARCH=riscv32 ;;
++riscv64*) ARCH=riscv64 ;;
+ sh[1-9bel-]*|sh|superh*) ARCH=sh ;;
+ s390x*) ARCH=s390x ;;
+ unknown) fail "$0: unable to detect target arch; try $0 --target=..." ;;
+@@ -640,6 +642,12 @@
+ trycppif _SOFT_FLOAT "$t" && fail "$0: error: soft-float not supported on powerpc64"
+ fi
+ 
++if test "$ARCH" = "riscv32" || test "$ARCH" = "riscv64" ; then
++trycppif "RISCVEB || _RISCVEB || __RISCVEB || __RISCVEB__" "$t" && SUBARCH=${SUBARCH}eb
++trycppif __riscv_soft_float "$t" && SUBARCH=${SUBARCH}-sf
++trycppif __riscv_float_abi_soft "$t" && SUBARCH=${SUBARCH}-sf
++fi
++
+ if test "$ARCH" = "sh" ; then
+ tryflag CFLAGS_AUTO -Wa,--isa=any
+ trycppif __BIG_ENDIAN__ "$t" && SUBARCH=${SUBARCH}eb
+diff -ruN musl-1.1.21/crt/riscv32/crti.s musl-1.1.21-riscv/crt/riscv32/crti.s
+--- musl-1.1.21/crt/riscv32/crti.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/crt/riscv32/crti.s	2019-02-12 16:53:44.436616950 +0000
+@@ -0,0 +1,11 @@
++.section .init
++.global _init
++.type _init,%function
++_init:
++        ret
++
++.section .fini
++.global _fini
++.type _fini,%function
++_fini:
++        ret
+diff -ruN musl-1.1.21/crt/riscv64/crti.s musl-1.1.21-riscv/crt/riscv64/crti.s
+--- musl-1.1.21/crt/riscv64/crti.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/crt/riscv64/crti.s	2019-02-12 16:53:44.436616950 +0000
+@@ -0,0 +1,11 @@
++.section .init
++.global _init
++.type _init,%function
++_init:
++        ret
++
++.section .fini
++.global _fini
++.type _fini %function
++_fini:
++        ret
+diff -ruN musl-1.1.21/include/elf.h musl-1.1.21-riscv/include/elf.h
+--- musl-1.1.21/include/elf.h	2019-01-21 17:30:47.000000000 +0000
++++ musl-1.1.21-riscv/include/elf.h	2019-02-12 16:53:44.436616950 +0000
+@@ -3166,6 +3166,62 @@
+ #define R_BPF_NONE		0
+ #define R_BPF_MAP_FD		1
+ 
++#define R_RISCV_NONE            0
++#define R_RISCV_32              1
++#define R_RISCV_64              2
++#define R_RISCV_RELATIVE        3
++#define R_RISCV_COPY            4
++#define R_RISCV_JUMP_SLOT       5
++#define R_RISCV_TLS_DTPMOD32    6
++#define R_RISCV_TLS_DTPMOD64    7
++#define R_RISCV_TLS_DTPREL32    8
++#define R_RISCV_TLS_DTPREL64    9
++#define R_RISCV_TLS_TPREL32     10
++#define R_RISCV_TLS_TPREL64     11
++
++#define R_RISCV_BRANCH          16
++#define R_RISCV_JAL             17
++#define R_RISCV_CALL            18
++#define R_RISCV_CALL_PLT        19
++#define R_RISCV_GOT_HI20        20
++#define R_RISCV_TLS_GOT_HI20    21
++#define R_RISCV_TLS_GD_HI20     22
++#define R_RISCV_PCREL_HI20      23
++#define R_RISCV_PCREL_LO12_I    24
++#define R_RISCV_PCREL_LO12_S    25
++#define R_RISCV_HI20            26
++#define R_RISCV_LO12_I          27
++#define R_RISCV_LO12_S          28
++#define R_RISCV_TPREL_HI20      29
++#define R_RISCV_TPREL_LO12_I    30
++#define R_RISCV_TPREL_LO12_S    31
++#define R_RISCV_TPREL_ADD       32
++#define R_RISCV_ADD8            33
++#define R_RISCV_ADD16           34
++#define R_RISCV_ADD32           35
++#define R_RISCV_ADD64           36
++#define R_RISCV_SUB8            37
++#define R_RISCV_SUB16           38
++#define R_RISCV_SUB32           39
++#define R_RISCV_SUB64           40
++#define R_RISCV_GNU_VTINHERIT   41
++#define R_RISCV_GNU_VTENTRY     42
++#define R_RISCV_ALIGN           43
++#define R_RISCV_RVC_BRANCH      44
++#define R_RISCV_RVC_JUMP        45
++#define R_RISCV_RVC_LUI         46
++#define R_RISCV_GPREL_I         47
++#define R_RISCV_GPREL_S         48
++#define R_RISCV_TPREL_I         49
++#define R_RISCV_TPREL_S         50
++#define R_RISCV_RELAX           51
++#define R_RISCV_SUB6            52
++#define R_RISCV_SET6            53
++#define R_RISCV_SET8            54
++#define R_RISCV_SET16           55
++#define R_RISCV_SET32           56
++#define R_RISCV_32_PCREL        57
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff -ruN musl-1.1.21/include/elf.h.orig musl-1.1.21-riscv/include/elf.h.orig
+--- musl-1.1.21/include/elf.h.orig	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/include/elf.h.orig	2019-01-21 17:30:47.000000000 +0000
+@@ -0,0 +1,3174 @@
++#ifndef _ELF_H
++#define _ELF_H
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#include <stdint.h>
++
++typedef uint16_t Elf32_Half;
++typedef uint16_t Elf64_Half;
++
++typedef uint32_t Elf32_Word;
++typedef	int32_t  Elf32_Sword;
++typedef uint32_t Elf64_Word;
++typedef	int32_t  Elf64_Sword;
++
++typedef uint64_t Elf32_Xword;
++typedef	int64_t  Elf32_Sxword;
++typedef uint64_t Elf64_Xword;
++typedef	int64_t  Elf64_Sxword;
++
++typedef uint32_t Elf32_Addr;
++typedef uint64_t Elf64_Addr;
++
++typedef uint32_t Elf32_Off;
++typedef uint64_t Elf64_Off;
++
++typedef uint16_t Elf32_Section;
++typedef uint16_t Elf64_Section;
++
++typedef Elf32_Half Elf32_Versym;
++typedef Elf64_Half Elf64_Versym;
++
++#define EI_NIDENT (16)
++
++typedef struct {
++  unsigned char	e_ident[EI_NIDENT];
++  Elf32_Half	e_type;
++  Elf32_Half	e_machine;
++  Elf32_Word	e_version;
++  Elf32_Addr	e_entry;
++  Elf32_Off	e_phoff;
++  Elf32_Off	e_shoff;
++  Elf32_Word	e_flags;
++  Elf32_Half	e_ehsize;
++  Elf32_Half	e_phentsize;
++  Elf32_Half	e_phnum;
++  Elf32_Half	e_shentsize;
++  Elf32_Half	e_shnum;
++  Elf32_Half	e_shstrndx;
++} Elf32_Ehdr;
++
++typedef struct {
++  unsigned char	e_ident[EI_NIDENT];
++  Elf64_Half	e_type;
++  Elf64_Half	e_machine;
++  Elf64_Word	e_version;
++  Elf64_Addr	e_entry;
++  Elf64_Off	e_phoff;
++  Elf64_Off	e_shoff;
++  Elf64_Word	e_flags;
++  Elf64_Half	e_ehsize;
++  Elf64_Half	e_phentsize;
++  Elf64_Half	e_phnum;
++  Elf64_Half	e_shentsize;
++  Elf64_Half	e_shnum;
++  Elf64_Half	e_shstrndx;
++} Elf64_Ehdr;
++
++#define EI_MAG0		0
++#define ELFMAG0		0x7f
++
++#define EI_MAG1		1
++#define ELFMAG1		'E'
++
++#define EI_MAG2		2
++#define ELFMAG2		'L'
++
++#define EI_MAG3		3
++#define ELFMAG3		'F'
++
++
++#define	ELFMAG		"\177ELF"
++#define	SELFMAG		4
++
++#define EI_CLASS	4
++#define ELFCLASSNONE	0
++#define ELFCLASS32	1
++#define ELFCLASS64	2
++#define ELFCLASSNUM	3
++
++#define EI_DATA		5
++#define ELFDATANONE	0
++#define ELFDATA2LSB	1
++#define ELFDATA2MSB	2
++#define ELFDATANUM	3
++
++#define EI_VERSION	6
++
++
++#define EI_OSABI	7
++#define ELFOSABI_NONE		0
++#define ELFOSABI_SYSV		0
++#define ELFOSABI_HPUX		1
++#define ELFOSABI_NETBSD		2
++#define ELFOSABI_LINUX		3
++#define ELFOSABI_GNU		3
++#define ELFOSABI_SOLARIS	6
++#define ELFOSABI_AIX		7
++#define ELFOSABI_IRIX		8
++#define ELFOSABI_FREEBSD	9
++#define ELFOSABI_TRU64		10
++#define ELFOSABI_MODESTO	11
++#define ELFOSABI_OPENBSD	12
++#define ELFOSABI_ARM		97
++#define ELFOSABI_STANDALONE	255
++
++#define EI_ABIVERSION	8
++
++#define EI_PAD		9
++
++
++
++#define ET_NONE		0
++#define ET_REL		1
++#define ET_EXEC		2
++#define ET_DYN		3
++#define ET_CORE		4
++#define	ET_NUM		5
++#define ET_LOOS		0xfe00
++#define ET_HIOS		0xfeff
++#define ET_LOPROC	0xff00
++#define ET_HIPROC	0xffff
++
++
++
++#define EM_NONE		 0
++#define EM_M32		 1
++#define EM_SPARC	 2
++#define EM_386		 3
++#define EM_68K		 4
++#define EM_88K		 5
++#define EM_860		 7
++#define EM_MIPS		 8
++#define EM_S370		 9
++#define EM_MIPS_RS3_LE	10
++
++#define EM_PARISC	15
++#define EM_VPP500	17
++#define EM_SPARC32PLUS	18
++#define EM_960		19
++#define EM_PPC		20
++#define EM_PPC64	21
++#define EM_S390		22
++
++#define EM_V800		36
++#define EM_FR20		37
++#define EM_RH32		38
++#define EM_RCE		39
++#define EM_ARM		40
++#define EM_FAKE_ALPHA	41
++#define EM_SH		42
++#define EM_SPARCV9	43
++#define EM_TRICORE	44
++#define EM_ARC		45
++#define EM_H8_300	46
++#define EM_H8_300H	47
++#define EM_H8S		48
++#define EM_H8_500	49
++#define EM_IA_64	50
++#define EM_MIPS_X	51
++#define EM_COLDFIRE	52
++#define EM_68HC12	53
++#define EM_MMA		54
++#define EM_PCP		55
++#define EM_NCPU		56
++#define EM_NDR1		57
++#define EM_STARCORE	58
++#define EM_ME16		59
++#define EM_ST100	60
++#define EM_TINYJ	61
++#define EM_X86_64	62
++#define EM_PDSP		63
++
++#define EM_FX66		66
++#define EM_ST9PLUS	67
++#define EM_ST7		68
++#define EM_68HC16	69
++#define EM_68HC11	70
++#define EM_68HC08	71
++#define EM_68HC05	72
++#define EM_SVX		73
++#define EM_ST19		74
++#define EM_VAX		75
++#define EM_CRIS		76
++#define EM_JAVELIN	77
++#define EM_FIREPATH	78
++#define EM_ZSP		79
++#define EM_MMIX		80
++#define EM_HUANY	81
++#define EM_PRISM	82
++#define EM_AVR		83
++#define EM_FR30		84
++#define EM_D10V		85
++#define EM_D30V		86
++#define EM_V850		87
++#define EM_M32R		88
++#define EM_MN10300	89
++#define EM_MN10200	90
++#define EM_PJ		91
++#define EM_OR1K		92
++#define EM_OPENRISC	92
++#define EM_ARC_A5	93
++#define EM_ARC_COMPACT	93
++#define EM_XTENSA	94
++#define EM_VIDEOCORE	95
++#define EM_TMM_GPP	96
++#define EM_NS32K	97
++#define EM_TPC		98
++#define EM_SNP1K	99
++#define EM_ST200	100
++#define EM_IP2K		101
++#define EM_MAX		102
++#define EM_CR		103
++#define EM_F2MC16	104
++#define EM_MSP430	105
++#define EM_BLACKFIN	106
++#define EM_SE_C33	107
++#define EM_SEP		108
++#define EM_ARCA		109
++#define EM_UNICORE	110
++#define EM_EXCESS	111
++#define EM_DXP		112
++#define EM_ALTERA_NIOS2 113
++#define EM_CRX		114
++#define EM_XGATE	115
++#define EM_C166		116
++#define EM_M16C		117
++#define EM_DSPIC30F	118
++#define EM_CE		119
++#define EM_M32C		120
++#define EM_TSK3000	131
++#define EM_RS08		132
++#define EM_SHARC	133
++#define EM_ECOG2	134
++#define EM_SCORE7	135
++#define EM_DSP24	136
++#define EM_VIDEOCORE3	137
++#define EM_LATTICEMICO32 138
++#define EM_SE_C17	139
++#define EM_TI_C6000	140
++#define EM_TI_C2000	141
++#define EM_TI_C5500	142
++#define EM_TI_ARP32	143
++#define EM_TI_PRU	144
++#define EM_MMDSP_PLUS	160
++#define EM_CYPRESS_M8C	161
++#define EM_R32C		162
++#define EM_TRIMEDIA	163
++#define EM_QDSP6	164
++#define EM_8051		165
++#define EM_STXP7X	166
++#define EM_NDS32	167
++#define EM_ECOG1X	168
++#define EM_MAXQ30	169
++#define EM_XIMO16	170
++#define EM_MANIK	171
++#define EM_CRAYNV2	172
++#define EM_RX		173
++#define EM_METAG	174
++#define EM_MCST_ELBRUS	175
++#define EM_ECOG16	176
++#define EM_CR16		177
++#define EM_ETPU		178
++#define EM_SLE9X	179
++#define EM_L10M		180
++#define EM_K10M		181
++#define EM_AARCH64	183
++#define EM_AVR32	185
++#define EM_STM8		186
++#define EM_TILE64	187
++#define EM_TILEPRO	188
++#define EM_MICROBLAZE	189
++#define EM_CUDA		190
++#define EM_TILEGX	191
++#define EM_CLOUDSHIELD	192
++#define EM_COREA_1ST	193
++#define EM_COREA_2ND	194
++#define EM_ARC_COMPACT2	195
++#define EM_OPEN8	196
++#define EM_RL78		197
++#define EM_VIDEOCORE5	198
++#define EM_78KOR	199
++#define EM_56800EX	200
++#define EM_BA1		201
++#define EM_BA2		202
++#define EM_XCORE	203
++#define EM_MCHP_PIC	204
++#define EM_KM32		210
++#define EM_KMX32	211
++#define EM_EMX16	212
++#define EM_EMX8		213
++#define EM_KVARC	214
++#define EM_CDP		215
++#define EM_COGE		216
++#define EM_COOL		217
++#define EM_NORC		218
++#define EM_CSR_KALIMBA	219
++#define EM_Z80		220
++#define EM_VISIUM	221
++#define EM_FT32		222
++#define EM_MOXIE	223
++#define EM_AMDGPU	224
++#define EM_RISCV	243
++#define EM_BPF		247
++#define EM_NUM		248
++
++#define EM_ALPHA	0x9026
++
++#define EV_NONE		0
++#define EV_CURRENT	1
++#define EV_NUM		2
++
++typedef struct {
++  Elf32_Word	sh_name;
++  Elf32_Word	sh_type;
++  Elf32_Word	sh_flags;
++  Elf32_Addr	sh_addr;
++  Elf32_Off	sh_offset;
++  Elf32_Word	sh_size;
++  Elf32_Word	sh_link;
++  Elf32_Word	sh_info;
++  Elf32_Word	sh_addralign;
++  Elf32_Word	sh_entsize;
++} Elf32_Shdr;
++
++typedef struct {
++  Elf64_Word	sh_name;
++  Elf64_Word	sh_type;
++  Elf64_Xword	sh_flags;
++  Elf64_Addr	sh_addr;
++  Elf64_Off	sh_offset;
++  Elf64_Xword	sh_size;
++  Elf64_Word	sh_link;
++  Elf64_Word	sh_info;
++  Elf64_Xword	sh_addralign;
++  Elf64_Xword	sh_entsize;
++} Elf64_Shdr;
++
++
++
++#define SHN_UNDEF	0
++#define SHN_LORESERVE	0xff00
++#define SHN_LOPROC	0xff00
++#define SHN_BEFORE	0xff00
++
++#define SHN_AFTER	0xff01
++
++#define SHN_HIPROC	0xff1f
++#define SHN_LOOS	0xff20
++#define SHN_HIOS	0xff3f
++#define SHN_ABS		0xfff1
++#define SHN_COMMON	0xfff2
++#define SHN_XINDEX	0xffff
++#define SHN_HIRESERVE	0xffff
++
++
++
++#define SHT_NULL	  0
++#define SHT_PROGBITS	  1
++#define SHT_SYMTAB	  2
++#define SHT_STRTAB	  3
++#define SHT_RELA	  4
++#define SHT_HASH	  5
++#define SHT_DYNAMIC	  6
++#define SHT_NOTE	  7
++#define SHT_NOBITS	  8
++#define SHT_REL		  9
++#define SHT_SHLIB	  10
++#define SHT_DYNSYM	  11
++#define SHT_INIT_ARRAY	  14
++#define SHT_FINI_ARRAY	  15
++#define SHT_PREINIT_ARRAY 16
++#define SHT_GROUP	  17
++#define SHT_SYMTAB_SHNDX  18
++#define	SHT_NUM		  19
++#define SHT_LOOS	  0x60000000
++#define SHT_GNU_ATTRIBUTES 0x6ffffff5
++#define SHT_GNU_HASH	  0x6ffffff6
++#define SHT_GNU_LIBLIST	  0x6ffffff7
++#define SHT_CHECKSUM	  0x6ffffff8
++#define SHT_LOSUNW	  0x6ffffffa
++#define SHT_SUNW_move	  0x6ffffffa
++#define SHT_SUNW_COMDAT   0x6ffffffb
++#define SHT_SUNW_syminfo  0x6ffffffc
++#define SHT_GNU_verdef	  0x6ffffffd
++#define SHT_GNU_verneed	  0x6ffffffe
++#define SHT_GNU_versym	  0x6fffffff
++#define SHT_HISUNW	  0x6fffffff
++#define SHT_HIOS	  0x6fffffff
++#define SHT_LOPROC	  0x70000000
++#define SHT_HIPROC	  0x7fffffff
++#define SHT_LOUSER	  0x80000000
++#define SHT_HIUSER	  0x8fffffff
++
++#define SHF_WRITE	     (1 << 0)
++#define SHF_ALLOC	     (1 << 1)
++#define SHF_EXECINSTR	     (1 << 2)
++#define SHF_MERGE	     (1 << 4)
++#define SHF_STRINGS	     (1 << 5)
++#define SHF_INFO_LINK	     (1 << 6)
++#define SHF_LINK_ORDER	     (1 << 7)
++#define SHF_OS_NONCONFORMING (1 << 8)
++
++#define SHF_GROUP	     (1 << 9)
++#define SHF_TLS		     (1 << 10)
++#define SHF_COMPRESSED	     (1 << 11)
++#define SHF_MASKOS	     0x0ff00000
++#define SHF_MASKPROC	     0xf0000000
++#define SHF_ORDERED	     (1 << 30)
++#define SHF_EXCLUDE	     (1U << 31)
++
++typedef struct {
++  Elf32_Word	ch_type;
++  Elf32_Word	ch_size;
++  Elf32_Word	ch_addralign;
++} Elf32_Chdr;
++
++typedef struct {
++  Elf64_Word	ch_type;
++  Elf64_Word	ch_reserved;
++  Elf64_Xword	ch_size;
++  Elf64_Xword	ch_addralign;
++} Elf64_Chdr;
++
++#define ELFCOMPRESS_ZLIB	1
++#define ELFCOMPRESS_LOOS	0x60000000
++#define ELFCOMPRESS_HIOS	0x6fffffff
++#define ELFCOMPRESS_LOPROC	0x70000000
++#define ELFCOMPRESS_HIPROC	0x7fffffff
++
++
++#define GRP_COMDAT	0x1
++
++typedef struct {
++  Elf32_Word	st_name;
++  Elf32_Addr	st_value;
++  Elf32_Word	st_size;
++  unsigned char	st_info;
++  unsigned char	st_other;
++  Elf32_Section	st_shndx;
++} Elf32_Sym;
++
++typedef struct {
++  Elf64_Word	st_name;
++  unsigned char	st_info;
++  unsigned char st_other;
++  Elf64_Section	st_shndx;
++  Elf64_Addr	st_value;
++  Elf64_Xword	st_size;
++} Elf64_Sym;
++
++typedef struct {
++  Elf32_Half si_boundto;
++  Elf32_Half si_flags;
++} Elf32_Syminfo;
++
++typedef struct {
++  Elf64_Half si_boundto;
++  Elf64_Half si_flags;
++} Elf64_Syminfo;
++
++#define SYMINFO_BT_SELF		0xffff
++#define SYMINFO_BT_PARENT	0xfffe
++#define SYMINFO_BT_LOWRESERVE	0xff00
++
++#define SYMINFO_FLG_DIRECT	0x0001
++#define SYMINFO_FLG_PASSTHRU	0x0002
++#define SYMINFO_FLG_COPY	0x0004
++#define SYMINFO_FLG_LAZYLOAD	0x0008
++
++#define SYMINFO_NONE		0
++#define SYMINFO_CURRENT		1
++#define SYMINFO_NUM		2
++
++#define ELF32_ST_BIND(val)		(((unsigned char) (val)) >> 4)
++#define ELF32_ST_TYPE(val)		((val) & 0xf)
++#define ELF32_ST_INFO(bind, type)	(((bind) << 4) + ((type) & 0xf))
++
++#define ELF64_ST_BIND(val)		ELF32_ST_BIND (val)
++#define ELF64_ST_TYPE(val)		ELF32_ST_TYPE (val)
++#define ELF64_ST_INFO(bind, type)	ELF32_ST_INFO ((bind), (type))
++
++#define STB_LOCAL	0
++#define STB_GLOBAL	1
++#define STB_WEAK	2
++#define	STB_NUM		3
++#define STB_LOOS	10
++#define STB_GNU_UNIQUE	10
++#define STB_HIOS	12
++#define STB_LOPROC	13
++#define STB_HIPROC	15
++
++#define STT_NOTYPE	0
++#define STT_OBJECT	1
++#define STT_FUNC	2
++#define STT_SECTION	3
++#define STT_FILE	4
++#define STT_COMMON	5
++#define STT_TLS		6
++#define	STT_NUM		7
++#define STT_LOOS	10
++#define STT_GNU_IFUNC	10
++#define STT_HIOS	12
++#define STT_LOPROC	13
++#define STT_HIPROC	15
++
++#define STN_UNDEF	0
++
++#define ELF32_ST_VISIBILITY(o)	((o) & 0x03)
++#define ELF64_ST_VISIBILITY(o)	ELF32_ST_VISIBILITY (o)
++
++#define STV_DEFAULT	0
++#define STV_INTERNAL	1
++#define STV_HIDDEN	2
++#define STV_PROTECTED	3
++
++
++
++
++typedef struct {
++  Elf32_Addr	r_offset;
++  Elf32_Word	r_info;
++} Elf32_Rel;
++
++typedef struct {
++  Elf64_Addr	r_offset;
++  Elf64_Xword	r_info;
++} Elf64_Rel;
++
++
++
++typedef struct {
++  Elf32_Addr	r_offset;
++  Elf32_Word	r_info;
++  Elf32_Sword	r_addend;
++} Elf32_Rela;
++
++typedef struct {
++  Elf64_Addr	r_offset;
++  Elf64_Xword	r_info;
++  Elf64_Sxword	r_addend;
++} Elf64_Rela;
++
++
++
++#define ELF32_R_SYM(val)		((val) >> 8)
++#define ELF32_R_TYPE(val)		((val) & 0xff)
++#define ELF32_R_INFO(sym, type)		(((sym) << 8) + ((type) & 0xff))
++
++#define ELF64_R_SYM(i)			((i) >> 32)
++#define ELF64_R_TYPE(i)			((i) & 0xffffffff)
++#define ELF64_R_INFO(sym,type)		((((Elf64_Xword) (sym)) << 32) + (type))
++
++
++
++typedef struct {
++  Elf32_Word	p_type;
++  Elf32_Off	p_offset;
++  Elf32_Addr	p_vaddr;
++  Elf32_Addr	p_paddr;
++  Elf32_Word	p_filesz;
++  Elf32_Word	p_memsz;
++  Elf32_Word	p_flags;
++  Elf32_Word	p_align;
++} Elf32_Phdr;
++
++typedef struct {
++  Elf64_Word	p_type;
++  Elf64_Word	p_flags;
++  Elf64_Off	p_offset;
++  Elf64_Addr	p_vaddr;
++  Elf64_Addr	p_paddr;
++  Elf64_Xword	p_filesz;
++  Elf64_Xword	p_memsz;
++  Elf64_Xword	p_align;
++} Elf64_Phdr;
++
++
++
++#define	PT_NULL		0
++#define PT_LOAD		1
++#define PT_DYNAMIC	2
++#define PT_INTERP	3
++#define PT_NOTE		4
++#define PT_SHLIB	5
++#define PT_PHDR		6
++#define PT_TLS		7
++#define	PT_NUM		8
++#define PT_LOOS		0x60000000
++#define PT_GNU_EH_FRAME	0x6474e550
++#define PT_GNU_STACK	0x6474e551
++#define PT_GNU_RELRO	0x6474e552
++#define PT_LOSUNW	0x6ffffffa
++#define PT_SUNWBSS	0x6ffffffa
++#define PT_SUNWSTACK	0x6ffffffb
++#define PT_HISUNW	0x6fffffff
++#define PT_HIOS		0x6fffffff
++#define PT_LOPROC	0x70000000
++#define PT_HIPROC	0x7fffffff
++
++
++#define PN_XNUM 0xffff
++
++
++#define PF_X		(1 << 0)
++#define PF_W		(1 << 1)
++#define PF_R		(1 << 2)
++#define PF_MASKOS	0x0ff00000
++#define PF_MASKPROC	0xf0000000
++
++
++
++#define NT_PRSTATUS	1
++#define NT_PRFPREG	2
++#define NT_FPREGSET	2
++#define NT_PRPSINFO	3
++#define NT_PRXREG	4
++#define NT_TASKSTRUCT	4
++#define NT_PLATFORM	5
++#define NT_AUXV		6
++#define NT_GWINDOWS	7
++#define NT_ASRS		8
++#define NT_PSTATUS	10
++#define NT_PSINFO	13
++#define NT_PRCRED	14
++#define NT_UTSNAME	15
++#define NT_LWPSTATUS	16
++#define NT_LWPSINFO	17
++#define NT_PRFPXREG	20
++#define NT_SIGINFO	0x53494749
++#define NT_FILE		0x46494c45
++#define NT_PRXFPREG	0x46e62b7f
++#define NT_PPC_VMX	0x100
++#define NT_PPC_SPE	0x101
++#define NT_PPC_VSX	0x102
++#define NT_PPC_TAR	0x103
++#define NT_PPC_PPR	0x104
++#define NT_PPC_DSCR	0x105
++#define NT_PPC_EBB	0x106
++#define NT_PPC_PMU	0x107
++#define NT_PPC_TM_CGPR	0x108
++#define NT_PPC_TM_CFPR	0x109
++#define NT_PPC_TM_CVMX	0x10a
++#define NT_PPC_TM_CVSX	0x10b
++#define NT_PPC_TM_SPR	0x10c
++#define NT_PPC_TM_CTAR	0x10d
++#define NT_PPC_TM_CPPR	0x10e
++#define NT_PPC_TM_CDSCR	0x10f
++#define NT_386_TLS	0x200
++#define NT_386_IOPERM	0x201
++#define NT_X86_XSTATE	0x202
++#define NT_S390_HIGH_GPRS	0x300
++#define NT_S390_TIMER	0x301
++#define NT_S390_TODCMP	0x302
++#define NT_S390_TODPREG	0x303
++#define NT_S390_CTRS	0x304
++#define NT_S390_PREFIX	0x305
++#define NT_S390_LAST_BREAK	0x306
++#define NT_S390_SYSTEM_CALL	0x307
++#define NT_S390_TDB	0x308
++#define NT_S390_VXRS_LOW	0x309
++#define NT_S390_VXRS_HIGH	0x30a
++#define NT_S390_GS_CB	0x30b
++#define NT_S390_GS_BC	0x30c
++#define NT_S390_RI_CB	0x30d
++#define NT_ARM_VFP	0x400
++#define NT_ARM_TLS	0x401
++#define NT_ARM_HW_BREAK	0x402
++#define NT_ARM_HW_WATCH	0x403
++#define NT_ARM_SYSTEM_CALL	0x404
++#define NT_ARM_SVE	0x405
++#define NT_METAG_CBUF	0x500
++#define NT_METAG_RPIPE	0x501
++#define NT_METAG_TLS	0x502
++#define NT_ARC_V2	0x600
++#define NT_VMCOREDD	0x700
++#define NT_VERSION	1
++
++
++
++
++typedef struct {
++  Elf32_Sword d_tag;
++  union {
++      Elf32_Word d_val;
++      Elf32_Addr d_ptr;
++  } d_un;
++} Elf32_Dyn;
++
++typedef struct {
++  Elf64_Sxword d_tag;
++  union {
++      Elf64_Xword d_val;
++      Elf64_Addr d_ptr;
++  } d_un;
++} Elf64_Dyn;
++
++
++
++#define DT_NULL		0
++#define DT_NEEDED	1
++#define DT_PLTRELSZ	2
++#define DT_PLTGOT	3
++#define DT_HASH		4
++#define DT_STRTAB	5
++#define DT_SYMTAB	6
++#define DT_RELA		7
++#define DT_RELASZ	8
++#define DT_RELAENT	9
++#define DT_STRSZ	10
++#define DT_SYMENT	11
++#define DT_INIT		12
++#define DT_FINI		13
++#define DT_SONAME	14
++#define DT_RPATH	15
++#define DT_SYMBOLIC	16
++#define DT_REL		17
++#define DT_RELSZ	18
++#define DT_RELENT	19
++#define DT_PLTREL	20
++#define DT_DEBUG	21
++#define DT_TEXTREL	22
++#define DT_JMPREL	23
++#define	DT_BIND_NOW	24
++#define	DT_INIT_ARRAY	25
++#define	DT_FINI_ARRAY	26
++#define	DT_INIT_ARRAYSZ	27
++#define	DT_FINI_ARRAYSZ	28
++#define DT_RUNPATH	29
++#define DT_FLAGS	30
++#define DT_ENCODING	32
++#define DT_PREINIT_ARRAY 32
++#define DT_PREINIT_ARRAYSZ 33
++#define DT_SYMTAB_SHNDX	34
++#define	DT_NUM		35
++#define DT_LOOS		0x6000000d
++#define DT_HIOS		0x6ffff000
++#define DT_LOPROC	0x70000000
++#define DT_HIPROC	0x7fffffff
++#define	DT_PROCNUM	DT_MIPS_NUM
++
++#define DT_VALRNGLO	0x6ffffd00
++#define DT_GNU_PRELINKED 0x6ffffdf5
++#define DT_GNU_CONFLICTSZ 0x6ffffdf6
++#define DT_GNU_LIBLISTSZ 0x6ffffdf7
++#define DT_CHECKSUM	0x6ffffdf8
++#define DT_PLTPADSZ	0x6ffffdf9
++#define DT_MOVEENT	0x6ffffdfa
++#define DT_MOVESZ	0x6ffffdfb
++#define DT_FEATURE_1	0x6ffffdfc
++#define DT_POSFLAG_1	0x6ffffdfd
++
++#define DT_SYMINSZ	0x6ffffdfe
++#define DT_SYMINENT	0x6ffffdff
++#define DT_VALRNGHI	0x6ffffdff
++#define DT_VALTAGIDX(tag)	(DT_VALRNGHI - (tag))
++#define DT_VALNUM 12
++
++#define DT_ADDRRNGLO	0x6ffffe00
++#define DT_GNU_HASH	0x6ffffef5
++#define DT_TLSDESC_PLT	0x6ffffef6
++#define DT_TLSDESC_GOT	0x6ffffef7
++#define DT_GNU_CONFLICT	0x6ffffef8
++#define DT_GNU_LIBLIST	0x6ffffef9
++#define DT_CONFIG	0x6ffffefa
++#define DT_DEPAUDIT	0x6ffffefb
++#define DT_AUDIT	0x6ffffefc
++#define	DT_PLTPAD	0x6ffffefd
++#define	DT_MOVETAB	0x6ffffefe
++#define DT_SYMINFO	0x6ffffeff
++#define DT_ADDRRNGHI	0x6ffffeff
++#define DT_ADDRTAGIDX(tag)	(DT_ADDRRNGHI - (tag))
++#define DT_ADDRNUM 11
++
++
++
++#define DT_VERSYM	0x6ffffff0
++
++#define DT_RELACOUNT	0x6ffffff9
++#define DT_RELCOUNT	0x6ffffffa
++
++
++#define DT_FLAGS_1	0x6ffffffb
++#define	DT_VERDEF	0x6ffffffc
++
++#define	DT_VERDEFNUM	0x6ffffffd
++#define	DT_VERNEED	0x6ffffffe
++
++#define	DT_VERNEEDNUM	0x6fffffff
++#define DT_VERSIONTAGIDX(tag)	(DT_VERNEEDNUM - (tag))
++#define DT_VERSIONTAGNUM 16
++
++
++
++#define DT_AUXILIARY    0x7ffffffd
++#define DT_FILTER       0x7fffffff
++#define DT_EXTRATAGIDX(tag)	((Elf32_Word)-((Elf32_Sword) (tag) <<1>>1)-1)
++#define DT_EXTRANUM	3
++
++
++#define DF_ORIGIN	0x00000001
++#define DF_SYMBOLIC	0x00000002
++#define DF_TEXTREL	0x00000004
++#define DF_BIND_NOW	0x00000008
++#define DF_STATIC_TLS	0x00000010
++
++
++
++#define DF_1_NOW	0x00000001
++#define DF_1_GLOBAL	0x00000002
++#define DF_1_GROUP	0x00000004
++#define DF_1_NODELETE	0x00000008
++#define DF_1_LOADFLTR	0x00000010
++#define DF_1_INITFIRST	0x00000020
++#define DF_1_NOOPEN	0x00000040
++#define DF_1_ORIGIN	0x00000080
++#define DF_1_DIRECT	0x00000100
++#define DF_1_TRANS	0x00000200
++#define DF_1_INTERPOSE	0x00000400
++#define DF_1_NODEFLIB	0x00000800
++#define DF_1_NODUMP	0x00001000
++#define DF_1_CONFALT	0x00002000
++#define DF_1_ENDFILTEE	0x00004000
++#define	DF_1_DISPRELDNE	0x00008000
++#define	DF_1_DISPRELPND	0x00010000
++#define	DF_1_NODIRECT	0x00020000
++#define	DF_1_IGNMULDEF	0x00040000
++#define	DF_1_NOKSYMS	0x00080000
++#define	DF_1_NOHDR	0x00100000
++#define	DF_1_EDITED	0x00200000
++#define	DF_1_NORELOC	0x00400000
++#define	DF_1_SYMINTPOSE	0x00800000
++#define	DF_1_GLOBAUDIT	0x01000000
++#define	DF_1_SINGLETON	0x02000000
++#define	DF_1_STUB	0x04000000
++#define	DF_1_PIE	0x08000000
++
++#define DTF_1_PARINIT	0x00000001
++#define DTF_1_CONFEXP	0x00000002
++
++
++#define DF_P1_LAZYLOAD	0x00000001
++#define DF_P1_GROUPPERM	0x00000002
++
++
++
++
++typedef struct {
++  Elf32_Half	vd_version;
++  Elf32_Half	vd_flags;
++  Elf32_Half	vd_ndx;
++  Elf32_Half	vd_cnt;
++  Elf32_Word	vd_hash;
++  Elf32_Word	vd_aux;
++  Elf32_Word	vd_next;
++} Elf32_Verdef;
++
++typedef struct {
++  Elf64_Half	vd_version;
++  Elf64_Half	vd_flags;
++  Elf64_Half	vd_ndx;
++  Elf64_Half	vd_cnt;
++  Elf64_Word	vd_hash;
++  Elf64_Word	vd_aux;
++  Elf64_Word	vd_next;
++} Elf64_Verdef;
++
++
++
++#define VER_DEF_NONE	0
++#define VER_DEF_CURRENT	1
++#define VER_DEF_NUM	2
++
++
++#define VER_FLG_BASE	0x1
++#define VER_FLG_WEAK	0x2
++
++
++#define	VER_NDX_LOCAL		0
++#define	VER_NDX_GLOBAL		1
++#define	VER_NDX_LORESERVE	0xff00
++#define	VER_NDX_ELIMINATE	0xff01
++
++
++
++typedef struct {
++  Elf32_Word	vda_name;
++  Elf32_Word	vda_next;
++} Elf32_Verdaux;
++
++typedef struct {
++  Elf64_Word	vda_name;
++  Elf64_Word	vda_next;
++} Elf64_Verdaux;
++
++
++
++
++typedef struct {
++  Elf32_Half	vn_version;
++  Elf32_Half	vn_cnt;
++  Elf32_Word	vn_file;
++  Elf32_Word	vn_aux;
++  Elf32_Word	vn_next;
++} Elf32_Verneed;
++
++typedef struct {
++  Elf64_Half	vn_version;
++  Elf64_Half	vn_cnt;
++  Elf64_Word	vn_file;
++  Elf64_Word	vn_aux;
++  Elf64_Word	vn_next;
++} Elf64_Verneed;
++
++
++
++#define VER_NEED_NONE	 0
++#define VER_NEED_CURRENT 1
++#define VER_NEED_NUM	 2
++
++
++
++typedef struct {
++  Elf32_Word	vna_hash;
++  Elf32_Half	vna_flags;
++  Elf32_Half	vna_other;
++  Elf32_Word	vna_name;
++  Elf32_Word	vna_next;
++} Elf32_Vernaux;
++
++typedef struct {
++  Elf64_Word	vna_hash;
++  Elf64_Half	vna_flags;
++  Elf64_Half	vna_other;
++  Elf64_Word	vna_name;
++  Elf64_Word	vna_next;
++} Elf64_Vernaux;
++
++
++
++#define VER_FLG_WEAK	0x2
++
++
++
++typedef struct {
++  uint32_t a_type;
++  union {
++      uint32_t a_val;
++  } a_un;
++} Elf32_auxv_t;
++
++typedef struct {
++  uint64_t a_type;
++  union {
++      uint64_t a_val;
++  } a_un;
++} Elf64_auxv_t;
++
++
++
++#define AT_NULL		0
++#define AT_IGNORE	1
++#define AT_EXECFD	2
++#define AT_PHDR		3
++#define AT_PHENT	4
++#define AT_PHNUM	5
++#define AT_PAGESZ	6
++#define AT_BASE		7
++#define AT_FLAGS	8
++#define AT_ENTRY	9
++#define AT_NOTELF	10
++#define AT_UID		11
++#define AT_EUID		12
++#define AT_GID		13
++#define AT_EGID		14
++#define AT_CLKTCK	17
++
++
++#define AT_PLATFORM	15
++#define AT_HWCAP	16
++
++
++
++
++#define AT_FPUCW	18
++
++
++#define AT_DCACHEBSIZE	19
++#define AT_ICACHEBSIZE	20
++#define AT_UCACHEBSIZE	21
++
++
++
++#define AT_IGNOREPPC	22
++
++#define	AT_SECURE	23
++
++#define AT_BASE_PLATFORM 24
++
++#define AT_RANDOM	25
++
++#define AT_HWCAP2	26
++
++#define AT_EXECFN	31
++
++
++
++#define AT_SYSINFO	32
++#define AT_SYSINFO_EHDR	33
++
++
++
++#define AT_L1I_CACHESHAPE	34
++#define AT_L1D_CACHESHAPE	35
++#define AT_L2_CACHESHAPE	36
++#define AT_L3_CACHESHAPE	37
++
++#define AT_L1I_CACHESIZE	40
++#define AT_L1I_CACHEGEOMETRY	41
++#define AT_L1D_CACHESIZE	42
++#define AT_L1D_CACHEGEOMETRY	43
++#define AT_L2_CACHESIZE		44
++#define AT_L2_CACHEGEOMETRY	45
++#define AT_L3_CACHESIZE		46
++#define AT_L3_CACHEGEOMETRY	47
++
++#define AT_MINSIGSTKSZ		51
++
++
++typedef struct {
++  Elf32_Word n_namesz;
++  Elf32_Word n_descsz;
++  Elf32_Word n_type;
++} Elf32_Nhdr;
++
++typedef struct {
++  Elf64_Word n_namesz;
++  Elf64_Word n_descsz;
++  Elf64_Word n_type;
++} Elf64_Nhdr;
++
++
++
++
++#define ELF_NOTE_SOLARIS	"SUNW Solaris"
++
++
++#define ELF_NOTE_GNU		"GNU"
++
++
++
++
++
++#define ELF_NOTE_PAGESIZE_HINT	1
++
++
++#define NT_GNU_ABI_TAG	1
++#define ELF_NOTE_ABI	NT_GNU_ABI_TAG
++
++
++
++#define ELF_NOTE_OS_LINUX	0
++#define ELF_NOTE_OS_GNU		1
++#define ELF_NOTE_OS_SOLARIS2	2
++#define ELF_NOTE_OS_FREEBSD	3
++
++#define NT_GNU_BUILD_ID	3
++#define NT_GNU_GOLD_VERSION	4
++
++
++
++typedef struct {
++  Elf32_Xword m_value;
++  Elf32_Word m_info;
++  Elf32_Word m_poffset;
++  Elf32_Half m_repeat;
++  Elf32_Half m_stride;
++} Elf32_Move;
++
++typedef struct {
++  Elf64_Xword m_value;
++  Elf64_Xword m_info;
++  Elf64_Xword m_poffset;
++  Elf64_Half m_repeat;
++  Elf64_Half m_stride;
++} Elf64_Move;
++
++
++#define ELF32_M_SYM(info)	((info) >> 8)
++#define ELF32_M_SIZE(info)	((unsigned char) (info))
++#define ELF32_M_INFO(sym, size)	(((sym) << 8) + (unsigned char) (size))
++
++#define ELF64_M_SYM(info)	ELF32_M_SYM (info)
++#define ELF64_M_SIZE(info)	ELF32_M_SIZE (info)
++#define ELF64_M_INFO(sym, size)	ELF32_M_INFO (sym, size)
++
++#define EF_CPU32	0x00810000
++
++#define R_68K_NONE	0
++#define R_68K_32	1
++#define R_68K_16	2
++#define R_68K_8		3
++#define R_68K_PC32	4
++#define R_68K_PC16	5
++#define R_68K_PC8	6
++#define R_68K_GOT32	7
++#define R_68K_GOT16	8
++#define R_68K_GOT8	9
++#define R_68K_GOT32O	10
++#define R_68K_GOT16O	11
++#define R_68K_GOT8O	12
++#define R_68K_PLT32	13
++#define R_68K_PLT16	14
++#define R_68K_PLT8	15
++#define R_68K_PLT32O	16
++#define R_68K_PLT16O	17
++#define R_68K_PLT8O	18
++#define R_68K_COPY	19
++#define R_68K_GLOB_DAT	20
++#define R_68K_JMP_SLOT	21
++#define R_68K_RELATIVE	22
++#define R_68K_TLS_GD32	25
++#define R_68K_TLS_GD16	26
++#define R_68K_TLS_GD8	27
++#define R_68K_TLS_LDM32	28
++#define R_68K_TLS_LDM16	29
++#define R_68K_TLS_LDM8	30
++#define R_68K_TLS_LDO32	31
++#define R_68K_TLS_LDO16	32
++#define R_68K_TLS_LDO8	33
++#define R_68K_TLS_IE32	34
++#define R_68K_TLS_IE16	35
++#define R_68K_TLS_IE8	36
++#define R_68K_TLS_LE32	37
++#define R_68K_TLS_LE16	38
++#define R_68K_TLS_LE8	39
++#define R_68K_TLS_DTPMOD32	40
++#define R_68K_TLS_DTPREL32	41
++#define R_68K_TLS_TPREL32	42
++#define R_68K_NUM	43
++
++#define R_386_NONE	   0
++#define R_386_32	   1
++#define R_386_PC32	   2
++#define R_386_GOT32	   3
++#define R_386_PLT32	   4
++#define R_386_COPY	   5
++#define R_386_GLOB_DAT	   6
++#define R_386_JMP_SLOT	   7
++#define R_386_RELATIVE	   8
++#define R_386_GOTOFF	   9
++#define R_386_GOTPC	   10
++#define R_386_32PLT	   11
++#define R_386_TLS_TPOFF	   14
++#define R_386_TLS_IE	   15
++#define R_386_TLS_GOTIE	   16
++#define R_386_TLS_LE	   17
++#define R_386_TLS_GD	   18
++#define R_386_TLS_LDM	   19
++#define R_386_16	   20
++#define R_386_PC16	   21
++#define R_386_8		   22
++#define R_386_PC8	   23
++#define R_386_TLS_GD_32	   24
++#define R_386_TLS_GD_PUSH  25
++#define R_386_TLS_GD_CALL  26
++#define R_386_TLS_GD_POP   27
++#define R_386_TLS_LDM_32   28
++#define R_386_TLS_LDM_PUSH 29
++#define R_386_TLS_LDM_CALL 30
++#define R_386_TLS_LDM_POP  31
++#define R_386_TLS_LDO_32   32
++#define R_386_TLS_IE_32	   33
++#define R_386_TLS_LE_32	   34
++#define R_386_TLS_DTPMOD32 35
++#define R_386_TLS_DTPOFF32 36
++#define R_386_TLS_TPOFF32  37
++#define R_386_SIZE32       38
++#define R_386_TLS_GOTDESC  39
++#define R_386_TLS_DESC_CALL 40
++#define R_386_TLS_DESC     41
++#define R_386_IRELATIVE	   42
++#define R_386_GOT32X	   43
++#define R_386_NUM	   44
++
++
++
++
++
++#define STT_SPARC_REGISTER	13
++
++
++
++#define EF_SPARCV9_MM		3
++#define EF_SPARCV9_TSO		0
++#define EF_SPARCV9_PSO		1
++#define EF_SPARCV9_RMO		2
++#define EF_SPARC_LEDATA		0x800000
++#define EF_SPARC_EXT_MASK	0xFFFF00
++#define EF_SPARC_32PLUS		0x000100
++#define EF_SPARC_SUN_US1	0x000200
++#define EF_SPARC_HAL_R1		0x000400
++#define EF_SPARC_SUN_US3	0x000800
++
++
++
++#define R_SPARC_NONE		0
++#define R_SPARC_8		1
++#define R_SPARC_16		2
++#define R_SPARC_32		3
++#define R_SPARC_DISP8		4
++#define R_SPARC_DISP16		5
++#define R_SPARC_DISP32		6
++#define R_SPARC_WDISP30		7
++#define R_SPARC_WDISP22		8
++#define R_SPARC_HI22		9
++#define R_SPARC_22		10
++#define R_SPARC_13		11
++#define R_SPARC_LO10		12
++#define R_SPARC_GOT10		13
++#define R_SPARC_GOT13		14
++#define R_SPARC_GOT22		15
++#define R_SPARC_PC10		16
++#define R_SPARC_PC22		17
++#define R_SPARC_WPLT30		18
++#define R_SPARC_COPY		19
++#define R_SPARC_GLOB_DAT	20
++#define R_SPARC_JMP_SLOT	21
++#define R_SPARC_RELATIVE	22
++#define R_SPARC_UA32		23
++
++
++
++#define R_SPARC_PLT32		24
++#define R_SPARC_HIPLT22		25
++#define R_SPARC_LOPLT10		26
++#define R_SPARC_PCPLT32		27
++#define R_SPARC_PCPLT22		28
++#define R_SPARC_PCPLT10		29
++#define R_SPARC_10		30
++#define R_SPARC_11		31
++#define R_SPARC_64		32
++#define R_SPARC_OLO10		33
++#define R_SPARC_HH22		34
++#define R_SPARC_HM10		35
++#define R_SPARC_LM22		36
++#define R_SPARC_PC_HH22		37
++#define R_SPARC_PC_HM10		38
++#define R_SPARC_PC_LM22		39
++#define R_SPARC_WDISP16		40
++#define R_SPARC_WDISP19		41
++#define R_SPARC_GLOB_JMP	42
++#define R_SPARC_7		43
++#define R_SPARC_5		44
++#define R_SPARC_6		45
++#define R_SPARC_DISP64		46
++#define R_SPARC_PLT64		47
++#define R_SPARC_HIX22		48
++#define R_SPARC_LOX10		49
++#define R_SPARC_H44		50
++#define R_SPARC_M44		51
++#define R_SPARC_L44		52
++#define R_SPARC_REGISTER	53
++#define R_SPARC_UA64		54
++#define R_SPARC_UA16		55
++#define R_SPARC_TLS_GD_HI22	56
++#define R_SPARC_TLS_GD_LO10	57
++#define R_SPARC_TLS_GD_ADD	58
++#define R_SPARC_TLS_GD_CALL	59
++#define R_SPARC_TLS_LDM_HI22	60
++#define R_SPARC_TLS_LDM_LO10	61
++#define R_SPARC_TLS_LDM_ADD	62
++#define R_SPARC_TLS_LDM_CALL	63
++#define R_SPARC_TLS_LDO_HIX22	64
++#define R_SPARC_TLS_LDO_LOX10	65
++#define R_SPARC_TLS_LDO_ADD	66
++#define R_SPARC_TLS_IE_HI22	67
++#define R_SPARC_TLS_IE_LO10	68
++#define R_SPARC_TLS_IE_LD	69
++#define R_SPARC_TLS_IE_LDX	70
++#define R_SPARC_TLS_IE_ADD	71
++#define R_SPARC_TLS_LE_HIX22	72
++#define R_SPARC_TLS_LE_LOX10	73
++#define R_SPARC_TLS_DTPMOD32	74
++#define R_SPARC_TLS_DTPMOD64	75
++#define R_SPARC_TLS_DTPOFF32	76
++#define R_SPARC_TLS_DTPOFF64	77
++#define R_SPARC_TLS_TPOFF32	78
++#define R_SPARC_TLS_TPOFF64	79
++#define R_SPARC_GOTDATA_HIX22	80
++#define R_SPARC_GOTDATA_LOX10	81
++#define R_SPARC_GOTDATA_OP_HIX22	82
++#define R_SPARC_GOTDATA_OP_LOX10	83
++#define R_SPARC_GOTDATA_OP	84
++#define R_SPARC_H34		85
++#define R_SPARC_SIZE32		86
++#define R_SPARC_SIZE64		87
++#define R_SPARC_GNU_VTINHERIT	250
++#define R_SPARC_GNU_VTENTRY	251
++#define R_SPARC_REV32		252
++
++#define R_SPARC_NUM		253
++
++
++
++#define DT_SPARC_REGISTER 0x70000001
++#define DT_SPARC_NUM	2
++
++
++#define EF_MIPS_NOREORDER   1
++#define EF_MIPS_PIC	    2
++#define EF_MIPS_CPIC	    4
++#define EF_MIPS_XGOT	    8
++#define EF_MIPS_64BIT_WHIRL 16
++#define EF_MIPS_ABI2	    32
++#define EF_MIPS_ABI_ON32    64
++#define EF_MIPS_FP64	    512
++#define EF_MIPS_NAN2008     1024
++#define EF_MIPS_ARCH	    0xf0000000
++
++
++
++#define EF_MIPS_ARCH_1	    0x00000000
++#define EF_MIPS_ARCH_2	    0x10000000
++#define EF_MIPS_ARCH_3	    0x20000000
++#define EF_MIPS_ARCH_4	    0x30000000
++#define EF_MIPS_ARCH_5	    0x40000000
++#define EF_MIPS_ARCH_32     0x50000000
++#define EF_MIPS_ARCH_64     0x60000000
++#define EF_MIPS_ARCH_32R2   0x70000000
++#define EF_MIPS_ARCH_64R2   0x80000000
++
++
++#define E_MIPS_ARCH_1	  0x00000000
++#define E_MIPS_ARCH_2	  0x10000000
++#define E_MIPS_ARCH_3	  0x20000000
++#define E_MIPS_ARCH_4	  0x30000000
++#define E_MIPS_ARCH_5	  0x40000000
++#define E_MIPS_ARCH_32	  0x50000000
++#define E_MIPS_ARCH_64	  0x60000000
++
++
++
++#define SHN_MIPS_ACOMMON    0xff00
++#define SHN_MIPS_TEXT	    0xff01
++#define SHN_MIPS_DATA	    0xff02
++#define SHN_MIPS_SCOMMON    0xff03
++#define SHN_MIPS_SUNDEFINED 0xff04
++
++
++
++#define SHT_MIPS_LIBLIST       0x70000000
++#define SHT_MIPS_MSYM	       0x70000001
++#define SHT_MIPS_CONFLICT      0x70000002
++#define SHT_MIPS_GPTAB	       0x70000003
++#define SHT_MIPS_UCODE	       0x70000004
++#define SHT_MIPS_DEBUG	       0x70000005
++#define SHT_MIPS_REGINFO       0x70000006
++#define SHT_MIPS_PACKAGE       0x70000007
++#define SHT_MIPS_PACKSYM       0x70000008
++#define SHT_MIPS_RELD	       0x70000009
++#define SHT_MIPS_IFACE         0x7000000b
++#define SHT_MIPS_CONTENT       0x7000000c
++#define SHT_MIPS_OPTIONS       0x7000000d
++#define SHT_MIPS_SHDR	       0x70000010
++#define SHT_MIPS_FDESC	       0x70000011
++#define SHT_MIPS_EXTSYM	       0x70000012
++#define SHT_MIPS_DENSE	       0x70000013
++#define SHT_MIPS_PDESC	       0x70000014
++#define SHT_MIPS_LOCSYM	       0x70000015
++#define SHT_MIPS_AUXSYM	       0x70000016
++#define SHT_MIPS_OPTSYM	       0x70000017
++#define SHT_MIPS_LOCSTR	       0x70000018
++#define SHT_MIPS_LINE	       0x70000019
++#define SHT_MIPS_RFDESC	       0x7000001a
++#define SHT_MIPS_DELTASYM      0x7000001b
++#define SHT_MIPS_DELTAINST     0x7000001c
++#define SHT_MIPS_DELTACLASS    0x7000001d
++#define SHT_MIPS_DWARF         0x7000001e
++#define SHT_MIPS_DELTADECL     0x7000001f
++#define SHT_MIPS_SYMBOL_LIB    0x70000020
++#define SHT_MIPS_EVENTS	       0x70000021
++#define SHT_MIPS_TRANSLATE     0x70000022
++#define SHT_MIPS_PIXIE	       0x70000023
++#define SHT_MIPS_XLATE	       0x70000024
++#define SHT_MIPS_XLATE_DEBUG   0x70000025
++#define SHT_MIPS_WHIRL	       0x70000026
++#define SHT_MIPS_EH_REGION     0x70000027
++#define SHT_MIPS_XLATE_OLD     0x70000028
++#define SHT_MIPS_PDR_EXCEPTION 0x70000029
++
++
++
++#define SHF_MIPS_GPREL	 0x10000000
++#define SHF_MIPS_MERGE	 0x20000000
++#define SHF_MIPS_ADDR	 0x40000000
++#define SHF_MIPS_STRINGS 0x80000000
++#define SHF_MIPS_NOSTRIP 0x08000000
++#define SHF_MIPS_LOCAL	 0x04000000
++#define SHF_MIPS_NAMES	 0x02000000
++#define SHF_MIPS_NODUPE	 0x01000000
++
++
++
++
++
++#define STO_MIPS_DEFAULT		0x0
++#define STO_MIPS_INTERNAL		0x1
++#define STO_MIPS_HIDDEN			0x2
++#define STO_MIPS_PROTECTED		0x3
++#define STO_MIPS_PLT			0x8
++#define STO_MIPS_SC_ALIGN_UNUSED	0xff
++
++
++#define STB_MIPS_SPLIT_COMMON		13
++
++
++
++typedef union {
++  struct {
++      Elf32_Word gt_current_g_value;
++      Elf32_Word gt_unused;
++  } gt_header;
++  struct {
++      Elf32_Word gt_g_value;
++      Elf32_Word gt_bytes;
++  } gt_entry;
++} Elf32_gptab;
++
++
++
++typedef struct {
++  Elf32_Word	ri_gprmask;
++  Elf32_Word	ri_cprmask[4];
++  Elf32_Sword	ri_gp_value;
++} Elf32_RegInfo;
++
++
++
++typedef struct {
++  unsigned char kind;
++
++  unsigned char size;
++  Elf32_Section section;
++
++  Elf32_Word info;
++} Elf_Options;
++
++
++
++#define ODK_NULL	0
++#define ODK_REGINFO	1
++#define ODK_EXCEPTIONS	2
++#define ODK_PAD		3
++#define ODK_HWPATCH	4
++#define ODK_FILL	5
++#define ODK_TAGS	6
++#define ODK_HWAND	7
++#define ODK_HWOR	8
++
++
++
++#define OEX_FPU_MIN	0x1f
++#define OEX_FPU_MAX	0x1f00
++#define OEX_PAGE0	0x10000
++#define OEX_SMM		0x20000
++#define OEX_FPDBUG	0x40000
++#define OEX_PRECISEFP	OEX_FPDBUG
++#define OEX_DISMISS	0x80000
++
++#define OEX_FPU_INVAL	0x10
++#define OEX_FPU_DIV0	0x08
++#define OEX_FPU_OFLO	0x04
++#define OEX_FPU_UFLO	0x02
++#define OEX_FPU_INEX	0x01
++
++
++
++#define OHW_R4KEOP	0x1
++#define OHW_R8KPFETCH	0x2
++#define OHW_R5KEOP	0x4
++#define OHW_R5KCVTL	0x8
++
++#define OPAD_PREFIX	0x1
++#define OPAD_POSTFIX	0x2
++#define OPAD_SYMBOL	0x4
++
++
++
++typedef struct {
++  Elf32_Word hwp_flags1;
++  Elf32_Word hwp_flags2;
++} Elf_Options_Hw;
++
++
++
++#define OHWA0_R4KEOP_CHECKED	0x00000001
++#define OHWA1_R4KEOP_CLEAN	0x00000002
++
++
++
++#define R_MIPS_NONE		0
++#define R_MIPS_16		1
++#define R_MIPS_32		2
++#define R_MIPS_REL32		3
++#define R_MIPS_26		4
++#define R_MIPS_HI16		5
++#define R_MIPS_LO16		6
++#define R_MIPS_GPREL16		7
++#define R_MIPS_LITERAL		8
++#define R_MIPS_GOT16		9
++#define R_MIPS_PC16		10
++#define R_MIPS_CALL16		11
++#define R_MIPS_GPREL32		12
++
++#define R_MIPS_SHIFT5		16
++#define R_MIPS_SHIFT6		17
++#define R_MIPS_64		18
++#define R_MIPS_GOT_DISP		19
++#define R_MIPS_GOT_PAGE		20
++#define R_MIPS_GOT_OFST		21
++#define R_MIPS_GOT_HI16		22
++#define R_MIPS_GOT_LO16		23
++#define R_MIPS_SUB		24
++#define R_MIPS_INSERT_A		25
++#define R_MIPS_INSERT_B		26
++#define R_MIPS_DELETE		27
++#define R_MIPS_HIGHER		28
++#define R_MIPS_HIGHEST		29
++#define R_MIPS_CALL_HI16	30
++#define R_MIPS_CALL_LO16	31
++#define R_MIPS_SCN_DISP		32
++#define R_MIPS_REL16		33
++#define R_MIPS_ADD_IMMEDIATE	34
++#define R_MIPS_PJUMP		35
++#define R_MIPS_RELGOT		36
++#define R_MIPS_JALR		37
++#define R_MIPS_TLS_DTPMOD32	38
++#define R_MIPS_TLS_DTPREL32	39
++#define R_MIPS_TLS_DTPMOD64	40
++#define R_MIPS_TLS_DTPREL64	41
++#define R_MIPS_TLS_GD		42
++#define R_MIPS_TLS_LDM		43
++#define R_MIPS_TLS_DTPREL_HI16	44
++#define R_MIPS_TLS_DTPREL_LO16	45
++#define R_MIPS_TLS_GOTTPREL	46
++#define R_MIPS_TLS_TPREL32	47
++#define R_MIPS_TLS_TPREL64	48
++#define R_MIPS_TLS_TPREL_HI16	49
++#define R_MIPS_TLS_TPREL_LO16	50
++#define R_MIPS_GLOB_DAT		51
++#define R_MIPS_COPY		126
++#define R_MIPS_JUMP_SLOT        127
++
++#define R_MIPS_NUM		128
++
++
++
++#define PT_MIPS_REGINFO	0x70000000
++#define PT_MIPS_RTPROC  0x70000001
++#define PT_MIPS_OPTIONS 0x70000002
++#define PT_MIPS_ABIFLAGS 0x70000003
++
++
++
++#define PF_MIPS_LOCAL	0x10000000
++
++
++
++#define DT_MIPS_RLD_VERSION  0x70000001
++#define DT_MIPS_TIME_STAMP   0x70000002
++#define DT_MIPS_ICHECKSUM    0x70000003
++#define DT_MIPS_IVERSION     0x70000004
++#define DT_MIPS_FLAGS	     0x70000005
++#define DT_MIPS_BASE_ADDRESS 0x70000006
++#define DT_MIPS_MSYM	     0x70000007
++#define DT_MIPS_CONFLICT     0x70000008
++#define DT_MIPS_LIBLIST	     0x70000009
++#define DT_MIPS_LOCAL_GOTNO  0x7000000a
++#define DT_MIPS_CONFLICTNO   0x7000000b
++#define DT_MIPS_LIBLISTNO    0x70000010
++#define DT_MIPS_SYMTABNO     0x70000011
++#define DT_MIPS_UNREFEXTNO   0x70000012
++#define DT_MIPS_GOTSYM	     0x70000013
++#define DT_MIPS_HIPAGENO     0x70000014
++#define DT_MIPS_RLD_MAP	     0x70000016
++#define DT_MIPS_DELTA_CLASS  0x70000017
++#define DT_MIPS_DELTA_CLASS_NO    0x70000018
++
++#define DT_MIPS_DELTA_INSTANCE    0x70000019
++#define DT_MIPS_DELTA_INSTANCE_NO 0x7000001a
++
++#define DT_MIPS_DELTA_RELOC  0x7000001b
++#define DT_MIPS_DELTA_RELOC_NO 0x7000001c
++
++#define DT_MIPS_DELTA_SYM    0x7000001d
++
++#define DT_MIPS_DELTA_SYM_NO 0x7000001e
++
++#define DT_MIPS_DELTA_CLASSSYM 0x70000020
++
++#define DT_MIPS_DELTA_CLASSSYM_NO 0x70000021
++
++#define DT_MIPS_CXX_FLAGS    0x70000022
++#define DT_MIPS_PIXIE_INIT   0x70000023
++#define DT_MIPS_SYMBOL_LIB   0x70000024
++#define DT_MIPS_LOCALPAGE_GOTIDX 0x70000025
++#define DT_MIPS_LOCAL_GOTIDX 0x70000026
++#define DT_MIPS_HIDDEN_GOTIDX 0x70000027
++#define DT_MIPS_PROTECTED_GOTIDX 0x70000028
++#define DT_MIPS_OPTIONS	     0x70000029
++#define DT_MIPS_INTERFACE    0x7000002a
++#define DT_MIPS_DYNSTR_ALIGN 0x7000002b
++#define DT_MIPS_INTERFACE_SIZE 0x7000002c
++#define DT_MIPS_RLD_TEXT_RESOLVE_ADDR 0x7000002d
++
++#define DT_MIPS_PERF_SUFFIX  0x7000002e
++
++#define DT_MIPS_COMPACT_SIZE 0x7000002f
++#define DT_MIPS_GP_VALUE     0x70000030
++#define DT_MIPS_AUX_DYNAMIC  0x70000031
++
++#define DT_MIPS_PLTGOT	     0x70000032
++
++#define DT_MIPS_RWPLT        0x70000034
++#define DT_MIPS_RLD_MAP_REL  0x70000035
++#define DT_MIPS_NUM	     0x36
++
++
++
++#define RHF_NONE		   0
++#define RHF_QUICKSTART		   (1 << 0)
++#define RHF_NOTPOT		   (1 << 1)
++#define RHF_NO_LIBRARY_REPLACEMENT (1 << 2)
++#define RHF_NO_MOVE		   (1 << 3)
++#define RHF_SGI_ONLY		   (1 << 4)
++#define RHF_GUARANTEE_INIT	   (1 << 5)
++#define RHF_DELTA_C_PLUS_PLUS	   (1 << 6)
++#define RHF_GUARANTEE_START_INIT   (1 << 7)
++#define RHF_PIXIE		   (1 << 8)
++#define RHF_DEFAULT_DELAY_LOAD	   (1 << 9)
++#define RHF_REQUICKSTART	   (1 << 10)
++#define RHF_REQUICKSTARTED	   (1 << 11)
++#define RHF_CORD		   (1 << 12)
++#define RHF_NO_UNRES_UNDEF	   (1 << 13)
++#define RHF_RLD_ORDER_SAFE	   (1 << 14)
++
++
++
++typedef struct {
++  Elf32_Word l_name;
++  Elf32_Word l_time_stamp;
++  Elf32_Word l_checksum;
++  Elf32_Word l_version;
++  Elf32_Word l_flags;
++} Elf32_Lib;
++
++typedef struct {
++  Elf64_Word l_name;
++  Elf64_Word l_time_stamp;
++  Elf64_Word l_checksum;
++  Elf64_Word l_version;
++  Elf64_Word l_flags;
++} Elf64_Lib;
++
++
++
++
++#define LL_NONE		  0
++#define LL_EXACT_MATCH	  (1 << 0)
++#define LL_IGNORE_INT_VER (1 << 1)
++#define LL_REQUIRE_MINOR  (1 << 2)
++#define LL_EXPORTS	  (1 << 3)
++#define LL_DELAY_LOAD	  (1 << 4)
++#define LL_DELTA	  (1 << 5)
++
++
++
++typedef Elf32_Addr Elf32_Conflict;
++
++typedef struct {
++  Elf32_Half version;
++  unsigned char isa_level;
++  unsigned char isa_rev;
++  unsigned char gpr_size;
++  unsigned char cpr1_size;
++  unsigned char cpr2_size;
++  unsigned char fp_abi;
++  Elf32_Word isa_ext;
++  Elf32_Word ases;
++  Elf32_Word flags1;
++  Elf32_Word flags2;
++} Elf_MIPS_ABIFlags_v0;
++
++#define MIPS_AFL_REG_NONE	0x00
++#define MIPS_AFL_REG_32		0x01
++#define MIPS_AFL_REG_64		0x02
++#define MIPS_AFL_REG_128	0x03
++
++#define MIPS_AFL_ASE_DSP	0x00000001
++#define MIPS_AFL_ASE_DSPR2	0x00000002
++#define MIPS_AFL_ASE_EVA	0x00000004
++#define MIPS_AFL_ASE_MCU	0x00000008
++#define MIPS_AFL_ASE_MDMX	0x00000010
++#define MIPS_AFL_ASE_MIPS3D	0x00000020
++#define MIPS_AFL_ASE_MT		0x00000040
++#define MIPS_AFL_ASE_SMARTMIPS	0x00000080
++#define MIPS_AFL_ASE_VIRT	0x00000100
++#define MIPS_AFL_ASE_MSA	0x00000200
++#define MIPS_AFL_ASE_MIPS16	0x00000400
++#define MIPS_AFL_ASE_MICROMIPS	0x00000800
++#define MIPS_AFL_ASE_XPA	0x00001000
++#define MIPS_AFL_ASE_MASK	0x00001fff
++
++#define MIPS_AFL_EXT_XLR	  1
++#define MIPS_AFL_EXT_OCTEON2	  2
++#define MIPS_AFL_EXT_OCTEONP	  3
++#define MIPS_AFL_EXT_LOONGSON_3A  4
++#define MIPS_AFL_EXT_OCTEON	  5
++#define MIPS_AFL_EXT_5900	  6
++#define MIPS_AFL_EXT_4650	  7
++#define MIPS_AFL_EXT_4010	  8
++#define MIPS_AFL_EXT_4100	  9
++#define MIPS_AFL_EXT_3900	  10
++#define MIPS_AFL_EXT_10000	  11
++#define MIPS_AFL_EXT_SB1	  12
++#define MIPS_AFL_EXT_4111	  13
++#define MIPS_AFL_EXT_4120	  14
++#define MIPS_AFL_EXT_5400	  15
++#define MIPS_AFL_EXT_5500	  16
++#define MIPS_AFL_EXT_LOONGSON_2E  17
++#define MIPS_AFL_EXT_LOONGSON_2F  18
++
++#define MIPS_AFL_FLAGS1_ODDSPREG  1
++
++enum
++{
++  Val_GNU_MIPS_ABI_FP_ANY = 0,
++  Val_GNU_MIPS_ABI_FP_DOUBLE = 1,
++  Val_GNU_MIPS_ABI_FP_SINGLE = 2,
++  Val_GNU_MIPS_ABI_FP_SOFT = 3,
++  Val_GNU_MIPS_ABI_FP_OLD_64 = 4,
++  Val_GNU_MIPS_ABI_FP_XX = 5,
++  Val_GNU_MIPS_ABI_FP_64 = 6,
++  Val_GNU_MIPS_ABI_FP_64A = 7,
++  Val_GNU_MIPS_ABI_FP_MAX = 7
++};
++
++
++
++
++#define EF_PARISC_TRAPNIL	0x00010000
++#define EF_PARISC_EXT		0x00020000
++#define EF_PARISC_LSB		0x00040000
++#define EF_PARISC_WIDE		0x00080000
++#define EF_PARISC_NO_KABP	0x00100000
++
++#define EF_PARISC_LAZYSWAP	0x00400000
++#define EF_PARISC_ARCH		0x0000ffff
++
++
++
++#define EFA_PARISC_1_0		    0x020b
++#define EFA_PARISC_1_1		    0x0210
++#define EFA_PARISC_2_0		    0x0214
++
++
++
++#define SHN_PARISC_ANSI_COMMON	0xff00
++
++#define SHN_PARISC_HUGE_COMMON	0xff01
++
++
++
++#define SHT_PARISC_EXT		0x70000000
++#define SHT_PARISC_UNWIND	0x70000001
++#define SHT_PARISC_DOC		0x70000002
++
++
++
++#define SHF_PARISC_SHORT	0x20000000
++#define SHF_PARISC_HUGE		0x40000000
++#define SHF_PARISC_SBP		0x80000000
++
++
++
++#define STT_PARISC_MILLICODE	13
++
++#define STT_HP_OPAQUE		(STT_LOOS + 0x1)
++#define STT_HP_STUB		(STT_LOOS + 0x2)
++
++
++
++#define R_PARISC_NONE		0
++#define R_PARISC_DIR32		1
++#define R_PARISC_DIR21L		2
++#define R_PARISC_DIR17R		3
++#define R_PARISC_DIR17F		4
++#define R_PARISC_DIR14R		6
++#define R_PARISC_PCREL32	9
++#define R_PARISC_PCREL21L	10
++#define R_PARISC_PCREL17R	11
++#define R_PARISC_PCREL17F	12
++#define R_PARISC_PCREL14R	14
++#define R_PARISC_DPREL21L	18
++#define R_PARISC_DPREL14R	22
++#define R_PARISC_GPREL21L	26
++#define R_PARISC_GPREL14R	30
++#define R_PARISC_LTOFF21L	34
++#define R_PARISC_LTOFF14R	38
++#define R_PARISC_SECREL32	41
++#define R_PARISC_SEGBASE	48
++#define R_PARISC_SEGREL32	49
++#define R_PARISC_PLTOFF21L	50
++#define R_PARISC_PLTOFF14R	54
++#define R_PARISC_LTOFF_FPTR32	57
++#define R_PARISC_LTOFF_FPTR21L	58
++#define R_PARISC_LTOFF_FPTR14R	62
++#define R_PARISC_FPTR64		64
++#define R_PARISC_PLABEL32	65
++#define R_PARISC_PLABEL21L	66
++#define R_PARISC_PLABEL14R	70
++#define R_PARISC_PCREL64	72
++#define R_PARISC_PCREL22F	74
++#define R_PARISC_PCREL14WR	75
++#define R_PARISC_PCREL14DR	76
++#define R_PARISC_PCREL16F	77
++#define R_PARISC_PCREL16WF	78
++#define R_PARISC_PCREL16DF	79
++#define R_PARISC_DIR64		80
++#define R_PARISC_DIR14WR	83
++#define R_PARISC_DIR14DR	84
++#define R_PARISC_DIR16F		85
++#define R_PARISC_DIR16WF	86
++#define R_PARISC_DIR16DF	87
++#define R_PARISC_GPREL64	88
++#define R_PARISC_GPREL14WR	91
++#define R_PARISC_GPREL14DR	92
++#define R_PARISC_GPREL16F	93
++#define R_PARISC_GPREL16WF	94
++#define R_PARISC_GPREL16DF	95
++#define R_PARISC_LTOFF64	96
++#define R_PARISC_LTOFF14WR	99
++#define R_PARISC_LTOFF14DR	100
++#define R_PARISC_LTOFF16F	101
++#define R_PARISC_LTOFF16WF	102
++#define R_PARISC_LTOFF16DF	103
++#define R_PARISC_SECREL64	104
++#define R_PARISC_SEGREL64	112
++#define R_PARISC_PLTOFF14WR	115
++#define R_PARISC_PLTOFF14DR	116
++#define R_PARISC_PLTOFF16F	117
++#define R_PARISC_PLTOFF16WF	118
++#define R_PARISC_PLTOFF16DF	119
++#define R_PARISC_LTOFF_FPTR64	120
++#define R_PARISC_LTOFF_FPTR14WR	123
++#define R_PARISC_LTOFF_FPTR14DR	124
++#define R_PARISC_LTOFF_FPTR16F	125
++#define R_PARISC_LTOFF_FPTR16WF	126
++#define R_PARISC_LTOFF_FPTR16DF	127
++#define R_PARISC_LORESERVE	128
++#define R_PARISC_COPY		128
++#define R_PARISC_IPLT		129
++#define R_PARISC_EPLT		130
++#define R_PARISC_TPREL32	153
++#define R_PARISC_TPREL21L	154
++#define R_PARISC_TPREL14R	158
++#define R_PARISC_LTOFF_TP21L	162
++#define R_PARISC_LTOFF_TP14R	166
++#define R_PARISC_LTOFF_TP14F	167
++#define R_PARISC_TPREL64	216
++#define R_PARISC_TPREL14WR	219
++#define R_PARISC_TPREL14DR	220
++#define R_PARISC_TPREL16F	221
++#define R_PARISC_TPREL16WF	222
++#define R_PARISC_TPREL16DF	223
++#define R_PARISC_LTOFF_TP64	224
++#define R_PARISC_LTOFF_TP14WR	227
++#define R_PARISC_LTOFF_TP14DR	228
++#define R_PARISC_LTOFF_TP16F	229
++#define R_PARISC_LTOFF_TP16WF	230
++#define R_PARISC_LTOFF_TP16DF	231
++#define R_PARISC_GNU_VTENTRY	232
++#define R_PARISC_GNU_VTINHERIT	233
++#define R_PARISC_TLS_GD21L	234
++#define R_PARISC_TLS_GD14R	235
++#define R_PARISC_TLS_GDCALL	236
++#define R_PARISC_TLS_LDM21L	237
++#define R_PARISC_TLS_LDM14R	238
++#define R_PARISC_TLS_LDMCALL	239
++#define R_PARISC_TLS_LDO21L	240
++#define R_PARISC_TLS_LDO14R	241
++#define R_PARISC_TLS_DTPMOD32	242
++#define R_PARISC_TLS_DTPMOD64	243
++#define R_PARISC_TLS_DTPOFF32	244
++#define R_PARISC_TLS_DTPOFF64	245
++#define R_PARISC_TLS_LE21L	R_PARISC_TPREL21L
++#define R_PARISC_TLS_LE14R	R_PARISC_TPREL14R
++#define R_PARISC_TLS_IE21L	R_PARISC_LTOFF_TP21L
++#define R_PARISC_TLS_IE14R	R_PARISC_LTOFF_TP14R
++#define R_PARISC_TLS_TPREL32	R_PARISC_TPREL32
++#define R_PARISC_TLS_TPREL64	R_PARISC_TPREL64
++#define R_PARISC_HIRESERVE	255
++
++
++
++#define PT_HP_TLS		(PT_LOOS + 0x0)
++#define PT_HP_CORE_NONE		(PT_LOOS + 0x1)
++#define PT_HP_CORE_VERSION	(PT_LOOS + 0x2)
++#define PT_HP_CORE_KERNEL	(PT_LOOS + 0x3)
++#define PT_HP_CORE_COMM		(PT_LOOS + 0x4)
++#define PT_HP_CORE_PROC		(PT_LOOS + 0x5)
++#define PT_HP_CORE_LOADABLE	(PT_LOOS + 0x6)
++#define PT_HP_CORE_STACK	(PT_LOOS + 0x7)
++#define PT_HP_CORE_SHM		(PT_LOOS + 0x8)
++#define PT_HP_CORE_MMF		(PT_LOOS + 0x9)
++#define PT_HP_PARALLEL		(PT_LOOS + 0x10)
++#define PT_HP_FASTBIND		(PT_LOOS + 0x11)
++#define PT_HP_OPT_ANNOT		(PT_LOOS + 0x12)
++#define PT_HP_HSL_ANNOT		(PT_LOOS + 0x13)
++#define PT_HP_STACK		(PT_LOOS + 0x14)
++
++#define PT_PARISC_ARCHEXT	0x70000000
++#define PT_PARISC_UNWIND	0x70000001
++
++
++
++#define PF_PARISC_SBP		0x08000000
++
++#define PF_HP_PAGE_SIZE		0x00100000
++#define PF_HP_FAR_SHARED	0x00200000
++#define PF_HP_NEAR_SHARED	0x00400000
++#define PF_HP_CODE		0x01000000
++#define PF_HP_MODIFY		0x02000000
++#define PF_HP_LAZYSWAP		0x04000000
++#define PF_HP_SBP		0x08000000
++
++
++
++
++
++
++#define EF_ALPHA_32BIT		1
++#define EF_ALPHA_CANRELAX	2
++
++
++
++
++#define SHT_ALPHA_DEBUG		0x70000001
++#define SHT_ALPHA_REGINFO	0x70000002
++
++
++
++#define SHF_ALPHA_GPREL		0x10000000
++
++
++#define STO_ALPHA_NOPV		0x80
++#define STO_ALPHA_STD_GPLOAD	0x88
++
++
++
++#define R_ALPHA_NONE		0
++#define R_ALPHA_REFLONG		1
++#define R_ALPHA_REFQUAD		2
++#define R_ALPHA_GPREL32		3
++#define R_ALPHA_LITERAL		4
++#define R_ALPHA_LITUSE		5
++#define R_ALPHA_GPDISP		6
++#define R_ALPHA_BRADDR		7
++#define R_ALPHA_HINT		8
++#define R_ALPHA_SREL16		9
++#define R_ALPHA_SREL32		10
++#define R_ALPHA_SREL64		11
++#define R_ALPHA_GPRELHIGH	17
++#define R_ALPHA_GPRELLOW	18
++#define R_ALPHA_GPREL16		19
++#define R_ALPHA_COPY		24
++#define R_ALPHA_GLOB_DAT	25
++#define R_ALPHA_JMP_SLOT	26
++#define R_ALPHA_RELATIVE	27
++#define R_ALPHA_TLS_GD_HI	28
++#define R_ALPHA_TLSGD		29
++#define R_ALPHA_TLS_LDM		30
++#define R_ALPHA_DTPMOD64	31
++#define R_ALPHA_GOTDTPREL	32
++#define R_ALPHA_DTPREL64	33
++#define R_ALPHA_DTPRELHI	34
++#define R_ALPHA_DTPRELLO	35
++#define R_ALPHA_DTPREL16	36
++#define R_ALPHA_GOTTPREL	37
++#define R_ALPHA_TPREL64		38
++#define R_ALPHA_TPRELHI		39
++#define R_ALPHA_TPRELLO		40
++#define R_ALPHA_TPREL16		41
++
++#define R_ALPHA_NUM		46
++
++
++#define LITUSE_ALPHA_ADDR	0
++#define LITUSE_ALPHA_BASE	1
++#define LITUSE_ALPHA_BYTOFF	2
++#define LITUSE_ALPHA_JSR	3
++#define LITUSE_ALPHA_TLS_GD	4
++#define LITUSE_ALPHA_TLS_LDM	5
++
++
++#define DT_ALPHA_PLTRO		(DT_LOPROC + 0)
++#define DT_ALPHA_NUM		1
++
++
++
++
++#define EF_PPC_EMB		0x80000000
++
++
++#define EF_PPC_RELOCATABLE	0x00010000
++#define EF_PPC_RELOCATABLE_LIB	0x00008000
++
++
++
++#define R_PPC_NONE		0
++#define R_PPC_ADDR32		1
++#define R_PPC_ADDR24		2
++#define R_PPC_ADDR16		3
++#define R_PPC_ADDR16_LO		4
++#define R_PPC_ADDR16_HI		5
++#define R_PPC_ADDR16_HA		6
++#define R_PPC_ADDR14		7
++#define R_PPC_ADDR14_BRTAKEN	8
++#define R_PPC_ADDR14_BRNTAKEN	9
++#define R_PPC_REL24		10
++#define R_PPC_REL14		11
++#define R_PPC_REL14_BRTAKEN	12
++#define R_PPC_REL14_BRNTAKEN	13
++#define R_PPC_GOT16		14
++#define R_PPC_GOT16_LO		15
++#define R_PPC_GOT16_HI		16
++#define R_PPC_GOT16_HA		17
++#define R_PPC_PLTREL24		18
++#define R_PPC_COPY		19
++#define R_PPC_GLOB_DAT		20
++#define R_PPC_JMP_SLOT		21
++#define R_PPC_RELATIVE		22
++#define R_PPC_LOCAL24PC		23
++#define R_PPC_UADDR32		24
++#define R_PPC_UADDR16		25
++#define R_PPC_REL32		26
++#define R_PPC_PLT32		27
++#define R_PPC_PLTREL32		28
++#define R_PPC_PLT16_LO		29
++#define R_PPC_PLT16_HI		30
++#define R_PPC_PLT16_HA		31
++#define R_PPC_SDAREL16		32
++#define R_PPC_SECTOFF		33
++#define R_PPC_SECTOFF_LO	34
++#define R_PPC_SECTOFF_HI	35
++#define R_PPC_SECTOFF_HA	36
++
++
++#define R_PPC_TLS		67
++#define R_PPC_DTPMOD32		68
++#define R_PPC_TPREL16		69
++#define R_PPC_TPREL16_LO	70
++#define R_PPC_TPREL16_HI	71
++#define R_PPC_TPREL16_HA	72
++#define R_PPC_TPREL32		73
++#define R_PPC_DTPREL16		74
++#define R_PPC_DTPREL16_LO	75
++#define R_PPC_DTPREL16_HI	76
++#define R_PPC_DTPREL16_HA	77
++#define R_PPC_DTPREL32		78
++#define R_PPC_GOT_TLSGD16	79
++#define R_PPC_GOT_TLSGD16_LO	80
++#define R_PPC_GOT_TLSGD16_HI	81
++#define R_PPC_GOT_TLSGD16_HA	82
++#define R_PPC_GOT_TLSLD16	83
++#define R_PPC_GOT_TLSLD16_LO	84
++#define R_PPC_GOT_TLSLD16_HI	85
++#define R_PPC_GOT_TLSLD16_HA	86
++#define R_PPC_GOT_TPREL16	87
++#define R_PPC_GOT_TPREL16_LO	88
++#define R_PPC_GOT_TPREL16_HI	89
++#define R_PPC_GOT_TPREL16_HA	90
++#define R_PPC_GOT_DTPREL16	91
++#define R_PPC_GOT_DTPREL16_LO	92
++#define R_PPC_GOT_DTPREL16_HI	93
++#define R_PPC_GOT_DTPREL16_HA	94
++#define R_PPC_TLSGD		95
++#define R_PPC_TLSLD		96
++
++
++#define R_PPC_EMB_NADDR32	101
++#define R_PPC_EMB_NADDR16	102
++#define R_PPC_EMB_NADDR16_LO	103
++#define R_PPC_EMB_NADDR16_HI	104
++#define R_PPC_EMB_NADDR16_HA	105
++#define R_PPC_EMB_SDAI16	106
++#define R_PPC_EMB_SDA2I16	107
++#define R_PPC_EMB_SDA2REL	108
++#define R_PPC_EMB_SDA21		109
++#define R_PPC_EMB_MRKREF	110
++#define R_PPC_EMB_RELSEC16	111
++#define R_PPC_EMB_RELST_LO	112
++#define R_PPC_EMB_RELST_HI	113
++#define R_PPC_EMB_RELST_HA	114
++#define R_PPC_EMB_BIT_FLD	115
++#define R_PPC_EMB_RELSDA	116
++
++
++#define R_PPC_DIAB_SDA21_LO	180
++#define R_PPC_DIAB_SDA21_HI	181
++#define R_PPC_DIAB_SDA21_HA	182
++#define R_PPC_DIAB_RELSDA_LO	183
++#define R_PPC_DIAB_RELSDA_HI	184
++#define R_PPC_DIAB_RELSDA_HA	185
++
++
++#define R_PPC_IRELATIVE		248
++
++
++#define R_PPC_REL16		249
++#define R_PPC_REL16_LO		250
++#define R_PPC_REL16_HI		251
++#define R_PPC_REL16_HA		252
++
++
++
++#define R_PPC_TOC16		255
++
++
++#define DT_PPC_GOT		(DT_LOPROC + 0)
++#define DT_PPC_OPT		(DT_LOPROC + 1)
++#define DT_PPC_NUM		2
++
++#define PPC_OPT_TLS		1
++
++
++#define R_PPC64_NONE		R_PPC_NONE
++#define R_PPC64_ADDR32		R_PPC_ADDR32
++#define R_PPC64_ADDR24		R_PPC_ADDR24
++#define R_PPC64_ADDR16		R_PPC_ADDR16
++#define R_PPC64_ADDR16_LO	R_PPC_ADDR16_LO
++#define R_PPC64_ADDR16_HI	R_PPC_ADDR16_HI
++#define R_PPC64_ADDR16_HA	R_PPC_ADDR16_HA
++#define R_PPC64_ADDR14		R_PPC_ADDR14
++#define R_PPC64_ADDR14_BRTAKEN	R_PPC_ADDR14_BRTAKEN
++#define R_PPC64_ADDR14_BRNTAKEN	R_PPC_ADDR14_BRNTAKEN
++#define R_PPC64_REL24		R_PPC_REL24
++#define R_PPC64_REL14		R_PPC_REL14
++#define R_PPC64_REL14_BRTAKEN	R_PPC_REL14_BRTAKEN
++#define R_PPC64_REL14_BRNTAKEN	R_PPC_REL14_BRNTAKEN
++#define R_PPC64_GOT16		R_PPC_GOT16
++#define R_PPC64_GOT16_LO	R_PPC_GOT16_LO
++#define R_PPC64_GOT16_HI	R_PPC_GOT16_HI
++#define R_PPC64_GOT16_HA	R_PPC_GOT16_HA
++
++#define R_PPC64_COPY		R_PPC_COPY
++#define R_PPC64_GLOB_DAT	R_PPC_GLOB_DAT
++#define R_PPC64_JMP_SLOT	R_PPC_JMP_SLOT
++#define R_PPC64_RELATIVE	R_PPC_RELATIVE
++
++#define R_PPC64_UADDR32		R_PPC_UADDR32
++#define R_PPC64_UADDR16		R_PPC_UADDR16
++#define R_PPC64_REL32		R_PPC_REL32
++#define R_PPC64_PLT32		R_PPC_PLT32
++#define R_PPC64_PLTREL32	R_PPC_PLTREL32
++#define R_PPC64_PLT16_LO	R_PPC_PLT16_LO
++#define R_PPC64_PLT16_HI	R_PPC_PLT16_HI
++#define R_PPC64_PLT16_HA	R_PPC_PLT16_HA
++
++#define R_PPC64_SECTOFF		R_PPC_SECTOFF
++#define R_PPC64_SECTOFF_LO	R_PPC_SECTOFF_LO
++#define R_PPC64_SECTOFF_HI	R_PPC_SECTOFF_HI
++#define R_PPC64_SECTOFF_HA	R_PPC_SECTOFF_HA
++#define R_PPC64_ADDR30		37
++#define R_PPC64_ADDR64		38
++#define R_PPC64_ADDR16_HIGHER	39
++#define R_PPC64_ADDR16_HIGHERA	40
++#define R_PPC64_ADDR16_HIGHEST	41
++#define R_PPC64_ADDR16_HIGHESTA	42
++#define R_PPC64_UADDR64		43
++#define R_PPC64_REL64		44
++#define R_PPC64_PLT64		45
++#define R_PPC64_PLTREL64	46
++#define R_PPC64_TOC16		47
++#define R_PPC64_TOC16_LO	48
++#define R_PPC64_TOC16_HI	49
++#define R_PPC64_TOC16_HA	50
++#define R_PPC64_TOC		51
++#define R_PPC64_PLTGOT16	52
++#define R_PPC64_PLTGOT16_LO	53
++#define R_PPC64_PLTGOT16_HI	54
++#define R_PPC64_PLTGOT16_HA	55
++
++#define R_PPC64_ADDR16_DS	56
++#define R_PPC64_ADDR16_LO_DS	57
++#define R_PPC64_GOT16_DS	58
++#define R_PPC64_GOT16_LO_DS	59
++#define R_PPC64_PLT16_LO_DS	60
++#define R_PPC64_SECTOFF_DS	61
++#define R_PPC64_SECTOFF_LO_DS	62
++#define R_PPC64_TOC16_DS	63
++#define R_PPC64_TOC16_LO_DS	64
++#define R_PPC64_PLTGOT16_DS	65
++#define R_PPC64_PLTGOT16_LO_DS	66
++
++
++#define R_PPC64_TLS		67
++#define R_PPC64_DTPMOD64	68
++#define R_PPC64_TPREL16		69
++#define R_PPC64_TPREL16_LO	70
++#define R_PPC64_TPREL16_HI	71
++#define R_PPC64_TPREL16_HA	72
++#define R_PPC64_TPREL64		73
++#define R_PPC64_DTPREL16	74
++#define R_PPC64_DTPREL16_LO	75
++#define R_PPC64_DTPREL16_HI	76
++#define R_PPC64_DTPREL16_HA	77
++#define R_PPC64_DTPREL64	78
++#define R_PPC64_GOT_TLSGD16	79
++#define R_PPC64_GOT_TLSGD16_LO	80
++#define R_PPC64_GOT_TLSGD16_HI	81
++#define R_PPC64_GOT_TLSGD16_HA	82
++#define R_PPC64_GOT_TLSLD16	83
++#define R_PPC64_GOT_TLSLD16_LO	84
++#define R_PPC64_GOT_TLSLD16_HI	85
++#define R_PPC64_GOT_TLSLD16_HA	86
++#define R_PPC64_GOT_TPREL16_DS	87
++#define R_PPC64_GOT_TPREL16_LO_DS 88
++#define R_PPC64_GOT_TPREL16_HI	89
++#define R_PPC64_GOT_TPREL16_HA	90
++#define R_PPC64_GOT_DTPREL16_DS	91
++#define R_PPC64_GOT_DTPREL16_LO_DS 92
++#define R_PPC64_GOT_DTPREL16_HI	93
++#define R_PPC64_GOT_DTPREL16_HA	94
++#define R_PPC64_TPREL16_DS	95
++#define R_PPC64_TPREL16_LO_DS	96
++#define R_PPC64_TPREL16_HIGHER	97
++#define R_PPC64_TPREL16_HIGHERA	98
++#define R_PPC64_TPREL16_HIGHEST	99
++#define R_PPC64_TPREL16_HIGHESTA 100
++#define R_PPC64_DTPREL16_DS	101
++#define R_PPC64_DTPREL16_LO_DS	102
++#define R_PPC64_DTPREL16_HIGHER	103
++#define R_PPC64_DTPREL16_HIGHERA 104
++#define R_PPC64_DTPREL16_HIGHEST 105
++#define R_PPC64_DTPREL16_HIGHESTA 106
++#define R_PPC64_TLSGD		107
++#define R_PPC64_TLSLD		108
++#define R_PPC64_TOCSAVE		109
++#define R_PPC64_ADDR16_HIGH	110
++#define R_PPC64_ADDR16_HIGHA	111
++#define R_PPC64_TPREL16_HIGH	112
++#define R_PPC64_TPREL16_HIGHA	113
++#define R_PPC64_DTPREL16_HIGH	114
++#define R_PPC64_DTPREL16_HIGHA	115
++
++
++#define R_PPC64_JMP_IREL	247
++#define R_PPC64_IRELATIVE	248
++#define R_PPC64_REL16		249
++#define R_PPC64_REL16_LO	250
++#define R_PPC64_REL16_HI	251
++#define R_PPC64_REL16_HA	252
++
++#define EF_PPC64_ABI	3
++
++#define DT_PPC64_GLINK  (DT_LOPROC + 0)
++#define DT_PPC64_OPD	(DT_LOPROC + 1)
++#define DT_PPC64_OPDSZ	(DT_LOPROC + 2)
++#define DT_PPC64_OPT	(DT_LOPROC + 3)
++#define DT_PPC64_NUM	4
++
++#define PPC64_OPT_TLS		1
++#define PPC64_OPT_MULTI_TOC	2
++#define PPC64_OPT_LOCALENTRY	4
++
++#define STO_PPC64_LOCAL_BIT	5
++#define STO_PPC64_LOCAL_MASK	0xe0
++#define PPC64_LOCAL_ENTRY_OFFSET(x) (1 << (((x)&0xe0)>>5) & 0xfc)
++
++
++#define EF_ARM_RELEXEC		0x01
++#define EF_ARM_HASENTRY		0x02
++#define EF_ARM_INTERWORK	0x04
++#define EF_ARM_APCS_26		0x08
++#define EF_ARM_APCS_FLOAT	0x10
++#define EF_ARM_PIC		0x20
++#define EF_ARM_ALIGN8		0x40
++#define EF_ARM_NEW_ABI		0x80
++#define EF_ARM_OLD_ABI		0x100
++#define EF_ARM_SOFT_FLOAT	0x200
++#define EF_ARM_VFP_FLOAT	0x400
++#define EF_ARM_MAVERICK_FLOAT	0x800
++
++#define EF_ARM_ABI_FLOAT_SOFT	0x200
++#define EF_ARM_ABI_FLOAT_HARD	0x400
++
++
++#define EF_ARM_SYMSARESORTED	0x04
++#define EF_ARM_DYNSYMSUSESEGIDX	0x08
++#define EF_ARM_MAPSYMSFIRST	0x10
++#define EF_ARM_EABIMASK		0XFF000000
++
++
++#define EF_ARM_BE8	    0x00800000
++#define EF_ARM_LE8	    0x00400000
++
++#define EF_ARM_EABI_VERSION(flags)	((flags) & EF_ARM_EABIMASK)
++#define EF_ARM_EABI_UNKNOWN	0x00000000
++#define EF_ARM_EABI_VER1	0x01000000
++#define EF_ARM_EABI_VER2	0x02000000
++#define EF_ARM_EABI_VER3	0x03000000
++#define EF_ARM_EABI_VER4	0x04000000
++#define EF_ARM_EABI_VER5	0x05000000
++
++
++#define STT_ARM_TFUNC		STT_LOPROC
++#define STT_ARM_16BIT		STT_HIPROC
++
++
++#define SHF_ARM_ENTRYSECT	0x10000000
++#define SHF_ARM_COMDEF		0x80000000
++
++
++
++#define PF_ARM_SB		0x10000000
++
++#define PF_ARM_PI		0x20000000
++#define PF_ARM_ABS		0x40000000
++
++
++#define PT_ARM_EXIDX		(PT_LOPROC + 1)
++
++
++#define SHT_ARM_EXIDX		(SHT_LOPROC + 1)
++#define SHT_ARM_PREEMPTMAP	(SHT_LOPROC + 2)
++#define SHT_ARM_ATTRIBUTES	(SHT_LOPROC + 3)
++
++#define R_AARCH64_NONE            0
++#define R_AARCH64_P32_ABS32	1
++#define R_AARCH64_P32_COPY	180
++#define R_AARCH64_P32_GLOB_DAT	181
++#define R_AARCH64_P32_JUMP_SLOT	182
++#define R_AARCH64_P32_RELATIVE	183
++#define R_AARCH64_P32_TLS_DTPMOD 184
++#define R_AARCH64_P32_TLS_DTPREL 185
++#define R_AARCH64_P32_TLS_TPREL	186
++#define R_AARCH64_P32_TLSDESC	187
++#define R_AARCH64_P32_IRELATIVE	188
++#define R_AARCH64_ABS64         257
++#define R_AARCH64_ABS32         258
++#define R_AARCH64_ABS16		259
++#define R_AARCH64_PREL64	260
++#define R_AARCH64_PREL32	261
++#define R_AARCH64_PREL16	262
++#define R_AARCH64_MOVW_UABS_G0	263
++#define R_AARCH64_MOVW_UABS_G0_NC 264
++#define R_AARCH64_MOVW_UABS_G1	265
++#define R_AARCH64_MOVW_UABS_G1_NC 266
++#define R_AARCH64_MOVW_UABS_G2	267
++#define R_AARCH64_MOVW_UABS_G2_NC 268
++#define R_AARCH64_MOVW_UABS_G3	269
++#define R_AARCH64_MOVW_SABS_G0	270
++#define R_AARCH64_MOVW_SABS_G1	271
++#define R_AARCH64_MOVW_SABS_G2	272
++#define R_AARCH64_LD_PREL_LO19	273
++#define R_AARCH64_ADR_PREL_LO21	274
++#define R_AARCH64_ADR_PREL_PG_HI21 275
++#define R_AARCH64_ADR_PREL_PG_HI21_NC 276
++#define R_AARCH64_ADD_ABS_LO12_NC 277
++#define R_AARCH64_LDST8_ABS_LO12_NC 278
++#define R_AARCH64_TSTBR14	279
++#define R_AARCH64_CONDBR19	280
++#define R_AARCH64_JUMP26	282
++#define R_AARCH64_CALL26	283
++#define R_AARCH64_LDST16_ABS_LO12_NC 284
++#define R_AARCH64_LDST32_ABS_LO12_NC 285
++#define R_AARCH64_LDST64_ABS_LO12_NC 286
++#define R_AARCH64_MOVW_PREL_G0	287
++#define R_AARCH64_MOVW_PREL_G0_NC 288
++#define R_AARCH64_MOVW_PREL_G1	289
++#define R_AARCH64_MOVW_PREL_G1_NC 290
++#define R_AARCH64_MOVW_PREL_G2	291
++#define R_AARCH64_MOVW_PREL_G2_NC 292
++#define R_AARCH64_MOVW_PREL_G3	293
++#define R_AARCH64_LDST128_ABS_LO12_NC 299
++#define R_AARCH64_MOVW_GOTOFF_G0 300
++#define R_AARCH64_MOVW_GOTOFF_G0_NC 301
++#define R_AARCH64_MOVW_GOTOFF_G1 302
++#define R_AARCH64_MOVW_GOTOFF_G1_NC 303
++#define R_AARCH64_MOVW_GOTOFF_G2 304
++#define R_AARCH64_MOVW_GOTOFF_G2_NC 305
++#define R_AARCH64_MOVW_GOTOFF_G3 306
++#define R_AARCH64_GOTREL64	307
++#define R_AARCH64_GOTREL32	308
++#define R_AARCH64_GOT_LD_PREL19	309
++#define R_AARCH64_LD64_GOTOFF_LO15 310
++#define R_AARCH64_ADR_GOT_PAGE	311
++#define R_AARCH64_LD64_GOT_LO12_NC 312
++#define R_AARCH64_LD64_GOTPAGE_LO15 313
++#define R_AARCH64_TLSGD_ADR_PREL21 512
++#define R_AARCH64_TLSGD_ADR_PAGE21 513
++#define R_AARCH64_TLSGD_ADD_LO12_NC 514
++#define R_AARCH64_TLSGD_MOVW_G1	515
++#define R_AARCH64_TLSGD_MOVW_G0_NC 516
++#define R_AARCH64_TLSLD_ADR_PREL21 517
++#define R_AARCH64_TLSLD_ADR_PAGE21 518
++#define R_AARCH64_TLSLD_ADD_LO12_NC 519
++#define R_AARCH64_TLSLD_MOVW_G1	520
++#define R_AARCH64_TLSLD_MOVW_G0_NC 521
++#define R_AARCH64_TLSLD_LD_PREL19 522
++#define R_AARCH64_TLSLD_MOVW_DTPREL_G2 523
++#define R_AARCH64_TLSLD_MOVW_DTPREL_G1 524
++#define R_AARCH64_TLSLD_MOVW_DTPREL_G1_NC 525
++#define R_AARCH64_TLSLD_MOVW_DTPREL_G0 526
++#define R_AARCH64_TLSLD_MOVW_DTPREL_G0_NC 527
++#define R_AARCH64_TLSLD_ADD_DTPREL_HI12 528
++#define R_AARCH64_TLSLD_ADD_DTPREL_LO12 529
++#define R_AARCH64_TLSLD_ADD_DTPREL_LO12_NC 530
++#define R_AARCH64_TLSLD_LDST8_DTPREL_LO12 531
++#define R_AARCH64_TLSLD_LDST8_DTPREL_LO12_NC 532
++#define R_AARCH64_TLSLD_LDST16_DTPREL_LO12 533
++#define R_AARCH64_TLSLD_LDST16_DTPREL_LO12_NC 534
++#define R_AARCH64_TLSLD_LDST32_DTPREL_LO12 535
++#define R_AARCH64_TLSLD_LDST32_DTPREL_LO12_NC 536
++#define R_AARCH64_TLSLD_LDST64_DTPREL_LO12 537
++#define R_AARCH64_TLSLD_LDST64_DTPREL_LO12_NC 538
++#define R_AARCH64_TLSIE_MOVW_GOTTPREL_G1 539
++#define R_AARCH64_TLSIE_MOVW_GOTTPREL_G0_NC 540
++#define R_AARCH64_TLSIE_ADR_GOTTPREL_PAGE21 541
++#define R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC 542
++#define R_AARCH64_TLSIE_LD_GOTTPREL_PREL19 543
++#define R_AARCH64_TLSLE_MOVW_TPREL_G2 544
++#define R_AARCH64_TLSLE_MOVW_TPREL_G1 545
++#define R_AARCH64_TLSLE_MOVW_TPREL_G1_NC 546
++#define R_AARCH64_TLSLE_MOVW_TPREL_G0 547
++#define R_AARCH64_TLSLE_MOVW_TPREL_G0_NC 548
++#define R_AARCH64_TLSLE_ADD_TPREL_HI12 549
++#define R_AARCH64_TLSLE_ADD_TPREL_LO12 550
++#define R_AARCH64_TLSLE_ADD_TPREL_LO12_NC 551
++#define R_AARCH64_TLSLE_LDST8_TPREL_LO12 552
++#define R_AARCH64_TLSLE_LDST8_TPREL_LO12_NC 553
++#define R_AARCH64_TLSLE_LDST16_TPREL_LO12 554
++#define R_AARCH64_TLSLE_LDST16_TPREL_LO12_NC 555
++#define R_AARCH64_TLSLE_LDST32_TPREL_LO12 556
++#define R_AARCH64_TLSLE_LDST32_TPREL_LO12_NC 557
++#define R_AARCH64_TLSLE_LDST64_TPREL_LO12 558
++#define R_AARCH64_TLSLE_LDST64_TPREL_LO12_NC 559
++#define R_AARCH64_TLSDESC_LD_PREL19 560
++#define R_AARCH64_TLSDESC_ADR_PREL21 561
++#define R_AARCH64_TLSDESC_ADR_PAGE21 562
++#define R_AARCH64_TLSDESC_LD64_LO12 563
++#define R_AARCH64_TLSDESC_ADD_LO12 564
++#define R_AARCH64_TLSDESC_OFF_G1 565
++#define R_AARCH64_TLSDESC_OFF_G0_NC 566
++#define R_AARCH64_TLSDESC_LDR	567
++#define R_AARCH64_TLSDESC_ADD	568
++#define R_AARCH64_TLSDESC_CALL	569
++#define R_AARCH64_TLSLE_LDST128_TPREL_LO12 570
++#define R_AARCH64_TLSLE_LDST128_TPREL_LO12_NC 571
++#define R_AARCH64_TLSLD_LDST128_DTPREL_LO12 572
++#define R_AARCH64_TLSLD_LDST128_DTPREL_LO12_NC 573
++#define R_AARCH64_COPY         1024
++#define R_AARCH64_GLOB_DAT     1025
++#define R_AARCH64_JUMP_SLOT    1026
++#define R_AARCH64_RELATIVE     1027
++#define R_AARCH64_TLS_DTPMOD   1028
++#define R_AARCH64_TLS_DTPMOD64 1028
++#define R_AARCH64_TLS_DTPREL   1029
++#define R_AARCH64_TLS_DTPREL64 1029
++#define R_AARCH64_TLS_TPREL    1030
++#define R_AARCH64_TLS_TPREL64  1030
++#define R_AARCH64_TLSDESC      1031
++
++
++#define R_ARM_NONE		0
++#define R_ARM_PC24		1
++#define R_ARM_ABS32		2
++#define R_ARM_REL32		3
++#define R_ARM_PC13		4
++#define R_ARM_ABS16		5
++#define R_ARM_ABS12		6
++#define R_ARM_THM_ABS5		7
++#define R_ARM_ABS8		8
++#define R_ARM_SBREL32		9
++#define R_ARM_THM_PC22		10
++#define R_ARM_THM_PC8		11
++#define R_ARM_AMP_VCALL9	12
++#define R_ARM_TLS_DESC		13
++#define R_ARM_THM_SWI8		14
++#define R_ARM_XPC25		15
++#define R_ARM_THM_XPC22		16
++#define R_ARM_TLS_DTPMOD32	17
++#define R_ARM_TLS_DTPOFF32	18
++#define R_ARM_TLS_TPOFF32	19
++#define R_ARM_COPY		20
++#define R_ARM_GLOB_DAT		21
++#define R_ARM_JUMP_SLOT		22
++#define R_ARM_RELATIVE		23
++#define R_ARM_GOTOFF		24
++#define R_ARM_GOTPC		25
++#define R_ARM_GOT32		26
++#define R_ARM_PLT32		27
++#define R_ARM_CALL		28
++#define R_ARM_JUMP24		29
++#define R_ARM_THM_JUMP24	30
++#define R_ARM_BASE_ABS		31
++#define R_ARM_ALU_PCREL_7_0	32
++#define R_ARM_ALU_PCREL_15_8	33
++#define R_ARM_ALU_PCREL_23_15	34
++#define R_ARM_LDR_SBREL_11_0	35
++#define R_ARM_ALU_SBREL_19_12	36
++#define R_ARM_ALU_SBREL_27_20	37
++#define R_ARM_TARGET1		38
++#define R_ARM_SBREL31		39
++#define R_ARM_V4BX		40
++#define R_ARM_TARGET2		41
++#define R_ARM_PREL31		42
++#define R_ARM_MOVW_ABS_NC	43
++#define R_ARM_MOVT_ABS		44
++#define R_ARM_MOVW_PREL_NC	45
++#define R_ARM_MOVT_PREL		46
++#define R_ARM_THM_MOVW_ABS_NC	47
++#define R_ARM_THM_MOVT_ABS	48
++#define R_ARM_THM_MOVW_PREL_NC	49
++#define R_ARM_THM_MOVT_PREL	50
++#define R_ARM_THM_JUMP19	51
++#define R_ARM_THM_JUMP6		52
++#define R_ARM_THM_ALU_PREL_11_0	53
++#define R_ARM_THM_PC12		54
++#define R_ARM_ABS32_NOI		55
++#define R_ARM_REL32_NOI		56
++#define R_ARM_ALU_PC_G0_NC	57
++#define R_ARM_ALU_PC_G0		58
++#define R_ARM_ALU_PC_G1_NC	59
++#define R_ARM_ALU_PC_G1		60
++#define R_ARM_ALU_PC_G2		61
++#define R_ARM_LDR_PC_G1		62
++#define R_ARM_LDR_PC_G2		63
++#define R_ARM_LDRS_PC_G0	64
++#define R_ARM_LDRS_PC_G1	65
++#define R_ARM_LDRS_PC_G2	66
++#define R_ARM_LDC_PC_G0		67
++#define R_ARM_LDC_PC_G1		68
++#define R_ARM_LDC_PC_G2		69
++#define R_ARM_ALU_SB_G0_NC	70
++#define R_ARM_ALU_SB_G0		71
++#define R_ARM_ALU_SB_G1_NC	72
++#define R_ARM_ALU_SB_G1		73
++#define R_ARM_ALU_SB_G2		74
++#define R_ARM_LDR_SB_G0		75
++#define R_ARM_LDR_SB_G1		76
++#define R_ARM_LDR_SB_G2		77
++#define R_ARM_LDRS_SB_G0	78
++#define R_ARM_LDRS_SB_G1	79
++#define R_ARM_LDRS_SB_G2	80
++#define R_ARM_LDC_SB_G0		81
++#define R_ARM_LDC_SB_G1		82
++#define R_ARM_LDC_SB_G2		83
++#define R_ARM_MOVW_BREL_NC	84
++#define R_ARM_MOVT_BREL		85
++#define R_ARM_MOVW_BREL		86
++#define R_ARM_THM_MOVW_BREL_NC	87
++#define R_ARM_THM_MOVT_BREL	88
++#define R_ARM_THM_MOVW_BREL	89
++#define R_ARM_TLS_GOTDESC	90
++#define R_ARM_TLS_CALL		91
++#define R_ARM_TLS_DESCSEQ	92
++#define R_ARM_THM_TLS_CALL	93
++#define R_ARM_PLT32_ABS		94
++#define R_ARM_GOT_ABS		95
++#define R_ARM_GOT_PREL		96
++#define R_ARM_GOT_BREL12	97
++#define R_ARM_GOTOFF12		98
++#define R_ARM_GOTRELAX		99
++#define R_ARM_GNU_VTENTRY	100
++#define R_ARM_GNU_VTINHERIT	101
++#define R_ARM_THM_PC11		102
++#define R_ARM_THM_PC9		103
++#define R_ARM_TLS_GD32		104
++
++#define R_ARM_TLS_LDM32		105
++
++#define R_ARM_TLS_LDO32		106
++
++#define R_ARM_TLS_IE32		107
++
++#define R_ARM_TLS_LE32		108
++#define R_ARM_TLS_LDO12		109
++#define R_ARM_TLS_LE12		110
++#define R_ARM_TLS_IE12GP	111
++#define R_ARM_ME_TOO		128
++#define R_ARM_THM_TLS_DESCSEQ	129
++#define R_ARM_THM_TLS_DESCSEQ16	129
++#define R_ARM_THM_TLS_DESCSEQ32	130
++#define R_ARM_THM_GOT_BREL12	131
++#define R_ARM_IRELATIVE		160
++#define R_ARM_RXPC25		249
++#define R_ARM_RSBREL32		250
++#define R_ARM_THM_RPC22		251
++#define R_ARM_RREL32		252
++#define R_ARM_RABS22		253
++#define R_ARM_RPC24		254
++#define R_ARM_RBASE		255
++
++#define R_ARM_NUM		256
++
++
++
++
++#define EF_IA_64_MASKOS		0x0000000f
++#define EF_IA_64_ABI64		0x00000010
++#define EF_IA_64_ARCH		0xff000000
++
++
++#define PT_IA_64_ARCHEXT	(PT_LOPROC + 0)
++#define PT_IA_64_UNWIND		(PT_LOPROC + 1)
++#define PT_IA_64_HP_OPT_ANOT	(PT_LOOS + 0x12)
++#define PT_IA_64_HP_HSL_ANOT	(PT_LOOS + 0x13)
++#define PT_IA_64_HP_STACK	(PT_LOOS + 0x14)
++
++
++#define PF_IA_64_NORECOV	0x80000000
++
++
++#define SHT_IA_64_EXT		(SHT_LOPROC + 0)
++#define SHT_IA_64_UNWIND	(SHT_LOPROC + 1)
++
++
++#define SHF_IA_64_SHORT		0x10000000
++#define SHF_IA_64_NORECOV	0x20000000
++
++
++#define DT_IA_64_PLT_RESERVE	(DT_LOPROC + 0)
++#define DT_IA_64_NUM		1
++
++
++#define R_IA64_NONE		0x00
++#define R_IA64_IMM14		0x21
++#define R_IA64_IMM22		0x22
++#define R_IA64_IMM64		0x23
++#define R_IA64_DIR32MSB		0x24
++#define R_IA64_DIR32LSB		0x25
++#define R_IA64_DIR64MSB		0x26
++#define R_IA64_DIR64LSB		0x27
++#define R_IA64_GPREL22		0x2a
++#define R_IA64_GPREL64I		0x2b
++#define R_IA64_GPREL32MSB	0x2c
++#define R_IA64_GPREL32LSB	0x2d
++#define R_IA64_GPREL64MSB	0x2e
++#define R_IA64_GPREL64LSB	0x2f
++#define R_IA64_LTOFF22		0x32
++#define R_IA64_LTOFF64I		0x33
++#define R_IA64_PLTOFF22		0x3a
++#define R_IA64_PLTOFF64I	0x3b
++#define R_IA64_PLTOFF64MSB	0x3e
++#define R_IA64_PLTOFF64LSB	0x3f
++#define R_IA64_FPTR64I		0x43
++#define R_IA64_FPTR32MSB	0x44
++#define R_IA64_FPTR32LSB	0x45
++#define R_IA64_FPTR64MSB	0x46
++#define R_IA64_FPTR64LSB	0x47
++#define R_IA64_PCREL60B		0x48
++#define R_IA64_PCREL21B		0x49
++#define R_IA64_PCREL21M		0x4a
++#define R_IA64_PCREL21F		0x4b
++#define R_IA64_PCREL32MSB	0x4c
++#define R_IA64_PCREL32LSB	0x4d
++#define R_IA64_PCREL64MSB	0x4e
++#define R_IA64_PCREL64LSB	0x4f
++#define R_IA64_LTOFF_FPTR22	0x52
++#define R_IA64_LTOFF_FPTR64I	0x53
++#define R_IA64_LTOFF_FPTR32MSB	0x54
++#define R_IA64_LTOFF_FPTR32LSB	0x55
++#define R_IA64_LTOFF_FPTR64MSB	0x56
++#define R_IA64_LTOFF_FPTR64LSB	0x57
++#define R_IA64_SEGREL32MSB	0x5c
++#define R_IA64_SEGREL32LSB	0x5d
++#define R_IA64_SEGREL64MSB	0x5e
++#define R_IA64_SEGREL64LSB	0x5f
++#define R_IA64_SECREL32MSB	0x64
++#define R_IA64_SECREL32LSB	0x65
++#define R_IA64_SECREL64MSB	0x66
++#define R_IA64_SECREL64LSB	0x67
++#define R_IA64_REL32MSB		0x6c
++#define R_IA64_REL32LSB		0x6d
++#define R_IA64_REL64MSB		0x6e
++#define R_IA64_REL64LSB		0x6f
++#define R_IA64_LTV32MSB		0x74
++#define R_IA64_LTV32LSB		0x75
++#define R_IA64_LTV64MSB		0x76
++#define R_IA64_LTV64LSB		0x77
++#define R_IA64_PCREL21BI	0x79
++#define R_IA64_PCREL22		0x7a
++#define R_IA64_PCREL64I		0x7b
++#define R_IA64_IPLTMSB		0x80
++#define R_IA64_IPLTLSB		0x81
++#define R_IA64_COPY		0x84
++#define R_IA64_SUB		0x85
++#define R_IA64_LTOFF22X		0x86
++#define R_IA64_LDXMOV		0x87
++#define R_IA64_TPREL14		0x91
++#define R_IA64_TPREL22		0x92
++#define R_IA64_TPREL64I		0x93
++#define R_IA64_TPREL64MSB	0x96
++#define R_IA64_TPREL64LSB	0x97
++#define R_IA64_LTOFF_TPREL22	0x9a
++#define R_IA64_DTPMOD64MSB	0xa6
++#define R_IA64_DTPMOD64LSB	0xa7
++#define R_IA64_LTOFF_DTPMOD22	0xaa
++#define R_IA64_DTPREL14		0xb1
++#define R_IA64_DTPREL22		0xb2
++#define R_IA64_DTPREL64I	0xb3
++#define R_IA64_DTPREL32MSB	0xb4
++#define R_IA64_DTPREL32LSB	0xb5
++#define R_IA64_DTPREL64MSB	0xb6
++#define R_IA64_DTPREL64LSB	0xb7
++#define R_IA64_LTOFF_DTPREL22	0xba
++
++
++#define EF_SH_MACH_MASK		0x1f
++#define EF_SH_UNKNOWN		0x0
++#define EF_SH1			0x1
++#define EF_SH2			0x2
++#define EF_SH3			0x3
++#define EF_SH_DSP		0x4
++#define EF_SH3_DSP		0x5
++#define EF_SH4AL_DSP		0x6
++#define EF_SH3E			0x8
++#define EF_SH4			0x9
++#define EF_SH2E			0xb
++#define EF_SH4A			0xc
++#define EF_SH2A			0xd
++#define EF_SH4_NOFPU		0x10
++#define EF_SH4A_NOFPU		0x11
++#define EF_SH4_NOMMU_NOFPU	0x12
++#define EF_SH2A_NOFPU		0x13
++#define EF_SH3_NOMMU		0x14
++#define EF_SH2A_SH4_NOFPU	0x15
++#define EF_SH2A_SH3_NOFPU	0x16
++#define EF_SH2A_SH4		0x17
++#define EF_SH2A_SH3E		0x18
++
++#define	R_SH_NONE		0
++#define	R_SH_DIR32		1
++#define	R_SH_REL32		2
++#define	R_SH_DIR8WPN		3
++#define	R_SH_IND12W		4
++#define	R_SH_DIR8WPL		5
++#define	R_SH_DIR8WPZ		6
++#define	R_SH_DIR8BP		7
++#define	R_SH_DIR8W		8
++#define	R_SH_DIR8L		9
++#define	R_SH_SWITCH16		25
++#define	R_SH_SWITCH32		26
++#define	R_SH_USES		27
++#define	R_SH_COUNT		28
++#define	R_SH_ALIGN		29
++#define	R_SH_CODE		30
++#define	R_SH_DATA		31
++#define	R_SH_LABEL		32
++#define	R_SH_SWITCH8		33
++#define	R_SH_GNU_VTINHERIT	34
++#define	R_SH_GNU_VTENTRY	35
++#define	R_SH_TLS_GD_32		144
++#define	R_SH_TLS_LD_32		145
++#define	R_SH_TLS_LDO_32		146
++#define	R_SH_TLS_IE_32		147
++#define	R_SH_TLS_LE_32		148
++#define	R_SH_TLS_DTPMOD32	149
++#define	R_SH_TLS_DTPOFF32	150
++#define	R_SH_TLS_TPOFF32	151
++#define	R_SH_GOT32		160
++#define	R_SH_PLT32		161
++#define	R_SH_COPY		162
++#define	R_SH_GLOB_DAT		163
++#define	R_SH_JMP_SLOT		164
++#define	R_SH_RELATIVE		165
++#define	R_SH_GOTOFF		166
++#define	R_SH_GOTPC		167
++#define	R_SH_GOT20		201
++#define	R_SH_GOTOFF20		202
++#define	R_SH_GOTFUNCDESC	203
++#define	R_SH_GOTFUNCDEST20	204
++#define	R_SH_GOTOFFFUNCDESC	205
++#define	R_SH_GOTOFFFUNCDEST20	206
++#define	R_SH_FUNCDESC		207
++#define	R_SH_FUNCDESC_VALUE	208
++
++#define	R_SH_NUM		256
++
++
++
++#define R_390_NONE		0
++#define R_390_8			1
++#define R_390_12		2
++#define R_390_16		3
++#define R_390_32		4
++#define R_390_PC32		5
++#define R_390_GOT12		6
++#define R_390_GOT32		7
++#define R_390_PLT32		8
++#define R_390_COPY		9
++#define R_390_GLOB_DAT		10
++#define R_390_JMP_SLOT		11
++#define R_390_RELATIVE		12
++#define R_390_GOTOFF32		13
++#define R_390_GOTPC		14
++#define R_390_GOT16		15
++#define R_390_PC16		16
++#define R_390_PC16DBL		17
++#define R_390_PLT16DBL		18
++#define R_390_PC32DBL		19
++#define R_390_PLT32DBL		20
++#define R_390_GOTPCDBL		21
++#define R_390_64		22
++#define R_390_PC64		23
++#define R_390_GOT64		24
++#define R_390_PLT64		25
++#define R_390_GOTENT		26
++#define R_390_GOTOFF16		27
++#define R_390_GOTOFF64		28
++#define R_390_GOTPLT12		29
++#define R_390_GOTPLT16		30
++#define R_390_GOTPLT32		31
++#define R_390_GOTPLT64		32
++#define R_390_GOTPLTENT		33
++#define R_390_PLTOFF16		34
++#define R_390_PLTOFF32		35
++#define R_390_PLTOFF64		36
++#define R_390_TLS_LOAD		37
++#define R_390_TLS_GDCALL	38
++
++#define R_390_TLS_LDCALL	39
++
++#define R_390_TLS_GD32		40
++
++#define R_390_TLS_GD64		41
++
++#define R_390_TLS_GOTIE12	42
++
++#define R_390_TLS_GOTIE32	43
++
++#define R_390_TLS_GOTIE64	44
++
++#define R_390_TLS_LDM32		45
++
++#define R_390_TLS_LDM64		46
++
++#define R_390_TLS_IE32		47
++
++#define R_390_TLS_IE64		48
++
++#define R_390_TLS_IEENT		49
++
++#define R_390_TLS_LE32		50
++
++#define R_390_TLS_LE64		51
++
++#define R_390_TLS_LDO32		52
++
++#define R_390_TLS_LDO64		53
++
++#define R_390_TLS_DTPMOD	54
++#define R_390_TLS_DTPOFF	55
++#define R_390_TLS_TPOFF		56
++
++#define R_390_20		57
++#define R_390_GOT20		58
++#define R_390_GOTPLT20		59
++#define R_390_TLS_GOTIE20	60
++
++
++#define R_390_NUM		61
++
++
++
++#define R_CRIS_NONE		0
++#define R_CRIS_8		1
++#define R_CRIS_16		2
++#define R_CRIS_32		3
++#define R_CRIS_8_PCREL		4
++#define R_CRIS_16_PCREL		5
++#define R_CRIS_32_PCREL		6
++#define R_CRIS_GNU_VTINHERIT	7
++#define R_CRIS_GNU_VTENTRY	8
++#define R_CRIS_COPY		9
++#define R_CRIS_GLOB_DAT		10
++#define R_CRIS_JUMP_SLOT	11
++#define R_CRIS_RELATIVE		12
++#define R_CRIS_16_GOT		13
++#define R_CRIS_32_GOT		14
++#define R_CRIS_16_GOTPLT	15
++#define R_CRIS_32_GOTPLT	16
++#define R_CRIS_32_GOTREL	17
++#define R_CRIS_32_PLT_GOTREL	18
++#define R_CRIS_32_PLT_PCREL	19
++
++#define R_CRIS_NUM		20
++
++
++
++#define R_X86_64_NONE		0
++#define R_X86_64_64		1
++#define R_X86_64_PC32		2
++#define R_X86_64_GOT32		3
++#define R_X86_64_PLT32		4
++#define R_X86_64_COPY		5
++#define R_X86_64_GLOB_DAT	6
++#define R_X86_64_JUMP_SLOT	7
++#define R_X86_64_RELATIVE	8
++#define R_X86_64_GOTPCREL	9
++
++#define R_X86_64_32		10
++#define R_X86_64_32S		11
++#define R_X86_64_16		12
++#define R_X86_64_PC16		13
++#define R_X86_64_8		14
++#define R_X86_64_PC8		15
++#define R_X86_64_DTPMOD64	16
++#define R_X86_64_DTPOFF64	17
++#define R_X86_64_TPOFF64	18
++#define R_X86_64_TLSGD		19
++
++#define R_X86_64_TLSLD		20
++
++#define R_X86_64_DTPOFF32	21
++#define R_X86_64_GOTTPOFF	22
++
++#define R_X86_64_TPOFF32	23
++#define R_X86_64_PC64		24
++#define R_X86_64_GOTOFF64	25
++#define R_X86_64_GOTPC32	26
++#define R_X86_64_GOT64		27
++#define R_X86_64_GOTPCREL64	28
++#define R_X86_64_GOTPC64	29
++#define R_X86_64_GOTPLT64	30
++#define R_X86_64_PLTOFF64	31
++#define R_X86_64_SIZE32		32
++#define R_X86_64_SIZE64		33
++
++#define R_X86_64_GOTPC32_TLSDESC 34
++#define R_X86_64_TLSDESC_CALL   35
++
++#define R_X86_64_TLSDESC        36
++#define R_X86_64_IRELATIVE	37
++#define R_X86_64_RELATIVE64	38
++#define R_X86_64_GOTPCRELX	41
++#define R_X86_64_REX_GOTPCRELX	42
++#define R_X86_64_NUM		43
++
++
++
++#define R_MN10300_NONE		0
++#define R_MN10300_32		1
++#define R_MN10300_16		2
++#define R_MN10300_8		3
++#define R_MN10300_PCREL32	4
++#define R_MN10300_PCREL16	5
++#define R_MN10300_PCREL8	6
++#define R_MN10300_GNU_VTINHERIT	7
++#define R_MN10300_GNU_VTENTRY	8
++#define R_MN10300_24		9
++#define R_MN10300_GOTPC32	10
++#define R_MN10300_GOTPC16	11
++#define R_MN10300_GOTOFF32	12
++#define R_MN10300_GOTOFF24	13
++#define R_MN10300_GOTOFF16	14
++#define R_MN10300_PLT32		15
++#define R_MN10300_PLT16		16
++#define R_MN10300_GOT32		17
++#define R_MN10300_GOT24		18
++#define R_MN10300_GOT16		19
++#define R_MN10300_COPY		20
++#define R_MN10300_GLOB_DAT	21
++#define R_MN10300_JMP_SLOT	22
++#define R_MN10300_RELATIVE	23
++
++#define R_MN10300_NUM		24
++
++
++
++#define R_M32R_NONE		0
++#define R_M32R_16		1
++#define R_M32R_32		2
++#define R_M32R_24		3
++#define R_M32R_10_PCREL		4
++#define R_M32R_18_PCREL		5
++#define R_M32R_26_PCREL		6
++#define R_M32R_HI16_ULO		7
++#define R_M32R_HI16_SLO		8
++#define R_M32R_LO16		9
++#define R_M32R_SDA16		10
++#define R_M32R_GNU_VTINHERIT	11
++#define R_M32R_GNU_VTENTRY	12
++
++#define R_M32R_16_RELA		33
++#define R_M32R_32_RELA		34
++#define R_M32R_24_RELA		35
++#define R_M32R_10_PCREL_RELA	36
++#define R_M32R_18_PCREL_RELA	37
++#define R_M32R_26_PCREL_RELA	38
++#define R_M32R_HI16_ULO_RELA	39
++#define R_M32R_HI16_SLO_RELA	40
++#define R_M32R_LO16_RELA	41
++#define R_M32R_SDA16_RELA	42
++#define R_M32R_RELA_GNU_VTINHERIT	43
++#define R_M32R_RELA_GNU_VTENTRY	44
++#define R_M32R_REL32		45
++
++#define R_M32R_GOT24		48
++#define R_M32R_26_PLTREL	49
++#define R_M32R_COPY		50
++#define R_M32R_GLOB_DAT		51
++#define R_M32R_JMP_SLOT		52
++#define R_M32R_RELATIVE		53
++#define R_M32R_GOTOFF		54
++#define R_M32R_GOTPC24		55
++#define R_M32R_GOT16_HI_ULO	56
++
++#define R_M32R_GOT16_HI_SLO	57
++
++#define R_M32R_GOT16_LO		58
++#define R_M32R_GOTPC_HI_ULO	59
++
++#define R_M32R_GOTPC_HI_SLO	60
++
++#define R_M32R_GOTPC_LO		61
++
++#define R_M32R_GOTOFF_HI_ULO	62
++
++#define R_M32R_GOTOFF_HI_SLO	63
++
++#define R_M32R_GOTOFF_LO	64
++#define R_M32R_NUM		256
++
++#define R_MICROBLAZE_NONE 0
++#define R_MICROBLAZE_32 1
++#define R_MICROBLAZE_32_PCREL 2
++#define R_MICROBLAZE_64_PCREL 3
++#define R_MICROBLAZE_32_PCREL_LO 4
++#define R_MICROBLAZE_64 5
++#define R_MICROBLAZE_32_LO 6
++#define R_MICROBLAZE_SRO32 7
++#define R_MICROBLAZE_SRW32 8
++#define R_MICROBLAZE_64_NONE 9
++#define R_MICROBLAZE_32_SYM_OP_SYM 10
++#define R_MICROBLAZE_GNU_VTINHERIT 11
++#define R_MICROBLAZE_GNU_VTENTRY 12
++#define R_MICROBLAZE_GOTPC_64 13
++#define R_MICROBLAZE_GOT_64 14
++#define R_MICROBLAZE_PLT_64 15
++#define R_MICROBLAZE_REL 16
++#define R_MICROBLAZE_JUMP_SLOT 17
++#define R_MICROBLAZE_GLOB_DAT 18
++#define R_MICROBLAZE_GOTOFF_64 19
++#define R_MICROBLAZE_GOTOFF_32 20
++#define R_MICROBLAZE_COPY 21
++#define R_MICROBLAZE_TLS 22
++#define R_MICROBLAZE_TLSGD 23
++#define R_MICROBLAZE_TLSLD 24
++#define R_MICROBLAZE_TLSDTPMOD32 25
++#define R_MICROBLAZE_TLSDTPREL32 26
++#define R_MICROBLAZE_TLSDTPREL64 27
++#define R_MICROBLAZE_TLSGOTTPREL32 28
++#define R_MICROBLAZE_TLSTPREL32	 29
++
++#define DT_NIOS2_GP             0x70000002
++
++#define R_NIOS2_NONE		0
++#define R_NIOS2_S16		1
++#define R_NIOS2_U16		2
++#define R_NIOS2_PCREL16		3
++#define R_NIOS2_CALL26		4
++#define R_NIOS2_IMM5		5
++#define R_NIOS2_CACHE_OPX	6
++#define R_NIOS2_IMM6		7
++#define R_NIOS2_IMM8		8
++#define R_NIOS2_HI16		9
++#define R_NIOS2_LO16		10
++#define R_NIOS2_HIADJ16		11
++#define R_NIOS2_BFD_RELOC_32	12
++#define R_NIOS2_BFD_RELOC_16	13
++#define R_NIOS2_BFD_RELOC_8	14
++#define R_NIOS2_GPREL		15
++#define R_NIOS2_GNU_VTINHERIT	16
++#define R_NIOS2_GNU_VTENTRY	17
++#define R_NIOS2_UJMP		18
++#define R_NIOS2_CJMP		19
++#define R_NIOS2_CALLR		20
++#define R_NIOS2_ALIGN		21
++#define R_NIOS2_GOT16		22
++#define R_NIOS2_CALL16		23
++#define R_NIOS2_GOTOFF_LO	24
++#define R_NIOS2_GOTOFF_HA	25
++#define R_NIOS2_PCREL_LO	26
++#define R_NIOS2_PCREL_HA	27
++#define R_NIOS2_TLS_GD16	28
++#define R_NIOS2_TLS_LDM16	29
++#define R_NIOS2_TLS_LDO16	30
++#define R_NIOS2_TLS_IE16	31
++#define R_NIOS2_TLS_LE16	32
++#define R_NIOS2_TLS_DTPMOD	33
++#define R_NIOS2_TLS_DTPREL	34
++#define R_NIOS2_TLS_TPREL	35
++#define R_NIOS2_COPY		36
++#define R_NIOS2_GLOB_DAT	37
++#define R_NIOS2_JUMP_SLOT	38
++#define R_NIOS2_RELATIVE	39
++#define R_NIOS2_GOTOFF		40
++#define R_NIOS2_CALL26_NOAT	41
++#define R_NIOS2_GOT_LO		42
++#define R_NIOS2_GOT_HA		43
++#define R_NIOS2_CALL_LO		44
++#define R_NIOS2_CALL_HA		45
++
++#define R_OR1K_NONE		0
++#define R_OR1K_32		1
++#define R_OR1K_16		2
++#define R_OR1K_8		3
++#define R_OR1K_LO_16_IN_INSN	4
++#define R_OR1K_HI_16_IN_INSN	5
++#define R_OR1K_INSN_REL_26	6
++#define R_OR1K_GNU_VTENTRY	7
++#define R_OR1K_GNU_VTINHERIT	8
++#define R_OR1K_32_PCREL		9
++#define R_OR1K_16_PCREL		10
++#define R_OR1K_8_PCREL		11
++#define R_OR1K_GOTPC_HI16	12
++#define R_OR1K_GOTPC_LO16	13
++#define R_OR1K_GOT16		14
++#define R_OR1K_PLT26		15
++#define R_OR1K_GOTOFF_HI16	16
++#define R_OR1K_GOTOFF_LO16	17
++#define R_OR1K_COPY		18
++#define R_OR1K_GLOB_DAT		19
++#define R_OR1K_JMP_SLOT		20
++#define R_OR1K_RELATIVE		21
++#define R_OR1K_TLS_GD_HI16	22
++#define R_OR1K_TLS_GD_LO16	23
++#define R_OR1K_TLS_LDM_HI16	24
++#define R_OR1K_TLS_LDM_LO16	25
++#define R_OR1K_TLS_LDO_HI16	26
++#define R_OR1K_TLS_LDO_LO16	27
++#define R_OR1K_TLS_IE_HI16	28
++#define R_OR1K_TLS_IE_LO16	29
++#define R_OR1K_TLS_LE_HI16	30
++#define R_OR1K_TLS_LE_LO16	31
++#define R_OR1K_TLS_TPOFF	32
++#define R_OR1K_TLS_DTPOFF	33
++#define R_OR1K_TLS_DTPMOD	34
++
++#define R_BPF_NONE		0
++#define R_BPF_MAP_FD		1
++
++#ifdef __cplusplus
++}
++#endif
++
++
++#endif
+diff -ruN musl-1.1.21/src/fenv/riscv32/fenv-sf.c musl-1.1.21-riscv/src/fenv/riscv32/fenv-sf.c
+--- musl-1.1.21/src/fenv/riscv32/fenv-sf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/fenv/riscv32/fenv-sf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,3 @@
++#ifndef __riscv_flen
++#include "../fenv.c"
++#endif
+diff -ruN musl-1.1.21/src/fenv/riscv32/fenv.S musl-1.1.21-riscv/src/fenv/riscv32/fenv.S
+--- musl-1.1.21/src/fenv/riscv32/fenv.S	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/fenv/riscv32/fenv.S	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,53 @@
++#ifdef __riscv_flen
++
++.global feclearexcept
++.type feclearexcept, %function
++feclearexcept:
++        csrc fflags, a0
++        li a0, 0
++        ret
++
++.global feraiseexcept
++.type feraiseexcept, %function
++feraiseexcept:
++        csrs fflags, a0
++        li a0, 0
++        ret
++
++.global fetestexcept
++.type fetestexcept, %function
++fetestexcept:
++        frflags t0
++        and a0, t0, a0
++        ret
++
++.global fegetround
++.type fegetround, %function
++fegetround:
++        frrm a0
++        ret
++
++.global __fesetround
++.type __fesetround, %function
++__fesetround:
++        fsrm t0, a0
++        li a0, 0
++        ret
++
++.global fegetenv
++.type fegetenv, %function
++fegetenv:
++        frcsr t0
++        sw t0, 0(a0)
++        li a0, 0
++        ret
++
++.global fesetenv
++.type fesetenv, %function
++fesetenv:
++        lw t1, 0(a0)
++        fscsr t0, t1
++        li a0, 0
++        ret
++
++#endif
+diff -ruN musl-1.1.21/src/fenv/riscv64/fenv-sf.c musl-1.1.21-riscv/src/fenv/riscv64/fenv-sf.c
+--- musl-1.1.21/src/fenv/riscv64/fenv-sf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/fenv/riscv64/fenv-sf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,3 @@
++#ifndef __riscv_flen
++#include "../fenv.c"
++#endif
+diff -ruN musl-1.1.21/src/fenv/riscv64/fenv.S musl-1.1.21-riscv/src/fenv/riscv64/fenv.S
+--- musl-1.1.21/src/fenv/riscv64/fenv.S	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/fenv/riscv64/fenv.S	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,53 @@
++#ifdef __riscv_flen
++
++.global feclearexcept
++.type feclearexcept, %function
++feclearexcept:
++        csrc fflags, a0
++        li a0, 0
++        ret
++
++.global feraiseexcept
++.type feraiseexcept, %function
++feraiseexcept:
++        csrs fflags, a0
++        li a0, 0
++        ret
++
++.global fetestexcept
++.type fetestexcept, %function
++fetestexcept:
++        frflags t0
++        and a0, t0, a0
++        ret
++
++.global fegetround
++.type fegetround, %function
++fegetround:
++        frrm a0
++        ret
++
++.global __fesetround
++.type __fesetround, %function
++__fesetround:
++        fsrm t0, a0
++        li a0, 0
++        ret
++
++.global fegetenv
++.type fegetenv, %function
++fegetenv:
++        frcsr t0
++        sw t0, 0(a0)
++        li a0, 0
++        ret
++
++.global fesetenv
++.type fesetenv, %function
++fesetenv:
++        lw t1, 0(a0)
++        fscsr t0, t1
++        li a0, 0
++        ret
++
++#endif
+diff -ruN musl-1.1.21/src/internal/riscv32/syscall.s musl-1.1.21-riscv/src/internal/riscv32/syscall.s
+--- musl-1.1.21/src/internal/riscv32/syscall.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/internal/riscv32/syscall.s	2019-02-12 16:53:44.436616950 +0000
+@@ -0,0 +1,15 @@
++.global __syscall
++.hidden __syscall
++.type   __syscall,%function
++__syscall:
++        mv t0, a0
++        mv a0, a1
++        mv a1, a2
++        mv a2, a3
++        mv a3, a4
++        mv a4, a5
++        mv a5, a6
++        mv a6, a7
++        mv a7, t0
++        scall
++        ret
+diff -ruN musl-1.1.21/src/internal/riscv64/syscall.s musl-1.1.21-riscv/src/internal/riscv64/syscall.s
+--- musl-1.1.21/src/internal/riscv64/syscall.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/internal/riscv64/syscall.s	2019-02-12 16:53:44.436616950 +0000
+@@ -0,0 +1,15 @@
++.global __syscall
++.hidden __syscall
++.type   __syscall,%function
++__syscall:
++        mv t0, a0
++        mv a0, a1
++        mv a1, a2
++        mv a2, a3
++        mv a3, a4
++        mv a4, a5
++        mv a5, a6
++        mv a6, a7
++        mv a7, t0
++        scall
++        ret
+diff -ruN musl-1.1.21/src/ldso/riscv32/dlsym.s musl-1.1.21-riscv/src/ldso/riscv32/dlsym.s
+--- musl-1.1.21/src/ldso/riscv32/dlsym.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/ldso/riscv32/dlsym.s	2019-02-12 16:53:44.436616950 +0000
+@@ -0,0 +1,6 @@
++.global dlsym
++.hidden __dlsym
++.type dlsym, %function
++dlsym:
++        mv a2, ra
++        j __dlsym
+diff -ruN musl-1.1.21/src/ldso/riscv64/dlsym.s musl-1.1.21-riscv/src/ldso/riscv64/dlsym.s
+--- musl-1.1.21/src/ldso/riscv64/dlsym.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/ldso/riscv64/dlsym.s	2019-02-12 16:53:44.436616950 +0000
+@@ -0,0 +1,6 @@
++.global dlsym
++.hidden __dlsym
++.type dlsym, %function
++dlsym:
++        mv a2, ra
++        j __dlsym
+diff -ruN musl-1.1.21/src/math/riscv32/copysign.c musl-1.1.21-riscv/src/math/riscv32/copysign.c
+--- musl-1.1.21/src/math/riscv32/copysign.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/copysign.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double copysign(double x, double y)
++{
++	__asm__ ("fsgnj.d %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../copysign.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/copysignf.c musl-1.1.21-riscv/src/math/riscv32/copysignf.c
+--- musl-1.1.21/src/math/riscv32/copysignf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/copysignf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float copysignf(float x, float y)
++{
++	__asm__ ("fsgnj.s %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../copysignf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fabs.c musl-1.1.21-riscv/src/math/riscv32/fabs.c
+--- musl-1.1.21/src/math/riscv32/fabs.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fabs.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fabs(double x)
++{
++	__asm__ ("fabs.d %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../fabs.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fabsf.c musl-1.1.21-riscv/src/math/riscv32/fabsf.c
+--- musl-1.1.21/src/math/riscv32/fabsf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fabsf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fabsf(float x)
++{
++	__asm__ ("fabs.s %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../fabsf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fma.c musl-1.1.21-riscv/src/math/riscv32/fma.c
+--- musl-1.1.21/src/math/riscv32/fma.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fma.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fma(double x, double y, double z)
++{
++	__asm__ ("fmadd.d %0, %1, %2, %3" : "=f"(x) : "f"(x), "f"(y), "f"(z));
++	return x;
++}
++
++#else
++
++#include "../fma.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fmaf.c musl-1.1.21-riscv/src/math/riscv32/fmaf.c
+--- musl-1.1.21/src/math/riscv32/fmaf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fmaf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fmaf(float x, float y, float z)
++{
++	__asm__ ("fmadd.s %0, %1, %2, %3" : "=f"(x) : "f"(x), "f"(y), "f"(z));
++	return x;
++}
++
++#else
++
++#include "../fmaf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fmax.c musl-1.1.21-riscv/src/math/riscv32/fmax.c
+--- musl-1.1.21/src/math/riscv32/fmax.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fmax.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fmax(double x, double y)
++{
++	__asm__ ("fmax.d %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fmax.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fmaxf.c musl-1.1.21-riscv/src/math/riscv32/fmaxf.c
+--- musl-1.1.21/src/math/riscv32/fmaxf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fmaxf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fmaxf(float x, float y)
++{
++	__asm__ ("fmax.s %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fmaxf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fmin.c musl-1.1.21-riscv/src/math/riscv32/fmin.c
+--- musl-1.1.21/src/math/riscv32/fmin.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fmin.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fmin(double x, double y)
++{
++	__asm__ ("fmin.d %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fmin.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/fminf.c musl-1.1.21-riscv/src/math/riscv32/fminf.c
+--- musl-1.1.21/src/math/riscv32/fminf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/fminf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fminf(float x, float y)
++{
++	__asm__ ("fmin.s %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fminf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/sqrt.c musl-1.1.21-riscv/src/math/riscv32/sqrt.c
+--- musl-1.1.21/src/math/riscv32/sqrt.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/sqrt.c	2019-02-12 16:53:44.449950283 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double sqrt(double x)
++{
++	__asm__ ("fsqrt.d %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../sqrt.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv32/sqrtf.c musl-1.1.21-riscv/src/math/riscv32/sqrtf.c
+--- musl-1.1.21/src/math/riscv32/sqrtf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv32/sqrtf.c	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float sqrtf(float x)
++{
++	__asm__ ("fsqrt.s %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../sqrtf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/copysign.c musl-1.1.21-riscv/src/math/riscv64/copysign.c
+--- musl-1.1.21/src/math/riscv64/copysign.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/copysign.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double copysign(double x, double y)
++{
++	__asm__ ("fsgnj.d %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../copysign.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/copysignf.c musl-1.1.21-riscv/src/math/riscv64/copysignf.c
+--- musl-1.1.21/src/math/riscv64/copysignf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/copysignf.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float copysignf(float x, float y)
++{
++	__asm__ ("fsgnj.s %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../copysignf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fabs.c musl-1.1.21-riscv/src/math/riscv64/fabs.c
+--- musl-1.1.21/src/math/riscv64/fabs.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fabs.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fabs(double x)
++{
++	__asm__ ("fabs.d %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../fabs.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fabsf.c musl-1.1.21-riscv/src/math/riscv64/fabsf.c
+--- musl-1.1.21/src/math/riscv64/fabsf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fabsf.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fabsf(float x)
++{
++	__asm__ ("fabs.s %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../fabsf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fma.c musl-1.1.21-riscv/src/math/riscv64/fma.c
+--- musl-1.1.21/src/math/riscv64/fma.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fma.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fma(double x, double y, double z)
++{
++	__asm__ ("fmadd.d %0, %1, %2, %3" : "=f"(x) : "f"(x), "f"(y), "f"(z));
++	return x;
++}
++
++#else
++
++#include "../fma.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fmaf.c musl-1.1.21-riscv/src/math/riscv64/fmaf.c
+--- musl-1.1.21/src/math/riscv64/fmaf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fmaf.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fmaf(float x, float y, float z)
++{
++	__asm__ ("fmadd.s %0, %1, %2, %3" : "=f"(x) : "f"(x), "f"(y), "f"(z));
++	return x;
++}
++
++#else
++
++#include "../fmaf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fmax.c musl-1.1.21-riscv/src/math/riscv64/fmax.c
+--- musl-1.1.21/src/math/riscv64/fmax.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fmax.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fmax(double x, double y)
++{
++	__asm__ ("fmax.d %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fmax.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fmaxf.c musl-1.1.21-riscv/src/math/riscv64/fmaxf.c
+--- musl-1.1.21/src/math/riscv64/fmaxf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fmaxf.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fmaxf(float x, float y)
++{
++	__asm__ ("fmax.s %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fmaxf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fmin.c musl-1.1.21-riscv/src/math/riscv64/fmin.c
+--- musl-1.1.21/src/math/riscv64/fmin.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fmin.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double fmin(double x, double y)
++{
++	__asm__ ("fmin.d %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fmin.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/fminf.c musl-1.1.21-riscv/src/math/riscv64/fminf.c
+--- musl-1.1.21/src/math/riscv64/fminf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/fminf.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float fminf(float x, float y)
++{
++	__asm__ ("fmin.s %0, %1, %2" : "=f"(x) : "f"(x), "f"(y));
++	return x;
++}
++
++#else
++
++#include "../fminf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/sqrt.c musl-1.1.21-riscv/src/math/riscv64/sqrt.c
+--- musl-1.1.21/src/math/riscv64/sqrt.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/sqrt.c	2019-02-12 16:53:44.449950283 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 64
++
++double sqrt(double x)
++{
++	__asm__ ("fsqrt.d %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../sqrt.c"
++
++#endif
+diff -ruN musl-1.1.21/src/math/riscv64/sqrtf.c musl-1.1.21-riscv/src/math/riscv64/sqrtf.c
+--- musl-1.1.21/src/math/riscv64/sqrtf.c	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/math/riscv64/sqrtf.c	2019-02-12 16:53:44.446616949 +0000
+@@ -0,0 +1,15 @@
++#include <math.h>
++
++#if __riscv_flen >= 32
++
++float sqrtf(float x)
++{
++	__asm__ ("fsqrt.s %0, %1" : "=f"(x) : "f"(x));
++	return x;
++}
++
++#else
++
++#include "../sqrtf.c"
++
++#endif
+diff -ruN musl-1.1.21/src/setjmp/riscv32/longjmp.S musl-1.1.21-riscv/src/setjmp/riscv32/longjmp.S
+--- musl-1.1.21/src/setjmp/riscv32/longjmp.S	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/setjmp/riscv32/longjmp.S	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,44 @@
++.global __longjmp
++.global _longjmp
++.global longjmp
++.type __longjmp, %function
++.type _longjmp,  %function
++.type longjmp,   %function
++__longjmp:
++_longjmp:
++longjmp:
++        lw s0,    0(a0)
++        lw s1,    4(a0)
++        lw s2,    8(a0)
++        lw s3,    12(a0)
++        lw s4,    16(a0)
++        lw s5,    20(a0)
++        lw s6,    24(a0)
++        lw s7,    28(a0)
++        lw s8,    32(a0)
++        lw s9,    36(a0)
++        lw s10,   40(a0)
++        lw s11,   44(a0)
++        lw sp,    48(a0)
++        lw ra,    52(a0)
++
++#ifndef __riscv_float_abi_soft
++        fld fs0,  56(a0)
++        fld fs1,  64(a0)
++        fld fs2,  72(a0)
++        fld fs3,  80(a0)
++        fld fs3,  88(a0)
++        fld fs4,  96(a0)
++        fld fs5,  104(a0)
++        fld fs6,  112(a0)
++        fld fs7,  120(a0)
++        fld fs8,  128(a0)
++        fld fs9,  136(a0)
++        fld fs10, 144(a0)
++        fld fs11, 152(a0)
++#endif
++
++        mv a0, a1
++        bnez a1, 1f
++        li a0, 1
++1:      ret
+diff -ruN musl-1.1.21/src/setjmp/riscv32/setjmp.S musl-1.1.21-riscv/src/setjmp/riscv32/setjmp.S
+--- musl-1.1.21/src/setjmp/riscv32/setjmp.S	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/setjmp/riscv32/setjmp.S	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,42 @@
++.global __setjmp
++.global _setjmp
++.global setjmp
++.type __setjmp, %function
++.type _setjmp,  %function
++.type setjmp,   %function
++__setjmp:
++_setjmp:
++setjmp:
++        sw s0,    0(a0)
++        sw s1,    4(a0)
++        sw s2,    8(a0)
++        sw s3,    12(a0)
++        sw s4,    16(a0)
++        sw s5,    20(a0)
++        sw s6,    24(a0)
++        sw s7,    28(a0)
++        sw s8,    32(a0)
++        sw s9,    36(a0)
++        sw s10,   40(a0)
++        sw s11,   44(a0)
++        sw sp,    48(a0)
++        sw ra,    52(a0)
++
++#ifndef __riscv_float_abi_soft
++        fsd fs0,  56(a0)
++        fsd fs1,  64(a0)
++        fsd fs2,  72(a0)
++        fsd fs3,  80(a0)
++        fsd fs3,  88(a0)
++        fsd fs4,  96(a0)
++        fsd fs5,  104(a0)
++        fsd fs6,  112(a0)
++        fsd fs7,  120(a0)
++        fsd fs8,  128(a0)
++        fsd fs9,  136(a0)
++        fsd fs10, 144(a0)
++        fsd fs11, 152(a0)
++#endif
++
++        li a0, 0
++        ret
+diff -ruN musl-1.1.21/src/setjmp/riscv64/longjmp.S musl-1.1.21-riscv/src/setjmp/riscv64/longjmp.S
+--- musl-1.1.21/src/setjmp/riscv64/longjmp.S	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/setjmp/riscv64/longjmp.S	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,44 @@
++.global __longjmp
++.global _longjmp
++.global longjmp
++.type __longjmp, %function
++.type _longjmp,  %function
++.type longjmp,   %function
++__longjmp:
++_longjmp:
++longjmp:
++        ld s0,    0(a0)
++        ld s1,    8(a0)
++        ld s2,    16(a0)
++        ld s3,    24(a0)
++        ld s4,    32(a0)
++        ld s5,    40(a0)
++        ld s6,    48(a0)
++        ld s7,    56(a0)
++        ld s8,    64(a0)
++        ld s9,    72(a0)
++        ld s10,   80(a0)
++        ld s11,   88(a0)
++        ld sp,    96(a0)
++        ld ra,    104(a0)
++
++#ifndef __riscv_float_abi_soft
++        fld fs0,  112(a0)
++        fld fs1,  120(a0)
++        fld fs2,  128(a0)
++        fld fs3,  136(a0)
++        fld fs3,  144(a0)
++        fld fs4,  152(a0)
++        fld fs5,  160(a0)
++        fld fs6,  168(a0)
++        fld fs7,  176(a0)
++        fld fs8,  184(a0)
++        fld fs9,  192(a0)
++        fld fs10, 200(a0)
++        fld fs11, 208(a0)
++#endif
++
++        mv a0, a1
++        bnez a1, 1f
++        li a0, 1
++1:      ret
+diff -ruN musl-1.1.21/src/setjmp/riscv64/setjmp.S musl-1.1.21-riscv/src/setjmp/riscv64/setjmp.S
+--- musl-1.1.21/src/setjmp/riscv64/setjmp.S	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/setjmp/riscv64/setjmp.S	2019-02-12 16:53:44.443283617 +0000
+@@ -0,0 +1,42 @@
++.global __setjmp
++.global _setjmp
++.global setjmp
++.type __setjmp, %function
++.type _setjmp,  %function
++.type setjmp,   %function
++__setjmp:
++_setjmp:
++setjmp:
++        sd s0,    0(a0)
++        sd s1,    8(a0)
++        sd s2,    16(a0)
++        sd s3,    24(a0)
++        sd s4,    32(a0)
++        sd s5,    40(a0)
++        sd s6,    48(a0)
++        sd s7,    56(a0)
++        sd s8,    64(a0)
++        sd s9,    72(a0)
++        sd s10,   80(a0)
++        sd s11,   88(a0)
++        sd sp,    96(a0)
++        sd ra,    104(a0)
++
++#ifndef __riscv_float_abi_soft
++        fsd fs0,  112(a0)
++        fsd fs1,  120(a0)
++        fsd fs2,  128(a0)
++        fsd fs3,  136(a0)
++        fsd fs3,  144(a0)
++        fsd fs4,  152(a0)
++        fsd fs5,  160(a0)
++        fsd fs6,  168(a0)
++        fsd fs7,  176(a0)
++        fsd fs8,  184(a0)
++        fsd fs9,  192(a0)
++        fsd fs10, 200(a0)
++        fsd fs11, 208(a0)
++#endif
++
++        li a0, 0
++        ret
+diff -ruN musl-1.1.21/src/signal/riscv32/restore.s musl-1.1.21-riscv/src/signal/riscv32/restore.s
+--- musl-1.1.21/src/signal/riscv32/restore.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/signal/riscv32/restore.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,8 @@
++.global __restore
++.type __restore, %function
++__restore:
++.global __restore_rt
++.type __restore_rt, %function
++__restore_rt:
++	li a7, 139 # SYS_rt_sigreturn
++	scall
+diff -ruN musl-1.1.21/src/signal/riscv32/sigsetjmp.s musl-1.1.21-riscv/src/signal/riscv32/sigsetjmp.s
+--- musl-1.1.21/src/signal/riscv32/sigsetjmp.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/signal/riscv32/sigsetjmp.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,21 @@
++.global sigsetjmp
++.global __sigsetjmp
++.type sigsetjmp, %function
++.type __sigsetjmp, %function
++sigsetjmp:
++__sigsetjmp:
++        beqz a1, setjmp
++
++        sw ra, 160(a0)
++        sw s0, 164(a0)
++        mv s0, a0
++
++        jal setjmp
++
++        mv a1, a0
++        mv a0, s0
++        lw s0, 164(a0)
++        lw ra, 160(a0)
++
++.hidden __sigsetjmp_tail
++        j __sigsetjmp_tail
+diff -ruN musl-1.1.21/src/signal/riscv64/restore.s musl-1.1.21-riscv/src/signal/riscv64/restore.s
+--- musl-1.1.21/src/signal/riscv64/restore.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/signal/riscv64/restore.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,8 @@
++.global __restore
++.type __restore, %function
++__restore:
++.global __restore_rt
++.type __restore_rt, %function
++__restore_rt:
++	li a7, 139 # SYS_rt_sigreturn
++	scall
+diff -ruN musl-1.1.21/src/signal/riscv64/sigsetjmp.s musl-1.1.21-riscv/src/signal/riscv64/sigsetjmp.s
+--- musl-1.1.21/src/signal/riscv64/sigsetjmp.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/signal/riscv64/sigsetjmp.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,21 @@
++.global sigsetjmp
++.global __sigsetjmp
++.type sigsetjmp, %function
++.type __sigsetjmp, %function
++sigsetjmp:
++__sigsetjmp:
++        beqz a1, setjmp
++
++        sd ra, 216(a0)
++        sd s0, 224(a0)
++        mv s0, a0
++
++        jal setjmp
++
++        mv a1, a0
++        mv a0, s0
++        ld s0, 224(a0)
++        ld ra, 216(a0)
++
++.hidden __sigsetjmp_tail
++        j __sigsetjmp_tail
+diff -ruN musl-1.1.21/src/stdio/rename.c musl-1.1.21-riscv/src/stdio/rename.c
+--- musl-1.1.21/src/stdio/rename.c	2019-01-21 17:30:47.000000000 +0000
++++ musl-1.1.21-riscv/src/stdio/rename.c	2019-02-12 16:53:44.446616949 +0000
+@@ -6,7 +6,9 @@
+ {
+ #ifdef SYS_rename
+ 	return syscall(SYS_rename, old, new);
+-#else
++#elif defined(SYS_renameat)
+ 	return syscall(SYS_renameat, AT_FDCWD, old, AT_FDCWD, new);
++#else
++	return syscall(SYS_renameat2, AT_FDCWD, old, AT_FDCWD, new, 0);
+ #endif
+ }
+diff -ruN musl-1.1.21/src/thread/riscv32/__set_thread_area.s musl-1.1.21-riscv/src/thread/riscv32/__set_thread_area.s
+--- musl-1.1.21/src/thread/riscv32/__set_thread_area.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv32/__set_thread_area.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,6 @@
++.global __set_thread_area
++.type   __set_thread_area, %function
++__set_thread_area:
++	mv tp, a0
++	li a0, 0
++	ret
+diff -ruN musl-1.1.21/src/thread/riscv32/__unmapself.s musl-1.1.21-riscv/src/thread/riscv32/__unmapself.s
+--- musl-1.1.21/src/thread/riscv32/__unmapself.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv32/__unmapself.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,7 @@
++.global __unmapself
++.type __unmapself, %function
++__unmapself:
++       li a7, 215 # SYS_munmap
++       scall
++       li a7, 93  # SYS_exit
++       scall
+diff -ruN musl-1.1.21/src/thread/riscv32/clone.s musl-1.1.21-riscv/src/thread/riscv32/clone.s
+--- musl-1.1.21/src/thread/riscv32/clone.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv32/clone.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,34 @@
++# __clone(func, stack, flags, arg, ptid, tls, ctid)
++#           a0,    a1,    a2,  a3,   a4,  a5,   a6
++
++# syscall(SYS_clone, flags, stack, ptid, tls, ctid)
++#                a7     a0,    a1,   a2,  a3,   a4
++
++.global __clone
++.type  __clone, %function
++__clone:
++        # Save func and arg to stack
++        addi a1, a1, -16
++        sw a0, 0(a1)
++        sw a3, 4(a1)
++
++        # Call SYS_clone
++        mv a0, a2
++        mv a2, a4
++        mv a3, a5
++        mv a4, a6
++        li a7, 220 # SYS_clone
++        scall
++
++        beqz a0, 1f
++        # Parent
++        ret
++
++        # Child
++1:      lw a1, 0(sp)
++        lw a0, 4(sp)
++        jalr a1
++
++        # Exit
++        li a7, 93 # SYS_exit
++        scall
+diff -ruN musl-1.1.21/src/thread/riscv32/syscall_cp.s musl-1.1.21-riscv/src/thread/riscv32/syscall_cp.s
+--- musl-1.1.21/src/thread/riscv32/syscall_cp.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv32/syscall_cp.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,29 @@
++.global __cp_begin
++.hidden __cp_begin
++.global __cp_end
++.hidden __cp_end
++.global __cp_cancel
++.hidden __cp_cancel
++.hidden __cancel
++.global __syscall_cp_asm
++.hidden __syscall_cp_asm
++.type __syscall_cp_asm, %function
++__syscall_cp_asm:
++__cp_begin:
++        lw t0, 0(a0)
++        bnez t0, __cp_cancel
++
++        mv t0, a1
++        mv a0, a2
++        mv a1, a3
++        mv a2, a4
++        mv a3, a5
++        mv a4, a6
++        mv a5, a7
++        lw a6, 0(sp)
++        mv a7, t0
++        scall
++__cp_cancel:
++        ret
++__cp_end:
++        j __cancel
+diff -ruN musl-1.1.21/src/thread/riscv64/__set_thread_area.s musl-1.1.21-riscv/src/thread/riscv64/__set_thread_area.s
+--- musl-1.1.21/src/thread/riscv64/__set_thread_area.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv64/__set_thread_area.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,6 @@
++.global __set_thread_area
++.type   __set_thread_area, %function
++__set_thread_area:
++	mv tp, a0
++	li a0, 0
++	ret
+diff -ruN musl-1.1.21/src/thread/riscv64/__unmapself.s musl-1.1.21-riscv/src/thread/riscv64/__unmapself.s
+--- musl-1.1.21/src/thread/riscv64/__unmapself.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv64/__unmapself.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,7 @@
++.global __unmapself
++.type __unmapself, %function
++__unmapself:
++       li a7, 215 # SYS_munmap
++       scall
++       li a7, 93  # SYS_exit
++       scall
+diff -ruN musl-1.1.21/src/thread/riscv64/clone.s musl-1.1.21-riscv/src/thread/riscv64/clone.s
+--- musl-1.1.21/src/thread/riscv64/clone.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv64/clone.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,34 @@
++# __clone(func, stack, flags, arg, ptid, tls, ctid)
++#           a0,    a1,    a2,  a3,   a4,  a5,   a6
++
++# syscall(SYS_clone, flags, stack, ptid, tls, ctid)
++#                a7     a0,    a1,   a2,  a3,   a4
++
++.global __clone
++.type  __clone, %function
++__clone:
++        # Save func and arg to stack
++        addi a1, a1, -16
++        sd a0, 0(a1)
++        sd a3, 8(a1)
++
++        # Call SYS_clone
++        mv a0, a2
++        mv a2, a4
++        mv a3, a5
++        mv a4, a6
++        li a7, 220 # SYS_clone
++        scall
++
++        beqz a0, 1f
++        # Parent
++        ret
++
++        # Child
++1:      ld a1, 0(sp)
++        ld a0, 8(sp)
++        jalr a1
++
++        # Exit
++        li a7, 93 # SYS_exit
++        scall
+diff -ruN musl-1.1.21/src/thread/riscv64/syscall_cp.s musl-1.1.21-riscv/src/thread/riscv64/syscall_cp.s
+--- musl-1.1.21/src/thread/riscv64/syscall_cp.s	1970-01-01 00:00:00.000000000 +0000
++++ musl-1.1.21-riscv/src/thread/riscv64/syscall_cp.s	2019-02-12 16:53:44.439950283 +0000
+@@ -0,0 +1,29 @@
++.global __cp_begin
++.hidden __cp_begin
++.global __cp_end
++.hidden __cp_end
++.global __cp_cancel
++.hidden __cp_cancel
++.hidden __cancel
++.global __syscall_cp_asm
++.hidden __syscall_cp_asm
++.type __syscall_cp_asm, %function
++__syscall_cp_asm:
++__cp_begin:
++        ld t0, 0(a0)
++        bnez t0, __cp_cancel
++
++        mv t0, a1
++        mv a0, a2
++        mv a1, a3
++        mv a2, a4
++        mv a3, a5
++        mv a4, a6
++        mv a5, a7
++        ld a6, 0(sp)
++        mv a7, t0
++        scall
++__cp_cancel:
++        ret
++__cp_end:
++        j __cancel
+diff -ruN musl-1.1.21/src/unistd/renameat.c musl-1.1.21-riscv/src/unistd/renameat.c
+--- musl-1.1.21/src/unistd/renameat.c	2019-01-21 17:30:47.000000000 +0000
++++ musl-1.1.21-riscv/src/unistd/renameat.c	2019-02-12 16:53:44.446616949 +0000
+@@ -3,5 +3,9 @@
+ 
+ int renameat(int oldfd, const char *old, int newfd, const char *new)
+ {
++#ifdef SYS_renameat
+ 	return syscall(SYS_renameat, oldfd, old, newfd, new);
++#else
++	return syscall(SYS_renameat2, oldfd, old, newfd, new, 0);
++#endif
+ }

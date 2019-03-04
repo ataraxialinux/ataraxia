@@ -1,0 +1,19 @@
+# Description: Portable lossless data compression library
+# URL:         http://www.oberhumer.com/opensource/lzo
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=lzo
+version=2.10
+release=1
+source=("http://www.oberhumer.com/opensource/$name/download/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	CFLAGS="$CFLAGS -DLZO_CFG_NO_SYSCALL=1" \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}

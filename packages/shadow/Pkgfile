@@ -1,0 +1,46 @@
+# Description: Password and account management tool suite
+# URL:         https://github.com/shadow-maint/shadow
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depend on:   acl
+
+name=shadow
+version=4.6
+release=1
+source=("https://github.com/shadow-maint/shadow/releases/download/$version/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p0 -i "$KEEP"/shadow/shadow-no_rlogin
+	patch -p0 -i "$KEEP"/shadow/shadow-strncpy-usage.patch
+	patch -p0 -i "$KEEP"/shadow/xstrdup.patch
+
+	sed -i -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD SHA512@' etc/login.defs
+
+	LDFLAGS='-static' \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--libdir=/usr/lib \
+		--mandir=/usr/share/man \
+		--sysconfdir=/etc \
+		--without-audit \
+		--without-libcrack \
+		--without-libpam \
+		--without-nscd \
+		--without-selinux \
+		--with-group-name-max-length=32 \
+		--disable-shared
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$KEEP"/shadow/useradd "$PKG"/etc/default/useradd
+
+	rm "$PKG"/usr/sbin/logoutd
+
+	mv "$PKG"/usr/bin/{newgrp,sg}
+
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin
+	rmdir "$PKG"/usr/sbin
+}
