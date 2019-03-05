@@ -17,15 +17,6 @@ build() {
 		x86_64)
 			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
 			;;
-		x86_64-amd)
-			export GCCOPTS="--with-tune=znver1 --with-arch=bdver1"
-			;;
-		x86_64-intel)
-			export GCCOPTS="--with-tune=haswell --with-arch=westmere"
-			;;
-		i686)
-			export GCCOPTS="--with-arch=i686 --with-tune=generic"
-			;;
 		i586)
 			export GCCOPTS="--with-arch=i586 --with-tune=generic"
 			;;
@@ -35,11 +26,14 @@ build() {
 		armv7l)
 			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
 			;;
-		armv7l-neon)
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=neon-vfpv4"
-			;;
 		armv5tel)
 			export GCCOPTS="--with-arch=armv5te --with-float=soft"
+			;;
+		mips64)
+			export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
+			;;
+		mips64el)
+			export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
 			;;
 		mips)
 			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
@@ -68,7 +62,7 @@ build() {
 	esac
 
 	case "$BARCH" in
-		mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
+		mips64|mips64el|mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
 		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
 	esac
 
