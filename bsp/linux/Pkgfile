@@ -60,8 +60,11 @@ generate_config() {
 		armv5tel)
 			export DEFCONFIG="multi_v5_defconfig"
 			;;
-		mips64|mips64el|mips|mipsel)
-			export DEFCONFIG="malta_defconfig"
+		mips64|mips)
+			export DEFCONFIG="CONFIG_CPU_BIG_ENDIAN=y malta_defconfig"
+			;;
+		mips64el|mipsel)
+			export DEFCONFIG="CONFIG_CPU_LITTLE_ENDIAN=y malta_defconfig"
 			;;
 		ppc64le)
 			export DEFCONFIG="powernv_defconfig"
@@ -93,17 +96,6 @@ generate_config() {
 			for archconf in CPU_MIPS64_R2 MIPS_O32_FP64_SUPPORT 64BIT MIPS32_O32 MIPS32_N32; do
 				yconfig $archconf
 			done
-			;;
-	esac
-
-	case $BARCH in
-		mips64|mips)
-			nconfig CPU_LITTLE_ENDIAN
-			yconfig CPU_BIG_ENDIAN
-			;;
-		mips64el|mipsel)
-			yconfig CPU_LITTLE_ENDIAN
-			nconfig CPU_BIG_ENDIAN
 			;;
 	esac
 
