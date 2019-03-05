@@ -1,0 +1,25 @@
+# Description: The Linux-native asynchronous I/O facility (aio) library
+# URL:         http://lse.sourceforge.net/io/aio.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=libaio
+version=0.3.111
+release=1
+source=("http://ftp.de.debian.org/debian/pool/main/liba/$name/${name}_${version}.orig.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
+	export CFLAGS="$CFLAGS -fno-stack-protector-strong"
+
+	if [ "$CROSS" = "yes" ]; then
+		make CC="$CC" HOSTCC="$HOSTCC"
+		make CC="$CC" HOSTCC="$HOSTCC" prefix="$PKG"/usr install
+	else
+		make
+		make prefix="$PKG"/usr install
+	fi
+}
