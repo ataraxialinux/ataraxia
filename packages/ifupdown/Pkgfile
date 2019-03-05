@@ -1,0 +1,25 @@
+# Description: Scripts to configure network
+# URL:         http://snapshot.debian.org/archive/debian/20160922T165503Z/pool/main/i/ifupdown
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=ifupdown
+version=0.8.16
+release=1
+source=("http://snapshot.debian.org/archive/debian/20160922T165503Z/pool/main/i/ifupdown/${name}_${version}.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	sed -i 's,ln -s,ln -sf,g' Makefile
+	sed -i 's,/sbin/,/usr/bin/,g' Makefile
+	sed -i 's,/lib/,/usr/lib/,g' Makefile
+
+	if [ "$CROSS" = "yes" ]; then
+		make CC="$CC" HOSTCC="$HOSTCC" CFLAGS="$CFLAGS"
+		make CC="$CC" HOSTCC="$HOSTCC" DESTDIR="$PKG" install
+	else
+		make CFLAGS="$CFLAGS"
+		make DESTDIR="$PKG" install
+	fi
+}
