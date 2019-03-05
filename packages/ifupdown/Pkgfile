@@ -9,17 +9,18 @@ source=("http://snapshot.debian.org/archive/debian/20160922T165503Z/pool/main/i/
 BOOTSTRAP=yes
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/$name
+	patch -Np1 -i "$KEEP"/ifupdown/fix.patch
 
 	sed -i 's,ln -s,ln -sf,g' Makefile
-	sed -i 's,/sbin/,/usr/bin/,g' Makefile
-	sed -i 's,/lib/,/usr/lib/,g' Makefile
+	sed -i 's,/sbin,/usr/bin,g' Makefile
+	sed -i 's,/lib,/usr/lib,g' Makefile
 
 	if [ "$CROSS" = "yes" ]; then
-		make CC="$CC" HOSTCC="$HOSTCC" CFLAGS="$CFLAGS"
+		make CC="$CC" HOSTCC="$HOSTCC" CFLAGS="$CFLAGS -std=gnu99"
 		make CC="$CC" HOSTCC="$HOSTCC" DESTDIR="$PKG" install
 	else
-		make CFLAGS="$CFLAGS"
+		make CFLAGS="$CFLAGS -std=gnu99"
 		make DESTDIR="$PKG" install
 	fi
 }
