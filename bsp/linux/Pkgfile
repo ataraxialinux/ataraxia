@@ -49,7 +49,7 @@ generate_config() {
 			export DEFCONFIG="x86_64_defconfig"
 			;;
 		i586)
-			export DEFCONFIG="CONFIG_M586=y i386_defconfig"
+			export DEFCONFIG="i386_defconfig"
 			;;
 		aarch64)
 			export DEFCONFIG="defconfig"
@@ -60,11 +60,8 @@ generate_config() {
 		armv5tel)
 			export DEFCONFIG="multi_v5_defconfig"
 			;;
-		mips64|mips)
-			export DEFCONFIG="CONFIG_CPU_BIG_ENDIAN=y malta_defconfig"
-			;;
-		mips64el|mipsel)
-			export DEFCONFIG="CONFIG_CPU_LITTLE_ENDIAN=y malta_defconfig"
+		mips64|mips64el|mips|mipsel)
+			export DEFCONFIG="malta_defconfig"
 			;;
 		ppc64le)
 			export DEFCONFIG="powernv_defconfig"
@@ -100,10 +97,25 @@ generate_config() {
 	esac
 
 	case $BARCH in
+		mips64|mips)
+			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
+			;;
+		mips64el|mipsel)
+			sed -i -e 's:CONFIG_CPU_BIG_ENDIAN:CONFIG_CPU_LITTLE_ENDIAN:' .config
+			;;
+	esac
+
+	case $BARCH in
 		ppc64le)
 			yconfig POWER8_CPU
 			yconfig TARGET_CPU_BOOL
 			sed -i "s/.*CONFIG_TARGET_CPU.*/CONFIG_TARGET_CPU=\"power8\"/" .config
+			;;
+	esac
+
+	case $BARCH in
+		i586)
+			yconfig M586
 			;;
 	esac
 
