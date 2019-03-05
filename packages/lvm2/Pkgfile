@@ -1,0 +1,46 @@
+# Description: Logical Volume Manager 2 utilities
+# URL:         https://sourceware.org/lvm2/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  eudev libaio
+
+name=lvm2
+version=2.03.02
+release=1
+source=("ftp://sources.redhat.com/pub/lvm2/LVM2.${version}.tgz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/LVM2.${version}
+	patch -Np1 -i "$KEEP"/lvm2/fix-stdio-usage.patch
+	patch -Np1 -i "$KEEP"/lvm2/mallinfo.patch
+	patch -Np1 -i "$KEEP"/lvm2/library_dir-default-config.patch
+	patch -Np1 -i "$KEEP"/lvm2/mlockall-default-config.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-default-dm-run-dir=/run \
+		--with-default-locking-dir=/run/lock/lvm \
+		--with-default-pid-dir=/run \
+		--with-default-run-dir=/run/lvm \
+		--with-cache=internal \
+		--with-thin=internal \
+		--enable-cmdlib \
+		--enable-dmeventd \
+		--enable-pkgconfig \
+		--enable-udev_rules \
+		--enable-udev_sync \
+		--enable-udev-systemd-background-jobs=no \
+		--disable-readline
+	make
+	make DESTDIR="$PKG" install
+
+	for svc in lvmetad dmeventd; do
+		install -Dm0755 "$KEEP"/services/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$KEEP"/services/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+
+	mkdir -p "$PKG"/var/log/lvmetad "$PKG"/var/log/dmeventd
+}
