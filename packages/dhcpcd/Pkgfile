@@ -1,0 +1,24 @@
+# Description: RFC2131 compliant DHCP client daemon
+# URL:         http://roy.marples.name/projects/dhcpcd/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=dhcpcd
+version=7.1.1
+release=1
+source=("https://roy.marples.name/downloads/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS --os=linux \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/dhcpcd \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--dbdir=/var/lib/dhcpcd \
+		--rundir=/run
+	make
+	make DESTDIR="$PKG" install
+
+	echo noipv4ll >> "$PKG"/etc/dhcpcd.conf
+}
