@@ -1,0 +1,20 @@
+name=uboot-tools
+version=2019.01
+release=1
+source=("ftp://ftp.denx.de/pub/u-boot/u-boot-$version.tar.bz2")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/u-boot-$version
+	make defconfig
+	make tools-all
+
+	mkdir -p "$PKG/tools/bin"
+
+	for a in {mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}; do
+		cp tools/$a "$TOOLS"/bin/
+	done
+
+	mkdir -p "$PKG"/var/lib/db
+	touch "$PKG"/var/lib/db/installed_${name}
+}
