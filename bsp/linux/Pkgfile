@@ -10,6 +10,30 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 BOOTSTRAP=yes
 NO_RUN_STRIP=1
 
+yconfig() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=y/" .config
+		grep ^"CONFIG_$1=y" .config || echo "CONFIG_$1=y" >> .config
+		shift 1
+	done
+}
+
+mconfig() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=,/" .config
+		grep ^"CONFIG_$1=," .config || echo "CONFIG_$1=," >> .config
+		shift 1
+	done
+}
+
+nconfig() {
+	while [ $# -ne 0 ]; do
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1/" .config
+		grep ^"# CONFIG_$1 is not set" .config || echo "# CONFIG_$1 is not set" >> .config
+		shift 1
+	done
+}
+
 generate_config() {
 	case $BARCH in
 		x86_64|i586)
@@ -36,17 +60,8 @@ generate_config() {
 		armv5tel)
 			export DEFCONFIG="multi_v5_defconfig"
 			;;
-		mips64)
-			export DEFCONFIG="CONFIG_CPU_BIG_ENDIAN=y 64r1_defconfig"
-			;;
-		mips64el)
-			export DEFCONFIG="CONFIG_CPU_LITTLE_ENDIAN=y 64r1_defconfig"
-			;;
-		mips)
-			export DEFCONFIG="CONFIG_CPU_BIG_ENDIAN=y 32r1_defconfig"
-			;;
-		mipsel)
-			export DEFCONFIG="CONFIG_CPU_LITTLE_ENDIAN=y 32r1_defconfig"
+		mips64|mips64el|mips|mipsel)
+			export DEFCONFIG="malta_defconfig"
 			;;
 		ppc64le)
 			export DEFCONFIG="powernv_defconfig"
@@ -71,17 +86,46 @@ generate_config() {
 		make ARCH=$XKARCH $DEFCONFIG
 	fi
 
+	case $BARCH in
+		mips64|mips64el)
+			nconfig CPU_MIPS32_R2
+			nconfig 32BIT
+			for archconf in CPU_MIPS64_R2 MIPS_O32_FP64_SUPPORT 64BIT MIPS32_O32 MIPS32_N32; do
+				yconfig $archconf
+			done
+			;;
+	esac
+
+	case $BARCH in
+		mips64|mips)
+			nconfig CPU_LITTLE_ENDIAN
+			yconfig CPU_BIG_ENDIAN
+			;;
+		mips64el|mipsel)
+			yconfig CPU_LITTLE_ENDIAN
+			nconfig CPU_BIG_ENDIAN
+			;;
+	esac
+
+	case $BARCH in
+		ppc64le)
+			yconfig POWER8_CPU
+			yconfig TARGET_CPU_BOOL
+			sed -i "s/.*CONFIG_TARGET_CPU.*/CONFIG_TARGET_CPU=\"power8\"/" .config
+			;;
+	esac
+
 	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} olddefconfig
+		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} oldconfig
 	else
-		make ARCH=$XKARCH olddefconfig
+		yes '' | make ARCH=$XKARCH oldconfig
 	fi
 }
 
 build() {
 	case $BARCH in
 		x86_64)
-			export XKARCH="x86_64"
+			export XKARCH="x86_64./scripts/config --disable"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
 		i586)
