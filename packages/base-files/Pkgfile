@@ -3,7 +3,7 @@
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
 name=base-files
-version=20190302
+version=20190305
 release=2
 BOOTSTRAP=yes
 
@@ -33,6 +33,19 @@ build() {
 	for f in gshadow shadow crypttab; do
 		install -m600 "$KEEP"/base-files/$f etc/
 	done
+
+	mkdir -p \
+		etc/network/if-down.d \
+		etc/network/if-post-down.d \
+		etc/network/if-post-up.d \
+		etc/network/if-pre-down.d \
+		etc/network/if-pre-up.d \
+		etc/network/if-up.d
+
+cat > etc/network/interfaces << "EOF"
+auto lo
+iface lo inet loopback
+EOF
 
 	for d in cache/{sources,packages} local opt log/old lib/misc empty; do
 		install -d -m755 var/$d
