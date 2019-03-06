@@ -131,12 +131,20 @@ generate_config() {
 	esac
 
 	case $BARCH in
+		riscv64|riscv32)
+			for archconf in ARCH_RV32I ARCH_RV64I 64BIT; do
+				nconfig $archconf
+			done
+			;;
+	esac
+
+	case $BARCH in
 		riscv64)
-			yconfig ARCH_RV64I
-			nconfig ARCH_RV32I
+			for archconf in AARCH_RV64I 64BIT; do
+				yconfig $archconf
+			done
 			;;
 		riscv32)
-			nconfig ARCH_RV64I
 			yconfig ARCH_RV32I
 			;;
 	esac
