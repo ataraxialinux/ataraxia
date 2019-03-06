@@ -19,16 +19,11 @@ build() {
 		x86_64)	ARCHCONFIG="--enable-targets=x86_64-pep"	;;
 	esac
 
-	case "$BARCH" in
-		riscv64|riscv32)	SECURITY=''	;;
-		*)		SECURITY="--enable-relro"	;;
-	esac
-
 	cd "$SRC"/$name-$version
 	mkdir build
 	cd build
 
-	../configure $TOOLFLAGS $ARCHCONFIG $HASHCONFIG $SECURITY \
+	../configure $TOOLFLAGS $ARCHCONFIG $HASHCONFIG \
 		--prefix=/usr \
 		--with-bugurl="https://github.com/JanusLinux/janus/issues" \
 		--with-lib-path="/usr/lib:/local/usr/lib" \
@@ -40,6 +35,7 @@ build() {
 		--enable-ld=default \
 		--enable-lto \
 		--enable-plugins \
+		--enable-relro \
 		--enable-shared \
 		--enable-threads \
 		--disable-compressed-debug-sections \
