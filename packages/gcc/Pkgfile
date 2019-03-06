@@ -67,6 +67,11 @@ build() {
 		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
 	esac
 
+	case "$BARCH" in
+		riscv64|riscv32)	SECURITY=''	;;
+		*)		SECURITY="--enable-default-pie --enable-default-ssp"	;;
+	esac
+
 	export CFLAGS_FOR_BUILD=" "
 	export FFLAGS_FOR_BUILD=" "
 	export CXXFLAGS_FOR_BUILD=" "
@@ -105,7 +110,7 @@ build() {
 	cd build
 
 	SED=sed \
-	../configure $TOOLFLAGS $GCCOPTS $HASHCONFIG \
+	../configure $TOOLFLAGS $GCCOPTS $HASHCONFIG $SECURITY \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--libexecdir=/usr/lib \
