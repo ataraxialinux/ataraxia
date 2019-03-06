@@ -66,6 +66,11 @@ build() {
 		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
 	esac
 
+	case "$BARCH" in
+		riscv64|riscv32)	SECURITY=''	;;
+		*)		SECURITY="--enable-default-pie --enable-default-ssp"	;;
+	esac
+
 	export CFLAGS_FOR_BUILD=" "
 	export FFLAGS_FOR_BUILD=" "
 	export CXXFLAGS_FOR_BUILD=" "
@@ -113,7 +118,7 @@ build() {
 		--libexecdir="$TOOLS/lib" \
 		--build=$XHOST \
 		--host=$XHOST \
-		--target=$XTARGET $GCCOPTS $HASHCONFIG \
+		--target=$XTARGET $GCCOPTS $HASHCONFIG $SECURITY \
 		--with-pkgversion="januslinux edition $version for $BARCH" \
 		--with-bugurl="https://github.com/JanusLinux/janus/issues" \
 		--with-sysroot="$ROOTFS" \
@@ -125,8 +130,6 @@ build() {
 		--without-headers \
 		--enable-checking=release \
 		--enable-clocale=generic \
-		--enable-default-pie \
-		--enable-default-ssp \
 		--enable-languages=c \
 		--enable-linker-build-id \
 		--enable-lto \
