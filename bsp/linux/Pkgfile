@@ -97,6 +97,11 @@ generate_config() {
 				yconfig $archconf
 			done
 			;;
+		riscv64|riscv32)
+			for archconf in RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC; do
+				yconfig $archconf
+			done
+			;;
 	esac
 
 	case $BARCH in
@@ -126,11 +131,23 @@ generate_config() {
 	esac
 
 	case $BARCH in
-		mips64|mips)
-			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
+		riscv64)
+			yconfig ARCH_RV64I
+			nconfig ARCH_RV32I
 			;;
-		mips64el|mipsel)
-			sed -i -e 's:CONFIG_CPU_BIG_ENDIAN:CONFIG_CPU_LITTLE_ENDIAN:' .config
+		riscv32)
+			nconfig ARCH_RV64I
+			yconfig ARCH_RV32I
+			;;
+	esac
+
+	case $BARCH in
+		mips64|mips64el)
+			nconfig CPU_MIPS32_R2
+			nconfig 32BIT
+			for archconf in CPU_MIPS64_R2 MIPS_O32_FP64_SUPPORT 64BIT MIPS32_O32 MIPS32_N32; do
+				yconfig $archconf
+			done
 			;;
 	esac
 

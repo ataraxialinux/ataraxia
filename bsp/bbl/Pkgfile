@@ -17,8 +17,19 @@ build() {
 			exit 1
 	esac
 
-	if [[ ! -f "$ROOTFS"/boot/vmlinuz-linux.bin ]]; then
-		echo "Compile kernel first!"
-		exit 1
-	fi
+	case $BARCH in
+		riscv64)
+			BBL="bbl64"
+			;;
+		riscv32)
+			BBL="bbl32"
+			;;
+	esac
+
+	mkdir -p "$PKG"/boot
+
+	cd "$PKG"/boot
+	curl ${PKGMK_CURL_OPTS} https://github.com/JanusLinux/storage/raw/master/${BBL}.bin
+
+	mv ${BBL}.bin bbl
 }
