@@ -5,7 +5,7 @@
 
 name=libcap
 version=2.26
-release=1
+release=3
 source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -18,11 +18,11 @@ build() {
 
 	if [ "$CROSS" = "yes" ]; then
 		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include
+		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 	else
-		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include
+		make PAM_CAP=no CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include
+		make PAM_CAP=no CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 	fi
-
-	make prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 
 	chmod 755 "$PKG"/usr/lib/libcap.so.${version}
 }
