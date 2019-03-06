@@ -1,0 +1,26 @@
+# Description: C library that performs DNS requests and name resolves asynchronously
+# URL:         https://c-ares.haxx.se/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=c-ares
+version=1.15.0
+release=1
+source=("https://c-ares.haxx.se/download/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	case "$CFLAGS" in
+		*"-D_FORTIFY_SOURCE=2"*)
+			export CFLAGS=${CFLAGS/-D_FORTIFY_SOURCE=?/}
+			export CPPFLAGS+=" -D_FORTIFY_SOURCE=2"
+			;;
+	esac
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}

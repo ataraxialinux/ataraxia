@@ -1,0 +1,24 @@
+# Description: A full-featured and high-performance event loop
+# URL:         http://software.schmorp.de/pkg/libev.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=libev
+version=4.25
+release=1
+source=("http://dist.schmorp.de/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$KEEP"/libev/libev-4.11-Add-pkgconfig-support.patch
+
+	libtoolize --force && aclocal -I m4 && autoheader&&  autoconf \
+			&& automake --add-missing
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/include/event.h
+}
