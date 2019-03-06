@@ -12,6 +12,8 @@ NO_EMPTY_DIRS=1
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np0 -i "$KEEP"/nghttp2/libressl.patch
+
 	autoreconf -vif
 
 	./configure $BUILDFLAGS \
@@ -19,7 +21,6 @@ build() {
 		--without-jemalloc \
 		--without-libxml2 \
 		--without-neverbleed \
-		--without-spdylay \
 		--enable-app \
 		--disable-examples \
 		--disable-python-bindings \
