@@ -3,33 +3,53 @@
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
 name=bbl
-version=david1
+version=a1c125dde740f5acd1e20a341cf3426ea44af292
 release=1
+source=("https://github.com/riscv/riscv-pk/archive/$version.tar.gz")
 BOOTSTRAP=yes
 
 build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
 	case $BARCH in
 		riscv64|riscv32)
 			true
 			;;
 		*)
-			echo "RISC V is supported only"
+			echo "RISC V supported only"
 			exit 1
 	esac
 
+	if [[ ! -f  "$TOOLS/var/lib/db/installed_cross_riscv" ]]; then
+		echo "Compile ELF toolchain first!"
+		exit 1
+	fi
+
+	if [[ ! -f "$ROOTFS"/boot/vmlinuz-linux ]]; then
+		echo "Compile kernel first!"
+		exit 1
+	fi
+
 	case $BARCH in
 		riscv64)
-			BBL="bbl64"
+			ELFTARGET="riscv64-unknown-elf"
 			;;
 		riscv32)
-			BBL="bbl32"
+			ELFTARGET="riscv32-unknown-elf"
 			;;
 	esac
 
+	cd "$SRC"/riscv-pk-$version
+
+	mkdir build
+	cd build
+
+	../configure  --host=$ELFTARGET \
+		--prefix= \
+		--with-payload="$ROOTFS/boot/vmlinuz-linux" \
+		--enable-logo
+	make
+
 	mkdir -p "$PKG"/boot
-
-	cd "$PKG"/boot
-	curl ${PKGMK_CURL_OPTS} https://github.com/JanusLinux/storage/raw/master/${BBL}.bin
-
-	mv ${BBL}.bin bbl
+	cp bbl "$PKG"/boot/bbl-linux
 }
