@@ -317,6 +317,27 @@ build_toolchain() {
 	pkginstall musl
 	pkghostinstall gcc
 
+	case $BARCH in
+		riscv64)
+			ELFOPTS="--with-arch=rv64imafdc"
+			;;
+		riscv32)
+			ELFOPTS="--with-arch=rv32imafdc"
+			;;
+	esac
+
+	case $BARCH in
+		riscv64|riscv32)
+			unset CFLAGS CXXFLAGS LDFLAGS
+			cd "$SOURCES"
+			git clone --recursive https://github.com/riscv/riscv-gnu-toolchain tools
+			cd tools
+			./configure --prefix="$TOOLS" --disable-linux $ELFOPTS
+			make $MKOPTS
+			touch "$TOOLS"/var/lib/db/installed_cross_riscv
+			;;
+	esac
+
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
