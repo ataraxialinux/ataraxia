@@ -22,32 +22,12 @@ udevadm trigger --action=add --type=devices
 udevadm trigger --action=change --type=devices
 udevadm settle
 
-if [[ -f '/etc/font.conf' ]]
-then
-	export FONT="$(cat /etc/font.conf)"
-	setfont $FONT
-else
-	setfont default
-fi
-
-if [[ -f '/etc/kmap.conf' ]]
-then
-	export KEYMAP="$(cat /etc/kmap.conf)"
-	loadkeys -q $KEYMAP
-else
-	loadkeys -q us
-fi
-
 hwclock --hctosys --utc
 
 mount -o remount,ro /
 
 if [ -x /usr/bin/mdadm -o -f /etc/mdadm.conf ]; then
 	mdadm -As || exec sh
-fi
-
-if [ -x /usr/bin/dmraid ]; then
-	dmraid -i -ay || exec sh
 fi
 
 if [ -x /usr/bin/btrfs ]; then
@@ -59,7 +39,7 @@ if [ -x /usr/bin/vgchange -o -x /bin/vgchange ]; then
 fi
 
 if [ -f /forcefsck ]; then
-FORCEFSCK="-f"
+	FORCEFSCK="-f"
 fi
 
 fsck $FORCEFSCK -A -T -C -a
@@ -100,15 +80,34 @@ else
 	hostname miyuki
 fi
 
-if [[ -f '/etc/timezone' ]]
-then
+if [[ -f '/etc/timezone' ]]; then
 	MYTZ="$(cat /etc/timezone)"
-	ln -sf /usr/share/zoneinfo/$MYTZ /etc/localtime
-else
-	ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
+	if [ -n "$MYTZ" ]; then
+		ln -sf /usr/share/zoneinfo/$MYTZ /etc/localtime
+	else
+		ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
+	fi
 fi
 
 sysctl -q --system
+
+if [[ -f '/etc/keymap' ]]; then
+	MYKMAP="$(cat /etc/keymap)"
+	if [ -n "$MYKMAP" ]; then
+		loadkeys -q $MYKMAP
+	else
+		loadkeys -q us
+	fi
+fi
+
+if [[ -f '/etc/font' ]]; then
+	MYFONT="$(cat //etc/font')"
+	if [ -n "$MYFONT" ]; then
+		setfont $MYFONT
+	else
+		setfont lat2-16 -m 8859-2
+	fi
+fi
 
 install -m0664 -o root -g utmp /dev/null /run/utmp
 if [ ! -e /var/log/wtmp ]; then
