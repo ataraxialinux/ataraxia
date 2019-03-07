@@ -195,7 +195,8 @@ setup_environment() {
 	export STAGEFS="$BUILD/stage"
 	export INITRAMFS="$BUILD/initramfs"
 	export IMAGEFS="$BUILD/image"
-	export ISOBUILD="$BUILD/iso"
+	export ISOBUILD="$BUILD/isobuild"
+	export ISODIR="$BUILD/iso"
 	export KEEP="$CWD/KEEP"
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
@@ -221,7 +222,7 @@ build_environment() {
 	msg "Building the build environment"
 
 	rm -rf "$BUILD"
-	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD" "$ISODIR"
 
 	initdb "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS"
 
@@ -319,22 +320,27 @@ build_toolchain() {
 
 	case $BARCH in
 		riscv64)
-			ELFOPTS="--with-arch=rv64imafdc"
+			ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
 			;;
 		riscv32)
-			ELFOPTS="--with-arch=rv32imafdc"
+			ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
 			;;
 	esac
 
 	case $BARCH in
 		riscv64|riscv32)
+			msg "Building cross-toolchain for '"$BARCH"'-elf platform"
 			unset CFLAGS CXXFLAGS LDFLAGS
 			cd "$SOURCES"
 			git clone --recursive https://github.com/riscv/riscv-gnu-toolchain tools --depth 1
 			cd tools
-			./configure --prefix="$TOOLS" --disable-linux $ELFOPTS
+			rm -rf .gitmodules
+			cp "$KEEP"/riscv-tools/modules .gitmodules
+			git submodule update --init --recursive --depth 1
+			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
 			make $MKOPTS
 			touch "$TOOLS"/var/lib/db/installed_cross_riscv
+			cd .. && rm -rf  tools
 			;;
 	esac
 
@@ -427,7 +433,7 @@ case "$COMMAND" in
 			build_stage
 			case $BARCH in
 				x86_64|i586|ppc64le|ppc64|ppc)
-					#build_grub_iso
+					"$SCRIPTS"/mklive $BARCH "$ISOBUILD" "$ISODIR"
 					;;
 				riscv64|riscv32)
 					#build_riscv_hdd
@@ -461,6 +467,11 @@ case "$COMMAND" in
 		for myemerge in "$PACKAGE"; do
 			pkghostinstall "$myemerge"
 		done
+		;;
+	emerge)
+		check_for_root
+		setup_architecture
+		setup_environment
 		;;
 	usage|*)
 		msg "In development!"
