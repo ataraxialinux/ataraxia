@@ -224,7 +224,7 @@ build_environment() {
 	rm -rf "$BUILD"
 	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD" "$ISODIR"
 
-	initdb "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS"
+	initdb "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS"
 
 cat << CEOF > "$BUILD"/host-pkgmk.conf
 export CROSS="yes"
@@ -439,6 +439,58 @@ build_initramfs() {
 	find . -name "*.pc" -print0 | xargs -0 rm -rf
 }
 
+build_hdd() {
+	msg "Building target rootfs for '"$BARCH"' platform"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=10G
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	parted -s $lodev mklabel msdos
+	parted -a optimal -s $lodev mkpart primary 0% 100%
+
+	case $BARCH in
+		x86_64|i586)
+			parted -s $lodev set 1 boot on
+			;;
+	esac
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext4 $lopart
+
+	mount -o loop $lopart "$IMAGEFS"
+
+	initdb "$IMAGEFS"
+
+	for target in base-files linux-api-headers fortify-headers musl musl-tools \
+			zlib file ncurses libedit m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
+			shadow sed psmisc pcre grep bash loksh which slibtool gdbm db gperf expat \
+			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
+			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
+			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			tar cpio vim-tiny runit libcap-ng procps-ng util-linux \
+			hwids eudev run-parts ifupdown dhcpcd \
+			libssh2 c-ares libev nghttp2 curl git prt-get $LINUX; do
+		pkginstallimage $target
+	done
+
+	cd "$IMAGEFS"
+	hash=$(openssl passwd -1 -salt xyzzy janus)
+	sed -i'' "s:\*:${hash}:" etc/shadow
+
+	umount "$IMAGEFS"
+	losetup -d $lodev
+
+	cd "$CWD"
+}
+
 COMMAND="$1"
 STAGE="$2"
 PACKAGE="${@:2}"
@@ -483,10 +535,24 @@ case "$COMMAND" in
 					build_initramfs
 					"$SCRIPTS"/mklive $BARCH "$ISOBUILD" "$ISODIR"
 					;;
-				riscv64|riscv32)
-					#build_riscv_hdd
+			esac
+			build_hdd
+			;;
+		all)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			build_target
+			build_stage
+			case $BARCH in
+				x86_64|i586|ppc64le|ppc64|ppc)
+					build_initramfs
+					"$SCRIPTS"/mklive $BARCH "$ISOBUILD" "$ISODIR"
 					;;
 			esac
+			build_hdd
 			;;
 		*)
 			die "Stage number was not selected or is not supported"
