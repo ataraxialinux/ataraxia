@@ -481,11 +481,7 @@ build_hdd() {
 		pkginstallimage $target
 	done
 
-	cd "$IMAGEFS"
-	hash=$(openssl passwd -1 -salt xyzzy janus)
-	sed -i'' "s:\*:${hash}:" etc/shadow
-
-	umount "$IMAGEFS"
+	umount -l "$IMAGEFS"
 	losetup -d $lodev
 
 	cd "$CWD"
