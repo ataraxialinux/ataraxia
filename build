@@ -334,9 +334,9 @@ build_toolchain() {
 			cd "$SOURCES"
 			git clone https://github.com/riscv/riscv-gnu-toolchain tools --depth 1
 			cd tools
-			rm -rf .gitmodules
-			cp "$KEEP"/riscv-tools/modules .gitmodules
-			git submodule update --init --recursive --depth 1
+			for clone in binutils gcc newlib; do
+				git clone https://github.com/riscv/riscv-${clone}--depth 1
+			done
 			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
 			make $MKOPTS
 			touch "$TOOLS"/var/lib/db/installed_cross_riscv
