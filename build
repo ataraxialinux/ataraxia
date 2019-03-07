@@ -300,6 +300,11 @@ CEOF
 build_toolchain() {
 	msg "Building cross-toolchain for '"$BARCH"' platform"
 
+	mkdir -p "$TOOLS"/bin
+
+	touch "$TOOLS"/bin/ldconfig
+	chmod +x "$TOOLS"/bin/ldconfig
+
 	pkginstalltwo base-files
 	pkghostinstall file
 	pkghostinstall pkgconf
@@ -329,14 +334,14 @@ build_toolchain() {
 
 	case $BARCH in
 		riscv64|riscv32)
-			msg "Building cross-toolchain for '"$BARCH"'-elf platform"
+			msg "Building cross-toolchain for '"$BARCH-elf"' platform"
 			unset CFLAGS CXXFLAGS LDFLAGS
 			cd "$SOURCES"
 			git clone https://github.com/riscv/riscv-gnu-toolchain tools --depth 1
 			cd tools
-			for clone in binutils gcc newlib; do
-				git clone https://github.com/riscv/riscv-${clone}--depth 1
-			done
+			git clone https://github.com/riscv/riscv-gcc --depth 1
+			git clone https://github.com/riscv/riscv-binutils --depth 1
+			git clone https://github.com/riscv/riscv-newlib --depth 1
 			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
 			make $MKOPTS
 			touch "$TOOLS"/var/lib/db/installed_cross_riscv
