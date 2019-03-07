@@ -392,6 +392,34 @@ build_stage() {
 	cd $CWD
 }
 
+build_initramfs() {
+	msg "Installing core initramfs packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$STAGEFS"
+
+	for target in base-files linux-api-headers fortify-headers musl musl-tools \
+			zlib file ncurses libedit bzip2 attr acl libcap \
+			shadow sed psmisc pcre grep bash loksh which expat \
+			inetutils net-tools libressl xz lzip lz4 zstd \
+			libarchive pkgutils kmod coreutils diffutils \
+			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
+			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
+			tar vim-tiny runit libcap-ng procps-ng util-linux \
+			hwids eudev run-parts libaio lvm2 ifupdown dhcpcd \
+			libssh2 c-ares libev nghttp2 curl; do
+		pkginstallinitrd $target
+	done
+
+	ln -sf bin/runit-init init
+
+	rm -rf usr/include
+
+	find . -name "*.a" -print0 | xargs -0 rm -rf
+	find . -name "*.h" -print0 | xargs -0 rm -rf
+	find . -name "*.hpp" -print0 | xargs -0 rm -rf
+	find . -name "*.pc" -print0 | xargs -0 rm -rf
+}
+
 COMMAND="$1"
 STAGE="$2"
 PACKAGE="${@:2}"
@@ -433,6 +461,7 @@ case "$COMMAND" in
 			build_stage
 			case $BARCH in
 				x86_64|i586|ppc64le|ppc64|ppc)
+					build_initramfs
 					"$SCRIPTS"/mklive $BARCH "$ISOBUILD" "$ISODIR"
 					;;
 				riscv64|riscv32)
