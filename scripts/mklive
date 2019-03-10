@@ -6,9 +6,9 @@ ISOBUILD="$2"
 ISODIR="$3"
 ROOTCD="$ISOBUILD/rootcd"
 EFIBUILD="$ISOBUILD/efibuild"
-KEEP="$KEEP"
+STUFF="$STUFF"
 
-set -e
+set -e -x
 
 msg() {
 	local msg=$(echo $1 | tr -s / /)
@@ -62,6 +62,8 @@ install_files() {
 }
 
 create_efi() {
+	umount -l "$EFIBUILD"/uefi_image || true
+
 	case $BARCH in
 		x86_64)
 			export EFIVER="x86_64"
@@ -75,7 +77,7 @@ create_efi() {
 
 	kernel_size=`du -b "$ISODIR"/seiba/seiba | awk '{print \$1}'`
 	rootfs_size=`du -b "$ISODIR"/seiba/seiba.gz| awk '{print \$1}'`
-	loader_size=`du -b $KEEP/mklive/$BOOTEFI | awk '{print \$1}'`
+	loader_size=`du -b $STUFF/mklive/$BOOTEFI | awk '{print \$1}'`
 
 	image_size=$((kernel_size + rootfs_size + loader_size + 65536 + 6291456))
     
@@ -92,10 +94,11 @@ create_efi() {
 	mount "$EFIBUILD"/uefi.img "$EFIBUILD"/uefi_image
 
 	mkdir -p "$EFIBUILD"/uefi_image/EFI/BOOT
-	cp "$KEEP"/mklive/$BOOTEFI "$EFIBUILD"/uefi_image/EFI/BOOT
+	cp "$STUFF"/mklive/$BOOTEFI "$EFIBUILD"/uefi_image/EFI/BOOT
 
+	mkdir -p "$EFIBUILD"/uefi_image/seiba
 	cp "$ISODIR"/seiba/seiba "$EFIBUILD"/uefi_image/seiba/seiba
-	cp "$ISODIR"/seiba/seiba.gz"$EFIBUILD"/uefi_image/seiba/seiba.gz
+	cp "$ISODIR"/seiba/seiba.gz "$EFIBUILD"/uefi_image/seiba/seiba.gz
 
 	mkdir -p "$EFIBUILD"/uefi_image/loader/entries
 
@@ -126,15 +129,15 @@ EOF
 
 create_bios() {
 	mkdir -p "$ISODIR"/isolinux
-	cp "$KEEP"/mklive/isolinux.cfg "$ISODIR"/isolinux/isolinux.cfg 
-	cp "$KEEP"/mklive/ldlinux.c32 "$ISODIR"/isolinux/ldlinux.c32
-	cp "$KEEP"/mklive/libutil.c32 "$ISODIR"/isolinux/libutil.c32
-	cp "$KEEP"/mklive/menu.c32 "$ISODIR"/isolinux/menu.c32
+	cp "$STUFF"/mklive/isolinux.cfg "$ISODIR"/isolinux/isolinux.cfg 
+	cp "$STUFF"/mklive/ldlinux.c32 "$ISODIR"/isolinux/ldlinux.c32
+	cp "$STUFF"/mklive/libutil.c32 "$ISODIR"/isolinux/libutil.c32
+	cp "$STUFF"/mklive/menu.c32 "$ISODIR"/isolinux/menu.c32
 }
 
 create_iso_x86() {
 	xorriso -as mkisofs \
-		-isohybrid-mbr "$KEEP"/mklive/isohdpfx.bin \
+		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
 		-c isolinux/boot.cat \
 		-b isolinux/isolinux.bin \
 		-no-emul-boot \

@@ -226,7 +226,7 @@ build_environment() {
 	msg "Building the build environment"
 
 	rm -rf "$BUILD"
-	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD" "$ISODIR"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD"/efibuild "$ISODIR"
 
 	initdb "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS"
 
@@ -406,7 +406,7 @@ build_stage() {
 
 	msg "Building stage archive for '"$BARCH"' platform"
 	cd "$STAGEFS"
-	tar -cJf "$CWD"/januslinux-$RELEASE-$BARCH.tar.xz .
+	tar cf - . | pixz -9 > "$CWD"/januslinux-$RELEASE-$BARCH.tar.xz
 	cd $CWD
 }
 
