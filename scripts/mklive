@@ -29,7 +29,7 @@ check_for_root() {
 
 check_architecture() {
 	case "$BARCH" in
-		x86_64|i586|ppc64le|ppc64|ppc)
+		x86_64|i686|ppc64le|ppc64|ppc)
 			true
 			;;
 		*)
@@ -69,7 +69,7 @@ create_efi() {
 			export EFIVER="x86_64"
 			export BOOTEFI="BOOTx64.EFI"
 			;;
-		i586)
+		i686)
 			export EFIVER="x86"
 			export BOOTEFI="BOOTIA32.EFI"
 			;;
@@ -125,6 +125,8 @@ EOF
 	chmod ugo+r "$EFIBUILD"/uefi.img
 
 	cp "$EFIBUILD"/uefi.img "$ISODIR"/uefi.img
+
+	losetup -d "$LOOP_DEVICE_HDD"
 }
 
 create_bios() {
