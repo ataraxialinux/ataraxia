@@ -10,7 +10,7 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/admin/$name-$version
-	patch -Np1 -i "$KEEP"/runit/cross.patch
+	patch -Np1 -i "$STUFF"/runit/cross.patch
 
 	sed -e 's,sbin/runit,usr/bin/runit,g' -i src/runit.h
 	sed -i -e 's:^char \*varservice ="/service/";$:char \*varservice ="/var/service/";:' src/sv.c
@@ -39,21 +39,21 @@ build() {
 
 	ln -sf /etc/runit/runsvdir/current "$PKG"/var/service
 
-	install -m0755 "$KEEP"/runit/{1,2,3} "$PKG"/etc/runit/
+	install -m0755 "$STUFF"/runit/{1,2,3} "$PKG"/etc/runit/
 	install -m0755 etc/debian/ctrlaltdel "$PKG"/etc/runit/
 
 	for tty in tty1 tty2 tty3 tty4 tty5 tty6 ttyS0 ttyAMA0; do
-		install -D -m755 "$KEEP"/services/$tty "$PKG"/etc/service/$tty/run
-		install -D -m755 "$KEEP"/services/$tty-finish "$PKG"/etc/service/$tty/finish
+		install -D -m755 "$STUFF"/services/$tty "$PKG"/etc/service/$tty/run
+		install -D -m755 "$STUFF"/services/$tty-finish "$PKG"/etc/service/$tty/finish
 		ln -sf /etc/service/$tty "$PKG"/etc/runit/runsvdir/current/$tty
 	done
 
-	install -D -m755 "$KEEP"/services/dmesg "$PKG"/etc/service/dmesg/run
+	install -D -m755 "$STUFF"/services/dmesg "$PKG"/etc/service/dmesg/run
 	ln -sf /etc/service/dmesg "$PKG"/etc/runit/runsvdir/current/dmesg
 
 	mkdir -p "$PKG"/var/log/dmesg
 
-	${CROSS_COMPILE}cc $CFLAGS -static "$KEEP"/runit/halt.c -o "$PKG"/usr/bin/halt
+	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/runit/halt.c -o "$PKG"/usr/bin/halt
 
 	ln -sf halt "$PKG"/usr/bin/poweroff
 	ln -sf halt "$PKG"/usr/bin/reboot
