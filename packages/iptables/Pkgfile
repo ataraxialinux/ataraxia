@@ -11,8 +11,8 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$KEEP"/iptables/musl.patch
-	patch -Np1 -i "$KEEP"/iptables/0001-ebtables-vlan-fix-userspace-kernel-headers-collision.patch
+	patch -Np1 -i "$STUFF"/iptables/musl.patch
+	patch -Np1 -i "$STUFF"/iptables/0001-ebtables-vlan-fix-userspace-kernel-headers-collision.patch
 
 	rm include/linux/types.h
 
@@ -38,8 +38,8 @@ build() {
 	mkdir -p "$PKG"/var/log/ip6tables
 
 	for svc in iptables ip6tables; do
-		install -Dm0755 "$KEEP"/services/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$KEEP"/services/$svc-finish "$PKG"/etc/service/$svc/finish
-		install -Dm0755 "$KEEP"/services/$svc-log "$PKG"/etc/service/$svc/log/run
+		install -Dm0755 "$STUFF"/services/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/services/$svc-finish "$PKG"/etc/service/$svc/finish
+		install -Dm0755 "$STUFF"/services/$svc-log "$PKG"/etc/service/$svc/log/run
 	done
 }

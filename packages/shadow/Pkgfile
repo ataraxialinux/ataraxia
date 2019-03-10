@@ -11,9 +11,9 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -p0 -i "$KEEP"/shadow/shadow-no_rlogin
-	patch -p0 -i "$KEEP"/shadow/shadow-strncpy-usage.patch
-	patch -p0 -i "$KEEP"/shadow/xstrdup.patch
+	patch -p0 -i "$STUFF"/shadow/shadow-no_rlogin
+	patch -p0 -i "$STUFF"/shadow/shadow-strncpy-usage.patch
+	patch -p0 -i "$STUFF"/shadow/xstrdup.patch
 
 	sed -i -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD SHA512@' etc/login.defs
 
@@ -35,7 +35,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm644 "$KEEP"/shadow/useradd "$PKG"/etc/default/useradd
+	install -Dm644 "$STUFF"/shadow/useradd "$PKG"/etc/default/useradd
 
 	rm "$PKG"/usr/sbin/logoutd
 

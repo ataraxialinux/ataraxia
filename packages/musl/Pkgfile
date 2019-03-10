@@ -11,9 +11,9 @@ NO_RUN_STRIP=1
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$KEEP"/musl/musl-riscv.patch
+	patch -Np1 -i "$STUFF"/musl/musl-riscv.patch
 
-	${CROSS_COMPILE}cc $CFLAGS -c "$KEEP"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
+	${CROSS_COMPILE}cc $CFLAGS -c "$STUFF"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
 	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
 
 	./configure $TOOLFLAGS \
