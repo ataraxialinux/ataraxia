@@ -6,23 +6,19 @@ dmesg -n 1
 
 clear
 
-mountpoint -q /proc || mount -o nosuid,noexec,nodev -t proc proc /proc
-mountpoint -q /sys || mount -o nosuid,noexec,nodev -t sysfs sys /sys
-mountpoint -q /run || mount -o mode=0755,nosuid,nodev -t tmpfs run /run
-mountpoint -q /dev || mount -o mode=0755,nosuid -t devtmpfs dev /dev
+mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
 mkdir -p -m0755 /run/runit /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
-mountpoint -q /dev/pts || mount -o mode=0620,gid=5,nosuid,noexec -n -t devpts devpts /dev/pts
-mountpoint -q /dev/shm || mount -o mode=1777,nosuid,nodev -n -t tmpfs shm /dev/shm
-mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
-mountpoint -q /sys/fs/cgroup || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
+mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 
 udevd --daemon
 udevadm trigger --action=add --type=subsystems
 udevadm trigger --action=add --type=devices
 udevadm trigger --action=change --type=devices
 udevadm settle
-
-hwclock --hctosys --utc
 
 mount -o remount,ro /
 
@@ -88,6 +84,8 @@ if [[ -f '/etc/timezone' ]]; then
 		ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 	fi
 fi
+
+hwclock --hctosys
 
 sysctl -q --system
 
