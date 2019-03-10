@@ -6,7 +6,7 @@
 name=gcc
 version=8.3.0
 islver=0.20
-release=4
+release=5
 source=("http://ftp.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz"
 	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 BOOTSTRAP=yes
@@ -65,6 +65,12 @@ build() {
 			exit 1
 	esac
 
+	if [ -n "$EXTRALANG" ]; do
+		LANGS="c,c++,lto,$EXTRALANG"
+	else
+		LANGS="c,c++,lto"
+	done
+
 	case "$BARCH" in
 		mips64|mips64el|mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
 		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
@@ -122,7 +128,7 @@ build() {
 		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-install-libiberty \
-		--enable-languages=c,c++,objc,obj-c++,fortran \
+		--enable-languages="$LANGS" \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
