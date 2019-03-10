@@ -10,7 +10,7 @@ januslinux is a fast and compact [Linux](https://www.kernel.org/) distribution w
 januslinux is ported on many CPU architectures. There are about 8 of them:
 ```
  * x86_64       - for 64-bit x86 CPUs
- * i586         - for 32-bit x86 CPUs beggining at classic Intel Pentium (i586)
+ * i686         - for 32-bit x86 CPUs beggining at classic Intel Pentium Pro
  * aarch64      - for 64-bit ARM CPUs
  * armv7l       - for 32-bit ARM CPUs beggining at ARMv7-a (hard-float)
  * armv5tel     - for 32-bit ARM CPUs beggining at ARMv5 (soft-float)
