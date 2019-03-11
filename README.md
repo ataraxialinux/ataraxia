@@ -23,6 +23,7 @@ januslinux is ported on many CPU architectures. There are about 8 of them:
  * ppc          - for 32-bit PowerPC CPUs (big-endian)
  * riscv64      - for 64-bit RISC V CPUs
  * riscv32      - for 32-bit RISC V CPUs
+ * m68k         - for 32-bit Motorola 68000 CPUs beggining at 68020
 ```
  
 ## Index of source packages
