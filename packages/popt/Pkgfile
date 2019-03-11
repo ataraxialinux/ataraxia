@@ -1,0 +1,20 @@
+# Description: A commandline option parser
+# URL:         http://rpm5.org
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=popt
+version=1.16
+release=1
+source=("http://rpm5.org/files/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	cp "$STUFF"/config.guess config.guess
+	cp "$STUFF"/config.sub config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
