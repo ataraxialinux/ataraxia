@@ -1,0 +1,17 @@
+# Description: High productivity build system
+# URL:         http://mesonbuild.com/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  python ninja
+
+name=meson
+version=0.50.0
+release=1
+source=("https://github.com/mesonbuild/meson/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	python setup.py build
+	python setup.py install --root="$PKG" --optimize=1 --skip-build
+
+	cp "$STUFF"/meson/janus-meson "$PKG"/usr/bin/janus-meson
+}

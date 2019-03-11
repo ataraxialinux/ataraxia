@@ -1,0 +1,24 @@
+# Description: A text-mode partitioning tool that works on GUID Partition Table (GPT) disks
+# URL:         https://www.rodsbooks.com/gdisk/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  ncurses util-linux popt
+
+name=gptfdisk
+version=1.0.4
+release=1
+source=("https://downloads.sourceforge.net/project/$name/$name/$version/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$CROSS" = "yes" ]; then
+		make HOSTCC="$HOSTCC" HOSTCXX="$HOSTCXX" CC="$CC" CXX="$CXX" CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
+	else
+		make CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS"
+	fi
+
+	mkdir -p "$PKG"/usr/bin
+	local i; for i in gdisk cgdisk sgdisk fixparts; do
+		install $i "$PKG"/usr/bin/
+	done
+}

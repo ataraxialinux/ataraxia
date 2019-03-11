@@ -1,0 +1,41 @@
+# Description: An object-oriented language for quick and easy programming
+# URL:         http://www.ruby-lang.org/en/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib gmp gdbm db libedit libressl libffi yaml
+
+name=ruby
+version=2.6.1
+release=1
+source=("https://cache.ruby-lang.org/pub/ruby/${version:0:3}/ruby-${version}.tar.xz")
+NO_EMPTY_DIRS=1
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/ruby/rubygems-avoid-platform-specific-gems.patch
+
+	export CFLAGS="${CFLAGS/-fomit-frame-pointer}"
+	export CXXFLAGS="${CXXFLAGS/-fomit-frame-pointer}"
+	export CFLAGS="$CFLAGS -fno-omit-frame-pointer -fno-strict-aliasing"
+	export CPPFLAGS="$CPPFLAGS -fno-omit-frame-pointer -fno-strict-aliasing"
+
+	export INSTALL=install
+
+	export ac_cv_func_isnan=yes
+	export ac_cv_func_isinf=yes
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/ruby \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--sharedstatedir=/var/lib \
+		--with-dbm-type=gdbm_compat \
+		--enable-pthread \
+		--enable-shared \
+		--disable-install-doc \
+		--disable-install-rdoc \
+		--disable-install-capi \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}

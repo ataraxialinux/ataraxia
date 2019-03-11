@@ -1,0 +1,18 @@
+# Description: Portable foreign function interface library
+# URL:         http://sourceware.org/libffi/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=libffi
+version=3.2.1
+release=1
+source=("ftp://sourceware.org/pub/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-pax_emutramp \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}
