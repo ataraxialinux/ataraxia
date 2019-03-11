@@ -304,6 +304,7 @@ CEOF
 build_toolchain() {
 	msg "Building cross-toolchain for '"$BARCH"' platform"
 
+	msg "Adding fake ldconfig"
 	mkdir -p "$TOOLS"/bin
 
 	touch "$TOOLS"/bin/ldconfig
@@ -325,6 +326,7 @@ build_toolchain() {
 	pkghostinstall gcc-static
 	pkginstall musl
 	pkghostinstall gcc
+	pkghostinstall slibtool
 
 	case $BARCH in
 		riscv64)
@@ -356,6 +358,12 @@ build_toolchain() {
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+
+	sed -i "s,uncom,$(which make),g" "$TOOLS"/bin/make
 }
 
 build_target() {
@@ -373,7 +381,8 @@ build_target() {
 			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
 			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
 			tar cpio vim-tiny runit libcap-ng procps-ng util-linux \
-			hwids eudev run-parts libaio lvm2 ifupdown dhcpcd \
+			hwids eudev run-parts e2fsprogs btrfs-progs xfsprogs f2fs-tools \
+			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm ifupdown dhcpcd \
 			libssh2 c-ares libev nghttp2 curl git prt-get; do
 		pkginstall $target
 	done
@@ -427,8 +436,9 @@ build_initramfs() {
 			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
 			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
 			tar vim-tiny runit libcap-ng procps-ng util-linux \
-			hwids eudev run-parts libaio lvm2 ifupdown dhcpcd \
-			libssh2 c-ares libev nghttp2 curl $LINUX; do
+			hwids eudev run-parts e2fsprogs btrfs-progs xfsprogs f2fs-tools \
+			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm ifupdown \
+			dhcpcd libssh2 c-ares libev nghttp2 curl $LINUX; do
 		pkginstallinitrd $target
 	done
 

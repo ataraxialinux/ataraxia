@@ -1,0 +1,23 @@
+# Description: A JSON implementation in C
+# URL:         https://github.com/json-c/json-c/wiki
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=json-c
+version=0.13.1
+release=1
+source=("https://s3.amazonaws.com/${name}_releases/releases/$name-${version}.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	export CFLAGS="$CFLAGS -Wno-error=unused-but-set-variable"
+
+	NOCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-threading \
+		--disable-static
+	make -j1
+	make -j1 DESTDIR="$PKG" install
+}
