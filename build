@@ -373,15 +373,13 @@ build_target() {
 	fi
 
 	for target in musl-tools zlib file ncurses libedit m4 bison flex bc \
-			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			shadow sed psmisc pcre grep bash mksh which slibtool gdbm db gperf expat \
-			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
-			libarchive lzo pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
-			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			tar cpio vim-tiny runit libcap-ng procps-ng util-linux \
-			e2fsprogs btrfs-progs f2fs-tools hwids eudev run-parts \
-			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm ifupdown dhcpcd \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap shadow \
+			pcre grep bash mksh which slibtool gdbm db gperf expat \
+			net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive lzo pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
+			dialog libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano runit libcap-ng util-linux e2fsprogs btrfs-progs f2fs-tools hwids eudev \
+			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm \
 			libssh2 c-ares libev nghttp2 curl git prt-get; do
 		pkginstall $target
 	done
@@ -400,21 +398,19 @@ build_stage() {
 
 	for target in base-files linux-api-headers fortify-headers musl musl-tools \
 			zlib file ncurses libedit m4 bison flex bc \
-			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			shadow sed psmisc pcre grep bash mksh which slibtool gdbm db gperf expat \
-			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
-			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
-			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			tar cpio vim-tiny runit libcap-ng procps-ng util-linux \
-			hwids eudev run-parts ifupdown dhcpcd libssh2 c-ares libev \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap shadow \
+			pcre grep bash mksh which slibtool gdbm db gperf expat \
+			net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
+			dialog libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano runit libcap-ng util-linux hwids eudev libssh2 c-ares libev \
 			nghttp2 curl git prt-get $LINUX; do
 		pkginstallstage $target
 	done
 
 	msg "Building stage archive for '"$BARCH"' platform"
 	cd "$STAGEFS"
-	tar cf - . | pixz -9 > "$BUILD"/januslinux-$RELEASE-$BARCH.tar.xz
+	cf - . | pixz -9 > "$BUILD"/januslinux-$RELEASE-$BARCH.tar.xz
 	cd $CWD
 }
 
@@ -428,14 +424,9 @@ build_initramfs() {
 	fi
 
 	for target in base-files musl musl-tools \
-			zlib file ncurses libedit bzip2 attr acl libcap \
-			shadow sed psmisc pcre grep bash mksh which expat \
-			inetutils net-tools libressl xz lzip lz4 zstd \
-			libarchive lzo pkgutils kmod coreutils diffutils \
-			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
-			tar vim-tiny runit libcap-ng procps-ng util-linux \
-			e2fsprogs btrfs-progs f2fs-tools hwids eudev run-parts \
+			zlib file ncurses libedit bzip2 attr acl libcap shadow pcre grep bash mksh which expat \
+			net-tools libressl xz lzo pkgutils kmod diffutils dialog libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
+			nano runit libcap-ng util-linux e2fsprogs btrfs-progs f2fs-tools hwids eudev \
 			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm ifupdown \
 			dhcpcd libssh2 c-ares libev nghttp2 curl $LINUX; do
 		pkginstallinitrd $target
@@ -482,14 +473,13 @@ build_hdd() {
 
 	for target in base-files linux-api-headers fortify-headers musl musl-tools \
 			zlib file ncurses libedit m4 bison flex bc \
-			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			shadow sed psmisc pcre grep bash mksh which slibtool gdbm db gperf expat \
-			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
-			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
-			dialog onetrueawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			tar cpio vim-tiny runit libcap-ng procps-ng util-linux e2fsprogs \
-			hwids eudev run-parts ifupdown dhcpcd \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap shadow \
+			pcre grep bash mksh which slibtool gdbm db gperf expat \
+			net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
+			dialog libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano runit libcap-ng util-linux e2fsprogs \
+			hwids eudev \
 			libssh2 c-ares libev nghttp2 curl git prt-get $LINUX; do
 		pkginstallimage $target
 	done
