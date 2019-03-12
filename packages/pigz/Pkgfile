@@ -1,0 +1,25 @@
+# Description: Parallel implementation of the gzip file compressor
+# URL:         https://www.zlib.net/pigz
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=pigz
+version=2.4
+release=1
+source=("https://www.zlib.net/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$CROSS" = "yes" ]; then
+		make CFLAGS="$CFLAGS" CC="$CC" HOSTCC="$HOSTCC"
+	else
+		make CFLAGS="$CFLAGS"
+	fi
+
+	install -Dm755 "$SRC"/$name-$version/$name "$PKG"/usr/bin/pigz
+
+	for i in unpigz gzip gunzip; do
+		ln -sf pigz "$PKG"/usr/bin/$i
+	done
+}
