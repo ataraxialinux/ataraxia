@@ -1,0 +1,22 @@
+# Description: Tools for Flash-Friendly File System (F2FS)
+# URL:         https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git/about/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  util-linux
+
+name=f2fs-tools
+version=1.12.0
+release=1
+source=("https://git.kernel.org/cgit/linux/kernel/git/jaegeuk/f2fs-tools.git/snapshot/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	export CFLAGS="$CFLAGS -I$STUFF/include"
+
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" sbindir=/usr/bin install
+}
