@@ -75,9 +75,6 @@ generate_config() {
 		riscv64|riscv32)
 			export DEFCONFIG="defconfig"
 			;;
-		m68k)
-			export DEFCONFIG="multi_defconfig"
-			;;
 		*)
 			echo "Architecture is not set or is not supported by januslinux"
 			exit 1
@@ -102,12 +99,6 @@ generate_config() {
 			;;
 		riscv64|riscv32)
 			for archconf in RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC LBDAF SECTION_MISMATCH_WARN_ONLY; do
-				yconfig $archconf
-			done
-			;;
-		m68k)
-			for archconf in MMU M68040 M68KFPU_EMU MAC SCSI_MAC_ESP MACINTOSH_DRIVERS ADB ADB_MACII NET_CORE NET_VENDOR_NATSEMI MACSONIC \
-						SERIAL_PMACZILOG SERIAL_PMACZILOG_TTYS SERIAL_PMACZILOG_CONSOLE SCSI BLK_DEV_SD SCSI_LOWLEVEL; do
 				yconfig $archconf
 			done
 			;;
@@ -218,10 +209,6 @@ build() {
 			;;
 		riscv64|riscv32)
 			export XKARCH="riscv"
-			export IMAGELOC="vmlinux"
-			;;
-		m68k)
-			export XKARCH="m68k"
 			export IMAGELOC="vmlinux"
 			;;
 		*)
