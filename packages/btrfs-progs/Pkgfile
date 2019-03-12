@@ -1,0 +1,23 @@
+# Description: Btrfs filesystem utilities
+# URL:         https://btrfs.wiki.kernel.org
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib lzo zstd util-linux e2fsprogs
+
+name=btrfs-progs
+version=4.20.2
+release=1
+source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$name/$name-v$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-v$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-backtrace \
+		--disable-documentation \
+		--disable-python
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 btrfs-completion "$PKG"/usr/share/bash-completion/completions/btrfs
+}
