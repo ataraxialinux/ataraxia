@@ -139,6 +139,7 @@ create_bios() {
 create_iso_x86() {
 	xorriso -as mkisofs \
 		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
+		-iso-level 2 \
 		-c isolinux/boot.cat \
 		-b isolinux/isolinux.bin \
 		-no-emul-boot \
@@ -152,7 +153,7 @@ create_iso_x86() {
 		-o "$BUILD"/januslinux-$RELEASE-$BARCH.iso \
 		"$ISODIR"/
 
-	isohybrid "$BUILD"/januslinux-$RELEASE-$BARCH.iso
+	"$SCRIPTS"/isohybrid.pl "$BUILD"/januslinux-$RELEASE-$BARCH.iso
 }
 
 check_for_root
