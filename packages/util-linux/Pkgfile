@@ -9,7 +9,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=3
+release=4
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -36,13 +36,14 @@ build() {
 		--enable-mesg \
 		--enable-partx \
 		--enable-raw \
+		--enable-sulogin \
 		--enable-wall \
 		--enable-write \
 		--disable-chfn-chsh \
 		--disable-login \
 		--disable-makeinstall-chown \
-		--disable-makeinstall-setuid \
 		--disable-nologin \
+		--disable-rpath \
 		--disable-runuser \
 		--disable-setpriv \
 		--disable-su
@@ -52,6 +53,8 @@ build() {
 	cd "$PKG"
 	mv usr/sbin/* usr/bin
 	rm -rf bin sbin usr/sbin
+
+	mkdir -p var/lib/hwclock
 
 	install -Dm0755 "$STUFF"/runit-svc/uuid "$PKG"/etc/service/uuid/run
 	install -Dm0755 "$STUFF"/runit-svc/uuid-log "$PKG"/etc/service/uuid/log/run
