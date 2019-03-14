@@ -1,0 +1,47 @@
+# Description: The GNU Debugger
+# URL:         http://www.gnu.org/software/gdb/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib ncurses libedit expat texinfo python
+
+name=gdb
+version=8.2.1
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gdb/0002-make-man-install-relative-to-DESTDIR.patch
+	patch -Np1 -i "$STUFF"/gdb/0003-mips-linux-nat-Define-_ABIO32-if-not-defined.patch
+	patch -Np1 -i "$STUFF"/gdb/0004-ppc-ptrace-Define-pt_regs-uapi_pt_regs-on-GLIBC-syst.patch
+	patch -Np1 -i "$STUFF"/gdb/0005-Add-support-for-Renesas-SH-sh4-architecture.patch
+	patch -Np1 -i "$STUFF"/gdb/0006-Dont-disable-libreadline.a-when-using-disable-static.patch
+	patch -Np1 -i "$STUFF"/gdb/0007-use-asm-sgidefs.h.patch
+	patch -Np1 -i "$STUFF"/gdb/0008-Use-exorted-definitions-of-SIGRTMIN.patch
+	patch -Np1 -i "$STUFF"/gdb/0009-Change-order-of-CFLAGS.patch
+	patch -Np1 -i "$STUFF"/gdb/0010-resolve-restrict-keyword-conflict.patch
+	patch -Np1 -i "$STUFF"/gdb/0011-Fix-invalid-sigprocmask-call.patch
+	patch -Np1 -i "$STUFF"/gdb/gdbserver-ctrl-c-handling.patch
+	patch -Np1 -i "$STUFF"/gdb/aarch64-headers.patch
+	patch -Np1 -i "$STUFF"/gdb/0001-Fix-build-with-latest-GCC-9.0-tree.patch
+
+	case "$BARCH" in
+		ppc64le|ppc64)	CXX="--enable-build-with-cxx=no"	;;
+	esac
+
+	./configure $BUILDFLAGS $CXX \
+		--prefix=/usr \
+		--with-system-gdbinit=/etc/gdb/gdbinit \
+		--with-python=/usr/bin/python3 \
+		--enable-plugins \
+		--disable-nls \
+		--disable-rpath \
+		--disable-werror
+	make
+	make DESTDIR="$PKG" install
+
+	install -dm755 "$PKG"/etc/gdb
+	touch "$PKG"/etc/gdb/gdbinit
+
+	rm -rf "$PKG"/usr/include
+	rm -rf "$PKG"/usr/lib
+}
