@@ -1,0 +1,26 @@
+# Description: A diagnostic, debugging and instructional userspace tracer
+# URL:         https://strace.io/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=strace
+version=4.26
+release=1
+source=("https://github.com/strace/strace/releases/download/v$version/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/strace/disable-git-version-gen.patch \
+	patch -Np1 -i "$STUFF"/strace/more-robust-test-for-m32-mx32-compile-support.patch \
+	patch -Np1 -i "$STUFF"/strace/update-gawk-paths.patch \
+	patch -Np1 -i "$STUFF"/strace/0001-Fix-build-when-using-non-glibc-libc-implementation-o.patch \
+	patch -Np1 -i "$STUFF"/strace/mips-SIGEMT.patch \
+	patch -Np1 -i "$STUFF"/strace/0001-caps-abbrev.awk-fix-gawk-s-path.patch \
+	patch -Np1 -i "$STUFF"/strace/0001-tests-sigaction-Check-for-mips-and-alpha-before-usin.patch \
+	patch -Np1 -i "$STUFF"/strace/0001-mips-o32-fix-build.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
