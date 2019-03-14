@@ -4,14 +4,15 @@
 # Depends on:  libcap iptables
 
 name=iproute2
-version=4.19.0
-release=2
+version=4.20.0
+release=1
 source=("https://www.kernel.org/pub/linux/utils/net/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/iproute2/0001-Fix-includes-for-musl-libc.patch
+	patch -Np1 -i "$STUFF"/iproute2/0002-f_flower-fix-build-with-musl-libc.patch
 	patch -Np1 -i "$STUFF"/iproute2/0002-make-iproute2-fhs-compliant.patch
 	patch -Np1 -i "$STUFF"/iproute2/0003-cross.patch
 	sed -i 's:/usr/local:/usr:' tc/m_ipt.c include/iptables.h
