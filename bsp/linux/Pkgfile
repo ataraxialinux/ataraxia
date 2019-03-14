@@ -4,7 +4,7 @@
 # Depends on:  kmod bc libelf xz libressl
 
 name=linux
-version=5.0.1
+version=5.0.2
 release=1
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 BOOTSTRAP=yes
@@ -20,8 +20,8 @@ yconfig() {
 
 mconfig() {
 	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=,/" .config
-		grep ^"CONFIG_$1=," .config || echo "CONFIG_$1=," >> .config
+		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=m/" .config
+		grep ^"CONFIG_$1=m" .config || echo "CONFIG_$1=m" >> .config
 		shift 1
 	done
 }
