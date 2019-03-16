@@ -1,18 +1,20 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  gettext-tiny xz lvm2 python
+# Depends on:  gettext-tiny xz lvm2 python2
 
 name=grub
 version=2.02
-release=3
+release=2
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
-	unset CFLAGS CXXFLAGS CLDFLAGS LDFLAGS
+	unset CXXFLAGS LDFLAGS
 
-	export CFLAGS="-g0 -Os -s -fomit-frame-pointer -pipe"
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
 	export CXXFLAGS="$CFLAGS"
 
 	case $BARCH in
