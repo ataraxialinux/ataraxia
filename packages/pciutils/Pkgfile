@@ -1,0 +1,22 @@
+# Description: PCI bus configuration space access library and tools
+# URL:         http://mj.ucw.cz/sw/pciutils/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  kmod hwids
+
+name=pciutils
+version=3.6.2
+release=1
+source=("ftp://atrey.karlin.mff.cuni.cz/pub/linux/pci/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make OPT="$CFLAGS -fPIC -DPIC" ZLIB=no SHARED=no PREFIX=/usr SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man SBINDIR=/usr/bin lib/libpci.a 
+	cp lib/libpci.a "$SRC/"
+	make clean
+	make OPT="$CFLAGS" ZLIB=no SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man all
+	make SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man DESTDIR="$PKG" install install-lib
+
+	cp "$SRC"/libpci.a "$PKG"/usr/lib
+
+	rm -rf "$PKG"/usr/{sbin/update-pciids,share/{man/man8/update-pciids.8,hwdata}}
+}

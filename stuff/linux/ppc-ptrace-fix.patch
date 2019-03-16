@@ -1,0 +1,118 @@
+From ca6d5149d2ad0a8d2f9c28cbe379802260a0a5e0 Mon Sep 17 00:00:00 2001
+From: Michael Ellerman <mpe@ellerman.id.au>
+Date: Thu, 14 Feb 2019 11:08:29 +1100
+Subject: powerpc/ptrace: Simplify vr_get/set() to avoid GCC warning
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+GCC 8 warns about the logic in vr_get/set(), which with -Werror breaks
+the build:
+
+  In function ‘user_regset_copyin’,
+      inlined from ‘vr_set’ at arch/powerpc/kernel/ptrace.c:628:9:
+  include/linux/regset.h:295:4: error: ‘memcpy’ offset [-527, -529] is
+  out of the bounds [0, 16] of object ‘vrsave’ with type ‘union
+  <anonymous>’ [-Werror=array-bounds]
+  arch/powerpc/kernel/ptrace.c: In function ‘vr_set’:
+  arch/powerpc/kernel/ptrace.c:623:5: note: ‘vrsave’ declared here
+     } vrsave;
+
+This has been identified as a regression in GCC, see GCC bug 88273.
+
+However we can avoid the warning and also simplify the logic and make
+it more robust.
+
+Currently we pass -1 as end_pos to user_regset_copyout(). This says
+"copy up to the end of the regset".
+
+The definition of the regset is:
+	[REGSET_VMX] = {
+		.core_note_type = NT_PPC_VMX, .n = 34,
+		.size = sizeof(vector128), .align = sizeof(vector128),
+		.active = vr_active, .get = vr_get, .set = vr_set
+	},
+
+The end is calculated as (n * size), ie. 34 * sizeof(vector128).
+
+In vr_get/set() we pass start_pos as 33 * sizeof(vector128), meaning
+we can copy up to sizeof(vector128) into/out-of vrsave.
+
+The on-stack vrsave is defined as:
+  union {
+	  elf_vrreg_t reg;
+	  u32 word;
+  } vrsave;
+
+And elf_vrreg_t is:
+  typedef __vector128 elf_vrreg_t;
+
+So there is no bug, but we rely on all those sizes lining up,
+otherwise we would have a kernel stack exposure/overwrite on our
+hands.
+
+Rather than relying on that we can pass an explict end_pos based on
+the sizeof(vrsave). The result should be exactly the same but it's
+more obviously not over-reading/writing the stack and it avoids the
+compiler warning.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Mathieu Malaterre <malat@debian.org>
+Cc: stable@vger.kernel.org
+Tested-by: Mathieu Malaterre <malat@debian.org>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+---
+ arch/powerpc/kernel/ptrace.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+(limited to 'arch/powerpc/kernel/ptrace.c')
+
+diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+index 7535f89e08cd..d9ac7d94656e 100644
+--- a/arch/powerpc/kernel/ptrace.c
++++ b/arch/powerpc/kernel/ptrace.c
+@@ -567,6 +567,7 @@ static int vr_get(struct task_struct *target, const struct user_regset *regset,
+ 		/*
+ 		 * Copy out only the low-order word of vrsave.
+ 		 */
++		int start, end;
+ 		union {
+ 			elf_vrreg_t reg;
+ 			u32 word;
+@@ -575,8 +576,10 @@ static int vr_get(struct task_struct *target, const struct user_regset *regset,
+ 
+ 		vrsave.word = target->thread.vrsave;
+ 
++		start = 33 * sizeof(vector128);
++		end = start + sizeof(vrsave);
+ 		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &vrsave,
+-					  33 * sizeof(vector128), -1);
++					  start, end);
+ 	}
+ 
+ 	return ret;
+@@ -614,6 +617,7 @@ static int vr_set(struct task_struct *target, const struct user_regset *regset,
+ 		/*
+ 		 * We use only the first word of vrsave.
+ 		 */
++		int start, end;
+ 		union {
+ 			elf_vrreg_t reg;
+ 			u32 word;
+@@ -622,8 +626,10 @@ static int vr_set(struct task_struct *target, const struct user_regset *regset,
+ 
+ 		vrsave.word = target->thread.vrsave;
+ 
++		start = 33 * sizeof(vector128);
++		end = start + sizeof(vrsave);
+ 		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &vrsave,
+-					 33 * sizeof(vector128), -1);
++					 start, end);
+ 		if (!ret)
+ 			target->thread.vrsave = vrsave.word;
+ 	}
+-- 
+cgit 1.2-0.3.lf.el7
+
+

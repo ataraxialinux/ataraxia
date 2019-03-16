@@ -1,0 +1,20 @@
+# Description: Library to pack up hard disk files and directories into a ISO 9660 disk image
+# URL:         https://dev.lovelyhq.com/libburnia
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib acl
+
+name=libisofs
+version=1.5.0
+release=1
+source=("http://files.libburnia-project.org/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-libacl \
+		--enable-xattr \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}
