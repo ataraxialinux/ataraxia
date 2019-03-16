@@ -1,0 +1,21 @@
+# Description: USB Device Utilities
+# URL:         http://linux-usb.sourceforge.net/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libusb hwids
+
+name=usbutils
+version=010
+release=1
+source=("http://www.kernel.org/pub/linux/utils/usb/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--datadir=/usr/share/hwdata \
+		--disable-zlib
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/{share/hwdata,sbin}
+}

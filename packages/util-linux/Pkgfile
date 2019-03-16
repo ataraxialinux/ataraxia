@@ -1,7 +1,7 @@
 # Description: Miscellaneous system utilities for Linux
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  zlib libedit libcap-ng libxcrypt
+# Depends on:  zlib libedit libcap-ng
 
 name=util-linux
 version=2.33.1
@@ -9,16 +9,15 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=4
+release=5
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	NCURSESW6_CONFIG=" " \
-	NCURSES6_CONFIG=" " \
-	NCURSESW5_CONFIG=" " \
-	NCURSES5_CONFIG=" " \
+	patch -Np1 -i "$STUFF"/util-linux/70c364b4db6530ada12f7103b5c5d8ceb777307f.patch
+
+	NOCONFIGURE=1 ./autogen.sh
 	ADJTIME_PATH=/var/lib/hwclock/adjtime \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
