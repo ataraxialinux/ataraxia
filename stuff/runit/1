@@ -14,6 +14,13 @@ mkdir -p -m0755 /run/runit /run/lvm /run/user /run/lock /run/log /dev/pts /dev/s
 mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
 mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 
+live="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)     live="${arg#*=}" ;;
+	esac
+done
+
 udevd --daemon
 udevadm trigger --action=add --type=subsystems
 udevadm trigger --action=add --type=devices
@@ -22,20 +29,22 @@ udevadm settle
 
 mount -o remount,ro /
 
-if [ -x /usr/bin/mdadm -o -f /etc/mdadm/mdadm.conf ]; then
-	mdadm -As || exec sh
-fi
+if [ "$live" != "1" ]; then
+	if [ -x /usr/bin/mdadm -o -f /etc/mdadm/mdadm.conf ]; then
+		mdadm -As || exec sh
+	fi
 
-if [ -x /usr/bin/btrfs ]; then
-	btrfs device scan || exec sh
-fi
+	if [ -x /usr/bin/btrfs ]; then
+		btrfs device scan || exec sh
+	fi
 
-if [ -x /usr/bin/vgchange -o -x /bin/vgchange ]; then
-	vgchange --sysinit -a y || exec sh
-fi
+	if [ -x /usr/bin/vgchange -o -x /bin/vgchange ]; then
+		vgchange --sysinit -a y || exec sh
+	fi
 
-if [ -f /forcefsck ]; then
-	FORCEFSCK="-f"
+	if [ -f /forcefsck ]; then
+		FORCEFSCK="-f"
+	fi
 fi
 
 fsck $FORCEFSCK -A -T -C -a
