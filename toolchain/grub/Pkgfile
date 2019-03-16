@@ -5,9 +5,11 @@ source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
 build() {
-	unset CFLAGS CXXFLAGS CLDFLAGS LDFLAGS
+	unset CXXFLAGS LDFLAGS
 
-	export CFLAGS="-g0 -Os -s -fomit-frame-pointer -pipe"
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
 	export CXXFLAGS="$CFLAGS"
 
 	case $BARCH in
@@ -52,3 +54,4 @@ build() {
 	mkdir -p "$PKG"/var/lib/db
 	touch "$PKG"/var/lib/db/installed_${name}
 }
+
