@@ -1,0 +1,23 @@
+# Description: A program for creating, destroying, resizing, checking and copying partitions
+# URL:         https://www.gnu.org/software/parted/parted.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  lvm2
+
+name=parted
+version=3.2
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gcc/fat16.patch
+	patch -Np1 -i "$STUFF"/gcc/fix-includes.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--disable-debug \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}
