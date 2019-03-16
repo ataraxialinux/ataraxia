@@ -500,6 +500,25 @@ build_hdd() {
 	cd "$CWD"
 }
 
+setup_iso_variables() {
+	ROOTCD="$ISOBUILD/rootcd"
+	EFIBUILD="$ISOBUILD/efibuild"
+}
+
+prepare_iso_files() {
+	mkdir -p "$ISODIR"/seiba
+
+	cp "$ROOTFS"/boot/vmlinuz-linux "$ISODIR"/seiba/seiba
+
+	cd "$INITRAMFS"
+
+	find . | cpio -H newc -o | pigz > "$ISODIR"/seiba/seiba.gz
+}
+
+mklive() {
+	:
+}
+
 COMMAND="$1"
 STAGE="$2"
 PACKAGE="${@:2}"
@@ -557,9 +576,11 @@ case "$COMMAND" in
 			build_stage
 			case $BARCH in
 				x86_64|i686|ppc64le|ppc64|ppc)
+					setup_iso_variables
+					pkghostinstall grub
 					build_initramfs
-					"$SCRIPTS"/mklive $BARCH "$ISOBUILD" "$ISODIR"
-					;;
+					prepare_iso_files
+					mklive
 			esac
 			build_hdd
 			;;
