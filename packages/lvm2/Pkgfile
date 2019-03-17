@@ -4,7 +4,7 @@
 # Depends on:  eudev libaio
 
 name=lvm2
-version=2.03.02
+version=2.02.183
 release=1
 source=("ftp://sources.redhat.com/pub/lvm2/LVM2.${version}.tgz")
 BOOTSTRAP=yes
@@ -13,11 +13,14 @@ build() {
 	cd "$SRC"/LVM2.${version}
 	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.183-fix-stdio-usage.patch
 	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.183-portability.patch
+	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.178-asneeded.patch
 
 	cp "$STUFF"/config.guess autoconf/config.guess
 	cp "$STUFF"/config.sub autoconf/config.sub
 
 	if [ "$CROSS" = "yes" ]; then
+		export ac_cv_func_malloc_0_nonnull=yes
+		export ac_cv_func_realloc_0_nonnull=yes
 		unset SOURCES
 	fi
 
@@ -32,8 +35,10 @@ build() {
 		--with-default-run-dir=/run/lvm \
 		--with-cache=internal \
 		--with-thin=internal \
+		--enable-applib \
 		--enable-cmdlib \
 		--enable-dmeventd \
+		--enable-lvmetad \
 		--enable-pkgconfig \
 		--enable-udev_rules \
 		--enable-udev_sync \
