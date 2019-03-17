@@ -4,17 +4,17 @@
 # Depends on:  eudev libaio
 
 name=lvm2
-version=2.03.02
-release=2
+version=2.02.183
+release=1
 source=("ftp://sources.redhat.com/pub/lvm2/LVM2.${version}.tgz")
 BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/LVM2.${version}
 	patch -Np1 -i "$STUFF"/lvm2/fix-stdio-usage.patch
-	patch -Np1 -i "$STUFF"/lvm2/mallinfo.patch
 	patch -Np1 -i "$STUFF"/lvm2/library_dir-default-config.patch
 	patch -Np1 -i "$STUFF"/lvm2/mlockall-default-config.patch
+	patch -Np1 -i "$STUFF"/lvm2/portability.patch
 
 	cp "$STUFF"/config.guess autoconf/config.guess
 	cp "$STUFF"/config.sub autoconf/config.sub
@@ -35,15 +35,23 @@ build() {
 		--with-default-run-dir=/run/lvm \
 		--with-cache=internal \
 		--with-thin=internal \
+		--enable-applib \
 		--enable-cmdlib \
 		--enable-dmeventd \
+		--enable-lvmetad \
 		--enable-pkgconfig \
+		--enable-static_link \
 		--enable-udev_rules \
 		--enable-udev_sync \
-		--enable-udev-systemd-background-jobs=no \
-		--disable-readline
+		--disable-readline \
+		--disable-udev-systemd-background-jobs
 	make
 	make DESTDIR="$PKG" install
+
+	install -d "$PKG"/etc/lvm/{archive,backup}
+
+	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
+	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
 
 	for svc in lvmetad dmeventd; do
 		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
