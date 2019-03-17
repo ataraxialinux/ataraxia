@@ -40,9 +40,10 @@ if [ "$live" != "1" ]; then
 		btrfs device scan
 	fi
 
-	if [ -x /usr/bin/vgchange -o -x /bin/vgchange ]; then
-		vgscan --mknodes --ignorelockingfailure 2> /dev/null && \
-		vgchange --sysinit --ignorelockingfailure -a y
+	if [ -x /usr/bin/vgchange ]; then
+		modprobe dm-mod 2>/dev/null
+		vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1
+		vgchange --sysinit --activate y >/dev/null 2>&1
 	fi
 fi
 

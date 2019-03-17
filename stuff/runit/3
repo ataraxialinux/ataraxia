@@ -27,6 +27,12 @@ fi
 
 halt -w
 
+if [ "$live" != "1" ]; then
+	if [ -x /usr/bin/vgchange ]; then
+		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+	fi
+fi
+
 udevadm control --exit
 
 pkill --inverse -s0,1 -TERM
