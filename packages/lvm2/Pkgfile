@@ -11,18 +11,16 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/LVM2.${version}
-	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.183-fix-stdio-usage.patch
-	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.183-portability.patch
-	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.178-asneeded.patch
+	patch -Np1 -i "$STUFF"/lvm2/fix-stdio-usage.patch
+	patch -Np0 -i "$STUFF"/lvm2/portability.patch
+	patch -Np1 -i "$STUFF"/lvm2/mlockall-default-config.patch
 
 	cp "$STUFF"/config.guess autoconf/config.guess
 	cp "$STUFF"/config.sub autoconf/config.sub
 
-	if [ "$CROSS" = "yes" ]; then
-		export ac_cv_func_malloc_0_nonnull=yes
-		export ac_cv_func_realloc_0_nonnull=yes
-		unset SOURCES
-	fi
+	export ac_cv_func_malloc_0_nonnull=yes
+	export ac_cv_func_realloc_0_nonnull=yes
+	unset SOURCES
 
 	bash configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -45,7 +43,7 @@ build() {
 		--disable-readline \
 		--disable-udev-systemd-background-jobs
 	make
-	make DESTDIR="$PKG" install
+	make -j1 DESTDIR="$PKG" install
 
 	install -d "$PKG"/etc/lvm/{archive,backup}
 

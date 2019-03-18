@@ -6,13 +6,15 @@ dmesg -n 1
 
 clear
 
-mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
-mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
-mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
-mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys                 || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run                 || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev                 || mount -t devtmpfs dev /dev -o mode=0755,nosuid
 mkdir -p -m0755 /run/runit /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
-mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
-mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
+mountpoint -q /sys/fs/cgroup       || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
 
 live="0"
 for arg in $(cat /proc/cmdline);do
@@ -31,20 +33,22 @@ mount -o remount,ro /
 
 if [ "$live" != "1" ]; then
 	if [ -x /usr/bin/mdadm -o -f /etc/mdadm/mdadm.conf ]; then
-		mdadm -As || exec sh
+		mdadm -As
 	fi
 
 	if [ -x /usr/bin/btrfs ]; then
-		btrfs device scan || exec sh
+		btrfs device scan
 	fi
 
-	if [ -x /usr/bin/vgchange -o -x /bin/vgchange ]; then
-		vgchange --sysinit -a y || exec sh
+	if [ -x /usr/bin/vgchange ]; then
+		modprobe dm-mod 2>/dev/null
+		vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1
+		vgchange --sysinit --activate y >/dev/null 2>&1
 	fi
+fi
 
-	if [ -f /forcefsck ]; then
-		FORCEFSCK="-f"
-	fi
+if [ -f /forcefsck ]; then
+	FORCEFSCK="-f"
 fi
 
 fsck $FORCEFSCK -A -T -C -a

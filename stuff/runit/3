@@ -6,6 +6,13 @@ if [ -e /run/runit/reboot ]; then
 	chmod 100 /run/runit/reboot
 fi
 
+live="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)     live="${arg#*=}" ;;
+	esac
+done
+
 sv force-stop /var/service/*
 sv exit /var/service/*
 
@@ -27,6 +34,12 @@ fi
 
 halt -w
 
+if [ "$live" != "1" ]; then
+	if [ -x /usr/bin/vgchange ]; then
+		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+	fi
+fi
+
 udevadm control --exit
 
 pkill --inverse -s0,1 -TERM
@@ -40,3 +53,7 @@ umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
 mount -o remount,ro /
 
 sync
+
+if [ -e /run/runit/reboot ] && command -v kexec >/dev/null; then
+	kexec -e 2>/dev/null
+fi
