@@ -8,7 +8,7 @@ This document describes roadmap of januslinux Codename "Kagami".
  - [x] Add packages for BSP (board support eg. kernels, bootloaders)
  - [x] Add packages for development and debugging (gdb, strace, valgrind)
  - [x] Test in qemu
- - [-] setup mksh as default shell
+ - [x] Setup mksh as default shell
 
 ## Stage 2
  - [ ] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
