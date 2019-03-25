@@ -538,7 +538,7 @@ make_iso_x86() {
 	esac
 
 cat << CEOF > "$BUILD"/grub-efi.cfg
-search --no-floppy --set=root --label "$CDLABEL"
+search --no-floppy --set=root --label "januslinux"
 set prefix=(\$root)/boot/grub
 CEOF
 
@@ -576,7 +576,7 @@ ONTIMEOUT januslinux
 
 MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
 MENU AUTOBOOT BIOS default device boot in # second{,s}...
-MENU BACKGROUND background.png
+MENU BACKGROUND /boot/isolinux/background.png
 MENU WIDTH 78
 MENU MARGIN 1
 MENU ROWS 4
@@ -597,23 +597,21 @@ KERNEL /seiba/seiba
 APPEND initrd=/seiba/seiba.gz live=1
 CEOF
 
-	xorriso \
-		-as mkisofs \
-		-quiet \
-		-o "$BUILD"/januslinux-$RELEASE-$BARCH.iso \
-		-full-iso9660-filenames \
-		-joliet \
-		-V "$CDLABEL" -A "$CDLABEL" \
+	xorriso -as mkisofs \
 		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
-		-eltorito-boot boot/isolinux/isolinux.bin \
-		-eltorito-catalog boot/isolinux/boot.cat \
+		-iso-level 2 \
+		-c boot/isolinux/boot.cat \
+		-b boot/isolinux/isolinux.bin \
 		-no-emul-boot \
-		-eltorito-alt-boot \
-		-e boot/grub/efi.img \
-		-isohybrid-gpt-basdat \
 		-boot-load-size 4 \
 		-boot-info-table \
-		"$ISODIR"
+		-eltorito-alt-boot \
+		-e boot/grub/efi.img \
+		-no-emul-boot \
+		-isohybrid-gpt-basdat \
+		-A 'januslinux' -V 'januslinux' \
+		-o "$BUILD"/januslinux-$RELEASE-$BARCH.iso \
+		"$ISODIR"/
 }
 
 mklive() {
@@ -668,7 +666,6 @@ case "$COMMAND" in
 			#build_stage
 			case $BARCH in
 				x86_64|i686|ppc64le|ppc64|ppc)
-					CDLABEL="januslinux"
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -688,7 +685,6 @@ case "$COMMAND" in
 			build_stage
 			case $BARCH in
 				x86_64|i686|ppc64le|ppc64|ppc)
-					CDLABEL="januslinux"
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
