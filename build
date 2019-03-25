@@ -509,7 +509,7 @@ prepare_iso_files() {
 			mkdir -p "$ISODIR"/seiba "$ISODIR"/efi/boot "$ISODIR"/boot/isolinux "$ISODIR"/boot/grub
 			;;
 		ppc64le|ppc64|ppc)
-			mkdir -p "$ISODIR"/seiba
+			mkdir -p "$ISODIR"/seiba "$ISODIR"/boot/grub
 			;;
 	esac
 
@@ -612,6 +612,23 @@ CEOF
 		-A 'januslinux' -V 'januslinux' \
 		-o "$BUILD"/januslinux-$RELEASE-$BARCH.iso \
 		"$ISODIR"/
+}
+
+make_iso_ppc() {
+	mkdir -p "$TOOLS"/share/grub
+	cp "$STUFF"/mklive/unicode.pf2 "$TOOLS"/share/grub/unicode.pf2
+
+	msg "Creating .iso image for PowerPC-based PCs"
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "januslinux" {
+linux	/seiba/seiba live=1
+initrd	/seiba/seiba.gz
+}
+CEOF
+
+	grub-mkrescue \
+		--output "$BUILD"/januslinux-$RELEASE-$BARCH.iso "$ISODIR"/ \
+		-A 'januslinux' -V 'januslinux'
 }
 
 mklive() {
