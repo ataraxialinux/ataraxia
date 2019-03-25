@@ -445,6 +445,7 @@ build_initramfs() {
 	cd "$INITRAMFS"
 	ln -sf bin/runit-init init
 
+	msg "Cleaning up initramfs"
 	rm -rf usr/include
 
 	find . -name "*.a" -print0 | xargs -0 rm -rf
@@ -501,23 +502,129 @@ build_hdd() {
 	cd "$CWD"
 }
 
-setup_iso_variables() {
-	ROOTCD="$ISOBUILD/rootcd"
-	EFIBUILD="$ISOBUILD/efibuild"
-}
-
 prepare_iso_files() {
-	mkdir -p "$ISODIR"/seiba
+	msg "Prepare files for .iso image"
+	case $BARCH in
+		x86_64|i686)
+			mkdir -p "$ISODIR"/seiba "$ISODIR"/efi/boot "$ISODIR"/boot/isolinux "$ISODIR"/boot/grub
+			;;
+		ppc64le|ppc64|ppc)
+			mkdir -p "$ISODIR"/seiba
+			;;
+	esac
 
 	cp "$ROOTFS"/boot/vmlinuz-linux "$ISODIR"/seiba/seiba
 
+	msg "Creating initramfs image"
 	cd "$INITRAMFS"
 
 	find . | cpio -H newc -o | pigz > "$ISODIR"/seiba/seiba.gz
 }
 
+make_iso_x86() {
+	msg "Creating .iso image for x86-based PCs"
+
+	grub_mod="all_video disk part_gpt part_msdos linux normal configfile search search_label efi_gop fat iso9660 cat echo ls test true help gzio multiboot2 efi_uga"
+
+	case $BARCH in
+		x86_64)
+			format="x86_64-efi"
+			efi="bootx64.efi"
+			;;
+		i686)
+			format="i386-efi"
+			efi="bootia32.efi"
+			;;
+	esac
+
+cat << CEOF > "$BUILD"/grub-efi.cfg
+search --no-floppy --set=root --label "$CDLABEL"
+set prefix=(\$root)/boot/grub
+CEOF
+
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "januslinux" {
+linux	/seiba/seiba live=1
+initrd	/seiba/seiba.gz
+}
+CEOF
+
+	grub-mkimage \
+		--config="$BUILD"/grub-efi.cfg \
+		--prefix="/boot/grub" \
+		--output="$ISODIR"/efi/boot/$efi \
+		--format="$format" \
+		--compress="xz" \
+		$grub_mod
+
+	mformat -i "$ISODIR"/boot/grub/efi.img -C -f 1440 ::
+	mcopy -i "$ISODIR"/boot/grub/efi.img -s "$ISODIR"/efi ::
+
+	cp -a "$STUFF"/mklive/isolinux.bin "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/ldlinux.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/libcom32.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/vesamenu.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/libutil.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/chain.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/background.png "$ISODIR"/boot/isolinux
+
+cat << CEOF > "$ISODIR"/boot/isolinux/isolinux.cfg
+UI vesamenu.c32
+PROMPT 0
+TIMEOUT 100
+ONTIMEOUT januslinux
+
+MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+MENU AUTOBOOT BIOS default device boot in # second{,s}...
+MENU BACKGROUND background.png
+MENU WIDTH 78
+MENU MARGIN 1
+MENU ROWS 4
+MENU VSHIFT 2
+MENU TIMEOUTROW 8
+MENU TABMSGROW 2
+MENU CMDLINEROW 11
+MENU HELPMSGROW 16
+MENU HELPMSGENDROW 29
+
+MENU COLOR title        * #9000FF *
+MENU COLOR border       * #00000000 #00000000 none
+MENU COLOR sel          * #ffffffff #9000FF *
+
+LABEL januslinux
+MENU LABEL januslinux
+KERNEL /seiba/seiba
+APPEND initrd=/seiba/seiba.gz live=1
+CEOF
+
+	xorriso \
+		-as mkisofs \
+		-quiet \
+		-o "$BUILD"/januslinux-$RELEASE-$BARCH.iso \
+		-full-iso9660-filenames \
+		-joliet \
+		-V "$CDLABEL" -A "$CDLABEL" \
+		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
+		-eltorito-boot boot/isolinux/isolinux.bin \
+		-eltorito-catalog boot/isolinux/boot.cat \
+		-no-emul-boot \
+		-eltorito-alt-boot \
+		-e boot/grub/efi.img \
+		-isohybrid-gpt-basdat \
+		-boot-load-size 4 \
+		-boot-info-table \
+		"$ISODIR"
+}
+
 mklive() {
-	:
+	case $BARCH in
+		x86_64|i686)
+			make_iso_x86
+			;;
+		ppc64le|ppc64|ppc)
+			make_iso_ppc
+			;;
+	esac
 }
 
 COMMAND="$1"
@@ -558,10 +665,10 @@ case "$COMMAND" in
 			check_for_root
 			setup_architecture
 			setup_environment
-			build_stage
+			#build_stage
 			case $BARCH in
 				x86_64|i686|ppc64le|ppc64|ppc)
-					setup_iso_variables
+					CDLABEL="januslinux"
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -569,7 +676,7 @@ case "$COMMAND" in
 					prepare_iso_files
 					mklive
 			esac
-			build_hdd
+			#build_hdd
 			;;
 		all)
 			check_for_root
@@ -581,7 +688,7 @@ case "$COMMAND" in
 			build_stage
 			case $BARCH in
 				x86_64|i686|ppc64le|ppc64|ppc)
-					setup_iso_variables
+					CDLABEL="januslinux"
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
