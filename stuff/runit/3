@@ -50,10 +50,15 @@ swapoff -a
 
 umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
 
-mount -o remount,ro /
+if [ "$live" != "1" ]; then
+	mount -o remount,ro /
+fi
 
 sync
 
-if [ -e /run/runit/reboot ] && command -v kexec >/dev/null; then
-	kexec -e 2>/dev/null
+
+if [ "$live" != "1" ]; then
+	if [ -e /run/runit/reboot ] && command -v kexec >/dev/null; then
+		kexec -e 2>/dev/null
+	fi
 fi
