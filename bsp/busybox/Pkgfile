@@ -27,12 +27,15 @@ build() {
 
 	rm -rf usr/bin/sh
 
-	echo '#!/bin/sh' > init
-	echo 'dmesg -n 1' >> init
-	echo 'mount -t devtmpfs none /dev' >> init
-	echo 'mount -t proc none /proc' >> init
-	echo 'mount -t sysfs none /sys' >> init
-	echo 'setsid cttyhack /bin/sh' >> init
-	echo 'echo Welcome to januslinux Embedded Edition!' >> init
-	chmod +x init
+	mkdir -p etc/init.d
+
+	echo '#!/bin/sh' > etc/init.d/rcS
+	echo 'export PATH=/usr/bin' >> etc/init.d/rcS
+	echo 'dmesg -n 1' >> etc/init.d/rcS
+	echo 'mount -t devtmpfs none /dev' >> etc/init.d/rcS
+	echo 'mount -t proc none /proc' >> etc/init.d/rcS
+	echo 'mount -t sysfs none /sys' >> etc/init.d/rcS
+	echo 'setsid cttyhack /bin/sh' >> etc/init.d/rcS
+	echo 'echo Welcome to januslinux Embedded Edition!' >> etc/init.d/rcS
+	chmod +x etc/init.d/rcS
 }
