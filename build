@@ -547,12 +547,6 @@ build_hdd_embedded() {
 	parted -s $lodev mklabel msdos
 	parted -a optimal -s $lodev mkpart primary 0% 100%
 
-	case $BARCH in
-		x86_64|i686)
-			parted -s $lodev set 1 boot on
-			;;
-	esac
-
 	lopart="${lodev}p1"
 	yes | mkfs.ext2 $lopart
 
@@ -766,7 +760,10 @@ case "$COMMAND" in
 					prepare_iso_files
 					mklive
 			esac
-			build_hdd
+			case $BARCH in
+				riscv64|riscv32)
+					build_hdd
+			esac
 			;;
 		2-embedded)
 			check_for_root
@@ -792,7 +789,10 @@ case "$COMMAND" in
 					prepare_iso_files
 					mklive
 			esac
-			build_hdd
+			case $BARCH in
+				riscv64|riscv32)
+					build_hdd
+			esac
 			;;
 		*)
 			die "Stage number was not selected or is not supported"
