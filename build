@@ -390,6 +390,21 @@ build_target() {
 	pkgbspinstall $LINUX
 }
 
+build_embedded() {
+	msg "Building embedded rootfs for '"$BARCH"' platform"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in musl-tools musl-fts zlib bzip2 xz libuargp libelf attr acl expat libressl xz lz4 zstd libarchive pkgutils mksh; do
+		pkginstall $target
+	done
+
+	pkgbspinstall busybox
+	pkgbspinstall $LINUX
+}
+
 build_stage() {
 	msg "Installing core stage packages in temporary filesystem for '"$BARCH"' platform"
 
@@ -410,6 +425,25 @@ build_stage() {
 			tar cpio nano runit libcap-ng procps-ng util-linux \
 			hwids eudev run-parts ifupdown dhcpcd libssh2 c-ares libev \
 			nghttp2 curl git prt-get $LINUX; do
+		pkginstallstage $target
+	done
+
+	msg "Building stage archive for '"$BARCH"' platform"
+	cd "$STAGEFS"
+	tar cf - . | pixz -9 > "$BUILD"/januslinux-$RELEASE-$BARCH.tar.xz
+	cd $CWD
+}
+
+build_stage_embedded() {
+	msg "Installing embedded stage packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$STAGEFS"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in base-files musl-tools pkgutils mksh busybox $LINUX; do
 		pkginstallstage $target
 	done
 
@@ -455,7 +489,7 @@ build_initramfs() {
 }
 
 build_hdd() {
-	msg "Building target rootfs for '"$BARCH"' platform"
+	msg "Building target hard disk image for '"$BARCH"' platform"
 
 	if [ -z "$LINUX" ]; then
 		LINUX="linux"
@@ -493,6 +527,34 @@ build_hdd() {
 			tar cpio nano runit libcap-ng procps-ng util-linux e2fsprogs \
 			hwids eudev run-parts ifupdown dhcpcd \
 			libssh2 c-ares libev nghttp2 curl git prt-get $LINUX; do
+		pkginstallimage $target
+	done
+
+	umount -l "$IMAGEFS"
+	losetup -d $lodev
+
+	cd "$CWD"
+}
+
+build_hdd_embedded() {
+	msg "Building embedded hard disk image for '"$BARCH"' platform"
+
+	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=8M
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	parted -s $lodev mklabel msdos
+	parted -a optimal -s $lodev mkpart primary 0% 100%
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext2 $lopart
+
+	mount -o loop $lopart "$IMAGEFS"
+
+	initdb "$IMAGEFS"
+
+	for target in base-files musl-tools pkgutils mksh busybox; do
 		pkginstallimage $target
 	done
 
@@ -676,6 +738,14 @@ case "$COMMAND" in
 			setup_environment
 			build_target
 			;;
+		1-embedded)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			build_embedded
+			;;
 		2)
 			check_for_root
 			setup_architecture
@@ -690,7 +760,17 @@ case "$COMMAND" in
 					prepare_iso_files
 					mklive
 			esac
-			build_hdd
+			case $BARCH in
+				riscv64|riscv32)
+					build_hdd
+			esac
+			;;
+		2-embedded)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_stage_embedded
+			build_hdd_embedded
 			;;
 		all)
 			check_for_root
@@ -709,7 +789,10 @@ case "$COMMAND" in
 					prepare_iso_files
 					mklive
 			esac
-			build_hdd
+			case $BARCH in
+				riscv64|riscv32)
+					build_hdd
+			esac
 			;;
 		*)
 			die "Stage number was not selected or is not supported"
