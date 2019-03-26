@@ -4,6 +4,25 @@ release=1
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
+build_flavor() {
+	local flavor="$1"
+	shift
+	local configure="$@"
+	mkdir -p build_${flavor}
+	cd build_${flavor}
+	../configure $configure \
+		--prefix="$TOOLS" \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--enable-boot-time \
+		--disable-nls \
+		--disable-werror
+	make
+	make install
+	cd ..
+}
+
 build() {
 	unset CXXFLAGS LDFLAGS
 
@@ -13,16 +32,15 @@ build() {
 	export CXXFLAGS="$CFLAGS"
 
 	case $BARCH in
-		x86_64|i686|aarch64|armv7l|armv5tel|ppc64le|ppc64|ppc)
-			true
+		x86_64|i686)
+			FLAVOR="efi pc"
+			;;
+		ppc64le|ppc64|ppc)
+			FLAVOR="ieee1275"
 			;;
 		*)
-			echo "GRUB is not supported for your architecture"
+			echo "Architecture is not set or is not supported by januslinux"
 			exit 1
-	esac
-
-	case "$BARCH" in
-		x86_64|i686|aarch64|armv7l|armv5tel)	EFICONFIG="--disable-efiemu"	;;
 	esac
 
 	cd "$SRC"/$name-$version
@@ -40,16 +58,13 @@ build() {
 	sed 's|GNU/Linux||' -i util/grub.d/10_linux.in
 
 	./autogen.sh
-	./configure $EFICONFIG \
-		--prefix="$TOOLS" \
-		--build=$XHOST \
-		--host=$XHOST \
-		--target=$XTARGET \
-		--enable-boot-time \
-		--disable-nls \
-		--disable-werror
-	make
-	make install
+
+	for f in $FLAVOR; do
+		case "$f" in
+			efi) build_flavor $f --with-platform=efi --disable-efiemu;;
+			*)   build_flavor $f --with-platform=$f;;
+		esac
+	done
 
 	mkdir -p "$PKG"/var/lib/db
 	touch "$PKG"/var/lib/db/installed_${name}
