@@ -1,0 +1,38 @@
+# Description: Size optimized toolbox of many common UNIX utilities
+# URL:         https://www.busybox.net/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=busybox
+version=1.30.1
+release=1
+source=("http://busybox.net/downloads/$name-$version.tar.bz2")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	make mrproper
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE defconfig
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" CONFIG_STATIC=y
+	make ARCH=$XKARCH CROSS_COMPILE=$CROSS_COMPILE EXTRA_CFLAGS="$CFLAGS" busybox.links
+
+
+	install -D busybox "$PKG"/usr/bin/busybox
+
+	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
+
+	mkdir -p "$PKG"/usr/share/udhcpc
+	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
+
+	cd "$PKG"
+
+	rm -rf usr/bin/sh
+
+	echo '#!/bin/sh' > init
+	echo 'dmesg -n 1' >> init
+	echo 'mount -t devtmpfs none /dev' >> init
+	echo 'mount -t proc none /proc' >> init
+	echo 'mount -t sysfs none /sys' >> init
+	echo 'setsid cttyhack /bin/sh' >> init
+	echo 'echo Welcome to januslinux Embedded Edition!' >> init
+	chmod +x init
+}
