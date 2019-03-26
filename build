@@ -539,10 +539,6 @@ build_hdd() {
 build_hdd_embedded() {
 	msg "Building embedded hard disk image for '"$BARCH"' platform"
 
-	if [ -z "$LINUX" ]; then
-		LINUX="linux"
-	fi
-
 	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=8M
 	losetup -f $IMG
@@ -564,7 +560,7 @@ build_hdd_embedded() {
 
 	initdb "$IMAGEFS"
 
-	for target in base-files musl-tools pkgutils mksh busybox $LINUX; do
+	for target in base-files musl-tools pkgutils mksh busybox; do
 		pkginstallimage $target
 	done
 
