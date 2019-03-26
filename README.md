@@ -41,19 +41,19 @@ We have separated packages on groups to make build system cleaner. We have follo
 We need specific packages to build this Linux distribution. Without them you can't perform required tasks. To install required build dependencies:
 Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 wget gawk bc bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar libarchive-dev xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev
+apt-get install build-essential m4 wget gawk bc bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar libarchive-dev xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz
 ```
 Fedora (and derivatives):
 ```
-dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel
+dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz
 ```
 Arch Linux (and derivatives):
 ```
-pacman -S base-devel xorriso mtools git pigz python python2
+pacman -S base-devel xorriso mtools git pigz python python2 pixz
 ```
 januslinux:
 ```
-prt-get depinst xorriso python python2 mtools
+prt-get depinst xorriso python python2 mtools pixz
 ```
 
 ### Getting source code
