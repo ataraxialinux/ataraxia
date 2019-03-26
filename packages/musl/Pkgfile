@@ -11,7 +11,11 @@ NO_RUN_STRIP=1
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/musl/musl-riscv.patch
+	patch -Np1 -i "$STUFF"/musl/0001-RISC-V-add-riscv32-and-riscv64-architecture-support.patch
+	patch -Np1 -i "$STUFF"/musl/0002-RISC-V-Add-cache-flush-syscall.patch
+	patch -Np1 -i "$STUFF"/musl/0003-RISC-V-Fix-syscall_cp-on-riscv64-32.patch
+	patch -Np1 -i "$STUFF"/musl/0004-Use-the-generic-fcntl.h-header-Currently-the-fcntl.h.patch
+	patch -Np1 -i "$STUFF"/musl/0005-Fix-missing-macros-from-fcntl.h.patch
 
 	${CROSS_COMPILE}cc $CFLAGS -c "$STUFF"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
 	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
