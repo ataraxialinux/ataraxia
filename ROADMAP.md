@@ -4,10 +4,11 @@ This document describes roadmap of januslinux Codename "Kagami".
 
 ## Stage 1
  - [x] Do the cross-toolchain
- - [ ] Add packages for basic target system (eg. userland, basic development software, package management)
+ - [x] Add packages for basic target system (eg. userland, basic development software, package management)
  - [x] Add packages for BSP (board support eg. kernels, bootloaders)
- - [ ] Add packages for development and debugging (gdb, strace, valgrind)
- - [ ] Test in qemu
+ - [x] Add packages for development and debugging (gdb, strace, valgrind)
+ - [x] Test in qemu
+ - [x] Setup mksh as default shell
 
 ## Stage 2
  - [ ] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
