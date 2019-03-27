@@ -5,7 +5,7 @@
 
 name=linux
 version=5.0.5
-release=1
+release=2
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 BOOTSTRAP=yes
 NO_RUN_STRIP=1
@@ -85,6 +85,12 @@ generate_config() {
 	else
 		make ARCH=$XKARCH $DEFCONFIG
 	fi
+
+	case $BARCH in
+		aarch64)
+			sed -i 's,=m,=y,g' .config
+			;;
+	esac
 
 	case $BARCH in
 		x86_64|i686)
