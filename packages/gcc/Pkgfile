@@ -6,7 +6,7 @@
 name=gcc
 version=8.3.0
 islver=0.20
-release=5
+release=6
 source=("http://ftp.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz"
 	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 BOOTSTRAP=yes
@@ -14,53 +14,55 @@ NO_RUN_STRIP=1
 NO_EMPTY_DIRS=1
 
 build() {
-	case $BARCH in
-		x86_64)
-			export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
-			;;
-		i686)
-			export GCCOPTS="--with-arch=i686 --with-tune=generic"
-			;;
-		aarch64)
-			export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
-			;;
-		armv7l)
-			export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
-			;;
-		armv5tel)
-			export GCCOPTS="--with-arch=armv5te --with-float=soft"
-			;;
-		mips64)
-			export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
-			;;
-		mips64el)
-			export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
-			;;
-		mips)
-			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
-			;;
-		mipsel)
-			export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
-			;;
-		ppc64le)
-			export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpcle-linux"
-			;;
-		ppc64)
-			export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpc-linux"
-			;;
-		ppc)
-			export GCCOPTS="--enable-decimal-float=no --enable-secureplt"
-			;;
-		riscv64)
-			export GCCOPTS="--with-arch=rv64imafdc"
-			;;
-		riscv32)
-			export GCCOPTS="--with-arch=rv32imafdc"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by januslinux"
-			exit 1
-	esac
+	if [ -z "$GCCOPTS" ]; then
+		case $BARCH in
+			x86_64)
+				export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+				;;
+			i686)
+				export GCCOPTS="--with-arch=i686 --with-tune=generic"
+				;;
+			aarch64)
+				export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+				;;
+			armv7l)
+				export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+				;;
+			armv5tel)
+				export GCCOPTS="--with-arch=armv5te --with-float=soft"
+				;;
+			mips64)
+				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
+				;;
+			mips64el)
+				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
+				;;
+			mips)
+				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+				;;
+			mipsel)
+				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+				;;
+			ppc64le)
+				export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpcle-linux"
+				;;
+			ppc64)
+				export GCCOPTS="--with-abi=elfv2 --enable-decimal-float=no --enable-secureplt --enable-targets=powerpc-linux"
+				;;
+			ppc)
+				export GCCOPTS="--enable-decimal-float=no --enable-secureplt"
+				;;
+			riscv64)
+				export GCCOPTS="--with-arch=rv64imafdc"
+				;;
+			riscv32)
+				export GCCOPTS="--with-arch=rv32imafdc"
+				;;
+			*)
+				echo "Architecture is not set or is not supported by januslinux"
+				exit 1
+		esac
+	fi
 
 	if [ -n "$EXTRALANG" ]; then
 		LANGS="c,c++,lto,$EXTRALANG"
@@ -100,7 +102,6 @@ build() {
 	patch -Np1 -i "$STUFF"/gcc/053_all_libitm-no-fortify-source.patch
 	patch -Np1 -i "$STUFF"/gcc/090_all_pr55930-dependency-tracking.patch
 	patch -Np1 -i "$STUFF"/gcc/0003-gcc-poison-system-directories.patch
-	patch -Np1 -i "$STUFF"/gcc/gcc-4.9-musl-fortify.patch
 	patch -Np1 -i "$STUFF"/gcc/gcc-6.1-musl-libssp.patch
 	patch -Np1 -i "$STUFF"/gcc/libgcc-always-build-gcceh.a.patch
 	patch -Np1 -i "$STUFF"/gcc/cpu_indicator.patch
