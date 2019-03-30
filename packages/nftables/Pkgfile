@@ -10,12 +10,13 @@ source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	LIBS='-lncursesw' \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--sysconfdir=/usr/share \
 		--with-json \
-		CONFIG_MAN=n DB2MAN=/usr/bin/true
+		--disable-man-doc
 	make
 	make DESTDIR="$PKG" install
 
