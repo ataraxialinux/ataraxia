@@ -6,7 +6,7 @@
 name=libedit
 _pkgver=20190324-3.1
 version=${_pkgver/-/_}
-release=3
+release=4
 source=("http://thrysoee.dk/editline/$name-${_pkgver}.tar.gz")
 BOOTSTRAP=yes
 
@@ -17,13 +17,4 @@ build() {
 		--enable-widec
 	make
 	make DESTDIR="$PKG" install
-
-	mkdir -p "$PKG"/usr/include/readline
-	touch "$PKG"/usr/include/readline/tilde.h
-
-	for replace in readline history; do
-		ln -sf libedit.so "$PKG"/usr/lib/lib${replace}.so
-		ln -sf libedit.a "$PKG"/usr/lib/lib${replace}.a
-		ln -sf ../editline/readline.h "$PKG"/usr/include/readline/${replace}.h
-	done
 }
