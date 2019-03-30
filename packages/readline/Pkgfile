@@ -1,0 +1,32 @@
+# Description: GNU readline library
+# URL:         http://tiswww.case.edu/php/chet/readline/rltop.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  ncurses
+
+name=readline
+lbasever=8.0
+patchlevel=0
+stripped_lbasever="$(echo ${lbasever} | tr -d '.')"
+version=${lbasever}.${patchlevel}
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$lbasever.tar.gz")
+for patch in $(seq 1 ${patchlevel}); do
+	source=(${source[@]} "http://ftp.gnu.org/gnu/readline/readline-${lbasever}-patches/readline${stripped_lbasever}-$(printf "%03d" ${patch})")
+done
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$lbasever
+
+	for patch in $(seq 1 ${patchlevel}); do
+		patch -p0 -i "$SRC/readline${stripped_lbasever}-$(printf "%03d" ${patch})"
+	done
+
+	sed -i '/MV.*old/d' Makefile.in
+	sed -i '/{OLDSUFF}/c:' support/shlib-install
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" DESTDIR="$PKG" install
+}
