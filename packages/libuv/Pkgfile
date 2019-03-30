@@ -1,0 +1,17 @@
+# Description: Multi-platform support library with a focus on asynchronous I/O
+# URL:         https://github.com/libuv/libuv
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=libuv
+version=1.27.0
+release=1
+source=("https://github.com/libuv/libuv/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
