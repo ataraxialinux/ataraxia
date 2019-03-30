@@ -1,0 +1,40 @@
+# Description: Premier connectivity tool for remote login with the SSH protocol
+# URL:         https://www.openssh.com/portable.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  zlib libressl libedit
+
+name=openssh
+version=7.9p1
+release=1
+source=("https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/ssh \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc/ssh \
+		--with-pid-dir=/run \
+		--with-default-path='/usr/local/sbin:/usr/local/bin:/usr/bin' \
+		--with-xauth=/usr/bin/xauth \
+		--with-privsep-path=/var/empty \
+		--with-privsep-user=nobody \
+		--with-md5-passwords \
+		--with-ssl-engine \
+		--with-libedit \
+		--without-kerberos5 \
+		--without-ldns \
+		--without-pam \
+		--disable-strip
+	make
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/var/log/sshd
+
+	for svc in sshd; do
+		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+}
