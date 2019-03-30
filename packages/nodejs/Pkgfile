@@ -1,0 +1,45 @@
+# Description: Evented I/O for V8 javascript
+# URL:         http://nodejs.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  procps-ng python2 zlib libressl nghttp2 icu libuv
+
+name=nodejs
+version=11.13.0
+release=1
+source=("https://nodejs.org/dist/v$version/node-v$version.tar.gz")
+
+build() {
+	case "$CARCH" in
+		mips64|mips64el|mips|mipsel) NODEARCH="--with-mips-arch-variant=r1 --with-mips-float-abi=soft";;
+	esac
+
+	cd "$SRC"/node-v$version
+
+	echo "Removing bundled dependencies"
+	rm -rf deps/http_parser deps/openssl deps/uv deps/zlib
+
+	echo "Switching to python 2"
+	export PYTHON=python2
+
+	find -type f -exec sed \
+		-e 's_^#!/usr/bin/env python$_&2_' \
+		-e 's_^\(#!/usr/bin/python2\).[45]$_\1_' \
+		-e 's_^#!/usr/bin/python$_&2_' \
+		-e 's_^\( *exec \+\)python\( \+.*\)$_\1python2\2_'\
+		-e 's_^\(.*\)python\( \+-c \+.*\)$_\1python2\2_'\
+		-e "s_'python'_'python2'_" -i {} \;
+	find test/ -type f -exec sed 's_python _python2 _' -i {} \;
+
+	./configure $BUILDFLAGS $NODEARCH \
+		--prefix=/usr \
+		--with-intl=system-icu \
+		--openssl-use-def-ca-store \
+		--shared-cares \
+		--shared-http-parser \
+		--shared-ibuv \
+		--shared-nghttp2 \
+		--shared-openssl \
+		--shared-zlib
+	make
+	make DESTDIR="$PKG" install
+}
