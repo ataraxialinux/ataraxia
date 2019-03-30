@@ -1,0 +1,31 @@
+# Description: Netfilter tables userspace tools
+# URL:         https://netfilter.org/projects/nftables/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  libedit gmp libmnl libnftnl jansson
+
+name=nftables
+version=0.9.0
+release=1
+source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/usr/share \
+		--with-json \
+		CONFIG_MAN=n DB2MAN=/usr/bin/true
+	make
+	make DESTDIR="$PKG" install
+
+	touch "$PKG"/etc/nftables.conf
+
+	mkdir -p "$PKG"/var/log/nftables
+
+	for svc in nftables; do
+		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/runit-svc/$svc-finish "$PKG"/etc/service/$svc/finish
+		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+}

@@ -5,7 +5,7 @@
 
 name=iptables
 version=1.8.2
-release=1
+release=2
 source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
 BOOTSTRAP=yes
 
@@ -28,6 +28,9 @@ build() {
 		--enable-share
 	make
 	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/iptables
+	cp "$STUFF"/iptables/iptables-flush "$PKG"/usr/lib/iptables/iptables-flush
 
 	mkdir -p "$PKG"/etc/iptables
 
