@@ -1,0 +1,19 @@
+# Description: International Components for Unicode library
+# URL:         http://www.icu-project.org/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=icu
+version=64.1
+release=1
+source=("https://ssl.icu-project.org/files/${name}4c/${version}/${name}4c-${version//./_}-src.tgz")
+
+build() {
+	cd "$SRC"/icu/source
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" install
+}
