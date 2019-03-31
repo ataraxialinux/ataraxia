@@ -35,6 +35,9 @@ nconfig() {
 }
 
 generate_config() {
+	touch .config
+	cat "$STUFF"/linux/config >> .config
+
 	case $BARCH in
 		x86_64|i686)
 			SUBKARCH="x86"
@@ -80,13 +83,7 @@ generate_config() {
 			exit 1
 	esac
 
-	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
-	else
-		make ARCH=$XKARCH $DEFCONFIG
-	fi
-
-	sed -i 's,=m,=y,g' .config
+	cat arch/$SUBKARCH/configs/$DEFCONFIG >> .config
 
 	case $BARCH in
 		x86_64|i686)
@@ -158,24 +155,6 @@ generate_config() {
 			;;
 	esac
 
-	# temp
-	for kernelconf in EARLY_PRINTK BINFMT_ELF BINFMT_SCRIPT NO_HZ HIGH_RES_TIMERS BLK_DEV BLK_DEV_INITRD RD_GZIP \
-					BLK_DEV_LOOP EXT4_FS_POSIX_ACL EXT4_FS_SECURITY EXT4_FS EXT4_USE_FOR_EXT2 VFAT_FS FAT_DEFAULT_UTF8 MISC_FILESYSTEMS \
-					SQUASHFS SQUASHFS_XATTR SQUASHFS_ZLIB DEVTMPFS DEVTMPFS_MOUNT TMPFS TMPFS_POSIX_ACL \
-					NET PACKET UNIX INET IPV6 NETDEVICES NET_CORE NETCONSOLE ETHERNET UNIX ONFIG_DRM RPMSG VSOCKETS NET_9P \
-					MODULES MODULE_UNLOAD MODVERSIONS MODULE_SRCVERSION_ALL \
-					ETLINK_DIAG NETWORK_FILESYSTEMS DRM_VIRTIO_GPU NET_9P_VIRTIO RPMSG_VIRTIO VIRTIO_BALLOON \
-					VIRTIO_BLK VIRTIO_CONSOLE VIRTIO_INPUT VIRTIO_MENU VIRTIO_MMIO VIRTIO_MMIO_CMDLINE_DEVICES \
-					VIRTIO_NET VIRTIO_PCI VIRTIO_PCI_LEGACY VIRTIO_VSOCKETS \
-					9P_FS_POSIX_ACL 9P_FS_SECURITY 9P_FS 9P_FSCACHE \
-					KEYBOARD_ATKBD INPUT INPUT_KEYBOARD IKCONFIG IKCONFIG_PROC; do
-		yconfig $kernelconf
-	done
-
-	nconfig EMBEDDED
-
-	sed -i "s/.*CONFIG_DEFAULT_HOSTNAME.*/CONFIG_DEFAULT_HOSTNAME=\"mai\"/" .config
-
 	if [ "$CROSS" = "yes" ]; then
 		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} oldconfig
 	else
@@ -219,6 +198,9 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "S$TUFF"/linux/muqss.patch
+	patch -Np1 -i "S$TUFF"/linux/hz-of-100-muqs.patch
+	patch -Np1 -i "S$TUFF"/linux/swap-sucks.patch
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
 
 	unset LDFLAGS
