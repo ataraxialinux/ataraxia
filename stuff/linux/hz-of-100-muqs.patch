@@ -1,0 +1,81 @@
+From e77d42447a296f3de95d0320458d9a7cd43cceb5 Mon Sep 17 00:00:00 2001
+From: Con Kolivas <kernel@kolivas.org>
+Date: Wed, 7 Dec 2016 21:23:01 +1100
+Subject: [PATCH 14/16] Reinstate default Hz of 100 in combination with MuQSS
+ and -ck patches.
+
+---
+ kernel/Kconfig.hz | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/Kconfig.hz b/kernel/Kconfig.hz
+index 2a202a846757..1806fcac8f14 100644
+--- a/kernel/Kconfig.hz
++++ b/kernel/Kconfig.hz
+@@ -4,7 +4,8 @@
+ 
+ choice
+ 	prompt "Timer frequency"
+-	default HZ_250
++	default HZ_100 if SCHED_MUQSS
++	default HZ_250_NODEF if !SCHED_MUQSS
+ 	help
+ 	 Allows the configuration of the timer frequency. It is customary
+ 	 to have the timer interrupt run at 1000 Hz but 100 Hz may be more
+@@ -19,11 +20,18 @@ choice
+ 	config HZ_100
+ 		bool "100 HZ"
+ 	help
++	  100 Hz is a suitable choice in combination with MuQSS which does
++	  not rely on ticks for rescheduling interrupts, and is not Hz limited
++	  for timeouts and sleeps from both the kernel and userspace.
++	  This allows us to benefit from the lower overhead and higher
++	  throughput of fewer timer ticks.
++
++	  Non-MuQSS kernels:
+ 	  100 Hz is a typical choice for servers, SMP and NUMA systems
+ 	  with lots of processors that may show reduced performance if
+ 	  too many timer interrupts are occurring.
+ 
+-	config HZ_250
++	config HZ_250_NODEF
+ 		bool "250 HZ"
+ 	help
+ 	 250 Hz is a good compromise choice allowing server performance
+@@ -31,7 +39,10 @@ choice
+ 	 on SMP and NUMA systems. If you are going to be using NTSC video
+ 	 or multimedia, selected 300Hz instead.
+ 
+-	config HZ_300
++	 250 Hz is the default choice for the mainline scheduler but not
++	 advantageous in combination with MuQSS.
++
++	config HZ_300_NODEF
+ 		bool "300 HZ"
+ 	help
+ 	 300 Hz is a good compromise choice allowing server performance
+@@ -39,7 +50,7 @@ choice
+ 	 on SMP and NUMA systems and exactly dividing by both PAL and
+ 	 NTSC frame rates for video and multimedia work.
+ 
+-	config HZ_1000
++	config HZ_1000_NODEF
+ 		bool "1000 HZ"
+ 	help
+ 	 1000 Hz is the preferred choice for desktop systems and other
+@@ -50,9 +61,9 @@ endchoice
+ config HZ
+ 	int
+ 	default 100 if HZ_100
+-	default 250 if HZ_250
+-	default 300 if HZ_300
+-	default 1000 if HZ_1000
++	default 250 if HZ_250_NODEF
++	default 300 if HZ_300_NODEF
++	default 1000 if HZ_1000_NODEF
+ 
+ config SCHED_HRTICK
+ 	def_bool HIGH_RES_TIMERS
+-- 
+2.17.1
+
