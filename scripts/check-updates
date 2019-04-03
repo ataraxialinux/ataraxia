@@ -83,7 +83,7 @@ check_updates() {
 		esac
 	fi
 
-	rx=${update_pattern:-$rx}
+	rx=${pattern:-$rx}
 	rx=${rx:-'(?<!-)\b\Q'"$update_pkgname"'\E[-_]?((src|source)[-_])?\K([^-/_\s]*?\d[^-/_\s]*?)(?=(?:[-_.](?:src|source|orig))?\.(?:[jt]ar|shar|t[bglx]z|tbz2|zip))\b'}
 
         curl --max-time 10 -Ls "$url" |
@@ -92,15 +92,25 @@ check_updates() {
 	sort -Vu -r |
 	head -n 1 |
 	while IFS= read -r found_version; do
-		if [ "$version" != "$found_version" ]; then
-			echo "update $name to $found_version"
-		fi
+	consider=true
+	p="$ignore "
+	while [ -n "$p" ]; do
+		i=${p%% *}
+		p=${p#* }
+		case "$found_version" in
+		$i)
+			consider=false
+		esac
+	done
+	if [ "$version" != "$found_version" ]; then
+		echo "update $name to $found_version"
+	fi
 	done
 }
 
 for packages in $(ls $REPO/); do
 	case $packages in
-		run-parts|ifupdown|bash|base-files|sbase|ubase|sinit|autoconf2.13)
+		run-parts|ifupdown|bash|base-files|sbase|ubase|sinit|autoconf2.13|musl-tools)
 			true
 			;;
 		*)
