@@ -1,3 +1,4 @@
+
 #!/bin/bash
 #
 # Written by Ishimoto Shinobu
@@ -86,10 +87,9 @@ check_updates() {
 	rx=${pattern:-$rx}
 	rx=${rx:-'(?<!-)\b\Q'"$update_pkgname"'\E[-_]?((src|source)[-_])?\K([^-/_\s]*?\d[^-/_\s]*?)(?=(?:[-_.](?:src|source|orig))?\.(?:[jt]ar|shar|t[bglx]z|tbz2|zip))\b'}
 
-        curl -H 'Accept: text/html,application/xhtml+xml,application/xml,text/plain,application/rss+xml' --max-time 10 -Lsk "$url" |
+        curl --max-time 10 -Ls "$url" |
             grep -Po -i "$rx"
 	done |
-	tr _ . |
 	sort -Vu -r |
 	head -n 1 |
 	while IFS= read -r found_version; do
@@ -104,7 +104,7 @@ check_updates() {
 		esac
 	done
 	if $consider; then
-		if [ "${version}" != "${found_version}" ]; then
+		if [ "$version" != "$found_version" ]; then
 			echo "update $name to $found_version"
 		fi
 	fi
@@ -113,7 +113,7 @@ check_updates() {
 
 for packages in $(ls $REPO/); do
 	case $packages in
-		run-parts|ifupdown|base-files|sbase|ubase|sinit|autoconf2.13|musl-tools|mkinitrd)
+		run-parts|ifupdown|bash|base-files|sbase|ubase|sinit|autoconf2.13|musl-tools)
 			true
 			;;
 		*)
