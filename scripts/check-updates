@@ -86,9 +86,10 @@ check_updates() {
 	rx=${pattern:-$rx}
 	rx=${rx:-'(?<!-)\b\Q'"$update_pkgname"'\E[-_]?((src|source)[-_])?\K([^-/_\s]*?\d[^-/_\s]*?)(?=(?:[-_.](?:src|source|orig))?\.(?:[jt]ar|shar|t[bglx]z|tbz2|zip))\b'}
 
-        curl --max-time 10 -Ls "$url" |
+        curl -H 'Accept: text/html,application/xhtml+xml,application/xml,text/plain,application/rss+xml' --max-time 10 -Lsk "$url" |
             grep -Po -i "$rx"
 	done |
+	tr _ . |
 	sort -Vu -r |
 	head -n 1 |
 	while IFS= read -r found_version; do
