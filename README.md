@@ -4,7 +4,7 @@
 januslinux is a fast and compact [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/). This distribution is made from scratch. Its goal is to be optimized and compact. It uses own fork of package manager called "pkgutils" from [CRUX](https://crux.nu/). januslinux is oriented for general use, but it is designed for advanced Linux users. januslinux was compiled with a hardened toolchain for better security. januslinux is a rolling distribution, it allows you to get the latest software. Also, januslinux have pretty good hardware support.
 
 ## Introduction to the build system
-[januslinux](https://januslinux.github.io/) is made from scratch that means every package, configuration files were written from scratch and controlled by januslinux Inc. and contributors. To build Linux distro we're made a build system called "Janus" in honor of the god of beginnings, gates, transitions, time, duality, doorways, passages, and endings. It's the main purpose to build and port packages easily.
+[januslinux](https://januslinux.github.io/) is made from scratch that means every package, configuration files were written from scratch and controlled by januslinux Inc. and contributors. To build Linux distro we have made a build system called "Janus" in honor of the god of beginnings, gates, transitions, time, duality, doorways, passages, and endings. It's the main purpose to build and port packages easily.
 
 ## Supported platforms
 januslinux is ported on many CPU architectures. There are about 14 of them:
