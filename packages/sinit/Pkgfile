@@ -1,0 +1,30 @@
+# Description: Suckless init
+# URL:         http://tools.suckless.org/sinit/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=sinit
+version=1.1
+release=1
+source=("https://github.com/henrysher/sinit/archive/v$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+
+	rm -rf config.h
+cat > config.h << "EOF"
+static char *const rcinitcmd[] = { "/etc/init.d/rcS", NULL };
+static char *const rcrebootcmd[] = { "/etc/init.d/rcK", "reboot", NULL };
+static char *const rcpoweroffcmd[] = { "/etc/init.d/rcK", "poweroff", NULL };
+EOF
+
+	if [ "$CROSS" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+	else
+		make CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+	fi
+
+	ln -sf sinit "$PKG"/usr/bin/init
+}
