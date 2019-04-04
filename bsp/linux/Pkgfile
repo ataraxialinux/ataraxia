@@ -12,24 +12,21 @@ NO_RUN_STRIP=1
 
 yconfig() {
 	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=y/" .config
-		grep ^"CONFIG_$1=y" .config || echo "CONFIG_$1=y" >> .config
+		sed -i "s/.*CONFIG_$1.*/CONFIG_$1=y/" .config
 		shift 1
 	done
 }
 
 mconfig() {
 	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1=m/" .config
-		grep ^"CONFIG_$1=m" .config || echo "CONFIG_$1=m" >> .config
+		sed -i "s/.*CONFIG_$1.*/CONFIG_$1=m/" .config
 		shift 1
 	done
 }
 
 nconfig() {
 	while [ $# -ne 0 ]; do
-		sed -i "s/.*CONFIG_$1\ .*/CONFIG_$1/" .config
-		grep ^"# CONFIG_$1 is not set" .config || echo "# CONFIG_$1 is not set" >> .config
+		sed -i "s/^CONFIG_$1.*/\\# CONFIG_$1 is not set/" .config
 		shift 1
 	done
 }

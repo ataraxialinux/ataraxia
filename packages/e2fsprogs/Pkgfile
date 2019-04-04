@@ -6,7 +6,7 @@
 name=e2fsprogs
 version=1.45.0
 release=1
-source=("https://downloads.sourceforge.net/project/$name/$name/v$version/$name-$version.tar.gz")
+source=("https://sourceforge.net/projects/e2fsprogs/files/e2fsprogs/v$version/$name-$version.tar.gz")
 BOOTSTRAP=yes
 
 build() {
@@ -29,8 +29,9 @@ build() {
 		--disable-libuuid \
 		--disable-uuidd
 	make
-	make DESTDIR="$PKG" install
-	make DESTDIR="$PKG" install-libs
+
+	unset MAKEFLAGS
+	make DESTDIR="$PKG" install install-libs
 
 	sed -i -e 's/^AWK=.*/AWK=awk/' "$PKG"/usr/bin/compile_et
 	sed -i -e 's#^SS_DIR=.*#SS_DIR="/share/ss"#' "$PKG"/usr/bin/mk_cmds

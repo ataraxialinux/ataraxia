@@ -1,0 +1,74 @@
+#!/bin/sh
+
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
+
+if [ -e /run/runit/reboot ]; then
+	chmod 100 /run/runit/reboot
+fi
+
+live="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)     live="${arg#*=}" ;;
+	esac
+done
+
+sv force-stop /var/service/*
+sv exit /var/service/*
+
+stty onlcr 0>&1
+
+ifdown -a
+
+hwclock --systohc --utc
+
+if egrep -q -m 1 '(usr|grp)quota' /etc/fstab
+then
+	if type quotaoff > /dev/null
+	then
+		quotaoff -va
+	fi
+fi
+
+( umask 077; bytes=$(cat /proc/sys/kernel/random/poolsize) || bytes=512; dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=$bytes >/dev/null 2>&1 )
+
+halt -w
+
+if [ "$live" != "1" ]; then
+	if [ -x /usr/bin/vgchange ]; then
+		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+	fi
+fi
+
+udevadm control --exit
+
+pkill --inverse -s0,1 -TERM
+sleep 1
+pkill --inverse -s0,1 -KILL
+
+swapoff -a
+
+umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+
+if [ "$live" != "1" ]; then
+	mount -o remount,ro /
+fi
+
+sync
+
+if [ "$live" != "1" ]; then
+	if [ "$1" = "reboot" ]; then
+		if command -v kexec >/dev/null; then
+			kexec -e 2>/dev/null
+		fi
+	fi
+fi
+
+case "$1" in
+	reboot)
+		halt -r
+		;;
+	poweroff)
+		halt -p
+		;;
+esac

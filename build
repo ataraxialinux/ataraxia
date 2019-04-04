@@ -366,7 +366,7 @@ build_toolchain() {
 }
 
 build_target() {
-	msg "Building target rootfs for '"$BARCH"' platform"
+	msg "Buildingget rootfs for '"$BARCH"' platform"
 
 	if [ -z "$LINUX" ]; then
 		LINUX="linux"
@@ -374,14 +374,11 @@ build_target() {
 
 	for target in musl-tools zlib file ncurses readline m4 bison flex bc \
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			shadow sed psmisc pcre grep mksh bash which libtool gdbm db gperf expat \
-			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
-			libarchive lzo pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
-			dialog gawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			tar cpio nano runit libcap-ng procps-ng util-linux \
-			e2fsprogs btrfs-progs f2fs-tools dosfstools hwids eudev run-parts \
-			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm ifupdown dhcpcd \
+			shadow pcre mksh bash libtool gdbm db gperf expat net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive lzo pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
+			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox sbase ubase sinit e2fsprogs btrfs-progs f2fs-tools dosfstools hwids eudev \
+			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm \
 			libssh2 c-ares libev nghttp2 curl git prt-get; do
 		pkginstall $target
 	done
@@ -415,14 +412,10 @@ build_stage() {
 
 	for target in base-files linux-api-headers musl musl-tools \
 			zlib file ncurses readline m4 bison flex bc \
-			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			shadow sed psmisc pcre grep mksh bash which libtool gdbm db gperf expat \
-			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
-			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
-			dialog gawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			tar cpio nano runit libcap-ng procps-ng util-linux \
-			hwids eudev run-parts ifupdown dhcpcd libssh2 c-ares libev \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap shadow pcre mksh bash libtool gdbm db gperf expat \
+			net-tools libressl perl autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
+			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox sbase ubase sinit hwids eudev libssh2 c-ares libev \
 			nghttp2 curl git prt-get $LINUX; do
 		pkginstallstage $target
 	done
@@ -463,20 +456,17 @@ build_initramfs() {
 
 	for target in base-files musl musl-tools \
 			zlib file ncurses readline gmp mpfr mpc bzip2 attr acl libcap \
-			shadow sed psmisc pcre grep mksh bash which expat \
-			inetutils net-tools libressl xz lzip lz4 zstd \
-			libarchive lzo pkgutils kmod coreutils diffutils \
-			dialog gawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
+			shadow pcre mksh bash expat net-tools libressl xz lzip lz4 zstd \
+			libarchive lzo pkgutils kmod diffutils dialog pigz libmnl libnftnl libnfnetlink \
 			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
-			tar nano runit libcap-ng procps-ng util-linux \
-			e2fsprogs btrfs-progs f2fs-tools dosfstools hwids eudev run-parts \
-			popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm ifupdown \
+			nano libcap-ng util-linux busybox sbase ubase sinit e2fsprogs btrfs-progs f2fs-tools dosfstools \
+			hwids eudev popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm \
 			dhcpcd libssh2 c-ares libev nghttp2 curl $LINUX; do
 		pkginstallinitrd $target
 	done
 
 	cd "$INITRAMFS"
-	ln -sf bin/runit-init init
+	ln -sf bin/sinit init
 
 	msg "Cleaning up initramfs"
 	rm -rf usr/include
@@ -488,7 +478,7 @@ build_initramfs() {
 }
 
 build_hdd() {
-	msg "Building target hard disk image for '"$BARCH"' platform"
+	msg "Buildingget hard disk image for '"$BARCH"' platform"
 
 	if [ -z "$LINUX" ]; then
 		LINUX="linux"
@@ -518,13 +508,10 @@ build_hdd() {
 	for target in base-files linux-api-headers musl musl-tools \
 			zlib file ncurses readline m4 bison flex bc \
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			shadow sed psmisc pcre grep mksh bash which libtool gdbm db gperf expat \
-			inetutils net-tools libressl perl autoconf automake xz lzip lz4 zstd \
-			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils \
-			dialog gawk findutils less zutils pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			tar cpio nano runit libcap-ng procps-ng util-linux e2fsprogs \
-			hwids eudev run-parts ifupdown dhcpcd \
+			shadow pcre mksh bash libtool gdbm db gperf expat net-tools libressl perl autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
+			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox sbase ubase sinit e2fsprogs hwids eudev \
 			libssh2 c-ares libev nghttp2 curl git prt-get $LINUX; do
 		pkginstallimage $target
 	done
@@ -825,6 +812,10 @@ case "$COMMAND" in
 		check_for_root
 		setup_architecture
 		setup_environment
+		;;
+	updtchk)
+		setup_environment
+		"$SCRIPTS"/check-updates
 		;;
 	usage|*)
 		msg "In development!"
