@@ -56,9 +56,19 @@ fi
 
 sync
 
-
 if [ "$live" != "1" ]; then
-	if [ -e /run/runit/reboot ] && command -v kexec >/dev/null; then
-		kexec -e 2>/dev/null
+	if [ "$1" = "reboot" ]; then
+		if command -v kexec >/dev/null; then
+			kexec -e 2>/dev/null
+		fi
 	fi
 fi
+
+case "$1" in
+	reboot)
+		halt -r
+		;;
+	poweroff)
+		halt -p
+		;;
+esac
