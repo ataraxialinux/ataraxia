@@ -123,59 +123,59 @@ rmpkg() {
 setup_architecture() {
 	case $BARCH in
 		x86_64)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
 		i686)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i686-linux-musl"
 			;;
 		aarch64)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
 		armv7l)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
 		armv5tel)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabi"
 			;;
 		mips64)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mips64-linux-musl"
 			;;
 		mips64el)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mips64el-linux-musl"
 			;;
 		mips)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mips-linux-musl"
 			;;
 		mipsel)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mipsel-linux-musl"
 			;;
 		ppc64le)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="powerpc64le-linux-musl"
 			;;
 		ppc64)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="powerpc64-linux-musl"
 			;;
 		ppc)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="powerpc-linux-musl"
 			;;
 		riscv64)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="riscv64-linux-musl"
 			;;
 		riscv32)
-			export XHOST="$(echo ${MACHTYPE} | -e 's/-[^-]*/-cross/')"
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="riscv32-linux-musl"
 			;;
 		*)
@@ -372,7 +372,7 @@ build_target() {
 		LINUX="linux"
 	fi
 
-	forget in musl-tools zlib file ncurses readline m4 bison flex bc \
+	for target in musl-tools zlib file ncurses readline m4 bison flex bc \
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
 			shadow pcre mksh bash libtool gdbm db gperf expat net-tools libressl perl autoconf automake xz lzip lz4 zstd \
 			libarchive lzo pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils \
@@ -393,7 +393,7 @@ build_embedded() {
 		LINUX="linux"
 	fi
 
-	forget in musl-tools musl-fts zlib bzip2 xz libuargp libelf attr acl expat libressl xz lz4 zstd libarchive pkgutils mksh; do
+	for target in musl-tools musl-fts zlib bzip2 xz libuargp libelf attr acl expat libressl xz lz4 zstd libarchive pkgutils mksh; do
 		pkginstall $target
 	done
 
@@ -410,7 +410,7 @@ build_stage() {
 		LINUX="linux"
 	fi
 
-	forget in base-files linux-api-headers musl musl-tools \
+	for target in base-files linux-api-headers musl musl-tools \
 			zlib file ncurses readline m4 bison flex bc \
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
 			shadow pcre mksh bash libtool gdbm db gperf expat \
@@ -438,7 +438,7 @@ build_stage_embedded() {
 		LINUX="linux"
 	fi
 
-	forget in base-files musl-tools pkgutils mksh busybox $LINUX; do
+	for target in base-files musl-tools pkgutils mksh busybox $LINUX; do
 		pkginstallstage $target
 	done
 
@@ -457,7 +457,7 @@ build_initramfs() {
 		LINUX="linux"
 	fi
 
-	forget in base-files musl musl-tools \
+	for target in base-files musl musl-tools \
 			zlib file ncurses readline gmp mpfr mpc bzip2 attr acl libcap \
 			shadow pcre mksh bash expat net-tools libressl xz lzip lz4 zstd \
 			libarchive lzo pkgutils kmod diffutils dialog pigz libmnl libnftnl libnfnetlink \
@@ -490,7 +490,7 @@ build_hdd() {
 	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=10G
 	losetup -f $IMG
-	lodev=$(losetup -a | "$IMG" | cut -d: -f1)
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 
 	parted -s $lodev mklabel msdos
 	parted -a optimal -s $lodev mkpart primary 0% 100%
@@ -508,7 +508,7 @@ build_hdd() {
 
 	initdb "$IMAGEFS"
 
-	forget in base-files linux-api-headers musl musl-tools \
+	for target in base-files linux-api-headers musl musl-tools \
 			zlib file ncurses readline m4 bison flex bc \
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
 			shadow pcre mksh bash libtool gdbm db gperf expat \
@@ -533,7 +533,7 @@ build_hdd_embedded() {
 	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=8M
 	losetup -f $IMG
-	lodev=$(losetup -a | "$IMG" | cut -d: -f1)
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 
 	parted -s $lodev mklabel msdos
 	parted -a optimal -s $lodev mkpart primary 0% 100%
@@ -545,7 +545,7 @@ build_hdd_embedded() {
 
 	initdb "$IMAGEFS"
 
-	forget in base-files musl-tools pkgutils mksh busybox; do
+	for target in base-files musl-tools pkgutils mksh busybox; do
 		pkginstallimage $target
 	done
 
@@ -571,7 +571,7 @@ prepare_iso_files() {
 	msg "Creating initramfs image"
 	cd "$INITRAMFS"
 
-	find . | -H newc -o | pigz > "$ISODIR"/seiba/seiba.gz
+	find . | cpio -H newc -o | pigz > "$ISODIR"/seiba/seiba.gz
 }
 
 make_iso_x86() {
