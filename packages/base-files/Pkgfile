@@ -3,14 +3,14 @@
 # Maintainer:  nee-san, nagakamira at gmail dot com
 
 name=base-files
-version=20190326
+version=20190404
 release=2
 BOOTSTRAP=yes
 
 build() {
 	cd "$PKG"
 
-	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d,service} home mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d,service,init.d} home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -47,7 +47,7 @@ auto lo
 iface lo inet loopback
 EOF
 
-	for d in cache/{sources,packages} local opt log/old lib/misc empty; do
+	for d in cache/{sources,packages} local opt log/old lib/misc empty service; do
 		install -d -m755 var/$d
 	done
 
@@ -77,4 +77,8 @@ EOF
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
 	install -D -m755 "$STUFF"/base-files/enter-chroot "$PKG"/usr/bin/enter-chroot
 	install -D -m755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+	install -D -m755 "$STUFF"/base-files/run-svc "$PKG"/usr/bin/run-svc
+
+	install -D -m755 "$STUFF"/base-files/rcS "$PKG"/etc/init.d/rcS
+	install -D -m755 "$STUFF"/base-files/rcK "$PKG"/etc/init.d/rcK
 }
