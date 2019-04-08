@@ -1,4 +1,4 @@
-This document describes roadmap of januslinux Codename "Kagami".
+This document describes roadmap of Ataraxia Linux Codename "Kagami".
 
 # Roadmap
 
