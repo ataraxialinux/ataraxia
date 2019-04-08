@@ -9,6 +9,29 @@ release=2
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
+build_flavor() {
+	local flavor="$1"
+	shift
+	local configure="$@"
+	mkdir -p build_${flavor}
+	cd build_${flavor}
+	../configure $TOOLFLAGS $configure \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info \
+		--datarootdir=/usr/share \
+		--sysconfdir=/etc \
+		--enable-boot-time \
+		--enable-device-mapper \
+		--disable-nls \
+		--disable-werror
+	make
+	make DESTDIR="$PKG" bashcompletiondir=/usr/share/bash-completion/completions install
+	cd ..
+}
+
 build() {
 	unset CXXFLAGS LDFLAGS
 
@@ -18,16 +41,15 @@ build() {
 	export CXXFLAGS="$CFLAGS"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc)
-			true
+		x86_64|i486)
+			FLAVOR="efi pc"
+			;;
+		ppc64le|ppc64|ppc)
+			FLAVOR="ieee1275"
 			;;
 		*)
-			echo "GRUB is not supported for your architecture"
+			echo "Architecture is not set or is not supported by Ataraxia Linux"
 			exit 1
-	esac
-
-	case "$BARCH" in
-		x86_64|i486)	EFICONFIG="--disable-efiemu"	;;
 	esac
 
 	cd "$SRC"/$name-$version
@@ -42,23 +64,16 @@ build() {
 	patch -Np1 -i "$STUFF"/grub/0012-fix-gcc-no-pie-specs.patch
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i configure.ac
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
-	sed 's|GNU/Linux||' -i util/grub.d/10_linux.in
+	sed 's|GNU/Linux| |' -i util/grub.d/10_linux.in
 
 	./autogen.sh
-	./configure $TOOLFLAGS $EFICONFIG \
-		--prefix=/usr \
-		--bindir=/usr/bin \
-		--sbindir=/usr/bin \
-		--mandir=/usr/share/man \
-		--infodir=/usr/share/info \
-		--datarootdir=/usr/share \
-		--sysconfdir=/etc \
-		--enable-boot-time \
-		--enable-device-mapper \
-		--disable-nls \
-		--disable-werror
-	make
-	make DESTDIR="$PKG" bashcompletiondir=/usr/share/bash-completion/completions install
+
+	for f in $FLAVOR; do
+		case "$f" in
+			efi) build_flavor $f --with-platform=efi --disable-efiemu;;
+			*)   build_flavor $f --with-platform=$f;;
+		esac
+	done
 
 	install -D -m0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
 }
