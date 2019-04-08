@@ -38,11 +38,9 @@ build() {
 		--disable-rpath \
 		--disable-werror
 	make
-	make DESTDIR="$PKG" install
+	make -C gdb/data-directory DESTDIR="$PKG" install
+	make -C gdb DESTDIR="$PKG" install
 
 	install -dm755 "$PKG"/etc/gdb
 	touch "$PKG"/etc/gdb/gdbinit
-
-	rm -rf "$PKG"/usr/include
-	rm -rf "$PKG"/usr/lib
 }
