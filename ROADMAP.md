@@ -10,6 +10,7 @@ This document describes roadmap of januslinux Codename "Kagami".
  - [x] ~~Test in qemu~~
 
 ## Stage 2
+ - [ ] Add "update" files for packages
  - [ ] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
  - [ ] Add extra packages for networking (eg. nftables, openresolv, whois, wget, mail clients, tcpdump, wpa_supplicant, dhcpcd, openssh, ntp)
  - [ ] Add basic system administartion packages and daemons (eg. sudo, dcron, logrotate)
