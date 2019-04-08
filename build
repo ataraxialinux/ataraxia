@@ -126,9 +126,9 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
-		i686)
+		i486)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
+			export XTARGET="i486-linux-musl"
 			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -493,7 +493,7 @@ build_hdd() {
 	parted -a optimal -s $lodev mkpart primary 0% 100%
 
 	case $BARCH in
-		x86_64|i686)
+		x86_64|i486)
 			parted -s $lodev set 1 boot on
 			;;
 	esac
@@ -553,7 +553,7 @@ build_hdd_embedded() {
 prepare_iso_files() {
 	msg "Prepare files for .iso image"
 	case $BARCH in
-		x86_64|i686)
+		x86_64|i486)
 			mkdir -p "$ISODIR"/seiba "$ISODIR"/efi/boot "$ISODIR"/boot/isolinux "$ISODIR"/boot/grub
 			;;
 		ppc64le|ppc64|ppc)
@@ -579,7 +579,7 @@ make_iso_x86() {
 			format="x86_64-efi"
 			efi="bootx64.efi"
 			;;
-		i686)
+		i486)
 			format="i386-efi"
 			efi="bootia32.efi"
 			;;
@@ -681,7 +681,7 @@ CEOF
 
 mklive() {
 	case $BARCH in
-		x86_64|i686)
+		x86_64|i486)
 			make_iso_x86
 			;;
 		ppc64le|ppc64|ppc)
@@ -739,7 +739,7 @@ case "$COMMAND" in
 			setup_environment
 			build_stage
 			case $BARCH in
-				x86_64|i686|ppc64le|ppc64|ppc)
+				x86_64|i486|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -768,7 +768,7 @@ case "$COMMAND" in
 			build_target
 			build_stage
 			case $BARCH in
-				x86_64|i686|ppc64le|ppc64|ppc)
+				x86_64|i486|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
