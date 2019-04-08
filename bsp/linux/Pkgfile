@@ -52,7 +52,7 @@ generate_config() {
 			export DEFCONFIG="x86_64_defconfig"
 			;;
 		i486)
-			export DEFCONFIG="CONFIG_M486=y i386_defconfig"
+			export DEFCONFIG="i386_defconfig"
 			;;
 		aarch64)
 			export DEFCONFIG="defconfig"
@@ -106,6 +106,14 @@ generate_config() {
 	case $BARCH in
 		x86_64)
 			for archconf in 64BIT IA32_EMULATION; do
+				yconfig $archconf
+			done
+			;;
+		i486)
+			for archconf in M586; do
+				nconfig $archconf
+			done
+			for archconf in M486; do
 				yconfig $archconf
 			done
 			;;
