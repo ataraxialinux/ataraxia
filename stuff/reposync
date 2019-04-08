@@ -21,11 +21,11 @@ check_for_root() {
 
 reposync() {
 	printmsg "Syncing with januslinux repositories"
-	if [ ! -d "/var/cache/ports" ]; then
-		git clone https://github.com/JanusLinux/janus.git --depth 1 /var/cache/ports
-	else
-		cd /var/cache/ports && git pull
-	fi
+	cd /var/cache
+	rm -rf master.tar.gz ports
+	curl -C - -L -O https://github.com/ataraxialinux/ataraxia/archive/master.tar.gz
+	tar -xf master.tar.gz
+	mv ataraxia-master ports
 }
 
 check_for_root
