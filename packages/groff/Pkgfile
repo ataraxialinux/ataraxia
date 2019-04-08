@@ -1,13 +1,14 @@
 # Description: GNU troff text-formatting system
 # URL:         https://www.gnu.org/software/groff/groff.html
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  perl texinfo
+# Depends on:  perl
 
 name=groff
 version=1.22.4
 release=2
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
 NO_EMPTY_DIRS=1
+BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -22,4 +23,7 @@ build() {
 	ln -sf eqn "$PKG"/usr/bin/geqn
 	ln -sf tbl "$PKG"/usr/bin/gtbl
 	ln -sf soelim "$PKG"/usr/bin/zsoelim
+
+	cat "$STUFF"/groff/site.tmac >> "$PKG"/usr/share/groff/site-tmac/man.local
+	cat "$STUFF"/groff/site.tmac >> "$PKG"/usr/share/groff/site-tmac/mdoc.local
 }
