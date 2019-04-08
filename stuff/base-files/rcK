@@ -9,9 +9,7 @@ for arg in $(cat /proc/cmdline);do
 	esac
 done
 
-sv down /var/service/*
-
-stty onlcr 0>&1
+stty onlcr
 
 ifdown -a
 
@@ -27,7 +25,7 @@ fi
 
 ( umask 077; bytes=$(cat /proc/sys/kernel/random/poolsize) || bytes=512; dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=$bytes >/dev/null 2>&1 )
 
-halt -w
+sv down /var/service/*
 
 if [ "$live" != "1" ]; then
 	if [ -x /usr/bin/vgchange ]; then

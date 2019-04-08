@@ -422,7 +422,7 @@ build_stage() {
 
 	msg "Building stage archive for '"$BARCH"' platform"
 	cd "$STAGEFS"
-	tar cf - . | pixz -9 > "$BUILD"/januslinux-$RELEASE-$BARCH.tar.xz
+	tar cf - . | pixz -9 > "$BUILD"/ataraxialinux-$RELEASE-$BARCH.tar.xz
 	cd $CWD
 }
 
@@ -441,7 +441,7 @@ build_stage_embedded() {
 
 	msg "Building stage archive for '"$BARCH"' platform"
 	cd "$STAGEFS"
-	tar cf - . | pixz -9 > "$BUILD"/januslinux-$RELEASE-$BARCH.tar.xz
+	tar cf - . | pixz -9 > "$BUILD"/ataraxialinux-$RELEASE-$BARCH.tar.xz
 	cd $CWD
 }
 
@@ -484,7 +484,7 @@ build_hdd() {
 		LINUX="linux"
 	fi
 
-	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
+	IMG="$BUILD/ataraxialinux-$RELEASE-$BARCH-hdd.img"
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=10G
 	losetup -f $IMG
 	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
@@ -525,7 +525,7 @@ build_hdd() {
 build_hdd_embedded() {
 	msg "Building embedded hard disk image for '"$BARCH"' platform"
 
-	IMG="$BUILD/januslinux-$RELEASE-$BARCH-hdd.img"
+	IMG="$BUILD/ataraxialinux-$RELEASE-$BARCH-hdd.img"
 	dd if=/dev/zero of=$IMG bs=1 count=0 seek=8M
 	losetup -f $IMG
 	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
@@ -586,12 +586,12 @@ make_iso_x86() {
 	esac
 
 cat << CEOF > "$BUILD"/grub-efi.cfg
-search --no-floppy --set=root --label "januslinux"
+search --no-floppy --set=root --label "ataraxialinux"
 set prefix=(\$root)/boot/grub
 CEOF
 
 cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
-menuentry "januslinux" {
+menuentry "ataraxialinux" {
 linux	/seiba/seiba live=1
 initrd	/seiba/seiba.gz
 }
@@ -620,7 +620,7 @@ cat << CEOF > "$ISODIR"/boot/isolinux/isolinux.cfg
 UI vesamenu.c32
 PROMPT 0
 TIMEOUT 100
-ONTIMEOUT januslinux
+ONTIMEOUT ataraxialinux
 
 MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
 MENU AUTOBOOT BIOS default device boot in # second{,s}...
@@ -639,8 +639,8 @@ MENU COLOR title        * #9000FF *
 MENU COLOR border       * #00000000 #00000000 none
 MENU COLOR sel          * #ffffffff #9000FF *
 
-LABEL januslinux
-MENU LABEL januslinux
+LABEL ataraxialinux
+MENU LABEL ataraxialinux
 KERNEL /seiba/seiba
 APPEND initrd=/seiba/seiba.gz live=1
 CEOF
@@ -657,8 +657,8 @@ CEOF
 		-e boot/grub/efi.img \
 		-no-emul-boot \
 		-isohybrid-gpt-basdat \
-		-A 'januslinux' -V 'januslinux' \
-		-o "$BUILD"/januslinux-$RELEASE-$BARCH.iso \
+		-A 'ataraxialinux' -V 'ataraxialinux' \
+		-o "$BUILD"/ataraxialinux-$RELEASE-$BARCH.iso \
 		"$ISODIR"/
 }
 
@@ -668,15 +668,15 @@ make_iso_ppc() {
 
 	msg "Creating .iso image for PowerPC-based PCs"
 cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
-menuentry "januslinux" {
+menuentry "ataraxialinux" {
 linux	/seiba/seiba live=1
 initrd	/seiba/seiba.gz
 }
 CEOF
 
 	grub-mkrescue \
-		--output "$BUILD"/januslinux-$RELEASE-$BARCH.iso "$ISODIR"/ \
-		-A 'januslinux' -V 'januslinux'
+		--output "$BUILD"/ataraxialinux-$RELEASE-$BARCH.iso "$ISODIR"/ \
+		-A 'ataraxialinux' -V 'ataraxialinux'
 }
 
 mklive() {
