@@ -1,0 +1,17 @@
+# Description: Portable version of the NetBSD make build tool
+# URL:         http://www.crufty.net/help/sjg/bmake.html
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=bmake
+version=20181221
+release=1
+source=("http://www.crufty.net/ftp/pub/sjg/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name
+	sed -i 's/op_test() {/& return 0;/' boot-strap
+	sed -i '1s,:,#!/bin/sh,g' install-sh
+
+	./boot-strap --prefix=/usr op=build
+	./boot-strap --install-destdir="$PKG" --prefix=/usr op=install
+}
