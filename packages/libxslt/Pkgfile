@@ -1,21 +1,20 @@
-# Description: XML parsing library, version 2
+# Description: XML stylesheet transformation library
 # URL:         http://www.xmlsoft.org/
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  zlib readline xz python
+# Depends on:  python libxml2
 
-name=libxml2
-version=2.9.9
+name=libxslt
+version=1.1.33
 release=1
 source=("http://xmlsoft.org/sources/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i s/3000/5000/ libxslt/transform.c doc/xsltproc.{1,xml}
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--with-history \
-		--with-python=/usr/bin/python3 \
-		--with-threads \
-		--without-icu
+		--without-crypto
 	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0 /g' libtool
 	make
 	make DESTDIR="$PKG" install
