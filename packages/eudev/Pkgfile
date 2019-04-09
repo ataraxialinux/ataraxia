@@ -5,7 +5,7 @@
 
 name=eudev
 version=3.2.7
-release=2
+release=3
 source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz")
 BOOTSTRAP=yes
 
@@ -36,4 +36,9 @@ build() {
 
 	rm "$PKG"/usr/lib/udev/rules.d/80-net-name-slot.rules 
 	touch "$PKG"/usr/lib/udev/rules.d/80-net-name-slot.rules 
+
+cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules << "EOF"
+# set bfq by default
+ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
+EOF
 }
