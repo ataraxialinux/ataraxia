@@ -15,9 +15,6 @@ BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/util-linux/70c364b4db6530ada12f7103b5c5d8ceb777307f.patch
-
-	NOCONFIGURE=1 ./autogen.sh
 	ADJTIME_PATH=/var/lib/hwclock/adjtime \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -61,4 +58,6 @@ build() {
 	install -Dm0755 "$STUFF"/runit-svc/uuid-log "$PKG"/etc/service/uuid/log/run
 
 	mkdir -p "$PKG"/var/log/uuid
+
+	install -Dm644 "$srcdir"/util-linux/rfkill.rules "$PKG"/usr/lib/udev/rules.d/60-rfkill.rules
 }
