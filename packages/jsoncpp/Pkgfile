@@ -1,0 +1,21 @@
+# Description: C++ library for interacting with JSON
+# URL:         https://github.com/open-source-parsers/jsoncpp
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  meson
+
+name=jsoncpp
+version=1.8.4
+release=1
+source=("https://github.com/open-source-parsers/$name/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build build-static
+
+	ataraxia-meson --default-library shared build
+	ninja -C build
+	ataraxia-meson --default-library static build-static
+	ninja -C build-static
+	DESTDIR="$PKG" ninja -C build install
+	DESTDIR="$PKG" ninja -C build-static install
+}
