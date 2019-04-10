@@ -4,10 +4,10 @@
 Ataraxia Linux is a fast and compact [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/). This distribution is made from scratch. Its goal is to be optimized and compact. It uses own fork of package manager called "pkgutils" from [CRUX](https://crux.nu/). Ataraxia Linux is oriented for general use, but it is designed for advanced Linux users. Ataraxia Linux was compiled with a hardened toolchain for better security. Ataraxia Linux is a rolling distribution, it allows you to get the latest software. Also, Ataraxia Linux have pretty good hardware support.
 
 ## Introduction to the build system
-[Ataraxia Linux](https://github.com/ataraxialinux/ataraxia) is made from scratch that means every package, configuration files were written from scratch and controlled by Ataraxia Linux Inc. and contributors. To build Linux distro we have made a build system called "Ataraxia" because it literally means, "unperturbed ness", "imperturbability", "equanimity", or "tranquillity". It's the main purpose to build and port packages easily.
+[Ataraxia Linux](https://github.com/ataraxialinux/ataraxia) is made from scratch. Every package build and configuration file was written from scratch is controlled by the Ataraxia Linux team and it's contributors. To build the Linux distro we have made a build system called "Ataraxia" because it literally means, "unperturbed ness", "imperturbability", "equanimity", or "tranquillity". It's the main purpose to build and port packages easily.
 
 ## Supported platforms
-Ataraxia Linux is ported on many CPU architectures. There are about 14 of them:
+Ataraxia Linux has been ported to many CPU architectures. There are about 14 of them:
 ```
  * x86_64       - for 64-bit x86 CPUs
  * i686         - for 32-bit x86 CPUs beggining at classic Intel Pentium Pro
@@ -28,7 +28,7 @@ Ataraxia Linux is ported on many CPU architectures. There are about 14 of them:
 ## Index of source packages
 We have separated packages on groups to make build system cleaner. We have following repositories for packages:
 ```
- * bsp          - Packages for specific board support(eg. Linux kernels, bootloaders, misc. tools)
+ * bsp          - Packages for specific board support (eg. Linux kernels, bootloaders, misc. tools)
  * community    - Packages maintained by Ataraxia Linux community. Not supported by core team
  * experimental - Unstable packages mostly for testing new features and adding new packages
  * packages     - Main packages collection for Linux distribution
@@ -38,7 +38,7 @@ We have separated packages on groups to make build system cleaner. We have follo
 ## Bootstrapping
 
 ### Installing build dependencies
-We need specific packages to build this Linux distribution. Without them you can't perform required tasks. To install required build dependencies:
+We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 Debian or Ubuntu (and derivatives):
 ```
 apt-get install build-essential m4 wget gawk bc bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar libarchive-dev xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev groff
@@ -53,7 +53,7 @@ pacman -S base-devel xorriso mtools git pigz python python2 pixz
 ```
 Ataraxia Linux:
 ```
-prt-get depinst xorriso python python2 mtools pixz
+prt-get depinst libisoburn python python2 mtools pixz
 ```
 
 ### Getting source code
@@ -82,7 +82,7 @@ To run build process (as root):
 ```
 BARCH=[supported architecture] ./build stage [stage number]
 ```
-And magic happends!
+And magic happens!
 
 ## Conclusion
 So this document describes Ataraxia Linux build system, how to use it. Thanks for attention!
