@@ -1,0 +1,24 @@
+# Description: Text-based web browser.
+# URL: http://lynx.isc.org/
+# Maintainer: nee-san, nagakamira at gmail dot com
+# Depends on: ncurses libressl zlib
+
+name=lynx
+version=2.8.9
+release=1
+source=(https://invisible-mirror.net/archives/lynx/tarballs/lynx$versionrel.$release.tar.gz)
+
+build() {
+	cd "$SRC"/lynx$versionrel.$release
+
+	./configure \
+		--prefix=/usr \
+		--disable-nls \
+		--enable-color-style \
+		--enable-ipv6 \
+		--with-ssl=/usr/lib \
+		--with-zlib
+
+	make
+	make -j 1 DESTDIR=$PKG install
+}
