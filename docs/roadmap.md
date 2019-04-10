@@ -1,14 +1,15 @@
-This document describes roadmap of Ataraxia Linux Codename "Kagami".
-
 # Roadmap
+This document describes roadmap of Ataraxia Linux (codename "Kagami")
 
-## ~~Stage 1~~ DONE!
+## ~~Stage 1~~
  - [x] ~~Do the cross-toolchain~~
  - [x] ~~Add packages for basic target system (eg. userland, basic development software, package management)~~
  - [x] ~~Add packages for BSP (board support eg. kernels, bootloaders)~~
  - [x] ~~Add packages for development and debugging (gdb, strace, valgrind)~~
- - [x] ~~Test in qemu~~
+ - [x] ~~Test in QEMU~~
 
+Stage 1 is complete!
+ 
 ## Stage 2
  - [ ] Add "update" files for packages
  - [ ] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
@@ -17,4 +18,4 @@ This document describes roadmap of Ataraxia Linux Codename "Kagami".
  - [ ] Add user packages (eg. vim, nano, groff, texinfo, lynx)
 
 ## Stage 3
-TODO
+TODO 
