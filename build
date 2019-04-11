@@ -97,6 +97,14 @@ pkginstallinitrd() {
 	done
 }
 
+pkginstallinitrdstage() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$INITRAMFSSTAGE"
+	done
+}
+
 pkginstallimage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
@@ -195,6 +203,7 @@ setup_environment() {
 	export STAGEFS="$BUILD/stage"
 	export INITRAMFS="$BUILD/initramfs"
 	export IMAGEFS="$BUILD/image"
+	export INITRAMFSSTAGE="$BUILD/stage-initramfs"
 	export ISOBUILD="$BUILD/isobuild"
 	export ISODIR="$BUILD/iso"
 	export STUFF="$CWD/stuff"
@@ -465,6 +474,8 @@ build_initramfs() {
 		pkginstallinitrd $target
 	done
 
+
+
 	cd "$INITRAMFS"
 	ln -sf bin/sinit init
 
@@ -475,6 +486,28 @@ build_initramfs() {
 	find . -name "*.h" -print0 | xargs -0 rm -rf
 	find . -name "*.hpp" -print0 | xargs -0 rm -rf
 	find . -name "*.pc" -print0 | xargs -0 rm -rf
+}
+
+build_initramfs_stage() {
+	msg "Installing core stage-initramfs packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$INITRAMFS"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in base-files linux-api-headers musl musl-tools zlib file ncurses readline m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap shadow pcre mksh bash libtool gdbm db gperf expat \
+			net-tools libressl perl autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf \
+			diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox ubase sinit hwids eudev libssh2 c-ares libev \
+			nghttp2 curl prt-get $LINUX; do
+		pkginstallinitrdstage $target
+	done
+
+	cd "$INITRAMFS"
+	ln -sf bin/sinit init
 }
 
 build_hdd() {
@@ -750,6 +783,20 @@ case "$COMMAND" in
 			case $BARCH in
 				riscv64|riscv32)
 					build_hdd
+			esac
+			;;
+		2-stage)
+			check_for_root
+			setup_architecture
+			setup_environment
+			case $BARCH in
+				x86_64|i486|ppc64le|ppc64|ppc)
+					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
+						pkghostinstall grub
+					fi
+					build_initramfs
+					build_initramfs_stage
+					mklive
 			esac
 			;;
 		2-embedded)
