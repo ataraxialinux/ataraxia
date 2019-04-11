@@ -97,14 +97,6 @@ pkginstallinitrd() {
 	done
 }
 
-pkginstallinitrdstage() {
-	local pkg="$@"
-	for emergepkg in $pkg; do
-		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$INITRAMFSSTAGE"
-	done
-}
-
 pkginstallimage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
@@ -203,7 +195,6 @@ setup_environment() {
 	export STAGEFS="$BUILD/stage"
 	export INITRAMFS="$BUILD/initramfs"
 	export IMAGEFS="$BUILD/image"
-	export INITRAMFSSTAGE="$BUILD/stage-initramfs"
 	export ISOBUILD="$BUILD/isobuild"
 	export ISODIR="$BUILD/iso"
 	export STUFF="$CWD/stuff"
@@ -503,7 +494,7 @@ build_initramfs_stage() {
 			diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
 			nano libcap-ng util-linux busybox ubase sinit hwids eudev libssh2 c-ares libev \
 			nghttp2 curl prt-get $LINUX; do
-		pkginstallinitrdstage $target
+		pkginstallinitrd $target
 	done
 
 	cd "$INITRAMFS"
