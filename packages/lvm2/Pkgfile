@@ -1,10 +1,10 @@
 # Description: Logical Volume Manager 2 utilities
 # URL:         https://sourceware.org/lvm2/
 # Maintainer:  nee-san, nagakamira at gmail dot com
-# Depends on:  readline eudev libaio
+# Depends on:  eudev libaio
 
 name=lvm2
-version=2.03.02
+version=2.02.184
 release=1
 source=("ftp://sources.redhat.com/pub/lvm2/LVM2.${version}.tgz")
 BOOTSTRAP=yes
@@ -31,13 +31,17 @@ build() {
 		--with-default-locking-dir=/run/lock/lvm \
 		--with-default-pid-dir=/run \
 		--with-default-run-dir=/run/lvm \
+		--with-cache=internal \
 		--with-thin=internal \
+		--enable-applib \
 		--enable-cmdlib \
 		--enable-dmeventd \
 		--enable-lvmetad \
 		--enable-pkgconfig \
 		--enable-udev_rules \
-		--enable-udev_sync
+		--enable-udev_sync \
+		--disable-readline \
+		--disable-udev-systemd-background-jobs
 	make SHELL=/bin/bash
 	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install
 
@@ -46,10 +50,10 @@ build() {
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
 
-	for svc in dmeventd; do
+	for svc in lvmetad dmeventd; do
 		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
 		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
 	done
 
-	mkdir -p "$PKG"/var/log/dmeventd
+	mkdir -p "$PKG"/var/log/lvmetad "$PKG"/var/log/dmeventd
 }
