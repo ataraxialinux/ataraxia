@@ -34,5 +34,5 @@ To begin the build process, **as root**:
 ```
 BARCH=[supported architecture] ./build stage [stage number]
 ```
-See [supported platforms and architecures.](plaftorms.md)
+See [supported platforms and architecures.](platforms.md)
 And magic happens!
