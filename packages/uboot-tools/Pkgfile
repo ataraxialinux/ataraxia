@@ -1,0 +1,21 @@
+# Description: U-Boot bootloader utility tools
+# URL:         https://www.denx.de/wiki/U-Boot/WebHome
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
+
+name=uboot-tools
+version=2019.01
+release=1
+source=("https://github.com/u-boot/u-boot/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/u-boot-$version
+	make defconfig
+	make tools-all
+
+	mkdir -p "$PKG"/usr/bin
+
+	for a in {mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}; do
+		cp tools/$a "$PKG"/usr/bin
+	done
+}
