@@ -1,0 +1,18 @@
+# Description: Load another kernel from the currently executing Linux kernel
+# URL:         http://kernel.org/pub/linux/utils/kernel/kexec/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib xz
+
+name=kexec-tools
+version=2.0.19
+release=1
+source=("https://mirrors.edge.kernel.org/pub/linux/utils/kernel/kexec/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}
