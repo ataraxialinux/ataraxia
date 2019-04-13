@@ -323,7 +323,6 @@ build_toolchain() {
 	pkghostinstall gcc-static
 	pkginstall musl
 	pkghostinstall gcc
-	pkghostinstall slibtool
 
 	case $BARCH in
 		riscv64)
@@ -355,14 +354,6 @@ build_toolchain() {
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
-
-	msg "Adding fake make"
-
-	ORIGMAKE="$(which make)"
-
-	cp "$STUFF"/fakemake "$TOOLS"/bin/make
-
-	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
 }
 
 build_target() {
