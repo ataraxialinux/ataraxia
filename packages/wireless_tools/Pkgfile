@@ -1,0 +1,28 @@
+# Description: Tools allowing to manipulate the Wireless Extensions
+# URL:         https://hewlettpackard.github.io/wireless-tools/Tools.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=wireless_tools
+version=30.pre9
+_version=${version%.pre*}
+release=1
+source=("https://hewlettpackard.github.io/wireless-tools/${name}.${version}.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/${name}.${_version}
+	sed -i 's@sbin@bin@' Makefile
+
+	if [ "$CROSS" = "yes" ]; then
+		make CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$CFLAGS"
+	else
+		make CFLAGS="$CFLAGS"
+	fi
+
+	make \
+		INSTALL_DIR="$PKG/usr/bin" \
+		INSTALL_LIB="$PKG/usr/lib" \
+		INSTALL_INC="$PKG/usr/include" \
+		INSTALL_MAN="$PKG/usr/share/man" \
+		install
+}
