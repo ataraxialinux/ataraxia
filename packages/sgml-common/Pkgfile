@@ -1,0 +1,19 @@
+# Description: Tools for maintaining centralized SGML catalogs.
+# URL:         http://www.docbook.org/xml/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=sgml-common
+version=0.6.3
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/sgml-common/manpage.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" docdir=/usr/share/doc install
+}
