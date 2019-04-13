@@ -1,0 +1,34 @@
+# Description: XML stylesheets for Docbook-xml transformations
+# URL:         https://docbook.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxslt docbook-xml
+
+name=docbook-xsl
+version=1.79.2
+release=1
+source=("https://github.com/docbook/xslt10-stylesheets/releases/download/release/$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	patch -Np2 -i "$STUFF"/docbook-xsl/non-recursive-string-subst.patch
+	install -v -m 0755 -d "$PKG"/usr/share/xml/docbook/xsl-stylesheets-$version
+
+	cp -v -R \
+		VERSION common eclipse epub extensions fo \
+		highlighting html htmlhelp images javahelp lib manpages \
+		params profiling roundtrip slides template tests tools website \
+		xhtml xhtml-1_1 \
+		"$PKG"/usr/share/xml/docbook/xsl-stylesheets-$version
+
+	ln -s VERSION "$PKG"/usr/share/xml/docbook/xsl-stylesheets-${version}/VERSION.xsl
+
+	ln -sf xsl-stylesheets-$version "$PKG"/usr/share/xml/docbook/xsl-stylesheets
+
+	install -v -m 0644 -D README \
+		"$PKG"/usr/share/doc/docbook-xsl-$version/README.txt
+
+	install -v -m 0755 RELEASE-NOTES* NEWS* \
+		"$PKG"/usr/share/doc/docbook-xsl-$version
+}
+
