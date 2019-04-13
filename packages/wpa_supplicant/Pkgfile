@@ -1,0 +1,33 @@
+# Description: A utility providing key negotiation for WPA wireless networks
+# URL:         http://hostap.epitest.fi/wpa_supplicant
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline libressl libnl
+
+name=wpa_supplicant
+version=2.7
+release=1
+source=("https://w1.fi/releases/${name}-${version}.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	export CFLAGS="$(pkg-config --cflags libnl-3.0) $CFLAGS"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/wpa_supplicant/eloop.patch
+
+	cp "$STUFF"/wpa_supplicant/config $name/.config
+
+	cd $name
+	make PREFIX=/usr BINDIR=/usr/bin
+	make PREFIX=/usr BINDIR=/usr/bin DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
+	install -Dm0755 "$STUFF"/wpa_supplicant/auto "$PKG"/usr/lib/wpa_supplicant/auto
+
+	for svc in wpa_supplicant; do
+		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+
+	mkdir -p "$PKG"/var/log/wpa_supplicant
+}
