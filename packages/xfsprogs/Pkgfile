@@ -10,8 +10,6 @@ source=("https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/$name-$version.t
 BOOTSTRAP=yes
 
 build() {
-	unset MAKEFLAGS
-
 	export DEBUG=-DNDEBUG
 	export OPTIMIZER="$CFLAGS"
 
@@ -21,17 +19,17 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
-		--enable-lib64=no \
-		--enable-readline=yes \
-	make SHELL=/bin/bash
+		--enable-readline
+	make
+
+	unset MAKEFLAGS
 	make -j1 install install-dev \
-		LIBTOOL="$LIBTOOL" \
 		SHELL=/bin/bash \
 		DIST_ROOT="$PKG" \
 		PKG_ROOT_SBIN_DIR="/usr/bin"
 
 	chown -R root "$PKG"
-	chgrp -R root"$PKG"
+	chgrp -R root "$PKG"
 
 	mv "$PKG"/lib/libhandle.so* "$PKG"/usr/lib/
 	rm -rf "$PKG"/lib
