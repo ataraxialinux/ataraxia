@@ -1,0 +1,76 @@
+# Description: The Open Source toolkit for Secure Sockets Layer and Transport Layer Security
+# URL:         https://www.openssl.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib perl
+
+name=openssl
+version=1.1.1b
+release=1
+source=("https://www.openssl.org/source/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build(){
+	unset CC CXX AS AR LD STRIP RANLIB
+
+	case $BARCH in
+		x86_64)
+			export OPENSSLTARGET="linux-x86_64"
+			export OPENSSLOPTS="enable-ec_nistp_64_gcc_128"
+			;;
+		i486)
+			export OPENSSLTARGET="linux-elf"
+			export OPENSSLOPTS=''
+			;;
+		aarch64)
+			export OPENSSLTARGET="linux-aarch64"
+			export OPENSSLOPTS=''
+			;;
+		armv7l|armv5tel)
+			export OPENSSLTARGET="linux-armv4"
+			export OPENSSLOPTS=''
+			;;
+		ppc64le)
+			export OPENSSLTARGET="linux-ppc64le"
+			export OPENSSLOPTS=''
+			;;
+		ppc64)
+			export OPENSSLTARGET="linux-ppc64"
+			export OPENSSLOPTS="no-asm"
+			;;
+		ppc)
+			export OPENSSLTARGET="linux-ppc"
+			export OPENSSLOPTS=''
+			;;
+		mips64|mips64el)
+			export OPENSSLTARGET="linux64-mips64"
+			export OPENSSLOPTS=''
+			;;
+		mips|mipsel)
+			export OPENSSLTARGET="linux-mips32"
+			export OPENSSLOPTS="-mips32"
+			;;
+		riscv64)
+			export OPENSSLTARGET="linux-generic64"
+			export OPENSSLOPTS=''
+			;;
+		riscv32)
+			export OPENSSLTARGET="linux-generic32"
+			export OPENSSLOPTS=''
+			;;
+		*)
+			echo "Architecture is not set or is not supported"
+			exit 1
+	esac
+
+	cd "$SRC"/$name-$version
+	./Configure $OPENSSLTARGET \
+		--prefix=/usr \
+		--libdir=lib \
+		--openssldir=/etc/ssl \
+		shared no-ssl3-method $OPENSSLOPTS \
+		$CFLAGS -Wa,--noexecstack
+	make
+	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/bin/c_rehash
+}

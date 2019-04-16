@@ -1,0 +1,59 @@
+# Description: Common CA certificates (default providers)
+# URL:         https://packages.debian.org/sid/ca-certificates
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  openssl
+
+name=ca-certificates
+version=20190110
+release=1
+source=("http://deb.debian.org/debian/pool/main/c/ca-certificates/ca-certificates_${version}.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	mkdir -p "$PKG"/usr/bin
+
+	cd "$SRC"/$name-$version
+	HOSTCC=${HOSTCC:-cc}
+
+cat > sbin/Makefile << EOF
+install:
+	install -Dm755 update-ca-certificates \$(DESTDIR)\$(SBINDIR)/update-ca-certificates
+EOF
+
+	cp "$STUFF"/ca-certificates/certdata2pem.c mozilla/certdata2pem.c
+
+cat > mozilla/Makefile << EOF
+all:
+	$HOSTCC -Wall certdata2pem.c -o certdata2pem
+	./certdata2pem
+clean:
+	-rm -f *.crt
+install:
+	for p in *.crt; do \
+	    install -Dm0644 \$\$p \$(CERTSDIR)/\$\$p ; \
+	done
+EOF
+
+	make
+
+	${CROSS_COMPILE}cc "$STUFF"/ca-certificates/c_rehash.c -o "$PKG"/usr/bin/c_rehash -lssl -lcrypto -lz $CFLAGS
+
+	make DESTDIR="$PKG" SBINDIR=/usr/bin install
+
+	mkdir -p "$PKG"/etc/ssl/certs
+	find "$PKG"/usr/share/${name}/ -name '*.crt' | \
+		rev | cut -d/ -f1-2 | rev | sort > "$PKG"/etc/ca-certificates.conf
+
+	cat "$PKG"/usr/share/ca-certificates/*/*.crt >"$PKG"/etc/ssl/certs/ca-certificates.crt
+
+	cd "$PKG"
+	for i in  etc/ssl/certs/* ; do
+		test ! -L "$i" && continue
+		s=$(readlink "$i")
+		p=$(printf "%s" "$s" | awk '{n=split($0, a, "/share"); if(n>1)print a[n];}')
+		if test -n "$p" ; then
+			nl=$(printf "../../../share%s" "$p")
+			ln -sf "$nl" "$i"
+		fi
+	done
+}
