@@ -6,7 +6,7 @@
 name=perl
 version=5.28.1
 crossver=1.2.1
-release=1
+release=2
 source=("https://www.cpan.org/src/5.0/$name-$version.tar.xz"
 	"https://github.com/arsv/perl-cross/releases/download/$crossver/perl-cross-$crossver.tar.gz")
 BOOTSTRAP=yes
@@ -19,9 +19,11 @@ build() {
 	./configure $PERLFLAGS \
 		--prefix=/usr \
 		-Dvendorprefix=/usr \
-		-Dprivlib=/usr/lib/perl5/${version%.*} \
-		-Dsitelib=/usr/lib/perl5/site_perl/${version%.*} \
-		-Dvendorlib=/usr/lib/perl5/site_perl/${version%.*} \
+		-Dvendorlib=/usr/share/perl5/vendor_perl \
+		-Dvendorarch=/usr/lib/perl5/vendor_perl \
+		-Dsiteprefix=/usr/local \
+		-Dsitelib=/usr/local/share/perl5/site_perl \
+		-Dsitearch=/usr/local/lib/perl5/site_perl \
 		-Dman1dir=/usr/share/man/man1 \
 		-Dman3dir=/usr/share/man/man3 \
 		-Dpager="/usr/bin/less -isR" \
