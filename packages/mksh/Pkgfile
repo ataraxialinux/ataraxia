@@ -4,7 +4,7 @@
 
 name=mksh
 version=R57
-release=2
+release=3
 source=("http://www.mirbsd.org/MirOS/dist/mir/mksh/$name-$version.tgz")
 BOOTSTRAP=yes
 
@@ -14,7 +14,13 @@ build() {
 	cd "$SRC"/$name
 	sh Build.sh -r
 
-	install -D -m 755 mksh "$PKG"/usr/bin/mksh
+	mkdir -p lksh
+	cd lksh
+	CPPFLAGS="$CPPFLAGS -DMKSH_BINSHPOSIX" sh ../Build.sh -L -r
+	cd ..
 
-	ln -sf mksh "$PKG"/usr/bin/sh
+	install -D -m 755 mksh "$PKG"/usr/bin/mksh
+	install -D -m 755 mksh "$PKG"/usr/bin/lksh
+
+	ln -sf lksh "$PKG"/usr/bin/sh
 }
