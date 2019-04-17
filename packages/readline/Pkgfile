@@ -4,29 +4,34 @@
 # Depends on:  ncurses
 
 name=readline
-lbasever=8.0
-patchlevel=0
-stripped_lbasever="$(echo ${lbasever} | tr -d '.')"
-version=${lbasever}.${patchlevel}
+version=8.0.0
+_myver=${version%.*}
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$lbasever.tar.gz")
-for patch in $(seq 1 ${patchlevel}); do
-	source=(${source[@]} "http://ftp.gnu.org/gnu/readline/readline-${lbasever}-patches/readline${stripped_lbasever}-$(printf "%03d" ${patch})")
+source=("http://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
+
+for _patch in $(seq -w 001 ${version##*.}); do
+	_name=$name${_myver//./}-$_patch
+	source="$source $_name.diff::https://ftp.gnu.org/gnu/$name/$name-${_myver}-patches/$_name"
 done
+
 BOOTSTRAP=yes
 
 build() {
-	cd "$SRC"/$name-$lbasever
+	cd "$SRC"/$name-${_myver}
 
-	for patch in $(seq 1 ${patchlevel}); do
-		patch -p0 -i "$SRC/readline${stripped_lbasever}-$(printf "%03d" ${patch})"
+	for i in $source; do
+		case ${i%::*} in
+		*.diff) msg ${i#*::}; patch -p0 -i "$SRC"/${i%::*} ;;
+		esac
 	done
 
 	sed -i '/MV.*old/d' Makefile.in
 	sed -i '/{OLDSUFF}/c:' support/shlib-install
 
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--enable-shared \
+		--enable-static
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" DESTDIR="$PKG" install
 }
