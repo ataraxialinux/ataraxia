@@ -2,6 +2,17 @@
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/bin"
 
+modules_load() {
+{
+sed -nr 's/,/\n/;s/(.* |^)(rd\.)?modules-load=([^ ]*).*/\3/p' /proc/cmdline
+find -L /etc/modules-load.d /run/modules-load.d /usr/lib/modules-load.d \
+       	-maxdepth 1 -name '*.conf' -printf '%p %P\n' 2>/dev/null |
+	sort -k2 -s | uniq -f1 | cut -d' ' -f1 |
+	tr '\012' '\0' | xargs -0 -r grep -h -v -e '^[#;]' -e '^$'
+} |
+tr '\012' '\0' | xargs -0 -r modprobe -ab "$@"
+}
+
 ctrlaltdel -s
 
 dmesg -n 1
@@ -24,6 +35,12 @@ for arg in $(cat /proc/cmdline);do
 		live=*)     live="${arg#*=}" ;;
 	esac
 done
+
+for f in $(kmod static-nodes 2>/dev/null|awk '/Module/ {print $2}'); do
+	modprobe -bq $f 2>/dev/null
+done
+
+modules-load | tr '\n' ' ' | sed 's:insmod [^ ]*/::g; s:\.ko\(\.xz\)\? ::g'
 
 udevd --daemon
 udevadm trigger --action=add --type=subsystems
