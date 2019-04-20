@@ -1,0 +1,48 @@
+# Description: Collection of modular and reusable compiler and toolchain technologies
+# URL:         https://llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib binutils cmake python ninja libffi
+
+name=llvm
+version=8.0.0
+release=1
+source=("http://releases.llvm.org/$version/llvm-$version.src.tar.xz"
+	"http://releases.llvm.org/$version/compiler-rt-$version.src.tar.xz"
+	"http://releases.llvm.org/$version/libunwind-$version.src.tar.xz")
+
+build() {
+	cd "$SRC"/llvm-$version.src
+
+	mv "$SRC"/compiler-rt-$version.src projects/compiler-rt
+	mv "$SRC"/libunwind-$version.src projects/libunwind
+
+	mkdir build
+	cd build
+	cmake "$SRC"/llvm-$version.src \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DLLVM_HOST_TRIPLE="$(cc -dumpmachine)" \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DLLVM_ENABLE_FFI=ON \
+		-DFFI_INCLUDE_DIR=$(pkg-config --variable=includedir libffi) \
+		-DLLVM_BINUTILS_INCDIR=/usr/include \
+		-DLLVM_BUILD_LLVM_DYLIB=ON \
+ 		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_TARGETS_TO_BUILD="host;AMDGPU;BPF" \
+		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_BUILD_DOCS=OFF \
+		-DLLVM_INSTALL_UTILS=ON \
+		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
+		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+		-DCOMPILER_RT_BUILD_XRAY=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	echo "Removing rpaths..."
+
+	cd "$PKG"/usr
+	file lib/*.so bin/* \
+		| awk -F: '$2~/ELF/{print $1}' \
+		| xargs -r chrpath -d
+}
