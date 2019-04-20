@@ -38,11 +38,4 @@ build() {
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
-
-	echo "Removing rpaths..."
-
-	cd "$PKG"/usr
-	file lib/*.so bin/* \
-		| awk -F: '$2~/ELF/{print $1}' \
-		| xargs -r chrpath -d
 }
