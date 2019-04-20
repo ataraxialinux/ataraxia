@@ -9,6 +9,15 @@ release=1
 source=("https://cdn.kernel.org/pub/linux/utils/boot/$name/$name-$version.tar.xz")
 
 build() {
+	case $BARCH in
+		x86_64|i486)
+			true
+			;;
+		*)
+			echo "Architecture is not set or is not supported by syslinux"
+			exit 1
+	esac
+
 	cd "$SRC"/$name-$version
 	unset LDFLAGS
 	patch -p1 < "$STUFF"/syslinux/gcc-fix-alignment.patch
