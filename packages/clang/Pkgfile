@@ -1,0 +1,44 @@
+# Description: C language family frontend for LLVM
+# URL:         https://clang.llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  llvm
+
+name=clang
+version=8.0.0
+release=1
+source=("https://releases.llvm.org/$version/cfe-$version.src.tar.xz"
+	"https://releases.llvm.org/$version/clang-tools-extra-$version.src.tar.xz")
+
+build() {
+	cd "$SRC"/cfe-$version.src
+	patch -Np1 -i "$STUFF"/clang/0001-Add-Ataraxia-Linux.patch
+	patch -Np1 -i "$STUFF"/clang/0001-Use-z-relro-and-z-now.patch
+	patch -Np1 -i "$STUFF"/clang/0001-Enable-Stack-Protector-by-default.patch
+	patch -Np1 -i "$STUFF"/clang/0001-Enable-PIE-by-default.patch
+	patch -Np1 -i "$STUFF"/clang/0001-Enable-FORTIFY_SOURCE-by-default.patch
+
+	mv "$SRC"/clang-tools-extra-$version.src tools/extra
+
+	mkdir build
+	cd build
+	cmake "$SRC"/cfe-$version.src \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCLANG_BUILD_EXAMPLES=OFF \
+		-DCLANG_INCLUDE_DOCS=OFF \
+		-DCLANG_INCLUDE_TESTS=OFF \
+		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_BUILD_DOCS=OFF \
+		-DCLANG_PLUGIN_SUPPORT=ON \
+		-DLIBCLANG_BUILD_STATIC=ON \
+		-DLLVM_ENABLE_EH=ON \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DPYTHON_EXECUTABLE=/usr/bin/python \
+		-DBUILD_SHARED_LIBS=ON \
+		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -m 644 lib/libclang.a "$PKG"/usr/lib
+}
