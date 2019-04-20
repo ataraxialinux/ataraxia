@@ -1,0 +1,20 @@
+# Description: Introspection system for GObject-based libraries
+# URL:         https://wiki.gnome.org/Projects/GLib
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  glib
+
+name=gobject-introspection
+version=1.60.1
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+NO_EMPTY_DIRS=1
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgtk_doc=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
