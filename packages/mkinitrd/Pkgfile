@@ -1,13 +1,11 @@
 # Description: Initrd generator for Ataraxia Linux
 # URL:         https://ataraxialinux.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  kmod cpio pigz
+# Depends on:  kmod pigz busybox
 
 name=mkinitrd
-version=20190303
-busyboxver=1.30.1
+version=20190420
 release=1
-source=("https://busybox.net/downloads/busybox-$busyboxver.tar.bz2")
 BOOTSTRAP=yes
 
 build() {
@@ -20,25 +18,4 @@ build() {
 
 	install -Dm755 "$STUFF"/mkinitrd/mkinitrd "$PKG"/$BINDIR/mkinitrd
 	install -Dm755 "$STUFF"/mkinitrd/init "$PKG"/$DATA/init
-
-	export CFLAGS="$CFLAGS --static -static"
-	export CXXFLAGS="$CFLAGS"
-
-	cd "$SRC"/busybox-$busyboxver
-	make mrproper
-
-	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} CONFIG_STATIC=y defconfig
-	else
-		make ARCH=$XKARCH CONFIG_STATIC=y defconfig
-	fi
-
-	if [ "$CROSS" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} CONFIG_STATIC=y
-	else
-		make ARCH=$XKARCH CONFIG_STATIC=y
-	fi
-
-	chmod +x busybox
-	cp busybox "$PKG"/$DATA/bins
 }
