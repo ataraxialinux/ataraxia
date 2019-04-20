@@ -1,0 +1,118 @@
+From ed09d65cad4c59959abb2ba5e026adb64237a0c3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 21 Apr 2019 00:57:30 +0900
+Subject: [PATCH] Add support for Ataraxia Linux
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ include/clang/Driver/Distro.h       |  5 +++++
+ lib/Driver/Distro.cpp               |  3 +++
+ lib/Driver/ToolChains/Linux.cpp     | 11 +++++++----
+ lib/Driver/ToolChains/Linux.h       |  1 +
+ lib/Frontend/CompilerInvocation.cpp |  8 ++++++++
+ 5 files changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/include/clang/Driver/Distro.h b/include/clang/Driver/Distro.h
+index 5651ebb6..62a9e5fa 100644
+--- a/include/clang/Driver/Distro.h
++++ b/include/clang/Driver/Distro.h
+@@ -26,6 +26,7 @@ public:
+     // NB: Releases of a particular Linux distro should be kept together
+     // in this enum, because some tests are done by integer comparison against
+     // the first and last known member in the family, e.g. IsRedHat().
++    AtaraxiaLinux,
+     AlpineLinux,
+     ArchLinux,
+     DebianLenny,
+@@ -128,6 +129,10 @@ public:
+     return DistroVal == Gentoo;
+   }
+ 
++  bool IsAtaraxiaLinux() const {
++    return DistroVal == AtaraxiaLinux;
++  }
++
+   /// @}
+ };
+ 
+diff --git a/lib/Driver/Distro.cpp b/lib/Driver/Distro.cpp
+index 396d0bee..ddd9a883 100644
+--- a/lib/Driver/Distro.cpp
++++ b/lib/Driver/Distro.cpp
+@@ -141,6 +141,9 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS) {
+   if (VFS.exists("/etc/gentoo-release"))
+     return Distro::Gentoo;
+ 
++  if (VFS.exists("/etc/ataraxialinux-release"))
++    return Distro::AtaraxiaLinux;
++
+   return Distro::UnknownDistro;
+ }
+ 
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 65ab9b2d..bc7f03c4 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -236,12 +236,12 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+ 
+   Distro Distro(D.getVFS());
+ 
+-  if (Distro.IsAlpineLinux() || Triple.isAndroid()) {
++  if (Distro.IsAlpineLinux() || Distro.IsAtaraxiaLinux() || Triple.isAndroid()) {
+     ExtraOpts.push_back("-z");
+     ExtraOpts.push_back("now");
+   }
+ 
+-  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux() ||
++  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux() || Distro.IsAtaraxiaLinux() ||
+       Triple.isAndroid()) {
+     ExtraOpts.push_back("-z");
+     ExtraOpts.push_back("relro");
+@@ -968,8 +968,11 @@ void Linux::AddIAMCUIncludeArgs(const ArgList &DriverArgs,
+ }
+ 
+ bool Linux::isPIEDefault() const {
+-  return (getTriple().isAndroid() && !getTriple().isAndroidVersionLT(16)) ||
+-          getTriple().isMusl() || getSanitizerArgs().requiresPIE();
++  return true;
++}
++
++unsigned Linux::GetDefaultStackProtectorLevel(bool KernelOrKext) const {
++  return 2;
+ }
+ 
+ bool Linux::IsMathErrnoDefault() const {
+diff --git a/lib/Driver/ToolChains/Linux.h b/lib/Driver/ToolChains/Linux.h
+index 4a662cb4..2ddd4056 100644
+--- a/lib/Driver/ToolChains/Linux.h
++++ b/lib/Driver/ToolChains/Linux.h
+@@ -39,6 +39,7 @@ public:
+                            llvm::opt::ArgStringList &CC1Args) const override;
+   CXXStdlibType GetDefaultCXXStdlibType() const override;
+   bool isPIEDefault() const override;
++  unsigned GetDefaultStackProtectorLevel(bool KernelOrKext) const override;
+   bool IsMathErrnoDefault() const override;
+   SanitizerMask getSupportedSanitizers() const override;
+   void addProfileRTLibs(const llvm::opt::ArgList &Args,
+diff --git a/lib/Frontend/CompilerInvocation.cpp b/lib/Frontend/CompilerInvocation.cpp
+index 3e6528c2..1aafc812 100644
+--- a/lib/Frontend/CompilerInvocation.cpp
++++ b/lib/Frontend/CompilerInvocation.cpp
+@@ -3332,6 +3332,14 @@ bool CompilerInvocation::CreateFromArgs(CompilerInvocation &Res,
+   ParsePreprocessorOutputArgs(Res.getPreprocessorOutputOpts(), Args,
+                               Res.getFrontendOpts().ProgramAction);
+ 
++  // Set the macro before the command line macros are being processed, so it can be
++  // properly unset if required to in case of incompatibilities.
++  if (Res.getCodeGenOpts().OptimizationLevel > 0 &&
++      (DashX.getLanguage() == InputKind::C || DashX.getLanguage() == InputKind::CXX) &&
++      !LangOpts.Sanitize.has(SanitizerKind::Address)) {
++    Res.getPreprocessorOpts().addMacroDef("_FORTIFY_SOURCE=2");
++  }
++
+   // Turn on -Wspir-compat for SPIR target.
+   auto Arch = T.getArch();
+   if (Arch == llvm::Triple::spir || Arch == llvm::Triple::spir64) {
+-- 
+2.17.1
+
