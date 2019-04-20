@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Simple script to build Rust binaries
 #
@@ -8,7 +8,6 @@
 RUSTVER=1.34.0
 RUSTTAR="rustc-$RUSTVER-src.tar.gz"
 RUSTURL="https://static.rust-lang.org/dist/$RUSTTAR"
-BARCH="$1"
 
 set -e
 
@@ -62,7 +61,7 @@ setup_architecture() {
 }
 
 get_rust_src() {
-	msg "Getting Go sources"
+	msg "Getting Rust sources"
 
 	cd $SRC
 	rm -rf rustc*
@@ -71,8 +70,53 @@ get_rust_src() {
 }
 
 build_rust() {
-	msg "Building Go for '"$BARCH"' platform"
-	msg "Finished building Go for '"$BARCH"' platform"
+	msg "Building Rust for '"$BARCH"' platform"
+
+	cd $SRC/rustc-$RUSTVER-src
+cat << EOF > config.toml
+[llvm]
+optimize = true
+release-debuginfo = false
+assertions = false
+static-libstdcpp = true
+ninja = true
+targets = "X86;PowerPC;ARM;Aarch64;MIPS"
+experimental-targets = ""
+[build]
+host = ["$TRIPLET"]
+docs = true
+compiler-docs = false
+submodules = false
+full-bootstrap = false
+extended = true
+verbose = 0
+sanitizers = false
+profiler = false
+openssl-static = true
+low-priority = true
+[rust]
+optimize = true
+codegen-units = 0
+debug-assertions = false
+debuginfo = false
+debuginfo-lines = false
+use-jemalloc = false
+backtrace = true
+default-linker = "gcc"
+channel = "stable"
+rpath = true
+codegen-tests = false
+[target.$TRIPLET]
+cc = "$TRIPLET-gcc"
+cxx = "$TRIPLET-g++"
+crt-static = false
+[dist]
+src-tarball = false
+EOF
+
+	./x.py build -j32
+
+	msg "Finished building Rust for '"$BARCH"' platform"
 }
 
 setup_architecture

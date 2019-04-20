@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Simple script to build Go binaries
 #
@@ -8,7 +8,6 @@
 GOVER=1.12.4
 GOTAR="go$GOVER.src.tar.gz"
 GOURL="https://dl.google.com/go/$GOTAR"
-BARCH="$1"
 
 set -e
 
