@@ -1,0 +1,39 @@
+From 0a2dbb3392ee710838bea6bda80d4daad6b54780 Mon Sep 17 00:00:00 2001
+From: Scot Doyle <lkml14@scotdoyle.com>
+Date: Sat, 18 Apr 2015 07:11:07 -0400
+Subject: [PATCH] com32/lib/syslinux/load_linux.c: update prot_mode_base
+
+If the kernel is relocatable and the protected mode code will not fit
+in the initially determined location, that code will be moved to the
+next available location. However, beginning with commit 8f470e7b, the
+code is moved to the initially determined location instead of the next
+available location because prot_mode_base is no longer updated to the
+correct location. Since whdr->code32_start is updated, it is pointing
+to the wrong execution start location, random code is executed and
+the machine is rebooted.
+
+Restore the old behavior by assigning prot_mode_base the value of
+base. Tested on a machine that exposed this behavior.
+
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+Signed-off-by: Gene Cumm <gene.cumm@gmail.com>
+---
+ com32/lib/syslinux/load_linux.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/com32/lib/syslinux/load_linux.c b/com32/lib/syslinux/load_linux.c
+index ac73729..fc7f04f 100644
+--- a/com32/lib/syslinux/load_linux.c
++++ b/com32/lib/syslinux/load_linux.c
+@@ -323,6 +323,7 @@ int bios_boot_linux(void *kernel_buf, size_t kernel_size,
+     }
+ 
+     whdr->code32_start += base - prot_mode_base;
++    prot_mode_base = base;
+ 
+     /* Real mode code */
+     if (syslinux_memmap_find(amap, &real_mode_base,
+-- 
+2.10.5.GIT
+
+

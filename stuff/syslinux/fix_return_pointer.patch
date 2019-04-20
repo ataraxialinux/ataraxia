@@ -1,0 +1,36 @@
+From 8dc6d758b564a1ccc44c3ae11f265d43628219ce Mon Sep 17 00:00:00 2001
+From: Sylvain Gault <sylvain.gault@gmail.com>
+Date: Tue, 13 Oct 2015 06:18:07 +0200
+Subject: [PATCH] ldlinux: Fix return pointer to local data
+
+The command-line parsing used to return a pointer to a local array. The
+code used to work by chance, but now, gcc 5 is able to detect it and
+return a NULL pointer instead.
+
+The buffer is now marked static. This shouldn't be a problem as only one
+command line can be read at a time.
+
+Signed-off-by: Sylvain Gault <sylvain.gault@gmail.com>
+Tested-by: poma <pomidorabelisima at gmail.com>
+Signed-off-by: Paulo Alcantara <pcacjr@zytor.com>
+---
+ com32/elflink/ldlinux/cli.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/com32/elflink/ldlinux/cli.c b/com32/elflink/ldlinux/cli.c
+index 6ff30c6..3119b11 100644
+--- a/com32/elflink/ldlinux/cli.c
++++ b/com32/elflink/ldlinux/cli.c
+@@ -125,7 +125,7 @@ const char *edit_cmdline(const char *input, int top /*, int width */ ,
+ 			 int (*pDraw_Menu) (int, int, int),
+ 			 void (*show_fkey) (int), bool *timedout)
+ {
+-    char cmdline[MAX_CMDLINE_LEN] = { };
++    static char cmdline[MAX_CMDLINE_LEN] = { };
+     int key, len, prev_len, cursor;
+     int redraw = 0;
+     int x, y;
+-- 
+2.10.5.GIT
+
+

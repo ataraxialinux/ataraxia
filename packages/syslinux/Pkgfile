@@ -1,0 +1,27 @@
+# Description: Collection of boot loaders
+# URL:         http://www.syslinux.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  linux-api-headers util-linux perl
+
+name=syslinux
+version=6.03
+release=1
+source=("https://cdn.kernel.org/pub/linux/utils/boot/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	unset LDFLAGS
+	patch -p1 < "$STUFF"/syslinux/gcc-fix-alignment.patch
+	patch -p1 < "$STUFF"/syslinux/dont-guess-alignment.patch
+	patch -p1 < "$STUFF"/syslinux/btrfs-fix.patch
+	patch -p1 < "$STUFF"/syslinux/kdb-230.patch
+	patch -p1 < "$STUFF"/syslinux/correct_base_type.patch
+	patch -p1 < "$STUFF"/syslinux/set_mode_base.patch
+	patch -p1 < "$STUFF"/syslinux/fix_return_pointer.patch
+	patch -p1 < "$STUFF"/syslinux/support-ext4-64bit.patch
+
+	make installer
+	make -j1 INSTALLROOT="$PKG" MANDIR=/usr/share/man bios install
+
+	install -D -m0644 "$STUFF"/syslinux/syslinux.cfg "$PKG"/boot/syslinux/syslinux.cfg
+}
