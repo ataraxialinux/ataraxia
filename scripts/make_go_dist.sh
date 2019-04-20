@@ -77,8 +77,8 @@ get_go_src() {
 	msg "Getting Go sources"
 
 	cd $SRC
+	rm -rf go*
 	curl -C - -L -O $GOURL
-	rm -rf go
 	tar -xvf $GOTAR
 }
 
