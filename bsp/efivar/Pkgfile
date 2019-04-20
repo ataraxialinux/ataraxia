@@ -1,0 +1,16 @@
+# Description: Tools and library to manipulate EFI variables
+# URL:         https://github.com/rhinstaller/efivar
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  popt
+
+name=efivar
+version=37
+release=1
+source=("https://github.com/rhboot/efivar/releases/download/$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed 's|-O0|-Os|g' -i Make.defaults || true
+	make libdir=/usr/lib bindir=/usr/bin mandir=/usr/share/man includedir=/usr/include
+	make -j1 libdir=/usr/lib bindir=/usr/bin mandir=/usr/share/man includedir=/usr/include DESTDIR="$PKG" install
+}
