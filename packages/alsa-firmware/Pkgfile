@@ -1,0 +1,25 @@
+# Description: ALSA firmware package
+# URL:         http://www.alsa-project.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=alsa-firmware
+version=1.0.29
+release=1
+source=("ftp://ftp.alsa-project.org/pub/firmware/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	cp "$STUFF"/config.guess config.guess
+	cp "$STUFF"/config.sub config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-hotplug-dir=/usr/lib/firmware
+	make
+	make DESTDIR="$PKG" install
+
+	# thanks arch
+	rm -rf "$PKG"/usr/lib/firmware/{ct{efx,speq}.bin,ess,korg,sb16,yamaha}
+	rm -rf "$PKG"/usr/lib/firmware/turtlebeach
+	rm -rf "$PKG"/usr/bin
+}
