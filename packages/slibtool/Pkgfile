@@ -1,0 +1,26 @@
+# Description: Skinny libtool implementation, written in C
+# URL:         http://git.midipix.org/cgit.cgi/slibtool
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=slibtool
+version=0.5.28
+release=1
+source=("http://midipix.org/dl/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	mkdir -p "$PKG"/usr/share/libtoolize/{AC_CONFIG_AUX_DIR,AC_CONFIG_MACRO_DIRS}
+	mkdir -p "$PKG"/usr/bin
+	install -m755 "$STUFF"/slibtool/ltmain.sh "$PKG"/usr/share/libtoolize/AC_CONFIG_AUX_DIR
+	install -m755 "$STUFF"/slibtool/libtoolize "$PKG"/usr/bin
+
+	cd "$SRC"/$name-$version
+	./configure $TOOLFLAGS \
+		--prefix=/usr \
+		--enable-shared \
+		--enable-static
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf slibtool "$PKG"/usr/bin/libtool
+}
