@@ -1,0 +1,23 @@
+# Description: Interactive process viewer
+# URL:         https://hisham.hm/htop/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python libnl
+
+name=htop
+version=2.2.0
+release=1
+source=("https://hisham.hm/$name/releases/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--enable-cgroup \
+		--enable-delayacct \
+		--enable-openvz \
+		--enable-unicode \
+		--enable-vserver
+	make
+	make DESTDIR="$PKG" install
+}
