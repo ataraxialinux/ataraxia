@@ -1,17 +1,36 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Freedesktop.org message bus system
+# URL:         https://wiki.freedesktop.org/www/Software/dbus/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  expat
 
-name=m4
-version=1.4.18
+name=dbus
+version=1.12.12
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
+source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--libexecdir=/usr/lib/dbus-1.0 \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-console-auth-dir=/run/console \
+		--with-dbus-user=dbus \
+		--with-system-pid-file=/run/dbus/pid \
+		--with-system-socket=/run/dbus/system_bus_socket \
+		--without-x \
+		--enable-user-session \
+		--disable-doxygen-docs \
+		--disable-xml-docs \
+		--disable-static
 	make
 	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/var/log/dbus "$PKG"/var/lib/dbus "$PKG"/etc/dbus-1/session.d
+
+	for svc in dbus; do
+		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
 }
