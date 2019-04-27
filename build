@@ -126,15 +126,19 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
-		i486)
+		i586)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i486-linux-musl"
+			export XTARGET="i586-linux-musl"
 			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
 		armv7l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			;;
+		armv6l)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
@@ -323,6 +327,7 @@ build_toolchain() {
 	pkghostinstall gcc-static
 	pkginstall musl
 	pkghostinstall gcc
+	pkghostinstall slibtool
 
 	case $BARCH in
 		riscv64)
@@ -354,14 +359,26 @@ build_toolchain() {
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+
+	ORIGMAKE="$(which make)"
+
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+
+	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
 }
 
 build_target() {
 	msg "Buildingget rootfs for '"$BARCH"' platform"
 
-	if [ -z "$LINUX" ]; then
-		LINUX="linux"
-	fi
+	case $BARCH in
+		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+			LINUX="linux"
+			;;
+		*)
+			msg "WARNING: Use vendor's kernel"
+	esac
 
 	for target in man-pages musl-tools zlib file ncurses readline m4 bison flex bc \
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
@@ -380,16 +397,17 @@ build_target() {
 build_embedded() {
 	msg "Building embedded rootfs for '"$BARCH"' platform"
 
-	if [ -z "$LINUX" ]; then
-		LINUX="linux"
-	fi
+	case $BARCH in
+		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+			LINUX="linux"
+			;;
+		*)
+			msg "WARNING: Use vendor's kernel"
+	esac
 
-	for target in man-pages musl-tools musl-fts zlib bzip2 xz libuargp libelf attr acl expat openssl xz lz4 zstd libarchive pkgutils; do
+	for target in man-pages musl-tools musl-fts zlib bzip2 xz libuargp libelf attr acl expat openssl xz lz4 zstd libarchive pkgutils busybox $LINUX; do
 		pkginstall $target
 	done
-
-	pkgbspinstall busybox
-	pkginstall $LINUX
 }
 
 build_stage() {
