@@ -1,0 +1,21 @@
+# Description: Tiny C Compiler
+# URL:         http://bellard.org/tcc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=tcc
+version=0.9.27
+release=1
+source=("https://download.savannah.nongnu.org/releases/tinycc/$name-$version.tar.bz2")
+
+build() {
+	unset CFLAGS LDFLAGS
+
+	cd "$SRC"/$name-$version
+	sed -i configure -e "s;lib64;lib;g"
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--config-musl
+	make
+	make DESTDIR="$PKG" docdir="$PKG"/usr/share/doc/tcc install
+}
