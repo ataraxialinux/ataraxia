@@ -1,17 +1,38 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Lightweight, easy to configure DNS forwarder and DHCP server
+# URL:         http://www.thekelleys.org.uk/dnsmasq/doc.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gmp libidn2 libnetfilter_conntrack dbus nettle
 
-name=m4
-version=1.4.18
+name=dnsmasq
+version=2.80
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
+source=("http://www.thekelleys.org.uk/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	make \
+		CFLAGS="$CFLAGS" \
+		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS -DHAVE_LIBIDN2 -DHAVE_CONNTRACK" \
+		PREFIX=/usr \
+		BINDIR=/usr/bin \
+		all-i18n
+	make \
+		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS -DHAVE_LIBIDN2 -DHAVE_CONNTRACK" \
+		PREFIX=/usr \
+		BINDIR=/usr/bin \
+		DESTDIR="$PKG" \
+		install install-i18n
+
+	install -Dm644 dbus/dnsmasq.conf "$PKG"/usr/share/dbus-1/system.d/dnsmasq.conf
+	install -Dm644 dnsmasq.conf.example "$PKG"/etc/dnsmasq.conf
+
+	sed -i 's,%%PREFIX%%,/usr,' "$PKG"/etc/dnsmasq.conf
+	install -Dm644 "trust-anchors.conf" "$PKG"/usr/share/dnsmasq/trust-anchors.conf
+
+	mkdir -p "$PKG"/var/log/dnsmasq
+
+	for svc in dnsmasq; do
+		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
 }
