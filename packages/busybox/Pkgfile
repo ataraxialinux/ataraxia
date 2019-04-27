@@ -13,13 +13,13 @@ build() {
 		x86_64)
 			export XKARCH="x86_64"
 			;;
-		i486)
+		i586)
 			export XKARCH="i386"
 			;;
 		aarch64)
 			export XKARCH="arm64"
 			;;
-		armv7l|armv5tel)
+		armv7l|armv6l|armv5tel)
 			export XKARCH="arm"
 			;;
 		mips64|mips64el|mips|mipsel)
@@ -39,7 +39,11 @@ build() {
 	cd "$SRC"/$name-$version
 	make mrproper
 
-	cp "$STUFF"/busybox/config .config
+	if [ "$EMBEDDED" = "1" ]; then
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" CONFIG_STATIC=y
+	else
+		cp "$STUFF"/busybox/config .config
+	fi
 
 	if [ "$CROSS" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS"
@@ -59,11 +63,29 @@ build() {
 	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 	chmod +x "$PKG"/usr/share/udhcpc/default.script
 
-	mkdir -p "$PKG"/var/service
-	mkdir -p "$PKG"/var/log/dmesg
+	if [ "$EMBEDDED" != "1" ]; then
+		mkdir -p "$PKG"/var/service
+		mkdir -p "$PKG"/var/log/dmesg
 
-	for svc in tty1 tty2 tty3 tty4 tty5 tty6 ttyS0 ttyAMA0 dmesg; do
-		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
-		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
-	done
+		for svc in tty1 tty2 tty3 tty4 tty5 tty6 ttyS0 ttyAMA0 dmesg; do
+			install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+			ln -sf /etc/service/$svc "$PKG"/var/service/$svc
+		done
+	fi
+
+	if [ "$EMBEDDED" = "1" ]; then
+		cd "$PKG"
+
+		mkdir -p etc/init.d
+
+		echo '#!/usr/bin/busybox hush' > etc/init.d/rcS
+		echo 'export PATH=/usr/bin' >> etc/init.d/rcS
+		echo 'dmesg -n 1' >> etc/init.d/rcS
+		echo 'mount -t devtmpfs none /dev' >> etc/init.d/rcS
+		echo 'mount -t proc none /proc' >> etc/init.d/rcS
+		echo 'mount -t sysfs none /sys' >> etc/init.d/rcS
+		echo 'setsid cttyhack /usr/bin/hush' >> etc/init.d/rcS
+		echo 'echo Welcome to Ataraxia Linux Embedded Edition!' >> etc/init.d/rcS
+		chmod +x etc/init.d/rcS
+	fi
 }
