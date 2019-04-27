@@ -1,0 +1,19 @@
+# Description: Generate scripting interfaces to C/C++ code
+# URL:         http://www.swig.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pcre
+
+name=swig
+version=3.0.12
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-clisp \
+		--without-maximum-compile-warnings
+	make
+	make DESTDIR="$PKG" install
+}
