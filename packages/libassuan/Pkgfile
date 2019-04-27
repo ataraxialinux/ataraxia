@@ -1,0 +1,17 @@
+# Description: IPC library used by some GnuPG related software
+# URL:         https://www.gnupg.org/related_software/libassuan/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libgpg-error
+
+name=libassuan
+version=2.5.3
+release=1
+source=("ftp://ftp.gnupg.org/gcrypt/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
