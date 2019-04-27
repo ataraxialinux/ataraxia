@@ -1,17 +1,24 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: GLib bindings for DBUS
+# URL:         https://www.freedesktop.org/wiki/Software/DBusBindings
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  glib dbus
 
-name=m4
-version=1.4.18
+name=dbus-glib
+version=0.110
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
+source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--libexecdir=/usr/lib \
+		--disable-static
 	make
-	make DESTDIR="$PKG" install
+
+	_c=/usr/share/bash-completion/completions
+	make DESTDIR="$PKG" install completiondir=$_c
+	mv "$PKG$_c"/{dbus-bash-completion.sh,dbus-send}
 }
