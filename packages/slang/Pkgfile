@@ -1,0 +1,20 @@
+# Description: S-Lang is a powerful interpreted language
+# URL:         https://www.jedsoft.org/slang/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pcre
+
+name=slang
+version=2.3.2
+release=1
+source=("https://www.jedsoft.org/releases/slang/$name-$version.tar.bz2")
+
+build() {
+	unset MAKEFLAGS
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install-all
+}
