@@ -1,0 +1,30 @@
+# Description: Complete and free implementation of the OpenPGP standard
+# URL:         https://www.gnupg.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline bzip2 sqlite libusb gnutls libgpg-error libgcrypt libassuan libksba npth pinentry
+
+name=gnupg
+version=2.2.15
+release=1
+source=("ftp://ftp.gnupg.org/gcrypt/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -e '/noinst_SCRIPTS = gpg-zip/c sbin_SCRIPTS += gpg-zip' -i tools/Makefile.in
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/gnupg \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--enable-symcryptrun \
+		--disable-all-tests \
+		--disable-ldap
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf gpg "$PKG"/usr/bin/gpg2
+	ln -sf gpgv "$PKG"/usr/bin/gpgv2
+
+	install -m755 tools/gpg-zip "$PKG"/usr/bin/gpg-zip
+}
