@@ -1,0 +1,18 @@
+# Description: A C wrapper library for GnuPG
+# URL:         http://www.gnupg.org/related_software/gpgme/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gnupg
+
+name=gpgme
+version=1.13.0
+release=1
+source=("ftp://ftp.gnupg.org/gcrypt/$name/$name-$version.tar.bz2")
+NO_EMPTY_DIRS=1
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
