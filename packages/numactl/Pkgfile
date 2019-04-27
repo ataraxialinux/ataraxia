@@ -1,0 +1,20 @@
+# Description: Simple NUMA policy support
+# URL:         http://oss.sgi.com/projects/libnuma/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl
+
+name=numactl
+version=2.0.12
+release=1
+source=("https://github.com/numactl/numactl/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/numactl/musl.patch
+
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
