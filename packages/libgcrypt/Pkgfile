@@ -1,0 +1,17 @@
+# Description: General purpose cryptographic library based on the code from GnuPG
+# URL:         https://www.gnupg.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libgpg-error
+
+name=libgcrypt
+version=1.8.4
+release=1
+source=("ftp://ftp.gnupg.org/gcrypt/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
