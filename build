@@ -373,7 +373,7 @@ build_target() {
 	msg "Buildingget rootfs for '"$BARCH"' platform"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -398,7 +398,7 @@ build_embedded() {
 	msg "Building embedded rootfs for '"$BARCH"' platform"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -416,7 +416,7 @@ build_stage() {
 	initdb "$STAGEFS"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -445,7 +445,7 @@ build_stage_embedded() {
 	initdb "$STAGEFS"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -468,7 +468,7 @@ build_initramfs() {
 	initdb "$INITRAMFS"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -506,7 +506,7 @@ build_initramfs_stage() {
 	initdb "$INITRAMFS"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -530,7 +530,7 @@ build_hdd() {
 	msg "Buildingget hard disk image for '"$BARCH"' platform"
 
 	case $BARCH in
-		x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+		x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 			LINUX="linux"
 			;;
 		*)
@@ -546,7 +546,7 @@ build_hdd() {
 	parted -a optimal -s $lodev mkpart primary 0% 100%
 
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			parted -s $lodev set 1 boot on
 			;;
 	esac
@@ -606,7 +606,7 @@ build_hdd_embedded() {
 prepare_iso_files() {
 	msg "Prepare files for .iso image"
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			mkdir -p "$ISODIR"/seiba "$ISODIR"/efi/boot "$ISODIR"/boot/isolinux "$ISODIR"/boot/grub
 			;;
 		ppc64le|ppc64|ppc)
@@ -632,7 +632,7 @@ make_iso_x86() {
 			format="x86_64-efi"
 			efi="bootx64.efi"
 			;;
-		i486)
+		i586)
 			format="i386-efi"
 			efi="bootia32.efi"
 			;;
@@ -740,7 +740,7 @@ CEOF
 
 mklive() {
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			make_iso_x86
 			;;
 		ppc64le|ppc64|ppc)
@@ -798,7 +798,7 @@ case "$COMMAND" in
 			setup_environment
 			build_stage
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc)
+				x86_64|i586|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -807,7 +807,7 @@ case "$COMMAND" in
 					mklive
 			esac
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+				x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 					build_hdd
 			esac
 			;;
@@ -816,7 +816,7 @@ case "$COMMAND" in
 			setup_architecture
 			setup_environment
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc)
+				x86_64|i586|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -841,7 +841,7 @@ case "$COMMAND" in
 			build_target
 			build_stage
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc)
+				x86_64|i586|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -850,7 +850,7 @@ case "$COMMAND" in
 					mklive
 			esac
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+				x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 					build_hdd
 			esac
 			;;
@@ -886,18 +886,6 @@ case "$COMMAND" in
 		check_for_root
 		setup_architecture
 		setup_environment
-		;;
-	build-go-dist)
-		check_for_root
-		setup_architecture
-		setup_environment
-		"$SCRIPTS"/make_go_dist.sh
-		;;
-	build-ghc-dist)
-		check_for_root
-		setup_architecture
-		setup_environment
-		"$SCRIPTS"/make_ghc_dist.sh
 		;;
 	check-updates|updtchk)
 		setup_environment
