@@ -1,0 +1,22 @@
+# Description: Provides a way to load and enumerate PKCS#11 modules
+# URL:         https://github.com/p11-glue/p11-kit
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libffi libtasn1
+
+name=p11-kit
+version=0.23.15
+release=1
+source=("https://github.com/p11-glue/p11-kit/releases/download/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-module-path=/usr/lib/pkcs11 \
+		--with-trust-paths=/etc/ca-certificates/trust-source:/usr/share/ca-certificates/trust-source
+	make
+	make DESTDIR="$PKG" install
+}
