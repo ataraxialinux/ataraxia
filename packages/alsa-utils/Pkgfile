@@ -5,7 +5,7 @@
 
 name=alsa-utils
 version=1.1.8
-release=1
+release=2
 source=("ftp://ftp.alsa-project.org/pub/utils/$name-$version.tar.bz2")
 
 build() {
@@ -25,11 +25,4 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -d "$PKG"/var/lib/alsa
-	mkdir -p "$PKG"/var/log/alsa
-
-	for svc in alsa; do
-		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/runit-svc/$svc-finish "$PKG"/etc/service/$svc/finish
-		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
-	done
 }
