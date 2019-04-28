@@ -1,0 +1,25 @@
+# Description: A generic library support script
+# URL:         http://www.gnu.org/software/libtool
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gcc
+
+name=libtool
+version=2.4.6
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-static
+
+	if [ "$CROSS" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
+}
