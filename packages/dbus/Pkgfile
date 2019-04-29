@@ -1,33 +1,40 @@
 # Description: Freedesktop.org message bus system
 # URL:         https://wiki.freedesktop.org/www/Software/dbus/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  expat
+# Depends on:  expat python2
 
 name=dbus
 version=1.12.12
-release=1
+release=2
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--libexecdir=/usr/lib/dbus-1.0 \
+		--libexecdir=/usr/lib/dbus \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-console-auth-dir=/run/console \
-		--with-dbus-user=dbus \
-		--with-system-pid-file=/run/dbus/pid \
+		--with-dbus-daemondir=/usr/bin \
+		--with-init-scripts=none \
+		--with-system-pid-file=/run/dbus/dbus.pid \
 		--with-system-socket=/run/dbus/system_bus_socket \
+		--with-session-socket-dir=/tmp \
+		--with-dbus-user=messagebus \
+		--with-xml=expat \
+		--without-systemdsystemunitdir \
 		--without-x \
-		--enable-user-session \
+		--enable-inotify \
 		--disable-doxygen-docs \
-		--disable-xml-docs \
-		--disable-static
+		--disable-selinux \
+		--disable-systemd \
+		--disable-x11-autolaunch \
+		--disable-xml-docs
 	make
 	make DESTDIR="$PKG" install
 
-	mkdir -p "$PKG"/var/log/dbus "$PKG"/var/lib/dbus "$PKG"/etc/dbus-1/session.d
+	mkdir -p "$PKG"/var/log/dbus
 
 	for svc in dbus; do
 		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
