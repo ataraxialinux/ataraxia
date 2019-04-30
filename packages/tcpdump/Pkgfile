@@ -1,0 +1,18 @@
+# Description: Powerful command-line packet analyzer
+# URL:         http://www.tcpdump.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl libpcap libcap-ng
+
+name=tcpdump
+version=4.9.2
+release=1
+source=("https://www.tcpdump.org/release/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}
