@@ -1,0 +1,19 @@
+# Description: resolv.conf management framework (resolvconf)
+# URL:         https://roy.marples.name/projects/openresolv
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=openresolv
+version=3.9.0
+release=1
+source=("https://roy.marples.name/downloads/openresolv/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/resolvconf \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
