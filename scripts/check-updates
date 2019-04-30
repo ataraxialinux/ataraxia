@@ -2,7 +2,7 @@
 #
 # Written by Ishimoto Shinobu
 #
-# Also thanks Void Linux and nemasu for required code!
+# Also thanks Void Linux for required code!
 #
 
 umask 022
@@ -16,6 +16,8 @@ check_updates() {
 	local i p url sfname lpname bbname githubname rx found_version consider
 	local update_override=$mypkg/update
 	local original_name=$name
+
+	DASHR="-r"
 
 	if [ -r $update_override ]; then
 		. $update_override
@@ -86,7 +88,7 @@ check_updates() {
 			grep -Po -i "$rx"
 	done |
 	tr _ . |
-	sort -Vu -r |
+	sort -Vu $DASHR |
 	head -n 1 |
 	while IFS= read -r found_version; do
 		consider=true
