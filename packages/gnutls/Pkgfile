@@ -4,22 +4,11 @@
 # Depends on:  zlib readline libunistring libidn2 nettle libtasn1 p11-kit
 
 name=gnutls
-version=3.6.7.1
-case $version in
-	*.*.*.*) _v=${version%.*}
-		_v=${_v%.*};;
-	*.*.*) _v=${version%.*};;
-esac
+version=3.6.7
 release=1
-source=("https://www.gnupg.org/ftp/gcrypt/$name/v${_v}/$name-$version.tar.xz")
+source=("https://www.gnupg.org/ftp/gcrypt/$name/v${version%.*}/$name-$version.tar.xz")
 
 build() {
-	case $version in
-		*.*.*.*)
-			version=${version%.*}
-			;;
-	esac
-
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
