@@ -1,0 +1,29 @@
+# Description: A file transfer program to keep remote files in sync
+# URL:         https://rsync.samba.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  acl perl popt
+
+name=rsync
+version=3.1.3
+release=1
+source=("https://rsync.samba.org/ftp/rsync/src/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-included-popt \
+		--with-included-zlib \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/rsync/rsyncd.conf "$PKG"/etc/rsyncd.conf
+
+	mkdir -p "$PKG"/var/log/rsyncd
+
+	for svc in rsyncd; do
+		install -Dm0755 "$STUFF"/runit-svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/runit-svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+}
