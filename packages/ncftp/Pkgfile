@@ -1,0 +1,22 @@
+# Description: A set of free application programs implementing FTP
+# URL:         http://www.ncftp.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+
+name=ncftp
+version=3.2.6
+release=1
+source=("ftp://ftp.ncftp.com/ncftp/$name-$version-src.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	CPP=/usr/bin/cpp \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+
+	install -d "$PKG"/usr/share
+	make prefix="$PKG"/usr mandir="$PKG"/usr/share/man install
+}
