@@ -1,0 +1,24 @@
+# Description: A functional language with OO extensions
+# URL:         http://caml.inria.fr/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib binutils gcc ncurses gdbm
+
+name=ocaml
+version=4.07.1
+release=1
+source=("http://caml.inria.fr/distrib/$name-${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/ocaml/compile-without-debug-info.patch
+	patch -Np1 -i "$STUFF"/ocaml/fix-mcontext-fields.patch
+	patch -Np1 -i "$STUFF"/ocaml/fix-segfault-in-ppc64le.patch
+
+	./configure \
+		-prefix /usr \
+		-mandir /usr/share/man \
+		-fPIC
+	make world.opt
+	make DESTDIR="$PKG" install
+	chmod -R g-w "$PKG"
+}
