@@ -2,11 +2,11 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 wget gawk bc bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar libarchive-dev xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev groff zlib1g-dev
+apt-get install build-essential m4 gawk bc bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar libarchive-dev xorriso wget git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev groff zlib1g-dev
 ```
 Fedora (and derivatives):
 ```
-dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz openssl-devel elfutils-devel groff zlib-devel
+dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz openssl-devel elfutils-devel groff zlib-devel wget
 ```
 Arch Linux (and derivatives):
 ```
