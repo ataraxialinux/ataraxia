@@ -14,8 +14,6 @@ release=1
 source=("https://www.gnupg.org/ftp/gcrypt/$name/v${_v}/$name-$version.tar.xz")
 
 build() {
-	export savedversion="$version"
-
 	case $version in
 		*.*.*.*)
 			version=${version%.*}
@@ -35,6 +33,4 @@ build() {
 	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
-
-	export version="$savedversion"
 }
