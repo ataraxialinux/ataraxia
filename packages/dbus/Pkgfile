@@ -1,0 +1,39 @@
+# Description: Freedesktop.org message bus system
+# URL:         https://freedesktop.org/wiki/Software/dbus
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  expat
+
+name=dbus
+version=1.12.12
+release=1
+source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/dbus \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-console-auth-dir=/run/console \
+		--with-system-pid-file=/run/dbus/pid \
+		--with-system-socket=/run/dbus/system_bus_socket \
+		--without-x \
+		--without-systemdsystemunitdir \
+		--disable-doxygen-docs \
+		--disable-xml-docs \
+		--disable-static \
+		--disable-systemd
+	make
+	make DESTDIR="$PKG" install
+
+	chown root:messagebus "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
+	chmod 4750 "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
+
+	mkdir -p "$PKG"/var/log/dbus
+
+	for svc in dbus; do
+		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+}
