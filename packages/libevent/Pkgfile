@@ -1,0 +1,21 @@
+# Description: An event notification library
+# URL:         http://libevent.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
+
+name=libevent
+version=2.1.8
+release=1
+source=("https://github.com/libevent/libevent/releases/download/release-$version-stable/$name-$version-stable.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libevent/libressl-2.7.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
