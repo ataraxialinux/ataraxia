@@ -1,0 +1,17 @@
+# Description: the best command tbh :bigbrain:
+# URL:         http://www.tkl.iis.u-tokyo.ac.jp/~toyoda/index_e.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+
+name=sl
+version=5.02
+release=1
+source=("https://github.com/mtoyoda/sl/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p "$PKG"/usr/bin "$PKG"/usr/share/man/man1/
+
+	cc $CFLAGS -o "$PKG"/usr/bin/sl sl.c -lcurses
+	gzip -9 -f sl.1 && cp sl.1.gz "$PKG"/usr/share/man/man1/
+}
