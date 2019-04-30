@@ -1,0 +1,67 @@
+From 54651a0962949c726bfcd582d6d5a33b147da456 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Mat=C3=ADas=20Fonzo?= <selk@dragora.org>
+Date: Wed, 9 Aug 2017 20:27:12 -0300
+Subject: [PATCH] Change path for missing headers of some progs/*.c
+
+Previously:
+
+for DEPS in `echo *.c */*.c`; do \
+gcc -I. -I /usr/src/gpm-1.20.7/src -M  -I/usr/src/gpm-1.20.7/src -DHAVE_CONFIG_H -include headers/config.h -Wall -DSYSCONFDIR="\"/etc\"" -DSBINDIR="\"/usr/sbin\"" -D_GNU_SOURCE  $DEPS | \
+/bin/sed 's/^\(.*\)\.o\([ :]+\)/\1.o \1.lo\2/g' >> .depend ; done
+prog/display-buttons.c:39:57: fatal error: gpm.h: No such file or directory
+ #include <gpm.h>              /* gpm information      */
+                                                         ^
+compilation terminated.
+prog/display-coords.c:40:57: fatal error: gpm.h: No such file or directory
+ #include <gpm.h>              /* gpm information      */
+                                                         ^
+compilation terminated.
+prog/get-versions.c:25:57: fatal error: gpm.h: No such file or directory
+ #include <gpm.h>              /* gpm information      */
+                                                         ^
+compilation terminated.
+---
+ src/prog/display-buttons.c | 2 +-
+ src/prog/display-coords.c  | 2 +-
+ src/prog/get-versions.c    | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/prog/display-buttons.c b/src/prog/display-buttons.c
+index 38d2f11..0db0289 100644
+--- a/src/prog/display-buttons.c
++++ b/src/prog/display-buttons.c
+@@ -37,7 +37,7 @@
+ #include <time.h>             /* time()               */
+ #include <errno.h>            /* errno                */
+ #include <sys/select.h>       /* fd_set and FD_*      */
+-#include <gpm.h>              /* gpm information      */
++#include "headers/gpm.h"      /* gpm information      */
+ 
+ /* display resulting data */
+ int display_data(Gpm_Event *event, void *data)
+diff --git a/src/prog/display-coords.c b/src/prog/display-coords.c
+index 82afd12..7a8da4a 100644
+--- a/src/prog/display-coords.c
++++ b/src/prog/display-coords.c
+@@ -39,7 +39,7 @@
+ #include <time.h>             /* time()               */
+ #include <errno.h>            /* errno                */
+ #include <sys/select.h>       /* fd_set and FD_*      */
+-#include <gpm.h>              /* gpm information      */
++#include "headers/gpm.h"      /* gpm information      */
+ 
+ /* display resulting data */
+ int display_data(Gpm_Event *event, void *data)
+diff --git a/src/prog/get-versions.c b/src/prog/get-versions.c
+index 00f1753..8b17e12 100644
+--- a/src/prog/get-versions.c
++++ b/src/prog/get-versions.c
+@@ -22,7 +22,7 @@
+  ********/
+ 
+ #include <stdio.h>            /* printf()             */
+-#include <gpm.h>              /* gpm information      */
++#include "headers/gpm.h"      /* gpm information      */
+ 
+ int main()
+ {
