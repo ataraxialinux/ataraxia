@@ -1,0 +1,26 @@
+From c26a6e19415633b2a264ca64f38fd6bc388f38c4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Mat=C3=ADas=20Fonzo?= <selk@dragora.org>
+Date: Wed, 9 Aug 2017 20:05:57 -0300
+Subject: [PATCH] redirect <sys/fcntl.h> to <fcntl.h> as the GCC compiler
+ suggest
+
+gcc  -I/usr/src/gpm-1.20.7/src -DHAVE_CONFIG_H -include headers/config.h -Wall -DSYSCONFDIR="\"/etc\"" -DSBINDIR="\"/usr/sbin\"" -D_GNU_SOURCE  -g -O2  -c -o daemon/gpm.o daemon/gpm.c
+In file included from daemon/gpm.c:32:0:
+/usr/include/sys/fcntl.h:1:2: warning: #warning redirecting incorrect #include <sys/fcntl.h> to <fcntl.h> [-Wcpp]
+---
+ src/daemon/gpm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/daemon/gpm.c b/src/daemon/gpm.c
+index 771da5c..6806dce 100644
+--- a/src/daemon/gpm.c
++++ b/src/daemon/gpm.c
+@@ -29,7 +29,7 @@
+ #include <signal.h>        /* SIGPIPE */
+ #include <time.h>          /* time() */
+ #include <sys/param.h>
+-#include <sys/fcntl.h>     /* O_RDONLY */
++#include <fcntl.h>         /* O_RDONLY */
+ #include <sys/wait.h>      /* wait()   */
+ #include <sys/stat.h>      /* mkdir()  */
+ #include <sys/time.h>      /* timeval */
