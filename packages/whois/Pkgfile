@@ -1,0 +1,19 @@
+# Description: Intelligent WHOIS client
+# URL:         https://github.com/rfc1036/whois
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl libidn2
+
+name=whois
+version=5.4.2
+release=1
+source=("http://ftp.debian.org/debian/pool/main/w/$name/${name}_${version}.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make \
+		CONFIG_FILE=/etc/whois.conf \
+		CFLAGS="$CFLAGS" \
+		HAVE_ICONV=1
+	make prefix=/usr BASEDIR="$PKG" install-whois
+	install -D -m644 whois.conf "$PKG"/etc/whois.conf
+}
