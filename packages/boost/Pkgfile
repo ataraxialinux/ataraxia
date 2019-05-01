@@ -1,7 +1,7 @@
 # Description: Free peer-reviewed portable C++ source libraries - development headers
 # URL:         http://www.boost.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib bzip2 xz zstd python icu
+# Depends on:  zlib bzip2 xz zstd python2 icu
 
 name=boost
 version=1.70.0
@@ -10,15 +10,13 @@ release=1
 source=("https://dl.bintray.com/boostorg/release/$version/source/${name}_${boostver}.tar.bz2")
 
 build() {
-	sus=$(python3 --version | awk '{print $2}')
+	sus=$(python2 --version | awk '{print $2}')
 
 	cd "$SRC"/${name}_${boostver}
-	sed -e '/using python/ s@;@: /usr/include/python${PYTHON_VERSION/3*/${PYTHON_VERSION}m} ;@' -i bootstrap.sh
-
 	./bootstrap.sh \
 		--prefix="$PKG"/usr \
 		--with-icu \
-		--with-python=python3 \
+		--with-python=/usr/bin/python2 \
 		--with-toolset=gcc
 
 	./b2 stage \
