@@ -10,34 +10,42 @@ release=1
 source=("https://dl.bintray.com/boostorg/release/$version/source/${name}_${boostver}.tar.bz2")
 
 build() {
+	sus=$(python3 --version | awk '{print $2}')
+
 	cd "$SRC"/${name}_${boostver}
+	sed -e '/using python/ s@;@: /usr/include/python${PYTHON_VERSION/3*/${PYTHON_VERSION}m} ;@' -i bootstrap.sh
+
 	./bootstrap.sh \
 		--prefix="$PKG"/usr \
-		--with-toolset=gcc \
 		--with-icu \
-		--with-python=python3
+		--with-libraries=python \
+		--with-python=python3 \
+		--with-toolset=gcc
+
 	./b2 stage \
 		variant=release \
-		threading=multi \
 		debug-symbols=off \
-		runtime-link=shared \
-		link=shared,static \
 		toolset=gcc \
+		threading=multi l\
+		ink=shared,static \
+		python=${sus%.*} \
 		cflags="${CFLAGS} -fPIC -O3" \
 		cxxflags="${CXXFLAGS} -std=c++14 -fPIC -O3" \
-		-j${JOBS} \
-		\
-		--layout=system
+		--layout=system \
+		--with-python \
+		-j$JOBS
 	./b2 install \
 		variant=release \
-		threading=multi \
 		debug-symbols=off \
-		runtime-link=shared \
-		link=shared,static \
 		toolset=gcc \
+		threading=multi l\
+		ink=shared,static \
+		python=${sus%.*} \
 		cflags="${CFLAGS} -fPIC -O3" \
 		cxxflags="${CXXFLAGS} -std=c++14 -fPIC -O3" \
-		-j${JOBS} \
-		\
-		--layout=system
+		--layout=system \
+		--with-python \
+		-j$JOBS
+
+	ln -sf detail/sha1.hpp "$PKG"/usr/include/boost/uuid/sha1.hpp
 }
