@@ -1,0 +1,44 @@
+# Description: Free peer-reviewed portable C++ source libraries - development headers
+# URL:         http://www.boost.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 xz zstd python icu
+
+name=boost
+version=1.70.0
+boostver=${version//./_}
+release=1
+source=("https://dl.bintray.com/boostorg/release/$version/source/${name}_${boostver}.tar.bz2")
+
+build() {
+	cd "$SRC"/${name}_${boostver}
+	./bootstrap.sh \
+		--prefix="$PKG"/usr \
+		--with-toolset=gcc \
+		--with-icu \
+		--with-python=/usr/bin/python3 \
+		--with-libraries=python
+	./b2 stage \
+		variant=release \
+		threading=multi \
+		debug-symbols=off \
+		runtime-link=shared \
+		link=shared,static \
+		toolset=gcc \
+		cflags="${CFLAGS} -fPIC -O3" \
+		cxxflags="${CXXFLAGS} -std=c++14 -fPIC -O3" \
+		${JOBS} \
+		\
+		--layout=system
+	./b2 install \
+		variant=release \
+		threading=multi \
+		debug-symbols=off \
+		runtime-link=shared \
+		link=shared,static \
+		toolset=gcc \
+		cflags="${CFLAGS} -fPIC -O3" \
+		cxxflags="${CXXFLAGS} -std=c++14 -fPIC -O3" \
+		${JOBS} \
+		\
+		--layout=system
+}
