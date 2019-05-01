@@ -1,0 +1,72 @@
+Submitted By:            Douglas R. Reno <renodr at linuxfromscratch dot org>
+Date:                    2019-04-09
+Initial Package Version: 2.60.1
+Upstream Status:         Committed
+Origin:                  Upstream
+Description:             Adapts glib-networking to API changes in GnuTLS-3.6.7,
+                         which broke TLS/SSL support due to a new error
+                         declaration being added that was unexpected.
+
+diff -Naurp glib-networking-2.60.1.orig/tls/gnutls/gtlsconnection-gnutls.c glib-networking-2.60.1/tls/gnutls/gtlsconnection-gnutls.c
+--- glib-networking-2.60.1.orig/tls/gnutls/gtlsconnection-gnutls.c	2019-04-01 21:55:21.000000000 -0500
++++ glib-networking-2.60.1/tls/gnutls/gtlsconnection-gnutls.c	2019-04-09 22:30:32.253268948 -0500
+@@ -1062,7 +1062,11 @@ end_gnutls_io (GTlsConnectionGnutls  *gn
+       else
+         return 0;
+     }
+-  else if (status == GNUTLS_E_NO_CERTIFICATE_FOUND)
++  else if (status == GNUTLS_E_NO_CERTIFICATE_FOUND
++#ifdef GNUTLS_E_CERTIFICATE_REQUIRED
++          || status == GNUTLS_E_CERTIFICATE_REQUIRED /* Added in GnuTLS 3.6.7 */
++#endif
++          )
+     {
+       g_set_error_literal (error, G_TLS_ERROR, G_TLS_ERROR_CERTIFICATE_REQUIRED,
+                            _("TLS connection peer did not send a certificate"));
+diff -Naurp glib-networking-2.60.1.orig/tls/tests/connection.c glib-networking-2.60.1/tls/tests/connection.c
+--- glib-networking-2.60.1.orig/tls/tests/connection.c	2019-04-01 21:55:21.000000000 -0500
++++ glib-networking-2.60.1/tls/tests/connection.c	2019-04-09 22:28:11.339078304 -0500
+@@ -1685,17 +1685,6 @@ test_simultaneous_async (TestConnection
+   g_assert_cmpstr (test->buf, ==, TEST_DATA);
+ }
+ 
+-#ifdef BACKEND_IS_GNUTLS
+-static gboolean
+-check_gnutls_has_rehandshaking_bug (void)
+-{
+-  const char *version = gnutls_check_version (NULL);
+-
+-  return !strcmp (version, "3.6.1") ||
+-         !strcmp (version, "3.6.2");
+-}
+-#endif
+-
+ static void
+ test_simultaneous_async_rehandshake (TestConnection *test,
+                                      gconstpointer   data)
+@@ -1703,12 +1692,6 @@ test_simultaneous_async_rehandshake (Tes
+ #ifdef BACKEND_IS_OPENSSL
+   g_test_skip ("this needs more research on openssl");
+   return;
+-#elif defined(BACKEND_IS_GNUTLS)
+-  if (check_gnutls_has_rehandshaking_bug ())
+-    {
+-      g_test_skip ("test would fail due to https://gitlab.com/gnutls/gnutls/issues/426");
+-      return;
+-    }
+ #endif
+ 
+   test->rehandshake = TRUE;
+@@ -1808,12 +1791,6 @@ test_simultaneous_sync_rehandshake (Test
+ #ifdef BACKEND_IS_OPENSSL
+   g_test_skip ("this needs more research on openssl");
+   return;
+-#elif defined(BACKEND_IS_GNUTLS)
+-  if (check_gnutls_has_rehandshaking_bug ())
+-    {
+-      g_test_skip ("test would fail due to https://gitlab.com/gnutls/gnutls/issues/426");
+-      return;
+-    }
+ #endif
+ 
+   test->rehandshake = TRUE;
