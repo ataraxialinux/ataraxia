@@ -1,0 +1,28 @@
+# Description: Advanced key-value store
+# URL:         https://redis.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=redis
+version=5.0.4
+release=1
+source=("http://download.redis.io/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p1 -i "$STUFF"/redis/sane-defaults.patch
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf redis-server "$PKG"/usr/bin/redis-sentinel
+
+	install -Dm644 redis.conf "$PKG"/etc/redis.conf
+
+	install -Dm644 "$STUFF"/redis/logrotate "$PKG"/etc/logrotate.d/redis
+
+	mkdir -p "$PKG"/var/log/redis
+
+	for svc in redis; do
+		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+}
