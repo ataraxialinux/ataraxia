@@ -1,0 +1,22 @@
+# Description: Lists open files for running Unix processes
+# URL:         http://people.freebsd.org/~abe/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=m4
+version=1.4.18
+release=1
+source=("ftp://ftp.fu-berlin.de/pub/unix/tools/$name/${name}_${version}.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	tar xf ${name}_${version}_src.tar
+	cd ${name}_${version}_src
+	sed -i 's|/\* #define\tHASSECURITY\t1 \*/|#define\tHASSECURITY\t1|' dialects/linux/machine.h
+
+	./Configure -n linux
+	make
+
+	install -Dm0755 lsof "$PKG"/usr/bin/lsof 
+	install -Dm0644 lsof.8 "$PKG"/usr/share/man/man8/lsof.8 
+}
