@@ -1,0 +1,33 @@
+# Description: Spell checker and morphological analyzer library and program
+# URL:         https://hunspell.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline unzip
+
+name=hunspell
+version=1.7.0
+usversion=2018.04.16
+release=1
+source=("https://github.com/hunspell/hunspell/archive/v$version.tar.gz"
+	"http://downloads.sourceforge.net/project/wordlist/speller/$usversion/hunspell-en_US-large-$usversion.zip")
+
+build() {
+	export PATH="$PKG/usr/bin:$PATH"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-readline \
+		--with-ui \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+
+	pushd "$PKG"/usr/lib
+		ln -sf libhunspell-?.?.so libhunspell.so
+	popd
+
+	cd "$SRC"
+	sed -i "s:SET UTF8:SET UTF-8:g" *.aff
+	install -dm755 "$PKG"/usr/share/hunspell
+	install -m644 en_US*.dic en_US*.aff "$PKG"/usr/share/hunspell
+}

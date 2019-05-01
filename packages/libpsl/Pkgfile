@@ -1,0 +1,22 @@
+# Description: Public Suffix List library
+# URL:         https://github.com/rockdaboot/libpsl
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python libidn2
+
+name=libpsl
+version=0.21.0
+release=1
+source=("https://github.com/rockdaboot/libpsl/releases/download/$name-$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/env python/&3/' src/psl-make-dafsa
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-gtk-doc \
+		--enable-man \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}

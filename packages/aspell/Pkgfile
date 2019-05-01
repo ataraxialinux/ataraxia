@@ -1,0 +1,27 @@
+# Description: A spell checker designed to eventually replace Ispell
+# URL:         http://aspell.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=aspell
+version=0.60.7-rc1
+enversion=2018.04.16
+release=1
+source=("ftp://alpha.gnu.org/gnu/$name/$name-$version.tar.gz"
+	"ftp://ftp.gnu.org/gnu/aspell/dict/en/aspell6-en-$enversion-0.tar.bz2")
+
+build() {
+	export PATH="$PKG/usr/bin:$PATH"
+
+	cd "$SRC"/$name-$version
+	PERL_USE_UNSAFE_INC=1 ./autogen
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+
+	cd "$SRC"/aspell6-en-$enversion-0
+	./configure
+	make
+	make DESTDIR="$PKG" install
+}
