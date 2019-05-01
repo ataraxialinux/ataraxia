@@ -1,0 +1,46 @@
+# Description: JavaScript interpreter and libraries - Version 60
+# URL:         https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python2 zip autoconf2.13 zlib readline libffi icu nspr
+
+name=mozjs60
+version=60.6.1
+release=1
+source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
+
+build() {
+	export PYTHON=/usr/bin/python2
+	export SHELL=/bin/bash
+
+	cd "$SRC"/firefox-${version}
+	patch -Np1 -i "$STUFF"/mozjs60/bug1415202.patch
+	patch -Np1 -i "$STUFF"/mozjs60/fix-soname.patch
+	patch -Np1 -i "$STUFF"/mozjs60/include-configure-script.patch
+	patch -Np1 -i "$STUFF"/mozjs60/musl.patch
+
+	cd js/src
+	./configure \
+		--prefix=/usr \
+		--with-intl-api \
+		--with-system-icu \
+		--with-system-nspr \
+		--with-system-zlib \
+		--enable-ctypes \
+		--enable-pie \
+		--enable-readline \
+		--enable-release \
+		--enable-shared-js \
+		--disable-debug \
+		--disable-debug-symbols \
+		--disable-optimize \
+		--disable-jemalloc \
+		--host=$XTARGET \
+		--target=$XTARGET
+	make
+	make DESTDIR="$PKG" install
+
+	sed 's|^Cflags:.*|Cflags: -include ${pc_sysrootdir}/${includedir}/mozjs-60/js/RequiredDefines.h -I${includedir}/mozjs-60|' -i "$PKG"/usr/lib/pkgconfig/mozjs-60.pc
+
+	rm "$PKG"/usr/lib/*.ajs
+	find "$PKG"/usr/{lib/pkgconfig,include} -type f -exec chmod -c a-x {} +
+}
