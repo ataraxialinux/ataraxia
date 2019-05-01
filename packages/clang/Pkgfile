@@ -6,7 +6,8 @@
 name=clang
 version=8.0.0
 release=1
-source=("https://releases.llvm.org/$version/cfe-$version.src.tar.xz"
+source=("http://releases.llvm.org/$version/llvm-$version.src.tar.xz"
+	"https://releases.llvm.org/$version/cfe-$version.src.tar.xz"
 	"https://releases.llvm.org/$version/clang-tools-extra-$version.src.tar.xz")
 
 build() {
@@ -15,23 +16,26 @@ build() {
 
 	mv "$SRC"/clang-tools-extra-$version.src tools/extra
 
+	cd "$SRC"/cfe-$version.src
 	mkdir build
 	cd build
 	cmake "$SRC"/cfe-$version.src \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DCLANG_BUILD_EXAMPLES=OFF \
-		-DCLANG_INCLUDE_DOCS=OFF \
-		-DCLANG_INCLUDE_TESTS=OFF \
-		-DLLVM_BUILD_TESTS=OFF \
-		-DLLVM_BUILD_DOCS=OFF \
-		-DCLANG_PLUGIN_SUPPORT=ON \
-		-DLIBCLANG_BUILD_STATIC=ON \
-		-DLLVM_ENABLE_EH=ON \
-		-DLLVM_ENABLE_RTTI=ON \
 		-DPYTHON_EXECUTABLE=/usr/bin/python \
+		-DLLVM_EXTERNAL_LIT=/usr/bin/lit \
 		-DBUILD_SHARED_LIBS=ON \
+		-DLLVM_BUILD_DOCS=OFF \
+		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_ENABLE_SPHINX=OFF \
+		-DLLVM_INCLUDE_DOCS=OFF \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_ENABLE_FFI=ON \
 		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-DFFI_INCLUDE_DIR=$(pkg-config --variable=includedir libffi) \
+		-DLLVM_MAIN_SRC_DIR="$SRC/llvm-$version.src" \
+		-DLLVM_TARGETS_TO_BUILD="host;AMDGPU;BPF" \
+		-DLLVM_HOST_TRIPLE="$(cc -dumpmachine)" \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
@@ -40,4 +44,6 @@ build() {
 
 	mkdir -p "$PKG"/usr/lib/clang/
 	mv "$PKG"/usr/libexec/{ccc,c++}-analyzer "$PKG"/usr/lib/clang/
+	sed -i 's|libexec|lib/clang|' "$PKG"/usr/bin/scan-build
+	rm -rf "$PKG"/usr/libexec
 }
