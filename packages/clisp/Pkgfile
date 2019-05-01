@@ -1,0 +1,21 @@
+# Description: ANSI Common Lisp interpreter, compiler and debugger
+# URL:         http://clisp.cons.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libffcall libsigsegv readline
+
+name=clisp
+version=2.49_20181112_df3b9f6fd
+release=1
+source=("http://mirror.yandex.ru/slackware/slackware64-current/source/d/clisp/$name-$version.tar.xz")
+NO_EMPTY_DIRS=1
+
+build() {
+	unset MAKEFLAGS
+	export FORCE_UNSAFE_CONFIGURE=1
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
