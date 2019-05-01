@@ -8,18 +8,24 @@ release=1
 source=("http://download.redis.io/releases/$name-$version.tar.gz")
 
 build() {
+	export FINAL_LIBS="-lm -ldl -pthread"
+
 	cd "$SRC"/$name-$version
 	patch -p1 -i "$STUFF"/redis/sane-defaults.patch
-	make
-	make DESTDIR="$PKG" install
+	case "$BARCH" in mips64|mips64el|mips|mipsel) FINAL_LIBS="$FINAL_LIBS -latomic";; esac
+	make PREFIX=/usr MALLOC=libc
+	make PREFIX="$PKG"/usr install
 
 	ln -sf redis-server "$PKG"/usr/bin/redis-sentinel
 
 	install -Dm644 redis.conf "$PKG"/etc/redis.conf
+	install -D -m 644 -o redis -g redis sentinel.conf "$PKG"/etc/sentinel.conf
 
 	install -Dm644 "$STUFF"/redis/logrotate "$PKG"/etc/logrotate.d/redis
 
-	mkdir -p "$PKG"/var/log/redis
+	install -d -o redis -g redis \
+		"$PKG"/var/lib/redis \
+		"$PKG"/var/log/redis
 
 	for svc in redis; do
 		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
