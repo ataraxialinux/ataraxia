@@ -1,0 +1,25 @@
+# Description: Tools to manage kernel-level quotas in Linux
+# URL:         http://sourceforge.net/projects/linuxquota/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libnl
+
+name=quota
+version=4.04
+release=1
+source=("http://downloads.sourceforge.net/sourceforge/linuxquota/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p1 -i "$STUFF"/quota/fcntl.patch
+	patch -p1 -i "$STUFF"/quota/remove_non_posix_types.patch
+	patch -p1 -i "$STUFF"/quota/replace_getrpcbynumber_r.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-ldapmail \
+		--disable-rpc \
+		--disable-werror
+	make
+	make DESTDIR="$PKG" sbindir=/usr/bin root_sbindir=/usr/bin STRIP="" install
+}
