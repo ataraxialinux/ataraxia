@@ -1,0 +1,54 @@
+From 8c6c885f800c32dec21371660f0be2d04a0f4913 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 2 May 2019 19:37:41 +0900
+Subject: [PATCH] fix build with libressl 2.9
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/plugins/preauth/pkinit/pkinit_crypto_openssl.c | 7 +++++--
+ src/plugins/preauth/pkinit/pkinit_crypto_openssl.h | 4 +++-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/src/plugins/preauth/pkinit/pkinit_crypto_openssl.c b/src/plugins/preauth/pkinit/pkinit_crypto_openssl.c
+index 5ff81d8cf..f2bae6406 100644
+--- a/src/plugins/preauth/pkinit/pkinit_crypto_openssl.c
++++ b/src/plugins/preauth/pkinit/pkinit_crypto_openssl.c
+@@ -189,7 +189,8 @@ pkinit_pkcs11_code_to_text(int err);
+     (*_x509_pp) = PKCS7_cert_from_signer_info(_p7,_si)
+ #endif
+ 
+-#if OPENSSL_VERSION_NUMBER < 0x10100000L
++#if (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x10100000L) || \
++    defined(LIBRESSL_VERSION_NUMBER)
+ 
+ /* 1.1 standardizes constructor and destructor names, renaming
+  * EVP_MD_CTX_{create,destroy} and deprecating ASN1_STRING_data. */
+@@ -3053,7 +3054,9 @@ cleanup:
+     return retval;
+ }
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
++#if ((defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000L) && \
++    !defined(LIBRESSL_VERSION_NUMBER)) || \
++    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER >= 0x20900000L)
+ 
+ /*
+  * We need to decode DomainParameters from RFC 3279 section 2.3.3.  We would
+diff --git a/src/plugins/preauth/pkinit/pkinit_crypto_openssl.h b/src/plugins/preauth/pkinit/pkinit_crypto_openssl.h
+index 957c3def4..8942b643e 100644
+--- a/src/plugins/preauth/pkinit/pkinit_crypto_openssl.h
++++ b/src/plugins/preauth/pkinit/pkinit_crypto_openssl.h
+@@ -46,7 +46,9 @@
+ #include <openssl/asn1.h>
+ #include <openssl/pem.h>
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
++#if ((defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000L) && \
++	!defined(LIBRESSL_VERSION_NUMBER)) || \
++	(defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER >= 0x20900000L)
+ #include <openssl/asn1t.h>
+ #else
+ #include <openssl/asn1_mac.h>
+-- 
+2.11.0
+

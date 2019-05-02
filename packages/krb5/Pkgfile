@@ -10,6 +10,9 @@ source=("https://kerberos.org/dist/krb5/$version/krb5-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/krb5/0001-fix-build-with-libressl-2.9.patch
+
+	cd src
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
