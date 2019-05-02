@@ -1,0 +1,21 @@
+# Description: Compiler runtime libraries for clang
+# URL:         https://compiler-rt.llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja llvm
+
+name=compiler-rt
+version=8.0.0
+release=1
+source=("http://releases.llvm.org/$version/$name-$version.src.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version.src
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version.src \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
