@@ -1,0 +1,48 @@
+# Description: C language family frontend for LLVM
+# URL:         https://clang.llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja llvm compiler-rt
+
+name=clang
+version=8.0.0
+release=1
+source=("https://releases.llvm.org/$version/cfe-$version.src.tar.xz"
+	"https://releases.llvm.org/$version/clang-tools-extra-$version.src.tar.xz"
+	"https://releases.llvm.org/$version/llvm-$version.src.tar.xz")
+
+build() {
+	cd "$SRC"/cfe-$version.src
+	patch -Np1 -i "$STUFF"/clang/0001-Add-support-for-Ataraxia-Linux.patch
+
+	mv "$SRC"/clang-tools-extra-$version.src tools/extra
+
+	mkdir build
+	cd build
+	cmake "$SRC"/cfe-$version.src \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_EXECUTABLE=/usr/bin/python \
+		-DCLANG_VENDOR=AtaraxiaLinux \
+		-DCLANG_BUILD_EXAMPLES=OFF \
+		-DCLANG_INCLUDE_DOCS=OFF \
+		-DCLANG_INCLUDE_TESTS=OFF \
+		-DCLANG_PLUGIN_SUPPORT=ON \
+		-DLIBCLANG_BUILD_STATIC=ON \
+		-DLLVM_ENABLE_EH=ON \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_EXTERNAL_LIT=/usr/bin/lit \
+		-DLLVM_MAIN_SRC_DIR="$SRC"/llvm-$version.src \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -m 644 lib/libclang.a "$PKG"/usr/lib
+
+	mv "$PKG"/usr/libexec/{ccc,c++}-analyzer "$PKG"/usr/lib/clang/
+	rmdir "$PKG"/usr/libexec
+	sed -i 's|libexec|lib/clang|' "$PKG"/usr/bin/scan-build
+
+	sed -i '1s|/usr/bin/env python$|&2|' \
+		"$PKG"/usr/bin/scan-view \
+		"$PKG"/usr/share/$pkgname/*.py
+}
