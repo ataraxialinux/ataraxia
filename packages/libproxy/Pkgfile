@@ -1,0 +1,28 @@
+# Description: A library that provides automatic proxy configuration management
+# URL:         hhttp://libproxy.github.io/libproxy/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja python perl zlib
+
+name=libproxy
+version=0.4.15
+release=1
+source=("https://github.com/libproxy/libproxy/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libproxy/unistd.patch
+	patch -Np1 -i "$STUFF"/libproxy/fix-includes.patch
+
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DLIBEXEC_INSTALL_DIR=/usr/lib/libproxy \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_PERL=ON \
+		-DWITH_PYTHON3=ON \
+		-DPYTHON3_EXECUTABLE=/usr/bin/python3 \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
