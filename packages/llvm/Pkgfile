@@ -7,16 +7,11 @@ name=llvm
 version=8.0.0
 release=1
 source=("http://releases.llvm.org/$version/llvm-$version.src.tar.xz"
-	"http://releases.llvm.org/$version/cfe-$version.src.tar.xz"
 	"http://releases.llvm.org/$version/compiler-rt-$version.src.tar.xz"
 	"http://releases.llvm.org/$version/libunwind-$version.src.tar.xz")
 
 build() {
-	cd "$SRC"/cfe-$version.src
-	patch -Np1 -i "$STUFF"/clang/0001-Add-support-for-Ataraxia-Linux.patch
-
 	cd "$SRC"/llvm-$version.src
-	mv "$SRC"/cfe-$version.src tools/clang
 	mv "$SRC"/compiler-rt-$version.src projects/compiler-rt
 	mv "$SRC"/libunwind-$version.src projects/libunwind
 
@@ -25,12 +20,6 @@ build() {
 	cmake "$SRC"/llvm-$version.src \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DCLANG_BUILD_EXAMPLES=OFF \
-		-DCLANG_INCLUDE_DOCS=OFF \
-		-DCLANG_INCLUDE_TESTS=OFF \
-		-DCLANG_PLUGIN_SUPPORT=ON \
-		-DCLANG_VENDOR=AtaraxiaLinux \
-		-DLIBCLANG_BUILD_STATIC=ON \
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
@@ -58,11 +47,4 @@ build() {
 	DESTDIR="$PKG" ninja install
 
 	python3 ../utils/lit/setup.py install --prefix=/usr --root="$PKG"
-
-	install -m 644 lib/libclang.a "$PKG"/usr/lib
-
-	mkdir -p "$PKG"/usr/lib/clang/
-	mv "$PKG"/usr/libexec/{ccc,c++}-analyzer "$PKG"/usr/lib/clang/
-	sed -i 's|libexec|lib/clang|' "$PKG"/usr/bin/scan-build
-	rm -rf "$PKG"/usr/libexec
 }
