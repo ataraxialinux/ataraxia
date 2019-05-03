@@ -11,14 +11,19 @@ NO_RUN_STRIP=1
 NO_EMPTY_DIRS=1
 
 build() {
+	CFLAGS=${CFLAGS/-D_FORTIFY_SOURCE=2/}
+	CFLAGS=${CFLAGS/-fstack-protector-strong/}
+	CFLAGS=${CFLAGS/-Wl,-z,relro,-z,now/}
+	CXXFLAGS="$CFLAGS"
+
+	export CFLAGS="$CFLAGS -fno-stack-protector -no-pie"
+	export CXXFLAGS="$CXXFLAGS -fno-stack-protector -no-pie"
+
 	case $BARCH in
 		ppc64le|ppc64)
 			echo "PowerPC64 is not supported"
 			exit 1
 	esac
-
-	export CFLAGS="$CFLAGS -fno-stack-protector -no-pie"
-	export CXXFLAGS="$CXXFLAGS -fno-stack-protector -no-pie"
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/valgrind/fixed-perl-path.patch

@@ -9,6 +9,11 @@ source=("http://ftp.de.debian.org/debian/pool/main/liba/$name/${name}_${version}
 BOOTSTRAP=yes
 
 build() {
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
+	export CFLAGS="$CFLAGS -fno-stack-protector"
+
 	cd "$SRC"/$name-$version
 	export CFLAGS="$CFLAGS -fno-stack-protector"
 
