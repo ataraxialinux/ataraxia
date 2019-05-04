@@ -10,6 +10,9 @@ source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/polkit/make-innetgr-optional.patch
+
+	autoreconf -fi
 	sed -e 's,/sys/fs/cgroup/systemd/,/sys/fs/cgroup,g' -i configure
 
 	./configure $BUILDFLAGS \
