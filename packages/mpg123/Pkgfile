@@ -1,0 +1,21 @@
+# Description: A console based real time MPEG Audio Player for Layer 1, 2 and 3
+# URL:         http://sourceforge.net/projects/mpg123
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib
+
+name=mpg123
+version=1.25.10
+release=1
+source=("https://downloads.sourceforge.net/sourceforge/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-module-suffix=.so \
+		--enable-int-quality
+	make
+	make DESTDIR="$PKG" install
+
+	install -m755 scripts/conplay "$PKG"/usr/bin/conplay
+}
