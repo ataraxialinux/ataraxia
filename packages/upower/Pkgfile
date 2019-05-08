@@ -1,0 +1,23 @@
+# Description: Abstraction for enumerating power devices, listening to device events and querying history and statistics
+# URL:         https://upower.freedesktop.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool python gobject-introspection dbus-glib libgudev libusb polkit
+
+name=upower
+version=0.99.10
+commit=c438511024b9bc5a904f8775cfc8e4c4
+release=1
+source=("https://gitlab.freedesktop.org/upower/upower/uploads/$commit/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-deprecated \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}
