@@ -1,7 +1,7 @@
 # Description: A tiny library providing a C "class" for working with arbitrary big sizes in bytes
 # URL:         https://github.com/rhinstaller/libbytesize
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python mpfr pcre
+# Depends on:  python mpfr pcre2
 
 name=libbytesize
 version=2.0
@@ -10,6 +10,8 @@ source=("https://github.com/rhinstaller/libbytesize/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libbytesize/gettext.patch
+
 	./autogen.sh
 	./configure $BUILDFLAGS \
 		--prefix=/usr
