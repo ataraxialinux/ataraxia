@@ -4,7 +4,7 @@
 # Depends on:  perl
 
 name=valgrind
-version=3.14.0
+version=3.15.0
 release=1
 source=("ftp://sourceware.org/pub/$name/$name-$version.tar.bz2")
 NO_RUN_STRIP=1
@@ -21,34 +21,6 @@ build() {
 	export CXXFLAGS="$CXXFLAGS -fno-stack-protector -no-pie"
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/valgrind/fixed-perl-path.patch
-	patch -Np1 -i "$STUFF"/valgrind/Added-support-for-PPC-instructions-mfatbu-mfatbl.patch
-	patch -Np1 -i "$STUFF"/valgrind/0004-Fix-out-of-tree-builds.patch
-	patch -Np1 -i "$STUFF"/valgrind/0005-Modify-vg_test-wrapper-to-support-PTEST-formats.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-Remove-tests-that-fail-to-build-on-some-PPC32-config.patch
-	patch -Np1 -i "$STUFF"/valgrind/use-appropriate-march-mcpu-mfpu-for-ARM-test-apps.patch
-	patch -Np1 -i "$STUFF"/valgrind/avoid-neon-for-targets-which-don-t-support-it.patch
-	patch -Np1 -i "$STUFF"/valgrind/valgrind-make-ld-XXX.so-strlen-intercept-optional.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-makefiles-Drop-setting-mcpu-to-cortex-a8-on-arm-arch.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-str_tester.c-Limit-rawmemchr-test-to-glibc.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-sigqueue-Rename-_sifields-to-__si_fields-on-musl.patch
-	patch -Np1 -i "$STUFF"/valgrind/0002-context-APIs-are-not-available-on-musl.patch
-	patch -Np1 -i "$STUFF"/valgrind/0003-correct-include-directive-path-for-config.h.patch
-	patch -Np1 -i "$STUFF"/valgrind/0004-pth_atfork1.c-Define-error-API-for-musl.patch
-	patch -Np1 -i "$STUFF"/valgrind/0005-tc20_verifywrap.c-Fake-__GLIBC_PREREQ-with-musl.patch
-	patch -Np1 -i "$STUFF"/valgrind/0006-pth_detached3.c-Dereference-pthread_t-before-adding-.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-memcheck-arm64-Define-__THROW-if-not-already-defined.patch
-	patch -Np1 -i "$STUFF"/valgrind/0002-memcheck-x86-Define-__THROW-if-not-defined.patch
-	patch -Np1 -i "$STUFF"/valgrind/0003-tests-seg_override-Replace-__modify_ldt-with-syscall.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-fix-opcode-not-supported-on-mips32-linux.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-Guard-against-__GLIBC_PREREQ-for-musl-libc.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-Make-local-functions-static-to-avoid-assembler-error.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-tests-amd64-Do-not-clobber-rsp-register.patch
-	patch -Np1 -i "$STUFF"/valgrind/0001-Fix-dependencies-between-libcoregrind-.a-and-m_main..patch
-
-	aclocal && autoconf && automake --add-missing
-	echo '#include <linux/a.out.h>' > include/a.out.h
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--without-mpicc \
