@@ -11,9 +11,11 @@ done
 
 stty onlcr
 
-ifdown -a
+sv down /var/service/*
 
-hwclock --systohc --utc
+ifdown -v -a
+
+hwclock -v --systohc --utc
 
 if egrep -q -m 1 '(usr|grp)quota' /etc/fstab
 then
@@ -25,26 +27,24 @@ fi
 
 ( umask 077; bytes=$(cat /proc/sys/kernel/random/poolsize) || bytes=512; dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=$bytes >/dev/null 2>&1 )
 
-sv down /var/service/*
-
 if [ "$live" != "1" ]; then
 	if [ -x /usr/bin/vgchange ]; then
-		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+		vgchange -v --ignorelockingfailure -a n
 	fi
 fi
 
 udevadm control --exit
 
 killall5 -s TERM
-sleep 3
+sleep 1
 killall5 -s KILL
 
-swapoff -a
+swapoff -v -a
 
-umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+umount -v -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
 
 if [ "$live" != "1" ]; then
-	mount -o remount,ro /
+	mount -v -o remount,ro /
 fi
 
 sync
