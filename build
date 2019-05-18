@@ -366,24 +366,30 @@ build_toolchain() {
 }
 
 build_target() {
-	msg "Buildingget rootfs for '"$BARCH"' platform"
+	msg "Building taget system for '"$BARCH"' platform"
 
 	if [ -z "$LINUX" ]; then
 		LINUX="linux"
 	fi
 
-	for target in man-pages musl-tools zlib file ncurses readline m4 bison flex bc \
-			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
-			pcre grep mksh bash libtool gdbm db gperf expat perl libressl ca-certificates autoconf automake xz lzip lz4 zstd \
-			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils groff \
-			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			nano libcap-ng util-linux busybox openrc netifrc libaal reiser4progs dosfstools hwids eudev \
-			wireless_tools wpa_supplicant popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm \
-			wget prt-get; do
+	case $BARCH in
+		ppc)
+			CRYPT=''
+			;;
+		*)
+			CRYPT="libaio lvm2 json-c argon2 cryptsetup"
+			;;
+	esac
+
+	for target in man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+			ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db gperf expat perl \
+			libressl ca-certificates autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny \
+			musl-fts libuargp libelf diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack \
+			libnl libpcap iptables iproute2 kbd make patch nano libcap-ng util-linux busybox openrc netifrc \
+			libaal reiser4progs dosfstools hwids eudev wireless_tools wpa_supplicant popt gptfdisk $CRYPT \
+			mdadm wget prt-get $LINUX; do
 		pkginstall $target
 	done
-
-	pkginstall $LINUX
 }
 
 build_embedded() {
@@ -450,14 +456,22 @@ build_initramfs() {
 		LINUX="linux"
 	fi
 
+	case $BARCH in
+		ppc)
+			CRYPT=''
+			;;
+		*)
+			CRYPT="libaio lvm2 json-c argon2 cryptsetup"
+			;;
+	esac
+
 	for target in base-files musl man-pages musl-tools \
 			zlib file ncurses readline gmp mpfr mpc bzip2 attr acl libcap \
 			pcre grep mksh bash expat libressl ca-certificates xz lzip lz4 zstd \
 			libarchive pkgutils kmod diffutils dialog pigz libmnl libnftnl libnfnetlink \
 			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
 			nano libcap-ng util-linux busybox openrc netifrc libaal reiser4progs dosfstools \
-			hwids eudev wireless_tools wpa_supplicant popt gptfdisk libaio lvm2 json-c argon2 \
-			cryptsetup mdadm wget $LINUX; do
+			hwids eudev wireless_tools wpa_supplicant popt gptfdisk $CRYPT mdadm wget $LINUX; do
 		pkginstallinitrd $target
 	done
 
