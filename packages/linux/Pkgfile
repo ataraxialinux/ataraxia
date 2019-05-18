@@ -8,7 +8,7 @@ version=4.19.43
 reiserfs4patchver=4.18.0
 release=1
 source=("http://linux-libre.fsfla.org/pub/linux-libre/releases/${version}-gnu/linux-libre-${version}-gnu.tar.xz"
-	"http://downloads.sourceforge.net/project/reiser4/reiser4-for-linux-4.x/reiser4-for-$reiserfs4patchver.patch.gz")
+	"https://github.com/ataraxialinux/storage/raw/master/reiser4-for-$reiserfs4patchver.patch")
 BOOTSTRAP=yes
 NO_RUN_STRIP=1
 
@@ -841,7 +841,7 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
-	gzip -dc "$SRC"/reiser4-for-$reiserfs4patchver.patch.gz | patch -p1
+	patch -Np1 -i "$SRC"/reiser4-for-$reiserfs4patchver.patch
 
 	unset LDFLAGS
 	make mrproper
