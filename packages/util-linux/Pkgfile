@@ -9,7 +9,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=6
+release=7
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -54,14 +54,15 @@ build() {
 	mv usr/sbin/* usr/bin
 	rm -rf bin sbin usr/sbin
 
-	rm -rf usr/bin/ctrlaltdel
-
 	mkdir -p var/lib/hwclock
 
-	install -Dm0755 "$STUFF"/svc/uuid "$PKG"/etc/service/uuid/run
-	install -Dm0755 "$STUFF"/svc/uuid-log "$PKG"/etc/service/uuid/log/run
-
-	mkdir -p "$PKG"/var/log/uuid
-
 	install -Dm644 "$STUFF"/util-linux/rfkill.rules "$PKG"/usr/lib/udev/rules.d/60-rfkill.rules
+
+	mkdir -p "$PKG"/etc/runlevels/default
+	mkdir -p "$PKG"/etc/init.d
+
+	for MYTTY in 1 2 3 4 5 6 S0 AMA0 USB0; do
+		ln -sf agetty "$PKG"/etc/init.d/agetty.tty$MYTTY
+		ln -sf ../../init.d/agetty.tty$MYTTY "$PKG"/etc/runlevels/default/agetty.tty$MYTTY
+	done
 }

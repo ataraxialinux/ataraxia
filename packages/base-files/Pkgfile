@@ -3,14 +3,14 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=base-files
-version=20190516
+version=0.1
 release=1
 BOOTSTRAP=yes
 
 build() {
 	cd "$PKG"
 
-	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d,service,rc.d} home mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d,service} home mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -33,19 +33,6 @@ build() {
 	for f in gshadow shadow crypttab; do
 		install -m600 "$STUFF"/base-files/$f etc/
 	done
-
-	mkdir -p \
-		etc/network/if-down.d \
-		etc/network/if-post-down.d \
-		etc/network/if-post-up.d \
-		etc/network/if-pre-down.d \
-		etc/network/if-pre-up.d \
-		etc/network/if-up.d
-
-cat > etc/network/interfaces << "EOF"
-auto lo
-iface lo inet loopback
-EOF
 
 	for d in cache/{sources,packages} local opt log/old lib/misc empty service; do
 		install -d -m755 var/$d
@@ -75,13 +62,5 @@ EOF
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -D -m755 "$STUFF"/base-files/enter-chroot "$PKG"/usr/bin/enter-chroot
 	install -D -m755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
-
-	if [ "$EMBEDDED" != "1" ]; then
-		install -D -m755 "$STUFF"/base-files/poweroff "$PKG"/usr/bin/poweroff
-		install -D -m755 "$STUFF"/base-files/reboot "$PKG"/usr/bin/reboot
-		install -D -m755 "$STUFF"/base-files/rcS "$PKG"/etc/rc.d/rcS
-		install -D -m755 "$STUFF"/base-files/rcK "$PKG"/etc/rc.d/rcK
-	fi
 }

@@ -1,0 +1,20 @@
+# Description: Network Interface Management Scripts
+# URL:         https://www.gentoo.org/proj/en/base/openrc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  busybox eudev openrc
+
+name=netifrc
+version=0.6.1
+release=1
+source=("https://gitweb.gentoo.org/proj/netifrc.git/snapshot/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	makeargs=(BINDIR=/usr/bin)
+	makeargs+=(SBINDIR=/usr/bin)
+	makeargs+=(LIBEXECDIR=/usr/lib/netifrc)
+
+	cd "$SRC"/$name-$version
+	make "${makeargs[@]}"
+	make "${makeargs[@]}" DESTDIR="$PKG" install
+}

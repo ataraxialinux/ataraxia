@@ -377,7 +377,7 @@ build_target() {
 			pcre grep mksh bash libtool gdbm db gperf expat perl libressl ca-certificates autoconf automake xz lzip lz4 zstd \
 			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils groff \
 			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			nano libcap-ng util-linux busybox ubase sinit libaal reiser4progs dosfstools hwids eudev \
+			nano libcap-ng util-linux busybox openrc netifrc libaal reiser4progs dosfstools hwids eudev \
 			wireless_tools wpa_supplicant popt gptfdisk libaio lvm2 json-c argon2 cryptsetup mdadm \
 			wget prt-get; do
 		pkginstall $target
@@ -412,7 +412,7 @@ build_stage() {
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db gperf expat \
 			perl libressl ca-certificates autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf \
 			diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			nano libcap-ng util-linux busybox ubase sinit hwids eudev wget prt-get $LINUX; do
+			nano libcap-ng util-linux busybox openrc netifrc hwids eudev wget prt-get $LINUX; do
 		pkginstallstage $target
 	done
 
@@ -455,7 +455,7 @@ build_initramfs() {
 			pcre grep mksh bash expat libressl ca-certificates xz lzip lz4 zstd \
 			libarchive pkgutils kmod diffutils dialog pigz libmnl libnftnl libnfnetlink \
 			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
-			nano libcap-ng util-linux busybox ubase sinit libaal reiser4progs dosfstools \
+			nano libcap-ng util-linux busybox openrc netifrc libaal reiser4progs dosfstools \
 			hwids eudev wireless_tools wpa_supplicant popt gptfdisk libaio lvm2 json-c argon2 \
 			cryptsetup mdadm wget $LINUX; do
 		pkginstallinitrd $target
@@ -464,7 +464,7 @@ build_initramfs() {
 
 
 	cd "$INITRAMFS"
-	ln -sf bin/sinit init
+	ln -sf usr/bin/openrc-init init
 
 	msg "Cleaning up initramfs"
 	rm -rf usr/include
@@ -488,12 +488,12 @@ build_initramfs_stage() {
 			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db gperf expat \
 			perl libressl ca-certificates autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf \
 			diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			nano libcap-ng util-linux busybox ubase sinit hwids eudev wireless_tools wpa_supplicant wget prt-get $LINUX; do
+			nano libcap-ng util-linux busybox openrc netifrc hwids eudev wireless_tools wpa_supplicant wget prt-get $LINUX; do
 		pkginstallinitrd $target
 	done
 
 	cd "$INITRAMFS"
-	ln -sf bin/sinit init
+	ln -sf usr/bin/openrc-init init
 }
 
 build_hdd() {
@@ -530,7 +530,7 @@ build_hdd() {
 			pcre grep mksh bash libtool gdbm db gperf expat perl libressl ca-certificates autoconf automake xz lzip lz4 zstd \
 			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils groff \
 			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			nano libcap-ng util-linux busybox ubase sinit hwids eudev wget prt-get $LINUX; do
+			nano libcap-ng util-linux busybox openrc netifrc hwids eudev wget prt-get $LINUX; do
 		pkginstallimage $target
 	done
 
@@ -791,6 +791,7 @@ case "$COMMAND" in
 			esac
 			;;
 		2-embedded)
+			export EMBEDDED=1
 			check_for_root
 			setup_architecture
 			setup_environment
