@@ -29,20 +29,11 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	mkdir -p "$PKG"/usr/lib/iptables
-	cp "$STUFF"/iptables/iptables-flush "$PKG"/usr/lib/iptables/iptables-flush
+	mkdir -p "$PKG"/var/lib/iptables "$PKG"/var/lib/ip6tables
 
-	mkdir -p "$PKG"/etc/iptables
-
-	touch "$PKG"/etc/iptables/iptables.rules
-	touch "$PKG"/etc/iptables/ip6tables.rules
-
-	mkdir -p "$PKG"/var/log/iptables
-	mkdir -p "$PKG"/var/log/ip6tables
-
-	for svc in iptables ip6tables; do
-		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/svc/$svc-finish "$PKG"/etc/service/$svc/finish
-		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	for initd in iptables; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
+	install -D -m755 "$STUFF"/svc/ip6tables.confd "$PKG"/etc/conf.d/ip6tables
 }
