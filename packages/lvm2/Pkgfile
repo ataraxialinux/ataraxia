@@ -51,10 +51,11 @@ build() {
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
 
-	for svc in lvmetad dmeventd; do
-		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	for initd in device-mapper dmeventd lvmetad lvm lvm-monitoring lvmpolld; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 	done
 
-	mkdir -p "$PKG"/var/log/lvmetad "$PKG"/var/log/dmeventd
+	for confd in device-mapper lvm; do
+		install -D -m644 "$STUFF"/svc/${confd}.confd "$PKG"/etc/conf.d/$confd
+	done
 }

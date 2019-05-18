@@ -28,10 +28,8 @@ build() {
 	install -Dm644 hostapd.8 "$PKG"/usr/share/man/man8/hostapd.8
 	install -Dm644 hostapd_cli.1 "$PKG"/usr/share/man/man1/hostapd_cli.1
 
-	for svc in hostapd; do
-		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	for initd in hostapd; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
-
-	mkdir -p "$PKG"/var/log/hostapd
 }

@@ -5,7 +5,7 @@
 
 name=kmod
 version=26
-release=3
+release=4
 source=("https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -31,4 +31,9 @@ build() {
 	# compat
 	mkdir -p "$PKG"/etc/depmod.d/
 	ln -sf /usr/lib/depmod.d/search.conf "$PKG"/etc/depmod.d/search.conf
+
+	install -Dm755 "$STUFF"/svc/kmod-static-nodes.initd "$PKG"/etc/init.d/kmod-static-nodes
+
+	mkdir -p "$PKG"/etc/runlevels/sysinit
+	ln -sf ../../init.d/kmod-static-nodes "$PKG"/etc/runlevels/sysinit/kmod-static-nodes
 }

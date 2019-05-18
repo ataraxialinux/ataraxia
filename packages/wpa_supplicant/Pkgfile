@@ -20,14 +20,10 @@ build() {
 	cd $name
 	make PREFIX=/usr BINDIR=/usr/bin
 	make PREFIX=/usr BINDIR=/usr/bin DESTDIR="$PKG" install
-
-	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
 	install -Dm0755 "$STUFF"/wpa_supplicant/auto "$PKG"/usr/lib/wpa_supplicant/auto
 
-	for svc in wpa_supplicant; do
-		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	for initd in wpa_supplicant; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
-
-	mkdir -p "$PKG"/var/log/wpa_supplicant
 }

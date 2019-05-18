@@ -4,7 +4,7 @@
 # Depends on:  expat
 
 name=dbus
-version=1.12.12
+version=1.12.14
 release=1
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
@@ -30,10 +30,5 @@ build() {
 	chown root:messagebus "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
 	chmod 4750 "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
 
-	mkdir -p "$PKG"/var/log/dbus
-
-	for svc in dbus; do
-		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
-	done
+	install -D -m755 "$STUFF"/svc/dbus.initd "$PKG"/etc/init.d/dbus
 }
