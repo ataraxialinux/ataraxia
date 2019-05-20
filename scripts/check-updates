@@ -5,6 +5,8 @@
 # Also thanks Void Linux for required code!
 #
 
+set -x
+
 umask 022
 unalias -a
 
@@ -126,17 +128,6 @@ check_updates() {
 	done
 }
 
-for packages in $(ls $REPO); do
-	case $packages in
-		base-files|sbase|ubase|sinit|autoconf2.13|musl-tools|mkinitrd|db|wireless_tools)
-			true
-			;;
-		*)
-			unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
-			cd $REPO
-			check_updates $packages
-			;;
-	esac
-done
+check_updates $1
 
 exit 0

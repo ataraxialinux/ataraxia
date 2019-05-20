@@ -843,24 +843,24 @@ case "$COMMAND" in
 		check_for_root
 		setup_architecture
 		setup_environment
-		for myemerge in "$PACKAGE"; do
-			pkginstall "$myemerge"
+		for myemerge in $PACKAGE; do
+			pkginstall $myemerge
 		done
 		;;
 	emergebsp)
 		check_for_root
 		setup_architecture
 		setup_environment
-		for myemerge in "$PACKAGE"; do
-			pkgbspinstall "$myemerge"
+		for myemerge in $PACKAGE; do
+			pkgbspinstall $myemerge
 		done
 		;;
 	emergehst)
 		check_for_root
 		setup_architecture
 		setup_environment
-		for myemerge in "$PACKAGE"; do
-			pkghostinstall "$myemerge"
+		for myemerge in $PACKAGE; do
+			pkghostinstall $myemerge
 		done
 		;;
 	emerge)
@@ -868,9 +868,28 @@ case "$COMMAND" in
 		setup_architecture
 		setup_environment
 		;;
-	check-updates|updtchk)
+	check-updates)
 		setup_environment
-		"$SCRIPTS"/check-updates
+		msg "Checking packages for updates"
+		for packages in $(ls $REPO); do
+				case $packages in
+				base-files|sbase|ubase|sinit|autoconf2.13|musl-tools|mkinitrd|db|wireless_tools)
+					true
+					;;
+				*)
+					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
+					cd $REPO
+					$SCRIPTS/check-updates $packages
+					;;
+			esac
+		done
+		;;
+	check-update)
+		setup_environment
+		msg "Checking packages for updates"
+		for myemerge in $PACKAGE; do
+			$SCRIPTS/check-updates $myemerge
+		done
 		;;
 	usage|*)
 		msg "In development!"
