@@ -17,6 +17,16 @@ Ataraxia Linux:
 prt-get depinst libisoburn python python2 mtools pixz
 ```
 
+### Compiling pkgutils
+Ataraxia Linux uses pkgutils as its package manager. We've modified it for features support that we need. You should do this commands to install pkgutils (**AS ROOT**):
+```
+cd /tmp
+git clone https://github.com/protonesso/pkgutils.git --depth 1
+cd pkgutils
+make -f Makefile.dynamic
+make install
+```
+
 ### Building
 We have seperated the build process into seperate "stages":
 ```
