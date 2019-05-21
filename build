@@ -33,9 +33,6 @@ pkginstall() {
 		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
 			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
 		fi
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
-			die "Couldn't get binary package of '"$emergepkg"'"
-		fi
 		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$ROOTFS" || true
 	done
 }
@@ -47,24 +44,6 @@ pkginstalltwo() {
 		cd "$REPO"/$emergepkg
 		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
 			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		fi
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
-			die "Couldn't get binary package of '"$emergepkg"'"
-		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$ROOTFS" || true
-	done
-}
-
-pkgbspinstall() {
-	local pkg="$@"
-	for emergepkg in $pkg; do
-		msg "Emerging '"$emergepkg"' package"
-		cd "$BSPREPO"/$emergepkg
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
-			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
-		fi
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
-			die "Couldn't get binary package of '"$emergepkg"'"
 		fi
 		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$ROOTFS" || true
 	done
@@ -236,7 +215,7 @@ export TOOL="yes"
 export LC_ALL="$LC_ALL"
 export CFLAGS="$CFLAGS"
 export CXXFLAGS="$CXXFLAGS"
-export MAKEFLAGS="$MKOPTS"
+export MKFLAGS="$MKOPTS"
 export XHOST="$XHOST"
 export XTARGET="$XTARGET"
 export HOSTCC="$HOSTCC"
@@ -264,7 +243,7 @@ export CROSS="yes"
 export LC_ALL="$LC_ALL"
 export CFLAGS="$CFLAGS"
 export CXXFLAGS="$CXXFLAGS"
-export MAKEFLAGS="$MKOPTS"
+export MKFLAGS="$MKOPTS"
 export XHOST="$XHOST"
 export XTARGET="$XTARGET"
 export CROSS_COMPILE="$XTARGET-"
@@ -845,14 +824,6 @@ case "$COMMAND" in
 		setup_environment
 		for myemerge in $PACKAGE; do
 			pkginstall $myemerge
-		done
-		;;
-	emergebsp)
-		check_for_root
-		setup_architecture
-		setup_environment
-		for myemerge in $PACKAGE; do
-			pkgbspinstall $myemerge
 		done
 		;;
 	emergehst)
