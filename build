@@ -30,10 +30,10 @@ pkginstall() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd "$REPO"/$emergepkg
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
 			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
 		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$ROOTFS" || true
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$ROOTFS" || true
 	done
 }
 
@@ -42,10 +42,10 @@ pkginstalltwo() {
 	for emergepkg in $pkg; do
 		msg "Emerging '"$emergepkg"' package"
 		cd "$REPO"/$emergepkg
-		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 ]; then
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
 			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
 		fi
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$ROOTFS" || true
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$ROOTFS" || true
 	done
 }
 
@@ -55,8 +55,8 @@ pkghostinstall() {
 		msg "Emerging '"$emergepkg"' package"
 		cd "$TCREPO"/$emergepkg
 		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$TOOLS" -f
-		rm -rf "$PACKAGES"/$emergepkg#*.pkg.tar.lz4
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$TOOLS" -f
+		rm -rf "$PACKAGES"/$emergepkg#*.pkg.tar.zst
 	done
 }
 
@@ -64,7 +64,7 @@ pkginstallstage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$STAGEFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$STAGEFS"
 	done
 }
 
@@ -72,7 +72,7 @@ pkginstallinitrd() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$INITRAMFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$INITRAMFS"
 	done
 }
 
@@ -80,7 +80,7 @@ pkginstallimage() {
 	local pkg="$@"
 	for emergepkg in $pkg; do
 		msg "Installing '"$emergepkg"'"
-		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.lz4 --root "$IMAGEFS"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$IMAGEFS"
 	done
 }
 
@@ -235,7 +235,7 @@ PKGMK_WGET_OPTS="--no-check-certificate"
 # PKGMK_IGNORE_FOOTPRINT="yes"
 # PKGMK_IGNORE_NEW="no"
 # PKGMK_NO_STRIP="no"
-# PKGMK_COMPRESSION_MODE="lz4"
+# PKGMK_COMPRESSION_MODE="zst"
 CEOF
 
 cat << CEOF > "$BUILD"/target-pkgmk.conf
@@ -277,7 +277,7 @@ PKGMK_WGET_OPTS="--no-check-certificate"
 # PKGMK_IGNORE_FOOTPRINT="yes"
 # PKGMK_IGNORE_NEW="no"
 # PKGMK_NO_STRIP="no"
-# PKGMK_COMPRESSION_MODE="lz4"
+# PKGMK_COMPRESSION_MODE="zst"
 CEOF
 }
 
