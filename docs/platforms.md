@@ -2,6 +2,7 @@
 Ataraxia Linux has been ported to 15 different CPU architectures:
 ```
  * x86_64       - for 64-bit x86 CPUs
+ * pentium4     - for 32-bit x86 CPUs beggining at Intel Pentium 4
  * i486         - for 32-bit x86 CPUs beggining at Intel i486
  * aarch64      - for 64-bit ARM CPUs
  * armv7l       - for 32-bit ARM CPUs beggining at ARMv7-a (hard-float)
