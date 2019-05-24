@@ -49,7 +49,7 @@ strconfig() {
 
 generate_config() {
 	case $BARCH in
-		x86_64|pentium4|i486)
+		x86_64|i486)
 			SUBKARCH="x86"
 			;;
 		*)
@@ -61,7 +61,7 @@ generate_config() {
 		x86_64)
 			export DEFCONFIG="x86_64_defconfig"
 			;;
-		pentium4|i486)
+		i486)
 			export DEFCONFIG="i386_defconfig"
 			;;
 		aarch64)
@@ -124,15 +124,6 @@ generate_config() {
 				HYPERV_MOUSE HYPERV_STORAGE HYPERV_NET HYPERV_BALLOON
 			varconfig XEN_BALLOON_MEMORY_HOTPLUG_LIMIT 512
 			varconfig NODES_SHIFT 6
-			;;
-		pentium4)
-			yconfig MPENTIUM4 PCI BLK_DEV_SD ATA ATA_SFF ATA_BMDMA ATA_PIIX \
-				E1000 SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
-				EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS \
-				MICROCODE MICROCODE_EARLY MICROCODE_INTEL MICROCODE_AMD
-			mconfig KVM_INTEL KVM_AMD FB_HYPERV VBOXGUEST HYPERV HYPERV_UTILS \
-				HYPERV_MOUSE HYPERV_STORAGE HYPERV_NET HYPERV_BALLOON
-			nconfig M586 M686 M486
 			;;
 		i486)
 			yconfig M486 PCI BLK_DEV_SD ATA ATA_SFF ATA_BMDMA ATA_PIIX \
@@ -887,7 +878,7 @@ build() {
 			export XKARCH="x86_64"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		pentium4|i486)
+		i486)
 			export XKARCH="i386"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
