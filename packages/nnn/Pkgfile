@@ -1,0 +1,15 @@
+# Description: The fastest terminal file manager ever written.
+# URL:         https://github.com/jarun/nnn
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=nnn
+version=2.4
+release=1
+source=("https://github.com/jarun/nnn/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/install: all/install:/' Makefile
+	make
+	make PREFIX=/usr DESTDIR="$PKG" install
+}
