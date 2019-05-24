@@ -1,0 +1,28 @@
+# Description: Anonymizing overlay network
+# URL:         https://www.torproject.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl libevent
+
+name=tor
+version=0.4.0.5
+release=1
+source=("https://dist.torproject.org/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-pic \
+		--disable-seccomp
+	make
+	make DESTDIR="$PKG" install
+
+	mv "$PKG"/etc/tor/torrc.sample "$PKG"/etc/tor/torrc
+
+	for initd in tor; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+}
