@@ -1,0 +1,31 @@
+# Description: A console-based network traffic monitor
+# URL:         https://humdi.net/vnstat/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  sqlite
+
+name=vnstat
+version=2.2
+release=1
+source=("https://humdi.net/vnstat/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/vnstat/vnstat-2.2-conf.patch
+	patch -Np1 -i "$STUFF"/vnstat/vnstat-2.2-run.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc
+	make
+
+	mkdir -p "$PKG"/usr/bin
+	make DESTDIR="$PKG" install
+
+	for initd in vnstat; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	mkdir -p "$PKG"/var/lib/vnstat
+}
