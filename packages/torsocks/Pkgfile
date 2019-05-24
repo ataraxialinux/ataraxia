@@ -1,0 +1,18 @@
+# Description: Wrapper to safely torify applications
+# URL:         https://gitweb.torproject.org/torsocks.git/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  tor
+
+name=torsocks
+version=2.3.0
+release=1
+source=("https://people.torproject.org/~dgoulet/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
