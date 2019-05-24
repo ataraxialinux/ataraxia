@@ -1,0 +1,22 @@
+# Description: Utility for network discovery and security auditing
+# URL:         https://nmap.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pcre libressl lua
+
+name=nmap
+version=7.70
+release=1
+source=("https://nmap.org/dist/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--mandir=/usr/share/man \
+		--with-libpcap=included
+	make
+	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/bin/uninstall_*
+}
