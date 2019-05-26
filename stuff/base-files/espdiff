@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+# espdiff - do whatever it was you wanted
+# Copyright (C) 2003 Tim Waugh <twaugh@redhat.com>
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+version() {
+  echo "espdiff - patchutils version 0.3.4"
+}
+
+usage() {
+  echo "usage: espdiff [OPTION...] [FILE...]"
+}
+
+deep_brainwave=0
+recurse=0
+compare=0
+while [ "$#" -gt 0 ]
+do
+  case "$1" in
+  --help)
+	usage
+	exit 0
+	;;
+  --version)
+	version
+	exit 0
+	;;
+  --deep-brainwave-mode)
+	deep_brainwave=1
+	shift
+	;;
+  --recurse)
+	recurse=1
+	shift
+	;;
+  --compare)
+	compare=1
+	shift
+	;;
+  --)
+	shift
+	break
+	;;
+
+  *)
+	break
+	;;
+  esac
+done
+
+for each in "$@"
+do
+  error=$(cat "$each" 2>&1 >/dev/null)
+  if [ $? -ne 0 ]
+  then
+    echo >&2 "espdiff${error#cat}"
+    exit 1
+  fi
+done
+
+delay=3
+if [ "$deep_brainwave" -ne 0 ]
+then
+  delay=$(($delay * 2))
+fi
+
+read -t $delay -p 'Please concentrate... ' || echo
+echo 'No brainwave activity detected.  Aborting.'
+exit 1
