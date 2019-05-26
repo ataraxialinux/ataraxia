@@ -14,7 +14,7 @@ pacman -S base-devel xorriso mtools git pigz python python2 pixz
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel bison flex libtool libarchive-devel xorriso mtools git patch pigz python3 python pixz zlib-devel zstd
+xbps-install -S base-devel libarchive-devel xorriso mtools git patch pigz python3 python pixz zlib-devel zstd
 ```
   In Void Linux you may have to:
 ```
