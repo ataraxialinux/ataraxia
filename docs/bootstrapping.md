@@ -1,22 +1,26 @@
 ### Installing build dependencies
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
-Debian or Ubuntu (and derivatives):
+#### Debian or Ubuntu (and derivatives):
 ```
 apt-get install build-essential m4 gawk bc bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar libarchive-dev xorriso wget git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev groff zlib1g-dev
 ```
-Fedora (and derivatives):
+#### Fedora (and derivatives):
 ```
 dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz openssl-devel elfutils-devel groff zlib-devel wget
 ```
-Arch Linux (and derivatives):
+#### Arch Linux (and derivatives):
 ```
 pacman -S base-devel xorriso mtools git pigz python python2 pixz
 ```
-Void Linux
+#### Void Linux
 ```
 pacman -S base-devel bison flex libtool libarchive-devel xorriso mtools git patch pigz python3 python pixz zlib-devel zstd
 ```
-Ataraxia Linux:
+  In Void Linux you may have to:
+```
+ln -s /bin/x86_64-linux-musl-gcc /bin/x86_64-linux-musl-cc
+```
+#### Ataraxia Linux:
 ```
 prt-get depinst libisoburn python python2 mtools pixz
 ```
