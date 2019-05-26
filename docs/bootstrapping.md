@@ -14,7 +14,7 @@ pacman -S base-devel xorriso mtools git pigz python python2 pixz
 ```
 Void Linux
 ```
-pacman -S base-devel bison flex libtool libarchive-devel xorriso mtools git pigz python3 python pixz zlib-devel zstd
+pacman -S base-devel bison flex libtool libarchive-devel xorriso mtools git patch pigz python3 python pixz zlib-devel zstd
 ```
 Ataraxia Linux:
 ```
