@@ -104,14 +104,11 @@ done
 
 ln -sf /usr/lib/udev/rules.d etc/udev/rules.d
 
+for bins in busybox /bash kmod udevd udevadm blkid switch_root mount umount; do
+	cp /usr/bin/$bins usr/bin/
+done
 
-cp /usr/bin/busybox usr/bin/
-cp /usr/bin/bash usr/bin/
-cp /usr/bin/kmod usr/bin/
-cp /usr/bin/udevd usr/bin/
-cp /usr/bin/udevadm usr/bin/
-
-for app in bash kmod udevd udevadm busybox; do
+for app in bash kmod udevd udevadm busybox blkid switch_root mount umount; do
 	copylib /usr/bin/$app
 done
 
@@ -145,7 +142,7 @@ if [ -f /usr/bin/mdadm ]; then
 	cp /etc/mdadm.conf etc
 fi
 
-for userland in cat cp dd killall ls mkdir mknod mount umount sed sleep ln rm uname readlink basename blkid switch_root find awk xargs tr cut uniq sort grep touch sed ash killall; do
+for userland in cat cp dd killall ls mkdir mknod sed sleep ln rm uname readlink basename find awk xargs tr cut uniq sort grep touch sed ash killall; do
 	ln -sf busybox usr/bin/$userland
 done
 
