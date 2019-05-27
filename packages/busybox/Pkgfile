@@ -43,7 +43,8 @@ build() {
 	make mrproper
 
 	if [ "$EMBEDDED" = "1" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" CONFIG_STATIC=y defconfig
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" defconfig
+		sed -i "s|.*CONFIG_STATIC.*|CONFIG_STATIC=y|" .config
 	else
 		cp "$STUFF"/busybox/config .config
 	fi
@@ -60,22 +61,24 @@ build() {
 
 	chmod 4755 "$PKG"/usr/bin/busybox
 
-	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
+	if [ "$EMBEDDED" != "1" ]; then
+		for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
+
+		for initd in crond klogd rdate syslog watchdog; do
+			install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+			install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+		done
+
+		for initd in acpid inetd; do
+			install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		done
+
+		${CROSS_COMPILE}cc $CFLAGS "$STUFF"/busybox/fmt.c -o "$PKG"/usr/bin/fmt
+	fi
 
 	mkdir -p "$PKG"/usr/share/udhcpc
 	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 	chmod +x "$PKG"/usr/share/udhcpc/default.script
-
-	for initd in crond klogd rdate syslog watchdog; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
-
-	for initd in acpid inetd; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-	done
-
-	${CROSS_COMPILE}cc $CFLAGS "$STUFF"/busybox/fmt.c -o "$PKG"/usr/bin/fmt
 
 	if [ "$EMBEDDED" = "1" ]; then
 		cd "$PKG"
@@ -84,6 +87,7 @@ build() {
 
 		echo '#!/usr/bin/busybox hush' > etc/init.d/rcS
 		echo 'export PATH=/usr/bin' >> etc/init.d/rcS
+		echo '/bin/busybox --install -s' >> etc/init.d/rcS
 		echo 'dmesg -n 1' >> etc/init.d/rcS
 		echo 'mount -t devtmpfs none /dev' >> etc/init.d/rcS
 		echo 'mount -t proc none /proc' >> etc/init.d/rcS
