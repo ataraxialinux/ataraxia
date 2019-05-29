@@ -201,6 +201,40 @@ setup_environment() {
 	export CXXFLAGS="$CFLAGS"
 }
 
+setup_environment_silent() {
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$BARCH"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STAGEFS="$BUILD/stage"
+	export INITRAMFS="$BUILD/initramfs"
+	export IMAGEFS="$BUILD/image"
+	export ISOBUILD="$BUILD/isobuild"
+	export ISODIR="$BUILD/iso"
+	export STUFF="$CWD/stuff"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export BSPREPO="$CWD/bsp"
+	export SCRIPTS="$CWD/scripts"
+
+	export LC_ALL="POSIX"
+	export PATH="$SCRIPTS:$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
+
+	if [ -z $MKJOBS ]; then
+		export MKJOBS="$(expr $(nproc) + 1)"
+	fi
+
+	export MKOPTS="-j$MKJOBS"
+
+	export CFLAGS="-Os -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
+	export CXXFLAGS="$CFLAGS"
+}
+
 build_environment() {
 	msg "Building the build environment"
 
@@ -854,6 +888,25 @@ case "$COMMAND" in
 					;;
 			esac
 		done
+		;;
+	check-updates-silent)
+		setup_environment_silent
+		msg "Checking for updates..."
+		for packages in $(ls $REPO); do
+				case $packages in
+				base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
+					true
+					;;
+				*)
+					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
+					cd $REPO
+					$SCRIPTS/check-updates-silent $packages
+					;;
+			esac
+		done
+		;;
+	notify-updates)
+		notify-send "Ataraxia Update!" $(./build check-updates-silent)
 		;;
 	check-update)
 		setup_environment
