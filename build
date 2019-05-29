@@ -1,0 +1,870 @@
+#!/bin/bash
+
+set -e
+
+if [ "$PRODUTCT_RELEASE" = "1" ]; then
+	export RELEASE="tp1"
+else
+	export RELEASE="minefield-$(date +%y%m%d)"
+fi
+
+msg() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[32m==>\e[0m $msg\n"
+}
+
+die() {
+	local msg=$(echo $1 | tr -s / /)
+	printf "\e[1m\e[31m==!\e[0m $msg\n"
+	exit 1
+}
+
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die "'bootstrap' script must be run as root"
+	fi
+}
+
+pkginstall() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$REPO"/$emergepkg
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
+			pkgmk -d -b -cf "$BUILD"/target-pkgmk.conf
+		fi
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$ROOTFS" || true
+	done
+}
+
+pkginstalltwo() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$REPO"/$emergepkg
+		if [ ! -f "$PACKAGES"/$emergepkg#*.pkg.tar.zst ]; then
+			pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
+		fi
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$ROOTFS" || true
+	done
+}
+
+pkghostinstall() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Emerging '"$emergepkg"' package"
+		cd "$TCREPO"/$emergepkg
+		pkgmk -d -b -cf "$BUILD"/host-pkgmk.conf
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$TOOLS" -f
+		rm -rf "$PACKAGES"/$emergepkg#*.pkg.tar.zst
+	done
+}
+
+pkginstallstage() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$STAGEFS"
+	done
+}
+
+pkginstallinitrd() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$INITRAMFS"
+	done
+}
+
+pkginstallimage() {
+	local pkg="$@"
+	for emergepkg in $pkg; do
+		msg "Installing '"$emergepkg"'"
+		pkgadd "$PACKAGES"/$emergepkg#*.pkg.tar.zst --root "$IMAGEFS"
+	done
+}
+
+initdb() {
+	local dir="$@"
+	for dbindir in $dir; do
+		mkdir -p "$dbindir"/var/lib/pkg
+		touch "$dbindir"/var/lib/pkg/db
+	done
+}
+
+rmpkg() {
+	local rmpkg="$@"
+	for rmpack in $rmpkg; do
+		rm -rf "$PACKAGES"/$rmpack#*
+	done
+}
+
+setup_architecture() {
+	case $BARCH in
+		x86_64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			;;
+		i486)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i486-linux-musl"
+			;;
+		aarch64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-linux-musl"
+			;;
+		armv7l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			;;
+		armv6l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			;;
+		mips64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64-linux-musl"
+			;;
+		mips64el)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64el-linux-musl"
+			;;
+		mips)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			;;
+		mipsel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mipsel-linux-musl"
+			;;
+		ppc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			;;
+		ppc64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64-linux-musl"
+			;;
+		ppc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			;;
+		s390x)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="s390x-linux-musl"
+			;;
+		riscv64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv64-linux-musl"
+			;;
+		riscv32)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv32-linux-musl"
+			;;
+		*)
+			die "Architecture is not set or is not supported by 'bootstrap' script"
+	esac
+}
+
+setup_environment() {
+	msg "Setting up the build environment"
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$BARCH"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STAGEFS="$BUILD/stage"
+	export INITRAMFS="$BUILD/initramfs"
+	export IMAGEFS="$BUILD/image"
+	export ISOBUILD="$BUILD/isobuild"
+	export ISODIR="$BUILD/iso"
+	export STUFF="$CWD/stuff"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export BSPREPO="$CWD/bsp"
+	export SCRIPTS="$CWD/scripts"
+
+	export LC_ALL="POSIX"
+	export PATH="$SCRIPTS:$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
+
+	if [ -z $MKJOBS ]; then
+		export MKJOBS="$(expr $(nproc) + 1)"
+	fi
+
+	export MKOPTS="-j$MKJOBS"
+
+	export CFLAGS="-Os -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
+	export CXXFLAGS="$CFLAGS"
+}
+
+build_environment() {
+	msg "Building the build environment"
+
+	rm -rf "$BUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS" "$IMAGEFS" "$ISOBUILD"/efibuild "$ISODIR"
+
+	initdb "$ROOTFS" "$TOOLS" "$STAGEFS" "$INITRAMFS"
+
+cat << CEOF > "$BUILD"/host-pkgmk.conf
+export CROSS="yes"
+export TOOL="yes"
+export LC_ALL="$LC_ALL"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+export MKFLAGS="$MKOPTS"
+export XHOST="$XHOST"
+export XTARGET="$XTARGET"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export PATH="$PATH"
+export STUFF="$STUFF"
+PKGMK_SOURCE_DIR="$SOURCES"
+PKGMK_PACKAGE_DIR="$PACKAGES"
+PKGMK_DOWNLOAD_PROG="wget"
+PKGMK_WGET_OPTS="--no-check-certificate"
+# PKGMK_CURL_OPTS=""
+# PKGMK_SOURCE_MIRRORS=()
+# PKGMK_WORK_DIR="$PWD/work"
+# PKGMK_DOWNLOAD="no"
+# PKGMK_IGNORE_SIGNATURE="yes"
+# PKGMK_IGNORE_MD5SUM="yes"
+# PKGMK_IGNORE_FOOTPRINT="yes"
+# PKGMK_IGNORE_NEW="no"
+# PKGMK_NO_STRIP="no"
+# PKGMK_COMPRESSION_MODE="zst"
+CEOF
+
+cat << CEOF > "$BUILD"/target-pkgmk.conf
+export CROSS="yes"
+export LC_ALL="$LC_ALL"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+export MKFLAGS="$MKOPTS"
+export XHOST="$XHOST"
+export XTARGET="$XTARGET"
+export CROSS_COMPILE="$XTARGET-"
+export CC="$XTARGET-gcc"
+export CXX="$XTARGET-g++"
+export AR="$XTARGET-ar"
+export AS="$XTARGET-as"
+export RANLIB="$XTARGET-ranlib"
+export LD="$XTARGET-ld"
+export STRIP="$XTARGET-strip"
+export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+export PERLFLAGS="--target=$XTARGET"
+export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export PATH="$PATH"
+export STUFF="$STUFF"
+export ORIGMAKE="$(which make)"
+PKGMK_SOURCE_DIR="$SOURCES"
+PKGMK_PACKAGE_DIR="$PACKAGES"
+PKGMK_DOWNLOAD_PROG="wget"
+PKGMK_WGET_OPTS="--no-check-certificate"
+# PKGMK_CURL_OPTS=""
+# PKGMK_SOURCE_MIRRORS=()
+# PKGMK_WORK_DIR="$PWD/work"
+# PKGMK_DOWNLOAD="no"
+# PKGMK_IGNORE_SIGNATURE="yes"
+# PKGMK_IGNORE_MD5SUM="yes"
+# PKGMK_IGNORE_FOOTPRINT="yes"
+# PKGMK_IGNORE_NEW="no"
+# PKGMK_NO_STRIP="no"
+# PKGMK_COMPRESSION_MODE="zst"
+CEOF
+}
+
+build_toolchain() {
+	msg "Building cross-toolchain for '"$BARCH"' platform"
+
+	msg "Adding fake ldconfig"
+	mkdir -p "$TOOLS"/bin
+
+	touch "$TOOLS"/bin/ldconfig
+	chmod +x "$TOOLS"/bin/ldconfig
+
+	pkginstalltwo base-files
+	pkghostinstall file
+	pkghostinstall pkgconf
+	pkghostinstall gettext-tiny
+	pkghostinstall m4
+	pkghostinstall bison
+	pkghostinstall flex
+	pkghostinstall bc
+	pkghostinstall ncurses
+	pkghostinstall gperf
+	pkghostinstall uboot-tools
+	pkginstalltwo linux-api-headers
+	pkghostinstall binutils
+	pkghostinstall gcc-static
+	pkginstall musl
+	pkghostinstall gcc
+	pkghostinstall slibtool
+
+	case $BARCH in
+		riscv64)
+			ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
+			;;
+		riscv32)
+			ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
+			;;
+	esac
+
+	case $BARCH in
+		riscv64|riscv32)
+			msg "Building cross-toolchain for '"$BARCH-elf"' platform"
+			unset CFLAGS CXXFLAGS LDFLAGS
+			cd "$SOURCES"
+			git clone https://github.com/riscv/riscv-gnu-toolchain tools --depth 1
+			cd tools
+			git clone https://github.com/riscv/riscv-gcc --depth 1
+			git clone https://github.com/riscv/riscv-binutils-gdb riscv-binutils --depth 1
+			git clone https://github.com/riscv/riscv-newlib --depth 1
+			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
+			make $MKOPTS
+			touch "$TOOLS"/var/lib/db/installed_cross_riscv
+			cd .. && rm -rf  tools
+			;;
+	esac
+
+	msg "Cleaning up"
+	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+
+	ORIGMAKE="$(which make)"
+
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+
+	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
+}
+
+build_target() {
+	msg "Building taget system for '"$BARCH"' platform"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	case $BARCH in
+		ppc)
+			CRYPT=''
+			;;
+		*)
+			CRYPT="libaio lvm2 json-c argon2 cryptsetup"
+			;;
+	esac
+
+	for target in man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+			ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db gperf expat perl \
+			libressl ca-certificates autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny \
+			musl-fts libuargp libelf diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack \
+			libnl libpcap iptables iproute2 kbd make patch nano libcap-ng util-linux busybox openrc netifrc \
+			libaal reiser4progs dosfstools hwids eudev wireless_tools wpa_supplicant popt gptfdisk $CRYPT \
+			mdadm wget prt-get $LINUX; do
+		pkginstall $target
+	done
+}
+
+build_embedded() {
+	msg "Building embedded rootfs for '"$BARCH"' platform"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in man-pages musl-tools musl-fts zlib bzip2 xz libuargp libelf attr acl expat libressl xz lz4 zstd libarchive pkgutils busybox $LINUX; do
+		pkginstall $target
+	done
+}
+
+build_stage() {
+	msg "Installing core stage packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$STAGEFS"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in base-files linux-api-headers musl man-pages musl-tools \
+			zlib file ncurses readline m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db gperf expat \
+			perl libressl ca-certificates autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf \
+			diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox openrc netifrc hwids eudev wget prt-get $LINUX; do
+		pkginstallstage $target
+	done
+
+	msg "Building stage archive for '"$BARCH"' platform"
+	cd "$STAGEFS"
+	tar cf - . | pixz -9 > "$BUILD"/ataraxialinux-$RELEASE-$BARCH.tar.xz
+	cd $CWD
+}
+
+build_stage_embedded() {
+	msg "Installing embedded stage packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$STAGEFS"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in base-files musl-tools pkgutils busybox $LINUX; do
+		pkginstallstage $target
+	done
+
+	msg "Building stage archive for '"$BARCH"' platform"
+	cd "$STAGEFS"
+	tar cf - . | pixz -9 > "$BUILD"/ataraxialinux-$RELEASE-$BARCH.tar.xz
+	cd $CWD
+}
+
+build_initramfs() {
+	msg "Installing core initramfs packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$INITRAMFS"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	case $BARCH in
+		ppc)
+			CRYPT=''
+			;;
+		*)
+			CRYPT="libaio lvm2 json-c argon2 cryptsetup"
+			;;
+	esac
+
+	for target in base-files musl man-pages musl-tools \
+			zlib file ncurses readline gmp mpfr mpc bzip2 attr acl libcap \
+			pcre grep mksh bash expat libressl ca-certificates xz lzip lz4 zstd \
+			libarchive pkgutils kmod diffutils dialog pigz libmnl libnftnl libnfnetlink \
+			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
+			nano libcap-ng util-linux busybox openrc netifrc libaal reiser4progs dosfstools \
+			hwids eudev wireless_tools wpa_supplicant popt gptfdisk $CRYPT mdadm wget $LINUX; do
+		pkginstallinitrd $target
+	done
+
+
+
+	cd "$INITRAMFS"
+	ln -sf usr/bin/openrc-init init
+
+	msg "Cleaning up initramfs"
+	rm -rf usr/include
+
+	find . -name "*.a" -print0 | xargs -0 rm -rf
+	find . -name "*.h" -print0 | xargs -0 rm -rf
+	find . -name "*.hpp" -print0 | xargs -0 rm -rf
+	find . -name "*.pc" -print0 | xargs -0 rm -rf
+}
+
+build_initramfs_stage() {
+	msg "Installing core stage-initramfs packages in temporary filesystem for '"$BARCH"' platform"
+
+	initdb "$INITRAMFS"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	for target in base-files linux-api-headers musl man-pages musl-tools zlib file ncurses readline m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db gperf expat \
+			perl libressl ca-certificates autoconf automake xz lzip lz4 zstd libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf \
+			diffutils groff dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox openrc netifrc hwids eudev wireless_tools wpa_supplicant wget prt-get $LINUX; do
+		pkginstallinitrd $target
+	done
+
+	cd "$INITRAMFS"
+	ln -sf usr/bin/openrc-init init
+}
+
+build_hdd() {
+	msg "Buildingget hard disk image for '"$BARCH"' platform"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	IMG="$BUILD/ataraxialinux-$RELEASE-$BARCH-hdd.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=10G
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	parted -s $lodev mklabel msdos
+	parted -a optimal -s $lodev mkpart primary 0% 100%
+
+	case $BARCH in
+		x86_64|i486)
+			parted -s $lodev set 1 boot on
+			;;
+	esac
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext4 $lopart
+
+	mount -o loop $lopart "$IMAGEFS"
+
+	initdb "$IMAGEFS"
+
+	for target in base-files linux-api-headers musl man-pages musl-tools \
+			zlib file ncurses readline m4 bison flex bc \
+			gmp mpfr mpc binutils gcc ccache bzip2 pkgconf attr acl libcap \
+			pcre grep mksh bash libtool gdbm db gperf expat perl libressl ca-certificates autoconf automake xz lzip lz4 zstd \
+			libarchive pkgutils kmod gettext-tiny musl-fts libuargp libelf diffutils groff \
+			dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux busybox openrc netifrc hwids eudev wget prt-get $LINUX; do
+		pkginstallimage $target
+	done
+
+	umount -l "$IMAGEFS"
+	losetup -d $lodev
+
+	cd "$CWD"
+}
+
+build_hdd_embedded() {
+	msg "Building embedded hard disk image for '"$BARCH"' platform"
+
+	IMG="$BUILD/ataraxialinux-$RELEASE-$BARCH-hdd.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=8M
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	parted -s $lodev mklabel msdos
+	parted -a optimal -s $lodev mkpart primary 0% 100%
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext2 $lopart
+
+	mount -o loop $lopart "$IMAGEFS"
+
+	initdb "$IMAGEFS"
+
+	for target in base-files musl-tools pkgutils busybox; do
+		pkginstallimage $target
+	done
+
+	umount -l "$IMAGEFS"
+	losetup -d $lodev
+
+	cd "$CWD"
+}
+
+prepare_iso_files() {
+	msg "Prepare files for .iso image"
+	case $BARCH in
+		x86_64|i486)
+			mkdir -p "$ISODIR"/seiba "$ISODIR"/efi/boot "$ISODIR"/boot/isolinux "$ISODIR"/boot/grub
+			;;
+		ppc64le|ppc64|ppc)
+			mkdir -p "$ISODIR"/seiba "$ISODIR"/boot/grub
+			;;
+	esac
+
+	cp "$ROOTFS"/boot/vmlinuz-linux "$ISODIR"/seiba/seiba
+
+	msg "Creating initramfs image"
+	cd "$INITRAMFS"
+
+	find . | cpio -H newc -o | pixz -9 > "$ISODIR"/seiba/seiba.xz
+}
+
+make_iso_x86() {
+	msg "Creating .iso image for x86-based PCs"
+
+	grub_mod="all_video disk part_gpt part_msdos linux normal configfile search search_label efi_gop fat iso9660 cat echo ls test true help gzio multiboot2 efi_uga"
+
+	case $BARCH in
+		x86_64)
+			format="x86_64-efi"
+			efi="bootx64.efi"
+			;;
+		i486)
+			format="i386-efi"
+			efi="bootia32.efi"
+			;;
+	esac
+
+cat << CEOF > "$BUILD"/grub-efi.cfg
+search --no-floppy --set=root --label "ataraxialinux"
+set prefix=(\$root)/boot/grub
+CEOF
+
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "Ataraxia Linux" {
+linux	/seiba/seiba live=1 quiet loglevel=4
+initrd	/seiba/seiba.xz
+}
+CEOF
+
+	grub-mkimage \
+		--config="$BUILD"/grub-efi.cfg \
+		--prefix="/boot/grub" \
+		--output="$ISODIR"/efi/boot/$efi \
+		--format="$format" \
+		--compress="xz" \
+		$grub_mod
+
+	mformat -i "$ISODIR"/boot/grub/efi.img -C -f 1440 ::
+	mcopy -i "$ISODIR"/boot/grub/efi.img -s "$ISODIR"/efi ::
+
+	cp -a "$STUFF"/mklive/isolinux.bin "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/ldlinux.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/libcom32.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/vesamenu.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/libutil.c32 "$ISODIR"/boot/isolinux
+	cp -a "$STUFF"/mklive/chain.c32 "$ISODIR"/boot/isolinux
+
+
+	if [ "$PRODUTCT_RELEASE" = "1" ]; then
+		cp -a "$STUFF"/mklive/background.png "$ISODIR"/boot/isolinux/background.png
+	else
+		cp -a "$STUFF"/mklive/background_devel.png "$ISODIR"/boot/isolinux/background.png
+	fi
+
+cat << CEOF > "$ISODIR"/boot/isolinux/isolinux.cfg
+UI vesamenu.c32
+PROMPT 0
+TIMEOUT 100
+ONTIMEOUT ataraxialinux
+
+MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+MENU AUTOBOOT BIOS default device boot in # second{,s}...
+MENU BACKGROUND /boot/isolinux/background.png
+MENU WIDTH 78
+MENU MARGIN 1
+MENU ROWS 4
+MENU VSHIFT 2
+MENU TIMEOUTROW 8
+MENU TABMSGROW 2
+MENU CMDLINEROW 11
+MENU HELPMSGROW 16
+MENU HELPMSGENDROW 29
+
+MENU COLOR title        * #9000FF *
+MENU COLOR border       * #00000000 #00000000 none
+MENU COLOR sel          * #ffffffff #9000FF *
+
+LABEL ataraxialinux
+MENU LABEL Ataraxia Linux
+KERNEL /seiba/seiba
+APPEND initrd=/seiba/seiba.xz live=1 quiet loglevel=4
+CEOF
+
+	xorriso -as mkisofs \
+		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
+		-iso-level 2 \
+		-c boot/isolinux/boot.cat \
+		-b boot/isolinux/isolinux.bin \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		-eltorito-alt-boot \
+		-e boot/grub/efi.img \
+		-no-emul-boot \
+		-isohybrid-gpt-basdat \
+		-A 'ataraxialinux' -V 'ataraxialinux' \
+		-o "$BUILD"/ataraxialinux-$RELEASE-$BARCH.iso \
+		"$ISODIR"/
+}
+
+make_iso_ppc() {
+	mkdir -p "$TOOLS"/share/grub
+	cp "$STUFF"/mklive/unicode.pf2 "$TOOLS"/share/grub/unicode.pf2
+
+	msg "Creating .iso image for PowerPC-based PCs"
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "Ataraxia Linux" {
+linux	/seiba/seiba live=1 quiet loglevel=4
+initrd	/seiba/seiba.xz
+}
+CEOF
+
+	grub-mkrescue \
+		--output "$BUILD"/ataraxialinux-$RELEASE-$BARCH.iso "$ISODIR"/ \
+		-A 'ataraxialinux' -V 'ataraxialinux'
+}
+
+mklive() {
+	case $BARCH in
+		x86_64|i486)
+			make_iso_x86
+			;;
+		ppc64le|ppc64|ppc)
+			make_iso_ppc
+			;;
+	esac
+}
+
+COMMAND="$1"
+STAGE="$2"
+PACKAGE="${@:2}"
+
+case "$COMMAND" in
+	stage)
+		case $STAGE in
+		0)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			;;
+		0a)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_toolchain
+			;;
+		1)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			build_target
+			;;
+		1a)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_target
+			;;
+		1-embedded)
+			export EMBEDDED=1
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			build_embedded
+			;;
+		2)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_stage
+			case $BARCH in
+				x86_64|i486|ppc64le|ppc64|ppc)
+					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
+						pkghostinstall grub
+					fi
+					build_initramfs
+					prepare_iso_files
+					mklive
+			esac
+			build_hdd
+			;;
+		2-stage)
+			check_for_root
+			setup_architecture
+			setup_environment
+			case $BARCH in
+				x86_64|i486|ppc64le|ppc64|ppc)
+					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
+						pkghostinstall grub
+					fi
+					build_initramfs_stage
+					prepare_iso_files
+					mklive
+			esac
+			;;
+		2-embedded)
+			export EMBEDDED=1
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_stage_embedded
+			build_hdd_embedded
+			;;
+		all)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			build_target
+			build_stage
+			case $BARCH in
+				x86_64|i486|ppc64le|ppc64|ppc)
+					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
+						pkghostinstall grub
+					fi
+					build_initramfs
+					prepare_iso_files
+					mklive
+			esac
+			case $BARCH in
+				x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+					build_hdd
+			esac
+			;;
+		*)
+			die "Stage number was not selected or is not supported"
+		esac
+		;;
+	emerge)
+		check_for_root
+		setup_architecture
+		setup_environment
+		for myemerge in $PACKAGE; do
+			pkginstall $myemerge
+		done
+		;;
+	emergehst)
+		check_for_root
+		setup_architecture
+		setup_environment
+		for myemerge in $PACKAGE; do
+			pkghostinstall $myemerge
+		done
+		;;
+	emerge)
+		check_for_root
+		setup_architecture
+		setup_environment
+		;;
+	check-updates)
+		setup_environment
+		msg "Checking packages for updates"
+		for packages in $(ls $REPO); do
+				case $packages in
+				base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
+					true
+					;;
+				*)
+					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
+					cd $REPO
+					$SCRIPTS/check-updates $packages
+					;;
+			esac
+		done
+		;;
+	check-update)
+		setup_environment
+		msg "Checking packages for updates"
+		for myemerge in $PACKAGE; do
+			$SCRIPTS/check-updates $myemerge
+		done
+		;;
+	usage|*)
+		msg "In development!"
+esac
+
+exit 0
+
