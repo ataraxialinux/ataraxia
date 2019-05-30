@@ -873,6 +873,22 @@ case "$COMMAND" in
 		setup_architecture
 		setup_environment
 		;;
+	autobump)
+		setup_environment_silent
+		echo "Checking for updates..."
+		for packages in $(ls $REPO); do
+				case $packages in
+				base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
+					true
+					;;
+				*)
+					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
+					cd $REPO
+					$SCRIPTS/autobump $packages
+					;;
+			esac
+		done
+		;;
 	check-updates)
 		setup_environment
 		msg "Checking packages for updates"
@@ -916,6 +932,12 @@ case "$COMMAND" in
 		for myemerge in $PACKAGE; do
 			$SCRIPTS/check-updates $myemerge
 		done
+		;;
+	select-updates)
+        setup_environment_silent
+		selected=$(ls ./packages/ | fzy)
+		cd $REPO
+		${SCRIPTS}/autobump $selected
 		;;
 	usage|*)
 		msg "In development!"
