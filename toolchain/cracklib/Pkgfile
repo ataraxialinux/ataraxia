@@ -1,0 +1,18 @@
+name=cracklib
+version=2.9.7
+release=1
+source=("https://github.com/cracklib/cracklib/releases/download/v$version/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--sbindir="$TOOLS"/bin \
+		--without-python
+	make
+	make install
+
+	mkdir -p "$PKG"/var/lib/db
+	touch "$PKG"/var/lib/db/installed_${name}
+}

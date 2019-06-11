@@ -1,0 +1,30 @@
+# Description: The basic file, shell and text manipulation utilities of the GNU operating system
+# URL:         https://www.gnu.org/software/coreutils/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+# Depends on:  gmp acl libcap libressl
+
+name=coreutils
+version=8.31
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/coreutils/musl-cross-fix.patch
+	patch -Np1 -i "$STUFF"/coreutils/remove-usr-local-lib-from-m4.patch
+
+	autoreconf -fiv
+
+	export FORCE_UNSAFE_CONFIGURE=1
+
+	PERL=missing \
+	MAKEINFO=true \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--with-openssl \
+		--enable-no-install-program=groups,hostname,kill,uptime
+	make
+	make DESTDIR="$PKG" install
+}

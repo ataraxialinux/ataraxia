@@ -1,13 +1,12 @@
 ## Supported platforms
-Ataraxia Linux has been ported to 15 different CPU architectures:
+Ataraxia Linux has been ported to 14 different CPU architectures:
 ```
  * x86_64       - for 64-bit x86 CPUs
  * i486         - for 32-bit x86 CPUs beginning with Intel i486
  * aarch64      - for 64-bit ARM CPUs
  * armv7l       - for 32-bit ARM CPUs beginning at ARMv7-a (hard-float)
  * armv6l       - for 32-bit ARM CPUs beginning at ARMv6-a (hard-float)
- * mips64       - for 64-bit MIPS CPUs beginning at MIPS Release 1 (big-endian)
- * mips64el     - for 64-bit MIPS CPUs beginning at MIPS Release 1 (little-endian)
+ * armv5tel     - for 32-bit ARM CPUs beginning at ARMv5   (soft-float)
  * mips         - for 32-bit MIPS CPUs beginning at MIPS Release 1 (big-endian)
  * mipsel       - for 32-bit MIPS CPUs beginning at MIPS Release 1 (little-endian)
  * ppc64le      - for 64-bit PowerPC CPUs (little-endian)

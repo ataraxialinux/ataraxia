@@ -1,7 +1,7 @@
 # Description: Dependency based init system
 # URL:         https://github.com/OpenRC/openrc/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  kmod util-linux busybox
+# Depends on:  pam kmod util-linux busybox
 
 name=openrc
 version=0.41.2
@@ -13,6 +13,7 @@ build() {
 	makeargs=(BRANDING="\e[35mAtaraxia Linux\e[0m")
 	makeargs+=(MKSELINUX=no)
 	makeargs+=(MKTERMCAP=ncurses)
+	makeargs+=(MKPAM=pam)
 	makeargs+=(PKG_PREFIX="")
 	makeargs+=(LIBDIR=/usr/lib)
 	makeargs+=(LIBMODE=0644)
@@ -25,8 +26,6 @@ build() {
 	makeagrs+=(LIBNAME=lib)
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/openrc/0003-sysctl-add-compatibility-for-busybox-sysctl.patch
-
 	make "${makeargs[@]}"
 	make "${makeargs[@]}" DESTDIR="$PKG" install
 

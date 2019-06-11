@@ -1,0 +1,38 @@
+# Description: Merging locate/updatedb implementation
+# URL:         https://pagure.io/mlocate
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=mlocate
+version=0.26
+release=1
+source=("https://releases.pagure.org/$name/$name-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/mlocate/musl_paths-h.patch
+
+	sed -i '/^groupname /s/mlocate/locate/' Makefile.in
+	cp "$STUFF"/config.guess admin/config.guess
+	cp "$STUFF"/config.sub admin/config.sub
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var/lib
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/mlocate/updatedb.conf "$PKG"/etc/updatedb.conf
+	mkdir -p "$PKG"/etc/cron.daily
+	cp -a "$STUFF"/mlocate/cron "$PKG"/etc/cron.daily/mlocate
+	chown root:root "$PKG"/etc/cron.daily/mlocate
+	chmod 755 "$PKG"/etc/cron.daily/mlocate
+
+	chgrp 21 "$PKG"/usr/bin/locate
+	chmod 2755 "$PKG"/usr/bin/locate
+	ln -sf locate "$PKG"/usr/bin/slocate
+
+	install -dm755 "$PKG"/var/lib
+	install -dm750 -g21 "$PKG"/var/lib/locate
+}

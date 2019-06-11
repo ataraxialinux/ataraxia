@@ -1,7 +1,7 @@
 # Description: Give certain users the ability to run some commands as root
 # URL:         https://www.sudo.ws/sudo/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib
+# Depends on:  zlib pam
 
 name=sudo
 version=1.8.27
@@ -18,13 +18,15 @@ build() {
 		--with-vardir=/var/db/sudo \
 		--with-all-insults \
 		--with-env-editor \
+		--with-pam \
 		--with-passprompt="[sudo] password for %p: " \
-		--without-pam \
 		--without-skey \
 		--enable-pie \
 		--disable-nls
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/pam.d/sudo "$PKG"/etc/pam.d/sudo
 
 	rm -rf "$PKG"/{no,usr/local,usr/include}
 	rm -rf "$PKG"/etc/sudoers.dist

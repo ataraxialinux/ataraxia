@@ -1,0 +1,31 @@
+# Description: Password Checking Library
+# URL:         https://github.com/cracklib/cracklib
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=cracklib
+version=2.9.7
+release=1
+source=("https://github.com/cracklib/cracklib/releases/download/v$version/$name-$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--without-python
+	make
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/share/dict
+	ln -sf /usr/share/cracklib/cracklib-small "$PKG"/usr/share/dict/cracklib-small
+
+	if [ "$CROSS" = "yes" ]; then
+		cracklib-format dicts/cracklib-small \
+			| cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
+	else
+		sh ./util/cracklib-format dicts/cracklib-small \
+			| sh ./util/cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
+	fi
+}

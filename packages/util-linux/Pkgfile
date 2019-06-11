@@ -1,7 +1,7 @@
 # Description: Miscellaneous system utilities for Linux
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib readline libcap-ng
+# Depends on:  zlib readline pam libcap-ng
 
 name=util-linux
 version=2.33.2
@@ -28,23 +28,27 @@ build() {
 		--without-python \
 		--without-systemd \
 		--without-systemdsystemunitdir \
+		--enable-chfn-chsh \
 		--enable-kill \
 		--enable-mesg \
+		--enable-newgrp \
 		--enable-partx \
 		--enable-raw \
-		--enable-sulogin \
+		--enable-vipw \
 		--enable-wall \
-		--enable-write \
-		--disable-chfn-chsh \
-		--disable-login \
-		--disable-makeinstall-chown \
-		--disable-nologin \
-		--disable-rpath \
-		--disable-runuser \
-		--disable-setpriv \
-		--disable-su
+		--enable-write
 	make
 	make DESTDIR="$PKG" install
+
+	chmod 4755 "$PKG"/usr/bin/{newgrp,ch{sh,fn}}
+
+	install -Dm644 "$STUFF"/pam.d/util-linux "$PKG"/etc/pam.d/chfn
+	install -m644 "$STUFF"/pam.d/util-linux "$PKG"/etc/pam.d/chsh
+	install -m644 "$STUFF"/pam.d/login "$PKG"/etc/pam.d/login
+	install -m644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser
+	install -m644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
+	install -m644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
+	install -m644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
 
 	cd "$PKG"
 	mv usr/sbin/* usr/bin

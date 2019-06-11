@@ -1,7 +1,7 @@
 # Description: POSIX 1003.1e capabilities
 # URL:         http://sites.google.com/site/fullycapable/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  attr
+# Depends on:  pam attr
 
 name=libcap
 version=2.27
@@ -17,12 +17,15 @@ build() {
 	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
 
 	if [ "$CROSS" = "yes" ]; then
-		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include
-		make PAM_CAP=no BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
+		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes
+		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 	else
-		make PAM_CAP=no CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include
-		make PAM_CAP=no CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
+		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes
+		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 	fi
+
+	mkdir -p "$PKG"/etc/security
+	install -m644 pam_cap/capability.conf "$PKG"/etc/security
 
 	chmod 755 "$PKG"/usr/lib/libcap.so.${version}
 }
