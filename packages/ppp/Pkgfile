@@ -1,0 +1,40 @@
+# Description: A daemon which implements the Point-to-Point Protocol for dial-up networking
+# URL:         https://www.samba.org/ppp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl libpcap
+
+name=ppp
+version=2.4.7
+release=1
+source=("http://samba.org/ftp/$name/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -D_GNU_SOURCE"
+
+	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/ppp/130-no_cdefs_h.patch
+	patch -Np0 -i "$STUFF"/ppp/132-fix_linux_includes.patch
+	patch -Np0 -i "$STUFF"/ppp/133-fix_sha1_include.patch
+	patch -Np0 -i "$STUFF"/ppp/403-no_wtmp.patch
+	patch -Np0 -i "$STUFF"/ppp/openssl_DES.patch
+	patch -Np0 -i "$STUFF"/ppp/openssl_include.patch
+
+	sed -i "s:^#FILTER=y:FILTER=y:" pppd/Makefile.linux
+	sed -i "s:^#HAVE_INET6=y:HAVE_INET6=y:" pppd/Makefile.linux
+	sed -i "s:^#CBCP=y:CBCP=y:" pppd/Makefile.linux
+	sed -i "s:-O2 -pipe -Wall -g:${CFLAGS}:" pppd/Makefile.linux
+	sed -i "s:-g -O2:${CFLAGS}:" pppd/plugins/Makefile.linux
+	sed -i "s:-O2:${CFLAGS}:" pppstats/Makefile.linux
+	sed -i "s:-O2 -g -pipe:${CFLAGS}:" chat/Makefile.linux
+	sed -i "s:-O:${CFLAGS}:" pppdump/Makefile.linux
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make -j1 INSTROOT="$PKG" install install-etcppp
+
+	install -D -m755 "$STUFF"/svc/pppd.initd "$PKG"/etc/init.d/pppd
+
+	chmod +w -R $PKG
+}
