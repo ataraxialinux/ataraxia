@@ -36,5 +36,11 @@ build() {
 	mkdir -p "$PKG"/usr/bin
 	ln -sf ../lib/libc.so "$PKG"/usr/bin/ldd
 
-	ln -sf true "$PKG"/usr/bin/ldconfig
+cat > "$PKG"/usr/bin/ldconfig << "EOF"
+#!/bin/sh
+echo "adjusting libs..."
+true
+EOF
+
+	chmod +x $PKG"/usr/bin/ldconfig
 }
