@@ -1,0 +1,63 @@
+# Description: Network connection manager and user applications
+# URL:         https://wiki.gnome.org/Projects/NetworkManager
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  busybox eudev intltool dbus-glib libndp libnl curl gobject-introspection iptables jansson newt polkit nss vala iwd ppp
+
+name=networkmanager
+version=1.18.1
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
+
+build() {
+	cd "$SRC"/NetworkManager-$version
+	patch -Np1 -i "$STUFF"/networkmanager/musl-basic.patch
+	patch -Np1 -i "$STUFF"/networkmanager/musl-network-support.patch
+	patch -Np1 -i "$STUFF"/networkmanager/musl-fix-includes.patch
+	patch -Np1 -i "$STUFF"/networkmanager/musl-process-util.patch
+	patch -Np1 -i "$STUFF"/networkmanager/musl-has-not-secure-getenv.patch
+	patch -Np1 -i "$STUFF"/networkmanager/musl-compar.patch
+	patch -Np1 -i "$STUFF"/networkmanager/fix-ppc64le-build.patch
+
+	sed '/initrd/d' -i src/meson.build
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dconfig_plugins_default=ifupdown \
+		-Ddnsmasq=/usr/bin/dnsmasq \
+		-Ddocs=false \
+		-Difupdown=true \
+		-Diptables=/usr/bin/iptables \
+		-Diwd=true \
+		-Dmodify_system=true \
+		-Dpppd=/usr/bin/pppd \
+		-Dvapi=true \
+		-Djson_validation=false \
+		-Dlibaudit=no \
+		-Dlibnm_glib=true \
+		-Dmodem_manager=false \
+		-Dnmtui=true \
+		-Dovs=false \
+		-Dqt=false \
+		-Dselinux=false \
+		-Dsession_tracking=no \
+		-Dsystemd_journal=false \
+		-Dsystemdsystemunitdir=no \
+		-Dudev_dir=/usr/lib/udev
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -d "$PKG"/etc/NetworkManager/{conf,dnsmasq}.d
+	install -dm700 "$PKG/etc/NetworkManager/system-connections"
+	install -m644 /dev/stdin "$PKG/etc/NetworkManager/NetworkManager.conf" <<END
+# Configuration file for NetworkManager.
+# See "man 5 NetworkManager.conf" for details.
+END
+
+	install -m644 -D "$STUFF"/networkmanager/org.freedesktop.NetworkManager.rules "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules
+
+	for initd in networkmanager; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+}

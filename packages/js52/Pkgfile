@@ -1,14 +1,16 @@
-# Description: JavaScript interpreter and libraries - Version 60
+# Description: JavaScript interpreter and libraries - Version 52
 # URL:         https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  autoconf2.13 python2 yasm zlib readline libffi nspr icu
 
-name=mozjs60
-version=60.7.0
+name=js52
+version=52.9.0
 release=1
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
+	export CFLAGS="$CFLAGS -fno-delete-null-pointer-checks -fno-strict-aliasing -fno-tree-vrp -Wno-format-overflow"
+	export CXXFLAGS="$CXXFLAGS -fno-delete-null-pointer-checks -fno-strict-aliasing -fno-tree-vrp -Wno-format-overflow"
 	export SHELL=/bin/bash
 	export PYTHON=/usr/bin/python2
 
@@ -16,7 +18,7 @@ build() {
 	mkdir build
 	cd build
 
-	"$SRC"/firefox-${version}/js/src/configure  \
+	"$SRC"/firefox-${version}esr/js/src/configure  \
 		--prefix=/usr \
 		--with-intl-api \
 		--with-system-icu \
@@ -25,6 +27,7 @@ build() {
 		--enable-ctypes \
 		--enable-pie \
 		--enable-readline \
+		--enable-release \
 		--enable-shared-js \
 		--enable-system-ffi \
 		--disable-debug \
@@ -37,4 +40,6 @@ build() {
 		--target=$XTARGET
 	make
 	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/lib/libjs_static.ajs
 }

@@ -5,9 +5,6 @@
 # Also thanks Void linux for required code!
 #
 
-umask 022
-unalias -a
-
 msg() {
 	local msg=$(echo $1 | tr -s / /)
 	printf "\e[1m\e[32m==>\e[0m $msg\n"
@@ -164,12 +161,7 @@ check_updates() {
 		if $consider; then
 			vercmp "$original_pkgname-${version}_1" "$original_pkgname-$(printf %s "$found_version" | tr - .)_1"
 			if [ $? = 255 ]; then
-				if [ "$AUTODUMP" = 1 ]; then
-					msg "Autobumping ${original_pkgname} to ${found_version}"
-					sed -i -e "s/${version}/${found_version}/g" $mypkg/Pkgfile
-				else
-					msg "Update ${original_pkgname} to ${found_version}"
-				fi
+				msg "Update ${original_pkgname} to ${found_version}"
 			fi
 		fi
 	done

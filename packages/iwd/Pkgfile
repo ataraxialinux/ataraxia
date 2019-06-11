@@ -1,0 +1,24 @@
+# Description: Internet Wireless Daemon
+# URL:         https://git.kernel.org/cgit/network/wireless/iwd.git/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=iwd
+version=0.18
+release=1
+source=("https://www.kernel.org/pub/linux/network/wireless/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/iwd \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-wired
+	make
+	make DESTDIR="$PKG" install
+
+	for initd in iwd ead; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+	done
+}
