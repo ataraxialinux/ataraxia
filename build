@@ -9,13 +9,17 @@ else
 fi
 
 msg() {
-	local msg=$(echo $1 | tr -s / /)
-	printf "\e[1m\e[32m==>\e[0m $msg\n"
+	if [ "$SILENT" != "1" ]; then
+		local msg=$(echo $1 | tr -s / /)
+		printf "\e[1m\e[32m==>\e[0m $msg\n"
+	fi
 }
 
 die() {
-	local msg=$(echo $1 | tr -s / /)
-	printf "\e[1m\e[31m==!\e[0m $msg\n"
+	if [ "$SILENT" != "1" ]; then
+		local msg=$(echo $1 | tr -s / /)
+		printf "\e[1m\e[31m==!\e[0m $msg\n"
+	fi
 	exit 1
 }
 
@@ -105,9 +109,9 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
-		i486)
+		i586)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i486-linux-musl"
+			export XTARGET="i586-linux-musl"
 			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -121,13 +125,9 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
-		mips64)
+		armv5tel)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips64-linux-musl"
-			;;
-		mips64el)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips64el-linux-musl"
+			export XTARGET="arm-linux-musleabi"
 			;;
 		mips)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -168,40 +168,6 @@ setup_architecture() {
 
 setup_environment() {
 	msg "Setting up the build environment"
-
-	export CWD="$(pwd)"
-	export BUILD="$CWD/OUT.$BARCH"
-	export SOURCES="$BUILD/sources"
-	export PACKAGES="$BUILD/packages"
-	export ROOTFS="$BUILD/rootfs"
-	export TOOLS="$BUILD/tools"
-	export STAGEFS="$BUILD/stage"
-	export INITRAMFS="$BUILD/initramfs"
-	export IMAGEFS="$BUILD/image"
-	export ISOBUILD="$BUILD/isobuild"
-	export ISODIR="$BUILD/iso"
-	export STUFF="$CWD/stuff"
-	export REPO="$CWD/packages"
-	export TCREPO="$CWD/toolchain"
-	export BSPREPO="$CWD/bsp"
-	export SCRIPTS="$CWD/scripts"
-
-	export LC_ALL="POSIX"
-	export PATH="$SCRIPTS:$TOOLS/bin:$PATH"
-	export HOSTCC="gcc"
-	export HOSTCXX="g++"
-
-	if [ -z $MKJOBS ]; then
-		export MKJOBS="$(expr $(nproc) + 1)"
-	fi
-
-	export MKOPTS="-j$MKJOBS"
-
-	export CFLAGS="-Os -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
-	export CXXFLAGS="$CFLAGS"
-}
-
-setup_environment_silent() {
 
 	export CWD="$(pwd)"
 	export BUILD="$CWD/OUT.$BARCH"
@@ -332,7 +298,6 @@ build_toolchain() {
 	pkghostinstall bison
 	pkghostinstall flex
 	pkghostinstall bc
-	pkghostinstall ncurses
 	pkghostinstall gperf
 	pkghostinstall uboot-tools
 	pkginstalltwo linux-api-headers
@@ -543,7 +508,7 @@ build_hdd() {
 	parted -a optimal -s $lodev mkpart primary 0% 100%
 
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			parted -s $lodev set 1 boot on
 			;;
 	esac
@@ -602,7 +567,7 @@ build_hdd_embedded() {
 prepare_iso_files() {
 	msg "Prepare files for .iso image"
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			mkdir -p "$ISODIR"/seiba "$ISODIR"/efi/boot "$ISODIR"/boot/isolinux "$ISODIR"/boot/grub
 			;;
 		ppc64le|ppc64|ppc)
@@ -628,7 +593,7 @@ make_iso_x86() {
 			format="x86_64-efi"
 			efi="bootx64.efi"
 			;;
-		i486)
+		i586)
 			format="i386-efi"
 			efi="bootia32.efi"
 			;;
@@ -736,7 +701,7 @@ CEOF
 
 mklive() {
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			make_iso_x86
 			;;
 		ppc64le|ppc64|ppc)
@@ -794,7 +759,7 @@ case "$COMMAND" in
 			setup_environment
 			build_stage
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc)
+				x86_64|i586|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -809,7 +774,7 @@ case "$COMMAND" in
 			setup_architecture
 			setup_environment
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc)
+				x86_64|i586|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -835,7 +800,7 @@ case "$COMMAND" in
 			build_target
 			build_stage
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc)
+				x86_64|i586|ppc64le|ppc64|ppc)
 					if [[ ! -f  "$TOOLS/var/lib/db/installed_grub" ]]; then
 						pkghostinstall grub
 					fi
@@ -844,7 +809,7 @@ case "$COMMAND" in
 					mklive
 			esac
 			case $BARCH in
-				x86_64|i486|ppc64le|ppc64|ppc|riscv64|riscv32)
+				x86_64|i586|ppc64le|ppc64|ppc|riscv64|riscv32)
 					build_hdd
 			esac
 			;;
@@ -873,24 +838,8 @@ case "$COMMAND" in
 		setup_architecture
 		setup_environment
 		;;
-	autobump)
-		setup_environment_silent
-		echo "Checking for updates..."
-		for packages in $(ls $REPO); do
-				case $packages in
-				base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
-					true
-					;;
-				*)
-					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
-					cd $REPO
-					$SCRIPTS/autobump $packages
-					;;
-			esac
-		done
-		;;
 	check-updates)
-		setup_environment
+		SILENT=1 setup_environment
 		msg "Checking packages for updates"
 		for packages in $(ls $REPO); do
 				case $packages in
@@ -905,39 +854,12 @@ case "$COMMAND" in
 			esac
 		done
 		;;
-	check-updates-silent)
-		setup_environment_silent
-		echo "Checking for updates..."
-		for packages in $(ls $REPO); do
-				case $packages in
-				base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
-					true
-					;;
-				*)
-					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
-					cd $REPO
-					$SCRIPTS/check-updates-silent $packages
-					;;
-			esac
-		done
-		;;
-	notify-updates)
-        notify-send "Beginning update check."
-        ./build check-updates-silent > ./updateslog
-		notify-send "Ataraxia Update!" "$(cat ./updateslog)"
-		;;
 	check-update)
-		setup_environment
+		SILENT=1 setup_environment
 		msg "Checking packages for updates"
 		for myemerge in $PACKAGE; do
 			$SCRIPTS/check-updates $myemerge
 		done
-		;;
-	select-updates)
-        setup_environment_silent
-		selected=$(ls ./packages/ | fzy)
-		cd $REPO
-		${SCRIPTS}/autobump $selected
 		;;
 	usage|*)
 		msg "In development!"

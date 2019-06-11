@@ -164,7 +164,12 @@ check_updates() {
 		if $consider; then
 			vercmp "$original_pkgname-${version}_1" "$original_pkgname-$(printf %s "$found_version" | tr - .)_1"
 			if [ $? = 255 ]; then
-				msg "Update  ${original_pkgname} to ${found_version}"
+				if [ "$AUTODUMP" = 1 ]; then
+					msg "Autobumping ${original_pkgname} to ${found_version}"
+					sed -i -e "s/${version}/${found_version}/g" $mypkg/Pkgfile
+				else
+					msg "Update ${original_pkgname} to ${found_version}"
+				fi
 			fi
 		fi
 	done

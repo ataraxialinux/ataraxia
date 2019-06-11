@@ -49,7 +49,7 @@ strconfig() {
 
 generate_config() {
 	case $BARCH in
-		x86_64|i486)
+		x86_64|i586)
 			SUBKARCH="x86"
 			;;
 		*)
@@ -61,19 +61,22 @@ generate_config() {
 		x86_64)
 			export DEFCONFIG="x86_64_defconfig"
 			;;
-		i486)
+		i586)
 			export DEFCONFIG="i386_defconfig"
 			;;
 		aarch64)
 			export DEFCONFIG="defconfig"
 			;;
 		armv7l)
-			export DEFCONFIG="vexpress_defconfig"
+			export DEFCONFIG="multi_v7_defconfig"
 			;;
 		armv6l)
 			export DEFCONFIG="versatile_defconfig"
 			;;
-		mips64|mips64el|mips|mipsel)
+		armv5tel)
+			export DEFCONFIG="multi_v5_defconfig"
+			;;
+		mips|mipsel)
 			export DEFCONFIG="malta_defconfig"
 			;;
 		ppc64le)
@@ -124,13 +127,12 @@ generate_config() {
 			varconfig XEN_BALLOON_MEMORY_HOTPLUG_LIMIT 512
 			varconfig NODES_SHIFT 6
 			;;
-		i486)
-			yconfig M486 PCI E1000 SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
+		i586)
+			yconfig M586 PCI E1000 SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
 				EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS \
 				MICROCODE MICROCODE_EARLY MICROCODE_INTEL MICROCODE_AMD X86_PM_TIMER
 			mconfig KVM_INTEL KVM_AMD FB_HYPERV VBOXGUEST HYPERV HYPERV_UTILS \
 				HYPERV_MOUSE HYPERV_STORAGE HYPERV_NET HYPERV_BALLOON
-			nconfig M586 M686
 			;;
 		mips64|mips64el|mips|mipsel)
 			yconfig SERIAL_8250 SERIAL_8250_CONSOLE PCI NET_VENDOR_AMD PCNET32 POWER_RESET POWER_RESET_SYSCON
@@ -147,20 +149,11 @@ generate_config() {
 			;;
 	esac
 
-
 	case $BARCH in
-		mips64|mips64el)
-			nconfig CPU_MIPS32_R2
-			nconfig 32BIT
-			yconfig CPU_MIPS64_R2 MIPS_O32_FP64_SUPPORT 64BIT MIPS32_O32 MIPS32_N32
-			;;
-	esac
-
-	case $BARCH in
-		mips64|mips)
+		mips)
 			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
 			;;
-		mips64el|mipsel)
+		mipsel)
 			sed -i -e 's:CONFIG_CPU_BIG_ENDIAN:CONFIG_CPU_LITTLE_ENDIAN:' .config
 			;;
 	esac
@@ -451,7 +444,7 @@ build() {
 			export XKARCH="x86_64"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		i486)
+		i586)
 			export XKARCH="i386"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
@@ -459,11 +452,11 @@ build() {
 			export XKARCH="arm64"
 			export IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armv7l|armv6l)
+		armv7l|armv6l|armv5tel|armv5tel)
 			export XKARCH="arm"
 			export IMAGELOC="arch/arm/boot/zImage"
 			;;
-		mips64|mips64el|mips|mipsel)
+		mips|mipsel)
 			export XKARCH="mips"
 			export IMAGELOC="vmlinux"
 			;;
@@ -518,7 +511,7 @@ build() {
 	fi
 
 	case $BARCH in
-		aarch64|armv7l|armv6l)
+		aarch64|armv7l|armv6l|armv5tel|armv5tel)
 			if [ "$CROSS" = "yes" ]; then
 				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
