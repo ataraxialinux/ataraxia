@@ -1,7 +1,7 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  busybox eudev intltool dbus-glib libndp libnl libpsl curl gobject-introspection iptables jansson newt polkit nss vala iwd ppp docbook-xsl
+# Depends on:  busybox eudev intltool dbus-glib libndp libnl libpsl curl gobject-introspection iptables jansson newt polkit nss vala iwd ppp docbook-xsl modemmanager
 
 name=networkmanager
 version=1.18.1
@@ -19,6 +19,7 @@ build() {
 	patch -Np1 -i "$STUFF"/networkmanager/fix-ppc64le-build.patch
 
 	sed '/initrd/d' -i src/meson.build
+	grep -rl '^#!.*python$' | xargs sed -i '1s/python/&3/'
 
 	mkdir -p build
 	cd build
@@ -35,7 +36,6 @@ build() {
 		-Djson_validation=false \
 		-Dlibaudit=no \
 		-Dlibnm_glib=true \
-		-Dmodem_manager=false \
 		-Dnmtui=true \
 		-Dovs=false \
 		-Dqt=false \
@@ -43,7 +43,7 @@ build() {
 		-Dsession_tracking=no \
 		-Dsystemd_journal=false \
 		-Dsystemdsystemunitdir=no \
-		-Dudev_dir=/usr/lib/udev
+		-Dudev_dir=/usr/lib/udev -Dintrospection=false
 	ninja
 	DESTDIR="$PKG" ninja install
 
