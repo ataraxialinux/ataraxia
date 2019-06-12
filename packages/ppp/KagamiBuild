@@ -4,15 +4,17 @@
 # Depends on:  zlib libressl libpcap
 
 name=ppp
-version=347904e33a8a1993316e57445a1ba8243cd947ce
+version=2.4.7
 release=1
-source=("https://github.com/paulusmack/ppp/archive/$version.tar.gz")
+source=("http://samba.org/ftp/$name/$name-$version.tar.gz")
 
 build() {
 	export CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/ppp/130-no_cdefs_h.patch
+	for a in $(ls stuff/ppp); do
+		patch -Np1 -i "$STUFF"/ppp/$a
+	done
 
 	sed -i "s:^#FILTER=y:FILTER=y:" pppd/Makefile.linux
 	sed -i "s:^#HAVE_INET6=y:HAVE_INET6=y:" pppd/Makefile.linux
