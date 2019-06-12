@@ -5,7 +5,7 @@
 
 name=coreutils
 version=8.31
-release=1
+release=2
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 BOOTSTRAP=yes
 
@@ -27,4 +27,7 @@ build() {
 		--enable-no-install-program=groups,hostname,kill,uptime
 	make
 	make DESTDIR="$PKG" install
+
+	( cd "$PKG"/usr/bin ; ln -sf install ginstall )
+	( cd "$PKG"/usr/share/man/man1 ; ln -sf install.1 ginstall.1 )
 }
