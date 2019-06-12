@@ -1,0 +1,24 @@
+# Description: A linkable library for Git
+# URL:         https://libgit2.github.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja zlib libressl curl http-parser
+
+name=libgit2
+version=0.28.2
+release=1
+source=("https://github.com/libgit2/libgit2/archive/v${version}.tar.gz")
+
+build() {
+	export CFLAGS="-D__ANDROID_API__ $CFLAGS"
+
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DTHREADSAFE=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
