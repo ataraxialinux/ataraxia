@@ -1,0 +1,23 @@
+# Description: A fast compressor/decompressor library
+# URL:         https://google.github.io/snappy/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja zlib lzo
+
+name=snappy
+version=1.1.7
+release=1
+source=("https://github.com/google/snappy/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
