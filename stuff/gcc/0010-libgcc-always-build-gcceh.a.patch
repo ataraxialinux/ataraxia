@@ -1,11 +1,19 @@
-Highly inspired by:
-  http://landley.net/hg/aboriginal/file/7e0747a665ab/sources/patches/gcc-core-libgcceh.patch
+From 99e9d76c73d8cbbac376b0b268c1cb82fc2a94fa Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 13 Jun 2019 00:42:54 +0900
+Subject: [PATCH 10/11] libgcc always build gcceh.a
 
-diff -durN gcc-4.6.0.orig/libgcc/Makefile.in gcc-4.6.0/libgcc/Makefile.in
---- gcc-4.6.0.orig/libgcc/Makefile.in	2011-01-26 05:19:58.000000000 +0100
-+++ gcc-4.6.0/libgcc/Makefile.in	2011-09-12 18:17:12.743718974 +0200
-@@ -772,8 +772,9 @@
- libgcc_s$(SHLIB_EXT): libunwind$(SHLIB_EXT)
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ libgcc/Makefile.in | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/libgcc/Makefile.in b/libgcc/Makefile.in
+index ea390a5bb..5523feb35 100644
+--- a/libgcc/Makefile.in
++++ b/libgcc/Makefile.in
+@@ -954,8 +954,9 @@ ifneq ($(LIBUNWIND),)
+ all: libunwind.a
  endif
  
 +all: libgcc_eh.a
@@ -14,8 +22,8 @@ diff -durN gcc-4.6.0.orig/libgcc/Makefile.in gcc-4.6.0/libgcc/Makefile.in
 +all: libgcc_s$(SHLIB_EXT)
  ifneq ($(LIBUNWIND),)
  all: libunwind$(SHLIB_EXT)
- endif
-@@ -950,10 +951,6 @@
+ libgcc_s$(SHLIB_EXT): libunwind$(SHLIB_EXT)
+@@ -1157,10 +1158,6 @@ install-libunwind:
  install-shared:
  	$(mkinstalldirs) $(DESTDIR)$(inst_libdir)
  
@@ -26,9 +34,9 @@ diff -durN gcc-4.6.0.orig/libgcc/Makefile.in gcc-4.6.0/libgcc/Makefile.in
  	$(subst @multilib_dir@,$(MULTIDIR),$(subst \
  		@shlib_base_name@,libgcc_s,$(subst \
  		@shlib_slibdir_qual@,$(MULTIOSSUBDIR),$(SHLIB_INSTALL))))
-@@ -968,6 +965,10 @@
- 	chmod 644 $(DESTDIR)$(inst_libdir)/libgcov.a
+@@ -1177,6 +1174,10 @@ ifeq ($(enable_gcov),yes)
  	$(RANLIB) $(DESTDIR)$(inst_libdir)/libgcov.a
+ endif
  
 +	$(INSTALL_DATA) libgcc_eh.a $(DESTDIR)$(inst_libdir)/
 +	chmod 644 $(DESTDIR)$(inst_libdir)/libgcc_eh.a
@@ -37,3 +45,6 @@ diff -durN gcc-4.6.0.orig/libgcc/Makefile.in gcc-4.6.0/libgcc/Makefile.in
  	parts="$(INSTALL_PARTS)";				\
  	for file in $$parts; do					\
  	  rm -f $(DESTDIR)$(inst_libdir)/$$file;		\
+-- 
+2.20.1
+

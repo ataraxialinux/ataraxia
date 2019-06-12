@@ -1,0 +1,27 @@
+From aba845bb094887fe596610f6cc9d3d680d58d23b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 13 Jun 2019 00:28:49 +0900
+Subject: [PATCH 01/11] Use musl's libssp_nonshared.a
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gcc/gcc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 4f57765b0..09499212e 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -877,8 +877,7 @@ proper position among the other output files.  */
+ 
+ #ifndef LINK_SSP_SPEC
+ #ifdef TARGET_LIBC_PROVIDES_SSP
+-#define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
+-		       "|fstack-protector-strong|fstack-protector-explicit:}"
++#define LINK_SSP_SPEC "-lssp_nonshared"
+ #else
+ #define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
+ 		       "|fstack-protector-strong|fstack-protector-explicit" \
+-- 
+2.20.1
+

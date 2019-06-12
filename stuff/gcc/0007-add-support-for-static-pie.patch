@@ -1,27 +1,20 @@
-patch by Ishimoto Shinobu
-based on Szabolcs Nagy's work
+From 347212e2ab57b8b4723f2571d539eae0b0d5c7ca Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 13 Jun 2019 00:38:14 +0900
+Subject: [PATCH 07/11] add support for static pie
 
-in gcc-9 -static means static non-pie, even if -pie or -static-pie
-are specified, -static-pie can be used to build static pie.
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gcc/common.opt        |  4 ++--
+ gcc/config/gnu-user.h | 12 +++++-------
+ gcc/gcc.c             |  4 ++--
+ 3 files changed, 9 insertions(+), 11 deletions(-)
 
-in musl toolchains -static -pie always meant static pie, so this
-patch fixes the link specs accordingly, the new -static-pie is just
-an alias to -static -pie.
-
-МЫ ЕБАЛИСЬ ХУИ СЛОМАЛИСЬ
-И ВСЕ ЖОПЫ ОБ НИХ ПОРВАЛИСЬ
-ТОЛЬКО ВСЕ РАВНО СЕКСА МАЛО
-МЫ ХОТИМ ЧТОБ ТЫ СКАЗАЛА
-
-отъеби меня скорей
-своих сил ты не желей
-и засунь поглубже мне
-18 ведь уже
-
-diff -ruN gcc-9.1.0-orig/gcc/common.opt gcc-9.1.0/gcc/common.opt
---- gcc-9.1.0-orig/gcc/common.opt	2019-03-09 18:28:04.000000000 +0900
-+++ gcc-9.1.0/gcc/common.opt	2019-05-03 21:36:03.327947229 +0900
-@@ -3287,11 +3287,11 @@
+diff --git a/gcc/common.opt b/gcc/common.opt
+index d342c4f37..2aae4a3ce 100644
+--- a/gcc/common.opt
++++ b/gcc/common.opt
+@@ -3287,11 +3287,11 @@ Driver
  
  no-pie
  Driver RejectNegative Negative(shared)
@@ -35,10 +28,11 @@ diff -ruN gcc-9.1.0-orig/gcc/common.opt gcc-9.1.0/gcc/common.opt
  
  static-pie
  Driver RejectNegative Negative(pie)
-diff -ruN gcc-9.1.0-orig/gcc/config/gnu-user.h gcc-9.1.0/gcc/config/gnu-user.h
---- gcc-9.1.0-orig/gcc/config/gnu-user.h	2019-01-16 18:38:21.000000000 +0900
-+++ gcc-9.1.0/gcc/config/gnu-user.h	2019-05-03 21:38:10.904937016 +0900
-@@ -51,13 +51,12 @@
+diff --git a/gcc/config/gnu-user.h b/gcc/config/gnu-user.h
+index 055a4f0af..7a671c6a4 100644
+--- a/gcc/config/gnu-user.h
++++ b/gcc/config/gnu-user.h
+@@ -51,13 +51,12 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #define GNU_USER_TARGET_STARTFILE_SPEC \
    "%{shared:; \
       pg|p|profile:%{static-pie:grcrt1.o%s;:gcrt1.o%s}; \
@@ -55,7 +49,7 @@ diff -ruN gcc-9.1.0-orig/gcc/config/gnu-user.h gcc-9.1.0/gcc/config/gnu-user.h
       :crtbegin.o%s} \
     %{fvtable-verify=none:%s; \
       fvtable-verify=preinit:vtv_start_preinit.o%s; \
-@@ -76,8 +75,7 @@
+@@ -76,8 +75,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
    "%{fvtable-verify=none:%s; \
       fvtable-verify=preinit:vtv_end_preinit.o%s; \
       fvtable-verify=std:vtv_end.o%s} \
@@ -65,7 +59,7 @@ diff -ruN gcc-9.1.0-orig/gcc/config/gnu-user.h gcc-9.1.0/gcc/config/gnu-user.h
       :crtend.o%s} " \
     GNU_USER_TARGET_CRTN " " \
     CRTOFFLOADEND
-@@ -106,7 +104,7 @@
+@@ -106,7 +104,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #define LIB_SPEC GNU_USER_TARGET_LIB_SPEC
  
  #if defined(HAVE_LD_EH_FRAME_HDR)
@@ -74,10 +68,11 @@ diff -ruN gcc-9.1.0-orig/gcc/config/gnu-user.h gcc-9.1.0/gcc/config/gnu-user.h
  #endif
  
  #define GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC \
-diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
---- gcc-9.1.0-orig/gcc/gcc.c	2019-03-11 22:58:44.000000000 +0900
-+++ gcc-9.1.0/gcc/gcc.c	2019-05-03 21:41:00.976965660 +0900
-@@ -931,12 +931,12 @@
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 09499212e..797cad682 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -930,12 +930,12 @@ proper position among the other output files.  */
  #ifndef LINK_PIE_SPEC
  #ifdef HAVE_LD_PIE
  #ifndef LD_PIE_SPEC
@@ -92,3 +87,6 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
  #endif
  
  #ifndef LINK_BUILDID_SPEC
+-- 
+2.20.1
+

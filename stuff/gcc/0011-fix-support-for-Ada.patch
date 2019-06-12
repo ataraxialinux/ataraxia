@@ -1,0 +1,196 @@
+From 6b86fa3d236355c26893f675eb731e6e30a2f3e5 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 13 Jun 2019 00:53:02 +0900
+Subject: [PATCH 11/11] fix support for Ada
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gcc/ada/adaint.c    | 34 +++++++++++++++++++---------------
+ gcc/ada/adaint.h    | 10 ++++------
+ gcc/ada/link.c      | 12 ++++++------
+ gcc/ada/terminals.c |  6 +++---
+ 4 files changed, 32 insertions(+), 30 deletions(-)
+
+diff --git a/gcc/ada/adaint.c b/gcc/ada/adaint.c
+index 4a75b5909..b97ae7b41 100644
+--- a/gcc/ada/adaint.c
++++ b/gcc/ada/adaint.c
+@@ -79,6 +79,11 @@
+ #include <sys/pstat.h>
+ #endif
+ 
++#if defined (linux)
++#define _GNU_SOURCE 1
++#include <sched.h>
++#endif
++
+ #ifdef __PikeOS__
+ #define __BSD_VISIBLE 1
+ #endif
+@@ -3271,7 +3276,6 @@ __gnat_lwp_self (void)
+ #endif
+ 
+ #if defined (__linux__)
+-#include <sched.h>
+ 
+ /* glibc versions earlier than 2.7 do not define the routines to handle
+    dynamically allocated CPU sets. For these targets, we use the static
+@@ -3281,7 +3285,7 @@ __gnat_lwp_self (void)
+ 
+ /* Dynamic cpu sets */
+ 
+-cpu_set_t *
++void *
+ __gnat_cpu_alloc (size_t count)
+ {
+   return CPU_ALLOC (count);
+@@ -3294,33 +3298,33 @@ __gnat_cpu_alloc_size (size_t count)
+ }
+ 
+ void
+-__gnat_cpu_free (cpu_set_t *set)
++__gnat_cpu_free (void *set)
+ {
+-  CPU_FREE (set);
++  CPU_FREE ((cpu_set_t *) set);
+ }
+ 
+ void
+-__gnat_cpu_zero (size_t count, cpu_set_t *set)
++__gnat_cpu_zero (size_t count, void *set)
+ {
+-  CPU_ZERO_S (count, set);
++  CPU_ZERO_S (count, (cpu_set_t *) set);
+ }
+ 
+ void
+-__gnat_cpu_set (int cpu, size_t count, cpu_set_t *set)
++__gnat_cpu_set (int cpu, size_t count, void *set)
+ {
+   /* Ada handles CPU numbers starting from 1, while C identifies the first
+      CPU by a 0, so we need to adjust. */
+-  CPU_SET_S (cpu - 1, count, set);
++  CPU_SET_S (cpu - 1, count, (cpu_set_t *) set);
+ }
+ 
+ #else /* !CPU_ALLOC */
+ 
+ /* Static cpu sets */
+ 
+-cpu_set_t *
++void *
+ __gnat_cpu_alloc (size_t count ATTRIBUTE_UNUSED)
+ {
+-  return (cpu_set_t *) xmalloc (sizeof (cpu_set_t));
++  return xmalloc (sizeof (cpu_set_t));
+ }
+ 
+ size_t
+@@ -3330,23 +3334,23 @@ __gnat_cpu_alloc_size (size_t count ATTRIBUTE_UNUSED)
+ }
+ 
+ void
+-__gnat_cpu_free (cpu_set_t *set)
++__gnat_cpu_free (void *set)
+ {
+   free (set);
+ }
+ 
+ void
+-__gnat_cpu_zero (size_t count ATTRIBUTE_UNUSED, cpu_set_t *set)
++__gnat_cpu_zero (size_t count ATTRIBUTE_UNUSED, void *set)
+ {
+-  CPU_ZERO (set);
++  CPU_ZERO ((cpu_set_t *) set);
+ }
+ 
+ void
+-__gnat_cpu_set (int cpu, size_t count ATTRIBUTE_UNUSED, cpu_set_t *set)
++__gnat_cpu_set (int cpu, size_t count ATTRIBUTE_UNUSED, void *set)
+ {
+   /* Ada handles CPU numbers starting from 1, while C identifies the first
+      CPU by a 0, so we need to adjust. */
+-  CPU_SET (cpu - 1, set);
++  CPU_SET (cpu - 1, (cpu_set_t *) set);
+ }
+ #endif /* !CPU_ALLOC */
+ #endif /* __linux__ */
+diff --git a/gcc/ada/adaint.h b/gcc/ada/adaint.h
+index 2ae876699..13159bb9c 100644
+--- a/gcc/ada/adaint.h
++++ b/gcc/ada/adaint.h
+@@ -316,13 +316,11 @@ extern void   *__gnat_lwp_self			   (void);
+ 
+ /* Routines for interface to required CPU set primitives */
+ 
+-#include <sched.h>
+-
+-extern cpu_set_t *__gnat_cpu_alloc                 (size_t);
++extern void * __gnat_cpu_alloc                 (size_t);
+ extern size_t __gnat_cpu_alloc_size                (size_t);
+-extern void   __gnat_cpu_free                  (cpu_set_t *);
+-extern void   __gnat_cpu_zero                      (size_t, cpu_set_t *);
+-extern void   __gnat_cpu_set                       (int, size_t, cpu_set_t *);
++extern void   __gnat_cpu_free                  (void *);
++extern void   __gnat_cpu_zero                      (size_t, void *);
++extern void   __gnat_cpu_set                       (int, size_t, void *);
+ #endif
+ 
+ #if defined (_WIN32)
+diff --git a/gcc/ada/link.c b/gcc/ada/link.c
+index 02c413a41..f0e52a87d 100644
+--- a/gcc/ada/link.c
++++ b/gcc/ada/link.c
+@@ -107,9 +107,9 @@ const char *__gnat_default_libgcc_subdir = "lib";
+    || defined (__NetBSD__) || defined (__OpenBSD__) \
+    || defined (__QNX__)
+ const char *__gnat_object_file_option = "-Wl,@";
+-const char *__gnat_run_path_option = "-Wl,-rpath,";
+-char __gnat_shared_libgnat_default = STATIC;
+-char __gnat_shared_libgcc_default = STATIC;
++const char *__gnat_run_path_option = "";
++char __gnat_shared_libgnat_default = SHARED;
++char __gnat_shared_libgcc_default = SHARED;
+ int __gnat_link_max = 8192;
+ unsigned char __gnat_objlist_file_supported = 1;
+ const char *__gnat_object_library_extension = ".a";
+@@ -129,9 +129,9 @@ const char *__gnat_default_libgcc_subdir = "lib";
+ 
+ #elif defined (__linux__) || defined (__GLIBC__)
+ const char *__gnat_object_file_option = "-Wl,@";
+-const char *__gnat_run_path_option = "-Wl,-rpath,";
+-char __gnat_shared_libgnat_default = STATIC;
+-char __gnat_shared_libgcc_default = STATIC;
++const char *__gnat_run_path_option = "";
++char __gnat_shared_libgnat_default = SHARED;
++char __gnat_shared_libgcc_default = SHARED;
+ int __gnat_link_max = 8192;
+ unsigned char __gnat_objlist_file_supported = 1;
+ const char *__gnat_object_library_extension = ".a";
+diff --git a/gcc/ada/terminals.c b/gcc/ada/terminals.c
+index 23f9dfdfd..fca3c30b9 100644
+--- a/gcc/ada/terminals.c
++++ b/gcc/ada/terminals.c
+@@ -1150,7 +1150,7 @@ __gnat_setup_winsize (void *desc, int rows, int columns)
+ #if defined (__APPLE__) || defined (BSD)
+ #define USE_OPENPTY
+ #elif defined (__linux__)
+-#define USE_GETPT
++#define USE_POSIX_OPENPT
+ #elif defined (__sun__)
+ #define USE_CLONE_DEVICE "/dev/ptmx"
+ #elif defined (_AIX)
+@@ -1199,8 +1199,8 @@ allocate_pty_desc (pty_desc **desc) {
+    int  master_fd   = -1;
+    char *slave_name = NULL;
+ 
+-#ifdef USE_GETPT
+-  master_fd = getpt ();
++#ifdef USE_POSIX_OPENPT
++  master_fd = posix_openpt(O_RDWR | O_NOCTTY);
+ #elif defined (USE_OPENPTY)
+   status = openpty (&master_fd, &slave_fd, NULL, NULL, NULL);
+ #elif defined (USE_CLONE_DEVICE)
+-- 
+2.20.1
+
