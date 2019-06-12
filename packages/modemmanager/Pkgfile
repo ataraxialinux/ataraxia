@@ -1,0 +1,26 @@
+# Description: Mobile broadband modem management service
+# URL:         https://www.freedesktop.org/wiki/Software/ModemManager/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libgudev gobject-introspection libqmi polkit vala ppp
+
+name=modemmanager
+version=1.10.2
+release=1
+source=("https://www.freedesktop.org/software/ModemManager/ModemManager-$version.tar.xz")
+
+build() {
+	cd "$SRC"/ModemManager-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-dbus-sys-dir=/usr/share/dbus-1/system.d \
+		--with-polkit=permissive \
+		--with-udev-base-dir=/usr/lib/udev \
+		--disable-static
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
