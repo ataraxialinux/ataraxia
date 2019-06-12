@@ -1,17 +1,71 @@
---- pppd/Makefile.linux
-+++ pppd/Makefile.linux
-@@ -126,7 +126,7 @@ LIBS        += -lcrypt
+diff -ruN ppp-2.4.7-orig/include/linux/ppp_defs.h ppp-2.4.7/include/linux/ppp_defs.h
+--- ppp-2.4.7-orig/include/linux/ppp_defs.h	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/include/linux/ppp_defs.h	2019-06-12 19:03:53.141884171 +0900
+@@ -50,6 +50,10 @@
+ #ifndef _PPP_DEFS_H_
+ #define _PPP_DEFS_H_
+ 
++#ifndef __P
++# define __P(x) x
++#endif
++
+ /*
+  * The basic PPP frame.
+  */
+diff -ruN ppp-2.4.7-orig/include/net/ppp_defs.h ppp-2.4.7/include/net/ppp_defs.h
+--- ppp-2.4.7-orig/include/net/ppp_defs.h	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/include/net/ppp_defs.h	2019-06-12 19:04:36.168615342 +0900
+@@ -38,6 +38,8 @@
+ #ifndef _PPP_DEFS_H_
+ #define _PPP_DEFS_H_
+ 
++#include <sys/time.h>	/* time_t */
++
+ /*
+  * The basic PPP frame.
+  */
+diff -ruN ppp-2.4.7-orig/pppd/magic.h ppp-2.4.7/pppd/magic.h
+--- ppp-2.4.7-orig/pppd/magic.h	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/magic.h	2019-06-12 19:04:15.781213595 +0900
+@@ -42,6 +42,10 @@
+  * $Id: magic.h,v 1.5 2003/06/11 23:56:26 paulus Exp $
+  */
+ 
++#ifndef __P
++# define __P(x) x
++#endif
++
+ void magic_init __P((void));	/* Initialize the magic number generator */
+ u_int32_t magic __P((void));	/* Returns the next magic number */
+ 
+diff -ruN ppp-2.4.7-orig/pppd/Makefile.linux ppp-2.4.7/pppd/Makefile.linux
+--- ppp-2.4.7-orig/pppd/Makefile.linux	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/Makefile.linux	2019-06-12 19:00:02.736712635 +0900
+@@ -126,7 +126,7 @@
  endif
  
  ifdef USE_LIBUTIL
--CFLAGS += -DHAVE_LOGWTMP=1
-+#CFLAGS        += -DHAVE_LOGWTMP=1
- LIBS   += -lutil
+-CFLAGS	+= -DHAVE_LOGWTMP=1
++#CFLAGS	+= -DHAVE_LOGWTMP=1
+ LIBS	+= -lutil
  endif
  
---- pppd/plugins/rp-pppoe/if.c
-+++ pppd/plugins/rp-pppoe/if.c
-@@ -30,10 +30,6 @@ static char const RCSID[] =
+diff -ruN ppp-2.4.7-orig/pppd/plugins/rp-pppoe/config.h ppp-2.4.7/pppd/plugins/rp-pppoe/config.h
+--- ppp-2.4.7-orig/pppd/plugins/rp-pppoe/config.h	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/plugins/rp-pppoe/config.h	2019-06-12 18:59:28.393475520 +0900
+@@ -102,7 +102,7 @@
+ #define HAVE_NETPACKET_PACKET_H 1
+ 
+ /* Define if you have the <sys/cdefs.h> header file.  */
+-#define HAVE_SYS_CDEFS_H 1
++/* #undef HAVE_SYS_CDEFS_H */
+ 
+ /* Define if you have the <sys/dlpi.h> header file.  */
+ /* #undef HAVE_SYS_DLPI_H */
+diff -ruN ppp-2.4.7-orig/pppd/plugins/rp-pppoe/if.c ppp-2.4.7/pppd/plugins/rp-pppoe/if.c
+--- ppp-2.4.7-orig/pppd/plugins/rp-pppoe/if.c	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/plugins/rp-pppoe/if.c	2019-06-12 19:00:25.356210823 +0900
+@@ -30,10 +30,6 @@
  #include <linux/if_packet.h>
  #endif
  
@@ -22,9 +76,10 @@
  #ifdef HAVE_ASM_TYPES_H
  #include <asm/types.h>
  #endif
---- pppd/plugins/rp-pppoe/plugin.c
-+++ pppd/plugins/rp-pppoe/plugin.c
-@@ -46,7 +46,6 @@ static char const RCSID[] =
+diff -ruN ppp-2.4.7-orig/pppd/plugins/rp-pppoe/plugin.c ppp-2.4.7/pppd/plugins/rp-pppoe/plugin.c
+--- ppp-2.4.7-orig/pppd/plugins/rp-pppoe/plugin.c	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/plugins/rp-pppoe/plugin.c	2019-06-12 19:01:00.851235664 +0900
+@@ -46,7 +46,6 @@
  #include <unistd.h>
  #include <fcntl.h>
  #include <signal.h>
@@ -32,8 +87,9 @@
  #include <net/if_arp.h>
  #include <linux/ppp_defs.h>
  #include <linux/if_pppox.h>
---- pppd/plugins/rp-pppoe/pppoe-discovery.c
-+++ pppd/plugins/rp-pppoe/pppoe-discovery.c
+diff -ruN ppp-2.4.7-orig/pppd/plugins/rp-pppoe/pppoe-discovery.c ppp-2.4.7/pppd/plugins/rp-pppoe/pppoe-discovery.c
+--- ppp-2.4.7-orig/pppd/plugins/rp-pppoe/pppoe-discovery.c	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/plugins/rp-pppoe/pppoe-discovery.c	2019-06-12 19:01:38.834014159 +0900
 @@ -27,10 +27,6 @@
  #include <linux/if_packet.h>
  #endif
@@ -45,8 +101,8 @@
  #ifdef HAVE_ASM_TYPES_H
  #include <asm/types.h>
  #endif
-@@ -55,6 +51,8 @@ void die(int status)
-        exit(status);
+@@ -55,6 +51,8 @@
+ 	exit(status);
  }
  
 +#define error(x...) fprintf(stderr, x)
@@ -54,12 +110,26 @@
  /* Initialize frame types to RFC 2516 values.  Some broken peers apparently
     use different frame types... sigh... */
  
---- pppd/plugins/rp-pppoe/pppoe.h
-+++ pppd/plugins/rp-pppoe/pppoe.h
-@@ -86,18 +86,6 @@ typedef unsigned long UINT32_t;
+diff -ruN ppp-2.4.7-orig/pppd/plugins/rp-pppoe/pppoe.h ppp-2.4.7/pppd/plugins/rp-pppoe/pppoe.h
+--- ppp-2.4.7-orig/pppd/plugins/rp-pppoe/pppoe.h	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/plugins/rp-pppoe/pppoe.h	2019-06-12 19:02:17.932782943 +0900
+@@ -47,6 +47,10 @@
+ #include <sys/socket.h>
+ #endif
  
- #include <netinet/in.h>
++/* This has to be included before Linux 4.8's linux/in.h
++ * gets dragged in. */
++#include <netinet/in.h>
++
+ /* Ugly header files on some Linux boxes... */
+ #if defined(HAVE_LINUX_IF_H)
+ #include <linux/if.h>
+@@ -84,21 +88,6 @@
+ #include <linux/if_ether.h>
+ #endif
  
+-#include <netinet/in.h>
+-
 -#ifdef HAVE_NETINET_IF_ETHER_H
 -#include <sys/types.h>
 -
@@ -72,17 +142,19 @@
 -#endif
 -
 -
- 
+-
  /* Ethernet frame types according to RFC 2516 */
  #define ETH_PPPOE_DISCOVERY 0x8863
---- pppd/sys-linux.c
-+++ pppd/sys-linux.c
+ #define ETH_PPPOE_SESSION   0x8864
+diff -ruN ppp-2.4.7-orig/pppd/sys-linux.c ppp-2.4.7/pppd/sys-linux.c
+--- ppp-2.4.7-orig/pppd/sys-linux.c	2014-08-09 21:31:39.000000000 +0900
++++ ppp-2.4.7/pppd/sys-linux.c	2019-06-12 19:02:45.323935176 +0900
 @@ -102,19 +102,11 @@
  #define MAX_ADDR_LEN 7
  #endif
  
 -#if __GLIBC__ >= 2
- #include <asm/types.h>         /* glibc 2 conflicts with linux/types.h */
+ #include <asm/types.h>		/* glibc 2 conflicts with linux/types.h */
  #include <net/if.h>
  #include <net/if_arp.h>
  #include <net/route.h>
@@ -97,40 +169,3 @@
  #include <netinet/in.h>
  #include <arpa/inet.h>
  
-
---- include/linux/ppp_defs.h.orig	2015-05-10 10:59:27.959155977 +0200
-+++ include/linux/ppp_defs.h	2015-05-10 10:59:50.190403246 +0200
-@@ -50,6 +50,9 @@
- #ifndef _PPP_DEFS_H_
- #define _PPP_DEFS_H_
- 
-+#ifndef __P
-+# define __P(x) x
-+#endif
- /*
-  * The basic PPP frame.
-  */
---- pppd/magic.h.orig	2015-05-10 11:00:16.687697962 +0200
-+++ pppd/magic.h	2015-05-10 11:00:34.030890864 +0200
-@@ -42,6 +42,10 @@
-  * $Id: magic.h,v 1.5 2003/06/11 23:56:26 paulus Exp $
-  */
- 
-+#ifndef __P
-+# define __P(x) x
-+#endif
-+
- void magic_init __P((void));	/* Initialize the magic number generator */
- u_int32_t magic __P((void));	/* Returns the next magic number */
- 
---- include/net/ppp_defs.h.orig	2015-05-10 11:09:54.505127657 +0200
-+++ include/net/ppp_defs.h	2015-05-10 11:10:10.753309024 +0200
-@@ -38,6 +38,8 @@
- #ifndef _PPP_DEFS_H_
- #define _PPP_DEFS_H_
- 
-+#include <sys/time.h>	/* time_t */
-+
- /*
-  * The basic PPP frame.
-  */
