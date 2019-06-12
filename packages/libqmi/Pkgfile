@@ -1,0 +1,20 @@
+# Description: QMI modem protocol helper library
+# URL:         https://www.freedesktop.org/wiki/Software/libqmi/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libmbim
+
+name=libqmi
+version=1.22.4
+release=1
+source=("https://www.freedesktop.org/software/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+	make
+	make DESTDIR="$PKG" install
+}
