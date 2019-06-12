@@ -12,6 +12,8 @@ build() {
 	export CFLAGS="$CFLAGS -D_GNU_SOURCE"
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/ppp/130-no_cdefs_h.patch
+
 	sed -i "s:^#FILTER=y:FILTER=y:" pppd/Makefile.linux
 	sed -i "s:^#HAVE_INET6=y:HAVE_INET6=y:" pppd/Makefile.linux
 	sed -i "s:^#CBCP=y:CBCP=y:" pppd/Makefile.linux
