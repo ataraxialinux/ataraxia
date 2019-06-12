@@ -1,11 +1,11 @@
 # Description: Freedesktop.org message bus system
 # URL:         https://freedesktop.org/wiki/Software/dbus
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  expat
+# Depends on:  expat dbus-broker
 
 name=dbus
 version=1.12.16
-release=1
+release=2
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -27,8 +27,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	rm -rf "$PKG"/usr/bin/dbus-daemon
+
 	chown root:messagebus "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
 	chmod 4750 "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
-
-	install -D -m755 "$STUFF"/svc/dbus.initd "$PKG"/etc/init.d/dbus
 }
