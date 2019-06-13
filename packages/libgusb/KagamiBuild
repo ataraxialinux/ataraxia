@@ -1,0 +1,19 @@
+# Description: GObject wrapper for libusb1
+# URL:         https://github.com/hughsie/libgusb
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libusb gobject-introspection vala
+
+name=libgusb
+version=0.3.0
+release=1
+source=("https://people.freedesktop.org/~hughsient/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddocs=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
