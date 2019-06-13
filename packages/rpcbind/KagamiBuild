@@ -1,17 +1,33 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: portmap replacement which supports RPC over various protocols
+# URL:         http://rpcbind.sourceforge.net
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libtirpc
 
-name=m4
-version=1.4.18
+name=rpcbind
+version=1.2.5
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
+source=("https://downloads.sourceforge.net/sourceforge/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/rpcbind/cve.patch
+	sed -i "/servname/s:rpcbind:sunrpc:" src/rpcbind.c
+
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--with-statedir=/var/lib/rpcbind \
+		--with-rpcuser=root \
+		--without-systemdsystemunitdir \
+		--enable-rmtcalls \
+		--enable-warmstarts
 	make
 	make DESTDIR="$PKG" install
+
+	for initd in rpcbind; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	mkdir -p "$PKG"/var/lib/rpcbind
 }
