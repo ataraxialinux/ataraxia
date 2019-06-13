@@ -1,0 +1,28 @@
+# Description: A vi clone.
+# URL:         http://elvis.the-little-red-haired-girl.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib ncurses
+
+name=elvis
+version=2.2_0
+release=1
+source=("http://mirror.yandex.ru/slackware/slackware64-current/source/a/elvis/$name-$version.tar.bz2")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/elvis/elvis.ref.c.getline.diff
+
+	CC="${CROSS_COMPILE}cc $CFLAGS" \
+	./configure \
+		--prefix=/usr \
+		--without-gnome \
+		--without-x
+	make
+
+	install -Dm755 elvis "$PKG"/usr/bin/elvis
+	install -Dm755 elvtags "$PKG"/usr/bin/elvtags
+	install -Dm755 ref "$PKG"/usr/bin/ref
+
+	( cd "$PKG"/usr/bin ; ln -sf elvis ex ; ln -sf elvis vi )
+}

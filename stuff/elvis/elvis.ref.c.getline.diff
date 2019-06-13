@@ -1,0 +1,47 @@
+--- ./ref.c.orig	2003-10-20 21:32:25.000000000 -0500
++++ ./ref.c	2010-01-27 12:27:06.000000000 -0600
+@@ -42,7 +42,7 @@
+ 
+ #if USE_PROTOTYPES
+ static void usage(char *argv0);
+-static char *getline(FILE *fp);
++static char *elv_getline(FILE *fp);
+ static void store(char *line, char **list);
+ static LINECLS classify(char *line, LINECLS prev);
+ static void lookup(TAG *tag);
+@@ -171,7 +171,7 @@
+ /* This function reads a single line, and replaces the terminating newline with
+  * a '\0' byte.  The string will be in a static buffer.  Returns NULL at EOF.
+  */
+-static char *getline(fp)
++static char *elv_getline(fp)
+ 	FILE	*fp;
+ {
+ 	int	ch;
+@@ -348,7 +348,7 @@
+ 	}
+ 
+ 	/* for each line... */
+-	for (lnum = 1, lc = LC_COMPLETE; (line = getline(fp)) != NULL; lnum++)
++	for (lnum = 1, lc = LC_COMPLETE; (line = elv_getline(fp)) != NULL; lnum++)
+ 	{
+ 		/* is this the tag definition? */
+ 		if (taglnum > 0 ? taglnum == lnum : !strncmp(tagline, line, len))
+@@ -377,7 +377,7 @@
+ 			{
+ 				if (strchr(line, '(') != NULL)
+ 				{
+-					while ((line = getline(fp)) != NULL
++					while ((line = elv_getline(fp)) != NULL
+ 					    && *line
+ 					    && ((*line != '#' && *line != '{')
+ 						|| line[strlen(line) - 1] == '\\'))
+@@ -387,7 +387,7 @@
+ 				}
+ 				else if ((lc = classify(line, lc)) == LC_PARTIAL)
+ 				{
+-					while ((line = getline(fp)) != NULL
++					while ((line = elv_getline(fp)) != NULL
+ 					    && (lc = classify(line, lc)) == LC_PARTIAL)
+ 					{
+ 						puts(line);
