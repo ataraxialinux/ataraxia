@@ -1,17 +1,65 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: The userspace NFS server and client tools
+# URL:         http://nfs.sourceforge.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libcap lvm2 sqlite python libevent libtirpc rpcsvc-proto rpcbind
 
-name=m4
-version=1.4.18
+name=nfs-utils
+version=2.4.1
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
+source=("https://downloads.sourceforge.net/nfs/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/nfs-utils/musl-configure_ac.patch
+	patch -Np1 -i "$STUFF"/nfs-utils/musl-getservbyport.patch
+	patch -Np1 -i "$STUFF"/nfs-utils/musl-svcgssd-sysconf.patch
+	patch -Np1 -i "$STUFF"/nfs-utils/limits.patch
+
+	sed -i "s|sbindir = /sbin|sbindir = /usr/bin|g" utils/*/Makefile.am
+
+	./autogen.sh
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-statedir=/var/lib/nfs \
+		--with-start-statd=/usr/bin/start-statd \
+		--without-tcp-wrappers \
+		--enable-ipv6 \
+		--enable-libmount-mount \
+		--enable-mountconfig \
+		--disable-gss
 	make
 	make DESTDIR="$PKG" install
+
+	install -D -m 644 utils/mount/nfsmount.conf "$PKG"/etc/nfsmount.conf
+	install -D -m 644 nfs.conf "$PKG"/etc/nfs.conf
+
+	mkdir "$PKG"/etc/exports.d
+	mkdir -m 555 "$PKG"/var/lib/nfs/rpc_pipefs
+	mkdir "$PKG"/var/lib/nfs/v4recovery
+
+cat >> "$PKG"/etc/exports << EOF
+# /etc/exports - exports(5) - directories exported to NFS clients
+#
+# Example for NFSv2 and NFSv3:
+#  /srv/home        hostname1(rw,sync) hostname2(ro,sync)
+# Example for NFSv4:
+#  /srv/nfs4	    hostname1(rw,sync,fsid=0)
+#  /srv/nfs4/home   hostname1(rw,sync,nohide)
+#
+# Use `exportfs -arv` to reload.
+EOF
+
+	chmod u+w,go+r "$PKG"/usr/bin/mount.nfs
+	chown nobody "$PKG"/var/lib/nfs
+
+	for initd in nfsclient nfs nfsmount ; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	for initd in rpc.gssd rpc.idmapd rpc.pipefs rpc.statd rpc.svcgssd; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+	done
 }

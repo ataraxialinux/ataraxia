@@ -1,4 +1,4 @@
-#!/sbin/openrc-run
+#!/usr/bin/openrc-run
 # Copyright (c) 2008 Saleem Abdulrasool <compnerd@compnerd.org>
 # Copyright 2013-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
@@ -21,7 +21,7 @@ start() {
 
 	ebegin "Starting NetworkManager"
 	start-stop-daemon --start --quiet --pidfile /run/NetworkManager/NetworkManager.pid \
-		--exec /usr/sbin/NetworkManager -- --pid-file /run/NetworkManager/NetworkManager.pid
+		--exec /usr/usr/bin/NetworkManager -- --pid-file /run/NetworkManager/NetworkManager.pid
 	local _retval=$?
 	eend "${_retval}"
 	if [ "x${_retval}" = 'x0' ] && ! nm-online -t "${INACTIVE_TIMEOUT}"; then
@@ -42,9 +42,9 @@ stop() {
 
 	ebegin "Stopping NetworkManager"
 	local pidfile=/run/NetworkManager/NetworkManager.pid
-	if [ ! -e "${pidfile}" ] && [ -e /var/run/NetworkManager.pid ]; then 
+	if [ ! -e "${pidfile}" ] && [ -e /run/NetworkManager.pid ]; then 
 		# Try stopping the pid file used by <0.9.7
-		pidfile=/var/run/NetworkManager.pid
+		pidfile=/run/NetworkManager.pid
 		start-stop-daemon --stop --quiet --pidfile "${pidfile}"
 		ret=$?
 		[ ${ret} = 0 ] && [ -e "${pidfile}" ] && rm "${pidfile}"
