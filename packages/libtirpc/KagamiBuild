@@ -9,6 +9,10 @@ source=("http://downloads.sourceforge.net/sourceforge/libtirpc/$name-$version.ta
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libtirpc/musl.patch
+
+	aclocal
+	autoreconf
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconf=/etc \
