@@ -4,22 +4,34 @@
 # Depends on:  zlib binutils gcc ncurses gdbm
 
 name=ocaml
-version=4.07.1
+version=4.08.0
 release=1
 source=("https://github.com/ocaml/ocaml/archive/$version.tar.gz")
 
 build() {
+	case $BARCH in
+		x86_64|i586|aarch64|armv7l|armv6l|armv5tel|ppc64le|ppc64|ppc)
+			true
+			;;
+		*)
+			echo "Architecture is not set or is not supported by OCaml Language"
+			exit 1
+	esac
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/ocaml/compile-without-debug-info.patch
 	patch -Np1 -i "$STUFF"/ocaml/fix-mcontext-fields.patch
 	patch -Np1 -i "$STUFF"/ocaml/elfv2.patch
 	patch -Np1 -i "$STUFF"/ocaml/pie.patch
 
-	./configure \
-		-prefix /usr \
-		-mandir /usr/share/man \
-		-fPIC
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--with-pic
 	make world.opt
 	make DESTDIR="$PKG" install
-	chmod -R g-w "$PKG"
+
+	find "$PKG"/usr/lib/ocaml \
+		\( -name '*.cmt' -o -name '*.cmti' -o -name '*.ml' \) \
+		-a -delete
 }
