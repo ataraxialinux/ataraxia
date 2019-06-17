@@ -1,10 +1,10 @@
 # Description: Disk Management Service, version 2
 # URL:         https://www.freedesktop.org/wiki/Software/udisks
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gobject-introspection libatasmart libblockdev libgudev libxslt polkit mdadm gptfdisk dbus dosfstools reiser4progs
+# Depends on:  gobject-introspection libatasmart libblockdev libgudev libxslt polkit mdadm gptfdisk dbus dosfstools reiser4progs lvm2
 
-name=282
-version=udisks
+name=udisks
+version=2.8.3
 release=1
 source=("https://github.com/storaged-project/udisks/releases/download/$name-$version/$name-$version.tar.bz2")
 
@@ -19,7 +19,10 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--without-systemdsystemunitdir \
+		--enable-bcache \
 		--enable-compile-warnings=minimum \
+		--enable-lvm2 \
+		--enable-vdo \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install
