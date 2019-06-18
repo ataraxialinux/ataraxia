@@ -1,11 +1,11 @@
 # Description: Vi Improved, a highly configurable, improved version of the vi text editor
 # URL:         https://www.vim.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses libelf
+# Depends on:  ncurses acl pcre libelf
 
-name=vim-tiny
+name=vim
 version=8.1.1517
-release=2
+release=1
 source=("https://github.com/vim/vim/archive/v$version.tar.gz")
 
 
@@ -15,18 +15,13 @@ build() {
 		--prefix=/usr \
 		--localstatedir=/var/lib/vim \
 		--with-compiledby='Ataraxia Linux' \
-		--with-features=tiny \
-		--with-tlib=ncurses \
+		--with-features=huge \
+		--with-tlib=ncursesw \
 		--without-x \
-		--enable-gui=no \
 		--enable-multibyte \
-		--disable-acl \
-		--disable-desktop-database-update \
-		--disable-gpm \
-		--disable-gtktest \
-		--disable-icon-cache-update \
-		--disable-netbeans \
-		--disable-selinux
+		--disable-gui
 	make
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/bin/ex
 }
