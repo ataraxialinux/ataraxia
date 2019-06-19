@@ -5,6 +5,10 @@
 
 name=linux
 version=5.1.11
+case $version in
+	*.*.*) kver=$version;;
+	*.*) kver=$version.0;;
+esac
 reiser4ver=5.0.0
 release=1
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
@@ -964,6 +968,8 @@ build() {
 	else
 		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
+
+	depmod -a -v -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
 		aarch64|armv7l|armv6l|armv5tel)

@@ -6,7 +6,7 @@ apt-get install build-essential m4 gawk bc bison flex texinfo python3 python per
 ```
 #### Fedora (and derivatives):
 ```
-dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz openssl-devel elfutils-devel zlib-devel wget
+dnf install libarchive-devel libarchive bsdtar autoconf automake git autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 python2 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz openssl-devel elfutils-devel zlib-devel xz-devel wget
 ```
 #### Arch Linux (and derivatives):
 ```
@@ -14,7 +14,7 @@ pacman -S base-devel xorriso mtools git pigz python python2 pixz
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel libarchive-devel xorriso mtools git patch pigz python3 python pixz zlib-devel zstd
+xbps-install -S base-devel libarchive-devel xorriso mtools git patch pigz python3 python pixz zlib-devel liblzma-devel zstd
 ```
   In Void Linux you may have to:
 ```
