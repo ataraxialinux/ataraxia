@@ -10,9 +10,18 @@ source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	make CMAKE_EXTRA_FLAGS=" \
+	mkdir .deps
+	cd .deps
+	cmake "$SRC"/$name-$version/third-party
+	make
+
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+
+	cmake "$SRC"/$name-$version \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DCMAKE_INSTALL_PREFIX=$PKG/usr" \
-		-DENABLE_JEMALLOC=0
-	make install
+		-DCMAKE_INSTALL_PREFIX=/usr
+	make
+	make DESTDIR="$PKG" install
 }
