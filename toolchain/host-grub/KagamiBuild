@@ -1,0 +1,69 @@
+name=host-grub
+version=2.02
+release=1
+source=("http://ftp.gnu.org/gnu/grub/grub-$version.tar.xz")
+BOOTSTRAP=yes
+
+build_flavor() {
+	local flavor="$1"
+	shift
+	local configure="$@"
+	mkdir -p build_${flavor}
+	cd build_${flavor}
+	../configure $configure \
+		--prefix="$TOOLS" \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--enable-boot-time \
+		--disable-nls \
+		--disable-werror
+	make
+	make install
+	cd ..
+}
+
+build() {
+	unset CXXFLAGS LDFLAGS
+
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
+	export CXXFLAGS="$CFLAGS"
+
+	case $BARCH in
+		x86_64|i586)
+			FLAVOR="efi pc"
+			;;
+		ppc64le|ppc64|ppc)
+			FLAVOR="ieee1275"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Ataraxia Linux"
+			exit 1
+	esac
+
+	cd "$SRC"/grub-$version
+	patch -Np1 -i "$STUFF"/grub/0004-add-GRUB_COLOR_variables.patch
+	patch -Np1 -i "$STUFF"/grub/0005-Allow_GRUB_to_mount_ext234_filesystems_that_have_the_encryption_feature.patch
+	patch -Np1 -i "$STUFF"/grub/0006-tsc-Change-default-tsc-calibration-method-to-pmtimer-on-EFI-systems.patch
+	patch -Np1 -i "$STUFF"/grub/0007-grub-mkconfig_10_linux_Support_multiple_early_initrd_images.patch
+	patch -Np1 -i "$STUFF"/grub/0008-Fix-packed-not-aligned-error-on-GCC-8.patch
+	patch -Np1 -i "$STUFF"/grub/0009-xfs-Accept-filesystem-with-sparse-inodes.patch
+	patch -Np1 -i "$STUFF"/grub/0010-relocation.patch
+	patch -Np1 -i "$STUFF"/grub/0011-f2fs-support.patch
+	patch -Np1 -i "$STUFF"/grub/0012-fix-gcc-no-pie-specs.patch
+	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i configure.ac
+	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
+	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
+
+	./autogen.sh
+
+	for f in $FLAVOR; do
+		case "$f" in
+			efi) build_flavor $f --with-platform=efi --disable-efiemu;;
+			*)   build_flavor $f --with-platform=$f;;
+		esac
+	done
+}
+

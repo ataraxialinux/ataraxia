@@ -1,0 +1,18 @@
+name=host-m4
+version=1.4.18
+release=1
+source=("http://ftp.gnu.org/gnu/m4/m4-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/m4-$version
+
+	# for glibc based systems
+	sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' lib/*.c
+	echo "#define _IO_IN_BACKUP 0x100" >> lib/stdio-impl.h
+
+	./configure \
+		--prefix="$TOOLS"
+	make
+	make install
+}

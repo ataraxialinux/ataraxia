@@ -1,0 +1,22 @@
+name=host-pkgconf
+version=1.6.1
+release=1
+source=("http://distfiles.dereferenced.org/pkgconf/pkgconf-$version.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/pkgconf-$version
+	LDFLAGS="-static" \
+	./configure \
+		--prefix="$TOOLS" \
+		--with-sysroot="$ROOTFS" \
+		--with-pkg-config-dir="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig" \
+		--with-system-libdir="$ROOTFS/usr/lib" \
+		--with-system-includedir="$ROOTFS/usr/include"
+	make
+	make install
+
+	ln -sf pkgconf "$TOOLS"/bin/pkg-config
+	ln -sf pkgconf "$TOOLS"/bin/$XTARGET-pkg-config
+	ln -sf pkgconf "$TOOLS"/bin/$XTARGET-pkgconf
+}

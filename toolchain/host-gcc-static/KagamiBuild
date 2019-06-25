@@ -1,0 +1,154 @@
+name=host-gcc-static
+version=9.1.0
+gmpver=6.1.2
+mpfrver=4.0.2
+mpcver=1.1.0
+islver=0.21
+release=1
+source=("http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
+	"http://ftp.gnu.org/gnu/gmp/gmp-$gmpver.tar.xz"
+	"http://www.mpfr.org/mpfr-$mpfrver/mpfr-$mpfrver.tar.xz"
+	"http://ftp.gnu.org/gnu/mpc/mpc-$mpcver.tar.gz"
+	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
+BOOTSTRAP=yes
+
+build() {
+	if [ -z "$GCCOPTS" ]; then
+		case $BARCH in
+			x86_64)
+				export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
+				;;
+			i586)
+				export GCCOPTS="--with-arch=i586 --with-tune=generic"
+				;;
+			aarch64)
+				export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
+				;;
+			armv7l)
+				export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
+				;;
+			armv6l)
+				export GCCOPTS="--with-arch=armv6 --with-float=hard --with-fpu=vfp"
+				;;
+			armv5tel)
+				export GCCOPTS="--with-arch=armv5te --with-float=soft"
+				;;
+			mips)
+				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+				;;
+			mipsel)
+				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
+				;;
+			ppc64le)
+				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpcle-linux --disable-decimal-float --disable-libquadmath"
+				;;
+			ppc64)
+				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpc-linux --disable-decimal-float --disable-libquadmath"
+				;;
+			ppc)
+				export GCCOPTS="--with-long-double=64 --enable-secureplt --disable-decimal-float"
+				;;
+			s390x)
+				export GCCOPTS="--with-arch=z196 --with-tune=z14 --with-zarch --with-long-double-128 --enable-decimal-float"
+				;;
+			riscv64)
+				export GCCOPTS="--with-arch=rv64imafdc"
+				;;
+			riscv32)
+				export GCCOPTS="--with-arch=rv32imafdc"
+				;;
+			*)
+				echo "Architecture is not set or is not supported by Ataraxia Linux"
+				exit 1
+		esac
+	fi
+
+	case "$BARCH" in
+		mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
+		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
+	esac
+
+	export CFLAGS_FOR_BUILD=" "
+	export FFLAGS_FOR_BUILD=" "
+	export CXXFLAGS_FOR_BUILD=" "
+	export LDFLAGS_FOR_BUILD=" "
+	export CFLAGS_FOR_TARGET=" "
+	export FFLAGS_FOR_TARGET=" "
+	export CXXFLAGS_FOR_TARGET=" "
+	export LDFLAGS_FOR_TARGET=" "
+
+	cd "$SRC"/gcc-$version
+	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+
+	patch -Np1 -i "$STUFF"/gcc/0001-Use-musl-s-libssp_nonshared.a.patch
+	patch -Np1 -i "$STUFF"/gcc/0002-POSIX-memalign.patch
+	patch -Np1 -i "$STUFF"/gcc/0003-Define-musl-ldso-for-s390.patch
+	patch -Np1 -i "$STUFF"/gcc/0004-microblaze-pr65649.patch
+	patch -Np1 -i "$STUFF"/gcc/0005-define-128-long-double-for-some-musl-targets.patch
+	patch -Np1 -i "$STUFF"/gcc/0006-add-support-for-m68k-musl.patch
+	patch -Np1 -i "$STUFF"/gcc/0007-add-support-for-static-pie.patch
+	patch -Np1 -i "$STUFF"/gcc/0008-cpu-indicator.patch
+	patch -Np1 -i "$STUFF"/gcc/0009-fix-tls-model.patch
+	patch -Np1 -i "$STUFF"/gcc/0010-libgcc-always-build-gcceh.a.patch
+	patch -Np1 -i "$STUFF"/gcc/0011-fix-support-for-Ada.patch
+	patch -Np1 -i "$STUFF"/gcc/0003-gcc-poison-system-directories.patch
+	patch -Np1 -i "$STUFF"/gcc/security.patch
+	patch -Np1 -i "$STUFF"/gcc/gcc-pure64.patch
+	patch -Np1 -i "$STUFF"/gcc/gcc-pure64-mips.patch
+	patch -Np1 -i "$STUFF"/gcc/gcc-pure64-riscv.patch
+
+	mv ../gmp-$gmpver gmp
+	mv ../mpfr-$mpfrver mpfr
+	mv ../mpc-$mpcver mpc
+	mv ../isl-$islver isl
+
+	mkdir build
+	cd build
+
+	AR=ar \
+	../configure \
+		--prefix="$TOOLS" \
+		--libdir="$TOOLS/lib" \
+		--libexecdir="$TOOLS/lib" \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET $GCCOPTS $HASHCONFIG \
+		--with-pkgversion="Ataraxia Linux edition $version for $BARCH" \
+		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
+		--with-sysroot="$ROOTFS" \
+		--with-local-prefix="$ROOTFS" \
+		--with-native-system-header-dir="$ROOTFS/usr/include" \
+		--with-isl \
+		--with-system-zlib \
+		--with-newlib \
+		--without-headers \
+		--enable-checking=release \
+		--enable-clocale=generic \
+		--enable-default-pie \
+		--enable-default-ssp \
+		--enable-languages=c \
+		--enable-linker-build-id \
+		--enable-lto \
+		--disable-decimal-float \
+		--disable-gnu-indirect-function \
+		--disable-libatomic \
+		--disable-libcilkrts \
+		--disable-libgomp \
+		--disable-libitm \
+		--disable-libmudflap \
+		--disable-libquadmath \
+		--disable-libsanitizer \
+		--disable-libssp \
+		--disable-libstdcxx \
+		--disable-libvtv \
+		--disable-multilib \
+		--disable-nls \
+		--disable-shared \
+		--disable-symvers \
+		--disable-threads \
+		--disable-werror
+	make all-gcc all-target-libgcc
+	make -j1 install-gcc install-target-libgcc
+
+	ln -sf $XTARGET-gcc "$TOOLS"/bin/$XTARGET-cc
+}

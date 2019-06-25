@@ -1,0 +1,17 @@
+name=host-uboot-tools
+version=2019.04
+release=1
+source=("https://github.com/u-boot/u-boot/archive/v$version.tar.gz")
+BOOTSTRAP=yes
+
+build() {
+	cd "$SRC"/u-boot-$version
+	make defconfig
+	make tools-all
+
+	mkdir -p "$PKG/tools/bin"
+
+	for a in {mk{,env}image,env/fw_printenv,img2srec,dumpimage,netconsole,jtagconsole,ncb}; do
+		cp tools/$a "$TOOLS"/bin/
+	done
+}
