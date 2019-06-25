@@ -847,17 +847,18 @@ case "$COMMAND" in
 	check-updates)
 		SILENT=1 setup_environment
 		msg "Checking packages for updates"
-		for packages in $(ls $REPO); do
+		for packages in $(ls "$REPO/"); do
 				case $packages in
-				base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
-					true
-					;;
-				*)
-					unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
-					cd $REPO
-					$SCRIPTS/check-updates $packages
-					;;
-			esac
+					base-files|autoconf2.13|musl-tools|mkinitrd|db|prt-get)
+						true
+						;;
+					*)
+						unset name version release site pattern bash_distverbash_patchlevel ignore i p url sfname lpname bbname githubname rx found_version consider update_override original_name
+						cd "$REPO"
+						$SCRIPTS/check-updates $packages
+						cd "$CWD"
+						;;
+				esac
 		done
 		;;
 	check-update)
