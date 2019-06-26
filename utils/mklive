@@ -3,39 +3,40 @@
 # Ataraxia Linux Live CD generator
 #
 
-set -x
-
 msg() { echo -e "\033[1;32m >>> \033[0m$@"; }
 msgtwo() { echo -e "\033[1;35m * \033[0m$@"; }
 die() { echo -e "\033[1;31m >>> \033[0m$@"; exit 1; }
 dietwo() { echo -e "\033[1;31m * \033[0m$@"; exit 1; }
+pushd () { command pushd "$@" > /dev/null; }
+popd () { command popd "$@" > /dev/null; }
 
 generate_initramfs() {
 	msg "Generating initramfs"
 
 	msgtwo "Installing core packages"
-	kagami -E -c "$BUILD"/target.config -r "$INITRAMFS" \
+	kagami -EWn -c "$BUILD"/target.config -r "$INITRAMFS" \
 		base-files musl file bzip2 shadow sed grep bash dash ca-certificates kagami \
 		coreutils findutils dialog less pigz iproute2 kbd tar vim procps-ng util-linux \
 		busybox ubase s6 reiser4progs dosfstools eudev wireless_tools wpa_supplicant gptfdisk \
 		linux
 	kagami -R -r "$INITRAMFS" musl-fts libuargp libelf
 
-	cd "$INITRAMFS"
-	ln -sf usr/bin/init init
+	pushd "$INITRAMFS"
+		ln -sf usr/bin/init init
 
-	msgtwo "Cleaning initramfs"
-	rm -rf usr/include
+		msgtwo "Cleaning initramfs"
+		rm -rf usr/include
 
-	find . -name "*.a" -print0 | xargs -0 rm -rf
-	find . -name "*.h" -print0 | xargs -0 rm -rf
-	find . -name "*.hpp" -print0 | xargs -0 rm -rf
-	find . -name "*.pc" -print0 | xargs -0 rm -r
+		find . -name "*.a" -print0 | xargs -0 rm -rf
+		find . -name "*.h" -print0 | xargs -0 rm -rf
+		find . -name "*.hpp" -print0 | xargs -0 rm -rf
+		find . -name "*.pc" -print0 | xargs -0 rm -r
 
-	msgtwo "Generating archive"
-	mv boot/vmlinuz-linux "$ISODIR"/seiba/seiba
+		msgtwo "Generating archive"
+		mv boot/vmlinuz-linux "$ISODIR"/seiba/seiba
 
-	find . | cpio -H newc -o | pixz -9 > "$ISODIR"/seiba/seiba.xz
+		find . | cpio -H newc -o | pixz -9 > "$ISODIR"/seiba/seiba.xz
+	popd
 
 	msg "Generation succeeded"
 }

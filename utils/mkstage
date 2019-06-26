@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# Ataraxia Linux stage archive generator
+#
+
+msg() { echo -e "\033[1;32m >>> \033[0m$@"; }
+msgtwo() { echo -e "\033[1;35m * \033[0m$@"; }
+die() { echo -e "\033[1;31m >>> \033[0m$@"; exit 1; }
+dietwo() { echo -e "\033[1;31m * \033[0m$@"; exit 1; }
+pushd () { command pushd "$@" > /dev/null; }
+popd () { command popd "$@" > /dev/null; }
+
+generate_stage() {
+	msg "Generating stage archive"
+	rm -rf "$STAGE"
+	mkdir -p "$STAGE"
+
+	msg "Installing required packages"
+	kagami -EWn -c "$BUILD"/target.config -r "$STAGE" \
+
+	msg "Creating archive"
+	pushd "$STAGE"
+		bsdtar -c --zstd -f "$BUILD"/ataraxialinux-$BARCH.tar.zst .
+	popd
+
+	msg "Stage archive was generated successfully"
+}
+
+while getopts b options; do
+	case $options in
+		b)
+			BUILD="$OPTARG"
+			;;
+		:)
+			die "Option '-${OPTARG}' needs an argument"
+			;;
+		\?)
+			die "Option '-${OPTARG}' is illegal"
+			;;
+	esac
+done
+if [ "$#" -eq 0 ]; then
+	die "Specify options."
+fi
+shift $((OPTIND - 1))
+
+[ "$BUILD" ] || die 'Variable for build directory is not set'
+
+BUILD="$(realpath $BUILD)"
+
+STAGE="$BUILD/stage"
+
+generate_stage
+
+exit 0
+
