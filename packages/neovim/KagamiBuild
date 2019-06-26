@@ -11,14 +11,10 @@ source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	mkdir build
-
-	cmake -Bbuild -GNinja \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DENABLE_JEMALLOC=OFF
-	cmake --build build
-	DESTDIR="$PKG" cmake --build . --target install
+	make \
+		CMAKE_INSTALL_PREFIX="$PKG"/usr \
+		CMAKE_BUILD_TYPE=MinSizeRel
+	make install
 
 	install -Dm644 runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
 	install -Dm644 runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
