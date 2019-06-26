@@ -1,0 +1,68 @@
+# Description: Small and simple packages manager for Ataraxia Linux 
+# URL:         https://github.com/ataraxialinux/kagami
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bash libarchive curl
+
+name=kagami
+version=104
+release=1
+source=("https://github.com/ataraxialinux/kagami/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./build -B
+	./build -I -P /usr -D "$PKG"
+
+	mkdir -p "$PKG"/var/cache/kagami/{packages,sources}
+
+	rm -rf "$PKG"/etc/kagami.conf
+
+cat > "$PKG"/etc/pkgmk.conf << "EOF"
+# Uncomment if you want parallel build or add certain options for 'make' or 'ninja'
+#
+MKOPTS="-j9"
+
+# Options for build:
+#
+#  emptydirs - Leave empty directories
+#  strip     - Remove debug information from binaries
+#  makeflags - Enable parallel build
+#  locales   - Leave localization files
+#  docs      - Leave documentation files
+#  ccache    - Enable ccache
+#
+# Add '~' before option name to disable certain option
+#
+OPTIONS=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' 'ccache')
+
+# Source and package destination
+#
+PKGDEST="/var/cache/kagami/packages"
+SRCDEST="/var/cache/kagami/sources"
+
+# Repositories
+#
+# REPOS=('/var/cache/ports/packages' '/tmp/community' '/home/localname/myrepo')
+REPOS=('/var/cache/ports/packages')
+
+
+# System variables
+export BARCH="@BARCH@"
+
+export XTARGET="@XTARGET@"
+export BUILDFLAGS="--build=$XTARGET"
+export TOOLFLAGS="$BUILDFLAGS"
+export PERLFLAGS=
+
+export CFLAGS="@CFLAGS@"
+export CXXFLAGS="@CXXFLAGS@"
+
+export STUFF="/var/cache/ports/stuff"
+EOF
+
+	sed -i "$PKG"/etc/pkgmk.conf \
+		-e "s|@BARCH[@]|$BARCH|g" \
+		-e "s|@XTARGET[@]|$XTARGET|g" \
+		-e "s|@CFLAGS[@]|$CFLAGS|g" \
+		-e "s|@CXXFLAGS[@]|$CXXFLAGS|g"
+}
