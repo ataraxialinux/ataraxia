@@ -10,6 +10,12 @@ dietwo() { echo -e "\033[1;31m * \033[0m$@"; exit 1; }
 pushd () { command pushd "$@" > /dev/null; }
 popd () { command popd "$@" > /dev/null; }
 
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die "You must be root to run 'kagami'"
+	fi
+}
+
 generate_initramfs() {
 	msg "Generating initramfs"
 
@@ -153,6 +159,34 @@ CEOF
 		"$ISODIR"/
 }
 
+main_program() {
+	[ "$BUILD" ] || die 'Variable for build directory is not set'
+	[ "$STUFF" ] || die 'Variable for "stuff" directory is not set'
+
+	BUILD="$(realpath $BUILD)"
+	STUFF="$(realpath $STUFF)"
+
+	ISODIR="$BUILD/rootcd"
+	INITRAMFS="$BUILD/initramfs"
+	GRUBEFICFG="$BUILD/efi.cfg"
+
+	rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG"
+	mkdir -p "$ISODIR/seiba" "$INITRAMFS"
+
+	generate_initramfs
+
+	case $BARCH in
+		x86_64|i586)
+			make_iso_x86
+			;;
+		ppc64le|ppc64|ppc)
+			make_iso_ppc
+			;;
+		*)
+			die "Architecture is not set or is not supported in mklive"
+	esac
+}
+
 while getopts bsa options; do
 	case $options in
 		b)
@@ -177,31 +211,8 @@ if [ "$#" -eq 0 ]; then
 fi
 shift $((OPTIND - 1))
 
-[ "$BUILD" ] || die 'Variable for build directory is not set'
-[ "$STUFF" ] || die 'Variable for "stuff" directory is not set'
-
-BUILD="$(realpath $BUILD)"
-STUFF="$(realpath $STUFF)"
-
-ISODIR="$BUILD/rootcd"
-INITRAMFS="$BUILD/initramfs"
-GRUBEFICFG="$BUILD/efi.cfg"
-
-rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG"
-mkdir -p "$ISODIR/seiba" "$INITRAMFS"
-
-generate_initramfs
-
-case $BARCH in
-	x86_64|i586)
-		make_iso_x86
-		;;
-	ppc64le|ppc64|ppc)
-		make_iso_ppc
-		;;
-	*)
-		die "Architecture is not set or is not supported in mklive"
-esac
+check_for_root
+main_program
 
 exit 0
 
