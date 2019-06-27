@@ -38,6 +38,7 @@ generate_stage() {
 
 main_program() {
 	[ "$BUILD" ] || die 'Variable for build directory is not set'
+	[ "$BARCH" ] || die 'Variable for architecture is not set or is not supported'
 
 	BUILD="$(realpath $BUILD)"
 
@@ -49,8 +50,11 @@ main_program() {
 	generate_stage
 }
 
-while getopts b options; do
+while getopts ab options; do
 	case $options in
+		a)
+			BARCH="$OPTARG"
+			;;
 		b)
 			BUILD="$OPTARG"
 			;;

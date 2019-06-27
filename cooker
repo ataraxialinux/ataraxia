@@ -1,0 +1,186 @@
+#!/bin/bash
+#
+# Utility to bootstrap Ataraxia Linux distribution
+#
+
+set -e
+
+msg() {
+	if [ "$SILENT" != "1" ]; then
+		echo -e "\033[1;32m >>> \033[0m$@"
+	fi
+}
+
+die() {
+	if [ "$SILENT" != "1" ]; then
+		echo -e "\033[1;31m >>> \033[0m$@"
+	fi
+	exit 1
+}
+
+pushd () { command pushd "$@" > /dev/null; }
+popd () { command popd "$@" > /dev/null; }
+
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die "You must be root to run 'kagami'"
+	fi
+}
+
+setup_architecture() {
+	case "$BARCH" in
+		x86_64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			;;
+		i586)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i586-linux-musl"
+			;;
+		aarch64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-linux-musl"
+			;;
+		armv7l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			;;
+		armv6l)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			;;
+		armv5tel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabi"
+			;;
+		mips)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			;;
+		mipsel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mipsel-linux-musl"
+			;;
+		ppc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			;;
+		ppc64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64-linux-musl"
+			;;
+		ppc)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc-linux-musl"
+			;;
+		s390x)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="s390x-linux-musl"
+			;;
+		riscv64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv64-linux-musl"
+			;;
+		riscv32)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv32-linux-musl"
+			;;
+		*)
+			die "Architecture is not set or is not supported by 'bootstrap' script"
+	esac
+}
+
+setup_environment() {
+	msg "Setting up the build environment"
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$BARCH"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STUFF="$CWD/stuff"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export UTILS="$CWD/utils"
+
+	export LC_ALL="POSIX"
+	export PATH="$UTILS:$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
+
+	if [ -z "$JOBS" ]; then
+		export JOBS="$(expr $(nproc) + 1)"
+	fi
+
+	export MKOPTS="-j$JOBS"
+
+	if [ -z "$CFLAGS" ]; then
+		export CFLAGS="-Os -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
+	fi
+	if [ -z "$CXXFLAGS" ]; then
+		export CXXFLAGS="$CFLAGS"
+	fi
+}
+
+while getopts :s:a:j:uA options; do
+	case $options in
+		s)
+			mode=stage
+			STAGE="$OPTARG"
+			;;
+		u)
+			mode=check-updates
+			;;
+		A)
+			mode=autobumb
+			;;
+		a)
+			BARCH="$OPTARG"
+			;;
+		j)
+			JOBS="$OPTARG"
+			;;
+		:)
+			die "Option '-${OPTARG}' needs an argument"
+			;;
+		\?)
+			die "Option '-${OPTARG}' is illegal"
+			;;
+	esac
+done
+if [ "$#" -eq 0 ]; then
+	die "Specify options."
+fi
+shift $((OPTIND - 1))
+
+if [ "$mode" = "check-updates" ] || [ "$mode" = "autobumb" ]; then
+	case $mode in
+		autobumb)
+			cmd="check-updates -a"
+			;;
+		check-updates)
+			cmd="check-updates"
+			;;
+	esac
+
+	SILENT=1 setup_environment
+	msg "Checking packages for updates"
+	for packages in $(ls "$REPO/"); do
+		case $packages in
+			base-files|autoconf2.13|musl-tools)
+				true
+				;;
+			*)
+				pushd "$REPO"
+					(
+						$cmd $packages
+					)
+				popd
+				;;
+		esac
+	done
+fi
+
+exit 0
+
