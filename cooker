@@ -212,8 +212,11 @@ build_toolchain() {
 	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses cracklib kmod gperf pkgconf \
 					linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
 		case $toolchain in
-			base-files|linux-api-headers|musl)
+			base-files|linux-api-headers)
 				kagami -EWn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
+				;;
+			musl)
+				kagami -EWn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
 				;;
 			*)
 				kagami -EWp -c "$BUILD"/host.config host-${toolchain}
