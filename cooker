@@ -41,6 +41,7 @@ export XHOST="$XHOST"
 export XTARGET="$XTARGET"
 export HOSTCC="$HOSTCC"
 export HOSTCXX="$HOSTCXX"
+export ORIGMAKE="$ORIGMAKE"
 export PATH="$PATH"
 export STUFF="$STUFF"
 CEOF
@@ -152,6 +153,7 @@ setup_environment() {
 	export PATH="$UTILS:$TOOLS/bin:$PATH"
 	export HOSTCC="gcc"
 	export HOSTCXX="g++"
+	export ORIGMAKE="$(which make)"
 
 	if [ -z "$JOBS" ]; then
 		export JOBS="$(expr $(nproc) + 1)"
@@ -177,7 +179,78 @@ build_environment() {
 	USE_TARGET=1 generate_config "$BUILD"/target.config
 }
 
-while getopts :s:a:j:nuA options; do
+build_toolchain() {
+	msg "Building cross-toolchain for '"$BARCH"' platform"
+
+	msg "Adding fake ldconfig"
+	mkdir -p "$TOOLS"/bin
+
+	touch "$TOOLS"/bin/ldconfig
+	chmod +x "$TOOLS"/bin/ldconfig
+
+	case $BARCH in
+		x86_64|i586|ppc64le|ppc64|ppc)
+				GRUB="grub"
+				;;
+	esac
+
+	for toolchain in file gettext-tiny m4 bison flex bc ncurses cracklib kmod gperf uboot-tools pkgconf \
+					linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
+		case $toolchain in
+			base-files|linux-api-headers|musl)
+				if [ "$NEEDED" = "yes" ]; then
+					cmd="-EWn"
+				else
+					cmd="-EW"
+				fi
+
+				kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
+				;;
+			*)
+				kagami -Ep -c "$BUILD"/host.config host-${toolchain}
+				;;
+		esac
+	done
+	touch "$TOOLS"/.riscv_elf
+
+	if [ "$BARCH" = "riscv32" ] || [ "$BARCH" = "riscv64" ]; then
+		if [ -z "$ELFOPTS" ]; then
+			case $BARCH in
+				riscv64)
+					ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
+					;;
+				riscv32)
+					ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
+					;;
+			esac
+		fi
+
+		msg "Building cross-toolchain for '"$BARCH-elf"' platform"
+		unset CFLAGS CXXFLAGS LDFLAGS
+		cd "$SOURCES"
+		git clone https://github.com/riscv/riscv-gnu-toolchain tools --depth 1
+		cd tools
+		git clone https://github.com/riscv/riscv-gcc --depth 1
+		git clone https://github.com/riscv/riscv-binutils-gdb riscv-binutils --depth 1
+		git clone https://github.com/riscv/riscv-newlib --depth 1
+		./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
+		make $MKOPTS
+		touch "$TOOLS"/var/lib/db/installed_cross_riscv
+		cd .. && rm -rf  tools
+		touch "$TOOLS"/.riscv_elf
+	fi
+
+	msg "Cleaning up"
+	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
+}
+
+while getopts :s:a:j:g:e:nuA options; do
 	case $options in
 		s)
 			mode=stage
@@ -197,6 +270,12 @@ while getopts :s:a:j:nuA options; do
 			;;
 		j)
 			JOBS="$OPTARG"
+			;;
+		g)
+			GCCOPTS="$OPTARG"
+			;;
+		e)
+			ELFOPTS="$OPTARG"
 			;;
 		:)
 			die "Option '-${OPTARG}' needs an argument"
