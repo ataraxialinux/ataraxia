@@ -43,11 +43,6 @@ export CFLAGS="$CFLAGS"
 export CXXFLAGS="$CXXFLAGS"
 export XHOST="$XHOST"
 export XTARGET="$XTARGET"
-export HOSTCC="$HOSTCC"
-export HOSTCXX="$HOSTCXX"
-export ORIGMAKE="$ORIGMAKE"
-export PATH="$PATH"
-export STUFF="$STUFF"
 export CROSS_COMPILE="$XTARGET-"
 export CC="$XTARGET-gcc"
 export CXX="$XTARGET-g++"
@@ -61,6 +56,11 @@ export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
 export PERLFLAGS="--target=$XTARGET"
 export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
 export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export ORIGMAKE="$ORIGMAKE"
+export PATH="$PATH"
+export STUFF="$STUFF"
 EOF
 elif [ "$USE_HOST" = "1" ]; then
 cat <<EOF > "$file"
@@ -75,6 +75,9 @@ export CFLAGS="$CFLAGS"
 export CXXFLAGS="$CXXFLAGS"
 export XHOST="$XHOST"
 export XTARGET="$XTARGET"
+export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+export PERLFLAGS="--target=$XTARGET"
 export HOSTCC="$HOSTCC"
 export HOSTCXX="$HOSTCXX"
 export ORIGMAKE="$ORIGMAKE"
@@ -210,7 +213,7 @@ build_toolchain() {
 					linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
 		case $toolchain in
 			base-files|linux-api-headers|musl)
-				kagami -EWn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
+				kagami -EWn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
 				;;
 			*)
 				kagami -EWp -c "$BUILD"/host.config host-${toolchain}
