@@ -112,7 +112,7 @@ generate_config() {
 			exit 1
 	esac
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
 	else
 		make ARCH=$XKARCH $DEFCONFIG
@@ -885,7 +885,7 @@ generate_config() {
 	varconfig HISAX_MAX_CARDS 8
 	varconfig DE2104X_DSL 0
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} olddefconfig
 	else
 		yes '' | make ARCH=$XKARCH olddefconfig
@@ -946,7 +946,7 @@ build() {
 	make mrproper
 
 
-	if [ "$CROSS" != "yes" ]; then
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
 		if [ -f /boot/config-linux ]; then
 			cp /boot/config-linux .config
 		else
@@ -956,13 +956,13 @@ build() {
 		generate_config
 	fi
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE}
 	else
 		yes '' | make ARCH=$XKARCH
 	fi
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
 		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
@@ -972,7 +972,7 @@ build() {
 
 	case $BARCH in
 		aarch64|armv7l|armv6l|armv5tel)
-			if [ "$CROSS" = "yes" ]; then
+			if [ "$USEBOOTSTRAP" = "yes" ]; then
 				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
 				make ARCH=$XKARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install

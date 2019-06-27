@@ -27,6 +27,50 @@ check_for_root() {
 	fi
 }
 
+generate_config() {
+	local file="$1"
+
+cat << CEOF > "$file"
+export LC_ALL="$LC_ALL"
+export MKOPTS="$MKOPTS"
+export PKGDEST="$PACKAGES"
+export SRCDEST="$SOURCES"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+export XHOST="$XHOST"
+export XTARGET="$XTARGET"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export PATH="$PATH"
+export STUFF="$STUFF"
+CEOF
+
+if [ "$USE_TARGET" = "1" ]; then
+cat << CEOF > "$file"
+export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
+export REPOS=("${REPO}")
+export CROSS_COMPILE="$XTARGET-"
+export CC="$XTARGET-gcc"
+export CXX="$XTARGET-g++"
+export AR="$XTARGET-ar"
+export AS="$XTARGET-as"
+export RANLIB="$XTARGET-ranlib"
+export LD="$XTARGET-ld"
+export STRIP="$XTARGET-strip"
+export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+export PERLFLAGS="--target=$XTARGET"
+export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+CEOF
+elif [ "$USE_HOST" = "1" ]; then
+cat << CEOF > "$file"
+export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
+export REPOS=("${TCREPO}")
+CEOF
+fi
+}
+
 setup_architecture() {
 	case "$BARCH" in
 		x86_64)
@@ -123,7 +167,17 @@ setup_environment() {
 	fi
 }
 
-while getopts :s:a:j:uA options; do
+build_environment() {
+	msg "Preparing the environment for build"
+
+	rm -rf "$BUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS"
+
+	USE_HOST=1 generate_config "$BUILD"/host.config
+	USE_TARGET=1 generate_config "$BUILD"/target.config
+}
+
+while getopts :s:a:j:nuA options; do
 	case $options in
 		s)
 			mode=stage
@@ -134,6 +188,9 @@ while getopts :s:a:j:uA options; do
 			;;
 		A)
 			mode=autobumb
+			;;
+		n)
+			NEEDED="yes"
 			;;
 		a)
 			BARCH="$OPTARG"
@@ -180,6 +237,19 @@ if [ "$mode" = "check-updates" ] || [ "$mode" = "autobumb" ]; then
 				;;
 		esac
 	done
+elif [ "$mode" = "stage" ]; then
+	case $STAGE in
+		0)
+			check_for_root
+			setup_architecture
+			setup_environment
+			build_environment
+			build_toolchain
+			;;
+		*)
+			die "Stage number was not selected or is not supported"
+			;;
+	esac
 fi
 
 exit 0
