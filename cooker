@@ -208,13 +208,7 @@ build_toolchain() {
 					linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
 		case $toolchain in
 			base-files|linux-api-headers|musl)
-				if [ "$NEEDED" = "yes" ]; then
-					cmd="-EWn"
-				else
-					cmd="-EW"
-				fi
-
-				kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
+				kagami -Ewn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
 				;;
 			*)
 				kagami -Ep -c "$BUILD"/host.config host-${toolchain}
@@ -260,7 +254,7 @@ build_toolchain() {
 	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
 }
 
-while getopts :s:a:j:g:e:nuA options; do
+while getopts :s:a:j:g:e:uA options; do
 	case $options in
 		s)
 			mode=stage
@@ -271,9 +265,6 @@ while getopts :s:a:j:g:e:nuA options; do
 			;;
 		A)
 			mode=autobumb
-			;;
-		n)
-			NEEDED="yes"
 			;;
 		a)
 			BARCH="$OPTARG"
