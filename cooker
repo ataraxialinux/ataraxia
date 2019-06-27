@@ -30,9 +30,12 @@ check_for_root() {
 generate_config() {
 	local file="$1"
 
-cat << CEOF > "$file"
+if [ "$USE_TARGET" = "1" ]; then
+cat <<EOF > "$file"
 export LC_ALL="$LC_ALL"
 export MKOPTS="$MKOPTS"
+export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
+export REPOS=("${REPO}")
 export PKGDEST="$PACKAGES"
 export SRCDEST="$SOURCES"
 export CFLAGS="$CFLAGS"
@@ -44,12 +47,6 @@ export HOSTCXX="$HOSTCXX"
 export ORIGMAKE="$ORIGMAKE"
 export PATH="$PATH"
 export STUFF="$STUFF"
-CEOF
-
-if [ "$USE_TARGET" = "1" ]; then
-cat << CEOF > "$file"
-export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
-export REPOS=("${REPO}")
 export CROSS_COMPILE="$XTARGET-"
 export CC="$XTARGET-gcc"
 export CXX="$XTARGET-g++"
@@ -63,12 +60,25 @@ export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
 export PERLFLAGS="--target=$XTARGET"
 export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
 export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
-CEOF
+EOF
 elif [ "$USE_HOST" = "1" ]; then
-cat << CEOF > "$file"
+cat <<EOF > "$file"
+export LC_ALL="$LC_ALL"
+export MKOPTS="$MKOPTS"
 export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
 export REPOS=("${TCREPO}")
-CEOF
+export PKGDEST="$PACKAGES"
+export SRCDEST="$SOURCES"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+export XHOST="$XHOST"
+export XTARGET="$XTARGET"
+export HOSTCC="$HOSTCC"
+export HOSTCXX="$HOSTCXX"
+export ORIGMAKE="$ORIGMAKE"
+export PATH="$PATH"
+export STUFF="$STUFF"
+EOF
 fi
 }
 
