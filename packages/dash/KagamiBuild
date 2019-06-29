@@ -10,9 +10,12 @@ source=("http://gondor.apana.org.au/~herbert/$name/files/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	LDFLAGS='-static' \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-libedit
 	make
 	make DESTDIR="$PKG" install
+
+	ln -sf dash "$PKG"/usr/bin/sh
 }

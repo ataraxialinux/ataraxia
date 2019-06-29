@@ -3,16 +3,15 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=bzip2
-version=1.0.6
+version=1.0.7
 release=1
-source=("https://sources.archlinux.org/other/packages/$name/$name-$version.tar.gz")
+options=('bootstrap')
+source=("https://sourceware.org/pub/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	cp Makefile{,.orig}
-	sed -e 's/^CFLAGS=\(.*\)$/CFLAGS=\1 \$(BIGFILES)/' -i ./Makefile-libbz2_so
-	sed -i "s|-O2|${CFLAGS} -fPIC|g" Makefile
-	sed -i "s|-O2|${CFLAGS} -fPIC|g" Makefile-libbz2_so
+	sed -i "s|-O2|${CFLAGS}|g" Makefile
+	sed -i "s|-O2|${CFLAGS}|g" Makefile-libbz2_so
 	sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
 	sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
 	sed -i 's@all: libbz2.a bzip2 bzip2recover test@all: libbz2.a bzip2 bzip2recover@' Makefile
@@ -27,8 +26,8 @@ build() {
 
 	make PREFIX="$PKG/usr" install
 
-	install -m755 libbz2.so.1.0.6 "$PKG"/usr/lib
-	ln -sf libbz2.so.1.0.6 "$PKG"/usr/lib/libbz2.so
-	ln -sf libbz2.so.1.0.6 "$PKG"/usr/lib/libbz2.so.1
-	ln -sf libbz2.so.1.0.6 "$PKG"/usr/lib/libbz2.so.1.0
+	install -m755 libbz2.so.${version} "$PKG"/usr/lib
+	ln -sf libbz2.so.${version} "$PKG"/usr/lib/libbz2.so
+	ln -sf libbz2.so.${version} "$PKG"/usr/lib/libbz2.so.1
+	ln -sf libbz2.so.${version} "$PKG"/usr/lib/libbz2.so.1.0
 }

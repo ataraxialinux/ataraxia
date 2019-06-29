@@ -6,19 +6,18 @@ name=lzip
 version=1.21
 release=1
 source=("http://download.savannah.gnu.org/releases/$name/$name-$version.tar.gz")
+BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		./configure $BUILDFLAGS \
-			CC="$CC" CXX="$CXX" \
+		./configure CC="$CC" CXX="$CXX" \
 			AR="$AR" AS="$AS" LD="$LD" RANLIB="$RANLIB" READELF="$READELF" STRIP="$STRIP"  \
 			CXXFLAGS="$CXXFLAGS" \
 			--prefix=/usr
 	else
-		./configure $BUILDFLAGS \
-			CXXFLAGS="$CXXFLAGS" \
+		./configure CXXFLAGS="$CXXFLAGS" \
 			--prefix=/usr
 	fi
 
