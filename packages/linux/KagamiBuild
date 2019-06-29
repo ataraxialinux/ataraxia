@@ -104,8 +104,11 @@ generate_config() {
 		s390x)
 			export DEFCONFIG="performance_defconfig"
 			;;
-		riscv64|riscv32)
+		riscv64)
 			export DEFCONFIG="defconfig"
+			;;
+		riscv32)
+			export DEFCONFIG="rv32_defconfig"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Ataraxia Linux"
@@ -141,15 +144,8 @@ generate_config() {
 		mips64|mips64el|mips|mipsel)
 			yconfig SERIAL_8250 SERIAL_8250_CONSOLE PCI NET_VENDOR_AMD PCNET32 POWER_RESET POWER_RESET_SYSCON
 			;;
-		riscv64)
+		riscv64|riscv32)
 			yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC
-			;;
-		riscv32)
-			yconfig 32BIT ARCH_RV32I MAXPHYSMEM_2GB LBDAF GENERIC_ATOMIC64 \
-				GENERIC_LIB_ASHLDI3 GENERIC_LIB_ASHRDI3 GENERIC_LIB_LSHRDI3 \
-				GENERIC_LIB_UCMPDI2 GENERIC_LIB_UMODDI3 \
-				RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC
-			nconfig ARCH_RV64I
 			;;
 	esac
 
