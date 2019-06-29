@@ -237,18 +237,13 @@ build_toolchain() {
 		msg "Building cross-toolchain for '"$BARCH-elf"' platform"
 		unset CFLAGS CXXFLAGS LDFLAGS
 
-		git clone https://github.com/riscv/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
+		git clone https://github.com/protonesso/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
 		git clone https://github.com/riscv/riscv-gcc --depth 1 "$SOURCES"/riscv-tools/riscv-gcc
 		git clone https://github.com/riscv/riscv-binutils-gdb --depth 1 "$SOURCES"/riscv-tools/riscv-binutils
 		git clone https://github.com/riscv/riscv-newlib --depth 1 "$SOURCES"/riscv-tools/riscv-newlib
 
 		pushd "$SOURCES"/riscv-tools
-			patch -Np1 -i "$STUFF"/riscv-tools/0001-no-gawk.patch
-
-			autoreconf -vif
 			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
-
-			sed -i "s,AWK := @GAWK@,AWK := $(which awk),g" Makefile
 			make -j$JOBS MAKEINFO="true"
 		popd
 
