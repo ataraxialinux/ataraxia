@@ -243,7 +243,12 @@ build_toolchain() {
 		git clone https://github.com/riscv/riscv-newlib --depth 1 "$SOURCES"/riscv-tools/riscv-newlib
 
 		pushd "$SOURCES"/riscv-tools
+			patch -Np1 -i "$STUFF"/riscv-tools/0001-no-gawk.patch
+
+			autoreconf -vif
 			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
+
+			sed -i "s,AWK := @GAWK@,AWK := $(which awk),g"
 			make $MKOPTS
 		popd
 
