@@ -1,5 +1,5 @@
 # Description: A high-quality data compression program
-# URL:         http://sources.redhat.com/bzip2
+# URL:         https://sourceware.org/bzip2/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=bzip2
@@ -16,8 +16,6 @@ build() {
 	sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
 	sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
 	sed -i 's@all: libbz2.a bzip2 bzip2recover test@all: libbz2.a bzip2 bzip2recover@' Makefile
-	patch -Np1 < "$STUFF"/bzip2/bzip2-1.0.4-bzip2recover.patch
-	patch -Np1 -i "$STUFF"/bzip2/bzip2-1.0.6-CVE-2016-3189.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make CC="$CC" AR="$AR" RANLIB="$RANLIB" -f Makefile-libbz2_so
