@@ -192,7 +192,7 @@ build_environment() {
 }
 
 build_toolchain() {
-	msg "Building cross-toolchain for '"$BARCH"' platform"
+	msg "Building cross-toolchain for '${BARCH}' platform"
 
 	msg "Adding fake ldconfig"
 	mkdir -p "$TOOLS"/bin
@@ -234,7 +234,7 @@ build_toolchain() {
 			esac
 		fi
 
-		msg "Building cross-toolchain for '"$BARCH-elf"' platform"
+		msg "Building cross-toolchain for '${BARCH}-elf' platform"
 		unset CFLAGS CXXFLAGS LDFLAGS
 
 		git clone https://github.com/protonesso/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
@@ -258,6 +258,36 @@ build_toolchain() {
 	msg "Adding fake make"
 	cp "$STUFF"/fakemake "$TOOLS"/bin/make
 	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
+}
+
+build_target() {
+	msg "Building target system for '${BARCH}' platform"
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	if [ "$EMBEDDED" = "1" ]; then
+		packages="$LINUX busybox"
+	else
+#		packages="man-pages musl-tools zlib file ncurses readline libedit m4 bison flex bc gmp mpfr mpc binutils gcc \
+#				ccache pkgconf cracklib pam attr acl libcap shadow sed ed pcre grep libedit dash bash libtool gdbm gperf \
+#				expat perl libressl ca-certificates autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
+#				coreutils diffutils mlocate findutils mandoc dialog less pigz libmnl libnftnl libnfnetlink \
+#				libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
+#				util-linux hwids eudev ubase skalibs execline s6 busybox libaal reiser4progs dosfstools $LINUX tree time \
+#				wireless_tools wpa_supplicant popt gptfdisk nettle lz4 zstd libarchive libssh2 c-ares libev nghttp2 curl kagami"
+		packages="man-pages musl-tools zlib file ncurses readline libedit m4 bison flex bc gmp mpfr mpc binutils gcc \
+				ccache pkgconf cracklib pam attr acl libcap shadow sed ed pcre grep libedit dash bash libtool gdbm gperf \
+				expat perl libressl ca-certificates autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
+				coreutils diffutils mlocate findutils mandoc dialog less pigz libmnl libnftnl libnfnetlink \
+				libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
+				util-linux hwids eudev ubase $LINUX"
+	fi
+
+	for pkgtarget in $packages; do
+		kagami -EWnd -c "$BUILD"/target.config -r "$ROOTFS" $packages
+	done
 }
 
 while getopts :s:a:j:g:e:l:m:uA options; do
@@ -288,7 +318,7 @@ while getopts :s:a:j:g:e:l:m:uA options; do
 			LINUX="$OPTARG"
 			;;
 		m)
-			EMBEDDED=1
+			EMBEDDED="1"
 			;;
 		:)
 			die "Option '-${OPTARG}' needs an argument"
@@ -337,6 +367,16 @@ elif [ "$mode" = "stage" ]; then
 			setup_environment
 			build_environment
 			build_toolchain
+			;;
+		1)
+			check_for_root
+			setup_architecture
+			setup_environment
+			if [ ! -f "$TOOLS/.cross-linux" ]; then
+				build_environment
+				build_toolchain
+			fi
+			build_target
 			;;
 		*)
 			die "Stage number was not selected or is not supported"
