@@ -1,0 +1,24 @@
+#!/bin/sh
+
+pre_remove() {
+	install-catalog --remove /etc/sgml/sgml-ent.cat \
+		/usr/share/sgml/sgml-iso-entities-8879.1986/catalog > /dev/null 2>&1
+	install-catalog --remove /etc/sgml/sgml-docbook.cat \
+		/etc/sgml/sgml-ent.cat > /dev/null 2>&1
+}
+
+post_install() {
+	install-catalog --add /etc/sgml/sgml-ent.cat \
+		/usr/share/sgml/sgml-iso-entities-8879.1986/catalog > /dev/null 2>&1
+	install-catalog --add /etc/sgml/sgml-docbook.cat \
+		/etc/sgml/sgml-ent.cat > /dev/null 2>&1
+}
+
+case $1 in
+	post-install|post-update)
+		post_install
+		;;
+	pre-remove|pre-update)
+		pre_remove
+		;;
+esac
