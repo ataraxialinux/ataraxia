@@ -1,0 +1,20 @@
+# Description: A (non-interactive) scripting language, like sh
+# URL:         http://skarnet.org/software/execline/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=execline
+version=2.5.1.0
+release=1
+options=('bootstrap')
+source=("http://www.skarnet.org/software/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	LDFLAGS='-static' \
+	./configure \
+		--prefix=/usr \
+		--with-lib="$ROOTFS"/usr/lib/skalibs \
+		--with-sysdeps="$ROOTFS"/usr/lib/skalibs/sysdeps
+	make
+	make DESTDIR="$PKG" install
+}
