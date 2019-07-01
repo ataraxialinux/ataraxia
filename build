@@ -214,13 +214,13 @@ build_toolchain() {
 			linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
 		case $toolchain in
 			base-files|linux-api-headers)
-				kagami -EWn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
+				kagami -EWVn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
 				;;
 			musl)
-				kagami -EWn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
+				kagami -EWVn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
 				;;
 			*)
-				kagami -EWp -c "$BUILD"/host.config host-${toolchain}
+				kagami -EWVp -c "$BUILD"/host.config host-${toolchain}
 				;;
 		esac
 	done
@@ -274,23 +274,17 @@ build_target() {
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox"
 	else
-#		packages="man-pages musl-tools zlib file ncurses readline libedit m4 bison flex bc gmp mpfr mpc binutils gcc \
-#				ccache bzip2 pkgconf cracklib pam attr acl libcap shadow sed ed pcre grep libedit dash bash libtool gdbm db gperf \
-#				expat perl libressl ca-certificates autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
-#				coreutils diffutils mlocate findutils mandoc dialog less pigz libmnl libnftnl libnfnetlink \
-#				libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
-#				util-linux hwids eudev ubase skalibs execline s6 busybox libaal reiser4progs dosfstools $LINUX tree time \
-#				wireless_tools wpa_supplicant popt gptfdisk nettle lz4 zstd libarchive libssh2 c-ares libev nghttp2 curl kagami"
 		packages="man-pages musl-tools zlib file ncurses readline libedit m4 bison flex bc gmp mpfr mpc binutils gcc \
 				ccache bzip2 pkgconf cracklib pam attr acl libcap shadow sed ed pcre grep libedit dash bash libtool gdbm db gperf \
 				expat perl libressl ca-certificates autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
 				coreutils diffutils mlocate findutils mandoc dialog less pigz libmnl libnftnl libnfnetlink \
 				libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
-				util-linux hwids eudev ubase $LINUX"
+				util-linux hwids eudev ubase skalibs execline s6 busybox libaal reiser4progs dosfstools $LINUX tree time \
+				wireless_tools wpa_supplicant popt gptfdisk nettle lz4 zstd libarchive libssh2 c-ares libev nghttp2 curl kagami"
 	fi
 
 	for pkgtarget in $packages; do
-		kagami -EWnd -c "$BUILD"/target.config -r "$ROOTFS" $packages
+		kagami -EWVnd -c "$BUILD"/target.config -r "$ROOTFS" $packages
 	done
 }
 
