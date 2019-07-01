@@ -61,6 +61,13 @@ build_busybox_standard() {
 	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 	chmod +x "$PKG"/usr/share/udhcpc/default.script
 
+	mkdir -p "$PKG"/etc/s6/services/available "$PKG"/etc/s6/services/enabled
+
+	for ttys in tty1 tty2 tty3 tty4 tty5 tty6 ttyAMA0 ttyS0 ttyUSB0; do
+		install -Dm775 "$STUFF"/svc/${ttys}.run "$PKG"/etc/s6/services/available/$ttys/run
+		ln -sf ../available/$ttys "$PKG"/etc/s6/services/enabled/$ttys
+	done
+
 	for initd in crond klogd rdate syslog watchdog ntpd; do
 		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
 		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
