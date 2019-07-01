@@ -286,6 +286,8 @@ build_target() {
 	for pkgtarget in $packages; do
 		kagami -EWVnd -c "$BUILD"/target.config -r "$ROOTFS" $packages
 	done
+
+	touch "$ROOTFS"/.compiled
 }
 
 while getopts :s:a:j:g:e:l:m:uA options; do
@@ -374,7 +376,9 @@ elif [ "$mode" = "stage" ]; then
 				build_environment
 				build_toolchain
 			fi
-			build_target
+			if [ ! -f "$ROOTFS/.compiled" ]; then
+				build_target
+			fi
 			;;
 		*)
 			die "Stage number was not selected or is not supported"
