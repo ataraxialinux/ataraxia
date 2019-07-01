@@ -21,19 +21,6 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm775 "$STUFF"/s6/init "$PKG"/usr/bin/init
-
-	mkdir -p "$PKG"/etc/s6/services/{available,enabled} "$PKG"/etc/s6/env
-	echo '/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin' >> "$PKG"/etc/s6/env/PATH
-
-	install -Dm775 "$STUFF"/s6/finish "$PKG"/etc/s6/.finish
-
-	install -Dm775 "$STUFF"/s6/rc.init "$PKG"/etc/rc.init
-	install -Dm775 "$STUFF"/s6/rc.shutdown "$PKG"/etc/rc.shutdown
-
-    install -Dm0775 "$STUFF"/s6/svscan-crash "$PKG"/etc/s6/services/enabled/.s6-svscan/crash
-	install -Dm0775 "$STUFF"/s6/svscan-finish "$PKG"/etc/s6/services/enabled/.s6-svscan/finish
-
 	for ttys in tty1 tty2 tty3 tty4 tty5 tty6 ttyAMA0 ttyS0 ttyUSB0; do
 		install -Dm775 "$STUFF"/svc/${ttys}.run "$PKG"/etc/s6/services/available/$ttys/run
 		ln -sf ../available/$ttys "$PKG"/etc/s6/services/enabled/$ttys
