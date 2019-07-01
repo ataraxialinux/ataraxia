@@ -16,21 +16,17 @@ options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/net/$name/$name-$version.tar.xz")
 
 build() {
+	export CFLAGS="-I$STUFF/include $CFLAGS"
+
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/iproute2/100-configure.patch
-	patch -Np1 -i "$STUFF"/iproute2/110-darwin_fixes.patch
-	patch -Np1 -i "$STUFF"/iproute2/115-add-config-xtlibdir.patch
-	patch -Np1 -i "$STUFF"/iproute2/120-no_arpd.patch
-	patch -Np1 -i "$STUFF"/iproute2/130-no_netem.patch
-	patch -Np1 -i "$STUFF"/iproute2/135-sync-iptables-header.patch
-	patch -Np1 -i "$STUFF"/iproute2/140-allow_pfifo_fast.patch
-	patch -Np1 -i "$STUFF"/iproute2/140-keep_libmnl_optional.patch
-	patch -Np1 -i "$STUFF"/iproute2/145-keep_libelf_optional.patch
-	patch -Np1 -i "$STUFF"/iproute2/160-libnetlink-pic.patch
-	patch -Np1 -i "$STUFF"/iproute2/170-ip_tiny.patch
-	patch -Np1 -i "$STUFF"/iproute2/175-reduce-dynamic-syms.patch
-	patch -Np1 -i "$STUFF"/iproute2/180-drop_FAILED_POLICY.patch
-	patch -Np1 -i "$STUFF"/iproute2/200-drop_libbsd_dependency.patch
+	patch -Np1 -i "$STUFF"/iproute2/0001-devlink-fix-libc-and-kernel-headers-collision.patch
+	patch -Np1 -i "$STUFF"/iproute2/musl-fixes.patch
+
+	sed -i '/^TARGETS=/s: arpd : :' misc/Makefile
+	sed -i 's:/usr/local:/usr:' tc/m_ipt.c include/iptables.h
+	sed -i -e 's:=/share:=/usr/share:' \
+		-e 's:-Werror::' Makefile
+	sed -e 's/^check_elf$/echo "no"/' -i configure
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr

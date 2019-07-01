@@ -1,0 +1,61 @@
+#!/bin/execlineb -P
+
+if { ctrlaltdel -s }
+
+if { mount -f -t proc proc /proc -o nosuid,noexec,nodev }
+if { mount -f -t sysfs sys /sys -o nosuid,noexec,nodev }
+if { mount -t tmpfs run /run -o mode=0755,nosuid,nodev }
+if { mount -f -t devtmpfs dev /dev -o mode=0755,nosuid }
+if { mkdir -p /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm }
+if { mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec }
+if { mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev }
+if { mount -n -t securityfs securityfs /sys/kernel/security }
+if { mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup }
+
+if { udevd --daemon }
+if { udevadm trigger --action=add --type=subsystems }
+if { udevadm trigger --action=add --type=devices }
+if { udevadm trigger --action=change --type=devices }
+if { udevadm settle }
+
+if { mount -o remount,ro / }
+
+if { test -x /usr/bin/mdadm } foreground { if { mdadm -As } }
+if { test -x /usr/bin/vgchange } foreground {
+	if { vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1 }
+	if { vgchange --sysinit --activate y >/dev/null 2>&1 }
+}
+
+if { mount -o remount,rw / }
+
+if { swapon -a }
+
+if { mount -a -t "nosysfs,nonfs,nonfs4,nosmbfs,nocifs" -O no_netdev }
+
+foreground {
+    if { test -e /etc/random-seed } foreground { if { cat /etc/random-seed >/dev/urandom } }
+}
+if { dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null }
+
+foreground {
+    if { test -e /etc/hostname } foreground { hostname -F /etc/hostname }
+}
+
+background {
+	if { ifup -a }
+}
+
+foreground {
+	if { hwclock --hctosys }
+	if { sysctl -p /etc/sysctl.d/*.conf }
+	if { rm -rf /etc/nologin /forcefsck /forcequotacheck /fastboot }
+	if { install -v -dm1777 /tmp/.X11-unix /tmp/.ICE-unix }
+}
+
+if { test -x /etc/rc.local } foreground {
+	if { /etc/rc.local }
+}
+
+foreground {
+	if { dmesg >> /var/log/dmesg.log }
+}

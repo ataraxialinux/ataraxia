@@ -1,0 +1,30 @@
+#!/usr/bin/execlineb -P
+#
+# System initializtion script
+#
+
+/bin/export PATH "/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"
+
+cd /
+
+emptyenv -p
+s6-setsid -qb --
+umask 022
+
+if { mount -f -t proc none /proc }
+if { mount -f -t sysfs none /sys }
+if { mount -f -t devtmpfs none /dev }
+
+s6-envdir -I -- /etc/s6/env
+
+redirfd -r 0 /dev/null
+redirfd -wnb 1 /run/s6-svscan-log/fifo
+fdmove -c 2 1
+
+background {
+	s6-setsid --
+	/etc/rc.init
+}
+
+unexport !
+s6-svscan -st0 /etc/s6/services/enabled/

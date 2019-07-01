@@ -1,0 +1,5 @@
+#!/bin/sh
+for svcs in $(find /etc/s6/services/enabled -mindepth 1 -maxdepth 1 -type d -print0 | sed -e 's,\./, ,g'); do
+	s6-svc -d -wd -T 1000 "$svcs" 2>/dev/null &
+	s6-svc -k "$svcs" 2>/dev/null &
+done
