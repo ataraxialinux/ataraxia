@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# System shutdown script (stage 3)
+#
+
+echo; stty onlcr
+
+ifdown -a
+
+hwclock --systohc --utc
+
+if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
+	if type quotaoff > /dev/null; then
+		quotaoff -va
+	fi
+fi
+
+if [ -x /usr/bin/vgchange ]; then
+	vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+fi
+
+udevadm control --exit
+
+s6-nuke -th
+sleep 1
+s6-nuke -k
+
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+swapoff -a
+
+umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+
+mount -o remount,ro /
+
+sync
+
+if [ "$1" = "reboot" ]; then
+	if command -v kexec >/dev/null; then
+		kexec -e 2>/dev/null
+	fi
+fi
+
+case "$1" in
+	reboot)
+	halt -r
+	;;
+	poweroff)
+	halt -p
+	;;
+esac
