@@ -91,14 +91,14 @@ rm -f /etc/nologin /forcefsck /forcequotacheck /fastboot
 
 dmesg >/var/log/dmesg.log
 
-if [ -x /etc/rc.local ]; then
-	/etc/rc.local
-fi
-
 if [ "$single" = "1" ]; then
 	sulogin -p
 	halt -r
 else
+	if [ -x /etc/rc.local ]; then
+		/etc/rc.local
+	fi
+
 	respawn agetty 38400 tty1 linux &
 	respawn agetty 38400 tty2 linux &
 	respawn agetty 38400 tty3 linux &
