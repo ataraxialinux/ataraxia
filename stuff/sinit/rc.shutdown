@@ -5,6 +5,13 @@
 
  . /etc/rc.conf
 
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		single=*)     single="${arg#*=}" ;;
+	esac
+done
+
 echo; stty onlcr
 
 ifdown -a
