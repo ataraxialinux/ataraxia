@@ -21,8 +21,8 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/iproute2/0001-devlink-fix-libc-and-kernel-headers-collision.patch
 	patch -Np1 -i "$STUFF"/iproute2/musl-fixes.patch
+	patch -Np1 -i "$STUFF"/iproute2/avoid-arpd.patch
 
-	sed -i '/^TARGETS=/s: arpd : :' misc/Makefile
 	sed -i 's:/usr/local:/usr:' tc/m_ipt.c include/iptables.h
 	sed -i -e 's:=/share:=/usr/share:' \
 		-e 's:-Werror::' Makefile
