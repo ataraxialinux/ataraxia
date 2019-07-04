@@ -9,11 +9,6 @@ source=("https://github.com/P-H-C/phc-winner-argon2/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/phc-winner-argon2-$version
-	cp "$STUFF"/argon2/libargon2.pc libargon2.pc
-	sed -i -e "s/@UPSTREAM_VER@/${version}/" libargon2.pc
-
-	make OPTTARGET=none
-	make OPTTARGET=none DESTDIR="$PKG" install
-
-	install -D -m0644 libargon2.pc "$PKG"/usr/lib/pkgconfig/libargon2.pc
+	make OPTTARGET=none LIBRARY_REL=lib
+	make OPTTARGET=none LIBRARY_REL=lib DESTDIR="$PKG" install
 }
