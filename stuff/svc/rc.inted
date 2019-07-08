@@ -1,0 +1,17 @@
+#!/bin/sh
+
+NAME="inetd"
+PIDFILE="/run/$NAME.pid"
+
+case $1 in
+	start)
+		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $NAME
+		;;
+	stop)
+		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+		;;
+	restart|reload)
+		$0 stop
+		$0 start
+		;;
+esac
