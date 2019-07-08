@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# System shutdown script (stage 3)
+# System shutdown script
 #
 
  . /etc/rc.conf
@@ -14,7 +14,15 @@ done
 
 echo; stty onlcr
 
-hwclock --systohc --utc
+if [ "$single" != "1" ]; then
+	for a in $(ls stuff/svc | sed -e 's,rc.,,g'); do
+		if [ "${a}_enable" = "yes" ]; then
+			/etc/rc.d/rc.${a} stop
+		fi
+	done
+fi
+
+hwclock --systohc
 
 if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
 	if type quotaoff > /dev/null; then

@@ -2,40 +2,40 @@
 
  . /etc/rc.conf
 
-if [ "$NETTYPE" = "wireless" ]; then
-	INTERFACE="{INTERFACE:wlan0}"
+if [ "$nettype" = "wireless" ]; then
+	interface="{interface:wlan0}"
 else
-	INTERFACE="{INTERFACE:eth0}"
+	interface="{interface:eth0}"
 fi
 
 case $1 in
 	start)
 		ip link set lo up
-		if [ "$NETTYPE" = "static" ]; then
-			ip addr add ${ADDRESS}/${MASK} dev ${INTERFACE} broadcast +
-			ip link set ${INTERFACE} up
-			ip route add default via ${GATEWAY}
-		elif [ "$NETTYPE" = "dhcp" ]; then
-			ip link set ${INTERFACE} up
-			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${INTERFACE}
-		elif [ "$NETTYPE" = "wireless" ]; then
-			ip link set ${INTERFACE} up
-			start-stop-daemon --start --quiet --pidfile /run/wireless.pid --exec wpa_supplicant -- -B -i ${INTERFACE} -c /etc/wpa_supplicant/wpa_supplicant.conf
-			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${INTERFACE}
+		if [ "$nettype" = "static" ]; then
+			ip addr add ${address}/${mask} dev ${interface} broadcast +
+			ip link set ${interface} up
+			ip route add default via ${gateway}
+		elif [ "$nettype" = "dhcp" ]; then
+			ip link set ${interface} up
+			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${interface}
+		elif [ "$nettype" = "wireless" ]; then
+			ip link set ${interface} up
+			start-stop-daemon --start --quiet --pidfile /run/wireless.pid --exec wpa_supplicant -- -B -i ${interface} -c /etc/wpa_supplicant/wpa_supplicant.conf
+			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${interface}
 		fi
 		;;
 	stop)
-		if [ "$NETTYPE" = "static" ]; then
+		if [ "$nettype" = "static" ]; then
 			ip route del default
-			ip link set ${INTERFACE} down
-			ip addr del ${ADDRESS}/${MASK} dev  ${INTERFACE}
-		elif [ "$NETTYPE" = "dhcp" ]; then
+			ip link set ${interface} down
+			ip addr del ${address}/${mask} dev  ${interface}
+		elif [ "$nettype" = "dhcp" ]; then
 			start-stop-daemon --stop --quiet --oknodo --pidfile /run/dhcp.pid
-			ip link set ${INTERFACE} down
-		elif [ "$NETTYPE" = "wireless" ]; then
+			ip link set ${interface} down
+		elif [ "$nettype" = "wireless" ]; then
 			start-stop-daemon --stop --quiet --oknodo --pidfile /run/wireless.pid
 			start-stop-daemon --stop --quiet --oknodo --pidfile /run/dhcp.pid
-			ip link set ${INTERFACE} down
+			ip link set ${interface} down
 		fi
 		ip link set lo down
 		;;

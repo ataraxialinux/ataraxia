@@ -2,7 +2,6 @@
 
  . /etc/rc.conf
 
-dmesg -n 1
 ctrlaltdel -s
 
 mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,nodev
@@ -69,8 +68,15 @@ mount -a -t "nosysfs,nonfs,nonfs4,nosmbfs,nocifs" -O no_netdev
 [ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 
-if [ -f '/etc/hostname' ] ;then
-	hostname -F /etc/hostname
+if [ -n "$hostname" ] ;then
+	hostname $hostname
+fi
+
+if [ -n "$timezone" ] ;then
+	ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
+	export TZ=/etc/localtime
+else
+	export TZ=UTC
 fi
 
 hwclock --hctosys
@@ -89,13 +95,29 @@ rm -f /etc/nologin /forcefsck /forcequotacheck /fastboot
 
 dmesg >/var/log/dmesg.log
 
+dmesg -n 1
+
 if [ "$single" = "1" ]; then
 	sulogin -p
 	halt -r
 else
+	if [ -n "$keymap" ] ;then
+		loadkeys $keymap
+	fi
+
+	if [ -n "$fontname" ] ;then
+		setfont $fontname
+	fi
+
 	if [ -x /etc/rc.local ]; then
 		/etc/rc.local
 	fi
+
+	for a in $(ls stuff/svc | sed -e 's,rc.,,g'); do
+		if [ "${a}_enable" = "yes" ]; then
+			/etc/rc.d/rc.${a} start
+		fi
+	done
 
 	respawn agetty 38400 tty1 linux &
 	respawn agetty 38400 tty2 linux &
