@@ -1,6 +1,9 @@
 #!/bin/sh
 
-NAME="iwd"
+set -e
+
+NAME="NetworkManager"
+OPTIONS="-n"
 PIDFILE="/run/$NAME.pid"
 
 case $1 in
@@ -8,7 +11,7 @@ case $1 in
 		if [ ! -f "/run/dbus.pid" ]; then
 			exit 1
 		fi
-		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/lib/iwd/$NAME
+		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $NAME -- $OPTIONS
 		;;
 	stop)
 		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE

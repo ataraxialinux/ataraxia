@@ -11,6 +11,8 @@ source=("http://www.thekelleys.org.uk/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/dnsmasq/nettle-3.5.patch
+
 	make \
 		CFLAGS="$CFLAGS" \
 		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS -DHAVE_LIBIDN2 -DHAVE_CONNTRACK" \
@@ -30,8 +32,7 @@ build() {
 	sed -i 's,%%PREFIX%%,/usr,' "$PKG"/etc/dnsmasq.conf
 	install -Dm644 "trust-anchors.conf" "$PKG"/usr/share/dnsmasq/trust-anchors.conf
 
-	for initd in dnsmasq; do
-		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	for rc in dnsmasq; do
+		install -Dm775 "$STUFF"/svc/rc.{rc} "$PKG"/etc/rc.d/rc.${rc}
 	done
 }
