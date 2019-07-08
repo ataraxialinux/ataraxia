@@ -84,9 +84,11 @@
 #ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h>
 #endif
+/*
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
+*/
 #ifdef HAVE_SYS_PROCFS_H
 #include <sys/procfs.h>
 #endif
@@ -128,9 +130,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <getopt.h>
+/*
 #ifdef HAVE_ERROR_H
 #include <error.h>
 #endif
+*/
 #ifdef HAVE_ERR_H
 #include <err.h>
 #endif
@@ -988,7 +992,7 @@ usage(void)
 static void
 do_version(void)
 {
-	printf("start-stop-daemon " VERSION " for " Ataraxia Linux.\n");
+	printf("start-stop-daemon " VERSION " for Ataraxia Linux.\n");
 }
 
 static void DPKG_ATTR_NORET
