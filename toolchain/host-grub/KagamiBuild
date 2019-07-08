@@ -1,5 +1,5 @@
 name=host-grub
-version=2.02
+version=2.04
 release=1
 options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/grub/grub-$version.tar.xz")
@@ -46,20 +46,9 @@ build() {
 	esac
 
 	cd "$SRC"/grub-$version
-	patch -Np1 -i "$STUFF"/grub/0004-add-GRUB_COLOR_variables.patch
-	patch -Np1 -i "$STUFF"/grub/0005-Allow_GRUB_to_mount_ext234_filesystems_that_have_the_encryption_feature.patch
-	patch -Np1 -i "$STUFF"/grub/0006-tsc-Change-default-tsc-calibration-method-to-pmtimer-on-EFI-systems.patch
-	patch -Np1 -i "$STUFF"/grub/0007-grub-mkconfig_10_linux_Support_multiple_early_initrd_images.patch
-	patch -Np1 -i "$STUFF"/grub/0008-Fix-packed-not-aligned-error-on-GCC-8.patch
-	patch -Np1 -i "$STUFF"/grub/0009-xfs-Accept-filesystem-with-sparse-inodes.patch
-	patch -Np1 -i "$STUFF"/grub/0010-relocation.patch
-	patch -Np1 -i "$STUFF"/grub/0011-f2fs-support.patch
-	patch -Np1 -i "$STUFF"/grub/0012-fix-gcc-no-pie-specs.patch
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i configure.ac
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
-
-	./autogen.sh
 
 	for f in $FLAVOR; do
 		case "$f" in
