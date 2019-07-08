@@ -6,8 +6,8 @@
 name=libtool
 version=2.4.6
 release=1
+options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -15,7 +15,7 @@ build() {
 		--prefix=/usr \
 		--disable-static
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		$ORIGMAKE
 		$ORIGMAKE DESTDIR="$PKG" install
 	else

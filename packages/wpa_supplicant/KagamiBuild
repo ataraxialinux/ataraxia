@@ -6,8 +6,8 @@
 name=wpa_supplicant
 version=2.8
 release=1
+options=('bootstrap')
 source=("https://w1.fi/releases/${name}-${version}.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	export CFLAGS="$(pkg-config --cflags libnl-3.0) $CFLAGS"
@@ -23,7 +23,7 @@ build() {
 	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
 
 	for initd in wpa_supplicant; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

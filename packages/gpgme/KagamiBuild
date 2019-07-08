@@ -6,13 +6,14 @@
 name=gpgme
 version=1.13.1
 release=1
+options=('~emptydirs')
 source=("ftp://ftp.gnupg.org/gcrypt/$name/$name-$version.tar.bz2")
-NO_EMPTY_DIRS=1
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 }

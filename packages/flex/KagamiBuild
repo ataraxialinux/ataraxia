@@ -6,13 +6,13 @@
 name=flex
 version=2.6.4
 release=1
+options=('bootstrap')
 source=("https://github.com/westes/flex/releases/download/v$version/$name-$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 cat > config.cache << EOF
 ac_cv_func_malloc_0_nonnull=yes
 ac_cv_func_realloc_0_nonnull=yes
@@ -21,7 +21,10 @@ EOF
 	fi
 
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
+
+	ln -sf flex "$PKG"/usr/bin/lex
 }

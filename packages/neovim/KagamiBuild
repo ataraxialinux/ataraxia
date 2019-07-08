@@ -4,24 +4,18 @@
 # Depends on:  cmake ninja
 
 name=neovim
-version=0.3.7
+version=0.3.8
 release=1
+backup=('etc/xdg/nvim/sysinit.vim')
 source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	mkdir .deps
-	cd .deps
-	cmake "$SRC"/$name-$version/third-party
-	make
+	make \
+		CMAKE_INSTALL_PREFIX="$PKG"/usr \
+		CMAKE_BUILD_TYPE=MinSizeRel
+	make install
 
-	cd "$SRC"/$name-$version
-	mkdir build
-	cd build
-
-	cmake "$SRC"/$name-$version \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DCMAKE_INSTALL_PREFIX=/usr
-	make
-	make DESTDIR="$PKG" install
+	install -Dm644 runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
+	install -Dm644 runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
 }

@@ -3,9 +3,24 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 
 name=base-files
-version=0.3
+version=0.5
 release=1
-BOOTSTRAP=yes
+options=('bootstrap')
+backup=('etc/fstab'
+	'etc/group'
+	'etc/gshadow'
+	'etc/host.conf'
+	'etc/hosts'
+	'etc/issue'
+	'etc/issue.net'
+	'etc/motd'
+	'etc/passwd'
+	'etc/profile'
+	'etc/resolv.conf'
+	'etc/securetty'
+	'etc/shadow'
+	'etc/shells'
+	'etc/network/interfaces')
 
 build() {
 	cd "$PKG"
@@ -33,6 +48,19 @@ build() {
 	for f in gshadow shadow crypttab; do
 		install -m600 "$STUFF"/base-files/$f etc/
 	done
+
+	mkdir -p \
+		etc/network/if-down.d \
+		etc/network/if-post-down.d \
+		etc/network/if-post-up.d \
+		etc/network/if-pre-down.d \
+		etc/network/if-pre-up.d \
+		etc/network/if-up.d
+
+cat > etc/network/interfaces << "EOF"
+auto lo
+iface lo inet loopback
+EOF
 
 	for d in cache/{sources,packages} local opt log/old lib/misc empty; do
 		install -d -m755 var/$d

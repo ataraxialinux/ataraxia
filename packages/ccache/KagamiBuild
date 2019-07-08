@@ -6,14 +6,15 @@
 name=ccache
 version=3.7.1
 release=1
+options=('bootstrap')
 source=("https://github.com/ccache/ccache/releases/download/v$version/$name-$version.tar.xz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sysconfdir=/etc
+		--sysconfdir=/etc \
+		--disable-nls
 	make
 
 	install -Dm 755 ccache -t "$PKG"/usr/bin

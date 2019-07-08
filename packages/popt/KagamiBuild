@@ -5,8 +5,8 @@
 name=popt
 version=1.16
 release=1
+options=('bootstrap')
 source=("http://mirror.yandex.ru/gentoo-distfiles/distfiles/$name-$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -14,7 +14,8 @@ build() {
 	cp "$STUFF"/config.sub config.sub
 
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 }

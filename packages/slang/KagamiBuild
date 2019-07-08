@@ -6,15 +6,16 @@
 name=slang
 version=2.3.2
 release=1
+options=('~makeflags')
+backup=('etc/slsh.rc')
 source=("https://www.jedsoft.org/releases/slang/$name-$version.tar.bz2")
 
 build() {
-	unset MAKEFLAGS
-
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sysconfdir=/etc
+		--sysconfdir=/etc \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install-all
 }

@@ -5,8 +5,8 @@
 name=autoconf
 version=2.69
 release=3
+options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -19,7 +19,8 @@ build() {
 
 	M4=m4 \
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 

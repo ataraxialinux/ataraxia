@@ -5,11 +5,9 @@
 
 name=eudev
 version=3.2.8
-scriptsver=32
 release=1
-source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz"
-	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$scriptsver.tar.gz")
-BOOTSTRAP=yes
+options=('bootstrap')
+source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -43,14 +41,4 @@ cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules << "EOF"
 # set bfq by default
 ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
 EOF
-
-	mkdir -p "$PKG"/etc/runlevels/sysinit
-
-	for MYUDEV in udev udev-settle udev-trigger; do
-		ln -sf ../../init.d/$MYUDEV "$PKG"/etc/runlevels/sysinit/$MYUDEV
-	done
-
-	cd "$SRC"/udev-init-scripts-$scriptsver
-	make PREFIX=/usr
-	make PREFIX=/usr DESTDIR="$PKG" install
 }

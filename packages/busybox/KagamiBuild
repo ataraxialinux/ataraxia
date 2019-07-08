@@ -5,8 +5,8 @@
 name=busybox
 version=1.31.0
 release=3
+options=('bootstrap')
 source=("http://busybox.net/downloads/$name-$version.tar.bz2")
-BOOTSTRAP=yes
 
 build_busybox_embedded() {
 	make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" defconfig
@@ -20,7 +20,6 @@ build_busybox_embedded() {
 	chmod 4755 "$PKG"/usr/bin/busybox
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
-
 
 	mkdir -p "$PKG"/usr/share/udhcpc
 	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
@@ -43,7 +42,7 @@ build_busybox_embedded() {
 build_busybox_standard() {
 	cp "$STUFF"/busybox/config .config
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS"
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links
 	else
@@ -61,13 +60,8 @@ build_busybox_standard() {
 	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 	chmod +x "$PKG"/usr/share/udhcpc/default.script
 
-	for initd in crond klogd rdate syslog watchdog ntpd; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
-
-	for initd in acpid inetd; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+	for rc in acpid crond inted ntpd watchdog; do
+		install -Dm775 "$STUFF"/svc/rc.{rc} "$PKG"/etc/rc.d/rc.${rc}
 	done
 }
 

@@ -6,6 +6,7 @@
 name=dnsmasq
 version=2.80
 release=1
+backup=('etc/dnsmasq.conf')
 source=("http://www.thekelleys.org.uk/$pkgname/$pkgname-$pkgver.tar.xz")
 
 build() {
@@ -30,7 +31,7 @@ build() {
 	install -Dm644 "trust-anchors.conf" "$PKG"/usr/share/dnsmasq/trust-anchors.conf
 
 	for initd in dnsmasq; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

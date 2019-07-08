@@ -4,17 +4,16 @@
 # Depends on:  kmod bc libelf xz libressl
 
 name=linux
-version=5.1.15
+version=5.2
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
 reiser4ver=5.0.0
 release=1
+options=('~strip' 'bootstrap')
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://sourceforge.net/projects/reiser4/files/reiser4-for-linux-5.x/reiser4-for-$reiser4ver.patch.gz")
-BOOTSTRAP=yes
-NO_RUN_STRIP=1
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -105,15 +104,18 @@ generate_config() {
 		s390x)
 			export DEFCONFIG="performance_defconfig"
 			;;
-		riscv64|riscv32)
+		riscv64)
 			export DEFCONFIG="defconfig"
+			;;
+		riscv32)
+			export DEFCONFIG="rv32_defconfig"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Ataraxia Linux"
 			exit 1
 	esac
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} $DEFCONFIG
 	else
 		make ARCH=$XKARCH $DEFCONFIG
@@ -142,15 +144,8 @@ generate_config() {
 		mips64|mips64el|mips|mipsel)
 			yconfig SERIAL_8250 SERIAL_8250_CONSOLE PCI NET_VENDOR_AMD PCNET32 POWER_RESET POWER_RESET_SYSCON
 			;;
-		riscv64)
+		riscv64|riscv32)
 			yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC
-			;;
-		riscv32)
-			yconfig 32BIT ARCH_RV32I MAXPHYSMEM_2GB LBDAF GENERIC_ATOMIC64 \
-				GENERIC_LIB_ASHLDI3 GENERIC_LIB_ASHRDI3 GENERIC_LIB_LSHRDI3 \
-				GENERIC_LIB_UCMPDI2 GENERIC_LIB_UMODDI3 \
-				RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC
-			nconfig ARCH_RV64I
 			;;
 	esac
 
@@ -236,7 +231,7 @@ generate_config() {
 		OPENVSWITCH_GRE OPENVSWITCH_VXLAN OPENVSWITCH_GENEVE RPS RFS_ACCEL NETLINK_MMAP BATMAN_ADV_BLA \
 		ACPI ACPI_PROCESSOR ACPI_LEGACY_TABLES_LOOKUP ACPI_PROCFS_POWER ACPI_NUMA HAVE_ACPI_APEI HAVE_ACPI_APEI_NMI \
 		BPF BPF_SYSCALL BPF_JIT EXPERT HIBERNATION SUSPEND HWMON FONT_8x8 FONT_8x16 SUN8x16 FB_BOOT_VESA_SUPPORT \
-		HDMI THUNDERBOLT RESET_ATTACK_MITIGATION ANDROID_PARANOID_NETWORK SECURITY_DMESG_RESTRICT BCACHE ASHMEM
+		HDMI THUNDERBOLT RESET_ATTACK_MITIGATION ANDROID_PARANOID_NETWORK SECURITY_DMESG_RESTRICT BCACHE ASHMEM LOGO
 
 	# core (modules)
 	mconfig I2C_HID INPUT_GPIO_ROTARY_ENCODER INPUT_JOYDEV INPUT_POLLDEV INPUT_MATRIXKMAP VHOST_NET VHOST_VSOCK \
@@ -342,7 +337,7 @@ generate_config() {
 	mconfig DM_SWITCH DM_LOG_WRITES DM_INTEGRITY DM_ZONED TARGET_CORE TCM_IBLOCK TCM_FILEIO TCM_PSCSI TCM_USER2 \
 		LOOPBACK_TARGET TCM_FC ISCSI_TARGET ISCSI_TARGET_CXGB4 SBP_TARGET DM_FLAKEY DM_VERITY DM_LOG_USERSPACE \
 		DM_RAID DM_ZERO DM_MULTIPATH DM_MULTIPATH_QL DM_MULTIPATH_ST DM_THIN_PROVISIONING DM_CACHE DM_CACHE_SMQ DM_ERA \
-		DM_BIO_PRISON DM_PERSISTENT_DATA DM_UNSTRIPED MD_FAULTY MD_CLUSTER BCACHE
+		DM_BIO_PRISON DM_PERSISTENT_DATA DM_UNSTRIPED MD_FAULTY MD_CLUSTER DM_DUST
 	nconfig FUSION_LOGGING DM_DELAY DM_WRITECACHE DM_DEBUG_BLOCK_STACK_TRACING DM_MQ_DEFAULT DM_DEBUG BCACHE_DEBUG \
 		BCACHE_CLOSURES_DEBUG
 
@@ -765,12 +760,11 @@ generate_config() {
 		FB_MODE_HELPERS FB_TILEBLITTING
 
 	# gpu drivers
-	mconfig DRM_RADEON DRM_AMDGPU DRM_AMDGPU_SI DRM_AMDGPU_CIK \
-		DRM_NOUVEAU DRM_NOUVEAU_BACKLIGHT DRM_VMWGFX DRM_VMWGFX_FBCON \
+	mconfig DRM_RADEON DRM_AMDGPU DRM_NOUVEAU DRM_VMWGFX \
 		DRM_I915 DRM_I915_ALPHA_SUPPORT DRM_I915_CAPTURE_ERROR DRM_I915_COMPRESS_ERROR DRM_I915_USERPTR DRM_I915_GVT DRM_I915_GVT_KVMGT \
 		VIRTIO_GPU DRM_QLX DRM_GMA500 DRM_GMA600 DRM_GMA3600 DRM_CIRRUS_QEMU DRM_I915_PRELIMINARY_HW_SUPPORT DRM_FBDEV_EMULATION R6040 \
 		DRM_R128 DRM_MGA DRM_SIS DRM_SAVAG DRM_SAVAGE TEGRA_HOST1X IMX_IPUV3_CORE DRM_SCHED DRM_ETNAVIV
-	yconfig TEGRA_HOST1X_FIREWALL DRM_ETNAVIV_THERMAL DRM_AMDGPU_SI DRM_AMDGPU_CIK
+	yconfig TEGRA_HOST1X_FIREWALL DRM_ETNAVIV_THERMAL DRM_AMDGPU_SI DRM_AMDGPU_CIK DRM_NOUVEAU_BACKLIGHT DRM_VMWGFX_FBCON
 
 	# display panel drivers
 	mconfig DRM_PANEL_ARM_VERSATILE DRM_PANEL_LVDS DRM_PANEL_SIMPLE DRM_PANEL_ILITEK_IL9322 DRM_PANEL_INNOLUX_P079ZCA \
@@ -886,7 +880,7 @@ generate_config() {
 	varconfig HISAX_MAX_CARDS 8
 	varconfig DE2104X_DSL 0
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} olddefconfig
 	else
 		yes '' | make ARCH=$XKARCH olddefconfig
@@ -941,13 +935,13 @@ build() {
 
 	cd $name-$version
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
-	patch -Np1 -i "$SRC"/reiser4-for-$reiser4ver.patch
+	#patch -Np1 -i "$SRC"/reiser4-for-$reiser4ver.patch
 
 	unset LDFLAGS
 	make mrproper
 
 
-	if [ "$CROSS" != "yes" ]; then
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
 		if [ -f /boot/config-linux ]; then
 			cp /boot/config-linux .config
 		else
@@ -957,13 +951,13 @@ build() {
 		generate_config
 	fi
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE}
 	else
 		yes '' | make ARCH=$XKARCH
 	fi
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
 		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
@@ -973,7 +967,7 @@ build() {
 
 	case $BARCH in
 		aarch64|armv7l|armv6l|armv5tel)
-			if [ "$CROSS" = "yes" ]; then
+			if [ "$USEBOOTSTRAP" = "yes" ]; then
 				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
 				make ARCH=$XKARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install

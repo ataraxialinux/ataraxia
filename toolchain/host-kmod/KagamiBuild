@@ -1,0 +1,20 @@
+name=host-kmod
+version=26
+release=1
+options=('bootstrap')
+source=("https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-$version.tar.xz")
+
+build() {
+	cd "$SRC"/kmod-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--with-xz \
+		--with-zlib \
+		--disable-manpages
+	make
+	make install
+
+	for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
+		ln -sf kmod "$TOOLS"/bin/$tool
+	done
+}

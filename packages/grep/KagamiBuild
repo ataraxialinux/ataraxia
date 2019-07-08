@@ -6,13 +6,14 @@
 name=grep
 version=3.3
 release=1
+options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 }

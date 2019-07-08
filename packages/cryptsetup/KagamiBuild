@@ -6,9 +6,8 @@
 name=cryptsetup
 version=2.1.0
 release=1
+options=('~emptydirs')
 source=("https://www.kernel.org/pub/linux/utils/cryptsetup/v${version%.*}/${name}-${version}.tar.xz")
-BOOTSTRAP=yes
-NO_EMPTY_DIRS=1
 
 build() {
 	cd "$SRC"/$name-$version
@@ -17,12 +16,8 @@ build() {
 		--sbindir=/usr/bin \
 		--with-crypto_backend=openssl \
 		--enable-libargon2 \
+		--disable-nls \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install
-
-	for initd in dmcrypt; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
 }

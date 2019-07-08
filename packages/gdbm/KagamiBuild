@@ -5,14 +5,15 @@
 name=gdbm
 version=1.18.1
 release=1
+options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--enable-libgdbm-compat
+		--enable-libgdbm-compat \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 

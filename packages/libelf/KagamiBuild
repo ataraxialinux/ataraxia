@@ -1,13 +1,13 @@
 # Description: Utilities to handle ELF object files and DWARF debugging information
 # URL:         https://sourceware.org/elfutils/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib bzip2 xz libuargp
+# Depends on:  zlib bzip2 xz libuargp musl-fts
 
 name=libelf
 version=0.176
 release=1
+options=('bootstrap')
 source=("https://sourceware.org/elfutils/ftp/$version/elfutils-$version.tar.bz2")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/elfutils-$version
@@ -36,7 +36,8 @@ build() {
 
 	./configure $TOOLFLAGS \
 		--prefix=/usr \
-		--enable-deterministic-archives
+		--enable-deterministic-archives \
+		--disable-nls
 	make
 	make -C libelf DESTDIR="$PKG" install
 

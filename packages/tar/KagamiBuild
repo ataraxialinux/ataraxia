@@ -6,9 +6,8 @@
 name=tar
 version=1.32
 release=1
+options=('~emptydirs' 'bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
-NO_EMPTY_DIRS=1
 
 build() {
 	cd "$SRC"/$name-$version
@@ -16,7 +15,8 @@ build() {
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--libexecdir=/usr/lib/tar
+		--libexecdir=/usr/lib/tar \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 }

@@ -6,16 +6,14 @@
 name=findutils
 version=4.6.0
 release=1
+options=('~makeflags' 'bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
-	unset MAKEFLAGS
-
 	cd "$SRC"/$name-$version
 	sed -i '/^SUBDIRS/s/locate//' Makefile.in
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 cat > config.cache << EOF
 gl_cv_func_wcwidth_works=yes
 ac_cv_func_fnmatch_gnu=yes
@@ -26,7 +24,8 @@ EOF
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
-		--without-python
+		--without-python \
+		--disable-nls
 	make -j1 -C locate dblocation.texi
 	make -j1
 	make -j1 DESTDIR="$PKG" install

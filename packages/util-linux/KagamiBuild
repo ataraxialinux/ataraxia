@@ -10,8 +10,15 @@ case $version in
 	*.*) _v=$version;;
 esac
 release=7
+backup=('etc/pam.d/chfn'
+	'etc/pam.d/chsh'
+	'etc/pam.d/login'
+	'etc/pam.d/runuser'
+	'etc/pam.d/runuser-l'
+	'etc/pam.d/su'
+	'etc/pam.d/su-l')
+options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -36,7 +43,8 @@ build() {
 		--enable-raw \
 		--enable-vipw \
 		--enable-wall \
-		--enable-write
+		--enable-write \
+		--disable-nls
 	make
 	make DESTDIR="$PKG" install
 
@@ -58,11 +66,5 @@ build() {
 
 	install -Dm644 "$STUFF"/util-linux/rfkill.rules "$PKG"/usr/lib/udev/rules.d/60-rfkill.rules
 
-	mkdir -p "$PKG"/etc/runlevels/default
-	mkdir -p "$PKG"/etc/init.d
-
-	for MYTTY in 1 2 3 4 5 6 S0 AMA0 USB0; do
-		ln -sf agetty "$PKG"/etc/init.d/agetty.tty$MYTTY
-		ln -sf ../../init.d/agetty.tty$MYTTY "$PKG"/etc/runlevels/default/agetty.tty$MYTTY
-	done
+	rm -rf usr/bin/ctrlaltdel
 }

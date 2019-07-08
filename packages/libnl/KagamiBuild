@@ -5,8 +5,10 @@
 name=libnl
 version=3.4.0
 release=1
+backup=('etc/libnl/classid'
+	'etc/libnl/pktloc')
+options=('bootstrap')
 source=("https://github.com/thom311/libnl/releases/download/libnl${version//./_}/$name-$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -17,6 +19,7 @@ build() {
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
+		--disable-nls \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install

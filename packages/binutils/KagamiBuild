@@ -6,8 +6,8 @@
 name=binutils
 version=2.32
 release=2
+options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
-BOOTSTRAP=yes
 
 build() {
 	case "$BARCH" in
@@ -42,6 +42,7 @@ build() {
 		--disable-multilib \
 		--disable-nls \
 		--disable-werror
+	make MAKEINFO="true" configure-host
 	make MAKEINFO="true" tooldir=/usr
 	make MAKEINFO="true" tooldir=/usr DESTDIR="$PKG" install
 

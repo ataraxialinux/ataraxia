@@ -1,0 +1,60 @@
+name=host-grub
+version=2.04
+release=1
+options=('bootstrap')
+source=("http://ftp.gnu.org/gnu/grub/grub-$version.tar.xz")
+
+build_flavor() {
+	local flavor="$1"
+	shift
+	local configure="$@"
+	mkdir -p build_${flavor}
+	cd build_${flavor}
+	../configure $configure \
+		--prefix="$TOOLS" \
+		--bindir="$TOOLS"/bin \
+		--sbindir="$TOOLS"/bin \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--enable-boot-time \
+		--disable-nls \
+		--disable-werror
+	make
+	make install
+	cd ..
+}
+
+build() {
+	unset CXXFLAGS LDFLAGS
+
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
+	export CXXFLAGS="$CFLAGS"
+
+	case $BARCH in
+		x86_64|i586)
+			FLAVOR="efi pc"
+			;;
+		ppc64le|ppc64|ppc)
+			FLAVOR="ieee1275"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Ataraxia Linux"
+			exit 1
+	esac
+
+	cd "$SRC"/grub-$version
+	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i configure.ac
+	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
+	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
+
+	for f in $FLAVOR; do
+		case "$f" in
+			efi) build_flavor $f --with-platform=efi --disable-efiemu;;
+			*)   build_flavor $f --with-platform=$f;;
+		esac
+	done
+}
+

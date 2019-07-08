@@ -1,0 +1,111 @@
+#!/bin/sh
+
+ . /etc/rc.conf
+
+dmesg -n 1
+ctrlaltdel -s
+
+mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys                 || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run                 || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev                 || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p -m0755 /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
+mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
+mountpoint -q /sys/fs/cgroup       || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
+
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		single=*)     single="${arg#*=}" ;;
+	esac
+done
+
+udevd --daemon
+udevadm trigger --action=add --type=subsystems
+udevadm trigger --action=add --type=devices
+udevadm trigger --action=change --type=devices
+udevadm settle
+
+mount -o remount,ro /
+
+if [ -x /usr/bin/mdadm -o -f /etc/mdadm/mdadm.conf ]; then
+	mdadm -As
+fi
+
+if [ -x /usr/bin/vgchange ]; then
+	vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1
+	vgchange --sysinit --activate y >/dev/null 2>&1
+fi
+
+if [ -f /forcefsck ]; then
+	FORCEFSCK="-f"
+fi
+
+fsck $FORCEFSCK -A -T -C -a
+if [ $? -gt 1 ]; then
+	echo
+	echo "***************  FILESYSTEM CHECK FAILED  ******************"
+	echo "*                                                          *"
+	echo "*  Please repair manually and reboot. Note that the root   *"
+	echo "*  file system is currently mounted read-only. To remount  *"
+	echo "*  it read-write type: mount -n -o remount,rw /            *"
+	echo "*  When you exit the maintainance shell the system will    *"
+	echo "*  reboot automatically.                                   *"
+	echo "*                                                          *"
+	echo "************************************************************"
+	echo
+	sulogin -p
+	halt -r
+fi
+
+mount -o remount,rw /
+
+swapon -a
+
+mount -a -t "nosysfs,nonfs,nonfs4,nosmbfs,nocifs" -O no_netdev
+
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+if [ -f '/etc/hostname' ] ;then
+	hostname -F /etc/hostname
+fi
+
+ifup -a
+
+hwclock --hctosys
+
+sysctl -qp /etc/sysctl.d/*.conf
+
+install -m0664 -o root -g utmp /dev/null /run/utmp
+if [ ! -e /var/log/wtmp ]; then
+	install -m0664 -o root -g utmp /dev/null /var/log/wtmp
+fi
+if [ ! -e /var/log/btmp ]; then
+	install -m0600 -o root -g utmp /dev/null /var/log/btmp
+fi
+install -dm1777 /tmp/.X11-unix /tmp/.ICE-unix
+rm -f /etc/nologin /forcefsck /forcequotacheck /fastboot
+
+dmesg >/var/log/dmesg.log
+
+if [ "$single" = "1" ]; then
+	sulogin -p
+	halt -r
+else
+	if [ -x /etc/rc.local ]; then
+		/etc/rc.local
+	fi
+
+	respawn agetty 38400 tty1 linux &
+	respawn agetty 38400 tty2 linux &
+	respawn agetty 38400 tty3 linux &
+	respawn agetty 38400 tty4 linux &
+	respawn agetty 38400 tty5 linux &
+	respawn agetty 38400 tty6 linux &
+	respawn agetty 38400 ttyS0 vt100 &
+	respawn agetty 38400 ttyAMA0 vt100 &
+	respawn agetty 38400 ttyUSB0 vt100 &
+fi

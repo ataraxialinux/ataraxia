@@ -10,6 +10,7 @@ _bash_patchlevel="00$_patchlevel"
 _myver=${version%.*}
 _patchbase=${_myver/./}
 release=2
+options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
 
 _i=1
@@ -21,7 +22,6 @@ while [ $_i -le $_patchlevel ]; do
 	_i=$(( $_i + 1))
 done
 
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-${_myver}
@@ -54,10 +54,10 @@ EOF
 		--with-curses \
 		--without-bash-malloc \
 		--enable-readline \
+		--disable-nls \
 		--cache-file=config.cache
 	make
 	make DESTDIR="$PKG" install
 
 	ln -sf bash "$PKG"/usr/bin/rbash
-	ln -sf bash "$PKG"/usr/bin/sh
 }

@@ -5,11 +5,13 @@
 name=loksh
 version=6.5
 release=1
+options=('bootstrap')
 source=("https://github.com/dimkr/loksh/archive/$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
-	make
+	make LDFLAGS='-static'
 	make BIN_DIR=/usr/bin MAN_DIR=/usr/share/man DOC_DIR=/usr/share/doc/loksh DESTDIR="$PKG" install
+
+	ln -sf ksh "$PKG"/usr/bin/sh
 }

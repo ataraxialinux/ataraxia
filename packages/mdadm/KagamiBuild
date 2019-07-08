@@ -5,8 +5,8 @@
 name=mdadm
 version=4.1
 release=2
+backup=('etc/mdadm.conf')
 source=("https://www.kernel.org/pub/linux/utils/raid/$name/$name-$version.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -14,7 +14,7 @@ build() {
 
 	mkdir -p "$PKG"/usr/bin
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev all
 		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev DESTDIR="$PKG" install
 	else
@@ -23,9 +23,4 @@ build() {
 	fi
 
 	install -D -m644 "$STUFF"/mdadm/mdadm.conf "$PKG"/etc/mdadm/mdadm.conf
-
-	for initd in mdadm mdraid; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
 }

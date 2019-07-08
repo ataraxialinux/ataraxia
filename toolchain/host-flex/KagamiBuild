@@ -1,0 +1,19 @@
+name=host-flex
+version=2.6.4
+release=1
+options=('bootstrap')
+source=("https://github.com/westes/flex/releases/download/v$version/flex-$version.tar.gz")
+
+build() {
+	cd "$SRC"/flex-$version
+
+	# for glibc based systems
+	sed -i "/math.h/a #include <malloc.h>" src/flexdef.h
+
+	./configure \
+		--prefix="$TOOLS"
+	make
+	make install
+
+	ln -sf flex "$TOOLS"/bin/lex
+}

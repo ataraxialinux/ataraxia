@@ -6,8 +6,11 @@
 name=iptables
 version=1.8.3
 release=1
+backup=('etc/ethertypes'
+	'etc/iptables/iptables.rules'
+	'etc/iptables/ip6tables.rules')
+options=('bootstrap')
 source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-$version
@@ -27,11 +30,12 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	mkdir -p "$PKG"/var/lib/iptables "$PKG"/var/lib/ip6tables
+	mkdir -p "$PKG"/etc/iptables
+	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
 
-	for initd in iptables; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	install -Dm775 "$STUFF"/iptables/flush "$PKG"/usr/lib/iptables-flush
+
+	for rc in iptables ip6tables; do
+		install -Dm775 "$STUFF"/svc/rc.{rc} "$PKG"/etc/rc.d/rc.${rc}
 	done
-	install -D -m755 "$STUFF"/svc/ip6tables.confd "$PKG"/etc/conf.d/ip6tables
 }

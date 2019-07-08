@@ -6,14 +6,14 @@ name=wireless_tools
 version=30.pre9
 _version=${version%.pre*}
 release=1
+options=('bootstrap')
 source=("https://hewlettpackard.github.io/wireless-tools/${name}.${version}.tar.gz")
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/${name}.${_version}
 	sed -i 's@sbin@bin@' Makefile
 
-	if [ "$CROSS" = "yes" ]; then
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$CFLAGS"
 	else
 		make CFLAGS="$CFLAGS"

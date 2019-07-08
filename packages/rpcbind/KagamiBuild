@@ -6,6 +6,7 @@
 name=rpcbind
 version=1.2.5
 release=1
+backup=('etc/conf.d/rpcbind')
 source=("https://downloads.sourceforge.net/sourceforge/$name/$name-$version.tar.bz2")
 
 build() {
@@ -25,8 +26,8 @@ build() {
 	make DESTDIR="$PKG" install
 
 	for initd in rpcbind; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 
 	mkdir -p "$PKG"/var/lib/rpcbind

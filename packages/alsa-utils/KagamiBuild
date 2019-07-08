@@ -19,14 +19,15 @@ build() {
 		--with-udev-rules-dir=/usr/lib/udev/rules.d \
 		--disable-alsaconf \
 		--disable-alsatest \
+		--disable-nls \
 		--disable-rst2man \
 		--disable-xmlto
 	make
 	make DESTDIR="$PKG" install
 
 	for initd in alsasound; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 
 	install -d "$PKG"/var/lib/alsa

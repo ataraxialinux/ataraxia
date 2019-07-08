@@ -9,7 +9,9 @@ _myver=${version%.*}
 _dist_ver=${version%.*}
 _patchlevel=${version##*.}
 _patch_ver="00{version##*.}"
-release=1
+release=2
+options=('~emptydirs' 'bootstrap')
+backup=('etc/inputrc')
 source=("http://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
 
 for _patch in $(seq -w 001 ${version##*.}); do
@@ -17,7 +19,6 @@ for _patch in $(seq -w 001 ${version##*.}); do
 	source="$source $_name.diff::https://ftp.gnu.org/gnu/$name/$name-${_myver}-patches/$_name"
 done
 
-BOOTSTRAP=yes
 
 build() {
 	cd "$SRC"/$name-${_myver}
@@ -37,4 +38,6 @@ build() {
 		--enable-static
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/readline/inputrc "$PKG"/etc/inputrc
 }

@@ -1,0 +1,22 @@
+# Description: A suckless variant of the Linux system utilities
+# URL:         https://core.suckless.org/ubase/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=ubase
+version=140efda3a263b9e6d922633c418fa9846d35731d
+release=1
+options=('bootstrap')
+source=("https://github.com/protonesso/ubase/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
+	else
+		make CFLAGS="$CFLAGS" LDFLAGS='-static'
+	fi
+
+	for cmd in respawn halt ctrlaltdel killall5; do
+		install -D $cmd "$PKG"/usr/bin/$cmd
+	done
+}
