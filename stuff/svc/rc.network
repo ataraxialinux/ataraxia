@@ -1,0 +1,46 @@
+#!/bin/sh
+
+ . /etc/rc.conf
+
+if [ "$NETTYPE" = "wireless" ]; then
+	INTERFACE="{INTERFACE:wlan0}"
+else
+	INTERFACE="{INTERFACE:eth0}"
+fi
+
+case $1 in
+	start)
+		ip link set lo up
+		if [ "$NETTYPE" = "static" ]; then
+			ip addr add ${ADDRESS}/${MASK} dev ${INTERFACE} broadcast +
+			ip link set ${INTERFACE} up
+			ip route add default via ${GATEWAY}
+		elif [ "$NETTYPE" = "dhcp" ]; then
+			ip link set ${INTERFACE} up
+			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${INTERFACE}
+		elif [ "$NETTYPE" = "wireless" ]; then
+			ip link set ${INTERFACE} up
+			start-stop-daemon --start --quiet --pidfile /run/wireless.pid --exec wpa_supplicant -- -B -i ${INTERFACE} -c /etc/wpa_supplicant/wpa_supplicant.conf
+			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${INTERFACE}
+		fi
+		;;
+	stop)
+		if [ "$NETTYPE" = "static" ]; then
+			ip route del default
+			ip link set ${INTERFACE} down
+			ip addr del ${ADDRESS}/${MASK} dev  ${INTERFACE}
+		elif [ "$NETTYPE" = "dhcp" ]; then
+			start-stop-daemon --stop --quiet --oknodo --pidfile /run/dhcp.pid
+			ip link set ${INTERFACE} down
+		elif [ "$NETTYPE" = "wireless" ]; then
+			start-stop-daemon --stop --quiet --oknodo --pidfile /run/wireless.pid
+			start-stop-daemon --stop --quiet --oknodo --pidfile /run/dhcp.pid
+			ip link set ${INTERFACE} down
+		fi
+		ip link set lo down
+		;;
+	restart|reload)
+		$0 stop
+		$0 start
+		;;
+esac
