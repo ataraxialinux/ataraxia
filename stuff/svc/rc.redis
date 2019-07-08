@@ -1,0 +1,19 @@
+#!/bin/sh
+
+NAME="redis-server"
+OPTIONS="/etc/redis.conf"
+USER="redis"
+PIDFILE="/run/$NAME.pid"
+
+case $1 in
+	start)
+		start-stop-daemon --start -c "$USER" --quiet --pidfile $PIDFILE --exec $NAME -- $OPTIONS
+		;;
+	stop)
+		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+		;;
+	restart|reload)
+		$0 stop
+		$0 start
+		;;
+esac

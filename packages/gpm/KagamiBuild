@@ -25,8 +25,7 @@ build() {
 	ln -sf libgpm.so.2.* libgpm.so
 	chmod 0755 "$PKG"/usr/lib/libgpm.so.*
 
-	for initd in gpm; do
-		install -D -m755 "$STUFF"/openrc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/openrc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	for rc in gpm; do
+		install -Dm775 "$STUFF"/svc/rc.{rc} "$PKG"/etc/rc.d/rc.${rc}
 	done
 }
