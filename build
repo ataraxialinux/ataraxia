@@ -283,8 +283,14 @@ build_target() {
 				wireless_tools wpa_supplicant popt gptfdisk nettle lz4 zstd libarchive libssh2 c-ares libev nghttp2 curl kagami"
 	fi
 
+	if [ "$EMBEDDED" = "1" ]; then
+		cmd="-EWV"
+	else
+		cmd="-EWVd"
+	fi
+
 	for pkgtarget in $packages; do
-		kagami -EWVd -c "$BUILD"/target.config -r "$ROOTFS" $packages
+		kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" $packages
 	done
 }
 
