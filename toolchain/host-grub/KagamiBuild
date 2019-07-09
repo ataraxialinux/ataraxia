@@ -46,9 +46,12 @@ build() {
 	esac
 
 	cd "$SRC"/grub-$version
+	patch -Np1 -i "$STUFF"/grub/0012-fix-gcc-no-pie-specs.patch
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i configure.ac
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
+
+	./autogen.sh
 
 	for f in $FLAVOR; do
 		case "$f" in

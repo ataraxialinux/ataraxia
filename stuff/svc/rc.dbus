@@ -1,12 +1,13 @@
 #!/bin/sh
 
-NAME="acpid"
-OPTIONS="-f"
+NAME="dbus"
+OPTIONS="--system --nofork --nopidfile"
 PIDFILE="/run//usr/bin/$NAME.pid"
 
 case $1 in
 	start)
-		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME -- $OPTIONS
+		install -m755 /run/dbus
+		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/dbus-daemon -- $OPTIONS
 		;;
 	stop)
 		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE

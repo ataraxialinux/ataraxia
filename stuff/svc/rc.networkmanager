@@ -1,11 +1,16 @@
 #!/bin/sh
 
-NAME="acpid"
-OPTIONS="-f"
+set -e
+
+NAME="NetworkManager"
+OPTIONS="-n"
 PIDFILE="/run//usr/bin/$NAME.pid"
 
 case $1 in
 	start)
+		if [ ! -f "/run/dbus.pid" ]; then
+			/etc/rc.d/rc.dbus start
+		fi
 		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME -- $OPTIONS
 		;;
 	stop)

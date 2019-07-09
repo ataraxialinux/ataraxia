@@ -1,12 +1,13 @@
 #!/bin/sh
 
-NAME="acpid"
-OPTIONS="-f"
+NAME="redis-server"
+OPTIONS="/etc/redis.conf"
+USER="redis"
 PIDFILE="/run//usr/bin/$NAME.pid"
 
 case $1 in
 	start)
-		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME -- $OPTIONS
+		start-stop-daemon --start -c "$USER" --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME -- $OPTIONS
 		;;
 	stop)
 		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE

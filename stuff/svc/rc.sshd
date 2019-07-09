@@ -1,0 +1,33 @@
+#!/bin/sh
+
+NAME="sshd"
+PIDFILE="/run//usr/bin/$NAME.pid"
+
+create_keys() {
+	if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+		ssh-keygen -q -t rsa -b 2048 -N "" -f /etc/ssh/ssh_host_rsa_key
+	fi
+	if [ ! -f /etc/ssh/ssh_host_dsa_key ]; then
+		ssh-keygen -q -t dsa -N "" -f /etc/ssh/ssh_host_dsa_key
+	fi
+	if [ ! -f /etc/ssh/ssh_host_ecdsa_key ]; then
+		ssh-keygen -q -t ecdsa -b 521 -N "" -f /etc/ssh/ssh_host_ecdsa_key
+	fi
+	if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
+		ssh-keygen -q -t ed25519 -N "" -f /etc/ssh/ssh_host_ed25519_key
+	fi
+}
+
+case $1 in
+	start)
+		create_keys
+		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME
+		;;
+	stop)
+		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+		;;
+	restart|reload)
+		$0 stop
+		$0 start
+		;;
+esac

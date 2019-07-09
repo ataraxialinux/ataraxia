@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# System shutdown script (stage 3)
+# System shutdown script
 #
 
  . /etc/rc.conf
@@ -14,9 +14,13 @@ done
 
 echo; stty onlcr
 
-ifdown -a
+if [ "$single" != "1" ]; then
+	for myservices in ${services[@]}; do
+		/etc/rc.d/rc.${myservices} stop
+	done
+fi
 
-hwclock --systohc --utc
+hwclock --systohc
 
 if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
 	if type quotaoff > /dev/null; then
@@ -30,9 +34,9 @@ fi
 
 udevadm control --exit
 
-killall5 -15
+killall5 -s TERM
 sleep 1
-killall5 -9
+killall5 -s KILL
 
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 

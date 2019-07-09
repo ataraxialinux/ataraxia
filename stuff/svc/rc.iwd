@@ -1,12 +1,14 @@
 #!/bin/sh
 
-NAME="acpid"
-OPTIONS="-f"
+NAME="iwd"
 PIDFILE="/run//usr/bin/$NAME.pid"
 
 case $1 in
 	start)
-		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME -- $OPTIONS
+		if [ ! -f "/run/dbus.pid" ]; then
+			/etc/rc.d/rc.dbus start
+		fi
+		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/lib/iwd//usr/bin/$NAME
 		;;
 	stop)
 		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
