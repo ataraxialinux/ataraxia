@@ -1,0 +1,22 @@
+# Description: The next generation secure network tunnel
+# URL:         http://www.wireguard.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libmnl openresolv
+
+name=wireguard-tools
+version=0.0.20190702
+release=1
+source=("https://git.zx2c4.com/WireGuard/snapshot/WireGuard-$version.tar")
+
+build() {
+	cd "$SRC"/WireGuard-$version
+	sed -i -e '/depmod -a/d' src/Makefile
+
+	make -C src/tools
+	make -C src/tools \
+		DESTDIR="$PKG" \
+		WITH_BASHCOMPLETION=yes \
+		WITH_WGQUICK=yes \
+		WITH_SYSTEMDUNITS=no \
+		install
+}
