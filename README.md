@@ -13,3 +13,6 @@ We have a [discord community](https://discord.gg/KrrkEEG) where you can share yo
 * [Roadmap](docs/roadmap.md)
 
 See the ./docs/ folder.
+
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/ataraxialinux/ataraxia.svg)](https://starchart.cc/ataraxialinux/ataraxia)
