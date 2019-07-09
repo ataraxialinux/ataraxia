@@ -1,0 +1,112 @@
+#!/bin/bash
+
+main_standard() {
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	IMAGEFS="$BUILD/imagefs"
+
+	rm -rf "$IMAGEFS"
+	mkdir -p "$IMAGEFS"
+
+	IMG="$BUILD/ataraxialinux-sdcard-$BARCH.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=4G
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	case $BARCH in
+		x86_64|i586)
+			parted -s $lodev mklabel msdos
+			parted -a optimal -s $lodev mkpart primary 0% 100%
+			parted -s $lodev set 1 boot on
+			;;
+		aarch64|armv7l|armv6l|armv5tel)
+			parted -s $lodev mklabel msdos
+			parted -a optimal -s $lodev mkpart primary 0mb 256mb
+			parted -a optimal -s $lodev mkpart primary 256mb 100%
+			;;
+		*)
+			parted -s $lodev mklabel msdos
+			parted -a optimal -s $lodev mkpart primary 0% 100%
+			;;
+	esac
+
+	case $BARCH in
+		aarch64|armv7l|armv6l|armv5tel)
+			bootpart="${lodev}p1"
+			lopart="${lodev}p2"
+
+			yes | mkfs.ext4 $lopart
+			yes | mkfs.vfat -F 32 $bootpart
+
+			mount -o loop $lopart "$IMAGEFS"
+			mkdir -p "$IMAGEFS/boot"
+			mount -o loop $bootpart "$IMAGEFS/boot"
+			;;
+		*)
+			lopart="${lodev}p1"
+			yes | mkfs.ext4 $lopart
+
+			mount -o loop $lopart "$IMAGEFS"
+			;;
+	esac
+
+	packages="tzdata man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+			ccache bzip2 pkgconf cracklib pam attr acl libcap shadow sed ed pcre grep loksh bash libtool gdbm db gperf \
+			expat perl libressl ca-certificates autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
+			coreutils diffutils mlocate findutils mandoc dialog less pigz libmnl libnftnl libnfnetlink \
+			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
+			util-linux e2fsprogs hwids eudev ubase sinit start-stop-daemon busybox dosfstools $LINUX tree time \
+			wireless_tools wpa_supplicant popt gptfdisk nettle lz4 zstd libarchive libssh2 c-ares libev nghttp2 curl kagami"
+
+	kagami -EWV -c "$BUILD"/target.config -r "$IMAGEFS" $packages
+
+	case $BARCH in
+		aarch64|armv7l|armv6l|armv5tel)
+			umount -l "$IMAGEFS/boot"
+			umount -l "$IMAGEFS"
+			;;
+		*)
+			umount -l "$IMAGEFS"
+			;;
+	esac
+
+	losetup -d $lodev
+}
+
+main_embedded() {
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	IMAGEFS="$BUILD/imagefs"
+
+	rm -rf "$IMAGEFS"
+	mkdir -p "$IMAGEFS"
+
+	IMG="$BUILD/ataraxialinux-sdcard-$BARCH.img"
+	dd if=/dev/zero of=$IMG bs=1 count=0 seek=8M
+	losetup -f $IMG
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+
+	parted -s $lodev mklabel msdos
+	parted -a optimal -s $lodev mkpart primary 0% 100%
+
+	lopart="${lodev}p1"
+	yes | mkfs.ext2 $lopart
+	mount -o loop $lopart "$IMAGEFS"
+
+	kagami -EWVd -c "$BUILD"/target.config -r "$IMAGEFS" busybox linux
+
+	umount -l "$IMAGEFS"
+	losetup -d $lodev
+}
+
+main() {
+	if [ "$EMBEDDED" = "1" ]; then
+		main_embedded
+	else
+		main_standard
+	fi
+}

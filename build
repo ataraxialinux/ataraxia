@@ -279,7 +279,7 @@ build_target() {
 				expat perl libressl ca-certificates autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
 				coreutils diffutils mlocate findutils mandoc dialog less pigz libmnl libnftnl libnfnetlink \
 				libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
-				util-linux hwids eudev ubase sinit start-stop-daemon busybox libaal reiser4progs dosfstools $LINUX tree time \
+				util-linux e2fsprogs hwids eudev ubase sinit start-stop-daemon busybox dosfstools $LINUX tree time \
 				wireless_tools wpa_supplicant popt gptfdisk nettle lz4 zstd libarchive libssh2 c-ares libev nghttp2 curl kagami"
 	fi
 
@@ -289,12 +289,10 @@ build_target() {
 		cmd="-EWVd"
 	fi
 
-	for pkgtarget in $packages; do
-		kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" $packages
-	done
+	kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" $packages
 }
 
-while getopts :s:a:j:g:e:l:EuA options; do
+while getopts :s:S:L:I:a:j:g:e:l:EuA options; do
 	case $options in
 		s)
 			mode=stage
@@ -305,6 +303,15 @@ while getopts :s:a:j:g:e:l:EuA options; do
 			;;
 		A)
 			mode=autobumb
+			;;
+		S)
+			mode=mkstage
+			;;
+		L)
+			mode=mklive
+			;;
+		I)
+			mode=mkimage
 			;;
 		a)
 			BARCH="$OPTARG"
@@ -386,6 +393,14 @@ elif [ "$mode" = "stage" ]; then
 			die "Stage number was not selected or is not supported"
 			;;
 	esac
+elif [ "$mode" = "mkstage" ] || [ "$mode" = "mkimage" ] || [ "$mode" = "mklive" ]; then
+		check_for_root
+		setup_architecture
+		setup_environment
+
+		. "$UTILS/$mode"
+
+		main
 fi
 
 exit 0

@@ -9,11 +9,9 @@ case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-reiser4ver=5.0.0
 release=1
 options=('~strip' 'bootstrap')
-source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
-	"https://sourceforge.net/projects/reiser4/files/reiser4-for-linux-5.x/reiser4-for-$reiser4ver.patch.gz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -256,7 +254,7 @@ generate_config() {
 		SQUASHFS_LZ4 SQUASHFS_LZO SQUASHFS_XATTR SQUASHFS_XZ SQUASHFS_ZLIB SQUASHFS_ZSTD \
 		OVERLAY_FS OVERLAY_FS_REDIRECT_DIR _OVERLAY_FS_INDEX OVERLAY_FS_REDIRECT_ALWAYS_FOLLOW \
 		OVERLAY_FS_NFS_EXPORT OVERLAY_FS_XINO_AUTO VERLAY_FS_METACOPY \
-		REISER4_FS EXT4_FS EXT4_USE_FOR_EXT2 EXT4_FS_POSIX_ACL EXT4_FS_SECURITY EXT4_USE_FOR_EXT2 \
+		EXT4_FS EXT4_USE_FOR_EXT2 EXT4_FS_POSIX_ACL EXT4_FS_SECURITY EXT4_USE_FOR_EXT2 \
 		FAT_FS VFAT_FS FAT_DEFAULT_UTF8 NTFS_FS NTFS_RW JBD2 FS_MBCACHE UBIFS_FS UBIFS_FS_LZO UBIFS_FS_ZLIB \
 		BTRFS_FS BTRFS_FS_POSIX_ACL BTRFS_FS_CHECK_INTEGRITY REISERFS_FS REISERFS_FS_XATTR JFS_FS JFS_SECURITY \
 		XFS_FS XFS_QUOTA CRYPTO_LZ4 CRYPTO_LZ4HC F2FS_FS F2FS_FS_XATTR F2FS_FS_POSIX_ACL F2FS_FS_SECURITY F2FS_STAT_FS F2FS_CHECK_FS ISO9660_FS JOLIET ZISOFS \
@@ -930,12 +928,8 @@ build() {
 			exit 1
 	esac
 
-	cd "$SRC"
-	gunzip reiser4-for-$reiser4ver.patch.gz
-
 	cd $name-$version
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
-	#patch -Np1 -i "$SRC"/reiser4-for-$reiser4ver.patch
 
 	unset LDFLAGS
 	make mrproper

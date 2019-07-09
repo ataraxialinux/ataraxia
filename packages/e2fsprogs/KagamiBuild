@@ -1,0 +1,37 @@
+# Description: Ext2/3/4 filesystem utilities
+# URL:         http://e2fsprogs.sourceforge.net
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-linux
+
+name=e2fsprogs
+version=1.45.2
+release=1
+options=('bootstrap')
+backup=('etc/mke2fs.conf')
+source=("https://sourceforge.net/projects/e2fsprogs/files/e2fsprogs/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i '/init\.d/s|^|#|' misc/Makefile.in
+
+	for i in misc/fsck.c misc/mke2fs.c e2fsck/unix.c; do
+		sed -i 's@sbin@bin@g' $i
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-root-prefix="" \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--enable-elf-shlibs \
+		--disable-fsck \
+		--disable-libblkid \
+		--disable-libuuid \
+		--disable-uuidd
+	make
+	make DESTDIR="$PKG" install install-libs
+
+	sed -i -e 's/^AWK=.*/AWK=awk/' "$PKG"/usr/bin/compile_et
+	sed -i -e 's#^SS_DIR=.*#SS_DIR="/share/ss"#' "$PKG"/usr/bin/mk_cmds
+	sed -i -e 's#^ET_DIR=.*#ET_DIR="/share/et"#' "$PKG"/usr/bin/compile_et
+}
