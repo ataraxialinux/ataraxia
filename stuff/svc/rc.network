@@ -3,9 +3,13 @@
  . /etc/rc.conf
 
 if [ "$nettype" = "wireless" ]; then
-	interface="{interface:wlan0}"
+	if [ -z "$interface" ]; then
+		interface="wlan0"
+	fi
 else
-	interface="{interface:eth0}"
+	if [ -z "$interface" ]; then
+		interface="eth0"
+	fi
 fi
 
 case $1 in
@@ -17,11 +21,11 @@ case $1 in
 			ip route add default via ${gateway}
 		elif [ "$nettype" = "dhcp" ]; then
 			ip link set ${interface} up
-			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${interface}
+			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec /usr/bin/udhcpc -- -i ${interface}
 		elif [ "$nettype" = "wireless" ]; then
 			ip link set ${interface} up
-			start-stop-daemon --start --quiet --pidfile /run/wireless.pid --exec wpa_supplicant -- -B -i ${interface} -c /etc/wpa_supplicant/wpa_supplicant.conf
-			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec udhcpc -- -i ${interface}
+			start-stop-daemon --start --quiet --pidfile /run/wireless.pid --exec /usr/bin/wpa_supplicant -- -B -i ${interface} -c /etc/wpa_supplicant/wpa_supplicant.conf
+			start-stop-daemon --start --quiet --pidfile /run/dhcp.pid --exec /usr/bin/udhcpc -- -i ${interface}
 		fi
 		;;
 	stop)

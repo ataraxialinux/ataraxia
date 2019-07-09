@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # System shutdown script
 #
@@ -15,10 +15,8 @@ done
 echo; stty onlcr
 
 if [ "$single" != "1" ]; then
-	for a in $(ls stuff/svc | sed -e 's,rc.,,g'); do
-		if [ "${a}_enable" = "yes" ]; then
-			/etc/rc.d/rc.${a} stop
-		fi
+	for myservices in ${SERVICES[@]}; do
+		/etc/rc.d/rc.${myservices} stop
 	done
 fi
 
@@ -36,9 +34,9 @@ fi
 
 udevadm control --exit
 
-killall5 -15
+killall5 -s TERM
 sleep 1
-killall5 -9
+killall5 -s KILL
 
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 
