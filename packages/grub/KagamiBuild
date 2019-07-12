@@ -1,14 +1,14 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gettext-tiny xz lvm2 python
+# Depends on:  gettext-tiny xz
 
 name=grub
 version=2.04
 release=1
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
-options=('locales')
+options=('locales' 'bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build_flavor() {
@@ -26,7 +26,6 @@ build_flavor() {
 		--datarootdir=/usr/share \
 		--sysconfdir=/etc \
 		--enable-boot-time \
-		--enable-device-mapper \
 		--disable-nls \
 		--disable-werror
 	make
@@ -48,12 +47,9 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/grub/0012-fix-gcc-no-pie-specs.patch
-	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i configure.ac
+	sed -i 's/-Wl,$grub_cv_target_cc_efiemu64_link_format/-Wl,$grub_cv_target_cc_efiemu64_link_format -no-pie/g' configure
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
-
-	./autogen.sh
 
 	for f in $FLAVOR; do
 		case "$f" in
