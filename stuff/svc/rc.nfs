@@ -1,0 +1,21 @@
+#!/usr/bin/bash
+
+PIPEFS=/var/lib/nfs/rpc_pipefs
+
+case $1 in
+	start)
+		mount -t rpc_pipefs rpc_pipefs $PIPEFS
+		sm-notify
+		/etc/rc.d/rc.rpc.idmapd start
+		/etc/rc.d/rc.rpc.statd start
+		;;
+	stop)
+		/etc/rc.d/rc.rpc.statd stop
+		/etc/rc.d/rc.rpc.idmapd stop
+		umount $PIPEFS
+		;;
+	restart|reload)
+		$0 stop
+		$0 start
+		;;
+esac
