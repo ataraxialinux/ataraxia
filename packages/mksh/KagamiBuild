@@ -5,10 +5,15 @@
 name=mksh
 version=R57
 release=4
+options=('bootstrap')
 source=("http://www.mirbsd.org/MirOS/dist/mir/mksh/$name-$version.tgz")
 
 build() {
+	export LDFLAGS="-static"
+
 	cd "$SRC"/$name
 	sh Build.sh -r
 	install -D -m 755 mksh "$PKG"/usr/bin/mksh
+
+	ln -sf mksh "$PKG"/usr/bin/sh
 }
