@@ -1,0 +1,98 @@
+# Description: A widely used XML scheme for writing documentation and help
+# URL:         https://www.oasis-open.org/docbook/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxml2
+
+name=docbook-xml
+version=4.5
+vers=(4.{2..5})
+release=1
+source=("http://distfiles.gentoo.org/distfiles/docbkx412.zip")
+noextract=("docbkx412.zip")
+
+for ver in ${vers[@]}; do
+	source+=("http://distfiles.gentoo.org/distfiles/docbook-xml-$ver.zip")
+	noextract+=("docbook-xml-$ver.zip")
+done
+
+build() {
+	cd "$SRC"
+
+	local ver xml
+
+	mkdir -p "$PKG"/etc/xml
+	xmlcatalog --noout --create "$PKG"/etc/xml/docbook-xml
+
+	mkdir "$SRC"/docbook-xml-4.1.2
+	bsdtar -C "$SRC"/docbook-xml-4.1.2 -xf "$SRCDEST"/docbkx412.zip
+
+	for ver in ${vers[@]}; do
+		mkdir "$SRC"/docbook-xml-$ver
+		bsdtar -C "$SRC"/docbook-xml-$ver -xf "$SRCDEST"/docbook-xml-$ver.zip
+	done
+
+	for ver in 4.1.2 ${vers[@]}; do
+		pushd docbook-xml-$ver
+			mkdir -p "$PKG"/usr/share/xml/docbook/xml-dtd-$ver
+			cp -dr docbook.cat *.dtd ent/ *.mod "$PKG"/usr/share/xml/docbook/xml-dtd-$ver
+		popd
+
+		xml=
+		case $ver in
+			4.1.2) xml=' XML' ;;&
+			*)
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//DTD DocBook XML V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/docbookx.dtd" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//DTD DocBook$xml CALS Table Model V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/calstblx.dtd" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//DTD XML Exchange Table Model 19990315//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/soextblx.dtd" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//ELEMENTS DocBook$xml Information Pool V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/dbpoolx.mod" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//ELEMENTS DocBook$xml Document Hierarchy V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/dbhierx.mod" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//ENTITIES DocBook$xml Additional General Entities V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/dbgenent.mod" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//ENTITIES DocBook$xml Notations V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/dbnotnx.mod" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//ENTITIES DocBook$xml Character Entities V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/dbcentx.mod" \
+					"$PKG"/etc/xml/docbook-xml
+				;;&
+			4.[45])
+				xmlcatalog --noout --add "public" \
+					"-//OASIS//ELEMENTS DocBook XML HTML Tables V$ver//EN" \
+					"http://www.oasis-open.org/docbook/xml/$ver/htmltblx.mod" \
+					"$PKG"/etc/xml/docbook-xml
+				;;&
+			*)
+				xmlcatalog --noout --add "rewriteSystem" \
+					"http://www.oasis-open.org/docbook/xml/$ver" \
+					"/usr/share/xml/docbook/xml-dtd-$ver" \
+					"$PKG"/etc/xml/docbook-xml
+				xmlcatalog --noout --add "rewriteURI" \
+					"http://www.oasis-open.org/docbook/xml/$ver" \
+					"/usr/share/xml/docbook/xml-dtd-$ver" \
+					"$PKG"/etc/xml/docbook-xml
+				;;&
+		esac
+	done
+
+	find "$PKG" -type f -exec chmod -c a-x {} +
+	chmod -Rc u=rwX,go=rX "$PKG"
+}
