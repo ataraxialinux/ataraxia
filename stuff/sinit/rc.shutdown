@@ -16,7 +16,9 @@ echo; stty onlcr
 
 if [ "$single" != "1" ]; then
 	for myservices in ${services[@]}; do
-		/etc/rc.d/rc.${myservices} stop
+		if [ -f "/run/${myservices}.pid" ]; then
+			/etc/rc.d/rc.${myservices} stop
+		fi
 	done
 fi
 
