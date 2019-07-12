@@ -1,0 +1,27 @@
+# Description: Reiserfs utilities
+# URL:         https://www.kernel.org/pub/linux/kernel/people/jeffm/reiserfsprogs/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  e2fsprogs musl-obstack
+
+name=reiserfsprogs
+version=3.6.27
+release=1
+options=('bootstrap')
+source=("https://www.kernel.org/pub/linux/kernel/people/jeffm/reiserfsprogs/v$version/$name-$version.tar.xz")
+
+build() {
+	export LDFLAGS="-lobstack"
+
+	cd "$SRC"/$name-$version
+	patch -p0 -i "$STUFF"/reiserfsprogs/musl-__compar_fn_t.patch
+	patch -p0 -i "$STUFF"/reiserfsprogs/musl-loff_t.patch
+	patch -p0 -i "$STUFF"/reiserfsprogs/musl-long_long_min_max.patch
+	patch -p0 -i "$STUFF"/reiserfsprogs/musl-prints.patch
+
+	autoreconf -i
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}
