@@ -14,7 +14,6 @@ fi
 
 case $1 in
 	start)
-		ip link set lo up
 		if [ "$nettype" = "static" ]; then
 			ip addr add ${address}/${mask} dev ${interface} broadcast +
 			ip link set ${interface} up
@@ -41,7 +40,6 @@ case $1 in
 			start-stop-daemon --stop --quiet --oknodo --pidfile /run/dhcp.pid
 			ip link set ${interface} down
 		fi
-		ip link set lo down
 		;;
 	restart|reload)
 		$0 stop
