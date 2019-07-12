@@ -1,14 +1,14 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gettext-tiny xz
+# Depends on:  gettext-tiny xz python
 
 name=grub
 version=2.04
 release=1
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
-options=('locales' 'bootstrap')
+options=('locales')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build_flavor() {
@@ -59,5 +59,5 @@ build() {
 	done
 
 	install -D -m0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
-	mkdir -p "$PKG"/usr/share/locale
+	rm -rf "$PKG"/usr/share/locale/*
 }
