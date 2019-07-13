@@ -6,20 +6,22 @@
  . /etc/rc.conf
 
 single="0"
+nonetwork="0"
 for arg in $(cat /proc/cmdline);do
 	case "$arg" in
-		single=*)     single="${arg#*=}" ;;
+		single=*)        single="${arg#*=}" ;;
+		nonetwork=*)     nonetwork="${arg#*=}" ;;
 	esac
 done
 
 echo; stty onlcr
 
-if [ "$single" != "1" ]; then
-	for myservices in ${services[@]}; do
-		if [ -f "/run/${myservices}.pid" ]; then
-			/etc/rc.d/rc.${myservices} stop
-		fi
-	done
+sv down /var/service/*
+
+if [ "$nonetwork" != "1" ]; then
+	if [ ! -x "/etc/services/networkmanager/run" ]; then
+		/etc/rc.d/rc.network stop
+	fi
 fi
 
 ip link set lo down
