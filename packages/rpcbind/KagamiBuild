@@ -10,6 +10,8 @@ backup=('etc/conf.d/rpcbind')
 source=("https://downloads.sourceforge.net/sourceforge/$name/$name-$version.tar.bz2")
 
 build() {
+	export CFLAGS="-I$STUFF/include $CFLAGS"
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/rpcbind/cve.patch
 	sed -i "/servname/s:rpcbind:sunrpc:" src/rpcbind.c
