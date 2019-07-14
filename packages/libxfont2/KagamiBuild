@@ -1,0 +1,19 @@
+# Description: X11 font rasterisation library
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  freetype util-macros xorgproto xtrans libfontenc
+
+name=libxfont2
+version=2.0.3
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/$(echo $name | sed -e 's,libx,libX,g')-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$(echo $name | sed -e 's,libx,libX,g')-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-devel-docs
+	make
+	make DESTDIR="$PKG" install
+}
