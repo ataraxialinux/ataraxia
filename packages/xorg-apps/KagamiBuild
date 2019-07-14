@@ -65,6 +65,15 @@ build() {
 		xver=ver$i
 		xversion=${!xver}
 		pushd "$SRC"/$xname-$xversion
+			msg "Building $xname-$xversion"
+			for a in $(find . -name config.sub); do
+				cp "$STUFF"/config.sub $a
+			done
+
+			for a in $(find . -name config.guess); do
+				cp "$STUFF"/config.guess $a
+			done
+
 			case $xname in
 				sessreg)
 					patch -Np1 -i "$STUFF"/sessreg/missing_path_wtmpx.patch
