@@ -1,7 +1,4 @@
-#!/usr/bin/bash
-
-NAME="sshd"
-PIDFILE="/run/$NAME.pid"
+#!/bin/sh
 
 create_keys() {
 	if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
@@ -18,16 +15,6 @@ create_keys() {
 	fi
 }
 
-case $1 in
-	start)
-		create_keys
-		start-stop-daemon --start --quiet --pidfile $PIDFILE --exec /usr/bin/$NAME
-		;;
-	stop)
-		start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
-		;;
-	restart|reload)
-		$0 stop
-		$0 start
-		;;
-esac
+create_keys
+
+exec /usr/bin/sshd -De 2>&1
