@@ -1,0 +1,21 @@
+# Description: X cursor management library
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-macros libxfixes libxrender polar-cursor-theme
+
+name=libxcursor
+version=1.2.0
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/$(echo $name | sed -e 's,libx,libX,g')-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$(echo $name | sed -e 's,libx,libX,g')-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+
+	install -m755 -d "$PKG"/usr/share/icons/default
+	install -m644 "$STUFF"/libxcursor/index.theme "$PKG"/usr/share/icons/default/
+}
