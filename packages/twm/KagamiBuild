@@ -1,0 +1,19 @@
+# Description: Tab Window Manager for the X Window System
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-macros libxmu
+
+name=twm
+version=1.0.10
+release=1
+options=('~emptydirs')
+backup=('usr/share/X11/twm/system.twmrc')
+source=("https://xorg.freedesktop.org/releases/individual/app/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
