@@ -1,0 +1,48 @@
+# Description: Xorg X server
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson eudev libressl nettle pixman libepoxy wayland-protocols xkeyboard-config font-util libdmx libxaw libxcomposite libxcursor libxfont2 libxft libxinerama libxkbfile libxrandr libxres libxtst libxxf86dga xcb-util-keysyms xcb-util-image xcb-util-renderutil xcb-util-wm
+
+name=xorg-server
+version=1.20.5
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/xserver/$name-$version.tar.bz2")
+
+build() {
+	export CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t"
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/xorg-server/fix-musl-arm.patch
+
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddmx=true \
+		-Dglamor=true \
+		-Dhal=false \
+		-Dipv6=true \
+		-Dlinux_acpi=true \
+		-Dos_vendor="Ataraxia Linux" \
+		-Dsuid_wrapper=true \
+		-Dsystemd_logind=false \
+		-Dudev=true \
+		-Dxcsecurity=true \
+		-Dxephyr=true \
+		-Dxkb_dir=/usr/share/X11/xkb \
+		-Dxkb_output_dir=/var/lib/xkb \
+		-Dxnest=true \
+		-Dxorg=true \
+		-Dxvfb=true \
+		-Dxwayland_eglstream=true \
+		-Dxwayland=true
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	chmod u+s "$PKG"/usr/bin/Xorg
+
+	rm -f "$PKG"/usr/share/X11/xorg.conf.d/10-evdev.conf
+
+	install -m755 -d "$PKG"/var/lib/xkb
+}
