@@ -60,7 +60,12 @@ EOF
 	chmod u+w,go+r "$PKG"/usr/bin/mount.nfs
 	chown nobody "$PKG"/var/lib/nfs
 
-	for rc in nfs nfsclient nfsserver rpc.idmapd rpc.statd rpc.mountd rpc.nfsd nfsdcld; do
-		install -Dm775 "$STUFF"/svc/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
+	for svc in nfs; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/svc/$svc-finish "$PKG"/etc/service/$svc/finish
+	done
+
+	for svc in rpc.blkmapd rpc.gssd rpc.idmapd rpc.statd rpc.svcgssd; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
 	done
 }

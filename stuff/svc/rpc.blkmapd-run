@@ -1,0 +1,7 @@
+#!/bin/sh
+sv check rpcbind >/dev/null || exit 1
+if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
+	mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || exit 1
+fi
+modprobe blocklayoutdriver || exit 1
+exec blkmapd -f
