@@ -27,8 +27,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for rc in dbus; do
-		install -Dm775 "$STUFF"/svc/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
+	for svc in dbus; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
 	done
 
 	chown root:messagebus "$PKG"/usr/lib/dbus/dbus-daemon-launch-helper
