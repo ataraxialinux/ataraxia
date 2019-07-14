@@ -1,0 +1,34 @@
+# Description: A simple virtual terminal emulator for X
+# URL:         http://st.suckless.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses libxext libxft
+
+name=st
+version=0.8.2
+release=1
+source=("http://dl.suckless.org/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i '/tic /d' Makefile
+	if [ -f $STUFF/st/config.h ]; then
+		cp $STUFF/st/config.h config.h
+	else
+		cp $STUFF/st/config.def.h config.h
+	fi
+	make CC="gcc" X11INC=/usr/include/X11 X11LIB=/usr/lib
+	make PREFIX=/usr DESTDIR="$PKG" TERMINFO="$PKG"/usr/share/terminfo install
+
+	ln -sf st "$PKG"/usr/bin/xterm
+
+	cat > "$pkgdir"/usr/share/applications/xterm.desktop <<-EOF
+		[Desktop Entry]
+		Name=xterm
+		Comment=st is a simple virtual terminal emulator for X which sucks less
+		Exec=st
+		Terminal=false
+		Type=Application
+		Icon=gnome-xterm
+		Categories=System;TerminalEmulator;
+	EOF
+}
