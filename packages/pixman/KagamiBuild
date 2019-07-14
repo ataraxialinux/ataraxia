@@ -1,0 +1,27 @@
+# Description: The pixel-manipulation library for X and cairo
+# URL:         https://cgit.freedesktop.org/pixman/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson
+
+name=pixman
+version=0.38.4
+release=1
+source=("https://www.cairographics.org/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version \
+		-Darm-simd=disabled \
+		-Dgtk=disabled \
+		-Diwmmxt=disabled \
+		-Dloongson-mmi=disabled \
+		-Dmips-dspr2=disabled \
+		-Dneon=disabled \
+		-Dopenmp=disabled \
+		-Dvmx=disabled
+	ninja
+	DESTDIR="$PKG" ninja install
+}
