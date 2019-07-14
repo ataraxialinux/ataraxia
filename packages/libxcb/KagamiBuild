@@ -1,0 +1,20 @@
+# Description: X11 client-side library
+# URL:         https://xcb.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-macros xcb-proto libxau libxdmcp
+
+name=libxcb
+version=1.13.1
+release=1
+source=("https://xcb.freedesktop.org/dist/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-doxygen \
+		--enable-xinput \
+		--enable-xkb
+	make -j1
+	make DESTDIR="$PKG" install
+}
