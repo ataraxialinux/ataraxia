@@ -53,7 +53,8 @@ source=()
 
 for i in $apps; do
 	xname=$i
-	xversion=$ver${i}
+	xver=ver$i
+	xversion=${!xver}
 	source="$source https://www.x.org/pub/individual/app/$xname-$xversion.tar.bz2"
 done
 
@@ -62,7 +63,8 @@ build() {
 
 	for i in $apps; do
 		xname=$i
-		xversion=$ver${i}
+		xver=ver$i
+		xversion=${!xver}
 		pushd "$SRC"/$name-$xversion
 			case $xname in
 				sessreg)
@@ -78,3 +80,5 @@ build() {
 		popd
 	done
 }
+
+
