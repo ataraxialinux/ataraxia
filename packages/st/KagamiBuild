@@ -11,10 +11,10 @@ source=("http://dl.suckless.org/$name/$name-$version.tar.gz")
 build() {
 	cd "$SRC"/$name-$version
 	sed -i '/tic /d' Makefile
-	if [ -f $STUFF/st/config.h ]; then
+	if [ -f "$STUFF"/st/config.h ]; then
 		cp "$STUFF"/st/config.h config.h
 	else
-		cp "$STUFF"/st/config.def.h config.h
+		cp "$STUFF"/st/config.h.def config.h
 	fi
 	make CC="gcc" X11INC=/usr/include/X11 X11LIB=/usr/lib
 	make PREFIX=/usr DESTDIR="$PKG" TERMINFO="$PKG"/usr/share/terminfo install
