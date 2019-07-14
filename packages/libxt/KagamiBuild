@@ -1,0 +1,18 @@
+# Description: X11 toolkit intrinsics library
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorgproto libsm libx11
+
+name=libxt
+version=1.2.0
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/$(echo $name | sed -e 's,libx,libX,g')-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$(echo $name | sed -e 's,libx,libX,g')-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr  \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,22 @@
+# Description: Nvidia VDPAU library
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorgproto libxext
+
+name=libvdpau
+version=1.2
+release=1
+backup=('etc/vdpau_wrapper.cfg')
+source=("https://gitlab.freedesktop.org/vdpau/libvdpau/-/archive/$name-$version/$name-$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$name-$version
+	NCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

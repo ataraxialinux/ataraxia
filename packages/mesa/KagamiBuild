@@ -1,0 +1,81 @@
+# Description: An open-source implementation of the OpenGL specification
+# URL:         https://www.mesa3d.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libelf llvm python-mako xorgproto wayland-protocols libx11 libxdamage libxrandr libxshmfence libxvmc libxxf86vm libdrm libglvnd libva libvdpau lm_sensors
+
+name=mesa
+version=19.1.2
+release=1
+source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
+
+build() {
+	case $BARCH in
+		x86_64|i586)
+			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv"
+			dri="i915,i965,r100,r200,nouveau"
+			vulkan="intel,amd"
+			opts="-Ddri3=true"
+			;;
+		ppc64le|ppc64|ppc|riscv64|riscv32)
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv"
+			dri="r100,r200,nouveau"
+			vulkan="amd"
+			opts="-Ddri3=true"
+			;;
+		aarch64)
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno"
+			dri="r100,r200,nouveau"
+			vulkan="amd"
+			opts="-Ddri3=true"
+			;;
+		armv7l|armv6l|armv5tel)
+			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno"
+			dri="nouveau"
+			vulkan=""
+			opts=""
+			;;
+		*)
+			gallium="swrast,virgl"
+			dri=""
+			vulkan=""
+			opts=""
+			;;
+	esac
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/mesa/glx-tls.patch
+	patch -Np1 -i "$STUFF"/mesa/includes.patch
+
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version $opts \
+		-Db_lto=false \
+		-Ddri-drivers="$dri" \
+		-Degl=true \
+		-Dgallium-drivers="$gallium" \
+		-Dgallium-nine=true \
+		-Dgallium-va=true \
+		-Dgallium-vdpau=true \
+		-Dgallium-xa=true \
+		-Dgallium-xvmc=true \
+		-Dgbm=true \
+		-Dgles1=true \
+		-Dgles2=true \
+		-Dglvnd=true \
+		-Dglx=dri \
+		-Dglx-use-tls=false \
+		-Dllvm=true \
+		-Dlmsensors=true \
+		-Dosmesa=gallium \
+		-Dplatforms=x11,drm,wayland,surfaceless \
+		-Dshared-glapi=true \
+		-Dshared-llvm=true \
+		-Dvalgrind=false \
+		-Dvalgrind=false \
+		-Dvulkan-drivers="$vulkan"
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	ln -sf libGLX_mesa.so.0 "$PKG"/usr/lib/libGLX_indirect.so.0
+}

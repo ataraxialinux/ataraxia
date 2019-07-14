@@ -1,0 +1,18 @@
+# Description: FreeType-based font drawing library for X
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  fontconfig libxrender
+
+name=libxft
+version=2.3.3
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/$(echo $name | sed -e 's,libx,libX,g')-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$(echo $name | sed -e 's,libx,libX,g')-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

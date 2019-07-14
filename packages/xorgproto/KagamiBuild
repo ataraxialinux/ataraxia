@@ -1,0 +1,19 @@
+# Description: Combined X.Org X11 Protocol headers
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson util-macros
+
+name=xorgproto
+version=2019.1
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/proto/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}

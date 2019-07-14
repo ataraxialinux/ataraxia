@@ -1,0 +1,26 @@
+# Description: A library for configuring and customizing font access
+# URL:         https://www.freedesktop.org/wiki/Software/fontconfig/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  expat freetype
+
+name=fontconfig
+version=2.13.1
+release=1
+source=("https://www.freedesktop.org/software/$name/release/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	rm -f src/fcobjshash.h
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-default-fonts=/usr/share/fonts \
+		--with-add-fonts=/usr/local/share/fonts \
+		--with-templatedir=/etc/fonts/conf.avail \
+		--with-xmldir=/etc/fonts \
+		--disable-nls
+	make
+	make DESTDIR="$PKG" install
+}

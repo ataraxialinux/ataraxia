@@ -1,0 +1,92 @@
+# Description: verx.org applicantions
+# URL:         https://verxorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam libpng xcb-util xbitmaps mesa libxfont2 libxkbfile libxcursor libxtst libxinerama libxaw
+
+name=xorg-apps
+apps="iceauth luit mkfontdir mkfontscale bdftopcf sessreg setxkbmap smproxy \
+	x11perf xauth xbacklight xcmsdb xcursorgen xdpyinfo xdriinfo xev xgamma xhost \
+	xinput xkbcomp xkbevd xkbutils xkill xlsatoms xlsclients xmessage xmodmap xpr \
+	xprop xrandr xrdb xrefresh xset xsetroot xvinfo xwd xwininfo xwud"
+version=20190715
+vericeauth=1.0.8
+verluit=1.1.1
+vermkfontdir=1.0.7
+vermkfontscale=1.2.1
+verbdftopcf=1.1
+versessreg=1.1.2
+versetxkbmap=1.3.1
+versmproxy=1.0.6
+verx11perf=1.6.1
+verxauth=1.1
+verxbacklight=1.2.2
+verxcmsdb=1.0.5
+verxcursorgen=1.0.7
+verxdpyinfo=1.3.2
+verxdriinfo=1.0.6
+verxev=1.2.3
+verxgamma=1.0.6
+verxhost=1.0.8
+verxinput=1.6.2
+verxkbcomp=1.4.2
+verxkbevd=1.1.4
+verxkbutils=1.0.4
+verxkill=1.0.5
+verxlsatoms=1.1.3
+verxlsclients=1.1.4
+verxmessage=1.0.5
+verxmodmap=1.0.10
+verxpr=1.0.5
+verxprop=1.2.4
+verxrandr=1.5.0
+verxrdb=1.2.0
+verxrefresh=1.0.6
+verxset=1.2.4
+verxsetroot=1.1.2
+verxvinfo=1.1.4
+verxwd=1.0.7
+verxwininfo=1.1.4
+verxwud=1.0.5
+release=1
+source=()
+
+for i in $apps; do
+	xname=$i
+	xver=ver$i
+	xversion=${!xver}
+	source="$source https://www.x.org/pub/individual/app/$xname-$xversion.tar.bz2"
+done
+
+build() {
+	export PATH="$PKG/usr/bin:$PATH"
+
+	for i in $apps; do
+		xname=$i
+		xver=ver$i
+		xversion=${!xver}
+		pushd "$SRC"/$xname-$xversion
+			msg "Building $xname-$xversion"
+			for a in $(find . -name config.sub); do
+				cp "$STUFF"/config.sub $a
+			done
+
+			for a in $(find . -name config.guess); do
+				cp "$STUFF"/config.guess $a
+			done
+
+			case $xname in
+				sessreg)
+					patch -Np1 -i "$STUFF"/sessreg/missing_path_wtmpx.patch
+					;;
+			esac
+			./configure $BUILDFLAGS \
+				--prefix=/usr \
+				--sysconfdir=/etc \
+				--localstatedir=/var
+			make
+			make DESTDIR="$PKG" install
+		popd
+	done
+}
+
+
