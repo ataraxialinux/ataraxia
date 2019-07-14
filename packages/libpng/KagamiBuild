@@ -1,0 +1,23 @@
+# Description: A collection of routines used to create PNG format graphics files
+# URL:         http://www.libpng.org/pub/png/libpng.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+
+name=libpng
+version=1.6.37
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.xz"
+	"https://downloads.sourceforge.net/sourceforge/libpng-apng/libpng-$version-apng.patch.gz")
+noextract=("libpng-$version-apng.patch.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	gzip -cd "$SRC"/libpng-$version-apng.patch.gz | patch -p1
+	patch -Np1 -i "$STUFF"/libpng/libpng-fix-arm-neon.patch
+
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
