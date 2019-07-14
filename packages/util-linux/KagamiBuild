@@ -9,7 +9,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=7
+release=8
 backup=('etc/pam.d/chfn'
 	'etc/pam.d/chsh'
 	'etc/pam.d/login'
@@ -57,6 +57,18 @@ build() {
 	install -m644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
 	install -m644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
 	install -m644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
+
+	mkdir -p "$PKG"/var/service
+
+	for svc in uuid; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+
+	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+
+		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
+	done
 
 	cd "$PKG"
 	mv usr/sbin/* usr/bin

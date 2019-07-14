@@ -15,9 +15,9 @@ build() {
 
 	rm -rf config.h
 cat > config.h << "EOF"
-static char *const rcinitcmd[] = { "/etc/rc.init", NULL };
-static char *const rcrebootcmd[] = { "/etc/rc.shutdown", "reboot", NULL };
-static char *const rcpoweroffcmd[] = { "/etc/rc.shutdown", "poweroff", NULL };
+static char *const rcinitcmd[] = { "/etc/rc.d/rc.init", NULL };
+static char *const rcrebootcmd[] = { "/etc/rc.d/rc.shutdown", "reboot", NULL };
+static char *const rcpoweroffcmd[] = { "/etc/rc.d/rc.shutdown", "poweroff", NULL };
 EOF
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
@@ -34,9 +34,10 @@ EOF
 	install -Dm755 "$STUFF"/sinit/reboot "$PKG"/usr/bin/reboot
 	ln -sf poweroff "$PKG"/usr/bin/shutdown
 
-	install -Dm755 "$STUFF"/sinit/rc.init "$PKG"/etc/rc.init
+	install -Dm755 "$STUFF"/sinit/rc.init "$PKG"/etc/rc.d/rc.init
+	install -Dm755 "$STUFF"/sinit/rc.network "$PKG"/etc/rc.d/rc.network
+	install -Dm755 "$STUFF"/sinit/rc.shutdown "$PKG"/etc/rc.d/rc.shutdown
 	install -Dm755 "$STUFF"/sinit/rc.local "$PKG"/etc/rc.local
-	install -Dm755 "$STUFF"/sinit/rc.shutdown "$PKG"/etc/rc.shutdown
 
 	install -Dm644 "$STUFF"/sinit/rc.conf "$PKG"/etc/rc.conf
 }
