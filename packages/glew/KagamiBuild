@@ -1,0 +1,18 @@
+# Description: The OpenGL Extension Wrangler Library
+# URL:         https://cgit.freedesktop.org/mesa/glu/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxmu libxi glu
+
+name=glew
+version=2.1.0
+release=1
+source=("http://downloads.sourceforge.net/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|lib64|lib|' config/Makefile.linux
+	sed -i '/^.PHONY: .*\.pc$/d' Makefile
+
+	make
+	make GLEW_DEST="$PKG/usr" install.all
+}
