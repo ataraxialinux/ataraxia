@@ -1,0 +1,20 @@
+# Description: X11 font encoding library
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib xorgproto
+
+name=libfontenc
+version=1.1.4
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/lib/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-encodingsdir=/usr/share/fonts/encodings
+	make
+	make DESTDIR="$PKG" install
+}
