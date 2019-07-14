@@ -5,7 +5,7 @@
 
 name=xorg-server
 version=1.20.5
-release=1
+release=2
 source=("https://xorg.freedesktop.org/releases/individual/xserver/$name-$version.tar.bz2")
 
 build() {
@@ -20,7 +20,10 @@ build() {
 
 	ataraxia-meson "$SRC"/$name-$version \
 		-Ddmx=true \
+		-Ddri2=true \
+		-Ddri3=true \
 		-Dglamor=true \
+		-Dglx=true \
 		-Dhal=false \
 		-Dipv6=true \
 		-Dlinux_acpi=true \
@@ -44,4 +47,6 @@ build() {
 	rm -f "$PKG"/usr/share/X11/xorg.conf.d/10-evdev.conf
 
 	install -m755 -d "$PKG"/var/lib/xkb
+
+	ln -sf Xorg "$PKG"/usr/bin/X
 }
