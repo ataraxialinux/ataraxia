@@ -1,0 +1,17 @@
+# Description: Mesa demos and tools incl. glxinfo + glxgears
+# URL:         http://mesa3d.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  glew glu
+
+name=mesa-demos
+version=8.4.0
+release=1
+source=("https://mesa.freedesktop.org/archive/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make -C src/xdemos/ glxinfo glxgears
+	install -Dm0755 -t "$PKG"/usr/bin src/xdemos/glx{gears,info}
+}
