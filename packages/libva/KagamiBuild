@@ -1,0 +1,20 @@
+# Description: Video Acceleration (VA) API for Linux
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libdrm libglvnd libx11 libxext libxfixes wayland
+
+name=libva
+version=2.5.0
+release=1
+backup=('etc/libva.conf')
+source=("https://github.com/intel/libva/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
