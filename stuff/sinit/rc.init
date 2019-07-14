@@ -96,15 +96,12 @@ hwclock --hctosys
 
 sysctl -qp /etc/sysctl.d/*.conf
 
-install -m0664 -o root -g utmp /dev/null /run/utmp
-if [ ! -e /var/log/wtmp ]; then
-	install -m0664 -o root -g utmp /dev/null /var/log/wtmp
-fi
-if [ ! -e /var/log/btmp ]; then
-	install -m0600 -o root -g utmp /dev/null /var/log/btmp
-fi
-install -dm1777 /tmp/.X11-unix /tmp/.ICE-unix
-rm -f /etc/nologin /forcefsck /forcequotacheck /fastboot
+: > /var/run/utmp
+rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+(cd /run && /usr/bin/find . -name "*.pid" -delete)
+(cd /run/lock && /usr/bin/find . ! -type d -delete)
+(cd /tmp && /usr/bin/find . ! -name . -delete)
+mkdir -m 1777 /tmp/.ICE-unix
 
 dmesg >/var/log/dmesg.log
 
