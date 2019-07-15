@@ -1,0 +1,21 @@
+# Description: Library to identify Wacom tablets and their features
+# URL:         https://github.com/linuxwacom/libwacom/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxml2 libgudev
+
+name=libwacom
+version=0.33
+release=1
+source=("https://github.com/linuxwacom/libwacom/releases/download/$name-$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	install -m755 -d "$PKG"/usr/lib/udev/rules.d
+	cd tools
+	./generate-udev-rules > "$PKG"/usr/lib/udev/rules.d/65-libwacom.rules
+}
