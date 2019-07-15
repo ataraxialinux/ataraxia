@@ -1,0 +1,17 @@
+# Description: Generic input driver for the X.Org server based on libinput
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server libinput
+
+name=xf86-input-libinput
+version=0.28.2
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/driver/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
