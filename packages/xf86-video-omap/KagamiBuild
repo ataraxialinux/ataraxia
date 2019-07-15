@@ -1,0 +1,19 @@
+# Description: X.org OMAP3+ video driver
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server
+
+name=xf86-video-omap
+version=0.4.5
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/driver/$name-$version.tar.bz2")
+
+build() {
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
