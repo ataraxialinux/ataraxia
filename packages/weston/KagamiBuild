@@ -10,6 +10,8 @@ source=("https://wayland.freedesktop.org/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/weston/no-error.h
+
 	mkdir -p build
 	cd build
 
@@ -18,6 +20,9 @@ build() {
 		--libexec=lib/weston \
 		-Dbackend-drm-screencast-vaapi=true \
 		-Dbackend-rdp=false \
+		-Dcolor-management-colord=false \
+		-Dcolor-management-lcms=false \
+		-Dimage-webp=false \
 		-Dlauncher-logind=false \
 		-Dremoting=false \
 		-Dsimple-dmabuf-drm=auto \

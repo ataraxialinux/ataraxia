@@ -1,0 +1,37 @@
+# Description: A replacement for sysvinit, and other init schemes, with service supervision
+# URL:         http://smarden.org/runit/
+# Maintainer:  nee-san, nagakamira at gmail dot com
+
+name=runit
+version=2.1.2
+release=1
+options=('bootstrap')
+source=("http://smarden.org/runit/runit-$version.tar.gz")
+
+build() {
+	mkdir -p "$PKG"/usr/bin
+
+	cd "$SRC"/admin/runit-$version/
+	patch -Np1 -i "$STUFF"/runit/cross.patch
+
+	cd src
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		echo "$CC $CFLAGS -static" > conf-cc
+		echo "$CC -s -static" > conf-ld
+		sed -i "s,strip,$STRIP,g" Makefile
+	else
+		echo "cc $CFLAGS -static" > conf-cc
+		echo "cc -s -static" > conf-ld
+	fi
+
+	make
+
+	for f in $(cat package/commands); do
+		install -Dm0755 $f "$PKG"/usr/bin/$f
+	done
+
+	# we're using sinit
+	rm -rf "$PKG"/usr/bin/runit-init
+
+	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/runit/start-stop-daemon.c -o "$PKG"/usr/bin/start-stop-daemon
+}

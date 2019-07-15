@@ -5,7 +5,7 @@
 
 name=mesa
 version=19.1.2
-release=3
+release=4
 source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
 
 build() {
@@ -77,4 +77,7 @@ build() {
 	DESTDIR="$PKG" ninja install
 
 	ln -sf libGLX_mesa.so.0 "$PKG"/usr/lib/libGLX_indirect.so.0
+
+	install -Dm644 "$STUFF"/mesa/glesv2.pc "$PKG"/usr/lib/pkgconfig
+	sed -i "s,uncom,$version,g" "$PKG"/usr/lib/pkgconfig/glesv2.pc
 }
