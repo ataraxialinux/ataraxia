@@ -1,0 +1,20 @@
+# Description: X.org DDX video driver
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server
+
+name=xf86-video-fbturbo
+version=f9a6ed78419f0b98cf2c3ce3cdd4c97fe9a46195
+release=1
+source=("https://github.com/ssvb/xf86-video-fbturbo/archive/$version.zip")
+
+build() {
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
