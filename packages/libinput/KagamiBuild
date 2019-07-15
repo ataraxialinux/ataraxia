@@ -1,0 +1,23 @@
+# Description: Input device management and event handling library
+# URL:         https://www.freedesktop.org/wiki/Software/libinput/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libevdev mtdev libwacom
+
+name=libinput
+version=1.13.4
+release=1
+source=("https://www.freedesktop.org/software/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddebug-gui=false \
+		-Ddocumentation=false \
+		-Dtests=false \
+		-Dudev-dir=/usr/lib/udev
+	ninja
+	DESTDIR="$PKG" ninja install
+}
