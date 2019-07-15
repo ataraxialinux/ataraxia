@@ -1,0 +1,22 @@
+# Description: JPEG image codec with accelerated baseline compression and decompression
+# URL:         https://libjpeg-turbo.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake nasm
+
+name=libjpeg-turbo
+version=2.0.2
+release=1
+source=("https://downloads.sourceforge.net/project/$name/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_JPEG8=1
+	make
+	make DESTDIR="$PKG" install
+}
