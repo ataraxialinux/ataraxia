@@ -1,0 +1,19 @@
+# Description: Keymap handling library for toolkits and window systems
+# URL:         https://xkbcommon.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson xkeyboard-config libxcb wayland-protocols
+
+name=libxkbcommon
+version=0.8.4
+release=1
+source=("https://xkbcommon.org/download/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
