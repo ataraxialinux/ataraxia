@@ -1,0 +1,20 @@
+# Description: X.org armsoc video driver
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server
+
+name=xf86-video-armsoc
+version=6b5bc2784b00fb4751f66c97761e377b0fc73799
+release=1
+source=("https://github.com/jakogut/xf86-video-armsoc/archive/$version.zip")
+
+build() {
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	NCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
