@@ -1,0 +1,44 @@
+From 65e1c65c690fe7751882fe348ca9917678951825 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 15 Jul 2019 20:10:13 +0900
+Subject: [PATCH] fixes and updates
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ kagami.in | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/kagami.in b/kagami.in
+index f06fbdd..778ea36 100755
+--- a/kagami.in
++++ b/kagami.in
+@@ -783,7 +783,7 @@ emerge_package() {
+ sysup() {
+ 	rm -rf /tmp/2update
+ 
+-	local EMERGE_SUCCESS="no"
++	EMERGE_SUCCESS="no"
+ 
+ 	if [ "$WORLDUP" = "1" ]; then
+ 		if [ ! -d "$ROOTDIR/$PACKAGES" ]; then
+@@ -943,14 +943,16 @@ while getopts IBERQCDxbpnXdfsHWawFVlPc:r:vh options; do
+ 			;;
+ 		a)
+ 			if [ "$kagami_mode" = "emerge_package" ]; then
+-				SYSUP=1
+-				WORLDUP=0
++				export SYSUP=1
++				export WORLDUP=0
+ 			fi
+ 			;;
+ 		w)
+ 			if [ "$kagami_mode" = "emerge_package" ]; then
+-				SYSUP=1
+-				WORLDUP=1
++				export SYSUP=1
++				export WORLDUP=1
++				export FORCE="yes"
++				export NEEDED="no"
+ 			fi
+ 			;;
+ 		l)
