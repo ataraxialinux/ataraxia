@@ -1,0 +1,22 @@
+# Description: 2D graphics library with support for multiple output devices
+# URL:         https://cairographics.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libpng pixman fontconfig glib libxext libxrender xcb-util
+
+name=cairo
+version=1.16.0
+release=1
+source=("https://www.cairographics.org/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-ps \
+		--enable-pdf \
+		--enable-tee \
+		--enable-xcb \
+		--disable-gtk-doc
+	make
+	make DESTDIR="$PKG" install
+}
