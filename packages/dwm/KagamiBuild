@@ -1,0 +1,23 @@
+# Description: A dynamic window manager for X
+# URL:         http://dwm.suckless.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  freetype libx11 libxft libxinerama st dmenu
+
+name=dwm
+version=6.2
+release=1
+source=("http://dl.suckless.org/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ -f "$STUFF"/dwm/config.h ]; then
+		cp "$STUFF"/dwm/config.h config.h
+	else
+		cp config.def.h config.h
+	fi
+	make X11INC=/usr/include/X11 X11LIB=/usr/lib/X11 FREETYPEINC=/usr/include/freetype2
+	make PREFIX=/usr DESTDIR=$PKG install
+
+	# Thanks AUR
+	install -m644 -D "$STUFF"/dwm/dwm.desktop "$PKG"/usr/share/xsessions/dwm.desktop
+}
