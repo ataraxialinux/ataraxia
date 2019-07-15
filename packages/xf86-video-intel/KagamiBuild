@@ -1,0 +1,24 @@
+# Description: X.org Intel i810/i830/i915/945G/G965+ video drivers
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server xcb-util
+
+name=xf86-video-intel
+version=60022507b80e3c123db2c88b6e0f0f1dee5d3a4f
+release=1
+source=("https://github.com/freedesktop/xorg-xf86-video-intel/archive/$version.zip")
+
+build() {
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	NOCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--with-default-dri=3 \
+		--enable-kms-only \
+		--enable-uxa
+	make
+	make DESTDIR="$PKG" install
+}
