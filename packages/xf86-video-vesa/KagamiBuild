@@ -1,0 +1,19 @@
+# Description: X.org vesa video driver
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server
+
+name=xf86-video-vesa
+version=2.4.0
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/driver/$name-$version.tar.bz2")
+
+build() {
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
