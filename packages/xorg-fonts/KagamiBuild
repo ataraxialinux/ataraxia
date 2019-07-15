@@ -1,0 +1,50 @@
+# Description: X.org fonts
+# URL:         https://verxorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  fontconfig encodings
+
+name=xorg-fonts
+fonts="font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 \
+	font-misc-ethiopic font-xfree86-type1 font-adobe-100dpi font-adobe-75dpi \
+	font-jis-misc font-daewoo-misc font-isas-misc"
+version=20190715
+verfont_alias=1.0.3
+verfont_adobe_utopia_type1=1.0.4
+verfont_bh_ttf=1.0.3
+verfont_bh_type1=1.0.3
+verfont_ibm_type1=1.0.3
+verfont_misc_ethiopic=1.0.3
+verfont_xfree86_type1=1.0.4
+verfont_adobe_100dpi=1.0.3
+verfont_adobe_75dpi=1.0.3
+verfont_jis_misc=1.0.3
+verfont_daewoo_misc=1.0.3
+verfont_isas_misc=1.0.3
+release=1
+source=()
+
+for i in $fonts; do
+	xname=$i
+	xver="$(echo $i | sed -e 's,-,_,g')"
+	xvertwo=ver$xver
+	xversion=${!xvertwo}
+	source="$source https://www.x.org/pub/individual/font/$xname-$xversion.tar.bz2"
+done
+
+build() {
+	for i in $fonts; do
+		xname=$i
+		xver="$(echo $i | sed -e 's,-,_,g')"
+		xvertwo=ver$xver
+		xversion=${!xvertwo}
+		pushd "$SRC"/$xname-$xversion
+			msg "Building $xname-$xversion"
+			./configure $BUILDFLAGS \
+				--prefix=/usr
+			make
+			make DESTDIR="$PKG" install
+		popd
+	done
+}
+
+
