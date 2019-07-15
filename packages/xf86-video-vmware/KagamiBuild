@@ -1,0 +1,22 @@
+# Description: X.org vmware video driver
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xorg-server
+
+name=xf86-video-vmware
+version=13.3.0
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/driver/$name-$version.tar.bz2")
+
+build() {
+	export LDFLAGS="-Wl,-z,lazy"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/f86-video-vmware/fix.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-vmwarectrl-client
+	make
+	make DESTDIR="$PKG" install
+}
