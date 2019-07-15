@@ -1,0 +1,17 @@
+# Description: Generic menu for X
+# URL:         https://tools.suckless.org/dmenu/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  freetype libxft libxinerama
+
+name=dmenu
+version=4.9
+release=1
+source=("http://dl.suckless.org/tools/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	echo "CFLAGS+=${CFLAGS}" >> config.mk
+	echo "LDFLAGS+=${LDFLAGS}" >> config.mk
+	make X11INC=/usr/include/X11 X11LIB=/usr/lib/X11 FREETYPEINC=/usr/include/freetype2
+	make PREFIX=/usr DESTDIR="$PKG" install
+}
