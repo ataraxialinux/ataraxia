@@ -1,0 +1,26 @@
+# Description: XML-RPC for C and C++
+# URL:         http://xmlrpc-c.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl
+
+name=xmlrpc-c
+version=1.43.08
+release=1
+options=('~emptydirs')
+source=("https://downloads.sourceforge.net/$name/$name-$version.tgz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -e "s;linux-gnu;linux-musl;g" -i config.mk
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--enable-cplusplus \
+		--disable-cgi-server \
+		--disable-libxml2-backend \
+		--disable-libwww-client \
+		--disable-wininet-client
+	make
+	make DESTDIR="$PKG" install
+}
