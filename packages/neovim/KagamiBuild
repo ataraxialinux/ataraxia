@@ -1,7 +1,7 @@
 # Description: Fork of Vim aiming to improve user experience, plugins, and GUIs
 # URL:         https://neovim.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja unzip libuv libtermkey libvterm msgpack luajit
+# Depends on:  gperf cmake ninja unzip libuv libtermkey libvterm msgpack luajit
 
 name=neovim
 version=0.3.8
@@ -15,6 +15,15 @@ build() {
 			die "Not supported on your architecture"
 			;;
 	esac
+
+	unset CC CXX
+
+	cd "$SRC"/$name-$version
+	mkdir .deps
+	cd .deps
+	cmake "$SRC"/$name-$version/third-party \
+		-Wno-dev -G Ninja
+	ninja
 
 	cd "$SRC"/$name-$version
 	mkdir build
