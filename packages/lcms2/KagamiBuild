@@ -1,0 +1,18 @@
+# Description: Small-footprint color management engine, version 2
+# URL:         http://www.littlecms.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libjpeg-turbo tiff
+
+name=lcms2
+version=2.9
+release=1
+source=("https://downloads.sourceforge.net/lcms/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-threads
+	make
+	make DESTDIR="$PKG" install
+}
