@@ -1,0 +1,24 @@
+# Description: An open source JPEG 2000 codec
+# URL:         https://github.com/uclouvain/openjpeg
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja zlib libpng lcms2
+
+name=openjpeg
+version=2.3.1
+release=1
+source=("https://github.com/uclouvain/openjpeg/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_DOC=OFF \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
