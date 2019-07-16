@@ -1,0 +1,55 @@
+From be9c60d75bd9594ee77d5803abb79ac5d56e623b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 16 Jul 2019 18:11:35 +0900
+Subject: [PATCH] fixes for remove_package
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ kagami.in | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/kagami.in b/kagami.in
+index f7b949f..01e74af 100755
+--- a/kagami.in
++++ b/kagami.in
+@@ -292,7 +292,7 @@ run_backup() {
+ 	if [ "$INST" = "yes" ]; then
+ 		backupfile="$TMPDIR/data/BACKUP"
+ 	else
+-		pkg="$1"
++		local pkg="$2"
+ 		backupfile="$ROOTDIR/$PACKAGES/$pkg/BACKUP"
+ 	fi
+ 
+@@ -692,14 +692,21 @@ remove_package() {
+ 
+ 	run_scripts pre-remove $pkg
+ 
+-	run_backup save $pkg
++	if [ -f "$ROOTDIR/$PACKAGES/$pkg/BACKUP" ]; then
++		run_backup save $pkg
++	fi
+ 
+ 	msgtwo "Removing files"
+ 	dirlist=`grep '/$' "$ROOTDIR/$PACKAGES/$pkg/CONTENTS"`
+ 	nondir=`grep -v '/$' "$ROOTDIR/$PACKAGES/$pkg/CONTENTS"`
+ 	list_uninstall "$ROOTDIR/$PACKAGES/$pkg/CONTENTS"
++	if [ $? -gt 1 ]; then
++		die -2 "Failed to remove package"
++	fi
+ 
+-	run_backup restore $pkg
++	if [ -f "$ROOTDIR/$PACKAGES/$pkg/BACKUP" ]; then
++		run_backup restore $pkg
++	fi
+ 
+ 	run_scripts post-remove $pkg
+ 
+@@ -807,6 +814,7 @@ sysup() {
+ 			echo "$pkgs" >> /tmp/2update
+ 		done
+ 	else
++		msg "Checking for updates"
+ 		for pkgs in $(ls "$ROOTDIR/$PACKAGES" | sort); do
+ 			myfolder="$(find_portdir $pkgs)"
+ 
