@@ -13,10 +13,21 @@ build() {
 	unset CC CXX
 
 	cd "$SRC"/$name-$version
-	make \
-		CMAKE_INSTALL_PREFIX="$PKG"/usr \
-		CMAKE_BUILD_TYPE=MinSizeRel
-	make install
+	mkdir .deps
+	cd .deps
+	cmake "$SRC"/$name-$version/third-party
+
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DENABLE_JEMALLOC=FALSE \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
 
 	install -Dm644 runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
 	install -Dm644 runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
