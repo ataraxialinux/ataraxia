@@ -1,0 +1,21 @@
+# Description: Library for manipulation of TIFF images
+# URL:         http://www.simplesystems.org/libtiff/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib xz zstd libjpeg-turbo
+
+name=tiff
+version=4.0.10
+release=1
+source=("https://download.osgeo.org/libtiff/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
