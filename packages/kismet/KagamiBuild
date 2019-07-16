@@ -1,0 +1,22 @@
+# Description: 802.11 layer2 wireless network detector, sniffer, and intrusion detection system
+# URL:         https://www.kismetwireless.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libcap pcre libpcap libmicrohttpd protobuf-c
+
+name=kismet
+version=2019-05-R2
+release=1
+backup=('etc/kismet.conf'
+	'etc/kismet_drone.conf')
+source=("https://www.kismetwireless.net/code/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-python-tools
+	make
+	make DESTDIR="$PKG" install
+}
