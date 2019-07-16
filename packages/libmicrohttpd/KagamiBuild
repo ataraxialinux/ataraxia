@@ -1,0 +1,23 @@
+# Description: A small C library that is supposed to make it easy to run an HTTP server as part of another application.
+# URL:         https://www.gnu.org/software/libmicrohttpd/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl gnutls
+
+name=libmicrohttpd
+version=0.9.65
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-pic \
+		--enable-curl \
+		--enable-https \
+		--enable-largefile \
+		--enable-messages \
+		--disable-examples
+	make
+	make DESTDIR="$PKG" install
+}
