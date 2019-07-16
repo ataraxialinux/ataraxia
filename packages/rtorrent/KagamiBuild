@@ -1,0 +1,21 @@
+# Description: Ncurses BitTorrent client based on libTorrent
+# URL:         http://rakshasa.github.io/rtorrent/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl libtorrent xmlrpc-c
+
+name=rtorrent
+version=0.9.7
+release=1
+source=("http://rtorrent.net/downloads/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-xmlrpc-c \
+		--enable-ipv6 \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
