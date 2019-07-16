@@ -1,0 +1,21 @@
+# Description: Share a single mouse and keyboard between multiple computers
+# URL:         https://symless.com/synergy/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja libxrender libxdmcp libxcb
+
+name=synergy
+version=1.10.2
+release=1
+source=("https://github.com/symless/synergy-core/archive/v$version-stable.tar.gz")
+
+build() {
+	cd "$SRC"/synergy-core-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/synergy-core-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
