@@ -1,0 +1,54 @@
+# Description: Validating, recursive, and caching DNS resolver
+# URL:         https://unbound.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:: python swig expat libevent libsodium
+
+name=unbound
+version=1.9.2
+release=1
+backup=('etc/unbound/unbound.conf')
+source=("https://unbound.net/downloads/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	PYTHON_VERSION=3 \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-conf-file=/etc/unbound/unbound.conf \
+		--with-pidfile=/run/unbound.pid \
+		--with-rootkey-file=/etc/trusted-key.key \
+		--with-libevent \
+		--with-libexpat \
+		--with-pthreads \
+		--with-ssl \
+		--enable-dnscrypt \
+		--enable-event-api \
+		--enable-pie \
+		--enable-relro-now \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/unbound/config "$PKG"/etc/unbound/unbound.conf
+
+	for svc in unbound; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+
+	export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PKG/usr/lib"
+	export PATH="$PATH:$PKG/usr/bin"
+
+	unbound-anchor -v -a root.key ||
+	unbound-anchor -v -a root.key
+
+	unbound-host -v -f root.key -t DNSKEY . |
+	sed 's/ (secure)//;t;d' |
+	sed 's/ has / IN /' |
+	sed 's/ record / /' \
+	> trusted-key.key
+
+	install -Dm644 trusted-key.key "$PKG"/etc/trusted-key.key
+}
