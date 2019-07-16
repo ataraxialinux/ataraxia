@@ -1,0 +1,19 @@
+# Description: A high quality MPEG Audio Layer III (MP3) encoder
+# URL:         http://lame.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  nasm ncurses
+
+name=lame
+version=3.100
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-nasm \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}
