@@ -1,0 +1,19 @@
+# Description: BitTorrent library with a focus on high performance and good code
+# URL:         https://rakshasa.github.io/rtorrent/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
+
+name=libtorrent
+version=0.13.7
+release=1
+source=("http://rtorrent.net/downloads/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
