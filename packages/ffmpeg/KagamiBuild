@@ -1,0 +1,58 @@
+# Description: Complete solution to record, convert and stream audio and video
+# URL:         https://ffmpeg.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib gmp bzip2 libressl xz yasm alsa-lib libva libvdpau sdl2 lame libass fdk-aac libogg libtheora libvorbis libvpx opus x264 x265 lcms2 openjpeg2 speex giflib libwebp libsoxr libmodplug aom fontconfig libdrm libx11 libxext libxv libxml2 libxcb fribidi
+
+name=ffmpeg
+version=4.1.4
+release=1
+source=("http://ffmpeg.org/releases/$name-$version.tar.xz")
+
+build() {
+	case $BARCH in
+		i586|armv7l|armv6l|armv5tel)
+			export BUILDFLAGS="--disable-asm"
+			;;
+	esac
+
+	cd "$SRC"/$name-$version
+	sed -i 's/-lflite"/-lflite -lasound"/' configure
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-avresample \
+		--enable-fontconfig \
+		--enable-gmp \
+		--enable-gpl \
+		--enable-ladspa \
+		--enable-libaom \
+		--enable-libass \
+		--enable-libdrm \
+		--enable-libfdk-aac \
+		--enable-libfreetype \
+		--enable-libfribidi \
+		--enable-libmodplug \
+		--enable-libmp3lame \
+		--enable-libopus \
+		--enable-libsoxr \
+		--enable-libspeex \
+		--enable-libtheora \
+		--enable-libvorbis \
+		--enable-libvpx \
+		--enable-libwebp \
+		--enable-libx264 \
+		--enable-libx265 \
+		--enable-libxcb \
+		--enable-libxml2 \
+		--enable-libxvid \
+		--enable-nonfree \
+		--enable-nvdec \
+		--enable-nvenc \
+		--enable-openssl \
+		--enable-shared \
+		--enable-version3 \
+		--disable-debug  \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}
