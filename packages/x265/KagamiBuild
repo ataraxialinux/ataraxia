@@ -1,0 +1,33 @@
+# Description: Open Source H265/HEVC video encoder
+# URL:         https://bitbucket.org/multicoreware/x265
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja nasm
+
+name=x265
+version=3.1.1
+release=1
+source=("https://bitbucket.org/multicoreware/${name}/downloads/${name}_${version}.tar.gz")
+
+build() {
+	case $BARCH in
+		i586)
+			export BUILDFLAGS="-DENABLE_ASSEMBLY=OFF"
+			;;
+		ppc64le)
+			export BUILDFLAGS="-DENABLE_ALTIVEC=OFF"
+			;;
+		ppc64|ppc)
+			export BUILDFLAGS="-DENABLE_ALTIVEC=OFF -DCPU_POWER8=OFF"
+			;;
+	esac
+
+	cd "$SRC"/${name}_${version}
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version $BUILDFLAGS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

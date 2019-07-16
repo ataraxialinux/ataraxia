@@ -1,0 +1,27 @@
+# Description: Open Source H264/AVC video encoder
+# URL:         https://www.videolan.org/developers/x264.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  nasm
+
+name=x264
+version=20190209-2245
+release=1
+source=("https://download.videolan.org/x264/snapshots/x264-snapshot-$version-stable.tar.bz2")
+
+build() {
+	cd "$SRC"/x264-snapshot-$version-stable
+	case $BARCH in
+		i586|armv7l|armv6l|armv5tel)
+			export BUILDFLAGS="--disable-asm"
+			;;
+	esac
+
+	./configure $BUILDFLAGS \
+		--host=$XTARGET \
+		--prefix=/usr \
+		--enable-pic \
+		--enable-shared \
+		--disable-cli
+	make
+	make DESTDIR="$PKG" install
+}
