@@ -1,0 +1,25 @@
+# Description: Monitors network traffic and bandwidth usage
+# URL:         http://www.roland-riegel.de/nload
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+
+name=nload
+version=0.7.4
+release=1
+source=("http://www.roland-riegel.de/nload/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
