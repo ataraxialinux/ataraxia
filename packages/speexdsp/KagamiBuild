@@ -1,0 +1,20 @@
+# Description: DSP library derived from Speex
+# URL:         https://www.speex.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=speexdsp
+version=1.2.0
+release=1
+source=("https://downloads.us.xiph.org/releases/speex/$name-$version.tar.gz")
+
+build() {
+	[ "$BARCH" = "aarch64" ] && BUILDFLAGS="$BUILDFLAGS --disable-neon"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+	make
+	make DESTDIR="$PKG" install
+}
