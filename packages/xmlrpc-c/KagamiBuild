@@ -11,7 +11,13 @@ source=("https://downloads.sourceforge.net/$name/$name-$version.tgz")
 
 build() {
 	cd "$SRC"/$name-$version
-	sed -e "s;linux-gnu;linux-musl;g" -i config.mk
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
