@@ -1,0 +1,32 @@
+# Description: VP8 and VP9 codec
+# URL:         https://www.webmproject.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  yasm
+
+name=libvpx
+version=1.8.0
+release=1
+source=("https://github.com/webmproject/libvpx/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libvpx/fix-arm-float-abi.patch
+
+	bash configure \
+		--prefix=/usr \
+		--as=yasm \
+		--enable-pic \
+		--enable-postproc \
+		--enable-runtime-cpu-detect \
+		--enable-shared \
+		--enable-vp8 \
+		--enable-vp9 \
+		--enable-vp9-highbitdepth \
+		--enable-vp9-temporal-denoising \
+		--disable-install-bins \
+		--disable-install-docs \
+		--disable-install-srcs \
+		--disable-tools
+	make
+	make DESTDIR="$PKG" install
+}
