@@ -32,6 +32,8 @@ build() {
 		mkdir build-$d
 	done
 
+
+	cd "$SRC"/${name}_${version}/build-12
 	cmake "$SRC"/${name}_${version}/source \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DHIGH_BIT_DEPTH=TRUE \
@@ -42,8 +44,7 @@ build() {
 		$FLAGS -Wno-dev -G Ninja
 	ninja
 
-	cd "$SRC"/${name}_${version}//build-10
-
+	cd "$SRC"/${name}_${version}/build-10
 	cmake "$SRC"/${name}_${version}/source \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DHIGH_BIT_DEPTH=TRUE \
@@ -54,9 +55,8 @@ build() {
 	ninja
 
 	cd "$SRC"/${name}_${version}/build-8
-
-	ln -s ../build-10/libx265.a libx265_main10.a
-	ln -s ../build-12/libx265.a libx265_main12.a
+	ln -sf "$SRC"/${name}_${version}/build-10/libx265.a libx265_main10.a
+	ln -sf "$SRC"/${name}_${version}/build-12/libx265.a libx265_main12.a
 
 	cmake "$SRC"/${name}_${version}/source \
 		-DCMAKE_INSTALL_PREFIX=/usr \
