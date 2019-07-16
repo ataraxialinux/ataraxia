@@ -1,0 +1,20 @@
+# Description: Just-in-time compiler and drop-in replacement for Lua 5.1
+# URL:         http://luajit.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=luajit
+version=2.0.5
+release=1
+source=("https://luajit.org/download/LuaJIT-$version.tar.gz")
+
+build() {
+	case "$BARCH" in
+		riscv32|riscv64|s390x)
+			die "Not supported on your architecture"
+			;;
+	esac
+
+	cd "$SRC"/LuaJIT-$version
+	make PREFIX=/usr
+	make PREFIX=/usr DESTDIR="$PKG" install
+}

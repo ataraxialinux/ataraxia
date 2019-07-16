@@ -1,7 +1,7 @@
 # Description: Fork of Vim aiming to improve user experience, plugins, and GUIs
 # URL:         https://neovim.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja unzip libtermkey libvterm
+# Depends on:  cmake ninja unzip libuv libtermkey libvterm msgpack luajit
 
 name=neovim
 version=0.3.8
@@ -10,14 +10,11 @@ backup=('etc/xdg/nvim/sysinit.vim')
 source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
 build() {
-	unset CC CXX
-
-	cd "$SRC"/$name-$version
-	mkdir .deps
-	cd .deps
-	cmake "$SRC"/$name-$version/third-party \
-		-Wno-dev -G Ninja
-	ninja
+	case "$BARCH" in
+		riscv32|riscv64|s390x)
+			die "Not supported on your architecture"
+			;;
+	esac
 
 	cd "$SRC"/$name-$version
 	mkdir build
@@ -26,7 +23,7 @@ build() {
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DENABLE_JEMALLOC=FALSE \
+		-DENABLE_JEMALLOC=OFF \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install

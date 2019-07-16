@@ -1,0 +1,25 @@
+# Description: An efficient object serialization library
+# URL:         https://msgpack.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
+
+name=msgpack
+version=3.2.0
+release=1
+source=("https://github.com/msgpack/msgpack-c/archive/cpp-$version.tar.gz")
+
+build() {
+	cd "$SRC"/msgpack-c-cpp-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/msgpack-c-cpp-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=ON \
+		-DMSGPACK_CXX11=ON \
+		-DMSGPACK_BUILD_EXAMPLES=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
