@@ -1,0 +1,21 @@
+# Description: WebP library and conversion tools
+# URL:         https://developers.google.com/speed/webp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  giflib libjpeg-turbo libpng tiff
+
+name=libwebp
+version=1.0.3
+release=1
+source=("https://storage.googleapis.com/downloads.webmproject.org/releases/webp/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	NOCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-libwebpdecoder \
+		--enable-libwebpdemux \
+		--enable-libwebpmux
+	make
+	make DESTDIR="$PKG" install
+}
