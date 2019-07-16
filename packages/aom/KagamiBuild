@@ -1,0 +1,22 @@
+# Description: Alliance for Open Media video codec
+# URL:         https://aomedia.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
+
+name=aom
+version=d14c5bb4f336ef1842046089849dee4a301fbbf0
+release=1
+source=("https://aomedia.googlesource.com/aom/+archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DENABLE_TESTS=0 \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
