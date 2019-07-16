@@ -1,0 +1,32 @@
+# Description: A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard
+# URL:         https://www.libsdl.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib
+
+name=sdl
+version=1.2.15
+release=1
+source=("http://www.libsdl.org/release/SDL-$version.tar.gz")
+
+build() {
+	cd "$SRC"/SDL-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-alsa \
+		--enable-shared \
+		--enable-static \
+		--disable-arts \
+		--disable-esd \
+		--disable-pulseaudio-shared \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}

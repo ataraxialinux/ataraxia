@@ -1,0 +1,30 @@
+# Description: A library for portable low-level access to a video framebuffer, audio output, mouse, and keyboard (Version 2)
+# URL:         https://www.libsdl.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib
+
+name=sdl2
+version=2.0.9
+release=1
+source=("http://www.libsdl.org/release/SDL2-$version.tar.gz")
+
+build() {
+	case $BARCH in
+		ppc64le|ppc64|ppc)
+			export BUILDFLAGS="$BUILDFLAGS --disable-altivec"
+			;;
+	esac
+
+	cd "$SRC"/SDL2-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-alsa \
+		--enable-shared \
+		--enable-static \
+		--disable-arts \
+		--disable-esd \
+		--disable-pulseaudio-shared \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}
