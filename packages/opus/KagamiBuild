@@ -1,0 +1,17 @@
+# Description: Totally open, royalty-free, highly versatile audio codec
+# URL:         https://www.opus-codec.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=opus
+version=1.3.1
+release=1
+source=("https://archive.mozilla.org/pub/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-custom-modes
+	make
+	make DESTDIR="$PKG" install
+}
