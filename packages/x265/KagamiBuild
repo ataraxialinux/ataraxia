@@ -25,13 +25,50 @@ build() {
 	esac
 
 	cd "$SRC"/${name}_${version}
-	mkdir -p build
-	cd build
+	for d in 8 10 12; do
+		if [[ -d build-$d ]]; then
+			rm -rf build-$d
+		fi
+		mkdir build-$d
+	done
+
 	cmake "$SRC"/${name}_${version}/source \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DENABLE_PIC=1 \
-		$FLAGS -Wno-dev -G Ninja
+		-DHIGH_BIT_DEPTH=TRUE \
+		-DMAIN12=TRUE \
+		-DEXPORT_C_API=FALSE \
+		-DENABLE_CLI=FALSE \
+		-DENABLE_SHARED=FALSE \
+		-Wno-dev -G Ninja
 	ninja
+
+	cd "$SRC"/${name}_${version}//build-10
+
+	cmake "$SRC"/${name}_${version}/source \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DHIGH_BIT_DEPTH=TRUE \
+		-DEXPORT_C_API=FALSE \
+		-DENABLE_CLI=FALSE \
+		-DENABLE_SHARED=FALSE \
+		-Wno-dev -G Ninja
+	ninja
+
+	cd "$SRC"/${name}_${version}/build-8
+
+	ln -s ../build-10/libx265.a libx265_main10.a
+	ln -s ../build-12/libx265.a libx265_main12.a
+
+	cmake "$SRC"/${name}_${version}/source \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DENABLE_SHARED=TRUE \
+		-DENABLE_HDR10_PLUS=TRUE \
+		-DEXTRA_LIB='x265_main10.a;x265_main12.a' \
+		-DEXTRA_LINK_FLAGS='-L .' \
+		-DLINKED_10BIT=TRUE \
+		-DLINKED_12BIT=TRUE \
+		-Wno-dev -G Ninja
+	ninja
+
+	cd "$SRC"/${name}_${version}/build-8
 	DESTDIR="$PKG" ninja install
 }
