@@ -10,6 +10,14 @@ source=("https://downloads.xiph.org/releases/theora/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	# Thanks LFS
 	sed -i 's/png_\(sizeof\)/\1/g' examples/png2theora.c
 

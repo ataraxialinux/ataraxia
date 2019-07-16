@@ -6,28 +6,32 @@
 name=x265
 version=3.1.1
 release=1
+options=('~ccache')
 source=("https://bitbucket.org/multicoreware/${name}/downloads/${name}_${version}.tar.gz")
 
 build() {
+	unset BUILFLAGS
+
 	case $BARCH in
 		i586)
-			export BUILDFLAGS="-DENABLE_ASSEMBLY=OFF"
+			export FLAGS="-DENABLE_ASSEMBLY=OFF"
 			;;
 		ppc64le)
-			export BUILDFLAGS="-DENABLE_ALTIVEC=OFF"
+			export FLAGS="-DENABLE_ALTIVEC=OFF"
 			;;
 		ppc64|ppc)
-			export BUILDFLAGS="-DENABLE_ALTIVEC=OFF -DCPU_POWER8=OFF"
+			export FLAGS="-DENABLE_ALTIVEC=OFF -DCPU_POWER8=OFF"
 			;;
 	esac
 
 	cd "$SRC"/${name}_${version}
-	mkdir build
+	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version $BUILDFLAGS \
+	cmake "$SRC"/${name}_${version}/source \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-Wno-dev -G Ninja
+		-DENABLE_PIC=1 \
+		$FLAGS -Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
 }

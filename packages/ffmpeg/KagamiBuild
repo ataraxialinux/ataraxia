@@ -1,7 +1,7 @@
 # Description: Complete solution to record, convert and stream audio and video
 # URL:         https://ffmpeg.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib gmp bzip2 libressl xz yasm alsa-lib libva libvdpau sdl2 lame libass fdk-aac libogg libtheora libvorbis libvpx opus x264 x265 lcms2 openjpeg2 speex giflib libwebp libsoxr libmodplug aom fontconfig libdrm libx11 libxext libxv libxml2 libxcb fribidi
+# Depends on:  zlib gmp bzip2 libressl xz yasm alsa-lib libva libvdpau sdl2 lame libass fdk-aac libogg libtheora libvorbis libvpx opus x264 lcms2 openjpeg2 speex giflib libwebp libsoxr libmodplug aom fontconfig libdrm libx11 libxext libxv libxml2 libxcb fribidi
 
 name=ffmpeg
 version=4.1.4
@@ -9,6 +9,8 @@ release=1
 source=("http://ffmpeg.org/releases/$name-$version.tar.xz")
 
 build() {
+	unset BUILDFLAGS
+
 	case $BARCH in
 		i586|armv7l|armv6l|armv5tel)
 			export BUILDFLAGS="--disable-asm"
@@ -24,7 +26,6 @@ build() {
 		--enable-fontconfig \
 		--enable-gmp \
 		--enable-gpl \
-		--enable-ladspa \
 		--enable-libaom \
 		--enable-libass \
 		--enable-libdrm \
@@ -41,13 +42,9 @@ build() {
 		--enable-libvpx \
 		--enable-libwebp \
 		--enable-libx264 \
-		--enable-libx265 \
 		--enable-libxcb \
 		--enable-libxml2 \
-		--enable-libxvid \
 		--enable-nonfree \
-		--enable-nvdec \
-		--enable-nvenc \
 		--enable-openssl \
 		--enable-shared \
 		--enable-version3 \

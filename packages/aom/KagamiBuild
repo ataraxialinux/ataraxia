@@ -4,19 +4,24 @@
 # Depends on:  cmake ninja
 
 name=aom
-version=d14c5bb4f336ef1842046089849dee4a301fbbf0
+version=1.0.0
+commit=d14c5bb4f336ef1842046089849dee4a301fbbf0
 release=1
-source=("https://aomedia.googlesource.com/aom/+archive/$version.tar.gz")
+source=("https://aomedia.googlesource.com/aom/+archive/$commit.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
-	mkdir build
+	cd "$SRC"
+	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version \
+	cmake "$SRC" \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=1 \
 		-DENABLE_TESTS=0 \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	# hack
+	sed -i "s,0.1.0,$version,g" "$PKG"/usr/lib/pkgconfig/aom.pc
 }
