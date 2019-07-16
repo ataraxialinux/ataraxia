@@ -1,0 +1,18 @@
+# Description: Portable NaCl-based crypto library
+# URL:         https://github.com/jedisct1/libsodium
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=libsodium
+version=1.0.18
+release=1
+source=("https://download.libsodium.org/$name/releases/$name-$version.tar.gz")
+
+build() {
+	export lt_cv_prog_compiler_static_works=yes
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
