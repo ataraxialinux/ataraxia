@@ -1,0 +1,22 @@
+# Description: Protocol Buffers - Google's data interchange format
+# URL:         https://developers.google.com/protocol-buffers/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python
+
+name=protobuf
+version=3.9.0
+release=1
+source=("https://github.com/google/protobuf/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/protobuf/musl-fix.patch
+
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	python3 setup.py install --root="$PKG" --cpp_implementation
+}
