@@ -1,0 +1,20 @@
+# Description: An open video codec developed by the Xiph.org
+# URL:         https://www.theora.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libvorbis
+
+name=libtheora
+version=1.1.1
+release=1
+source=("https://downloads.xiph.org/releases/theora/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	# Thanks LFS
+	sed -i 's/png_\(sizeof\)/\1/g' examples/png2theora.c
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
