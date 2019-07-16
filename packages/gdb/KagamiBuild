@@ -6,7 +6,6 @@
 name=gdb
 version=8.3
 release=1
-options=('~ccache')
 backup=('etc/gdb/gdbinit')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
@@ -14,10 +13,10 @@ build() {
 	cd "$SRC"/$name-$version
 
 	case "$BARCH" in
-		ppc64le|ppc64)	CXX="--enable-build-with-cxx=no"	;;
+		ppc64le|ppc64)	MYCXX="--enable-build-with-cxx=no"	;;
 	esac
 
-	./configure $BUILDFLAGS $CXX \
+	./configure $BUILDFLAGS $MYCXX \
 		--prefix=/usr \
 		--with-system-gdbinit=/etc/gdb/gdbinit \
 		--with-system-readline \
