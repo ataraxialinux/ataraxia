@@ -51,7 +51,7 @@ SRCDEST="/var/cache/kagami/sources"
 # Repositories
 #
 # REPOS=('/var/cache/ports/packages' '/tmp/community' '/home/localname/myrepo')
-REPOS=('/var/cache/ports/packages')
+REPOS=('/usr/ports/packages')
 
 
 # System variables
@@ -65,7 +65,7 @@ export PERLFLAGS=
 export CFLAGS="@CFLAGS@"
 export CXXFLAGS="@CXXFLAGS@"
 
-export STUFF="/var/cache/ports/stuff"
+export STUFF="/usr/ports/stuff"
 EOF
 
 	sed -i "$PKG"/etc/kagami.conf \
@@ -73,4 +73,6 @@ EOF
 		-e "s|@XTARGET[@]|$XTARGET|g" \
 		-e "s|@CFLAGS[@]|$CFLAGS|g" \
 		-e "s|@CXXFLAGS[@]|$CXXFLAGS|g"
+
+	install -Dm0755 "$STUFF"/kagami/reposync "$PKG"/usr/bin/reposync
 }

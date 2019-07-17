@@ -1,0 +1,19 @@
+#!/bin/bash
+
+msg() {
+	if [ "$SILENT" != "1" ]; then
+		echo -e "\033[1;32m >>> \033[0m$@"
+	fi
+}
+
+msg "Synchronizing port tree"
+
+rm -rf /usr/ports
+cd /usr
+curl -k -C - -L -O https://github.com/ataraxialinux/ataraxia/archive/master.zip &>/dev/null
+bsdtar -xf master.zip
+mv ataraxia-master ports
+rm -rf master.zip
+
+exit 0
+
