@@ -23,27 +23,47 @@ build() {
 	esac
 
 	cd "$SRC"/rustc-$version-src
-	patch -Np1 -i "$STUFF"/rust/ataraxia.patch
+	patch -Np1 -i "$STUFF"/rust/musl.patch
 
-	rm -rf rm -rf src/llvm-project
+	rm -rf src/llvm-project
 
 	clear_vendor_checksums libc
 	clear_vendor_checksums openssl-sys
 
-	./configure \
-		--prefix=/usr \
-		--build=$RUST_TARGET \
-		--host=$RUST_TARGET \
-		--target=$RUST_TARGET \
-		--llvm-root=/usr \
-		--set=target.$RUST_TARGET.llvm-config=/usr/bin/llvm-config \
-		--set=target.$RUST_TARGET.musl-root=/usr \
-		--release-channel=stable \
-		--enable-llvm-link-shared \
-		--enable-vendor \
-		--disable-codegen-tests \
-		--disable-docs \
-		--disable-rpath
+	cat > config.toml <<- EOF
+		[build]
+		docs = false
+		extended = true
+		submodules = false
+		python = "python3"
+		locked-deps = true
+		vendor = true
+
+		[install]
+		prefix = "/usr"
+
+		[rust]
+		channel = "stable"
+		rpath = false
+		codegen-tests = false
+		codegen-units = 1
+		debuginfo = false
+		debuginfo-lines = false
+		debuginfo-only-std = false
+		debuginfo-tools = false
+		backtrace = true
+		jemalloc = false
+		codegen-tests = false
+
+		[target.$XTARGET]
+		llvm-config = "/usr/bin/llvm-config"
+		crt-static = false
+		cc = "gcc"
+		cxx = "g++"
+		ar = "ar"
+		linker = "gcc"
+	EOF
+
 	./x.py build -v --jobs ${JOBS:-2}
 	DESTDIR="$PKG" ./x.py install -v
 
