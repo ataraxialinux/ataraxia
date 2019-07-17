@@ -11,6 +11,8 @@ source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/findutils/findutils-makedev.patch
+
 	sed -i '/^SUBDIRS/s/locate//' Makefile.in
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
