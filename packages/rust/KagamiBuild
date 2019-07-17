@@ -1,0 +1,51 @@
+# Description: Systems programming language focused on safety, speed and concurrency
+# URL:         https://www.rust-lang.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl cmake libssh2 llvm python libffi ncurses libxml2 zlib libgit2
+
+name=rust
+version=1.36.0
+release=1
+source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz")
+
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
+}
+
+build() {
+	case $BARCH in
+		x86_64)
+			export RUST_TARGET="x86_64-unknown-linux-musl"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Rust Language"
+			exit 1
+	esac
+
+	cd "$SRC"/rustc-$version-src
+	patch -Np1 -i "$STUFF"/rust/ataraxia.patch
+
+	rm -rf rm -rf src/llvm-project
+
+	clear_vendor_checksums libc
+	clear_vendor_checksums openssl-sys
+
+	./configure \
+		--prefix=/usr \
+		--build=$RUST_TARGET \
+		--host=$RUST_TARGET \
+		--target=$RUST_TARGET \
+		--llvm-root=/usr \
+		--set=target.$RUST_TARGET.llvm-config=/usr/bin/llvm-config \
+		--set=target.$RUST_TARGET.musl-root=/usr \
+		--release-channel=stable \
+		--enable-llvm-link-shared \
+		--enable-vendor \
+		--disable-codegen-tests \
+		--disable-docs \
+		--disable-rpath
+	./x.py build -v --jobs ${JOBS:-2}
+	DESTDIR="$PKG" ./x.py install -v
+
+	chown -R root:root "$PKG"/*
+}
