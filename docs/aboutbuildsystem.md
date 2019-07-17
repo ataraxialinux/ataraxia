@@ -14,8 +14,6 @@ git checkout [Ataraxia Linux version]
 ## Index of source packages
 We have separated packages into groups to make the build system cleaner. We have following repositories for packages:
 ```
- * community    - Packages maintained by Ataraxia Linux community. Not supported by core team
- * experimental - Unstable packages mostly for testing new features and adding new packages
  * packages     - Main packages collection for Linux distribution
  * toolchain    - Packages to build cross-toolchain [mostly required to build basic system]
 ```

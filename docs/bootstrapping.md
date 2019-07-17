@@ -42,7 +42,7 @@ Arguments supported by "build script":
  -E				- Enable build for embedded devices
  -S				- Build stage archive
  -L				- Build live/installer image
- -I				- Build sdcard image
+ -I				- Build image to deploy to hard drive or sdcard.
 ```
 We have seperated the build process into seperate "stages":
 ```

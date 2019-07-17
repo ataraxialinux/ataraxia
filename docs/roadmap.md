@@ -11,11 +11,11 @@ This document describes roadmap of Ataraxia Linux (codename "Kagami")
 Stage 1 is complete!
  
 ## Stage 2
- - [ ] Add "update" files for packages
- - [ ] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
+ - [x] Add "update" files for packages
+ - [x] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
  - [ ] Add extra packages for networking (eg. nftables, openresolv, whois, wget, mail clients, tcpdump, wpa_supplicant, dhcpcd, openssh, ntp)
- - [ ] Add basic system administartion packages and daemons (eg. sudo, dcron, logrotate)
- - [ ] Add user packages (eg. vim, nano, groff, texinfo, lynx)
+ - [x] Add basic system administartion packages and daemons (eg. sudo, dcron, logrotate)
+ - [x] Add user packages (eg. vim, nano, groff, texinfo, lynx)
 
 ## Stage 3
 TODO 
