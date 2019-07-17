@@ -1,0 +1,78 @@
+# Description: Core compiler tools for the Go programming language
+# URL:         https://golang.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=go
+version=1.12.7
+bootver=20171003
+release=1
+source=("https://dl.google.com/go/go${version}.src.tar.gz"
+	"https://dl.google.com/go/go1.4-bootstrap-$bootver.tar.gz")
+noextract=("go${version}.src.tar.gz"
+	"go1.4-bootstrap-$bootver.tar.gz")
+
+build() {
+	case "$BARCH" in
+		x86_64)
+			export GOARCH="amd64"
+			export GOOS="linux"
+			;;
+		i686)
+			export GOARCH="386"
+			export GO386="387"
+			export GOOS="linux"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Ataraxia Linux"
+			exit 1
+	esac
+
+	cd "$SRC"
+	tar -xvf "$SRCDEST"/go${version}.src.tar.gz
+	mv go go-$version
+
+	tar -xvf "$SRCDEST"/go1.4-bootstrap-$bootver.tar.gz
+	mv go go-boot-$bootver
+
+	cd "$SRC"/go-boot-$bootver/src
+	case "$BARCH" in
+		x86_64)
+			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" ./make.bash
+			;;
+		i586)
+			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" GO386="$GO386" ./make.bash
+			;;
+	esac
+
+	export GOROOT_FINAL=/usr/lib/go
+	export GOROOT_BOOTSTRAP="$SRC"/go-boot-$bootver
+
+	cd "$SRC"/go-$version
+	patch -Np1 -i "$STUFF"/go/default-buildmode-pie.patch
+
+	cd src
+	case "$BARCH" in
+		x86_64)
+			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" ./make.bash
+			;;
+		i586)
+			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" GO386="$GO386" ./make.bash
+			;;
+	esac
+
+	cd ..
+
+	install -d -m 755 "$PKG"/usr/bin
+	install -d -m 755 "$PKG"/usr/lib/go/pkg/tool
+
+	cp -R bin "$PKG"/usr/lib/go/bin
+	cp -R pkg/linux_$GOARCH "$PKG"/usr/lib/go/pkg/
+	cp -R pkg/tool/linux_$GOARCH "$PKG"/usr/lib/go/pkg/tool/
+	cp -R src "$PKG"/usr/lib/go/src
+	ln -sf ../lib/go/bin/go "$PKG"/usr/bin/go
+	ln -sf ../lib/go/bin/gofmt "$PKG"/usr/bin/gofmt
+
+	find "$PKG"/usr/lib/go/src -name "testdata" | sort -u | xargs rm -rf
+	rm -rf "$PKG"/usr/lib/go/pkg/bootstrap
+	rm -rf "$PKG"/usr/lib/go/pkg/tools/*/api
+}
