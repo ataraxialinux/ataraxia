@@ -1,0 +1,21 @@
+# Description: A fast and easy-to-use status bar
+# URL:         https://github.com/polybar/polybar
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja python2 cairo xcb-util-image xcb-util-wm xcb-util-cursor
+
+name=polybar
+version=3.3.1
+release=1
+source=("https://github.com/polybar/polybar/releases/download/$version/$name-$version.tar")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
