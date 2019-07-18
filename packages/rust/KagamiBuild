@@ -66,7 +66,7 @@ build() {
 		linker = "gcc"
 	EOF
 
-	./x.py build -v --jobs ${JOBS:-2}
+	./x.py build -v --jobs $(expr $(nproc) + 1)
 	DESTDIR="$PKG" ./x.py install -v
 
 	chown -R root:root "$PKG"/*
