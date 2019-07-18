@@ -1,0 +1,167 @@
+From a89c2e6d40606f563467a83fb98933e990e71377 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Andreas=20M=C3=BCller?= <schnitzeltony@gmail.com>
+Date: Tue, 2 Apr 2019 01:34:35 +0200
+Subject: [PATCH] Fix build with musl - systemd specific
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Networkmanager imported some code from systemd. This requires some adjustments
+for musl.
+
+Upstream-Status: Pending
+
+Signed-off-by: Andreas Müller <schnitzeltony@gmail.com>
+---
+ shared/systemd/src/basic/in-addr-util.c |  1 +
+ shared/systemd/src/basic/process-util.c |  9 +++++++++
+ shared/systemd/src/basic/socket-util.h  |  6 ++++++
+ shared/systemd/src/basic/sort-util.h    | 27 ++++---------------------
+ shared/systemd/src/basic/stdio-util.h   |  2 ++
+ shared/systemd/src/basic/string-util.h  |  5 +++++
+ 6 files changed, 27 insertions(+), 23 deletions(-)
+
+diff --git a/shared/systemd/src/basic/in-addr-util.c b/shared/systemd/src/basic/in-addr-util.c
+index 5899f62..0adb248 100644
+--- a/shared/systemd/src/basic/in-addr-util.c
++++ b/shared/systemd/src/basic/in-addr-util.c
+@@ -14,6 +14,7 @@
+ #include "in-addr-util.h"
+ #include "macro.h"
+ #include "parse-util.h"
++#include "string-util.h"
+ #include "random-util.h"
+ #include "strxcpyx.h"
+ #include "util.h"
+diff --git a/shared/systemd/src/basic/process-util.c b/shared/systemd/src/basic/process-util.c
+index 7431be3..189060a 100644
+--- a/shared/systemd/src/basic/process-util.c
++++ b/shared/systemd/src/basic/process-util.c
+@@ -21,6 +21,9 @@
+ #include <sys/wait.h>
+ #include <syslog.h>
+ #include <unistd.h>
++#ifndef __GLIBC__
++#include <pthread.h>
++#endif
+ #if 0 /* NM_IGNORED */
+ #if HAVE_VALGRIND_VALGRIND_H
+ #include <valgrind/valgrind.h>
+@@ -1183,11 +1186,13 @@ void reset_cached_pid(void) {
+         cached_pid = CACHED_PID_UNSET;
+ }
+ 
++#ifdef __GLIBC__
+ /* We use glibc __register_atfork() + __dso_handle directly here, as they are not included in the glibc
+  * headers. __register_atfork() is mostly equivalent to pthread_atfork(), but doesn't require us to link against
+  * libpthread, as it is part of glibc anyway. */
+ extern int __register_atfork(void (*prepare) (void), void (*parent) (void), void (*child) (void), void *dso_handle);
+ extern void* __dso_handle _weak_;
++#endif
+ 
+ pid_t getpid_cached(void) {
+         static bool installed = false;
+@@ -1216,7 +1221,11 @@ pid_t getpid_cached(void) {
+                          * only half-documented (glibc doesn't document it but LSB does — though only superficially)
+                          * we'll check for errors only in the most generic fashion possible. */
+ 
++#ifdef __GLIBC__
+                         if (__register_atfork(NULL, NULL, reset_cached_pid, __dso_handle) != 0) {
++#else
++                        if (pthread_atfork(NULL, NULL, reset_cached_pid) != 0) {
++#endif
+                                 /* OOM? Let's try again later */
+                                 cached_pid = CACHED_PID_UNSET;
+                                 return new_pid;
+diff --git a/shared/systemd/src/basic/socket-util.h b/shared/systemd/src/basic/socket-util.h
+index 15443f1..4807198 100644
+--- a/shared/systemd/src/basic/socket-util.h
++++ b/shared/systemd/src/basic/socket-util.h
+@@ -13,6 +13,12 @@
+ #include <sys/types.h>
+ #include <sys/un.h>
+ 
++#if !defined(__GLIBC__)
++/* SIOCGSTAMPNS from linux/asm-generic.h
++ * for src/systemd/src/libsystemd-network/sd-lldp.c */
++#include <linux/sockios.h>
++#endif
++
+ #include "macro.h"
+ #include "missing_socket.h"
+ #include "sparse-endian.h"
+diff --git a/shared/systemd/src/basic/sort-util.h b/shared/systemd/src/basic/sort-util.h
+index e029f86..1e8b6e1 100644
+--- a/shared/systemd/src/basic/sort-util.h
++++ b/shared/systemd/src/basic/sort-util.h
+@@ -5,15 +5,10 @@
+ 
+ #include "macro.h"
+ 
+-void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
+-                 __compar_d_fn_t compar, void *arg);
+-
+-#define typesafe_bsearch_r(k, b, n, func, userdata)                     \
+-        ({                                                              \
+-                const typeof(b[0]) *_k = k;                             \
+-                int (*_func_)(const typeof(b[0])*, const typeof(b[0])*, typeof(userdata)) = func; \
+-                xbsearch_r((const void*) _k, (b), (n), sizeof((b)[0]), (__compar_d_fn_t) _func_, userdata); \
+-        })
++#if !defined(__GLIBC__)
++typedef int (*__compar_fn_t) (const void*, const void*);
++typedef __compar_fn_t comparison_fn_t;
++#endif
+ 
+ /**
+  * Normal bsearch requires base to be nonnull. Here were require
+@@ -54,17 +49,3 @@ static inline void qsort_safe(void *base, size_t nmemb, size_t size, __compar_fn
+                 int (*_func_)(const typeof(p[0])*, const typeof(p[0])*) = func; \
+                 qsort_safe((p), (n), sizeof((p)[0]), (__compar_fn_t) _func_); \
+         })
+-
+-static inline void qsort_r_safe(void *base, size_t nmemb, size_t size, __compar_d_fn_t compar, void *userdata) {
+-        if (nmemb <= 1)
+-                return;
+-
+-        assert(base);
+-        qsort_r(base, nmemb, size, compar, userdata);
+-}
+-
+-#define typesafe_qsort_r(p, n, func, userdata)                          \
+-        ({                                                              \
+-                int (*_func_)(const typeof(p[0])*, const typeof(p[0])*, typeof(userdata)) = func; \
+-                qsort_r_safe((p), (n), sizeof((p)[0]), (__compar_d_fn_t) _func_, userdata); \
+-        })
+diff --git a/shared/systemd/src/basic/stdio-util.h b/shared/systemd/src/basic/stdio-util.h
+index c3b9448..e80a938 100644
+--- a/shared/systemd/src/basic/stdio-util.h
++++ b/shared/systemd/src/basic/stdio-util.h
+@@ -1,7 +1,9 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ #pragma once
+ 
++#if defined(__GLIBC__)
+ #include <printf.h>
++#endif
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <sys/types.h>
+diff --git a/shared/systemd/src/basic/string-util.h b/shared/systemd/src/basic/string-util.h
+index b23f4c8..8f2f6e0 100644
+--- a/shared/systemd/src/basic/string-util.h
++++ b/shared/systemd/src/basic/string-util.h
+@@ -27,6 +27,11 @@
+ #define strcaseeq(a,b) (strcasecmp((a),(b)) == 0)
+ #define strncaseeq(a, b, n) (strncasecmp((a), (b), (n)) == 0)
+ 
++/* musl does not know strndupa */
++#if !defined(__GLIBC__)
++#define strndupa(x,s) strncpy(alloca(strlen(x)+1),x,s)
++#endif
++
+ int strcmp_ptr(const char *a, const char *b) _pure_;
+ 
+ static inline bool streq_ptr(const char *a, const char *b) {
+-- 
+2.17.1
+

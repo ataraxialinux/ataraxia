@@ -14,13 +14,8 @@ build() {
 	exit 1
 
 	cd "$SRC"/NetworkManager-$version
-	patch -Np1 -i "$STUFF"/networkmanager/musl-basic.patch
-	patch -Np1 -i "$STUFF"/networkmanager/musl-network-support.patch
-	patch -Np1 -i "$STUFF"/networkmanager/musl-fix-includes.patch
-	patch -Np1 -i "$STUFF"/networkmanager/musl-process-util.patch
-	patch -Np1 -i "$STUFF"/networkmanager/musl-has-not-secure-getenv.patch
-	patch -Np1 -i "$STUFF"/networkmanager/musl-compar.patch
-	patch -Np1 -i "$STUFF"/networkmanager/fix-ppc64le-build.patch
+	patch -Np1 -i "$STUFF"/networkmanager/0001-Fix-build-with-musl-systemd-specific.patch
+	patch -Np1 -i "$STUFF"/networkmanager/0002-Fix-build-with-musl.patch
 
 	sed '/initrd/d' -i src/meson.build
 	grep -rl '^#!.*python$' | xargs sed -i '1s/python/&3/'
