@@ -1,7 +1,7 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  busybox eudev intltool dbus-glib libndp libnl libpsl curl iptables jansson newt polkit nss iwd modemmanager libxslt
+# Depends on:  busybox eudev intltool gobject-introspection vala dbus-glib libndp libpsl curl iptables jasson newt nss polkit pygobject upower iwd
 
 name=networkmanager
 version=1.18.1
@@ -10,6 +10,8 @@ backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
 build() {
+	export CFLAGS="-DRTLD_DEEPBIND=0 -DHAVE_SECURE_GETENV -Dsecure_getenv=getenv $CFLAGS"
+
 	cd "$SRC"/NetworkManager-$version
 	patch -Np1 -i "$STUFF"/networkmanager/0001-Fix-build-with-musl-systemd-specific.patch
 	patch -Np1 -i "$STUFF"/networkmanager/0002-Fix-build-with-musl.patch
@@ -21,6 +23,7 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/NetworkManager-$version \
 		-Dconfig_plugins_default=ifupdown \
+		-Ddbus_conf_dir=/usr/share/dbus-1/systemd.d \
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
 		-Difupdown=true \
@@ -39,7 +42,7 @@ build() {
 		-Dsession_tracking=no \
 		-Dsystemd_journal=false \
 		-Dsystemdsystemunitdir=no \
-		-Dudev_dir=/usr/lib/udev -Dintrospection=false -Dvapi=false
+		-Dudev_dir=/usr/lib/udev
 	ninja
 	DESTDIR="$PKG" ninja install
 
@@ -49,8 +52,6 @@ build() {
 # Configuration file for NetworkManager.
 # See "man 5 NetworkManager.conf" for details.
 END
-
-	install -m644 -D "$STUFF"/networkmanager/org.freedesktop.NetworkManager.rules "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules
 
 	for svc in networkmanager; do
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
