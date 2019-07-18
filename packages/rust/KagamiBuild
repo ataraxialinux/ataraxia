@@ -15,7 +15,7 @@ clear_vendor_checksums() {
 build() {
 	case $BARCH in
 		x86_64)
-			export RUST_TARGET="x86_64-unknown-linux-musl"
+			export RTARGET="x86_64-unknown-linux-musl"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Rust Language"
@@ -32,6 +32,9 @@ build() {
 
 	cat > config.toml <<- EOF
 		[build]
+		build = "$RTARGET"
+		host = [ "$RTARGET" ]
+		target = [ "$RTARGET" ]
 		docs = false
 		extended = true
 		submodules = false
@@ -45,7 +48,6 @@ build() {
 		[rust]
 		channel = "stable"
 		rpath = false
-		codegen-tests = false
 		codegen-units = 1
 		debuginfo = false
 		debuginfo-lines = false
@@ -55,7 +57,7 @@ build() {
 		jemalloc = false
 		codegen-tests = false
 
-		[target.$XTARGET]
+		[target.$RTARGET]
 		llvm-config = "/usr/bin/llvm-config"
 		crt-static = false
 		cc = "gcc"
