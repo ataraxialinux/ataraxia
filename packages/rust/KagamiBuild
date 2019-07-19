@@ -26,6 +26,11 @@ build() {
 	esac
 
 	cd "$SRC"/rustc-$version-src
+	patch -Np1 -i "$STUFF"/rust/0003-Allow-rustdoc-to-work-when-cross-compiling-on-musl.patch
+	patch -Np1 -i "$STUFF"/rust/0005-Remove-nostdlib-and-musl_root-from-musl-targets.patch
+	patch -Np1 -i "$STUFF"/rust/0006-Prefer-libgcc_eh-over-libunwind-for-musl.patch
+	patch -Np1 -i "$STUFF"/rust/0007-runtest-Fix-proc-macro-tests-on-musl-hosts.patch
+	patch -Np1 -i "$STUFF"/rust/0029-musl-dont-use-crt-static.patch
 	patch -Np1 -i "$STUFF"/rust/libressl.patch
 
 	clear_vendor_checksums openssl-sys
