@@ -1,7 +1,7 @@
 # Description: Fork of Vim aiming to improve user experience, plugins, and GUIs
 # URL:         https://neovim.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gperf cmake ninja unzip libuv libtermkey libvterm msgpack
+# Depends on:  cmake
 
 name=neovim
 version=0.3.8
@@ -18,30 +18,8 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/neovim/jemalloc.patch
-
-	mkdir .deps
-	cd .deps
-	cmake "$SRC"/$name-$version/third-party \
-		-DUSE_BUNDLED_GPERF=OFF \
-		-DUSE_BUNDLED_LIBTERMKEY=OFF \
-		-DUSE_BUNDLED_LIBUV=OFF \
-		-DUSE_BUNDLED_LIBVTERM=OFF \
-		-DUSE_BUNDLED_MSGPACK=OFF \
-		-DUSE_BUNDLED_UNIBILIUM=OFF \
-		-Wno-dev -G Ninja
-	ninja
-
-	cd "$SRC"/$name-$version
-	mkdir build
-	cd build
-	cmake "$SRC"/$name-$version \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	make CMAKE_INSTALL_PREFIX="$PKG"/usr CMAKE_BUILD_TYPE=Release
+	make install
 
 	install -Dm644 runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
 	install -Dm644 runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
