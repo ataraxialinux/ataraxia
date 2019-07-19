@@ -3,18 +3,31 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  lua lua51 lua52
 
-name=lua-lpeg
+name=lua51-lpeg
 version=1.0.2
 release=1
 source=("http://www.inf.puc-rio.br/~roberto/lpeg/lpeg-$version.tar.gz")
 
 build() {
+	cd "$SRC"
+	sed 's/^CFLAGS =/CFLAGS +=/' -i lpeg-$version/makefile
+	sed 's/^COPT =/# COPT =/' -i lpeg-$version/makefile
+
+	cp -a lpeg-$version lpeg-$version-51
+	cp -a lpeg-$version lpeg-$version-52
+
 	cd "$SRC"/lpeg-$version
-	make LUADIR=/usr/include/${name:0:3}jit ${name:0:3}=${name:0:3}jit
-	install -Dm755 ${name:4:7}.so "$PKG"/usr/lib/${name:0:3}/5.1/${name:4:7}.so
-	install -Dm644 re.${name:0:3} "$PKG"/usr/share/${name:0:3}/5.1/re.${name:0:3}
-	install -Dm755 ${name:4:7}.so "$PKG"/usr/lib/${name:0:3}/5.2/${name:4:7}.so
-	install -Dm644 re.${name:0:3} "$PKG"/usr/share/${name:0:3}/5.2/re.${name:0:3}
-	install -Dm755 ${name:4:7}.so "$PKG"/usr/lib/${name:0:3}/5.3/${name:4:7}.so
-	install -Dm644 re.${name:0:3} "$PKG"/usr/share/${name:0:3}/5.3/re.${name:0:3}
+	make LUADIR=/usr/include
+	install -Dm755 lpeg.so "$PKG"/usr/lib/lua/5.3/lpeg.so
+	install -Dm644 re.lua "$PKG"/usr/share/lua/5.3/re.lua
+
+	cd "$SRC"/lpeg-$version-52
+	make LUADIR=/usr/include/lua5.2
+	install -Dm755 lpeg.so "$PKG"/usr/lib/lua/5.2/lpeg.so
+	install -Dm644 re.lua "$PKG"/usr/share/lua/5.2/re.lua
+
+	cd "$SRC"/lpeg-$version-51
+	make LUADIR=/usr/include/lua5.1
+	install -Dm755 lpeg.so "$PKG"/usr/lib/lua/5.1/lpeg.so
+	install -Dm644 re.lua "$PKG"/usr/share/lua/5.1/re.lua
 }
