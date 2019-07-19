@@ -1,7 +1,7 @@
 # Description: libmpack lua binding
 # URL:         https://github.com/libmpack/libmpack-lua
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libmpack lua lua51 lua52
+# Depends on:  libmpack lua51
 
 name=lua-mpack
 version=1.0.8
@@ -12,12 +12,6 @@ build() {
 	cd "$SRC"/libmpack-lua-$version
 	cc -O2 -fPIC -DMPACK_USE_SYSTEM -I/usr/include/lua5.1 -c lmpack.c -o lmpack.o
 	cc -shared -lmpack -o mpack.so.5.1 lmpack.o
-	cc -O2 -fPIC -DMPACK_USE_SYSTEM -I/usr/include/lua5.2 -c lmpack.c -o lmpack.o
-	cc -shared -lmpack -o mpack.so.5.2 lmpack.o
-	cc -O2 -fPIC -DMPACK_USE_SYSTEM -I/usr/include -c lmpack.c -o lmpack.o
-	cc -shared -lmpack -o mpack.so.5.3 lmpack.o
 
 	install -Dm755 mpack.so.5.1 "$PKG"/usr/lib/lua/5.1/mpack.so
-	install -Dm755 mpack.so.5.2 "$PKG"/usr/lib/lua/5.2/mpack.so
-	install -Dm755 mpack.so.5.3 "$PKG"/usr/lib/lua/5.3/mpack.so
 }
