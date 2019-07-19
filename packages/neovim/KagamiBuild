@@ -1,7 +1,7 @@
 # Description: Fork of Vim aiming to improve user experience, plugins, and GUIs
 # URL:         https://neovim.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake
+# Depends on:  cmake ninja libtermkey libuv libvterm msgpack unibilium unzip
 
 name=neovim
 version=0.3.8
@@ -10,17 +10,31 @@ options=('~ccache')
 backup=('etc/xdg/nvim/sysinit.vim')
 source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
-build() {
+ build() {	
 	case "$BARCH" in
 		riscv32|riscv64|s390x)
-			die "Not supported on your architecture"
+			die "Not supported on your architecture"	
 			;;
 	esac
 
-	cd "$SRC"/$name-$version
-	make CMAKE_INSTALL_PREFIX="$PKG"/usr CMAKE_BUILD_TYPE=Release
-	make install
+ 	cd "$SRC"/$name-$version
+	mkdir .deps
+	cd .deps
+	cmake "$SRC"/$name-$version/third-party
+		-Wno-dev -G Ninja
+	ninja luarocks lpeg mpack
 
-	install -Dm644 runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
+ 	cd "$SRC"/$name-$version
+	mkdir build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+ 	install -Dm644 runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
 	install -Dm644 runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
 }
