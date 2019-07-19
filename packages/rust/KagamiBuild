@@ -67,8 +67,6 @@ build() {
 		linker = "gcc"
 	EOF
 
-	RUSTFLAGS="-C link-args=-lffi" ./x.py build -v --jobs $(expr $(nproc) + 1)
+	make RUSTFLAGS="-C link-args=-lffi"
 	DESTDIR="$PKG" ./x.py install -v
-
-	chown -R root:root "$PKG"/*
 }

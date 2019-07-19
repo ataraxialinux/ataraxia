@@ -1,0 +1,17 @@
+# Description: Python bindings for the cairo graphics library
+# URL:         https://pycairo.readthedocs.io/en/latest/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python cairo
+
+name=pycairo
+version=1.18.1
+release=1
+source=("https://github.com/pygobject/pycairo/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	python3 setup.py build
+	python3 setup.py install --root="$PKG" --optimize=1
+	python3 setup.py install_pycairo_header --root="$PKG"
+	python3 setup.py install_pkgconfig --root="$PKG"
+}
