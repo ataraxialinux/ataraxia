@@ -1,0 +1,32 @@
+# Description: A DHCP server, client, and relay agent
+# URL:         https://www.isc.org/software/dhcp
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  busybox
+
+name=dhcp
+version=4.4.1
+release=1
+backup=('etc/dhcpd.conf'
+	'etc/dhcpd6.conf')
+source=("http://ftp.isc.org/isc/dhcp/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-srv-lease-file=/var/lib/dhcpd/dhcpd.leases \
+		--with-srv6-lease-file=/var/lib/dhcpd/dhcpd6.leases \
+		--with-cli-lease-file=/var/lib/dhclient/dhclient.leases \
+		--with-cli6-lease-file=/var/lib/dhclient/dhclient6.leases \
+		--enable-binary-leases \
+		--enable-paranoia
+	make -j1
+	make DESTDIR="$PKG" install
+
+	mv "$PKG"/etc/dhcpd.conf.example "$PKG"/etc/dhcpd.conf
+	install -Dm644 doc/examples/dhcpd-dhcpv6.conf "$PKG"/etc/dhcpd6.conf
+
+	install -Dm755 client/scripts/linux "$PKG"/usr/bin/dhclient-script
+}
