@@ -22,5 +22,14 @@ build() {
 		INSTALL_TOP="$PKG"/usr \
 		INSTALL_MAN="$PKG"/usr/share/man/man1 \
 		install
+
+	chmod -v u+w "$PKG"/usr/share/man/man1/lua.1
+
+	ln -s lua "$PKG"/usr/bin/lua${version:0:3}
+	ln -s luac "$PKG"/usr/bin/luac${version:0:3}
+	ln -s liblua.so.$version "$PKG"/usr/lib/liblua${version:0:3}.so
+
 	install -m644 -D lua.pc "$PKG"/usr/lib/pkgconfig/lua.pc
+	install -m 0644 -D lua.pc "$PKG"/usr/lib/pkgconfig/lua53.pc
+	ln -s lua53.pc "$PKG"/usr/lib/pkgconfig/lua.pc
 }
