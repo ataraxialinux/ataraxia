@@ -1,0 +1,71 @@
+From 797d85dbf11912508a0206ec90400cc7b9209c96 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 19 Jul 2019 20:52:04 +0900
+Subject: [PATCH] get rid of jemalloc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ CMakeLists.txt        | 16 +---------------
+ config/CMakeLists.txt |  4 ----
+ config/config.h.in    |  5 -----
+ 3 files changed, 1 insertion(+), 24 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 058cee33dd3..546d2b6ac99 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -446,21 +446,7 @@ if((CLANG_ASAN_UBSAN OR CLANG_MSAN OR CLANG_TSAN) AND NOT CMAKE_C_COMPILER_ID MA
+   message(FATAL_ERROR "Sanitizers are only supported for Clang")
+ endif()
+ 
+-if(CMAKE_SYSTEM_NAME MATCHES "OpenBSD|FreeBSD|Windows")  # see #5318
+-  message(STATUS "skipping jemalloc on this system: ${CMAKE_SYSTEM_NAME}")
+-  option(ENABLE_JEMALLOC "enable jemalloc" OFF)
+-else()
+-  option(ENABLE_JEMALLOC "enable jemalloc" ON)
+-endif()
+-
+-if(ENABLE_JEMALLOC)
+-  if(CLANG_ASAN_UBSAN OR CLANG_MSAN OR CLANG_TSAN)
+-    message(STATUS "Sanitizers enabled; disabling jemalloc")
+-  else()
+-    find_package(JeMalloc REQUIRED)
+-    include_directories(SYSTEM ${JEMALLOC_INCLUDE_DIRS})
+-  endif()
+-endif()
++option(ENABLE_JEMALLOC "enable jemalloc" OFF)
+ 
+ if(ENABLE_LIBINTL)
+   # LibIntl (not Intl) selects our FindLibIntl.cmake script. #8464
+diff --git a/config/CMakeLists.txt b/config/CMakeLists.txt
+index 63cb3cc0d67..442d91524bf 100644
+--- a/config/CMakeLists.txt
++++ b/config/CMakeLists.txt
+@@ -47,10 +47,6 @@ if(Iconv_FOUND)
+   set(HAVE_ICONV 1)
+ endif()
+ 
+-if(JEMALLOC_FOUND)
+-  set(HAVE_JEMALLOC 1)
+-endif()
+-
+ check_function_exists(_putenv_s HAVE_PUTENV_S)
+ if(WIN32 AND NOT HAVE_PUTENV_S)
+   message(SEND_ERROR "_putenv_s() function not found on your system.")
+diff --git a/config/config.h.in b/config/config.h.in
+index 106013425d4..14a93eddc1a 100644
+--- a/config/config.h.in
++++ b/config/config.h.in
+@@ -61,11 +61,6 @@
+ 
+ #cmakedefine FEAT_TUI
+ 
+-#ifndef UNIT_TESTING
+-#cmakedefine HAVE_JEMALLOC
+-#cmakedefine LOG_LIST_ACTIONS
+-#endif
+-
+ #cmakedefine HAVE_BE64TOH
+ #cmakedefine ORDER_BIG_ENDIAN
+ #define ENDIAN_INCLUDE_FILE <@ENDIAN_INCLUDE_FILE@>
+

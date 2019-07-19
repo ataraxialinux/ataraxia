@@ -6,6 +6,7 @@
 name=rust
 version=1.36.0
 release=1
+options=('~emptydirs')
 source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz")
 
 clear_vendor_checksums() {
@@ -13,6 +14,8 @@ clear_vendor_checksums() {
 }
 
 build() {
+	export RUSTFLAGS="-C link-args=-lffi"
+
 	case $BARCH in
 		x86_64)
 			export RTARGET="x86_64-unknown-linux-musl"
@@ -23,14 +26,14 @@ build() {
 	esac
 
 	cd "$SRC"/rustc-$version-src
-	patch -Np1 -i "$STUFF"/rust/musl.patch
+	patch -Np1 -i "$STUFF"/rust/libressl.patch
 
-	rm -rf src/llvm-project
-
-	clear_vendor_checksums libc
 	clear_vendor_checksums openssl-sys
 
 	cat > config.toml <<- EOF
+		[llvm]
+		link-shared = true
+
 		[build]
 		build = "$RTARGET"
 		host = [ "$RTARGET" ]
@@ -41,7 +44,6 @@ build() {
 		python = "python3"
 		locked-deps = true
 		vendor = true
-		full-bootstrap = false
 
 		[install]
 		prefix = "/usr"
@@ -60,13 +62,12 @@ build() {
 
 		[target.$RTARGET]
 		llvm-config = "/usr/bin/llvm-config"
-		crt-static = false
 		cc = "gcc"
 		cxx = "g++"
 		ar = "ar"
 		linker = "gcc"
 	EOF
 
-	make RUSTFLAGS="-C link-args=-lffi"
-	DESTDIR="$PKG" ./x.py install -v
+	python3 ./x.py build -j$(nproc)
+	DESTDIR="$PKG" python3 ./x.py install
 }
