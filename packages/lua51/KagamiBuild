@@ -1,0 +1,32 @@
+# Description: A programming language designed for extending applications.
+# URL:         http://www.lua.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline
+
+name=lua51
+version=5.1.5
+release=1
+source=("http://www.lua.org/ftp/lua-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -fPIC"
+
+	cd "$SRC"/lua-$version
+	patch -p1 -i "$STUFF"/lua51/main.patch
+	patch -p1 -i "$STUFF"/lua51/cflags.patch
+
+	make MYCFLAGS="$CFLAGS" linux
+
+	install -d "$PKG"/usr/include/lua5.1 "$PKG"/usr/share/man/man1 "$PKG"/usr/lib
+
+	make \
+		TO_BIN="lua5.1 luac5.1" \
+		TO_LIB="liblua5.1.a liblua5.1.so liblua5.1.so.5.1 liblua5.1.so.$version" \
+		INSTALL_DATA='cp -d' \
+		INSTALL_TOP="$PKG"/usr \
+		INSTALL_INC="$PKG"/usr/include/lua5.1 \
+		INSTALL_MAN="$PKG"/usr/share/man/man1 \
+		install
+
+	install -m 0644 -D etc/lua.pc "$PKG"/usr/lib/pkgconfig/lua5.1.pc
+}
