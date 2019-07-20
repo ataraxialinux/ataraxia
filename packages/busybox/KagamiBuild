@@ -39,32 +39,6 @@ build_busybox_embedded() {
 	chmod +x etc/init.d/rcS
 }
 
-build_busybox_standard() {
-	cp "$STUFF"/busybox/config .config
-
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS"
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links
-	else
-		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS"
-		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" busybox.links
-	fi
-
-	install -D busybox "$PKG"/usr/bin/busybox
-
-	chmod 4755 "$PKG"/usr/bin/busybox
-
-	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
-
-	mkdir -p "$PKG"/usr/share/udhcpc
-	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
-	chmod +x "$PKG"/usr/share/udhcpc/default.script
-
-	for svc in acpid crond inted ntpd watchdog; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
-	done
-}
-
 build() {
 	case $BARCH in
 		x86_64)
@@ -102,6 +76,6 @@ build() {
 	if [ "$EMBEDDED" = "1" ]; then
 		build_busybox_embedded
 	else
-		build_busybox_standard
+		die "Unsupported"
 	fi
 }

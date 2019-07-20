@@ -1,82 +1,26 @@
 # Description: Systems programming language focused on safety, speed and concurrency
 # URL:         https://www.rust-lang.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  curl cmake libssh2 llvm python libffi ncurses libxml2 zlib libgit2
+
+case $BARCH in
+	x86_64)
+		export RTARGET="x86_64-unknown-linux-musl"
+		;;
+	*)
+		echo "Architecture is not set or is not supported by Rust Language"
+		exit 1
+esac
 
 name=rust
 version=1.36.0
 release=1
 options=('~emptydirs')
-source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz")
-
-clear_vendor_checksums() {
-	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
-}
+source=("https://static.rust-lang.org/dist/rust-$version-$RTARGET.tar.gz")
 
 build() {
-	export RUSTFLAGS="-C link-args=-lffi"
-
-	case $BARCH in
-		x86_64)
-			export RTARGET="x86_64-unknown-linux-musl"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
-	esac
-
-	cd "$SRC"/rustc-$version-src
-	patch -Np1 -i "$STUFF"/rust/0003-Allow-rustdoc-to-work-when-cross-compiling-on-musl.patch
-	patch -Np1 -i "$STUFF"/rust/0004-Require-static-native-libraries-when-linking-static-.patch
-	patch -Np1 -i "$STUFF"/rust/0005-Remove-nostdlib-and-musl_root-from-musl-targets.patch
-	patch -Np1 -i "$STUFF"/rust/0006-Prefer-libgcc_eh-over-libunwind-for-musl.patch
-	patch -Np1 -i "$STUFF"/rust/0007-runtest-Fix-proc-macro-tests-on-musl-hosts.patch
-	patch -Np1 -i "$STUFF"/rust/0029-musl-dont-use-crt-static.patch
-	patch -Np1 -i "$STUFF"/rust/0030-libc-linkage.patch
-	patch -Np1 -i "$STUFF"/rust/libressl.patch
-
-	clear_vendor_checksums openssl-sys
-	clear_vendor_checksums libc
-
-	cat > config.toml <<- EOF
-		[llvm]
-		link-shared = true
-
-		[build]
-		build = "$RTARGET"
-		host = [ "$RTARGET" ]
-		target = [ "$RTARGET" ]
-		docs = false
-		extended = true
-		submodules = false
-		python = "python3"
-		locked-deps = true
-		vendor = true
-
-		[install]
-		prefix = "/usr"
-
-		[rust]
-		channel = "stable"
-		rpath = false
-		codegen-units = 1
-		debuginfo = false
-		debuginfo-lines = false
-		debuginfo-only-std = false
-		debuginfo-tools = false
-		backtrace = true
-		jemalloc = false
-		codegen-tests = false
-
-		[target.$RTARGET]
-		llvm-config = "/usr/bin/llvm-config"
-		crt-static = false
-		cc = "gcc"
-		cxx = "g++"
-		ar = "ar"
-		linker = "gcc"
-	EOF
-
-	python3 ./x.py build -j$(nproc)
-	DESTDIR="$PKG" python3 ./x.py install
+	cd "$SRC"/rust-$version-$RTARGET
+	./install.sh \
+		--prefix=/usr \
+		--destdir="$PKG" \
+		--disable-ldconfig
 }

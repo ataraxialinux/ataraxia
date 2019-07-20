@@ -1,0 +1,20 @@
+# Description: Network monitoring tools, including ping
+# URL:         http://www.skbuff.net/iputils/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+
+name=iputils
+version=s20180629
+release=1
+options=('bootstrap')
+source=("https://github.com/iputils/iputils/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/iputils/iputils-20180629-musl.patch
+	patch -Np1 -i "$STUFF"/iputils/iputils-20180629-fix-ping-on-musl.patch
+
+	make USE_IDN=no USE_CAP=no USE_NETTLE=no USE_CRYPTO=no CC="${CROSS_COMPILE}cc" CFLAGS="$CFLAGS"
+
+	install -dm755 "$PKG"/usr/bin
+	install -m755 arping clockdiff ping rarpd rdisc tftpd tracepath "$PKG"/usr/bin/
+}
