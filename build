@@ -214,13 +214,13 @@ build_toolchain() {
 			linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
 		case $toolchain in
 			base-files|linux-api-headers)
-				kagami -EWVn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
+				kagami -EWn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
 				;;
 			musl)
-				kagami -EWVn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
+				kagami -EWn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
 				;;
 			*)
-				kagami -EWVp -c "$BUILD"/host.config host-${toolchain}
+				kagami -EWp -c "$BUILD"/host.config host-${toolchain}
 				;;
 		esac
 	done
@@ -284,9 +284,9 @@ build_target() {
 	fi
 
 	if [ "$EMBEDDED" = "1" ]; then
-		cmd="-EWV"
+		cmd="-EW"
 	else
-		cmd="-EWVd"
+		cmd="-EWd"
 	fi
 
 	kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" $packages
