@@ -60,7 +60,7 @@ main_standard() {
 			util-linux e2fsprogs hwids eudev runit sbase ubase sinit dhcp $LINUX tree libssh2 c-ares libev nghttp2 curl \
 			nettle lz4 zstd libarchive rpm kagami"
 
-	kagami -EWV -c "$BUILD"/target.config -r "$IMAGEFS" $packages
+	kagami -EW -c "$BUILD"/target.config -r "$IMAGEFS" $packages
 
 	case $BARCH in
 		aarch64|armv7l|armv6l|armv5tel)
@@ -97,7 +97,7 @@ main_embedded() {
 	yes | mkfs.ext2 $lopart
 	mount -o loop $lopart "$IMAGEFS"
 
-	kagami -EWVd -c "$BUILD"/target.config -r "$IMAGEFS" base-files busybox linux
+	kagami -EWd -c "$BUILD"/target.config -r "$IMAGEFS" base-files busybox linux
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev
