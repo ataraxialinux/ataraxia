@@ -4,23 +4,25 @@
 # License:     (ASL 2.0 or MIT) and (BSD and MIT)
 # Group:       Development/Languages
 
-#case $BARCH in
-#	x86_64)
-#		export RTARGET="x86_64-unknown-linux-musl"
-#		;;
-#	*)
-#		echo "Architecture is not set or is not supported by Rust Language"
-#		exit 1
-#esac
-
 name=rust
 version=1.36.0
 release=1
 options=('~emptydirs')
-source=("https://static.rust-lang.org/dist/rust-$version-$RTARGET.tar.gz")
 
 build() {
-	cd "$SRC"/rust-$version-$RTARGET
+	case $BARCH in
+		x86_64)
+			export RTARGET="x86_64-unknown-linux-musl"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Rust Language"
+			exit 1
+	esac
+
+	cd "$SRC"
+	curl -C - -L -O https://static.rust-lang.org/dist/rust-$version-$RTARGET.tar.gz
+
+	cd rust-$version-$RTARGET
 	./install.sh \
 		--prefix=/usr \
 		--destdir="$PKG" \
