@@ -6,82 +6,18 @@
 
 name=sysvinit
 version=2.95
-innservver=1.14.0
-killprocver=2.21
-showconsolever=1.16
-scriptsver=0.1.2
 release=1
 options=('bootstrap')
-backup=('etc/inittab')
-source=("http://download.savannah.gnu.org/releases/$name/$name-$version.tar.xz"
-	"https://github.com/ataraxialinux/storage/raw/master/insserv-${innservver}.tar.bz2"
-	"https://github.com/ataraxialinux/storage/raw/master/killproc-${killprocver}.tar.bz2"
-	"https://github.com/ataraxialinux/storage/raw/master/showconsole-${showconsolever}.tar.bz2"
-	"https://github.com/ataraxialinux/initscripts/archive/$scriptsver.tar.gz")
+source=("http://download.savannah.gnu.org/releases/$name/$name-$version.tar.xz")
 
 build() {
-	svcs="boot.cgroup boot.cleanup boot.clock boot.ipconfig boot.localfs boot.localnet boot.rootfsck boot.swap boot.sysctl boot.udev halt random reboot single"
-
-	cd "$SRC"
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		cp -a insserv-${innservver} insserv-${innservver}-host
-	fi
-
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/sysvinit/consolidated.patch
 	make CC="${CROSS_COMPILE}cc" CFLAGS="$CFLAGS" STATIC="-static"
 	make ROOT="$PKG" install
 
-	cp -a "$SRC"/initscripts-$scriptsver/* "$PKG"/
-	rm -rf "$PKG"/LICENSE
-
-	install -Dm755 "$STUFF"/init.d/boot.udev "$PKG"/etc/init.d/boot.udev
-	install -Dm755 "$STUFF"/init.d/boot.sysctl "$PKG"/etc/init.d/boot.sysctl
-
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		cd "$SRC"/insserv-${innservver}-host
-		patch -Np0 -i "$STUFF"/sysvinit/insserv-1.14.0.dif
-		patch -Np1 -i "$STUFF"/sysvinit/insserv-compile-errors.patch
-		sed -i 's,$(TODO) check,$(TODO),g' Makefile
-		make CC="$HOSTCC"
-		make DESTDIR="$TOOLS" SBINDIR="$TOOLS/bin" install
-	fi
-
-	cd "$SRC"/insserv-${innservver}
-	patch -Np0 -i "$STUFF"/sysvinit/insserv-1.14.0.dif
-	patch -Np1 -i "$STUFF"/sysvinit/insserv-compile-errors.patch
-	sed -i 's,$(TODO) check,$(TODO),g' Makefile
-	make CC="${CROSS_COMPILE}cc"
-	make DESTDIR="$PKG" SBINDIR="$PKG"/usr/bin install
-
-	install -Dm644 "$STUFF"/sysvinit/insserv.conf "$PKG"/etc/insserv.conf
-
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		INSSERV="insserv"
-	else
-		INSSERV="$SRC/insserv-${innservver}/insserv"
-	fi
-
-	$INSSERV -c "$PKG"/etc/insserv.conf "$PKG"/etc/init.d
-
-	for a in $svcs; do
-		$INSSERV -f -c "$PKG"/etc/insserv.conf -p "$PKG"/etc/init.d "$PKG"/etc/init.d/$svcs
-	done
-
-	cd "$SRC"/killproc-${killprocver}
-	patch -Np0 -i "$STUFF"/sysvinit/killproc-2.21.dif
-	patch -Np1 -i "$STUFF"/sysvinit/killproc-compile-errors.patch
-	make CC="${CROSS_COMPILE}cc"
-	make DESTDIR="$PKG" PREFIX=/usr SBINDIR="$PKG"/usr/bin UBINDIR="$PKG"/usr/bin install
-
-	cd "$SRC"/showconsole-${showconsolever}
-	patch -Np1 -i "$STUFF"/sysvinit/showconsole.patch
-	make CC="${CROSS_COMPILE}cc"
-	make DESTDIR="$PKG" PREFIX=/usr SBINDIR="$PKG"/usr/bin install
-
 	cd "$PKG"
 	cp -a lib/* usr/lib
 	cp -a sbin/* usr/bin
-	
 	rm -rf bin lib sbin
 }
