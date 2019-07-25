@@ -1,0 +1,284 @@
+Binary files killproc-2.21-orig/checkproc and killproc-2.21/checkproc differ
+diff -ruN killproc-2.21-orig/checkproc.c killproc-2.21/checkproc.c
+--- killproc-2.21-orig/checkproc.c	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/checkproc.c	2019-07-25 22:23:52.135096245 +0900
+@@ -35,7 +35,7 @@
+     char *fullname = NULL, * basename = NULL;
+     char *pid_file = NULL, *ignore_file = NULL;
+     char *root = NULL;
+-    extension char *iargv[argc];
++    char *iargv[argc];
+     char *posixa, *posixb;	/* Don't fool me with posix correct */
+     int quiet = 1, iargc = 0;
+     unsigned short flags = (DAEMON|PIDOF|NZOMBIE);
+Binary files killproc-2.21-orig/fsync and killproc-2.21/fsync differ
+Binary files killproc-2.21-orig/killproc and killproc-2.21/killproc differ
+diff -ruN killproc-2.21-orig/killproc.c killproc-2.21/killproc.c
+--- killproc-2.21-orig/killproc.c	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/killproc.c	2019-07-25 22:23:52.143096245 +0900
+@@ -44,7 +44,7 @@
+     char *fullname = NULL, *basename = NULL;
+     char *pid_file = NULL, *ignore_file = NULL;
+     char *root = NULL;
+-    extension char *iargv[argc];
++    char *iargv[argc];
+     char *posixa, *posixb;	/* Don't fool me with posix correct */
+     int process_group = 0, group_leader = 0, wait = 5, iargc = 0;
+     unsigned short flags = (KILL|PIDOF|KSTOP);
+diff -ruN killproc-2.21-orig/libinit.c killproc-2.21/libinit.c
+--- killproc-2.21-orig/libinit.c	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/libinit.c	2019-07-25 22:23:52.148096246 +0900
+@@ -384,7 +384,7 @@
+ /* write to syslog file if not open terminal */
+ static void nsyslog(int pri, const char *fmt, va_list args)
+ {
+-    extension char newfmt[strlen(we_are)+2+strlen(fmt)+1];
++    char newfmt[strlen(we_are)+2+strlen(fmt)+1];
+ 
+     strcat(strcat(strcpy(newfmt, we_are), ": "), fmt);
+ 
+@@ -416,7 +416,7 @@
+ 
+ static void dsyslog(int pri, const char *fmt, va_list args)
+ {
+-    extension char newfmt[strlen(we_are)+2+strlen(fmt)+1];
++    char newfmt[strlen(we_are)+2+strlen(fmt)+1];
+ 
+     strcat(strcat(strcpy(newfmt, we_are), ": "), fmt);
+     vsyslog(pri, newfmt, args);
+@@ -1876,96 +1876,99 @@
+  * Somehow the realpath(3) glibc function call, nevertheless
+  * it avoids lstat(2) system calls.
+  */
+-static char real[PATH_MAX+1];
+-char* expandpath(const char * path)
++static char real[PATH_MAX + 1];
++char *expandpath(const char *path)
+ {
+-    char tmpbuf[PATH_MAX+1];
+-    const char *start, *end;
+-    char *curr, *dest;
+-    int deep = MAXSYMLINKS;
+-
+-    if (!path || *path == '\0')
+-	return (char*)0;
+-
+-    curr = &real[0];
+-
+-    if (*path != '/') {
+-	if (!getcwd(curr, PATH_MAX))
+-	    return (char*)0;
+-	dest = rawmemchr(curr, '\0');
+-    } else {
+-	*curr = '/';
+-	dest = curr + 1;
+-    }
+-
+-    for (start = end = path; *start; start = end) {
+-
+-	while (*start == '/')
+-	    ++start;
++	char tmpbuf[PATH_MAX + 1];
++	const char *start, *end;
++	char *curr, *dest;
++	int deep = MAXSYMLINKS;
++
++	if (!path || *path == '\0')
++		return (char *)0;
++
++	curr = &real[0];
++
++	if (*path != '/') {
++		if (!getcwd(curr, PATH_MAX))
++			return (char *)0;
++#ifdef HAVE_RAWMEMCHR
++		dest = rawmemchr(curr, '\0');
++#else
++		dest = strchr(curr, '\0');
++#endif
++	} else {
++		*curr = '/';
++		dest = curr + 1;
++	}
+ 
+-	for (end = start; *end && *end != '/'; ++end)
+-	    ;
++	for (start = end = path; *start; start = end) {
+ 
+-	if (end - start == 0)
+-	    break;
+-	else if (end - start == 1 && start[0] == '.') {
+-	    ;
+-	} else if (end - start == 2 && start[0] == '.' && start[1] == '.') {
+-	    if (dest > curr + 1)
+-		while ((--dest)[-1] != '/')
+-		    ;
+-	} else {
+-	    char lnkbuf[PATH_MAX+1];
+-	    size_t len;
+-	    ssize_t n;
++		while (*start == '/')
++			++start;
+ 
+-	    if (dest[-1] != '/')
+-		*dest++ = '/';
++		for (end = start; *end && *end != '/'; ++end) ;
+ 
+-	    if (dest + (end - start) > curr + PATH_MAX) {
+-		errno = ENAMETOOLONG;
+-		return (char*)0;
+-	    }
++		if (end - start == 0)
++			break;
++		else if (end - start == 1 && start[0] == '.') {
++			;
++		} else if (end - start == 2 && start[0] == '.'
++			   && start[1] == '.') {
++			if (dest > curr + 1)
++				while ((--dest)[-1] != '/') ;
++		} else {
++			char lnkbuf[PATH_MAX + 1];
++			size_t len;
++			ssize_t n;
++
++			if (dest[-1] != '/')
++				*dest++ = '/';
++
++			if (dest + (end - start) > curr + PATH_MAX) {
++				errno = ENAMETOOLONG;
++				return (char *)0;
++			}
+ 
+-	    dest = mempcpy(dest, start, end - start);
+-	    *dest = '\0';
++			dest = mempcpy(dest, start, end - start);
++			*dest = '\0';
+ 
+-	    if (deep-- < 0) {
+-		errno = ELOOP;
+-		return (char*)0;
+-	    }
++			if (deep-- < 0) {
++				errno = ELOOP;
++				return (char *)0;
++			}
+ 
+-	    errno = 0;
+-	    if ((n = readlink(curr, lnkbuf, PATH_MAX)) < 0) {
+-		deep = MAXSYMLINKS;
+-		if (errno == EINVAL)
+-		    continue;    /* Not a symlink */
+-		return (char*)0;
+-	    }
+-	    lnkbuf[n] = '\0';	/* Don't be fooled by readlink(2) */
++			errno = 0;
++			if ((n = readlink(curr, lnkbuf, PATH_MAX)) < 0) {
++				deep = MAXSYMLINKS;
++				if (errno == EINVAL)
++					continue;	/* Not a symlink */
++				return (char *)0;
++			}
++			lnkbuf[n] = '\0';	/* Don't be fooled by readlink(2) */
+ 
+-	    len = strlen(end);
+-	    if ((n + len) > PATH_MAX) {
+-		errno = ENAMETOOLONG;
+-		return (char*)0;
+-	    }
++			len = strlen(end);
++			if ((n + len) > PATH_MAX) {
++				errno = ENAMETOOLONG;
++				return (char *)0;
++			}
+ 
+-	    memmove(&tmpbuf[n], end, len + 1);
+-	    path = end = memcpy(tmpbuf, lnkbuf, n);
++			memmove(&tmpbuf[n], end, len + 1);
++			path = end = memcpy(tmpbuf, lnkbuf, n);
+ 
+-	    if (lnkbuf[0] == '/')
+-		dest = curr + 1;
+-	    else if (dest > curr + 1)
+-		while ((--dest)[-1] != '/');
++			if (lnkbuf[0] == '/')
++				dest = curr + 1;
++			else if (dest > curr + 1)
++				while ((--dest)[-1] != '/') ;
+ 
++		}
+ 	}
+-    }
+ 
+-    if (dest > curr + 1 && dest[-1] == '/')
+-	--dest;
+-    *dest = '\0';
++	if (dest > curr + 1 && dest[-1] == '/')
++		--dest;
++	*dest = '\0';
+ 
+-    return curr;
++	return curr;
+ }
+ 
+ /* libinit.c ends here */
+diff -ruN killproc-2.21-orig/libinit.h killproc-2.21/libinit.h
+--- killproc-2.21-orig/libinit.h	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/libinit.h	2019-07-25 22:23:52.142096245 +0900
+@@ -31,6 +31,7 @@
+ #include <sys/stat.h>
+ #include <sys/wait.h>
+ #include <sys/param.h>
++#include <sys/sysmacros.h>
+ #include <utmp.h>
+ #include <pwd.h>
+ #include <mntent.h>
+Binary files killproc-2.21-orig/libinit.o and killproc-2.21/libinit.o differ
+diff -ruN killproc-2.21-orig/Makefile killproc-2.21/Makefile
+--- killproc-2.21-orig/Makefile	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/Makefile	2019-07-25 22:23:52.133096244 +0900
+@@ -29,8 +29,7 @@
+ #
+ 	LDFLAGS = -Wl,--as-needed,--hash-size=8599,-O2
+ 	 CFLAGS = $(RPM_OPT_FLAGS) $(COPTS) $(DEBUG) $(INC) -D_GNU_SOURCE -Wall -pipe
+-	  CLOOP = -funroll-loops
+-	     CC = gcc
++	     CC ?= gcc
+ 	     RM = rm -f
+ 	  MKDIR = mkdir -p
+ 	  RMDIR = rm -rf
+Binary files killproc-2.21-orig/mkill and killproc-2.21/mkill differ
+Binary files killproc-2.21-orig/rvmtab and killproc-2.21/rvmtab differ
+Binary files killproc-2.21-orig/startproc and killproc-2.21/startproc differ
+diff -ruN killproc-2.21-orig/startproc.c killproc-2.21/startproc.c
+--- killproc-2.21-orig/startproc.c	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/startproc.c	2019-07-25 22:23:52.140096245 +0900
+@@ -27,7 +27,6 @@
+ #include <sys/inotify.h>
+ #include <sys/ioctl.h>
+ #include <sys/syscall.h>
+-#include <argz.h>
+ #include <grp.h>
+ 
+ #ifndef  SD_LISTEN_FDS_START
+@@ -112,7 +111,7 @@
+     char *fullname = NULL, *basename = NULL;
+     char *log_file = NULL, *pid_file = NULL, *ignore_file = NULL;
+     char *root = NULL;
+-    extension char *iargv[argc];
++    char *iargv[argc];
+     int c, nicelvl = 0, env = 0, iargc = 0;
+     unsigned short flags = (DAEMON|PIDOF);
+ 
+Binary files killproc-2.21-orig/usleep and killproc-2.21/usleep differ
+Binary files killproc-2.21-orig/vhangup and killproc-2.21/vhangup differ
+diff -ruN killproc-2.21-orig/vhangup.c killproc-2.21/vhangup.c
+--- killproc-2.21-orig/vhangup.c	2012-02-01 01:14:07.000000000 +0900
++++ killproc-2.21/vhangup.c	2019-07-25 22:23:52.138096245 +0900
+@@ -29,6 +29,7 @@
+ #include <sys/wait.h>
+ #include <termios.h>
+ #include <unistd.h>
++#include <limits.h>
+ #include "lists.h"
+ 
+ /*

@@ -60,7 +60,6 @@ if [ "$USE_TARGET" = "1" ]; then
 		export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
-		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 	EOF
@@ -81,7 +80,6 @@ elif [ "$USE_HOST" = "1" ]; then
 		export XTARGET="$XTARGET"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
-		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 	EOF
@@ -210,10 +208,10 @@ build_toolchain() {
 				;;
 	esac
 
-	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses cracklib kmod gperf pkgconf \
-			linux-api-headers binutils gcc-static musl gcc $GRUB slibtool; do
+	for toolchain in filesystem file gettext-tiny m4 bison flex bc ncurses cracklib kmod gperf pkgconf \
+			linux-api-headers binutils gcc-static musl gcc $GRUB; do
 		case $toolchain in
-			base-files|linux-api-headers)
+			filesystem|linux-api-headers)
 				kagami -EWn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
 				;;
 			musl)
@@ -258,10 +256,6 @@ build_toolchain() {
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
-
-	msg "Adding fake make"
-	cp "$STUFF"/fakemake "$TOOLS"/bin/make
-	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
 }
 
 build_target() {
@@ -274,13 +268,12 @@ build_target() {
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox"
 	else
-		packages="tz man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-				ccache bzip2 pkgconf cracklib pam attr acl libcap shadow sed ed pcre grep mksh bash libtool gdbm db gperf \
-				expat perl libressl ca-certificates iputils net-tools autoconf automake xz lzip kmod gettext-tiny musl-fts libuargp libelf \
-				coreutils diffutils mlocate findutils mandoc dialog nawk less pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack \
-				libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng util-linux e2fsprogs musl-obstack reiserfsprogs \
-				hwids eudev runit sbase ubase sinit dhcp dosfstools $LINUX tree wireless_tools wpa_supplicant popt gptfdisk \
-				libssh2 c-ares libev nghttp2 curl nettle lz4 zstd libarchive rpm kagami"
+		packages="tz man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache bzip2 pkgconf \
+				cracklib pam attr acl libcap shadow sed psmisc ed pcre grep mksh bash which libtool gdbm db gperf expat perl \
+				libressl ca-certificates iputils net-tools run-parts ifupdown autoconf automake xz lzip cpio kmod gettext-tiny \
+				musl-fts libuargp libelf coreutils diffutils mlocate findutils mandoc dialog nawk less zutils pigz libmnl libnftnl \
+				libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
+				util-linux e2fsprogs musl-obstack reiserfsprogs hwids eudev sysvinit $LINUX"
 	fi
 
 	if [ "$EMBEDDED" = "1" ]; then

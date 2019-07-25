@@ -1,0 +1,31 @@
+--- libinit.c
++++ libinit.c	2012-05-23 11:04:58.370146656 +0000
+@@ -265,7 +265,7 @@ static inline boolean isnetfs(const char
+ static void init_mounts(void)
+ {
+     char point[PATH_MAX+1];
+-    char fstype[126];
++    char fstype[257];
+     struct stat st;
+     int mid, parid, max = 0;
+     uint maj, min;
+@@ -280,7 +280,7 @@ static void init_mounts(void)
+ 
+     if ((mnt = fopen("/proc/self/mountinfo", "re")) == (FILE*)0)
+ 	return;
+-    while (fscanf(mnt, "%i %i %u:%u %*s %s %*s - %*s %s %*[^\n]", &mid, &parid, &maj, &min, &point[0], &fstype[0]) == 6) {
++    while (fscanf(mnt, "%i %i %u:%u %*s %s %*s - %s %*s %*[^\n]", &mid, &parid, &maj, &min, &point[0], &fstype[0]) == 6) {
+ 	const size_t nlen = strlen(point);
+ 	MNTINFO *restrict p;
+ 	if (posix_memalign((void*)&p, sizeof(void*), alignof(MNTINFO)+(nlen+1)) != 0) {
+--- startproc.c
++++ startproc.c	2012-08-10 12:43:56.136510304 +0000
+@@ -778,7 +778,7 @@ retry:
+ 	     * to see a process damage.
+ 	     */
+ 	    usleep(10*1000);	/* 10 ms time for the child and its child */
+-	    if (++n < 10)
++	    if (++n < 50)
+ 		goto retry;
+ 	    break;
+ 	default:

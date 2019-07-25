@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# Copyright (c) 2001 SuSE GmbH Nuernberg, Germany.
+# Copyright (c) 2011 SUSE Linux Products GmbH Nuernberg, Germany.
+#
+# /etc/init.d/boot.sysctl
+#
+### BEGIN INIT INFO
+# Provides:          boot.sysctl
+# Required-Start:    $null
+# Should-Start:      $null
+# Required-Stop:     $null
+# Should-Stop:       $null
+# Default-Start:     B
+# Default-Stop:
+# Short-Description: Apply sysctl settings
+# Description:       Apply sysctl settings
+### END INIT INFO
+
+. /etc/rc.status
+
+rc_reset
+
+case "$1" in
+  start)
+	echo -n "Applying sysctl settings"
+	sysctl -e -q --system
+	rc_status -v -r
+	;;
+    stop)
+	# skip / do nothing
+	;;
+    status)
+	rc_failed 4
+	rc_status -v
+	;;
+    *)
+	echo "Usage: $0 {start|stop|status}"
+	exit 1
+	;;
+esac
+
+rc_exit

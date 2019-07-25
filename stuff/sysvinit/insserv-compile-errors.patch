@@ -1,0 +1,53 @@
+diff -ruN insserv-1.14.0/insserv.c insserv-1.14.0-patch/insserv.c
+--- insserv-1.14.0/insserv.c	2010-02-19 22:02:20.000000000 +0900
++++ insserv-1.14.0-patch/insserv.c	2019-07-25 21:21:07.082750316 +0900
+@@ -994,7 +994,7 @@
+ static void _logger (const char *restrict const fmt, va_list ap);
+ static void _logger (const char *restrict const fmt, va_list ap)
+ {
+-    extension char buf[strlen(myname)+2+strlen(fmt)+1];
++    char buf[strlen(myname)+2+strlen(fmt)+1];
+     strcat(strcat(strcpy(buf, myname), ": "), fmt);
+     vfprintf(stderr, buf, ap);
+     return;
+@@ -2376,7 +2376,7 @@
+     DIR * initdir;
+     struct dirent *d;
+     struct stat st_script;
+-    extension char * argr[argc];
++    char * argr[argc];
+     char * path = INITDIR;
+     char * override_path = OVERRIDEDIR;
+     char * insconf = INSCONF;
+diff -ruN insserv-1.14.0/Makefile insserv-1.14.0-patch/Makefile
+--- insserv-1.14.0/Makefile	2010-02-19 23:00:37.000000000 +0900
++++ insserv-1.14.0-patch/Makefile	2019-07-25 21:18:00.395733163 +0900
+@@ -29,7 +29,6 @@
+ endif
+ 	 CFLAGS = -W -Wall $(COPTS) $(DEBUG) $(LOOPS) -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
+ 		  $(ISSUSE) -DINITDIR=\"$(INITDIR)\" -DINSCONF=\"$(INSCONF)\" -pipe
+-	  CLOOP = -falign-loops=0
+ 	LDFLAGS = -Wl,-O,3,--relax
+ 	   LIBS =
+ ifdef USE_RPMLIB
+@@ -37,7 +36,7 @@
+ 	LDFLAGS += -Wl,--as-needed
+ 	   LIBS += -lrpm
+ endif
+-	     CC = gcc
++	     CC ?= gcc
+ 	     RM = rm -f
+ 	  MKDIR = mkdir -p
+ 	  RMDIR = rm -rf
+@@ -76,8 +75,8 @@
+ insserv:	insserv.o listing.o
+ 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+ 
+-listing.o:	listing.c listing.h config.h .system
+-	$(CC) $(CFLAGS) $(CLOOP) -c $<
++listing.o:	listing.c insserv.c listing.h config.h .system
++	$(CC) $(CFLAGS) $(CLOOP) $(CFLDBUS) -c $<
+ 
+ insserv.o:	insserv.c listing.h config.h .system
+ 	$(CC) $(CFLAGS) $(CLOOP) -c $<
+

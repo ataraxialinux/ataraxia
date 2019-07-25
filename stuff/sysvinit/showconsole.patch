@@ -1,0 +1,210 @@
+diff -ruN showconsole-1.16-orig/blogd.c showconsole-1.16/blogd.c
+--- showconsole-1.16-orig/blogd.c	2011-04-20 18:21:40.000000000 +0900
++++ showconsole-1.16/blogd.c	2019-07-25 22:53:04.772833040 +0900
+@@ -19,6 +19,7 @@
+ #include <sys/types.h> /* Defines the macros major and minor */
+ #include <sys/stat.h>
+ #include <sys/ioctl.h>
++#include <sys/ttydefaults.h>
+ #include <time.h>
+ #include <pty.h>
+ #include <stdio.h>
+diff -ruN showconsole-1.16-orig/libconsole.c showconsole-1.16/libconsole.c
+--- showconsole-1.16-orig/libconsole.c	2011-12-20 03:11:00.000000000 +0900
++++ showconsole-1.16/libconsole.c	2019-07-25 22:50:24.554818320 +0900
+@@ -358,7 +358,9 @@
+  */
+ 
+ typedef struct _mutex {
+-    int locked;
++    volatile int locked;
++    volatile int canceled;
++    volatile int used;
+     pthread_mutex_t mutex;
+     pthread_t thread;
+ } mutex_t;
+@@ -380,8 +382,8 @@
+     }
+ }
+ 
+-static mutex_t llock = { 0, PTHREAD_MUTEX_INITIALIZER, 0 };
+-static mutex_t ljoin = { 0, PTHREAD_MUTEX_INITIALIZER, 0 };
++static mutex_t llock = { 0, 0, 1, PTHREAD_MUTEX_INITIALIZER, 0 };
++static mutex_t ljoin = { 0, 0, 1, PTHREAD_MUTEX_INITIALIZER, 0 };
+ static pthread_cond_t lcond = PTHREAD_COND_INITIALIZER;
+ static pthread_t    lthread;
+ static volatile int running;
+@@ -429,21 +431,32 @@
+ 
+ static inline void writelog(void)
+ {
+-    if (!flog)
++    int oldstate;
++
++    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
++    lock(&llock);
++    if (!flog) { /* log file closed, reset buffer */
++	resetlog();
++	unlock(&llock);
++	pthread_setcancelstate(oldstate, NULL);
+ 	return;
++    }
+     clearerr(flog);
+-    lock(&llock);
+     while (avail > 0) {
+ 	size_t ret = (size_t)avail;
+ 
+ 	if (avail > TRANS_BUFFER_SIZE)
+ 	    ret = TRANS_BUFFER_SIZE;
+ 
+-	if (!flog || nsigsys)
++	if (!flog || nsigsys) { /* log file closed, reset buffer */
++	    resetlog();
+ 	    break;
++	}
+ 	ret = fwrite(head, sizeof(unsigned char), ret, flog);
+-	if (!ret && ferror(flog))
++	if (!ret && ferror(flog)) { /* cannot write anymore, reset buffer */
++	    resetlog();
+ 	    break;
++	}
+ 	head += ret;
+ 
+ 	if (head >= tail) {		/* empty, reset buffer */
+@@ -461,11 +474,12 @@
+ 	fflush(flog);
+ 	fdatasync(fileno(flog));
+     }
++    pthread_setcancelstate(oldstate, NULL);
+ }
+ 
+ static inline void flushlog(void)
+ {
+-    if (running) pthread_cond_broadcast(&lcond);
++    if (ljoin.canceled == 0) pthread_cond_broadcast(&lcond);
+ }
+ 
+ static inline int poll(int msec, mutex_t *outer)
+@@ -488,18 +502,25 @@
+ 	    abstime.tv_nsec = now.tv_usec * 1000;
+ 
+ 	    do {
+-		int locked = outer->locked;
+ 		/* Note: pthread_cond_timedwait() atomically unlocks the mutex */
+-		outer->locked = 0;
+-		err = pthread_cond_timedwait(&lcond, &outer->mutex, &abstime);
+-		outer->locked = locked;
++		if (outer->canceled == 0) {
++		    volatile int locked = outer->locked;
++		    outer->locked = 0;
++		    err = pthread_cond_timedwait(&lcond, &outer->mutex, &abstime);
++		    outer->locked = locked;
++		}
+ 	    } while (err == EINTR);
+ 
+ 	    if (err == ETIMEDOUT || err == EBUSY)
+ 		ret = 0;
+ 	}
+-    } else
+-	pthread_yield();
++#if 0
++    } else {
++	unlock(&outer->mutex);
++	sched_yield();
++	lock(&outer->mutex);
++#endif
++    }
+ 
+     return ret;
+ }
+@@ -772,14 +793,12 @@
+ 	if (!poll(30, &ljoin))
+ 	    continue;
+ 
+-	if (!flog)
+-	    break;
+-
+ 	writelog();
+     }
+     unlock(&ljoin);
+ 
+     (void)pthread_sigmask(SIG_SETMASK, &save_oldset, NULL);
++    ljoin.used = 0;
+     return NULL;
+ }
+ 
+@@ -902,16 +921,6 @@
+ #ifdef DEBUG_SIGIO
+ 	if (nsigio < 0)
+ 	   goto skip;
+-#else
+-	if (nsigio < 0) {
+-	    /*
+-	     * Maybe access() does lie under kernel 2.6
+-	     * or the root file system is rw mounted
+-	     */
+-	    const char *runlevel = getenv("RUNLEVEL");
+-	    if (runlevel && (*runlevel < '0' || *runlevel > '6'))
+-		goto skip;
+-	}
+ #endif
+ 	if (access(BOOT_LOGFILE, W_OK) < 0) {
+ 	    if (errno != ENOENT && errno != EROFS)
+@@ -1005,6 +1014,8 @@
+ 	(void)tcdrain(c->fd);		/* Hold in sync with console */
+     }
+ 
++    flushlog();
++
+     do {
+ 	/*
+ 	 * Repeat this as long as required,
+@@ -1021,14 +1032,19 @@
+     	more_input(&timeout, 1);
+ 	(void)tcdrain(fdread);
+ 
++	flushlog();
++
+     } while (timeout.tv_sec || timeout.tv_nsec);
+ 
+     if (running) {
+ 	lock(&ljoin);
+ 	running = 0;
+ 	unlock(&ljoin);
+-	flushlog();
+-	pthread_cancel(lthread);
++	ljoin.canceled = 1;
++	pthread_cond_broadcast(&lcond);
++	sched_yield();
++	if (ljoin.used && lthread)
++	    pthread_cancel(lthread);
+     }
+ 
+     if (flog) {
+diff -ruN showconsole-1.16-orig/libconsole.h showconsole-1.16/libconsole.h
+--- showconsole-1.16-orig/libconsole.h	2011-03-31 23:47:22.000000000 +0900
++++ showconsole-1.16/libconsole.h	2019-07-25 22:49:14.910811921 +0900
+@@ -11,6 +11,7 @@
+ 
+ #include <termios.h>
+ #include <unistd.h>
++#include <sys/sysmacros.h>
+ #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+ # ifndef  inline
+ #  define inline		__inline__
+diff -ruN showconsole-1.16-orig/Makefile showconsole-1.16/Makefile
+--- showconsole-1.16-orig/Makefile	2012-01-12 21:19:59.000000000 +0900
++++ showconsole-1.16/Makefile	2019-07-25 22:48:08.061805779 +0900
+@@ -29,11 +29,10 @@
+ 		  -DTRANS_BUFFER_SIZE=$(TRANS_BUFFER) \
+ 		  -DBOOT_LOGFILE=\"$(BOOT_LOGFILE)\" \
+ 		  -D_PATH_BLOG_FIFO=\"$(BOOT_FIFO)\" -Wall -pipe
+-	  CLOOP = -funroll-loops
+ ifeq ($(BLOGGER),1)
+ 	 CFLAGS := $(CFLAGS) -DBLOGGER
+ endif
+-	     CC = gcc
++	     CC ?= gcc
+ 	     RM = rm -f
+ 	  MKDIR = mkdir -p
+ 	  RMDIR = rm -rf

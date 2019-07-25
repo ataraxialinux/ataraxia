@@ -1,0 +1,35 @@
+# Description: Miscellaneous procfs tools
+# URL:         http://psmisc.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+# License:     GPLv2+
+# Group:       System Environment/Base
+
+name=psmisc
+version=23.2
+release=1
+options=('bootstrap')
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/psmisc/include_limits.patch
+	patch -Np1 -i "$STUFF"/psmisc/kal.patch
+
+	case $BARCH in
+		ppc64le|ppc64|ppc)
+			patch -Np1 -i "$STUFF"/psmisc/musl_ptregs.patch
+			;;
+	esac
+
+cat > config.cache << EOF
+ac_cv_func_malloc_0_nonnull=yes
+ac_cv_func_realloc_0_nonnull=yes
+EOF
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--cache-file=config.cache
+	make
+	make DESTDIR="$PKG" install
+}

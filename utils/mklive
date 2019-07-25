@@ -1,18 +1,19 @@
 #!/bin/bash
 
 generate_initramfs() {
-	packages="base-files musl tz musl-tools zlib file ncurses readline bzip2 cracklib pam attr acl libcap \
-		shadow sed ed pcre grep mksh bash expat libressl ca-certificates iputils net-tools xz lzip kmod coreutils diffutils \
-		mlocate findutils mandoc dialog nawk less pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl \
-		libpcap iptables iproute2 kbd tar vim procps-ng libcap-ng util-linux e2fsprogs musl-obstack reiserfsprogs \
-		dosfstools hwids eudev runit sbase ubase sinit dhcp wireless_tools wpa_supplicant popt gptfdisk \
-		libssh2 c-ares libev nghttp2 curl nettle lz4 zstd libarchive rpm kagami"
+	packages="filesystem musl tz man-pages musl-tools zlib file ncurses readline bzip2 cracklib pam attr acl libcap shadow \
+		sed psmisc ed pcre grep mksh bash which expat  libressl ca-certificates iputils net-tools run-parts ifupdown xz \
+		lzip cpio kmod coreutils mlocate findutils mandoc dialog nawk less zutils pigz libmnl libnftnl libnfnetlink \
+		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd tar vim procps-ng libcap-ng util-linux e2fsprogs \
+		musl-obstack reiserfsprogs hwids eudev sysvinit"
 
 	kagami -EWn -c "$BUILD"/target.config -r "$INITRAMFS" $packages
 
 	kagami -EWnd -c "$BUILD"/target.config -r "$INITRAMFS" linux
 
 	pushd "$INITRAMFS"
+		insserv -r -f -p . etc/init.d/boot.rootfsck
+
 		ln -sf usr/bin/init init
 
 		rm -rf usr/include

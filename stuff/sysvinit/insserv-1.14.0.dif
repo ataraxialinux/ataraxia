@@ -1,0 +1,722 @@
+--- insserv.c
++++ insserv.c	2011-02-25 16:37:28.887927611 +0000
+@@ -26,6 +26,7 @@
+ #define MINIMAL_MAKE	1	/* Remove disabled scripts from .depend.boot,
+ 				 * .depend.start, .depend.halt, and .depend.stop */
+ #define MINIMAL_RULES	1	/* ditto */
++#define MINIMAL_DEPEND	1	/* Remove redundant dependencies */
+ 
+ #include <pwd.h>
+ #include <string.h>
+@@ -389,8 +390,8 @@ static void reversereq(service_t *restri
+ /*
+  * Check required services for name
+  */
+-static boolean chkrequired(service_t *restrict serv) attribute((nonnull(1)));
+-static boolean chkrequired(service_t *restrict serv)
++static boolean chkrequired(service_t *restrict serv, const boolean recursive) attribute((nonnull(1)));
++static boolean chkrequired(service_t *restrict serv, const boolean recursive)
+ {
+     boolean ret = true;
+     list_t * pos;
+@@ -409,12 +410,23 @@ static boolean chkrequired(service_t *re
+ 	must = getorig(must);
+ 
+ 	if ((must->attr.flags & (SERV_CMDLINE|SERV_ENABLED)) == 0) {
+-	    warn("Service %s has to be enabled to start service %s\n",
+-		 req->serv->name, serv->name);
++	    if (recursive) {
++		must->attr.flags |= SERV_ENFORCE;
++		continue;	/* Enabled this later even if not on command line */
++	    }
++	    if ((must->attr.flags & SERV_WARNED) == 0) {
++		warn("FATAL: service %s has to be enabled to use service %s\n",
++		     req->serv->name, serv->name);
++		must->attr.flags |= SERV_WARNED;
++	    }
+ 	    ret = false;
+ 	}
+     }
+ #if 0
++    /*
++     * Once we may use REQ_MUST for X-Start-Before and/or
++     * X-Stop-After we may enable this, see reversereq()
++     */
+     if (serv->attr.flags & (SERV_CMDLINE|SERV_ENABLED))
+ 	goto out;
+     np_list_for_each(pos, &serv->sort.rev) {
+@@ -425,9 +437,8 @@ static boolean chkrequired(service_t *re
+ 	    continue;
+ 	must = rev->serv;
+ 	must = getorig(must);
+-
+ 	if (must->attr.flags & (SERV_CMDLINE|SERV_ENABLED)) {
+-	    warn("Service %s has to be enabled to stop service %s\n",
++	    warn("FATAL: service %s has to be enabled to use service %s\n",
+ 		 serv->name, rev->serv->name);
+ 	    ret = false;
+ 	}
+@@ -476,7 +487,7 @@ static boolean chkdependencies(service_t
+ 	    if ((cur->attr.flags & SERV_CMDLINE) && (flags & SERV_CMDLINE))
+ 		continue;
+ 
+-	    warn("Service %s has to be enabled to start service %s\n",
++	    warn("FATAL: service %s has to be enabled to use service %s\n",
+ 		 name, cur->name);
+ 	    ret = false;
+ 	}
+@@ -738,7 +749,7 @@ static inline void makedep(void)
+     FILE *halt;
+ #endif /* USE_KILL_IN_BOOT */
+     const char *target;
+-    service_t *serv;
++    const service_t *serv;
+ 
+     if (dryrun) {
+ #ifdef USE_KILL_IN_BOOT
+@@ -818,6 +829,10 @@ static inline void makedep(void)
+ 
+     target = (char*)0;
+     while ((serv = listscripts(&target, 'S', LVL_BOOT|LVL_ALL))) {
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	const service_t * lserv[100] = {0};
++	unsigned long lcnt = 0;
++#endif /* not MINIMAL_DEPEND */
+ 	boolean mark;
+ 	list_t * pos;
+ 
+@@ -841,6 +856,10 @@ static inline void makedep(void)
+ 	np_list_for_each(pos, &serv->sort.req) {
+ 	    req_t * req = getreq(pos);
+ 	    service_t * dep = req->serv;
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	    boolean shadow = false;
++	    unsigned long n;
++#endif /* not MINIMAL_DEPEND */
+ 	    const char * name;
+ 
+ 	    if (!dep)
+@@ -870,7 +889,36 @@ static inline void makedep(void)
+ 		fprintf(out, "%s:", target);
+ 		mark = true;
+ 	    }
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	    for (n = 0; n < lcnt && lserv[n] ; n++) {
++		list_t * red;
++		if (lserv[n]->attr.sorder <= dep->attr.sorder)
++		    break;
++		np_list_for_each(red, &(lserv[n])->sort.req) {
++		    req_t * other = getreq(red);
++		    if (other->serv->attr.flags & SERV_DUPLET)
++			continue;
++		    if (other->serv->attr.ref <= 0)
++			continue;
++		    if ((serv->start->lvl & other->serv->start->lvl) == 0)
++			continue;
++		    if (!other->serv->attr.script)
++			continue;
++		    if (other->serv != dep)
++			continue;
++		    shadow = true;
++		}
++	    }
++	    if (shadow)
++		continue;
++#endif /* not MINIMAL_DEPEND */
+ 	    fprintf(out, " %s", name);
++
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	    if (lcnt >= sizeof(lserv)/sizeof(lserv[0]))
++		continue;
++	    lserv[lcnt++] = dep;
++#endif /* not MINIMAL_DEPEND */
+ 	}
+ 
+ 	if (mark) fputc('\n', out);
+@@ -927,6 +975,10 @@ static inline void makedep(void)
+ 
+     target = (char*)0;
+     while ((serv = listscripts(&target, 'K', (LVL_NORM|LVL_BOOT)))) {
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	const service_t * lserv[100] = {0};
++	unsigned long lcnt = 0;
++#endif /* not MINIMAL_DEPEND */
+ 	boolean mark;
+ 	list_t * pos;
+ 
+@@ -953,6 +1005,10 @@ static inline void makedep(void)
+ 	np_list_for_each(pos, &serv->sort.rev) {
+ 	    req_t * rev = getreq(pos);
+ 	    service_t * dep = rev->serv;
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	    boolean shadow = false;
++	    unsigned long n;
++#endif /* not MINIMAL_DEPEND */
+ 	    const char * name;
+ 
+ 	    if (!dep)
+@@ -976,7 +1032,36 @@ static inline void makedep(void)
+ 		fprintf(out, "%s:", target);
+ 		mark = true;
+ 	    }
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	    for (n = 0; n < lcnt && lserv[n]; n++) {
++		list_t * red;
++		if (lserv[n]->attr.korder <= dep->attr.korder)
++		    break;
++		np_list_for_each(red, &(lserv[n])->sort.rev) {
++		    req_t * other = getreq(red);
++		    if (other->serv->attr.flags & SERV_DUPLET)
++			continue;
++		    if (other->serv->attr.ref <= 0)
++			continue;
++		    if ((serv->start->lvl & other->serv->start->lvl) == 0)
++			continue;
++		    if (!other->serv->attr.script)
++			continue;
++		    if (other->serv != dep)
++			continue;
++		    shadow = true;
++		}
++	    }
++	    if (shadow)
++		continue;
++#endif /* not MINIMAL_DEPEND */
+ 	    fprintf(out, " %s", name);
++
++#if defined(MINIMAL_DEPEND) && (MINIMAL_DEPEND != 0)
++	    if (lcnt >= sizeof(lserv)/sizeof(lserv[0]))
++		continue;
++	    lserv[lcnt++] = dep;
++#endif /* not MINIMAL_DEPEND */
+ 	}
+ 	if (mark) fputc('\n', out);
+     }
+@@ -1378,10 +1463,10 @@ static uchar scan_lsb_headers(const int
+ 		description = empty;
+ 	}
+ 
+-	if (!interactive    && regexecutor(&reg.interact,      COMMON_ARGS) == true) {
+-	    if (val->rm_so < val->rm_eo) {
+-		*(pbuf+val->rm_eo) = '\0';
+-		interactive = xstrdup(pbuf+val->rm_so);
++	if (!interactive    && regexecutor(&reg.interact,  COMMON_SHD_ARGS) == true) {
++	    if (shl->rm_so < shl->rm_eo) {
++		*(pbuf+shl->rm_eo) = '\0';
++		interactive = xstrdup(pbuf+shl->rm_so);
+ 	    } else
+ 		interactive = empty;
+ 	}
+@@ -1416,7 +1501,7 @@ static uchar scan_lsb_headers(const int
+ 	char *name = basename(path);
+ 	if (*name == 'S' || *name == 'K')
+ 	    name += 3;
+-	warn("Script %s is broken: missing end of LSB comment.\n", name);
++	warn("%sscript %s is broken: missing end of LSB comment.\n", ignore ? "" : "FATAL: ", name);
+ 	if (!ignore)
+ 	    error("exiting now!\n");
+     }
+@@ -1432,7 +1517,7 @@ static uchar scan_lsb_headers(const int
+ 	char *name = basename(path);
+ 	if (*name == 'S' || *name == 'K')
+ 	    name += 3;
+-	warn("Script %s is broken: incomplete LSB comment.\n", name);
++	warn("script %s is broken: incomplete LSB comment.\n", name);
+ 	if (!provides)
+ 	    warn("missing `Provides:' entry: please add.\n");
+ 	if (provides == empty)
+@@ -2338,17 +2423,18 @@ out:
+ 
+ static struct option long_options[] =
+ {
+-    {"verbose",	0, (int*)0, 'v'},
+-    {"config",	1, (int*)0, 'c'},
+-    {"dryrun",	0, (int*)0, 'n'},
+-    {"default",	0, (int*)0, 'd'},
+-    {"remove",	0, (int*)0, 'r'},
+-    {"force",	0, (int*)0, 'f'},
+-    {"path",	1, (int*)0, 'p'},
+-    {"override",1, (int*)0, 'o'},
+-    {"upstart-job",1, (int*)0, 'u'},
+-    {"help",	0, (int*)0, 'h'},
+-    { 0,	0, (int*)0,  0 },
++    {"verbose",	    0, (int*)0, 'v'},
++    {"config",	    1, (int*)0, 'c'},
++    {"dryrun",	    0, (int*)0, 'n'},
++    {"default",	    0, (int*)0, 'd'},
++    {"remove",	    0, (int*)0, 'r'},
++    {"force",	    0, (int*)0, 'f'},
++    {"path",	    1, (int*)0, 'p'},
++    {"override",    1, (int*)0, 'o'},
++    {"upstart-job", 1, (int*)0, 'u'},
++    {"recursive",   0, (int*)0, 'e'},
++    {"help",	    0, (int*)0, 'h'},
++    { 0,	    0, (int*)0,  0 },
+ };
+ 
+ static void help(const char *restrict const name) attribute((nonnull(1)));
+@@ -2364,6 +2450,8 @@ static void help(const char *restrict co
+     printf("  -o <path>, --override <path> Path to replace " OVERRIDEDIR ".\n");
+     printf("  -c <config>, --config <config>  Path to config file.\n");
+     printf("  -n, --dryrun     Do not change the system, only talk about it.\n");
++    printf("  -u <path>, --upstart-job <path> Path to replace existing upstart job path.\n");
++    printf("  -e, --recursive  Expand and enable all required services.\n");
+     printf("  -d, --default    Use default runlevels a defined in the scripts\n");
+ }
+ 
+@@ -2386,6 +2474,8 @@ int main (int argc, char *argv[])
+     boolean defaults = false;
+     boolean ignore = false;
+     boolean loadarg = false;
++    boolean recursive = false;
++    boolean waserr = false;
+ 
+     myname = basename(*argv);
+ 
+@@ -2400,7 +2490,7 @@ int main (int argc, char *argv[])
+     for (c = 0; c < argc; c++)
+ 	argr[c] = (char*)0;
+ 
+-    while ((c = getopt_long(argc, argv, "c:dfrhvno:p:u:", long_options, (int *)0)) != -1) {
++    while ((c = getopt_long(argc, argv, "c:dfrhvno:p:u:e", long_options, (int *)0)) != -1) {
+ 	size_t l;
+ 	switch (c) {
+ 	    case 'c':
+@@ -2445,6 +2535,9 @@ int main (int argc, char *argv[])
+ 		    goto err;
+ 		upstartjob_path = optarg;
+ 		break;
++	    case 'e':
++		recursive = true;
++		break;
+ 	    case '?':
+ 	    err:
+ 		error("For help use: %s -h\n", myname);
+@@ -2612,7 +2705,7 @@ int main (int argc, char *argv[])
+      * Scan scripts found in the command line to be able to resolve
+      * all dependcies given within those scripts.
+      */
+-    if (argc > 1) for (c = 0; c < argc; c++) {
++    for (c = 0; c < argc; c++) {
+ 	const char *const name = argv[c];
+ 	service_t * first = (service_t*)0;
+ 	char * provides, * begin, * token;
+@@ -3000,8 +3093,10 @@ int main (int argc, char *argv[])
+ 		    if (!del || (del && !isarg))
+ 			warn("script %s: service %s already provided!\n", d->d_name, token);
+ 
+-		    if (!del && !ignore && isarg)
+-			error("exiting now!\n");
++		    if (!del && !ignore && isarg) {
++			waserr = true;
++			continue;
++		    }
+ 
+ 		    if (!del || (del && !ignore && !isarg))
+ 			continue;
+@@ -3064,9 +3159,9 @@ int main (int argc, char *argv[])
+ 			if (del)
+ 			    ok = chkdependencies(service);
+ 			else
+-			    ok = chkrequired(service);
++			    ok = chkrequired(service, recursive);
+ 			if (!ok && !ignore)
+-			    error("exiting now!\n");
++			    waserr = true;
+ 		    }
+ 
+ 		    if (script_inf.default_start && script_inf.default_start != empty) {
+@@ -3357,6 +3452,123 @@ int main (int argc, char *argv[])
+     active_script();
+ 
+     /*
++     * Check if runlevels of required scripts are a real subset
++     * of the services handled here.
++     */
++    if (!del && !ignore) {
++	list_t * ptr;
++	list_for_each(ptr, s_start) {
++	    service_t * cur = getservice(ptr);
++	    ushort clvl = cur->start->lvl & ~LVL_SINGLE;
++	    list_t * pos;
++
++	    cur = getorig(cur);
++	    if (list_empty(&cur->sort.req))
++		continue;
++
++	    np_list_for_each(pos, &cur->sort.req) {
++		req_t *req = getreq(pos);
++		service_t * must;
++
++		if ((req->flags & REQ_MUST) == 0)
++		    continue;
++		must = req->serv;
++		must = getorig(must);
++
++		/*
++		 * Check for recursive mode the existence of the required services
++		 */
++		if (cur->attr.flags & SERV_CMDLINE) {
++
++		    if (must->attr.flags & SERV_ENABLED) {
++			ushort mlvl = must->start->lvl & ~LVL_SINGLE;
++
++			if ((mlvl & LVL_BOOT) && (clvl & LVL_BOOT) == 0)
++			    continue;
++
++			if ((mlvl & clvl) == clvl)
++			    continue;
++			if (recursive) {
++			    must->start->lvl |= clvl;
++			    must->stopp->lvl |= clvl;
++			    continue;
++			}
++			clvl &= ~mlvl;
++			if ((must->attr.flags & SERV_WARNED) == 0)
++#ifndef OSCBUILD
++			    warn("Service %s is missed in the runlevels %s to use service %s\n",
++				must->name, lvl2str(clvl), cur->name);
++#else
++			    warn("FATAL: service %s is missed in the runlevels %s to use service %s\n",
++				must->name, lvl2str(clvl), cur->name);
++			waserr = true;
++#endif
++			must->attr.flags |= SERV_WARNED;
++			continue;
++		    }
++		    if ((must->attr.flags & (SERV_ENFORCE|SERV_KNOWN)) == SERV_ENFORCE) {
++			if ((must->attr.flags & SERV_WARNED) == 0)
++#ifndef OSCBUILD
++			    warn("Service %s has to exists for service %s\n",
++				must->name, cur->name);
++#else
++			    warn("FATAL: service %s has to exists for service %s\n",
++				must->name, cur->name);
++			waserr = true;
++#endif
++			must->attr.flags |= SERV_WARNED;
++			continue;
++		    }
++		    if (recursive) {
++			must->start->lvl |= clvl;
++			must->stopp->lvl |= clvl;
++			continue;
++		    }
++		    continue;
++		}
++		if ((cur->attr.flags & SERV_ENABLED) == 0)
++		    continue;
++		if ((must->attr.flags & (SERV_CMDLINE|SERV_KNOWN)) == 0) {
++		    if ((must->attr.flags & SERV_WARNED) == 0)
++#ifndef OSCBUILD
++			warn("Service %s has to exists for service %s\n",
++			    must->name, cur->name);
++#else
++			warn("FATAL: service %s has to exists for service %s\n",
++			    must->name, cur->name);
++		    waserr = true;
++#endif
++		    must->attr.flags |= SERV_WARNED;
++		    continue;
++		}
++		if (must->attr.flags & SERV_ENABLED) {
++		    ushort mlvl = must->start->lvl & ~LVL_SINGLE;
++
++		    if ((mlvl & LVL_BOOT) && (clvl & LVL_BOOT) == 0)
++			continue;
++
++		    if ((mlvl & clvl) == clvl)
++			continue;
++		    clvl &= ~mlvl;
++		    if ((must->attr.flags & SERV_WARNED) == 0)
++#ifndef OSCBUILD
++			warn("Service %s is missed in the runlevels %s to use service %s\n",
++			    must->name, lvl2str(clvl), cur->name);
++#else
++			warn("FATAL: service %s is missed in the runlevels %s to use service %s\n",
++			    must->name, lvl2str(clvl), cur->name);
++		    waserr = true;
++#endif
++		    must->attr.flags |= SERV_WARNED;
++		}
++	    }
++	}
++    }
++
++    if (waserr)
++	error("exiting now!\n");
++
++    /*
+      * Sorry but we support only [KS][0-9][0-9]<name>
+      */
+     if (maxstart > MAX_DEEP || maxstop > MAX_DEEP)
+@@ -3435,13 +3647,16 @@ int main (int argc, char *argv[])
+ 
+ 	script = (char*)0;
+ 	while ((serv = listscripts(&script, 'X', lvl))) {
+-	    const boolean this = chkfor(script, argv, argc);
++	    boolean this = chkfor(script, argv, argc);
+ 	    boolean found, slink;
+ 	    char * clink;
+ 
+ 	    if (*script == '$')		/* Do not link in virtual dependencies */
+ 		continue;
+ 
++	    if ((serv->attr.flags & (SERV_ENFORCE|SERV_ENABLED)) == SERV_ENFORCE)
++		this = true;
++
+ 	    slink = false;
+ 	    if ((serv->start->lvl & lvl) == 0)
+ 		goto stop;
+@@ -3616,7 +3831,7 @@ int main (int argc, char *argv[])
+ 
+ 	script = (char*)0;
+ 	while ((serv = listscripts(&script, 'X', seek))) {
+-	    const boolean this = chkfor(script, argv, argc);
++	    boolean this = chkfor(script, argv, argc);
+ 	    boolean found;
+ 	    char * clink;
+ 	    char mode;
+@@ -3624,6 +3839,9 @@ int main (int argc, char *argv[])
+ 	    if (*script == '$')		/* Do not link in virtual dependencies */
+ 		continue;
+ 
++	    if ((serv->attr.flags & (SERV_ENFORCE|SERV_ENABLED)) == SERV_ENFORCE) 
++		this = true;
++
+ 	    sprintf(olink, "../init.d/%s", script);
+ 	    if (serv->stopp->lvl & lvl) {
+ #  ifndef USE_KILL_IN_BOOT
+--- listing.c
++++ listing.c	2010-11-26 14:16:31.675926125 +0000
+@@ -534,19 +534,16 @@ out:
+  * Sort linked list of provides into start or stop order
+  * during this set new start or stop order of the serives.
+  */
+-#undef SORT_REQUESTS
++#define getdep(req)    ((dir_t*)(req)->serv->dir)
+ void lsort(const char type)
+ {
+     list_t sort = { &sort, &sort };
+-#ifdef SORT_REQUESTS
+-    list_t * this;
+-#endif /* SORT_REQUESTS */
++    list_t * ptr, * safe, * this;
+     int order;
+ 
+     switch (type) {
+     case 'K':
+ 	for (order = 0; order <= maxstop; order++) {
+-	    list_t * ptr, * safe;
+ 	    list_for_each_safe(ptr, safe, d_start) {
+ 		dir_t * dir = getdir(ptr);
+ 		if (dir->stopp.deep == order)
+@@ -554,28 +551,54 @@ void lsort(const char type)
+ 	    }
+ 	}
+ 	join(&sort, d_start);
+-#ifdef SORT_REQUESTS
+ 	list_for_each(this, s_start) {
+ 	    service_t * serv = getservice(this);
+ 	    if (serv->attr.flags & SERV_DUPLET)
+ 		continue;
+ 	    initial(&sort);
+-	    for (order = 0; order <= maxstop; order++) {
+-		list_t * ptr, * safe;
++	    for (order = maxstop; order >= 0; order--) {
+ 		list_for_each_safe(ptr, safe, &serv->sort.rev) {
+ 		    req_t * rev = getreq(ptr);
+-		    dir_t * dir = (dir_t*)rev->serv->dir;
+-		    if (dir->stopp.deep == order)
+-			move_tail(ptr, &sort);
++		    dir_t * dir = getdep(rev);
++		    if (dir->stopp.deep == order) {
++			service_t *const orig = getorig(rev->serv);
++			list_t * chk;
++			boolean found = false;
++
++			list_for_each_prev(chk, &sort) {    /* check if service was already resorted */
++			    req_t * this = getreq(chk);
++			    if (getdep(this)->stopp.deep != order)
++				break;			    /* added on tail always with same order */
++			    if (getdep(this) == orig->dir) {
++				found = true;
++			    }
++			}
++
++			if (!found) {
++			    if (rev->serv != orig) {	    /* replace alias with its original */
++				req_t *restrict this;
++				if (posix_memalign((void*)&this, sizeof(void*), alignof(req_t)) != 0)
++				    error("%s", strerror(errno));
++				memset(this, 0, alignof(req_t));
++				this->flags = rev->flags;
++				this->serv = orig;
++				replace(ptr, &this->list);
++				ptr = &this->list;
++				free(rev);
++			    }
++			    move_tail(ptr, &sort);
++			} else {			    /* already included */
++			    delete(ptr);
++			    free(rev);
++			}
++		    }
+ 		}
+ 	    }
+ 	    join(&sort, &serv->sort.rev);
+ 	}
+-#endif /* SORT_REQUESTS */
+ 	break;
+     default:
+ 	for (order = 0; order <= maxstart; order++) {
+-	    list_t * ptr, * safe;
+ 	    list_for_each_safe(ptr, safe, d_start) {
+ 		dir_t * dir = getdir(ptr);
+ 		if (dir->start.deep == order)
+@@ -583,28 +606,54 @@ void lsort(const char type)
+ 	    }
+ 	}
+ 	join(&sort, d_start);
+-#ifdef SORT_REQUESTS
+ 	list_for_each(this, s_start) {
+ 	    service_t * serv = getservice(this);
+ 	    if (serv->attr.flags & SERV_DUPLET)
+ 		continue;
+ 	    initial(&sort);
+-	    for (order = 0; order <= maxstart; order++) {
+-		list_t * ptr, * safe;
++	    for (order = maxstart; order >= 0; order--) {
+ 		list_for_each_safe(ptr, safe, &serv->sort.req) {
+ 		    req_t * req = getreq(ptr);
+-		    dir_t * dir = (dir_t*)req->serv->dir;
+-		    if (dir->start.deep == order)
+-			move_tail(ptr, &sort);
++		    dir_t * dir = getdep(req);
++		    if (dir->start.deep == order) {
++			service_t * orig = getorig(req->serv);
++			list_t * chk;
++			boolean found = false;
++
++			list_for_each_prev(chk, &sort) {    /* check if service was already resorted */
++			    req_t * this = getreq(chk);
++			    if (getdep(this)->start.deep != order)
++				break;			    /* added on tail always with same order */
++			    if (getdep(this) == orig->dir) {
++				found = true;
++				break;
++			    }
++			}
++
++			if (!found) {
++			    if (req->serv != orig) {	    /* replace alias with its original */
++				req_t *restrict this;
++				if (posix_memalign((void*)&this, sizeof(void*), alignof(req_t)) != 0)
++				    error("%s", strerror(errno));
++				memset(this, 0, alignof(req_t));
++				this->flags = req->flags;
++				this->serv = orig;
++				replace(ptr, &this->list);
++				ptr = &this->list;
++				free(req);
++			    }
++			    move_tail(ptr, &sort);
++			} else {			    /* already included */
++			    delete(ptr);
++			    free(req);
++			}
++		    }
+ 		}
+ 	    }
+ 	    join(&sort, &serv->sort.req);
+ 	}
+-#endif /* SORT_REQUESTS */
+ 	break;
+     }
+-
+-
+ }
+ 
+ /*
+--- listing.h
++++ listing.h	2011-02-07 12:23:03.970855430 +0000
+@@ -64,8 +64,7 @@ typedef unsigned int uint;
+  *
+  * on the appropiate architecture (here on i686 for i586).
+  */
+-static inline void prefetch(const void *restrict x) attribute((used,always_inline));
+-static inline void prefetch(const void *restrict x)
++extern inline void attribute((used,__gnu_inline__,always_inline,__artificial__)) prefetch(const void *restrict x)
+ {
+ #if   defined(__x86_64__)
+     asm volatile ("prefetcht0 %0"  :: "m" (*(unsigned long *)x))
+@@ -91,6 +90,8 @@ static inline void prefetch(const void *
+ 		  "   \n664:\n"
+ 		  ".previous"
+ 		  :: "i" ((0*32+25)), "r" (x))
++#else
++    __builtin_prefetch ((x), 0, 1);
+ #endif
+     ;
+ }
+@@ -158,6 +159,18 @@ static inline void delete(list_t *restri
+     initial(entry);
+ }
+ 
++/*
++ * Replace an entry by a new one.
++ */
++static inline void replace(list_t *restrict old, list_t *restrict new) attribute((always_inline,nonnull(1,2)));
++static inline void replace(list_t *restrict old, list_t *restrict new)
++{
++    new->next = old->next;
++    new->next->prev = new;
++    new->prev = old->prev;
++    new->prev->next = new;
++}
++
+ static inline void join(list_t *restrict list, list_t *restrict head) attribute((always_inline,nonnull(1,2)));
+ static inline void join(list_t *restrict list, list_t *restrict head)
+ {
+@@ -175,12 +188,30 @@ static inline void join(list_t *restrict
+     }
+ }
+ 
+-static inline boolean list_empty(list_t *restrict head) attribute((always_inline,nonnull(1)));
+-static inline boolean list_empty(list_t *restrict head)
++static inline boolean list_empty(const list_t *restrict const head) attribute((always_inline,nonnull(1)));
++static inline boolean list_empty(const list_t *restrict const head)
+ {
+      return head->next == head;
+ }
+ 
++static inline void move_head(list_t *restrict entry, list_t *restrict head) attribute((always_inline,nonnull(1,2)));
++static inline void move_head(list_t *restrict entry, list_t *restrict head)
++{
++    list_t * prev = entry->prev;
++    list_t * next = entry->next;
++
++    next->prev = prev;		/* remove enty from old list */
++    prev->next = next;
++
++    prev = head;
++    next = head->next;
++
++    next->prev = entry;		/* and add it at head of new list */
++    entry->next = next;
++    entry->prev = prev;
++    prev->next = entry;
++}
++
+ static inline void move_tail(list_t *restrict entry, list_t *restrict head) attribute((always_inline,nonnull(1,2)));
+ static inline void move_tail(list_t *restrict entry, list_t *restrict head)
+ {
+@@ -379,6 +410,8 @@ static inline char * xstrdup(const char
+ #define SERV_NOSTOP	0x0100
+ #define SERV_CMDLINE	0x0200
+ #define SERV_FIRST	0x0400
++#define SERV_ENFORCE	0x0800
++#define SERV_WARNED	0x1000
+ 
+ /*
+  * Bits of the runlevels
