@@ -1,0 +1,152 @@
+#!/bin/bash
+#
+# rc.6		This file is executed by init when it goes into runlevel
+#		0 (halt) or runlevel 6 (reboot). It kills all processes,
+#		unmounts file systems and then either halts or reboots.
+#
+# Version:	@(#)/etc/rc.d/rc.6	2.47 Sat Jan 13 13:37:26 PST 2001
+#
+# Author:	Miquel van Smoorenburg <miquels@drinkel.nl.mugnet.org>
+# Modified by:	Patrick J. Volkerding, <volkerdi@slackware.com>
+# Modified by:	Damian Rakowski <maestromae@o2.pl>
+# Modified by:	protonesso <ataraxialinux@protonmail.ch>
+#
+
+export PATH="/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"
+source /etc/rc.d/functions.sh
+
+# Set linefeed mode to avoid staircase effect.
+echo; stty onlcr
+
+einfo "Running shutdown script $0:"
+
+# Find out how we were called.
+case "$0" in
+	*0)
+		command="halt"
+		;;
+	*6)
+		command=reboot
+		;;
+	*)
+		echo "$0: call me as \"rc.0\" or \"rc.6\" please!"
+		exit 1
+		;;
+esac
+
+if [ -x /sbin/hwclock ]; then
+	if grep "^UTC" /etc/hardwareclock 1> /dev/null 2> /dev/null ; then
+		msg="Saving system time to the hardware clock (UTC)"
+		status hwclock --utc --systohc
+	else
+		msg="Saving system time to the hardware clock (localtime)"
+		status hwclock --localtime --systohc
+	fi
+fi
+
+# Unmount any NFS or SMB filesystems:
+msg="Unmounting remote filesystems"
+status umount -a -r -t nfs,smbfs
+
+msg="Stopping network"
+status ifdown -a
+
+# Kill all processes.
+# INIT is supposed to handle this entirely now, but this didn't always
+# work correctly without this second pass at killing off the processes.
+# Since INIT already notified the user that processes were being killed,
+# we'll avoid echoing this info this time around.
+if [ "$1" != "fast" ]; then # shutdown did not already kill all processes
+msg="Killing all active processes"
+stat_busy 
+	killall5 -15 
+	sleep 1
+	killall5 -9
+stat_ok
+fi
+
+# Try to turn off quota:
+if fgrep quota /etc/fstab 1> /dev/null 2> /dev/null ; then
+	if [ -x /sbin/quotaoff ]; then
+		msg="Turning off filesystem quotas"
+		status quotaoff -a
+	fi
+fi
+
+# Before unmounting file systems write a reboot or halt record to wtmp.
+$command -w
+
+# Carry a random seed between reboots.
+# Save 512 bytes, which is the size of the entropy pool.
+msg="Saving random seed from /dev/urandom in /etc/random-seed"
+status dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 
+
+# Clear /var/lock/subsys.
+if [ -d /var/lock/subsys ]; then
+	rm -f /var/lock/subsys/*
+fi
+
+# Turn off swap, then unmount local file systems.
+msg="Turning off swap"
+status swapoff -a
+msg="Unmounting local file systems"
+status umount -a -r -t nonfs,noumsdos,nosmbfs,noproc
+
+# This never hurts:
+sync
+
+# Close any volumes opened by cryptsetup:
+if [ -f /etc/crypttab -a -x /sbin/cryptsetup ]; then
+	cat /etc/crypttab | grep -v "^#" | grep -v "^$" | while read line; do
+		# NOTE: we only support LUKS formatted volumes (except for swap)!
+		LUKS=$(echo $line | tr '\t' ' ' | tr -s ' ' | cut -f1 -d' ')
+		DEV=$(echo $line | tr '\t' ' ' | tr -s ' ' | cut -f2 -d' ')
+		OPTS=$(echo $line | tr '\t' ' ' | tr -s ' ' | cut -f4 -d' ')
+		if /sbin/cryptsetup isLuks $DEV 2>/dev/null ; then
+			msg="Locking LUKS crypt volume '${LUKS}':"
+			stat_busy
+
+			cryptsetup luksClose ${LUKS}
+			stat_ok
+		elif echo $OPTS | grep -wq swap ; then
+			# If any of the volumes was used as encrypted swap,
+			# then run mkswap on the underlying device -
+			# in case other Linux installations on this computer should use it:
+			msg="Erasing encrypted swap '${LUKS}' and restoring normal swap on ${DEV}:"
+			stat_busy
+
+			cryptsetup remove ${LUKS}
+			mkswap $DEV
+			stat_ok
+		fi
+	done
+fi
+
+# Deactivate LVM volume groups:
+if [ -r /etc/lvmtab -o -d /etc/lvm/backup ]; then
+	echo "Deactivating LVM volume groups:"
+	/sbin/vgchange -an
+fi
+
+# sleep 1 fixes problems with some hard drives that don't
+# otherwise finish syncing before reboot or poweroff
+sleep 1
+
+# This is to ensure all processes have completed on SMP machines:
+wait
+
+# Now halt (poweroff with APM kernels) or reboot.
+if [ "$command" = "reboot" ]; then
+	einfo "Rebooting."
+	if command -v kexec >/dev/null; then
+		if ! grep -wq nokexec /proc/cmdline; then
+			kexec -e 2>/dev/null
+		else
+			reboot
+		fi
+	else
+		reboot
+	fi
+else
+	poweroff
+fi

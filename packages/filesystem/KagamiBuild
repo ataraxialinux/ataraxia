@@ -13,6 +13,7 @@ backup=('etc/fstab'
 	'etc/gshadow'
 	'etc/host.conf'
 	'etc/hosts'
+	'etc/inittab'
 	'etc/issue'
 	'etc/issue.net'
 	'etc/motd'
@@ -42,13 +43,26 @@ build() {
 
 	touch etc/ataraxialinux-release
 
-	for f in fstab group host.conf hosts issue issue.net motd os-release passwd profile protocols resolv.conf securetty services shells; do
+	for f in fstab group host.conf hosts inittab issue issue.net motd os-release passwd profile protocols resolv.conf securetty services shells; do
 		install -m644 "$STUFF"/filesystem/$f etc/
 	done
 
 	for f in gshadow shadow crypttab; do
 		install -m600 "$STUFF"/filesystem/$f etc/
 	done
+
+	mkdir -p \
+		etc/network/if-down.d \
+		etc/network/if-post-down.d \
+		etc/network/if-post-up.d \
+		etc/network/if-pre-down.d \
+		etc/network/if-pre-up.d \
+		etc/network/if-up.d
+
+cat > etc/network/interfaces << "EOF"
+auto lo
+iface lo inet loopback
+EOF
 
 	for d in cache local opt log/old lib/misc empty spool/cron/crontabs; do
 		install -d -m755 var/$d
