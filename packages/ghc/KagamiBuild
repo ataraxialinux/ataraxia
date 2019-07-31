@@ -1,0 +1,66 @@
+# Description: The Glasgow Haskell Compiler
+# URL:         http://www.haskell.org/ghc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline gmp libffi libedit
+# Section:     devel
+
+name=ghc
+version=8.6.5
+bootver=8.6.5
+release=1
+options=('bootstrap')
+source=("https://downloads.haskell.org/~ghc/$version/$name-$version-src.tar.xz")
+
+build() {
+	case $BARCH in
+		amd64)
+			export GTARGET="x86_64-unknown-linux-musl"
+			;;
+		i386)
+			export GTARGET="i386-unknown-linux-musl"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Rust Language"
+			exit 1
+	esac
+
+	msg "Renaming ghc directory"
+	cd "$SRC"
+	mv $name-$version $name-$version-src
+
+	if [ ! -e '/usr/bin/ghc' ]; then
+		cd "$SRC"
+
+		curl -k -C - -L -O https://github.com/redneb/ghc-alt-libc/releases/download/ghc-$bootver-musl/ghc-$bootver-$GTARGET.tar.xz
+		bsdtar -xvf ghc-$bootver-$GTARGET.tar.xz
+
+		cd $name-$version
+		./configure \
+			--build=$GTARGET \
+			--prefix="$SRC"/ghc
+		make install
+
+		export PATH="$SRC/ghc/bin:$PATH"
+	fi
+
+	cd "$SRC"/$name-$version-src
+	cat >> mk/build.mk <<-EOF
+		HADDOCK_DOCS         = NO
+		BUILD_SPHINX_HTML    = NO
+		BUILD_SPHINX_PS      = NO
+		BUILD_SPHINX_PDF     = NO
+		GhcStage3HcOpts     += -O3
+		BeConservative      = YES
+	EOF
+
+	export GHCLD=ld.gold
+
+	./configure \
+		--build=$GTARGET \
+		--prefix=/usr \
+		--docdir=/usr/share/doc/ghc \
+		--with-ffi-includes=$(pkgconf --variable=includedir libffi) \
+		--with-system-libffi
+	make
+	make -j1 DESTDIR="$PKG" install
+}
