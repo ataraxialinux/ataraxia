@@ -1,0 +1,21 @@
+# Description: Sources for time zone and daylight saving time data
+# URL:         https://www.iana.org/time-zones/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     database
+
+name=tzdata
+version=2019b
+release=1
+options=('bootstrap' '~emptydirs')
+source=("https://data.iana.org/time-zones/releases/tzdb-$version.tar.lz")
+
+build() {
+	cd "$SRC"/tzdb-$version
+	sed -i "s:sbin:bin:g" Makefile
+	make CFLAGS="$CFLAGS"
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/etc
+	rm -rf "$PKG"/usr/share/man/man{5,8}
+	rm -rf "$PKG"/usr/bin "$PKG"/usr/lib
+}

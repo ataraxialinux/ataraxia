@@ -1,15 +1,15 @@
 # Description: A DHCP server, client, and relay agent
 # URL:         https://www.isc.org/software/dhcp
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  net-tools
-# License:     ISC
-# Group:       Applications/Internet
+# Depends on:  busybox
+# Section:     net
 
 name=dhcp
 version=4.4.1
-release=1
+release=2
 options=('bootstrap')
-backup=('etc/dhcpd.conf'
+backup=('etc/dhclient.conf'
+	'etc/dhcpd.conf'
 	'etc/dhcpd6.conf')
 source=("http://ftp.isc.org/isc/dhcp/$version/$name-$version.tar.gz")
 
@@ -39,6 +39,7 @@ build() {
 		make DESTDIR="$PKG" install
 	fi
 
+	mv "$PKG"/etc/dhclient.conf.example "$PKG"/etc/dhclient.conf
 	mv "$PKG"/etc/dhcpd.conf.example "$PKG"/etc/dhcpd.conf
 	install -Dm644 doc/examples/dhcpd-dhcpv6.conf "$PKG"/etc/dhcpd6.conf
 

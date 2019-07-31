@@ -2,8 +2,7 @@
 # URL:         http://www.alsa-project.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  alsa-lib ncurses
-# License:     GPLv2+
-# Group:       Applications/Multimedia
+# Section:     sound
 
 name=alsa-utils
 version=1.1.9
@@ -26,4 +25,8 @@ build() {
 		--disable-xmlto
 	make
 	make DESTDIR="$PKG" install
+
+	for rc in alsa; do
+		install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
+	done
 }

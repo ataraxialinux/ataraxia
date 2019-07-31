@@ -1,16 +1,14 @@
 # Description: Premier connectivity tool for remote login with the SSH protocol
 # URL:         https://www.openssh.com/portable.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib pam libressl libedit
-# License:     BSD
-# Group:       Applications/Communications
+# Depends on:  zlib libressl libedit
+# Section:     net
 
 name=openssh
 version=8.0p1
 release=2
 backup=('etc/ssh/ssh_config'
-	'etc/ssh/sshd_config'
-	'etc/pam.d/sshd')
+	'etc/ssh/sshd_config')
 source=("https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$name-$version.tar.gz")
 
 build() {
@@ -27,15 +25,13 @@ build() {
 		--with-privsep-user=nobody \
 		--with-libedit \
 		--with-md5-passwords \
-		--with-pam \
 		--with-ssl-engine \
 		--without-kerberos5 \
 		--without-ldns \
+		--without-pam \
 		--disable-strip
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm644 "$STUFF"/pam.d/sshd "$PKG"/etc/pam.d/sshd
 
 	for svc in sshd; do
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run

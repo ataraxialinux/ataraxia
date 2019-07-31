@@ -1,21 +1,20 @@
 # Description: System V Release 4.0 curses emulation library
 # URL:         http://invisible-island.net/ncurses/ncurses.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# License:     MIT
-# Group:       System Environment/Libraries
+# Section:     libs
 
 name=ncurses
-version=6.1_20190609
+version=6.1+20190609
 release=1
 options=('bootstrap')
-source=("ftp://ftp.invisible-island.net/$name/current/$name-${version/_/-}.tgz")
+source=("ftp://ftp.invisible-island.net/$name/current/$name-${version/+/-}.tgz")
 
 build() {
 	if [ -n "$HOSTCC" ]; then
 		BUILDFLAGS="$BUILDFLAGS --with-build-cc=$HOSTCC"
 	fi
 
-	cd "$SRC"/$name-${version/_/-}
+	cd "$SRC"/$name-${version/+/-}
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--mandir=/usr/share/man \

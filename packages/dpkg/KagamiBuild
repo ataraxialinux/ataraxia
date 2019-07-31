@@ -1,0 +1,25 @@
+# Description: The Debian Package Manager.
+# URL:         https://tracker.debian.org/pkg/dpkg
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 xz perl
+# Section:     admin
+
+name=dpkg
+version=1.19.7
+release=1
+options=('bootstrap')
+source=("http://ftp.debian.org/debian/pool/main/d/$name/${name}_${version}.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-dselect \
+		--disable-nls \
+		--disable-start-stop-daemon
+	make
+	make DESTDIR="$PKG" install
+}

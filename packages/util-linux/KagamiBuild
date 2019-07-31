@@ -1,9 +1,8 @@
-# Description: Miscellaneous system utilities for Linux
+# Description: Miscellaneous system utilities for Linux 
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib readline pam libcap-ng
-# License:     GPLv2 and GPLv2+ and LGPLv2+ and BSD with advertising and Public Domain
-# Group:       System Environment/Base
+# Depends on:  zlib readline libcap-ng
+# Section:     utils
 
 name=util-linux
 version=2.34
@@ -11,14 +10,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=8
-backup=('etc/pam.d/chfn'
-	'etc/pam.d/chsh'
-	'etc/pam.d/login'
-	'etc/pam.d/runuser'
-	'etc/pam.d/runuser-l'
-	'etc/pam.d/su'
-	'etc/pam.d/su-l')
+release=2
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
@@ -31,42 +23,38 @@ build() {
 		--bindir=/usr/bin \
 		--sbindir=/usr/bin \
 		--localstatedir=/var \
-		--enable-fs-paths-default=/usr/bin \
 		--with-btrfs \
 		--with-readline \
 		--without-python \
 		--without-systemd \
 		--without-systemdsystemunitdir \
-		--enable-chfn-chsh \
-		--enable-kill \
-		--enable-mesg \
-		--enable-newgrp \
+		--enable-fs-paths-default=/usr/bin \
+		--enable-fdisks \
+		--enable-fsck \
+		--enable-hwclock \
+		--enable-libblkid \
+		--enable-libfdisk \
+		--enable-libmount \
+		--enable-libsmartcols \
+		--enable-libuuid \
+		--enable-losetup \
+		--enable-mount \
+		--enable-mountpoint \
 		--enable-partx \
 		--enable-raw \
-		--enable-vipw \
 		--enable-wall \
 		--enable-write \
-		--disable-nls
+		--enable-zramctl \
+		--disable-all-programs \
+		--disable-makeinstall-chown \
+		--disable-nls \
+		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
 
-	chmod 4755 "$PKG"/usr/bin/{newgrp,ch{sh,fn}}
-
-	install -Dm644 "$STUFF"/pam.d/util-linux "$PKG"/etc/pam.d/chfn
-	install -m644 "$STUFF"/pam.d/util-linux "$PKG"/etc/pam.d/chsh
-	install -m644 "$STUFF"/pam.d/login "$PKG"/etc/pam.d/login
-	install -m644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser
-	install -m644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
-	install -m644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
-	install -m644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
-
 	cd "$PKG"
-	mv usr/sbin/* usr/bin
-	rm -rf bin sbin usr/sbin
-
 	mkdir -p var/lib/hwclock
 
-	install -Dm644 "$STUFF"/util-linux/rfkill.rules "$PKG"/usr/lib/udev/rules.d/60-rfkill.rules
-
-	rm -rf usr/bin/ctrlaltdel
+	mv usr/sbin/* usr/bin
+	rm -rf bin sbin usr/sbin
 }

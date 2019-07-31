@@ -1,14 +1,42 @@
 # Description: Size optimized toolbox of many common UNIX utilities
 # URL:         https://www.busybox.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# License:     GPLv2+
-# Group:       System Environment/Base
+# Section:     utils
 
 name=busybox
 version=1.31.0
-release=4
+release=1
 options=('bootstrap')
 source=("http://busybox.net/downloads/$name-$version.tar.bz2")
+
+
+build_busybox_standard() {
+	cp "$STUFF"/busybox/config .config
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS"
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links
+	else
+		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS"
+		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" busybox.links
+	fi
+
+	install -D busybox "$PKG"/usr/bin/busybox
+
+	chmod 4755 "$PKG"/usr/bin/busybox
+
+	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
+
+	mkdir -p "$PKG"/etc/service "$PKG"/var/service
+
+	for svc in acpid crond inted ntpd watchdog tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+
+	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
+	done
+}
 
 build_busybox_embedded() {
 	make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" defconfig
@@ -43,26 +71,23 @@ build_busybox_embedded() {
 
 build() {
 	case $BARCH in
-		x86_64)
+		amd64)
 			export XKARCH="x86_64"
 			;;
-		i586)
+		i386)
 			export XKARCH="i386"
 			;;
-		aarch64)
+		arm64)
 			export XKARCH="arm64"
 			;;
-		armv7l|armv6l|armv5tel)
+		armhf|armel)
 			export XKARCH="arm"
 			;;
-		mips|mipsel)
+		mips64|mips64el|mips|mipsel)
 			export XKARCH="mips"
 			;;
-		ppc64le|ppc64|ppc)
-			export XKARCH="powerpc"
-			;;
-		s390x)
-			export XKARCH="s390"
+		m68k)
+			export XKARCH="m68k"
 			;;
 		riscv64|riscv32)
 			export XKARCH="riscv"
@@ -78,6 +103,6 @@ build() {
 	if [ "$EMBEDDED" = "1" ]; then
 		build_busybox_embedded
 	else
-		die "Unsupported"
+		build_busybox_standard
 	fi
 }

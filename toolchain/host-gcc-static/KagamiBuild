@@ -1,5 +1,3 @@
-# Description: host-package
-
 name=host-gcc-static
 version=9.1.0
 gmpver=6.1.2
@@ -17,23 +15,26 @@ source=("http://ftp.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
 build() {
 	if [ -z "$GCCOPTS" ]; then
 		case $BARCH in
-			x86_64)
+			amd64)
 				export GCCOPTS="--with-arch=x86-64 --with-tune=generic"
 				;;
-			i586)
+			i386)
 				export GCCOPTS="--with-arch=i586 --with-tune=generic"
 				;;
-			aarch64)
+			arm64)
 				export GCCOPTS="--with-arch=armv8-a --enable-fix-cortex-a53-835769 --enable-fix-cortex-a53-843419"
 				;;
-			armv7l)
+			armhf)
 				export GCCOPTS="--with-arch=armv7-a --with-float=hard --with-fpu=vfpv3-d16"
 				;;
-			armv6l)
-				export GCCOPTS="--with-arch=armv6 --with-float=hard --with-fpu=vfp"
-				;;
-			armv5tel)
+			armel)
 				export GCCOPTS="--with-arch=armv5te --with-float=soft"
+				;;
+			mips64)
+				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
+				;;
+			mips64el)
+				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
 				;;
 			mips)
 				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
@@ -41,17 +42,8 @@ build() {
 			mipsel)
 				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
 				;;
-			ppc64le)
-				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpcle-linux --disable-decimal-float --disable-libquadmath"
-				;;
-			ppc64)
-				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpc-linux --disable-decimal-float --disable-libquadmath"
-				;;
-			ppc)
-				export GCCOPTS="--with-long-double=64 --enable-secureplt --disable-decimal-float"
-				;;
-			s390x)
-				export GCCOPTS="--with-arch=z196 --with-tune=z14 --with-zarch --with-long-double-128 --enable-decimal-float"
+			m68k)
+				export GCCOPTS=''
 				;;
 			riscv64)
 				export GCCOPTS="--with-arch=rv64imafdc"

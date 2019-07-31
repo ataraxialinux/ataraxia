@@ -52,14 +52,13 @@ main_standard() {
 			;;
 	esac
 
-	packages="filesystem linux-api-headers musl tz man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc \
-			binutils gcc ccache bzip2 pkgconf cracklib pam attr acl libcap shadow sed psmisc ed pcre grep mksh bash which libtool \
-			gdbm db gperf expat perl libressl ca-certificates iputils net-tools run-parts ifupdown autoconf automake xz lzip cpio \
-			kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils mlocate findutils mandoc dialog nawk less zutils pigz libmnl \
-			libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
-			util-linux e2fsprogs hwids eudev sysvinit $LINUX"
+	packages="base-files linux-api-headers musl tzdata man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+		ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
+		autoconf automake xz lzip lz4 zstd libarchive kmod gettext-tiny musl-fts libuargp libelf busybox mandoc dialog pigz libmnl libnftnl \
+		libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd libatomic_ops gc libffi libunistring guile make patch \
+		vim libcap-ng util-linux e2fsprogs hwids eudev $LINUX dpkg dhcp libssh2 c-ares libev nghttp2 curl"
 
-	kagami -EW -c "$BUILD"/target.config -r "$IMAGEFS" $packages
+	ne -c "$BUILD"/target.config -r "$IMAGEFS" -EWn $packages
 
 	case $BARCH in
 		aarch64|armv7l|armv6l|armv5tel)
@@ -96,7 +95,7 @@ main_embedded() {
 	yes | mkfs.ext2 $lopart
 	mount -o loop $lopart "$IMAGEFS"
 
-	kagami -EWd -c "$BUILD"/target.config -r "$IMAGEFS" base-files busybox linux
+	ne -c "$BUILD"/target.config -r "$IMAGEFS" -EWdn base-files busybox linux
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev

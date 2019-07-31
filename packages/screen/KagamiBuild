@@ -1,16 +1,14 @@
 # Description: Full-screen window manager that multiplexes a physical terminal
 # URL:         https://www.gnu.org/software/screen/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses pam
-# License:     GPLv3+
-# Group:       Applications/System
+# Depends on:  ncurses
+# Section:     admin
 
 name=screen
 version=4.6.2
 release=1
 options=('~makeflags')
-backup=('etc/screenrc'
-	'etc/pam.d/screen')
+backup=('etc/screenrc')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
 
 build() {
@@ -29,8 +27,6 @@ build() {
 		--enable-telnet
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm644 "$STUFF"/pam.d/screen "$PKG"/etc/pam.d/screen
 
 	install -Dm644 etc/etcscreenrc "$PKG"/etc/screenrc
 	install -Dm644 etc/screenrc "$PKG"/etc/skel/.screenrc

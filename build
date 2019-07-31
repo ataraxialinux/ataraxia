@@ -7,13 +7,13 @@ set -e
 
 msg() {
 	if [ "$SILENT" != "1" ]; then
-		echo -e "\033[1;32m >>> \033[0m$@"
+		printf '[\033[32m INFO\033[m ] %s\n' "$@"
 	fi
 }
 
 die() {
 	if [ "$SILENT" != "1" ]; then
-		echo -e "\033[1;31m >>> \033[0m$@"
+		printf '[\033[31m FAIL\033[m ] %s\n' "$@"
 	fi
 	exit 1
 }
@@ -60,6 +60,7 @@ if [ "$USE_TARGET" = "1" ]; then
 		export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
+		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 	EOF
@@ -80,6 +81,7 @@ elif [ "$USE_HOST" = "1" ]; then
 		export XTARGET="$XTARGET"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
+		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 	EOF
@@ -88,29 +90,33 @@ fi
 
 setup_architecture() {
 	case "$BARCH" in
-		x86_64)
+		amd64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
-		i586)
+		i386)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i586-linux-musl"
 			;;
-		aarch64)
+		arm64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
-		armv7l)
+		armhf)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
-		armv6l)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="arm-linux-musleabihf"
-			;;
-		armv5tel)
+		armel)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabi"
+			;;
+		mips64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64-linux-musl"
+			;;
+		mips64el)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64el-linux-musl"
 			;;
 		mips)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -120,21 +126,9 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="mipsel-linux-musl"
 			;;
-		ppc64le)
+		m68k)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64le-linux-musl"
-			;;
-		ppc64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64-linux-musl"
-			;;
-		ppc)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc-linux-musl"
-			;;
-		s390x)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="s390x-linux-musl"
+			export XTARGET="m68k-linux-musl"
 			;;
 		riscv64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -202,26 +196,27 @@ build_toolchain() {
 	touch "$TOOLS"/bin/ldconfig
 	chmod +x "$TOOLS"/bin/ldconfig
 
-	case $BARCH in
-		x86_64|i586|ppc64le|ppc64|ppc)
-				GRUB="grub"
-				;;
-	esac
-
-	for toolchain in filesystem file gettext-tiny m4 bison flex bc ncurses cracklib kmod gperf pkgconf \
-			linux-api-headers binutils gcc-static musl gcc $GRUB; do
+	for toolchain in dpkg base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf guile pkgconf \
+			linux-api-headers binutils gcc-static musl gcc slibtool; do
 		case $toolchain in
-			filesystem|linux-api-headers)
-				kagami -EWn -c "$BUILD"/host.config -r "$ROOTFS" ${toolchain}
+			base-files|linux-api-headers)
+				ne -c "$BUILD"/host.config -r "$ROOTFS" -EWn ${toolchain}
 				;;
 			musl)
-				kagami -EWn -c "$BUILD"/target.config -r "$ROOTFS" ${toolchain}
+				ne -c "$BUILD"/target.config -r "$ROOTFS" -EWn ${toolchain}
 				;;
 			*)
-				kagami -EWp -c "$BUILD"/host.config host-${toolchain}
+				ne -c "$BUILD"/host.config -EWp host-${toolchain}
 				;;
 		esac
 	done
+
+	case $BARCH in
+		amd64|i386)
+				ne -c "$BUILD"/host.config -EWP host-grub
+				;;
+	esac
+
 	touch "$TOOLS"/.cross-linux
 
 	if [ "$BARCH" = "riscv32" ] || [ "$BARCH" = "riscv64" ]; then
@@ -253,9 +248,12 @@ build_toolchain() {
 	fi
 
 	msg "Cleaning up"
-	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
 }
 
 build_target() {
@@ -268,21 +266,15 @@ build_target() {
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox"
 	else
-		packages="tz man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache bzip2 pkgconf \
-				cracklib pam attr acl libcap shadow sed psmisc ed pcre grep mksh bash which libtool gdbm db gperf expat perl \
-				libressl ca-certificates iputils net-tools run-parts ifupdown autoconf automake xz lzip cpio kmod gettext-tiny \
-				musl-fts libuargp libelf coreutils diffutils mlocate findutils mandoc dialog nawk less zutils pigz libmnl libnftnl \
-				libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
-				util-linux e2fsprogs musl-obstack reiserfsprogs hwids eudev sysvinit $LINUX"
+		packages="tzdata man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+			ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
+			autoconf automake xz lzip lz4 zstd libarchive kmod gettext-tiny musl-fts libuargp libelf busybox mandoc dialog pigz libmnl libnftnl \
+			libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd libatomic_ops gc libffi libunistring guile make patch \
+			vim libcap-ng util-linux e2fsprogs musl-obstack reiserfsprogs dosfstools hwids eudev $LINUX dpkg dhcp wireless_tools wpa_supplicant \
+			popt gptfdisk libssh2 c-ares libev nghttp2 curl"
 	fi
 
-	if [ "$EMBEDDED" = "1" ]; then
-		cmd="-EW"
-	else
-		cmd="-EWd"
-	fi
-
-	kagami $cmd -c "$BUILD"/target.config -r "$ROOTFS" $packages
+	ne -c "$BUILD"/target.config -r "$ROOTFS" -EWn $packages
 }
 
 while getopts :s:a:j:g:e:g:l:EuA:SLI options; do

@@ -1,0 +1,18 @@
+name=host-dpkg
+version=1.19.7
+release=1
+options=('bootstrap')
+source=("http://ftp.debian.org/debian/pool/main/d/dpkg/dpkg_${version}.tar.xz")
+
+build() {
+	cd "$SRC"/dpkg-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--sbindir="$TOOLS"/bin \
+		--localstatedir=/var \
+		--disable-dselect \
+		--disable-nls \
+		--disable-start-stop-daemon
+	make
+	make install
+}

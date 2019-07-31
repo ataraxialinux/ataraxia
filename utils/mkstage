@@ -10,14 +10,13 @@ main() {
 	rm -rf "$STAGE"
 	mkdir -p "$STAGE"
 
-	packages="filesystem linux-api-headers musl tz man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc \
-			binutils gcc ccache bzip2 pkgconf cracklib pam attr acl libcap shadow sed psmisc ed pcre grep mksh bash which libtool \
-			gdbm db gperf expat perl libressl ca-certificates iputils net-tools run-parts ifupdown autoconf automake xz lzip cpio \
-			kmod gettext-tiny musl-fts libuargp libelf coreutils diffutils mlocate findutils mandoc dialog nawk less zutils pigz libmnl \
-			libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim procps-ng libcap-ng \
-			util-linux hwids eudev sysvinit $LINUX"
+	packages="base-files linux-api-headers musl tzdata man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+		ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
+		autoconf automake xz lzip lz4 zstd libarchive kmod gettext-tiny musl-fts libuargp libelf busybox mandoc dialog pigz libmnl libnftnl \
+		libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd libatomic_ops gc libffi libunistring guile make patch \
+		vim libcap-ng util-linux hwids eudev $LINUX dpkg libssh2 c-ares libev nghttp2 curl"
 
-	kagami -EWn -c "$BUILD"/target.config -r "$STAGE" $packages
+	ne -c "$BUILD"/target.config -r "$STAGE" -EWn $packages
 
 	pushd "$STAGE"
 		bsdtar -c --zstd -f "$BUILD"/ataraxialinux-$BARCH.tar.zst .

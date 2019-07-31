@@ -1,9 +1,8 @@
 # Description: Reference implementation of a Wayland compositor
 # URL:         https://wayland.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson cairo libinput libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu libva pam pango dbus libxcb libxcursor
-# License:     BSD and CC-BY-SA
-# Group:       User Interface/Desktops
+# Depends on:  meson cairo libinput libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu libva pango dbus libxcb libxcursor
+# Section:     x11
 
 name=weston
 version=6.0.1
@@ -12,7 +11,8 @@ source=("https://wayland.freedesktop.org/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/weston/no-error.h
+	patch -Np1 -i "$STUFF"/weston/no-error.patch
+	patch -Np1 -i "$STUFF"/weston/no-pam.patch
 
 	mkdir -p build
 	cd build

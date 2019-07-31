@@ -2,8 +2,7 @@
 # URL:         http://www.gnu.org/software/libtool
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  gcc
-# License:     GPLv2+ and LGPLv2+ and GFDL
-# Group:       Development/Libraries
+# Section:     devel
 
 name=libtool
 version=2.4.6
@@ -16,6 +15,12 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-static
-	make
-	make DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
 }
