@@ -16,12 +16,12 @@ main_standard() {
 	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 
 	case $BARCH in
-		x86_64|i586)
+		amd64|i386)
 			parted -s $lodev mklabel msdos
 			parted -a optimal -s $lodev mkpart primary 0% 100%
 			parted -s $lodev set 1 boot on
 			;;
-		aarch64|armv7l|armv6l|armv5tel)
+		arm64|armhf|armel)
 			parted -s $lodev mklabel msdos
 			parted -a optimal -s $lodev mkpart primary 0mb 256mb
 			parted -a optimal -s $lodev mkpart primary 256mb 100%
@@ -33,7 +33,7 @@ main_standard() {
 	esac
 
 	case $BARCH in
-		aarch64|armv7l|armv6l|armv5tel)
+		arm64|armhf|armel)
 			bootpart="${lodev}p1"
 			lopart="${lodev}p2"
 
@@ -61,7 +61,7 @@ main_standard() {
 	ne -c "$BUILD"/target.config -r "$IMAGEFS" -EWn $packages
 
 	case $BARCH in
-		aarch64|armv7l|armv6l|armv5tel)
+		arm64|armhf|armel)
 			umount -l "$IMAGEFS/boot"
 			umount -l "$IMAGEFS"
 			;;
