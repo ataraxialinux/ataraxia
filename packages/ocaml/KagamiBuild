@@ -10,15 +10,6 @@ release=1
 source=("https://github.com/ocaml/ocaml/archive/$version.tar.gz")
 
 build() {
-	case $BARCH in
-		x86_64|i586|aarch64|armv7l|armv6l|armv5tel|ppc64le|ppc64|ppc)
-			true
-			;;
-		*)
-			echo "Architecture is not set or is not supported by OCaml Language"
-			exit 1
-	esac
-
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/ocaml/compile-without-debug-info.patch
 	patch -Np1 -i "$STUFF"/ocaml/fix-mcontext-fields.patch
