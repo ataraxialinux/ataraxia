@@ -17,6 +17,8 @@ backup=('etc/fstab'
 	'etc/motd'
 	'etc/passwd'
 	'etc/profile'
+	'etc/rc.conf'
+	'etc/rc.local'
 	'etc/resolv.conf'
 	'etc/securetty'
 	'etc/shadow'
@@ -41,7 +43,7 @@ build() {
 
 	touch etc/ataraxialinux-release
 
-	for f in fstab group host.conf hosts issue issue.net motd os-release passwd profile protocols resolv.conf securetty services shells; do
+	for f in fstab group host.conf hosts inittab issue issue.net motd os-release passwd profile protocols resolv.conf rc.conf securetty services shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
 	done
 
@@ -89,7 +91,14 @@ EOF
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
+	for rc in boot down; do
+		install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
+	done
+
+	install -D -m755 "$STUFF"/rc.d/rc.local "$PKG"/etc/rc.local
+
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
 	install -D -m755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+	install -D -m755 "$STUFF"/base-files/runsvdir-start "$PKG"/usr/bin/runsvdir-start
 	install -D -m755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
 }

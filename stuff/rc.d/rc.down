@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+# System shutdown script
+#
+
+ . /etc/rc.conf
+
+live="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)        live="${arg#*=}" ;;
+	esac
+done
+
+echo; stty onlcr
+
+sv down /var/service/*
+
+if [ "$ALSA" = "yes" ]; then
+	/etc/rc.d/rc.alsa stop
+fi
+
+if [ "$IPSET" = "yes" ]; then
+	/etc/rc.d/rc.ipset stop
+fi
+
+if [ "$NFTABLES" = "yes" ]; then
+	/etc/rc.d/rc.nftables stop
+fi
+
+if [ "$IP6TABLES" = "yes" ]; then
+	/etc/rc.d/rc.ip6tables stop
+fi
+
+if [ "$IPTABLES" = "yes" ]; then
+	/etc/rc.d/rc.iptables stop
+fi
+
+ifdown -a
+
+hwclock --systohc
+
+if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
+	if type quotaoff > /dev/null; then
+		quotaoff -va
+	fi
+fi
+
+if [ "$live" != "1" ]; then
+	if [ -x /usr/bin/vgchange ]; then
+		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
+	fi
+fi
+
+udevadm control --exit
+
+pkill --inverse -s0,1 -TERM
+sleep 1
+pkill --inverse -s0,1 -KILL
+
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+swapoff -a
+
+umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+
+if [ "$live" != "1" ]; then
+	mount -o remount,ro /
+fi
+
+sync
+
+if [ "$live" != "1" ]; then
+	if [ "$1" = "reboot" ]; then
+		if command -v kexec >/dev/null; then
+			kexec -e 2>/dev/null
+		fi
+	fi
+fi
