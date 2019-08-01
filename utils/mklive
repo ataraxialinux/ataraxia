@@ -4,15 +4,13 @@ generate_initramfs() {
 	packages="base-files linux-api-headers musl tzdata man-pages musl-tools zlib file ncurses readline bzip2 attr acl \
 		libcap pcre grep mksh bash expat libressl ca-certificates xz kmod busybox dialog pigz libmnl libnftnl libnfnetlink \
 		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd tar vim libcap-ng util-linux e2fsprogs musl-obstack \
-		reiserfsprogs dosfstools hwids eudev dhcp wireless_tools wpa_supplicant popt gptfdisk \
+		reiserfsprogs dosfstools hwids eudev linux dpkg dhcp wireless_tools wpa_supplicant popt gptfdisk \
 		libssh2 c-ares libev nghttp2 curl"
 
-	ne -c "$BUILD"/target.config -r "$INITRAMFS" -EWn $packages
-	ne -c "$BUILD"/target.config -r "$INITRAMFS" -EWnd dpkg
-	ne -c "$BUILD"/target.config -r "$INITRAMFS" -EWnd linux
+	ne -c "$BUILD"/target.config -r "$INITRAMFS" -EWnd $packages
 
 	pushd "$INITRAMFS"
-		ln -sf usr/bin/init init
+		ln -sf usr/bin/mksh init
 
 		rm -rf usr/include
 		rm -rf usr/share/man
@@ -65,7 +63,7 @@ CEOF
 		--prefix="/boot/grub" \
 		--output="$ISODIR"/efi/boot/$efi \
 		--format="$format" \
-		--compress="zstd" \
+		--compress="xz" \
 		$grub_mod
 
 	mformat -i "$ISODIR"/boot/grub/efi.img -C -f 1440 ::
