@@ -1,12 +1,11 @@
 # Description: GNU make utility to maintain groups of programs
 # URL:         http://www.gnu.org/software/make
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  guile
 # Section:     devel
 
 name=make
 version=4.2.1
-release=2
+release=3
 options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.bz2")
 
@@ -14,12 +13,10 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/make/fix-atexit-exit.patch
 	patch -Np1 -i "$STUFF"/make/fix-glob-dtype.patch
-	patch -Np1 -i "$STUFF"/make/guile2.2.patch
 
-	autoreconf -fi
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--with-guile \
+		--without-guile \
 		--without-dmalloc \
 		--disable-nls
 	make
