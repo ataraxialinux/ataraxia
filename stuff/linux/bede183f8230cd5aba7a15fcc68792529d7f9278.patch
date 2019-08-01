@@ -1,0 +1,25 @@
+From bede183f8230cd5aba7a15fcc68792529d7f9278 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <47295761+protonesso@users.noreply.github.com>
+Date: Fri, 2 Aug 2019 04:17:51 +0900
+Subject: [PATCH] fix RISC V build
+
+---
+ include/asm-generic/percpu.h | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+index c2de013b2cf4b..fab54f4064f05 100644
+--- a/include/asm-generic/percpu.h
++++ b/include/asm-generic/percpu.h
+@@ -30,11 +30,7 @@ extern unsigned long __per_cpu_offset[NR_CPUS];
+ #ifndef __my_cpu_offset
+ #define __my_cpu_offset per_cpu_offset(raw_smp_processor_id())
+ #endif
+-#ifdef CONFIG_DEBUG_PREEMPT
+-#define my_cpu_offset per_cpu_offset(smp_processor_id())
+-#else
+ #define my_cpu_offset __my_cpu_offset
+-#endif
+ 
+ /*
+  * Arch may define arch_raw_cpu_ptr() to provide more efficient address

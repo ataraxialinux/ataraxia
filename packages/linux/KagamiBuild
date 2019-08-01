@@ -922,6 +922,12 @@ build() {
 	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
 
+	case $BARCH in
+		riscv64|riscv32)
+			patch -Np1 -i "$STUFF"/linux/bede183f8230cd5aba7a15fcc68792529d7f9278.patch
+			;;
+	esac
+
 	unset LDFLAGS
 	make mrproper
 
