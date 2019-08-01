@@ -4,21 +4,14 @@
 # Section:     libs
 
 name=libffi
-version=3.2.1
+version=3.3+rc0
 release=1
 options=('bootstrap')
-source=("ftp://sourceware.org/pub/$name/$name-$version.tar.gz")
+#source=("ftp://sourceware.org/pub/$name/$name-$version.tar.gz")
+source=("https://github.com/libffi/libffi/releases/download/v${version/+/-}/libffi-${version/+/-}.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
-	for a in $(find . -name config.sub); do
-		cp "$STUFF"/config.sub $a
-	done
-
-	for a in $(find . -name config.guess); do
-		cp "$STUFF"/config.guess $a
-	done
-
+	cd "$SRC"/$name-${version/+/-}
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--enable-pax_emutramp \
