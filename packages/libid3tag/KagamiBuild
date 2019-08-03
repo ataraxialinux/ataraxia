@@ -17,6 +17,15 @@ build() {
 	patch -p1 -i  "$STUFF"/libid3tag/libid3tag-gperf.patch # Fedora patch
 	rm compat.c frametype.c
 
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
