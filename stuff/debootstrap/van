@@ -1,0 +1,174 @@
+mirror_style release
+download_style apt
+finddebs_style from-indices
+variants - buildd fakechroot minbase
+keyring /usr/share/keyrings/devuan-archive-keyring.gpg
+
+if doing_variant fakechroot; then
+	test "$FAKECHROOT" = "true" || error 1 FAKECHROOTREQ "This variant requires fakechroot environment to be started"
+fi
+
+LIBC="musl"
+
+work_out_debs () {
+	required="$(get_debs Priority: required)"
+
+	if doing_variant - || doing_variant fakechroot; then
+		#required="$required $(get_debs Priority: important)"
+		#  ^^ should be getting debconf here somehow maybe
+		base="$(get_debs Priority: important)"
+	elif doing_variant buildd; then
+		base="build-essential"
+	elif doing_variant minbase; then
+		base=""
+	fi
+
+	case $MIRRORS in
+	    https://*)
+		base="$base ca-certificates"
+		;;
+	esac
+}
+
+first_stage_install () {
+	extract $required
+
+	mkdir -p "$TARGET/var/lib/dpkg"
+	: >"$TARGET/var/lib/dpkg/status"
+	: >"$TARGET/var/lib/dpkg/available"
+
+	setup_etc
+	if [ ! -e "$TARGET/etc/fstab" ]; then
+		echo '# UNCONFIGURED FSTAB FOR BASE SYSTEM' > "$TARGET/etc/fstab"
+		chown 0:0 "$TARGET/etc/fstab"; chmod 644 "$TARGET/etc/fstab"
+	fi
+
+	setup_devices
+}
+
+second_stage_install () {
+	setup_dynamic_devices
+	ln -sf tar "$TARGET/usr/bin/gtar"
+
+	x_feign_install () {
+		local pkg="$1"
+		local deb="$(debfor $pkg)"
+		local ver="$(in_target dpkg-deb -f "$deb" Version)"
+
+		mkdir -p "$TARGET/var/lib/dpkg/info"
+
+		echo \
+"Package: $pkg
+Version: $ver
+Maintainer: unknown
+Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
+
+		touch "$TARGET/var/lib/dpkg/info/${pkg}.list"
+	}
+
+	x_feign_install dpkg
+
+	x_core_install () {
+		smallyes '' | in_target dpkg --force-depends --install $(debfor "$@")
+	}
+
+	p () {
+		baseprog="$(($baseprog + ${1:-1}))"
+	}
+
+	if doing_variant fakechroot; then
+		setup_proc_fakechroot
+	else
+		setup_proc
+	fi
+
+	DEBIAN_FRONTEND=noninteractive
+	DEBCONF_NONINTERACTIVE_SEEN=true
+	export DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+
+	baseprog=0
+	bases=7
+
+	p; progress $baseprog $bases INSTCORE "Installing core packages" #1
+	info INSTCORE "Installing core packages..."
+
+	p; progress $baseprog $bases INSTCORE "Installing core packages" #2
+	x_core_install base-files
+	p; progress $baseprog $bases INSTCORE "Installing core packages" #3
+	x_core_install dpkg
+
+	if [ ! -e "$TARGET/etc/localtime" ]; then
+		ln -sf /usr/share/zoneinfo/UTC "$TARGET/etc/localtime"
+	fi
+
+	if doing_variant fakechroot; then
+		install_fakechroot_tools
+	fi
+
+	p; progress $baseprog $bases INSTCORE "Installing core packages" #4
+	x_core_install $LIBC
+
+	p; progress $baseprog $bases INSTCORE "Installing core packages" #5
+	x_core_install perl
+
+	p; progress $baseprog $bases INSTCORE "Installing core packages" #6
+	x_core_install busybox
+
+	baseprog=0
+	bases=$(set -- $required; echo $#)
+
+	info UNPACKREQ "Unpacking required packages..."
+
+	exec 7>&1
+
+	smallyes '' |
+		(repeatn 5 in_target_failmsg UNPACK_REQ_FAIL_FIVE "Failure while unpacking required packages.  This will be attempted up to five times." "" \
+		dpkg --status-fd 8 --force-depends --unpack $(debfor $required) 8>&1 1>&7 || echo EXITCODE $?) |
+		dpkg_progress $baseprog $bases UNPACKREQ "Unpacking required packages" UNPACKING
+
+	info CONFREQ "Configuring required packages..."
+
+#	setup_dselect_method apt
+
+	smallyes '' |
+		(in_target_failmsg CONF_REQ_FAIL "Failure while configuring required packages." "" \
+		dpkg --status-fd 8 --configure --pending --force-configure-any --force-depends 8>&1 1>&7 || echo EXITCODE $?) |
+		dpkg_progress $baseprog $bases CONFREQ "Configuring required packages" CONFIGURING
+
+	baseprog=0
+	bases="$(set -- $base; echo $#)"
+
+	info UNPACKBASE "Unpacking the base system..."
+
+	setup_available $required $base
+	done_predeps=
+	while predep=$(get_next_predep); do
+		# We have to resolve dependencies of pre-dependencies manually because
+		# dpkg --predep-package doesn't handle this.
+		predep=$(without "$(without "$(resolve_deps $predep)" "$required")" "$done_predeps")
+		# XXX: progress is tricky due to how dpkg_progress works
+		# -- cjwatson 2009-07-29
+		p; smallyes '' |
+		in_target dpkg --force-overwrite --force-confold --skip-same-version --install $(debfor $predep)
+		base=$(without "$base" "$predep")
+		done_predeps="$done_predeps $predep"
+	done
+
+	if [ -n "$base" ]; then
+		smallyes '' |
+			(repeatn 5 in_target_failmsg INST_BASE_FAIL_FIVE "Failure while installing base packages.  This will be re-attempted up to five times." "" \
+			dpkg --status-fd 8 --force-overwrite --force-confold --skip-same-version --unpack $(debfor $base) 8>&1 1>&7 || echo EXITCODE $?) |
+			dpkg_progress $baseprog $bases UNPACKBASE "Unpacking base system" UNPACKING
+
+		info CONFBASE "Configuring the base system..."
+
+		smallyes '' |
+			(repeatn 5 in_target_failmsg CONF_BASE_FAIL_FIVE "Failure while configuring base packages.  This will be re-attempted up to five times." "" \
+			dpkg --status-fd 8 --force-confold --skip-same-version --configure -a 8>&1 1>&7 || echo EXITCODE $?) |
+			dpkg_progress $baseprog $bases CONFBASE "Configuring base system" CONFIGURING
+	fi
+
+	progress $bases $bases CONFBASE "Configuring base system"
+	info BASESUCCESS "Base system installed successfully."
+}
+

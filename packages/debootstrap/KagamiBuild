@@ -1,0 +1,21 @@
+# Description: Bootstrap a basic Debian/Ataraxia system
+# URL:         https://tracker.debian.org/pkg/debootstrap
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  binutils wget
+# Section:     admin
+
+name=debootstrap
+version=1.0.115
+release=1
+options=('bootstrap')
+source=("https://github.com/felixonmars/debootstrap/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/sbin/bin/g' Makefile
+	sed -i 's|export PATH|export PATH="/usr/local/sbin:/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"|' debootstrap
+	make DESTDIR="$PKG" install
+
+	install -Dm644 debootstrap.8 "$PKG"/usr/share/man/man8/debootstrap.8
+	install -Dm655 "$STUF"/debootstrap/van "$PKG"/usr/share/debootstrap/scripts/van
+}
