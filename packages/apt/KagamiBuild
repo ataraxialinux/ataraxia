@@ -7,17 +7,19 @@
 name=apt
 version=1.8.2
 release=1
+options=('~ccache')
 source=("http://ftp.debian.org/debian/pool/main/a/$name/${name}_${version}.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/apt/nodocs.patch
+	patch -Np1 -i "$STUFF"/apt/musl.patch
 
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_INSTALL_LIBDIR="lib" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-Wno-dev -G Ninja
 	ninja
