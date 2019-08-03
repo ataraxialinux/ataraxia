@@ -1,0 +1,18 @@
+# Description: Lists of the country, language, and currency names
+# URL:         https://salsa.debian.org/iso-codes-team/iso-codes
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python
+# Section:     localization
+
+name=iso-codes
+version=4.3
+release=1
+source=("http://ftp.debian.org/debian/pool/main/i/$name/${name}_${version}.orig.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

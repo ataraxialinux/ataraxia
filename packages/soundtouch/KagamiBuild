@@ -1,0 +1,19 @@
+# Description: An audio processing library
+# URL:         http://www.surina.net/soundtouch/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     audio
+
+name=soundtouch
+version=2.1.2
+release=1
+source=("https://gitlab.com/soundtouch/soundtouch/-/archive/$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./bootstrap
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-openmp
+	make
+	make DESTDIR="$PKG" install
+}

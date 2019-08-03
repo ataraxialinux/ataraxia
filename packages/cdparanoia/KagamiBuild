@@ -1,0 +1,33 @@
+# Description: Compact Disc Digital Audio extraction tool
+# URL:         http://www.xiph.org/paranoia/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     audio
+
+name=cdparanoia
+version=10.2
+release=1
+options=('~makeflags')
+source=("https://downloads.xiph.org/releases/cdparanoia/cdparanoia-III-$version.src.tgz")
+
+build() {
+	cd "$SRC"/cdparanoia-III-$version
+	patch -Np1 -i "$STUFF"/cdparanoia/gcc.patch
+	patch -Np1 -i "$STUFF"/cdparanoia/fix-includes.patch
+	sed -i -e '/configure.\(guess\|sub\)/d' configure.in
+
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	aclocal && autoconf
+	libtoolize
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make -j1
+	make prefix="$PKG"/usr install
+}

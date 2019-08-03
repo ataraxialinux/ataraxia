@@ -1,0 +1,23 @@
+# Description: A Library for reading and editing the meta-data of several popular audio formats
+# URL:         https://taglib.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja zlib
+# Section:     devel
+
+name=taglib
+version=1.11.1
+release=1
+source=("https://taglib.github.io/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

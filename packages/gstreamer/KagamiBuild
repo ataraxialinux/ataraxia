@@ -1,0 +1,23 @@
+# Description: GStreamer open-source multimedia framework core library
+# URL:         https://gstreamer.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libcap libelf libxml2 gobject-introspection
+# Section:     libs
+
+name=gstreamer
+version=1.16.0
+release=1
+source=("https://gstreamer.freedesktop.org/src/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgst_debug=false \
+		-Dgtk_doc=disabled \
+		-Dpackage-name="GStreamer $version (Ataraxia Linux edition)" \
+		-Dpackage-origin="https://ataraxialinux.github.io/"
+	ninja
+	DESTDIR="$PKG" ninja install
+}

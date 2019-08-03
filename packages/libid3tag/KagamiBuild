@@ -1,0 +1,26 @@
+# Description: Library for id3 tagging
+# URL:         http://www.underbit.com/products/mad/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gperf zlib
+# Section:     devel
+
+name=libid3tag
+version=0.15.1b
+release=1
+source=("ftp://ftp.mars.org/pub/mpeg/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p1 -i  "$STUFF"/libid3tag/10_utf16.diff
+	patch -p1 -i  "$STUFF"/libid3tag/11_unknown_encoding.diff
+	patch -Np0 -i  "$STUFF"/libid3tag/CVE-2008-2109.patch
+	patch -p1 -i  "$STUFF"/libid3tag/libid3tag-gperf.patch # Fedora patch
+	rm compat.c frametype.c
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	install -D -m644 "$STUFF"/libid3tag/id3tag.pc "$PKG"/usr/lib/pkgconfig/id3tag.pc
+}

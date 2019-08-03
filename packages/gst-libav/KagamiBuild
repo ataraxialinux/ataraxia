@@ -1,0 +1,21 @@
+# Description: GStreamer open-source multimedia framework FFmpeg plugin
+# URL:         https://gstreamer.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gst-plugins-base ffmpeg yasm
+# Section:     libs
+
+name=gst-libav
+version=1.16.0
+release=1
+source=("https://gstreamer.freedesktop.org/src/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dpackage-name="GStreamer $version (Ataraxia Linux edition)" \
+		-Dpackage-origin="https://ataraxialinux.github.io/"
+	ninja
+	DESTDIR="$PKG" ninja install
+}

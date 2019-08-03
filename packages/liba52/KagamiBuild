@@ -1,0 +1,25 @@
+# Description: An audio processing library
+# URL:         http://liba52.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     audio
+
+name=liba52
+version=0.7.4
+release=1
+source=("http://liba52.sourceforge.net/files/a52dec-$version.tar.gz")
+
+build() {
+	cd "$SRC"/a52dec-$version
+	patch -Np1 -i "$STUFF"/liba52/build.patch
+	sed -i 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/' configure.in
+	mv configure.in configure.ac
+
+	./bootstrap
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+
+	install -m644 liba52/a52_internal.h "$PKG"/usr/include/a52dec/
+}

@@ -1,0 +1,26 @@
+# Description: HTTP and WebDAV client library with a C interface
+# URL:         http://web.archive.org/web/20170928175008/http://www.webdav.org/neon/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl expat ca-certificates
+# Section:     net
+
+name=neon
+version=0.30.2
+release=1
+source=("https://fossies.org/linux/www/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/neon/libressl.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+		--with-expat \
+		--with-ssl=openssl \
+		--enable-threadsafe-ssl=posix \
+		--enable-shared \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}
