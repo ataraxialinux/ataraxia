@@ -1,0 +1,18 @@
+# Description: A tool to handle local repositories of Debian/Ataraxia packages
+# URL:         http://mirrorer.alioth.debian.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 db libarchive gpgme
+# Section:     devel
+
+name=reprepro
+version=5.3.0
+release=1
+source=("http://ftp.debian.org/debian/pool/main/r/$name/${name}_${version}.orig.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
