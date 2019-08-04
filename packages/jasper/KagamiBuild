@@ -1,0 +1,28 @@
+# Description: Software-based implementation of the codec specified in the emerging JPEG-2000 Part-1 standard
+# URL:         https://www.ece.uvic.ca/~mdadams/jasper/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja libjpeg-turbo libxmu
+# Section:     graphics
+
+name=jasper
+version=2.0.16
+release=1
+source=("https://github.com/mdadams/jasper/archive/version-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-version-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR="lib" \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_RPATH=ON \
+		-DJAS_ENABLE_AUTOMATIC_DEPENDENCIES=OFF \
+		-DJAS_ENABLE_DOC=OFF \
+		-DJAS_ENABLE_LIBJPEG=ON \
+		-DJAS_ENABLE_OPENGL=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
