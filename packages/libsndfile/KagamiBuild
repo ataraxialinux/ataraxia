@@ -1,0 +1,19 @@
+# Description: A C library for reading and writing files containing sampled sound
+# URL:         http://www.mega-nerd.com/libsndfile
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib flac libvorbis
+# Section:     audio
+
+name=libsndfile
+version=1.0.28
+release=1
+source=("http://www.mega-nerd.com/$name/files/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-sqlite
+	make
+	make DESTDIR="$PKG" install
+}
