@@ -1,0 +1,84 @@
+Submitted By: Bruce Dubbs <bdubbs at linuxfromscratch dot org>
+Date: 2019-07-04
+Initial Package Version: 5.13.0
+Upstream Status: uncertain
+Origin: https://code.qt.io/cgit/qt/qtbase.git/patch/?id=0c183117
+        https://code.qt.io/cgit/qt/qtbase.git/patch/?id=cbdc9a77
+Description: RCC: Change the default compression to Zlib
+             Track swap interval in QXcbWindow
+
+diff -Naur qt-everywhere-src-5.13.0.orig/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.cpp qt-everywhere-src-5.13.0/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.cpp
+--- qt-everywhere-src-5.13.0.orig/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.cpp	2019-06-12 23:18:18.000000000 -0500
++++ qt-everywhere-src-5.13.0/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.cpp	2019-07-04 19:31:57.848516759 -0500
+@@ -204,7 +204,6 @@
+     , m_shareContext(0)
+     , m_format(format)
+     , m_isPBufferCurrent(false)
+-    , m_swapInterval(-1)
+     , m_ownsContext(nativeHandle.isNull())
+     , m_getGraphicsResetStatus(0)
+     , m_lost(false)
+@@ -567,9 +566,9 @@
+ 
+     if (success && surfaceClass == QSurface::Window) {
+         int interval = surface->format().swapInterval();
++        QXcbWindow *window = static_cast<QXcbWindow *>(surface);
+         QXcbScreen *screen = screenForPlatformSurface(surface);
+-        if (interval >= 0 && m_swapInterval != interval && screen) {
+-            m_swapInterval = interval;
++        if (interval >= 0 && interval != window->swapInterval() && screen) {
+             typedef void (*qt_glXSwapIntervalEXT)(Display *, GLXDrawable, int);
+             typedef void (*qt_glXSwapIntervalMESA)(unsigned int);
+             static qt_glXSwapIntervalEXT glXSwapIntervalEXT = 0;
+@@ -588,6 +587,7 @@
+                 glXSwapIntervalEXT(m_display, glxDrawable, interval);
+             else if (glXSwapIntervalMESA)
+                 glXSwapIntervalMESA(interval);
++            window->setSwapInterval(interval);
+         }
+     }
+ 
+diff -Naur qt-everywhere-src-5.13.0.orig/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.h qt-everywhere-src-5.13.0/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.h
+--- qt-everywhere-src-5.13.0.orig/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.h	2019-06-12 23:18:18.000000000 -0500
++++ qt-everywhere-src-5.13.0/qtbase/src/plugins/platforms/xcb/gl_integrations/xcb_glx/qglxintegration.h	2019-07-04 19:31:57.867516937 -0500
+@@ -87,7 +87,6 @@
+     GLXContext m_shareContext;
+     QSurfaceFormat m_format;
+     bool m_isPBufferCurrent;
+-    int m_swapInterval;
+     bool m_ownsContext;
+     GLenum (APIENTRY * m_getGraphicsResetStatus)();
+     bool m_lost;
+diff -Naur qt-everywhere-src-5.13.0.orig/qtbase/src/plugins/platforms/xcb/qxcbwindow.h qt-everywhere-src-5.13.0/qtbase/src/plugins/platforms/xcb/qxcbwindow.h
+--- qt-everywhere-src-5.13.0.orig/qtbase/src/plugins/platforms/xcb/qxcbwindow.h	2019-06-12 23:18:18.000000000 -0500
++++ qt-everywhere-src-5.13.0/qtbase/src/plugins/platforms/xcb/qxcbwindow.h	2019-07-04 19:31:57.867516937 -0500
+@@ -184,6 +184,9 @@
+     static void setWindowTitle(const QXcbConnection *conn, xcb_window_t window, const QString &title);
+     static QString windowTitle(const QXcbConnection *conn, xcb_window_t window);
+ 
++    int swapInterval() const { return m_swapInterval; }
++    void setSwapInterval(int swapInterval) { m_swapInterval = swapInterval; }
++
+ public Q_SLOTS:
+     void updateSyncRequestCounter();
+ 
+@@ -276,6 +279,7 @@
+     SyncState m_syncState = NoSyncNeeded;
+ 
+     QXcbSyncWindowRequest *m_pendingSyncRequest = nullptr;
++    int m_swapInterval = -1;
+ };
+ 
+ class QXcbForeignWindow : public QXcbWindow
+diff -Naur qt-everywhere-src-5.13.0.orig/qtbase/src/tools/rcc/rcc.cpp qt-everywhere-src-5.13.0/qtbase/src/tools/rcc/rcc.cpp
+--- qt-everywhere-src-5.13.0.orig/qtbase/src/tools/rcc/rcc.cpp	2019-06-12 23:18:18.000000000 -0500
++++ qt-everywhere-src-5.13.0/qtbase/src/tools/rcc/rcc.cpp	2019-07-04 19:29:30.594129980 -0500
+@@ -58,7 +58,7 @@
+     CONSTANT_COMPRESSTHRESHOLD_DEFAULT = 70
+ };
+ 
+-#if QT_CONFIG(zstd)
++#if QT_CONFIG(zstd) && QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+ #  define CONSTANT_COMPRESSALGO_DEFAULT     RCCResourceLibrary::CompressionAlgorithm::Zstd
+ #elif !defined(QT_NO_COMPRESS)
+ #  define CONSTANT_COMPRESSALGO_DEFAULT     RCCResourceLibrary::CompressionAlgorithm::Zlib

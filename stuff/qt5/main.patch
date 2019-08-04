@@ -1,0 +1,72 @@
+diff -ruN qt-everywhere-src-5.13.0/qtbase/src/corelib/codecs/qiconvcodec.cpp qt-everywhere-src-5.13.0-orig/qtbase/src/corelib/codecs/qiconvcodec.cpp
+--- qt-everywhere-src-5.13.0/qtbase/src/corelib/codecs/qiconvcodec.cpp	2019-08-05 01:20:03.427116125 +0900
++++ qt-everywhere-src-5.13.0-orig/qtbase/src/corelib/codecs/qiconvcodec.cpp	2019-06-13 13:18:18.000000000 +0900
+@@ -61,7 +61,7 @@
+ #elif defined(Q_OS_AIX)
+ #  define NO_BOM
+ #  define UTF16 "UCS-2"
+-#elif defined(Q_OS_FREEBSD) || (defined(Q_OS_LINUX) && !defined(__GLIBC__))
++#elif defined(Q_OS_FREEBSD)
+ #  define NO_BOM
+ #  if Q_BYTE_ORDER == Q_BIG_ENDIAN
+ #    define UTF16 "UTF-16BE"
+diff -ruN qt-everywhere-src-5.13.0/qtbase/src/network/configure.json qt-everywhere-src-5.13.0-orig/qtbase/src/network/configure.json
+--- qt-everywhere-src-5.13.0/qtbase/src/network/configure.json	2019-08-05 01:21:54.685126347 +0900
++++ qt-everywhere-src-5.13.0-orig/qtbase/src/network/configure.json	2019-06-13 13:18:18.000000000 +0900
+@@ -167,7 +167,7 @@
+             "test": {
+                 "include": "openssl/opensslv.h",
+                 "tail": [
+-                    "#if !defined(OPENSSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER-0 < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)",
++                    "#if !defined(OPENSSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER-0 < 0x10100000L",
+                     "#  error OpenSSL >= 1.1 is required",
+                     "#endif"
+                 ]
+diff -ruN qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslcontext_openssl.cpp qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslcontext_openssl.cpp
+--- qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslcontext_openssl.cpp	2019-08-05 01:21:04.465121733 +0900
++++ qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslcontext_openssl.cpp	2019-06-13 13:18:18.000000000 +0900
+@@ -165,7 +165,7 @@
+         m_npnContext.data = reinterpret_cast<unsigned char *>(m_supportedNPNVersions.data());
+         m_npnContext.len = m_supportedNPNVersions.count();
+         m_npnContext.status = QSslConfiguration::NextProtocolNegotiationNone;
+-#if OPENSSL_VERSION_NUMBER >= 0x10002000L && !defined(LIBRESSL_VERSION_NUMBER)
++#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+         if (QSslSocket::sslLibraryVersionNumber() >= 0x10002000L) {
+             // Callback's type has a parameter 'const unsigned char ** out'
+             // since it was introduced in 1.0.2. Internally, OpenSSL's own code
+diff -ruN qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslsocket_openssl.cpp qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslsocket_openssl.cpp
+--- qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslsocket_openssl.cpp	2019-08-05 01:22:21.908128848 +0900
++++ qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslsocket_openssl.cpp	2019-06-13 13:18:18.000000000 +0900
+@@ -604,7 +604,7 @@
+             q_SSL_set_psk_server_callback(ssl, &q_ssl_psk_server_callback);
+     }
+ #endif
+-#if OPENSSL_VERSION_NUMBER >= 0x10101006L && !defined(LIBRESSL_VERSION_NUMBER)
++#if OPENSSL_VERSION_NUMBER >= 0x10101006L
+     // Set the client callback for TLSv1.3 PSK
+     if (mode == QSslSocket::SslClientMode
+         && QSslSocket::sslLibraryBuildVersionNumber() >= 0x10101006L) {
+diff -ruN qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslsocket_openssl_symbols.cpp qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslsocket_openssl_symbols.cpp
+--- qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslsocket_openssl_symbols.cpp	2019-08-05 01:21:27.328123833 +0900
++++ qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslsocket_openssl_symbols.cpp	2019-06-13 13:18:18.000000000 +0900
+@@ -439,7 +439,7 @@
+ DEFINEFUNC2(int, SSL_CTX_use_RSAPrivateKey, SSL_CTX *a, a, RSA *b, b, return -1, return)
+ DEFINEFUNC3(int, SSL_CTX_use_PrivateKey_file, SSL_CTX *a, a, const char *b, b, int c, c, return -1, return)
+ DEFINEFUNC(X509_STORE *, SSL_CTX_get_cert_store, const SSL_CTX *a, a, return nullptr, return)
+-#if OPENSSL_VERSION_NUMBER >= 0x10002000L && !defined(LIBRESSL_VERSION_NUMBER)
++#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+ DEFINEFUNC(SSL_CONF_CTX *, SSL_CONF_CTX_new, DUMMYARG, DUMMYARG, return nullptr, return);
+ DEFINEFUNC(void, SSL_CONF_CTX_free, SSL_CONF_CTX *a, a, return ,return);
+ DEFINEFUNC2(void, SSL_CONF_CTX_set_ssl_ctx, SSL_CONF_CTX *a, a, SSL_CTX *b, b, return, return);
+diff -ruN qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslsocket_openssl_symbols_p.h qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslsocket_openssl_symbols_p.h
+--- qt-everywhere-src-5.13.0/qtbase/src/network/ssl/qsslsocket_openssl_symbols_p.h	2019-08-05 01:21:41.482125134 +0900
++++ qt-everywhere-src-5.13.0-orig/qtbase/src/network/ssl/qsslsocket_openssl_symbols_p.h	2019-06-13 13:18:18.000000000 +0900
+@@ -372,7 +372,7 @@
+ int q_SSL_CTX_use_RSAPrivateKey(SSL_CTX *a, RSA *b);
+ int q_SSL_CTX_use_PrivateKey_file(SSL_CTX *a, const char *b, int c);
+ X509_STORE *q_SSL_CTX_get_cert_store(const SSL_CTX *a);
+-#if OPENSSL_VERSION_NUMBER >= 0x10002000L && !defined(LIBRESSL_VERSION_NUMBER)
++#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+ SSL_CONF_CTX *q_SSL_CONF_CTX_new();
+ void q_SSL_CONF_CTX_free(SSL_CONF_CTX *a);
+ void q_SSL_CONF_CTX_set_ssl_ctx(SSL_CONF_CTX *a, SSL_CTX *b);
