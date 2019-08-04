@@ -1,0 +1,23 @@
+# Description: Extra alsa plugins
+# URL:         http://www.alsa-project.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib libsamplerate jack speex
+# Section:     sound
+
+name=alsa-plugins
+version=1.1.9
+release=1
+source=("ftp://ftp.alsa-project.org/pub/lib/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	cp "$STUFF"/config.guess config.guess
+	cp "$STUFF"/config.sub config.sub
+
+	autoreconf -fvi
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
