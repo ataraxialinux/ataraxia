@@ -20,6 +20,12 @@ build() {
 	sed -i 's/SIOCGSTAMP/0x8906/' qtserialbus/src/plugins/canbus/socketcan/socketcanbackend.cpp
 	sed -i 's/SIOCGSTAMP/0x8906/' src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
 
+	case $BARCH in
+		riscv64|riscv32|m68k)
+			QTWEBENGINE="-skip qtwebengine"
+			;;
+	esac
+
 	./configure \
 		-archdatadir /usr/lib/qt5 \
 		-bindir /usr/bin \
@@ -41,7 +47,7 @@ build() {
 		-openssl-linked \
 		-reduce-relocations \
 		-system-harfbuzz \
-		-system-sqlite
+		-system-sqlite $QTWEBENGINE
 	make
 	make DESTDIR="$PKG" install
 
