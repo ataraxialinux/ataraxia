@@ -1,0 +1,22 @@
+# Description: RFC2131 compliant DHCP client daemon
+# URL:         https://roy.marples.name/projects/dhcpcd/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     net
+
+name=dhcpcd
+version=8.0.2
+release=1
+source=("https://roy.marples.name/downloads/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib/dhcpcd \
+		--sysconfdir=/etc \
+		--dbdir=/var/lib/dhcpcd \
+		--rundir=/run
+	make
+	make DESTDIR="$PKG" install
+}
