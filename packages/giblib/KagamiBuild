@@ -1,7 +1,7 @@
 # Description: A library that feh uses as a wrapper to imlib2
 # URL:         http://freshmeat.net/projects/giblib/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  freetype2 libxext imlib2
+# Depends on:  freetype libxext imlib2
 # Section:     graphics
 
 name=giblib
@@ -11,6 +11,14 @@ source=("https://kent.dl.sourceforge.net/project/slackbuildsdirectlinks/$name/$n
 
 build() {
 	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
