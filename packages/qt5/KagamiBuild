@@ -27,15 +27,14 @@ build() {
 	esac
 
 	./configure \
-		-archdatadir /usr/lib/qt5 \
-		-bindir /usr/bin \
-		-plugindir /usr/lib/qt5/plugins \
-		-importdir /usr/lib/qt5/imports \
-		-headerdir /usr/include/qt5 \
-		-datadir /usr/share/qt5 \
-		-docdir /usr/share/doc/qt5 \
-		-translationdir /usr/share/qt5/translations \
-		-examplesdir /usr/share/doc/qt5/examples \-confirm-license \
+		-prefix /usr \
+		-docdir /usr/share/doc/qt \
+		-headerdir /usr/include/qt \
+		-archdatadir /usr/lib/qt \
+		-datadir /usr/share/qt \
+		-sysconfdir /etc/xdg \
+		-examplesdir /usr/share/doc/qt/examples \
+		-confirm-license \
 		-libdir /usr/lib \
 		-sysconfdir /etc/xdg \
 		-dbus-linked \
@@ -51,7 +50,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	find "$PKG"/usr/ -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+	find "$PKG"/usr/lib -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+	sed -i "s|$SRC/qt-everywhere-src-$version|/usr|" "$PKG"/usr/lib/qt/mkspecs/modules/qt_lib_bootstrap_private.pri
 
 	install -Dm644 "$SRC"/qt-everywhere-src-$version/qttools/src/assistant/assistant/images/assistant-128.png "$PKG"/usr/share/pixmaps/assistant-qt5.png
 	install -Dm644 "$SRC"/qt-everywhere-src-$version/qttools/src/designer/src/designer/images/designer.png "$PKG"/usr/share/pixmaps/designer-qt5.png
