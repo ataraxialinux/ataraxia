@@ -51,6 +51,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	find "$PKG"/usr/ -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+
 	install -Dm644 "$SRC"/qt-everywhere-src-$version/qttools/src/assistant/assistant/images/assistant-128.png "$PKG"/usr/share/pixmaps/assistant-qt5.png
 	install -Dm644 "$SRC"/qt-everywhere-src-$version/qttools/src/designer/src/designer/images/designer.png "$PKG"/usr/share/pixmaps/designer-qt5.png
 	install -Dm644 "$SRC"/qt-everywhere-src-$version/qttools/src/linguist/linguist/images/icons/linguist-128-32.png "$PKG"/usr/share/pixmaps/linguist-qt5.png
