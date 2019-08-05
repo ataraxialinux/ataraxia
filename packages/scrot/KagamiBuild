@@ -1,0 +1,19 @@
+# Description: Simple command-line screenshot utility for X
+# URL:         https://tracker.debian.org/pkg/scrot
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  giblib
+# Section:     x11
+
+name=m4
+version=1.1.1
+release=1
+source=("http://ftp.debian.org/debian/pool/main/s/$name/${name}_${version}.orig.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" docsdir=/usr/share/doc/scrot install
+}
