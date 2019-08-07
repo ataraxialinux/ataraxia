@@ -4,10 +4,6 @@ We need specific packages to build this Linux distribution. Without them you can
 ```
 apt-get install build-essential m4 gawk bc bison flex texinfo python3 perl libtool autoconf automake autopoint gperf bsdtar xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev zlib1g-dev
 ```
-#### Fedora (and derivatives):
-```
-dnf install bsdtar autoconf automake git curl autoconf automake gawk m4 bison flex texinfo patchutils gcc gcc-c++ libtool gettext-devel xorriso glibc-static perl python3 xz-devel mtools pigz gmp-devel mpfr-devel libmpc-devel pixz openssl-devel elfutils-devel zlib-devel xz-devel
-```
 #### Arch Linux (and derivatives):
 ```
 pacman -S base-devel xorriso mtools git pigz python pixz
@@ -18,7 +14,7 @@ xbps-install -S base-devel xorriso mtools git patch pigz python3 pixz zlib-devel
 ```
 #### Ataraxia Linux:
 ```
-kagami -EV libisoburn python mtools pixz
+ne -E libisoburn python mtools pixz
 ```
 
 ### Compiling pkgutils
