@@ -21,9 +21,11 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
-		ln -sf kmod "$PKG"/usr/bin/$tool
-	done
+	if [ "$EMBEDDED" != "1" ]; then
+		for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
+			ln -sf kmod "$PKG"/usr/bin/$tool
+		done
+	fi
 
 	install -dm755 "$PKG"/{etc,usr/lib}/{depmod,modprobe}.d
 
