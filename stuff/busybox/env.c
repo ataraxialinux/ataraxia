@@ -186,7 +186,6 @@ fillenv(struct env *env, const char **envlist)
 		name[len] = '\0';
 
 		/* delete previous copies */
-		key.key = name;
 		if (*name == '-')
 			key.key = name + 1;
 		if ((node = RB_FIND(envtree, &env->root, &key))) {
