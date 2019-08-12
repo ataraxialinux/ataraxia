@@ -279,7 +279,7 @@ build_target() {
 	ne -c "$BUILD"/target.config -r "$ROOTFS" -EWn $packages
 }
 
-while getopts s:a:j:g:e:l:EuASLI options; do
+while getopts s:a:j:g:e:l:EuASLIcC options; do
 	case $options in
 		s)
 			mode=stage
@@ -297,8 +297,13 @@ while getopts s:a:j:g:e:l:EuASLI options; do
 		L)
 			mode=mklive
 			;;
-		I)
-			mode=mkimage
+		c)
+			mode=clean
+			dontreallyclean=0
+			;;
+		C)
+			mode=clean
+			dontreallyclean=1
 			;;
 		a)
 			BARCH="$OPTARG"
@@ -388,6 +393,31 @@ elif [ "$mode" = "mkstage" ] || [ "$mode" = "mkimage" ] || [ "$mode" = "mklive" 
 		. "$UTILS/$mode"
 
 		main
+elif [ "$mode" = "clean" ]; then
+		check_for_root
+		setup_architecture
+		setup_environment
+
+		if [ "$dontreallyclean" = "1" ]; then
+			if [ -z "$LINUX" ]; then
+				LINUX="linux"
+			fi
+
+			if [ "$EMBEDDED" = "1" ]; then
+				packages="zlib kmod bc libuargp musl-obstrack bzip2 libelf lz4 xz zstd libressl $LINUX busybox"
+			else
+				packages="tzdata man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+					ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
+					autoconf automake xz lzip lz4 zstd libarchive kmod gettext-tiny musl-fts libuargp libelf busybox mandoc dialog pigz libmnl libnftnl \
+					libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim libcap-ng util-linux e2fsprogs \
+					musl-obstack reiserfsprogs dosfstools hwids gperf eudev $LINUX dpkg dhcpcd wireless_tools wpa_supplicant popt gptfdisk libssh2 c-ares \
+					libev nghttp2 curl"
+			fi
+
+			dpkg --root="$ROOTFS" --force-all -P $packages
+		else
+			rm -rf "$BUILD"
+		fi
 fi
 
 exit 0

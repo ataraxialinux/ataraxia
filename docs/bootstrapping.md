@@ -39,6 +39,8 @@ Arguments supported by "build script":
  -S				- Build stage archive
  -L				- Build live/installer image
  -I				- Build image to deploy to hard drive or sdcard.
+ -c				- Clean everything after build.
+ -C				- Clean everything except toolchain.
 ```
 We have seperated the build process into seperate "stages":
 ```
