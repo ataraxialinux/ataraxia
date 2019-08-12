@@ -37,19 +37,23 @@ build_busybox_standard() {
 		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
 	done
 
-	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/busybox/pr.c "$STUFF"/busybox/egetopt.c "$STUFF"/busybox/strtonum.c -o "$PKG"/usr/bin/pr
-	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/busybox/apply.c -o "$PKG"/usr/bin/what
-	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/busybox/what.c -o "$PKG"/usr/bin/apply
-	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/busybox/who.c -o "$PKG"/usr/bin/who
-	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/busybox/xinstall.c "$STUFF"/busybox/strtonum.c "$STUFF"/busybox/setmode.c "$STUFF"/busybox/pwcache.c "$STUFF"/busybox/vwarnc.c "$STUFF"/busybox/verrc.c "$STUFF"/busybox/warnc.c "$STUFF"/busybox/errc.c "$STUFF"/busybox/getprogname.c "$STUFF"/busybox/reallocarray.c "$STUFF"/busybox/strtofflags.c -o "$PKG"/usr/bin/install
+	cd "$STUFF"/busybox/
+	bison -y parse.y
 
-	ln -sf install "$PKG"/usr/bin/xinstall
+	${CROSS_COMPILE}cc $CFLAGS -static pr.c egetopt.c strtonum.c -o "$PKG"/usr/bin/pr
+	${CROSS_COMPILE}cc $CFLAGS -static apply.c -o "$PKG"/usr/bin/what
+	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/apply
+	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/who
+	${CROSS_COMPILE}cc $CFLAGS -static xinstall.c strtonum.c setmode.c pwcache.c vwarnc.c verrc.c warnc.c errc.c getprogname.c reallocarray.c strtofflags.c -o "$PKG"/usr/bin/install
 
-	for a in apply.1 install.1 pr.1 what.1 who.1; do
+	${CROSS_COMPILE}cc $CFLAGS -static -I"$STUFF"/include doas.c env.c persist.c y.tab.c errc.c verrc.c reallocarray.c readpassphrase.c getprogname.c setprogname.c strtonum.c -o "$PKG"/usr/bin/doas
+
+	for a in apply.1 install.1 pr.1 what.1 who.1 doas.1; do
 		install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
 	done
+	install -Dm0644 "$STUFF"/busybox/doas.conf.5 "$PKG"/usr/share/man/man5/doas.conf.5
 
-	ln -sf install.1 "$PKG"/usr/share/man/man1/xinstall.1
+	chmod 4755 "$PKG"/usr/bin/doas
 }
 
 build_busybox_embedded() {

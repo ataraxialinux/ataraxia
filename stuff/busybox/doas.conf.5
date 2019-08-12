@@ -1,0 +1,146 @@
+.\" $OpenBSD: doas.conf.5,v 1.41 2019/07/07 19:21:28 tedu Exp $
+.\"
+.\"Copyright (c) 2015 Ted Unangst <tedu@openbsd.org>
+.\"
+.\"Permission to use, copy, modify, and distribute this software for any
+.\"purpose with or without fee is hereby granted, provided that the above
+.\"copyright notice and this permission notice appear in all copies.
+.\"
+.\"THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\"WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\"MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\"ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\"WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\"ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\"OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.Dd $Mdocdate: July 7 2019 $
+.Dt DOAS.CONF 5
+.Os
+.Sh NAME
+.Nm doas.conf
+.Nd doas configuration file
+.Sh DESCRIPTION
+The
+.Xr doas 1
+utility executes commands as other users according to the rules
+in the
+.Nm
+configuration file.
+.Pp
+The rules have the following format:
+.Bd -ragged -offset indent
+.Ic permit Ns | Ns Ic deny
+.Op Ar options
+.Ar identity
+.Op Ic as Ar target
+.Op Ic cmd Ar command Op Ic args No ...
+.Ed
+.Pp
+Rules consist of the following parts:
+.Bl -tag -width 11n
+.It Ic permit Ns | Ns Ic deny
+The action to be taken if this rule matches.
+.It Ar options
+Options are:
+.Bl -tag -width keepenv
+.It Ic nopass
+The user is not required to enter a password.
+.It Ic persist
+After the user successfully authenticates, do not ask for a password
+again for some time.
+.It Ic keepenv
+Environment variables other than those listed in
+.Xr doas 1
+are retained when creating the environment for the new process.
+.It Ic setenv { Oo Ar variable ... Oc Oo Ar variable=value ... Oc Ic }
+Keep or set the space-separated specified variables.
+Variables may also be removed with a leading
+.Sq -
+or set using the latter syntax.
+If the first character of
+.Ar value
+is a
+.Ql $
+then the value to be set is taken from the existing environment
+variable of the indicated name.
+This option is processed after the default environment has been created.
+.El
+.It Ar identity
+The username to match.
+Groups may be specified by prepending a colon
+.Pq Sq \&: .
+Numeric IDs are also accepted.
+.It Ic as Ar target
+The target user the running user is allowed to run the command as.
+The default is all users.
+.It Ic cmd Ar command
+The command the user is allowed or denied to run.
+The default is all commands.
+Be advised that it is best to specify absolute paths.
+If a relative path is specified, only a restricted
+.Ev PATH
+will be searched.
+.It Ic args Op Ar argument ...
+Arguments to command.
+The command arguments provided by the user need to match those specified.
+The keyword
+.Ic args
+alone means that command must be run without any arguments.
+.El
+.Pp
+The last matching rule determines the action taken.
+If no rule matches, the action is denied.
+.Pp
+Comments can be put anywhere in the file using a hash mark
+.Pq Sq # ,
+and extend to the end of the current line.
+.Pp
+The following quoting rules apply:
+.Bl -dash
+.It
+The text between a pair of double quotes
+.Pq Sq \&"
+is taken as is.
+.It
+The backslash character
+.Pq Sq \e
+escapes the next character, including new line characters, outside comments;
+as a result, comments may not be extended over multiple lines.
+.It
+If quotes or backslashes are used in a word,
+it is not considered a keyword.
+.El
+.Sh FILES
+.Bl -tag -width "/etc/doas.conf"
+.It Pa /etc/doas.conf
+doas configuration file.
+.El
+.Sh EXAMPLES
+The following example permits user aja to install packages
+from a preferred mirror;
+group wheel to execute commands as any user while keeping the environment
+variables
+.Ev PS1
+and
+.Ev SSH_AUTH_SOCK
+and
+unsetting
+.Ev ENV ;
+permits tedu to run procmap as root without a password;
+and additionally permits root to run unrestricted commands as itself
+while retaining the original PATH.
+.Bd -literal -offset indent
+permit persist setenv { PKG_CACHE PKG_PATH } aja cmd pkg_add
+permit setenv { -ENV PS1=$DOAS_PS1 SSH_AUTH_SOCK } :wheel
+permit nopass tedu as root cmd /usr/sbin/procmap
+permit nopass keepenv setenv { PATH } root as root
+.Ed
+.Sh SEE ALSO
+.Xr doas 1
+.Sh HISTORY
+The
+.Nm
+configuration file first appeared in
+.Ox 5.8 .
+.Sh AUTHORS
+.An Ted Unangst Aq Mt tedu@openbsd.org
