@@ -1,7 +1,7 @@
 # Description: Reference implementation of a Wayland compositor
 # URL:         https://wayland.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson cairo libinput libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu libva pango dbus libxcb libxcursor
+# Depends on:  meson libdrm libx11 libxcb libxcursor cairo libinput libpng libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu pango libwebp lcms2 libva dbus
 # Section:     x11
 
 name=weston
@@ -18,19 +18,10 @@ build() {
 	mkdir -p build
 	cd build
 
-	meson "$SRC"/$name-$version \
-		--prefix=/usr \
-		--libexec=lib/weston \
-		-Dbackend-drm-screencast-vaapi=true \
-		-Dbackend-rdp=false \
-		-Dcolor-management-colord=false \
-		-Dcolor-management-lcms=false \
-		-Dimage-webp=false \
+	ataraxia-meson "$SRC"/$name-$version \
 		-Dlauncher-logind=false \
-		-Dremoting=false \
 		-Dsimple-dmabuf-drm=auto \
-		-Dsystemd=false \
-		-Dtest-junit-xml=false
+		-Dsystemd=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }
