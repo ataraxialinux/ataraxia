@@ -78,19 +78,6 @@ build_busybox_embedded() {
 	mkdir -p "$PKG"/usr/share/udhcpc
 	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 	chmod +x "$PKG"/usr/share/udhcpc/default.script
-
-	cd "$PKG"
-	mkdir -p etc/init.d
-	echo '#!/usr/bin/busybox hush' > etc/init.d/rcS
-	echo 'export PATH=/usr/bin' >> etc/init.d/rcS
-	echo '/bin/busybox --install -s' >> etc/init.d/rcS
-	echo 'dmesg -n 1' >> etc/init.d/rcS
-	echo 'mount -t devtmpfs none /dev' >> etc/init.d/rcS
-	echo 'mount -t proc none /proc' >> etc/init.d/rcS
-	echo 'mount -t sysfs none /sys' >> etc/init.d/rcS
-	echo 'setsid cttyhack /usr/bin/hush' >> etc/init.d/rcS
-	echo 'echo Welcome to Ataraxia Linux Embedded Edition!' >> etc/init.d/rcS
-	chmod +x etc/init.d/rcS
 }
 
 build() {
