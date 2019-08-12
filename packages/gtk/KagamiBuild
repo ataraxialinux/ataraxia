@@ -1,18 +1,24 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: GObject-based multi-platform GUI toolkit
+# URL:         https://www.gtk.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Section:     devel
+# Depends on:  meson at-spi2-atk fribidi gdk-pixbuf librsvg libepoxy pango hicolor-icon-theme iso-codes libxkbcommon sassc wayland-protocols
+# Section:     graphics
 
-name=m4
-version=1.4.18
+name=gtk
+version=3.24.10
 release=1
-options=('bootstrap')
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz")
 
 build() {
-	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	cd "$SRC"/gtk+-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/gtk+-$version \
+		-Dbroadway_backend=true \
+		-Dcolord=yes \
+		-Dgtk_doc=false \
+		-Dman=true
+	ninja
+	DESTDIR="$PKG" ninja instal
 }
