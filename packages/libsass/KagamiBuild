@@ -1,16 +1,19 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: C implementation of Sass CSS preprocessor (library)
+# URL:         http://libsass.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Section:     devel
+# Section:     libs
 
-name=m4
-version=1.4.18
+name=libsass
+version=3.6.1
 release=1
-options=('bootstrap')
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://github.com/sass/libsass/archive/$version/$name-$version.tar.gz")
 
 build() {
+	export LIBSASS_VERSION="$version"
+
 	cd "$SRC"/$name-$version
+	autoreconf -fi
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
