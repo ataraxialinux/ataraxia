@@ -1,0 +1,64 @@
+# Description: Small and simple packages manager for Ataraxia Linux
+# URL:         https://github.com/ataraxialinux/ne
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bash libarchive curl
+
+name=ne
+version=0.2
+release=1
+options=('bootstrap')
+backup=('etc/ne/config')
+source=("https://github.com/ataraxialinux/ne/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./build.sh -B
+	./build.sh -I -P /usr -D "$PKG"
+
+	mkdir -p "$PKG"/var/cache/{packages,sources}
+
+	rm -rf "$PKG"/etc/ne/config
+
+cat > "$PKG"/etc/ne/config << "EOF"
+# Uncomment if you want parallel build or add certain options for 'make' or 'ninja'
+#
+# MKOPTS=""
+
+# Options for build:
+#
+#  emptydirs - Leave empty directories
+#  strip     - Remove debug information from binaries
+#  makeflags - Enable parallel build
+#  locales   - Leave localization files
+#  docs      - Leave documentation files
+#  ccache    - Enable ccache
+#
+# Add '~' before option name to disable certain option
+#
+# OPTIONS=('emptydirs' 'strip' 'makeflags' 'locales' 'docs' 'ccache')
+
+# Source and package destination
+#
+# PKGDEST="/var/cache/packages"
+# SRCDEST="/var/cache/sources"
+
+# Repositories
+#
+# REPOS=('/var/cache/ports/packages' '/tmp/community' '/home/localname/myrepo')
+REPOS=('/usr/ports/packages')
+
+export STUFF="/usr/ports/stuff"
+
+
+# System variables
+export BARCH="$BARCH"
+
+export XTARGET="$XTARGET"
+export BUILDFLAGS="--build=$XTARGET"
+export TOOLFLAGS="$BUILDFLAGS"
+export PERLFLAGS=
+
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
+EOF
+}
