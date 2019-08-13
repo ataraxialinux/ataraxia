@@ -36,6 +36,17 @@ build_busybox_standard() {
 	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
 		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
 	done
+
+	cd "$STUFF"/busybox
+	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static pr.c egetopt.c strtonum.c -o "$PKG"/usr/bin/pr
+	${CROSS_COMPILE}cc $CFLAGS -static apply.c -o "$PKG"/usr/bin/what
+	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/apply
+	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/who
+	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static setprogname.c setmode.c reallocarray.c strtonum.c errc.c verrc.c warnc.c vwarnc.c pwcache.c strtofflags.c xinstall.c -o "$PKG"/usr/bin/install
+
+	for a in apply.1 install.1 pr.1 what.1 who.1; do
+		install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
+	done
 }
 
 build_busybox_embedded() {

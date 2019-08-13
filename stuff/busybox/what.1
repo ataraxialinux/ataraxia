@@ -1,0 +1,97 @@
+.\"	$OpenBSD: what.1,v 1.20 2019/01/20 14:03:19 schwarze Exp $
+.\"	$NetBSD: what.1,v 1.3 1994/11/17 06:59:38 jtc Exp $
+.\"
+.\" Copyright (c) 1980, 1991, 1993
+.\"	The Regents of the University of California.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 3. Neither the name of the University nor the names of its contributors
+.\"    may be used to endorse or promote products derived from this software
+.\"    without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"     @(#)what.1	8.1 (Berkeley) 6/6/93
+.\"
+.Dd $Mdocdate: January 20 2019 $
+.Dt WHAT 1
+.Os
+.Sh NAME
+.Nm what
+.Nd show what versions of object modules were used to construct a file
+.Sh SYNOPSIS
+.Nm what
+.Op Fl s
+.Ar
+.Sh DESCRIPTION
+.Nm
+reads each
+.Ar file
+and searches for sequences of either the form
+.Sq $
+immediately followed by the system name (sysname) as defined by
+.Xr uname 3 ,
+or the form
+.Dq @(#)
+as inserted by the source code control system (SCCS).
+.Pp
+When
+.Sq $
+followed by the system name is encountered
+.Nm
+prints the remainder of the string up to a
+.Sq $
+or any non-printable character.
+.Pp
+When
+.Dq @(#)
+is encountered
+.Nm
+prints the remainder of the string, up to a NUL, newline, double
+quote, backslash, or
+.Sq >
+character.
+.Pp
+If the
+.Fl s
+option is specified, only the first occurrence of an identification string in
+each file is printed.
+.Sh EXIT STATUS
+The
+.Nm
+utility exits with a return value of 0 if any identification strings were found,
+or with a return value of 1 otherwise.
+.Sh STANDARDS
+The
+.Nm
+utility is compliant with the
+X/Open System Interfaces option of the
+.St -p1003.1-2008
+specification.
+.Pp
+Processing $sysname$ sequences is an
+.Ox
+extension.
+.Sh HISTORY
+The
+.Nm
+command first appeared in the SCCS package and was rewritten for
+.Bx 4.0
+for licensing reasons.
