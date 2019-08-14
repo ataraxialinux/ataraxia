@@ -1,0 +1,22 @@
+# Description: Monitor and display application startup
+# URL:         https://www.freedesktop.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libx11 xcb-util
+# Section:     x11
+
+name=startup-notification
+version=0.12
+release=1
+source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
