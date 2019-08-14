@@ -1,0 +1,23 @@
+# Description: Power manager for Xfce desktop
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool upower libnotify xfce4-panel
+# Section:     xfce
+
+name=xfce4-power-manager
+version=1.6.5
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
