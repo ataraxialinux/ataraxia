@@ -1,0 +1,25 @@
+# Description: Modern file manager for Xfce
+# URL:         https://docs.xfce.org/xfce/thunar/start
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxfce4ui exo libgudev libnotify libexif xfce4-panel desktop-file-utils
+# Section:     xfce
+
+name=thunar
+version=1.8.9
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/Thunar-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/Thunar-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--enable-exif \
+		--enable-gio-unix \
+		--enable-gudev \
+		--enable-notifications \
+		--enable-pcre \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
