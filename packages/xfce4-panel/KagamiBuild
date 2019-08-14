@@ -1,0 +1,23 @@
+# Description: Panel for the Xfce desktop environment
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxfce4ui exo garcon libwnck desktop-file-utils
+# Section:     xfce
+
+name=xfce4-panel
+version=4.14.0
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-gio-unix \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
