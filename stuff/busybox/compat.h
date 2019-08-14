@@ -5,6 +5,18 @@
 #define	__attribute__(x)
 #define __dead		__attribute__((__noreturn__))
 #define __pure		__attribute__((__const__))
+#define	__unused	__attribute__((__unused__))
+
+#if defined(__cplusplus)
+#define	__BEGIN_EXTERN_C	extern "C" {
+#define	__END_EXTERN_C		}
+#else
+#define	__BEGIN_EXTERN_C
+#define	__END_EXTERN_C
+#endif
+
+#define	__BEGIN_DECLS	__BEGIN_EXTERN_C
+#define	__END_DECLS	__END_EXTERN_C
 
 #if !defined(DEF_WEAK)
 #define DEF_WEAK(x)
@@ -31,5 +43,5 @@ int	uid_from_user(const char *, uid_t *);
 const char	*user_from_uid(uid_t, int);
 long long
 	strtonum(const char *, long long, long long, const char **);
-int	fchflags(int, unsigned int);
-int	chflags(const char *, unsigned int);
+int	 setresgid(gid_t, gid_t, gid_t);
+int	 setresuid(uid_t, uid_t, uid_t);

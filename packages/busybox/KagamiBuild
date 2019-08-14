@@ -21,9 +21,7 @@ build_busybox_standard() {
 		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" busybox.links
 	fi
 
-	install -D busybox "$PKG"/usr/bin/busybox
-
-	chmod 4755 "$PKG"/usr/bin/busybox
+	install -Dm4755 busybox "$PKG"/usr/bin/busybox
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
 
@@ -38,15 +36,21 @@ build_busybox_standard() {
 	done
 
 	cd "$STUFF"/busybox
+	rm -rf y.tab.c
+	bison -y parse.y
+
 	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static pr.c egetopt.c strtonum.c -o "$PKG"/usr/bin/pr
 	${CROSS_COMPILE}cc $CFLAGS -static apply.c -o "$PKG"/usr/bin/what
 	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/apply
 	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/who
-	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static setprogname.c setmode.c reallocarray.c strtonum.c errc.c verrc.c warnc.c vwarnc.c pwcache.c strtofflags.c xinstall.c -o "$PKG"/usr/bin/install
+	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static doas.c env.c y.tab.c persist.c reallocarray.c setprogname.c strtonum.c -o "$PKG"/usr/bin/doas
 
-	for a in apply.1 install.1 pr.1 what.1 who.1; do
+	for a in apply.1 pr.1 what.1 who.1 doas.1; do
 		install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
 	done
+	install -Dm0644 "$STUFF"/busybox/doas.conf.5 "$PKG"/usr/share/man/man5/doas.conf.5
+
+	chmod 4755 "$PKG"/usr/bin/doas
 }
 
 build_busybox_embedded() {
