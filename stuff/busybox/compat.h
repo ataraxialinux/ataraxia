@@ -31,3 +31,5 @@ int	uid_from_user(const char *, uid_t *);
 const char	*user_from_uid(uid_t, int);
 long long
 	strtonum(const char *, long long, long long, const char **);
+int	fchflags(int, unsigned int);
+int	chflags(const char *, unsigned int);

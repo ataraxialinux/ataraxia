@@ -1,4 +1,4 @@
-/*	$OpenBSD: xinstall.c,v 1.71 2019/02/14 11:51:42 espie Exp $	*/
+/*	$OpenBSD: xinstall.c,v 1.73 2019/06/28 13:35:05 deraadt Exp $	*/
 /*	$NetBSD: xinstall.c,v 1.9 1995/12/20 10:25:17 jonathan Exp $	*/
 
 /*
@@ -34,7 +34,6 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #include <ctype.h>
 #include <err.h>
@@ -48,50 +47,23 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <utime.h>
 #include <libgen.h>
-
 #include <compat.h>
 
 #include "pathnames.h"
 
-#ifndef UID_MAX
-#define UID_MAX 65535
-#endif
-
-#ifndef GID_MAX
-#define GID_MAX 65535
-#endif
-
-#ifndef EFTYPE
-#define EFTYPE	79	/* Inappropriate file type or format */
-#endif
+#define S_ISTXT S_ISVTX
 
 #ifndef S_BLKSIZE
 #define S_BLKSIZE 512
 #endif
 
-#ifndef SF_IMMUTABLE
-#define	SF_IMMUTABLE	0x00020000	/* file may not be changed */
-#endif
-
-#ifndef SF_APPEND
-#define	SF_APPEND	0x00040000	/* writes to file may only append */
-#endif
-
-#ifndef UF_NODUMP
-#define	UF_NODUMP	0x00000001	/* do not dump file */
-#endif
-
-#ifndef UF_IMMUTABLE
-#define	UF_IMMUTABLE	0x00000002	/* file may not be changed */
-#endif
-
-#ifndef UF_APPEND
-#define	UF_APPEND	0x00000004	/* writes to file may only append */
-#endif
+#define UID_MAX 60000
+#define GID_MAX 60000
 
 #define	MAXBSIZE	(64 * 1024)
+
+#define EFTYPE ENOTSUP
 
 #define MINIMUM(a, b)	(((a) < (b)) ? (a) : (b))
 
@@ -298,7 +270,7 @@ install(char *from_name, char *to_name, u_long fset, u_int flags)
 	}
 
 	if (!devnull) {
-		if ((from_fd = open(from_name, O_RDONLY, 0)) < 0)
+		if ((from_fd = open(from_name, O_RDONLY, 0)) == -1)
 			err(1, "%s", from_name);
 	}
 
@@ -318,7 +290,7 @@ install(char *from_name, char *to_name, u_long fset, u_int flags)
 		 *  that does not work in-place -- like gnu binutils strip.
 		 */
 		close(to_fd);
-		if ((to_fd = open(tempfile, O_RDONLY, 0)) < 0)
+		if ((to_fd = open(tempfile, O_RDONLY, 0)) == -1)
 			err(1, "stripping %s", to_name);
 	}
 
@@ -330,7 +302,7 @@ install(char *from_name, char *to_name, u_long fset, u_int flags)
 		struct stat temp_sb;
 
 		/* Re-open to_fd using the real target name. */
-		if ((to_fd = open(to_name, O_RDONLY, 0)) < 0)
+		if ((to_fd = open(to_name, O_RDONLY, 0)) == -1)
 			err(1, "%s", to_name);
 
 		if (fstat(temp_fd, &temp_sb)) {
@@ -423,14 +395,14 @@ install(char *from_name, char *to_name, u_long fset, u_int flags)
 			(void)snprintf(backup, PATH_MAX, "%s%s", to_name,
 			    suffix);
 			/* It is ok for the target file not to exist. */
-			if (rename(to_name, backup) < 0 && errno != ENOENT) {
+			if (rename(to_name, backup) == -1 && errno != ENOENT) {
 				serrno = errno;
 				unlink(tempfile);
 				errx(1, "rename: %s to %s: %s", to_name,
 				     backup, strerror(serrno));
 			}
 		}
-		if (rename(tempfile, to_name) < 0 ) {
+		if (rename(tempfile, to_name) == -1 ) {
 			serrno = errno;
 			unlink(tempfile);
 			errx(1, "rename: %s to %s: %s", tempfile,
@@ -772,7 +744,7 @@ file_write(int fd, char *str, size_t cnt, int *rem, int *isempt, int sz)
 				/*
 				 * skip, buf is empty so far
 				 */
-				if (lseek(fd, (off_t)wcnt, SEEK_CUR) < 0) {
+				if (lseek(fd, (off_t)wcnt, SEEK_CUR) == -1) {
 					warn("lseek");
 					return(-1);
 				}
@@ -818,12 +790,12 @@ file_flush(int fd, int isempt)
 	/*
 	 * move back one byte and write a zero
 	 */
-	if (lseek(fd, (off_t)-1, SEEK_CUR) < 0) {
+	if (lseek(fd, (off_t)-1, SEEK_CUR) == -1) {
 		warn("Failed seek on file");
 		return;
 	}
 
-	if (write(fd, blnk, 1) < 0)
+	if (write(fd, blnk, 1) == -1)
 		warn("Failed write to file");
 	return;
 }
