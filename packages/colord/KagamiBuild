@@ -1,0 +1,26 @@
+# Description: System daemon for managing color devices
+# URL:         https://www.freedesktop.org/software/colord
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  dbus gobject-introspection lcms2 polkit sqlite libgudev libgusb vala bash-completion
+# Section:     graphics
+
+name=colord
+version=1.4.4
+release=1
+source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddaemon_user=colord \
+		-Ddocs=false  \
+		-Dlibcolordcompat=true \
+		-Dman=false \
+		-Dprint_profiles=true \
+		-Dsystemd=false \
+		-Dvapi=true
+	ninja
+	DESTDIR="$PKG" ninja install
+}
