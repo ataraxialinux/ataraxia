@@ -1,0 +1,24 @@
+# Description: A desktop manager for Xfce
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool libxfce4ui exo libwnck libnotify startup-notification thunar
+# Section:     xfce
+
+name=xfdesktop
+version=4.14.1
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-notifications \
+		--enable-thunarx \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
