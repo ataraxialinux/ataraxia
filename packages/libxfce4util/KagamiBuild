@@ -1,0 +1,23 @@
+# Description: Basic utility non-GUI functions for Xfce
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection vala
+# Section:     xfce
+
+name=libxfce4util
+version=4.14.0
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
