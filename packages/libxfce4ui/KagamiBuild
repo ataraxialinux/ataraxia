@@ -1,0 +1,23 @@
+# Description: Commonly used Xfce widgets among Xfce applications
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libsm xfconf gtk gtk2 startup-notification
+# Section:     xfce
+
+name=libxfce4ui
+version=4.14.1
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-vendor-info="Ataraxia Linux" \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
