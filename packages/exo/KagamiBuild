@@ -1,0 +1,20 @@
+# Description: Application library for Xfce
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl-uri libxfce4ui
+# Section:     xfce
+
+name=exo
+version=0.12.8
+release=1
+source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
