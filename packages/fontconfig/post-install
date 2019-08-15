@@ -1,8 +1,11 @@
 #!/bin/sh
 
 if [ "$1" = triggered ]; then
-	/usr/bin/fc-cache -rs || true
+	if [ -d '/usr/share/fonts' ]; then
+		/usr/bin/fc-cache -f || true
+	fi
 else
-	/usr/bin/mkdir -p /usr/share/fonts
-	/usr/bin/fc-cache -rs || true
+	if [ -d '/usr/share/fonts' ]; then
+		/usr/bin/fc-cache -f || true
+	fi
 fi
