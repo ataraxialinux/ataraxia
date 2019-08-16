@@ -10,6 +10,8 @@ release=1
 source=("https://archive.mozilla.org/pub/$name/releases/$version/source/$name-$version.source.tar.xz")
 
 build() {
+	export RUSTFLAGS="-C target-feature=-crt-static"
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
 	patch -Np1 -i "$STUFF"/firefox/ffix-seccomp-bpf.patch
