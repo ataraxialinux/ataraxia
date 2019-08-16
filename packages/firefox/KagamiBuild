@@ -1,0 +1,92 @@
+# Description: Standalone web browser from mozilla.org
+# URL:         https://www.mozilla.org/firefox/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  autoconf2.13 python cbindgen nasm yasm gtk gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
+# Section:     net
+
+name=firefox
+version=68.0esr
+release=1
+source=("https://archive.mozilla.org/pub/$name/releases/$version/source/$name-$version.source.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-seccomp-bpf.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-toolkit.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-tools.patch
+	patch -Np1 -i "$STUFF"/firefox/fmallinfo.patch
+	patch -Np1 -i "$STUFF"/firefox/fdisable-moz-stackwalk.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-musl.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-rust-target.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-webrtc-glibcisms.patch
+	patch -Np1 -i "$STUFF"/firefox/ffix-sandbox-membarrier.patch
+
+	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
+
+	cat > mozconfig <<-EOF
+		ac_add_options --disable-dbus
+		ac_add_options --disable-necko-wifi
+		ac_add_options --disable-startup-notification
+		ac_add_options --disable-pulseaudio
+		ac_add_options --enable-alsa
+		ac_add_options --enable-system-sqlite
+		ac_add_options --with-system-libevent
+		ac_add_options --with-system-webp
+		ac_add_options --with-system-nspr
+		ac_add_options --with-system-nss
+		ac_add_options --with-system-icu
+		ac_add_options --enable-av1
+		ac_add_options --disable-debug-symbols
+		ac_add_options --prefix=/usr
+		ac_add_options --enable-application=browser
+		ac_add_options --disable-elf-hack
+		ac_add_options --enable-hardening
+		ac_add_options --enable-rust-simd
+		ac_add_options --disable-gold
+		ac_add_options --disable-jemalloc
+		ac_add_options --disable-crashreporter
+		ac_add_options --disable-updater
+		ac_add_options --disable-tests
+		ac_add_options --enable-optimize
+		ac_add_options --enable-system-ffi
+		ac_add_options --enable-system-pixman
+		ac_add_options --with-system-bz2
+		ac_add_options --with-system-jpeg
+		ac_add_options --with-system-png
+		ac_add_options --with-system-zlib
+		ac_add_options --enable-startup-notification
+		ac_add_options --disable-official-branding
+		ac_add_options --with-branding=browser/branding/unofficial
+		ac_add_options --enable-update-channel=release
+		ac_add_options --host=$XTARGET
+		ac_add_options --target=$XTARGET
+	EOF
+
+	./mach build
+	DESTDIR="$PKG" ./mach install
+
+	for i in 16 22 24 32 48 64 128 256; do
+		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
+	done
+
+	install -Dm644 browser/branding/unofficial/content/about-logo.png "$PKG"/usr/share/icons/hicolor/192x192/apps/firefox.png
+	install -Dm644 browser/branding/unofficial/content/about-logo@2x.png "$PKG"/usr/share/icons/hicolor/384x384/apps/firefox.png
+
+	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
+
+	cat > "$pkgdir"/usr/share/applications/firefox.desktop <<-EOF
+		[Desktop Entry]
+		Encoding=UTF-8
+		Name=Firefox Web Browser
+		Comment=Browse the World Wide Web
+		GenericName=Web Browser
+		Exec=firefox %u
+		Terminal=false
+		Type=Application
+		Icon=firefox
+		Categories=GNOME;GTK;Network;WebBrowser;
+		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
+		StartupNotify=true
+	EOF
+}
