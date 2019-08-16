@@ -34,6 +34,13 @@ build_flavor() {
 }
 
 build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	export BUILD_CPPFLAGS=""
+	export BUILD_CFLAGS=""
+	export BUILD_CXXFLAGS=""
+	export BUILD_LDFLAGS=""
+
 	case $BARCH in
 		amd64|i386)
 			FLAVOR="efi pc"
@@ -44,7 +51,6 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	sed -i 's/-Wl,$grub_cv_target_cc_efiemu64_link_format/-Wl,$grub_cv_target_cc_efiemu64_link_format -no-pie/g' configure
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
 

@@ -25,12 +25,12 @@ build_flavor() {
 }
 
 build() {
-	unset CXXFLAGS LDFLAGS
+	unset CFLAGS CXXFLAGS LDFLAGS
 
-	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
-	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
-	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
-	export CXXFLAGS="$CFLAGS"
+	export BUILD_CPPFLAGS=""
+	export BUILD_CFLAGS=""
+	export BUILD_CXXFLAGS=""
+	export BUILD_LDFLAGS=""
 
 	case $BARCH in
 		amd64|i386)
@@ -42,7 +42,6 @@ build() {
 	esac
 
 	cd "$SRC"/grub-$version
-	sed -i 's/-Wl,$grub_cv_target_cc_efiemu64_link_format/-Wl,$grub_cv_target_cc_efiemu64_link_format -no-pie/g' configure
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
 
