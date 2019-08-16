@@ -34,12 +34,12 @@ build_flavor() {
 }
 
 build() {
-	unset CFLAGS CXXFLAGS LDFLAGS
+	unset CXXFLAGS LDFLAGS
 
-	export BUILD_CPPFLAGS=""
-	export BUILD_CFLAGS=""
-	export BUILD_CXXFLAGS=""
-	export BUILD_LDFLAGS=""
+	export CFLAGS="${CFLAGS/-D_FORTIFY_SOURCE=2/}"
+	export CFLAGS="${CFLAGS/ -fstack-protector-strong/}"
+	export CFLAGS="${CFLAGS/ -Wl,-z,relro,-z,now/}"
+	export CXXFLAGS="$CFLAGS"
 
 	case $BARCH in
 		amd64|i386)
