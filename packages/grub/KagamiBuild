@@ -51,9 +51,12 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
+
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
 
+	./autogen.sh
 	for f in $FLAVOR; do
 		case "$f" in
 			efi) build_flavor $f --with-platform=efi --disable-efiemu;;
