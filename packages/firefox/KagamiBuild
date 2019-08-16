@@ -1,7 +1,7 @@
 # Description: Standalone web browser from mozilla.org
 # URL:         https://www.mozilla.org/firefox/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python cbindgen nasm yasm gtk gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm gtk gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
 # Section:     net
 
 name=firefox
@@ -10,6 +10,14 @@ release=1
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
+	if [ "$OPT_CCACHE" != "0" ]; then
+			if type ccache > /dev/null 2>&1; then
+				export CC="ccache clang"
+				export CXX="ccache clang++"
+			fi
+	fi
+
+
 	export RUSTFLAGS="-C target-feature=-crt-static"
 
 	cd "$SRC"/$name-$version

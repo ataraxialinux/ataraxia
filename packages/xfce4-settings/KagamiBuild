@@ -6,7 +6,7 @@
 
 name=xfce4-settings
 version=4.14.0
-release=1
+release=2
 source=("https://archive.xfce.org/src/xfce/$name/${version%.*}/$name-$version.tar.bz2")
 
 build() {
@@ -18,9 +18,18 @@ build() {
 		--libexecdir=/usr/lib \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--disable-debug
+		--enable-libnotify \
+		--enable-libxklavier \
+		--enable-pluggable-dialogs \
+		--enable-sound-settings \
+		--enable-xcursor \
+		--enable-xrandr \
+		--disable-debug \
+		--disable-upower-glib
 	make
 	make DESTDIR="$PKG" install
 
 	install -Dm755 "$STUFF"/xfce4-settings/xfce4-desktop.xml "$PKG"/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+
+	chmod 644 "$PKG"/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/*.xml
 }
