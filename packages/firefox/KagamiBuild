@@ -7,16 +7,10 @@
 name=firefox
 version=68.0.2
 release=1
+options=('~emptydirs')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
-	if [ "$OPT_CCACHE" != "0" ]; then
-			if type ccache > /dev/null 2>&1; then
-				export CC="ccache clang"
-				export CXX="ccache clang++"
-			fi
-	fi
-
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
 	patch -Np1 -i "$STUFF"/firefox/fix-seccomp-bpf.patch
@@ -36,12 +30,6 @@ build() {
 		ac_add_options --disable-startup-notification
 		ac_add_options --disable-pulseaudio
 		ac_add_options --enable-alsa
-		ac_add_options --enable-system-sqlite
-		ac_add_options --with-system-libevent
-		ac_add_options --with-system-webp
-		ac_add_options --with-system-nspr
-		ac_add_options --with-system-nss
-		ac_add_options --with-system-icu
 		ac_add_options --enable-av1
 		ac_add_options --disable-debug-symbols
 		ac_add_options --prefix=/usr
@@ -57,14 +45,21 @@ build() {
 		ac_add_options --enable-optimize
 		ac_add_options --enable-system-ffi
 		ac_add_options --enable-system-pixman
-		ac_add_options --with-system-bz2
-		ac_add_options --with-system-jpeg
-		ac_add_options --with-system-png
-		ac_add_options --with-system-zlib
+		ac_add_options --enable-system-sqlite
 		ac_add_options --enable-startup-notification
+		ac_add_options --with-system-bz2
+		ac_add_options --with-system-icu
+		ac_add_options --with-system-libevent
+		ac_add_options --with-system-nspr
+		ac_add_options --with-system-nss
+		ac_add_options --with-system-pixman
+		ac_add_options --with-system-png
+		ac_add_options --with-system-webp
+		ac_add_options --with-system-zlib
 		ac_add_options --disable-official-branding
 		ac_add_options --with-branding=browser/branding/unofficial
 		ac_add_options --enable-update-channel=release
+		ac_add_options --disable-gconf
 		ac_add_options --host=$XTARGET
 		ac_add_options --target=$XTARGET
 	EOF
