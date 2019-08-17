@@ -1,0 +1,32 @@
+# Description: Lightweight and fast web browser
+# URL:         http://www.netsurf-browser.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl-html-parser curl gtk
+# Section:     net
+
+name=netsurf
+version=3.9
+release=1
+source=("http://download.netsurf-browser.org/netsurf/releases/source-full/netsurf-all-$version.tar.gz")
+
+build() {
+	cd "$SRC"/netsurf-all-$version
+	make \
+		PREFIX=/usr \
+		LIBDIR=lib \
+		INCLUDEDIR=include \
+		NETSURF_GTK_MAJOR=3 \
+		TARGET=gtk
+	make install \
+		PREFIX=/usr \
+		LIBDIR=lib \
+		INCLUDEDIR=include \
+		DESTDIR="$PKG" \
+		NETSURF_GTK_MAJOR=3 \
+		TARGET=gtk
+
+	install -Dm644 $name/frontends/gtk/res/netsurf.xpm $PKG/usr/share/pixmaps/netsurf.xpm
+	install -Dm644 $name/frontends/gtk/res/netsurf-gtk.desktop $PKG/usr/share/applications/netsurf.desktop
+
+	ln -sf netsurf-gtk3 "$PKG"/usr/bin/netsurf
+}
