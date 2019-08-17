@@ -12,6 +12,16 @@ source=("https://github.com/TigerVNC/tigervnc/archive/v$version/$name-$version.t
 	"https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-$xserverver.tar.bz2")
 
 build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
 	cd "$SRC"/$name-$version/unix/xserver
 	cp -a "$SRC"/xorg-server-$xserverver/* .
 	patch -Np1 -i "$SRC"/$name-$version/unix/xserver120.patch
@@ -30,14 +40,4 @@ build() {
 
 	cd hw/vnc
 	make DESTDIR="$PKG" install
-
-	cd "$SRC"/$name-$version
-	mkdir -p build
-	cd build
-	cmake "$SRC"/$name-$version \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
 }
