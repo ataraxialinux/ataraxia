@@ -1,7 +1,7 @@
 # Description: The extensible, customizable, self-documenting real-time display editor
 # URL:         http://www.gnu.org/software/emacs/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gnutls libxpm gtk desktop-file-utils alsa-lib
+# Depends on:  gnutls giflib libxpm gtk desktop-file-utils alsa-lib
 # Section:     editors
 
 name=emacs
@@ -16,8 +16,12 @@ build() {
 		--libexecdir=/usr/lib \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
+		--with-modules \
 		--with-x-toolkit=gtk3 \
 		--with-xft
 	make
 	make DESTDIR="$PKG" install
+
+	msg "Fixing permissions"
+	find "$PKG"/usr/share/emacs/$version -exec chown root:root {} \;
 }
