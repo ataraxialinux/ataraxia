@@ -1,0 +1,43 @@
+# Description: Suite of VNC servers and clients. Based on the VNC 4 branch of TightVNC
+# URL:         http://www.tigervnc.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja fltk gnutls libgcrypt libjpeg-tubro pixman xorgproto libxdamage libxfont2 libxtst libdrm 'xkeyboard-config xorg-fonts
+# Section:     utils
+
+name=tigervnc
+version=1.9.0
+xserverver=1.20.5
+release=1
+source=("https://github.com/TigerVNC/tigervnc/archive/v$version/$name-$version.tar.gz"
+	"https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-$xserverver.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version/unix/xserver
+	cp -a "$SRC"/xorg-server-$xserverver/* .
+	patch -Np1 -i "$SRC"/$name-$version/unix/xserver120.patch
+
+	autoreconf -fiv
+	CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t -I/usr/include/libdrm" \
+	LDFLAGS="-Wl,-z,lazy" \
+	./configure $BUILDFLAGS --prefix=/usr \
+		--disable-static --without-dtrace \
+		--disable-xorg --disable-xnest --disable-xvfb --disable-dmx \
+		--disable-xwin --disable-xephyr --disable-kdrive --disable-xwayland \
+		--disable-config-hal --disable-config-udev --with-pic \
+		--disable-unit-tests --disable-devel-docs --disable-selective-werror \
+		--disable-dri --enable-dri2 --enable-dri3 --enable-glx
+	make
+
+	cd hw/vnc
+	make DESTDIR="$PKG" install
+
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
