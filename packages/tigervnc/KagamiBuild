@@ -13,9 +13,7 @@ source=("https://github.com/TigerVNC/tigervnc/archive/v$version/$name-$version.t
 
 build() {
 	cd "$SRC"/$name-$version
-	mkdir -p build
-	cd build
-	cmake "$SRC"/$name-$version \
+	cmake \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-Wno-dev -G Ninja
@@ -29,6 +27,7 @@ build() {
 
 	autoreconf -fiv
 	CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t -I/usr/include/libdrm" \
+	LDFLAGS="-Wl,-z,lazy" \
 	./configure $BUILDFLAGS --prefix=/usr \
 		--disable-static --without-dtrace \
 		--disable-xorg --disable-xnest --disable-xvfb --disable-dmx \
