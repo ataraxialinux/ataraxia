@@ -1,14 +1,24 @@
 # Description: Systems programming language focused on safety, speed and concurrency
 # URL:         https://www.rust-lang.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libssh2 curl cmake llvm
 # Section:     devel
 
 name=rust
 version=1.37.0
 release=1
 options=('~emptydirs')
+source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz")
+
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
+}
 
 build() {
+	export RUSTFLAGS="-C link-args=-lffi"
+	export MUSL_ROOT=/usr
+	export RUST_BACKTRACE=1
+
 	case $BARCH in
 		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
@@ -18,13 +28,48 @@ build() {
 			exit 1
 	esac
 
-	cd "$SRC"
-	curl -k -C - -L -O https://static.rust-lang.org/dist/rust-$version-$RTARGET.tar.gz
-	bsdtar -xvf rust-$version-$RTARGET.tar.gz
+	cd "$SRC"/rustc-$version-src
+	patch -Np1 -i "$STUFF"/rust/musl-libressl.patch
 
-	cd "$SRC"/rust-$version-$RTARGET
-	./install.sh \
-		--prefix=/usr \
-		--destdir="$PKG" \
-		--disable-ldconfig
+	clear_vendor_checksums openssl-sys
+	clear_vendor_checksums libc
+
+	cat > config.toml <<- EOF
+		[llvm]
+		link-shared = true
+
+		[build]
+		build = "$RTARGET"
+		host = [ "$RTARGET" ]
+		target = [ "$RTARGET" ]
+		docs = false
+		extended = true
+		submodules = false
+		python = "python3"
+		locked-deps = true
+		vendor = true
+
+		[install]
+		prefix = "/usr"
+
+		[rust]
+		channel = "stable"
+		rpath = false
+		codegen-units = 1
+		debuginfo-level = 2
+		backtrace = true
+		jemalloc = false
+		codegen-tests = false
+
+		[target.$RTARGET]
+		llvm-config = "/usr/bin/llvm-config"
+		crt-static = false
+		cc = "gcc"
+		cxx = "g++"
+		ar = "ar"
+		linker = "gcc"
+	EOF
+
+	python3 ./x.py build -j$(nproc)
+	DESTDIR="$PKG" python3 ./x.py install
 }
