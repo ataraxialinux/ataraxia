@@ -6,11 +6,13 @@
 
 name=fltk
 version=1.3.5
-release=1
+release=2
 source=("https://github.com/fltk/fltk/archive/release-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-release-$version
+	patch -Np1 -i "$STUFF"/fltk/fix-lib-mess.patch
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-release-$version \
