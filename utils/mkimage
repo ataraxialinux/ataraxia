@@ -74,10 +74,6 @@ main_standard() {
 }
 
 main_embedded() {
-	if [ -z "$LINUX" ]; then
-		LINUX="linux"
-	fi
-
 	IMAGEFS="$BUILD/imagefs"
 
 	rm -rf "$IMAGEFS"
@@ -95,7 +91,7 @@ main_embedded() {
 	yes | mkfs.ext2 $lopart
 	mount -o loop $lopart "$IMAGEFS"
 
-	ne -c "$BUILD"/target.config -r "$IMAGEFS" -EWdn base-files busybox linux
+	ne -c "$BUILD"/target.config -r "$IMAGEFS" -EWdn base-files busybox
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev
