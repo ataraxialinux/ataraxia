@@ -1,0 +1,38 @@
+# Description: A windowing toolkit for use with tcl
+# URL:         http://tcl.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  tcl libxft libxss
+# Section:     interpreters
+
+name=tk
+version=8.6.9.1
+release=1
+source=("http://downloads.sourceforge.net/sourceforge/$name/tk${version}-src.tar.gz")
+
+build() {
+	cd "$SRC"/tk${version}/unix
+	case "$BARCH" in
+		amd64) _64bit="--enable-64bit";;
+	esac
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--enable-threads ${_64bit} \
+		--disable-rpath
+	make
+	make INSTALL_ROOT="$PKG" install install-private-headers
+
+	ln -sf wish${version%.*.*} "$PKG"}/usr/bin/wish
+	ln -sf libtk${version%.*.*}.so "$PKG"/usr/lib/libtk.so
+
+	cd ..
+	for dir in compat generic generic/ttk unix; do
+		install -dm755 "$PKG"/usr/include/tk-private/$dir
+		install -m644 $dir/*.h "$PKG"/usr/include/tk-private/$dir
+	done
+
+	sed -e "s#$SRC/tk${version}/unix/unix#/usr/lib#" \
+		-e "s#$SRC/tk${version}/unix#/usr/include#" \
+		-i "$PKG"/usr/lib/tkConfig.sh
+}
