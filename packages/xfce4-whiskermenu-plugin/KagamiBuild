@@ -1,0 +1,23 @@
+# Description: Menu for Xfce4
+# URL:         https://gottcode.org/xfce4-whiskermenu-plugin/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja xfce4-panel
+# Section:     xfce
+
+name=xfce4-whiskermenu-plugin
+version=2.3.3
+release=1
+source=("https://archive.xfce.org/src/panel-plugins/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

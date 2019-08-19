@@ -1,0 +1,19 @@
+# Description: C-library for parsing configuration files
+# URL:         https://github.com/martinh/libconfuse
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=confuse
+version=3.2.2
+release=1
+options=('~emptydirs')
+source=("https://github.com/martinh/libconfuse/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}

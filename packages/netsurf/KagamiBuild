@@ -1,16 +1,18 @@
 # Description: Lightweight and fast web browser
 # URL:         http://www.netsurf-browser.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  perl-html-parser curl gtk
+# Depends on:  perl-html-parser curl gtk setconf
 # Section:     net
 
 name=netsurf
 version=3.9
-release=1
+release=2
 source=("http://download.netsurf-browser.org/netsurf/releases/source-full/netsurf-all-$version.tar.gz")
 
 build() {
 	cd "$SRC"/netsurf-all-$version
+	setconf netsurf/frontends/gtk/res/netsurf-gtk.desktop 'Exec=netsurf %u'
+
 	make \
 		PREFIX=/usr \
 		LIBDIR=lib \

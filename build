@@ -60,7 +60,6 @@ if [ "$USE_TARGET" = "1" ]; then
 		export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
-		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 		export EMBEDDED="$EMBEDDED"
@@ -82,7 +81,6 @@ elif [ "$USE_HOST" = "1" ]; then
 		export XTARGET="$XTARGET"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
-		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 		export EMBEDDED="$EMBEDDED"
@@ -199,7 +197,7 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	for toolchain in dpkg base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
-			linux-api-headers binutils gcc-static musl gcc slibtool; do
+			linux-api-headers binutils gcc-static musl gcc; do
 		case $toolchain in
 			base-files|linux-api-headers)
 				ne -c "$BUILD"/host.config -r "$ROOTFS" -EWn ${toolchain}
@@ -252,10 +250,6 @@ build_toolchain() {
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
-
-	msg "Adding fake make"
-	cp "$STUFF"/fakemake "$TOOLS"/bin/make
-	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
 }
 
 build_target() {

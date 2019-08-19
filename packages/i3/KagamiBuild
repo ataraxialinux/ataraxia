@@ -1,0 +1,20 @@
+# Description: An improved dynamic tiling window manager
+# URL:         https://i3wm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libev yajl xcb-util-cursor xcb-util-keysyms xcb-util-wm xcb-util-xrm libxkbcommon pango startup-notification
+# Section:     x11
+
+name=i3
+version=4.17
+release=1
+backup=('etc/i3/config')
+source=("https://i3wm.org/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}

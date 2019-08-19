@@ -1,0 +1,22 @@
+# Description: PulseAudio emulation for ALSA
+# URL:         https://github.com/i-rinat/apulse
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja alsa-lib glib
+# Section:     sound
+
+name=apulse
+version=0.1.12
+release=1
+source=("https://github.com/i-rinat/apulse/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
