@@ -1,0 +1,20 @@
+# Description: A wrapper library for generic spell checking
+# URL:         https://abiword.github.io/enchant/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  glib aspell hunspell
+# Section:     gnome
+
+name=gcr
+version=2.2.5
+release=1
+source=("https://github.com/AbiWord/enchant/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
