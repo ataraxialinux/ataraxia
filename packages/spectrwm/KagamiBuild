@@ -1,0 +1,22 @@
+# Description: A minimalistic automatic tiling window manager that tries to stay out of the way.
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxcursor libxft libxrandr libxt xcb-util xcb-util-keysyms xcb-util-wm
+# Section:     x11
+
+name=spectrwm
+version=3.2.0
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$pkgname-SPECTRWM_${version/./_}/linux
+	make PREFIX="/usr"
+	make PREFIX="/usr" DESTDIR="$PKG" install
+
+	install -Dm644 ../spectrwm.conf "$PKG"/etc/spectrwm.conf
+	install -Dm755 ../screenshot.sh "$PKG"/usr/share/spectrwm/screenshot.sh
+
+	mkdir -p "$PKG"/etc/spectrwm
+	cp -a ../spectrwm_*.conf "$PKG"/etc/spectrwm/
+}
