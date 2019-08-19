@@ -1,0 +1,19 @@
+# Description: Generates status bar to use with i3bar, dzen2 or xmobar
+# URL:         https://i3wm.org/i3status/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  apulse confuse libnl yajl
+# Section:     x11
+
+name=i3status
+version=2.13
+release=1
+source=("https://i3wm.org/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
