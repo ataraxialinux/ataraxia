@@ -1,0 +1,21 @@
+# Description: Default file manager for GNOME
+# URL:         https://wiki.gnome.org/Apps/Nautilus
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson bubblewrap gnome-autotar gnome-desktop libnotify libseccomp tracker-miners desktop-file-utils libexif
+# Section:     gnome
+
+name=nautilus
+version=3.32.3
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dpackagekit=false \
+		-Dselinux=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
