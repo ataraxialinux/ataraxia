@@ -1,0 +1,1316 @@
+Submitted By:            Douglas R. Reno <renodr at linuxfromscratch dot org>
+Date:                    2019-07-01
+Initial Package Version: 3.32.2
+Upstream Status:         Applied
+Origin:                  Upstream
+Description:             Fixes several bugs in mutter-3.32.2, including some
+                         bugs that have to do with cogl problems and an issue
+                         that causes a crash anytime a monitor is unplugged.
+
+diff -Naurp mutter-3.32.2.orig/clutter/clutter/clutter-text.c mutter-3.32.2/clutter/clutter/clutter-text.c
+--- mutter-3.32.2.orig/clutter/clutter/clutter-text.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/clutter/clutter/clutter-text.c	2019-07-01 21:53:47.219980200 -0500
+@@ -1975,6 +1975,7 @@ selection_paint (ClutterText     *self,
+   else
+     {
+       /* Paint selection background first */
++      CoglPipeline *color_pipeline = cogl_pipeline_copy (default_color_pipeline);
+       PangoLayout *layout = clutter_text_get_layout (self);
+       CoglPath *selection_path = cogl_path_new ();
+       CoglColor cogl_color = { 0, };
+@@ -1987,11 +1988,19 @@ selection_paint (ClutterText     *self,
+       else
+         color = &priv->text_color;
+ 
++      cogl_color_init_from_4ub (&cogl_color,
++                                color->red,
++                                color->green,
++                                color->blue,
++                                paint_opacity * color->alpha / 255);
++      cogl_color_premultiply (&cogl_color);
++      cogl_pipeline_set_color (color_pipeline, &cogl_color);
++
+       clutter_text_foreach_selection_rectangle_prescaled (self,
+                                                           add_selection_rectangle_to_path,
+                                                           selection_path);
+ 
+-      cogl_path_fill (selection_path);
++      cogl_framebuffer_fill_path (fb, color_pipeline, selection_path);
+ 
+       /* Paint selected text */
+       cogl_framebuffer_push_path_clip (fb, selection_path);
+diff -Naurp mutter-3.32.2.orig/cogl/cogl/cogl-pipeline.c mutter-3.32.2/cogl/cogl/cogl-pipeline.c
+--- mutter-3.32.2.orig/cogl/cogl/cogl-pipeline.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/cogl/cogl/cogl-pipeline.c	2019-07-01 15:34:38.353701635 -0500
+@@ -455,9 +455,6 @@ _cogl_pipeline_free (CoglPipeline *pipel
+       _cogl_bitmask_destroy (&uniforms_state->changed_mask);
+     }
+ 
+-  if (pipeline->differences & COGL_PIPELINE_STATE_NEEDS_BIG_STATE)
+-    g_slice_free (CoglPipelineBigState, pipeline->big_state);
+-
+   if (pipeline->differences & COGL_PIPELINE_STATE_LAYERS)
+     {
+       g_list_foreach (pipeline->layer_differences,
+@@ -471,6 +468,9 @@ _cogl_pipeline_free (CoglPipeline *pipel
+   if (pipeline->differences & COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS)
+     _cogl_pipeline_snippet_list_free (&pipeline->big_state->fragment_snippets);
+ 
++  if (pipeline->differences & COGL_PIPELINE_STATE_NEEDS_BIG_STATE)
++     g_slice_free (CoglPipelineBigState, pipeline->big_state);
++
+   g_list_free (pipeline->deprecated_get_layers_list);
+ 
+   recursively_free_layer_caches (pipeline);
+diff -Naurp mutter-3.32.2.orig/cogl/cogl-path/cogl-path.c mutter-3.32.2/cogl/cogl-path/cogl-path.c
+--- mutter-3.32.2.orig/cogl/cogl-path/cogl-path.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/cogl/cogl-path/cogl-path.c	2019-07-01 19:25:55.294692907 -0500
+@@ -1504,7 +1504,6 @@ cogl_framebuffer_push_path_clip (CoglFra
+       COGL_FRAMEBUFFER_STATE_CLIP;
+ }
+ 
+-/* XXX: deprecated */
+ void
+ cogl_clip_push_from_path (CoglPath *path)
+ {
+@@ -1575,7 +1574,6 @@ _cogl_path_build_stroke_attribute_buffer
+   data->stroke_n_attributes = n_attributes;
+ }
+ 
+-/* XXX: deprecated */
+ void
+ cogl_framebuffer_fill_path (CoglFramebuffer *framebuffer,
+                             CoglPipeline *pipeline,
+@@ -1588,7 +1586,6 @@ cogl_framebuffer_fill_path (CoglFramebuf
+   _cogl_path_fill_nodes (path, framebuffer, pipeline, 0 /* flags */);
+ }
+ 
+-/* XXX: deprecated */
+ void
+ cogl_framebuffer_stroke_path (CoglFramebuffer *framebuffer,
+                               CoglPipeline *pipeline,
+diff -Naurp mutter-3.32.2.orig/cogl/cogl-path/cogl-path-functions.h mutter-3.32.2/cogl/cogl-path/cogl-path-functions.h
+--- mutter-3.32.2.orig/cogl/cogl-path/cogl-path-functions.h	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/cogl/cogl-path/cogl-path-functions.h	2019-07-01 19:24:56.709323461 -0500
+@@ -460,9 +460,7 @@ cogl_path_fill (CoglPath *path);
+  * use while filling a path.</note>
+  *
+  * Stability: unstable
+- * Deprecated: 1.16: Use cogl_path_fill() instead
+  */
+-COGL_DEPRECATED_FOR (cogl_path_fill)
+ void
+ cogl_framebuffer_fill_path (CoglFramebuffer *framebuffer,
+                             CoglPipeline *pipeline,
+@@ -492,9 +490,7 @@ cogl_path_stroke (CoglPath *path);
+  * regardless of the current transformation matrix.
+  *
+  * Stability: unstable
+- * Deprecated: 1.16: Use cogl_path_stroke() instead
+  */
+-COGL_DEPRECATED_FOR (cogl_path_stroke)
+ void
+ cogl_framebuffer_stroke_path (CoglFramebuffer *framebuffer,
+                               CoglPipeline *pipeline,
+@@ -529,9 +525,7 @@ cogl_framebuffer_push_path_clip (CoglFra
+  *
+  * Since: 1.8
+  * Stability: Unstable
+- * Deprecated: 1.16: Use cogl_framebuffer_push_path_clip() instead
+  */
+-COGL_DEPRECATED_FOR (cogl_framebuffer_push_path_clip)
+ void
+ cogl_clip_push_from_path (CoglPath *path);
+ 
+diff -Naurp mutter-3.32.2.orig/src/backends/meta-renderer.c mutter-3.32.2/src/backends/meta-renderer.c
+--- mutter-3.32.2.orig/src/backends/meta-renderer.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/backends/meta-renderer.c	2019-07-01 21:29:17.909560150 -0500
+@@ -91,6 +91,12 @@ meta_renderer_create_view (MetaRenderer
+ void
+ meta_renderer_rebuild_views (MetaRenderer *renderer)
+ {
++   return META_RENDERER_GET_CLASS (renderer)->rebuild_views (renderer);
++}
++
++static void
++meta_renderer_real_rebuild_views (MetaRenderer *renderer)
++{
+   MetaRendererPrivate *priv = meta_renderer_get_instance_private (renderer);
+   MetaBackend *backend = meta_get_backend ();
+   MetaMonitorManager *monitor_manager =
+@@ -181,4 +187,6 @@ meta_renderer_class_init (MetaRendererCl
+   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+ 
+   object_class->finalize = meta_renderer_finalize;
++
++  klass->rebuild_views = meta_renderer_real_rebuild_views;
+ }
+diff -Naurp mutter-3.32.2.orig/src/backends/meta-renderer.h mutter-3.32.2/src/backends/meta-renderer.h
+--- mutter-3.32.2.orig/src/backends/meta-renderer.h	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/backends/meta-renderer.h	2019-07-01 21:30:06.639038031 -0500
+@@ -43,6 +43,7 @@ struct _MetaRendererClass
+   CoglRenderer * (* create_cogl_renderer) (MetaRenderer *renderer);
+   MetaRendererView * (* create_view) (MetaRenderer       *renderer,
+                                       MetaLogicalMonitor *logical_monitor);
++  void (* rebuild_views) (MetaRenderer *renderer);
+ };
+ 
+ CoglRenderer * meta_renderer_create_cogl_renderer (MetaRenderer *renderer);
+diff -Naurp mutter-3.32.2.orig/src/backends/native/meta-cursor-renderer-native.c mutter-3.32.2/src/backends/native/meta-cursor-renderer-native.c
+--- mutter-3.32.2.orig/src/backends/native/meta-cursor-renderer-native.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/backends/native/meta-cursor-renderer-native.c	2019-07-01 15:32:14.572326991 -0500
+@@ -823,6 +823,7 @@ static void
+ cursor_priv_free (MetaCursorNativePrivate *cursor_priv)
+ {
+   g_hash_table_destroy (cursor_priv->gpu_states);
++  g_free (cursor_priv);
+ }
+ 
+ static MetaCursorNativePrivate *
+diff -Naurp mutter-3.32.2.orig/src/backends/native/meta-renderer-native.c mutter-3.32.2/src/backends/native/meta-renderer-native.c
+--- mutter-3.32.2.orig/src/backends/native/meta-renderer-native.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/backends/native/meta-renderer-native.c	2019-07-01 22:16:57.469120864 -0500
+@@ -258,6 +258,9 @@ cogl_pixel_format_from_drm_format (uint3
+                                    CoglPixelFormat       *out_format,
+                                    CoglTextureComponents *out_components);
+ 
++static void
++meta_renderer_native_queue_modes_reset (MetaRendererNative *renderer_native);
++
+ static MetaBackend *
+ backend_from_renderer_native (MetaRendererNative *renderer_native)
+ {
+@@ -1277,7 +1280,7 @@ meta_renderer_native_egl_context_created
+                                       cogl_display_egl->dummy_surface,
+                                       cogl_display_egl->egl_context))
+     {
+-      _cogl_set_error (error, COGL_WINSYS_ERROR,
++      g_set_error (error, COGL_WINSYS_ERROR,
+                    COGL_WINSYS_ERROR_CREATE_CONTEXT,
+                    "Failed to make context current");
+       return FALSE;
+@@ -3036,10 +3039,52 @@ meta_onscreen_native_allocate (CoglOnscr
+ }
+ 
+ static void
++destroy_egl_surface (CoglOnscreen *onscreen)
++{
++   CoglOnscreenEGL *onscreen_egl = onscreen->winsys;
++
++   if (onscreen_egl->egl_surface != EGL_NO_SURFACE)
++   {
++      MetaOnscreenNative *onscreen_native = onscreen_egl->platform;
++      MetaEgl *egl = meta_onscreen_native_get_egl (onscreen_native);
++      CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
++      CoglContext *cogl_context = framebuffer->context;
++      CoglRenderer *cogl_renderer = cogl_context->display->renderer;
++      CoglRendererEGL *cogl_renderer_egl = cogl_renderer->winsys;
++
++      meta_egl_destroy_surface (egl,
++                                cogl_renderer_egl->edpy,
++                                onscreen_egl->egl_surface,
++                                NULL);
++      onscreen_egl->egl_surface = EGL_NO_SURFACE;
++   }
++}
++
++static void
++discard_onscreen_page_flip_retries (MetaOnscreenNative *onscreen_native)
++{
++   g_list_free_full (onscreen_native->pending_page_flip_retries,
++                     (GDestroyNotify) retry_page_flip_data_free);
++   onscreen_native->pending_page_flip_retries = NULL;
++
++   if (onscreen_native->retry_page_flips_source)
++   {
++      MetaBackend *backend = 
++         backend_from_renderer_native (onscreen_native->renderer_native);
++
++      meta_backend_thaw_updates (backend);
++      g_clear_pointer (&onscreen_native->retry_page_flips_source,
++                       g_source_destroy);
++   }
++}
++
++static void
+ meta_renderer_native_release_onscreen (CoglOnscreen *onscreen)
+ {
+   CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
+   CoglContext *cogl_context = framebuffer->context;
++  CoglDisplay *cogl_display = cogl_context_get_display (cogl_context);
++  CoglDisplayEGL *cogl_display_egl = cogl_display->winsys;
+   CoglRenderer *cogl_renderer = cogl_context->display->renderer;
+   CoglRendererEGL *cogl_renderer_egl = cogl_renderer->winsys;
+   CoglOnscreenEGL *onscreen_egl = onscreen->winsys;
+@@ -3052,28 +3097,18 @@ meta_renderer_native_release_onscreen (C
+ 
+   onscreen_native = onscreen_egl->platform;
+ 
+-  g_list_free_full (onscreen_native->pending_page_flip_retries,
+-                    (GDestroyNotify) retry_page_flip_data_free);
+-  if (onscreen_native->retry_page_flips_source)
+-    {
+-      MetaBackend *backend =
+-        backend_from_renderer_native (onscreen_native->renderer_native);
+-
+-      meta_backend_thaw_updates (backend);
+-      g_clear_pointer (&onscreen_native->retry_page_flips_source,
+-                       g_source_destroy);
+-    }
+-
+-  if (onscreen_egl->egl_surface != EGL_NO_SURFACE)
+-    {
+-      MetaEgl *egl = meta_onscreen_native_get_egl (onscreen_native);
++  if (onscreen_egl->egl_surface != EGL_NO_SURFACE &&
++      (cogl_display_egl->current_draw_surface == onscreen_egl->egl_surface ||
++       cogl_display_egl->current_read_surface == onscreen_egl->egl_surface))
++  {
++     if (!_cogl_winsys_egl_make_current (cogl_display,
++                                         cogl_display_egl->dummy_surface,
++                                         cogl_display_egl->dummy_surface,
++                                         cogl_display_egl->egl_context))
++        g_warning ("Failed to clear current context");
++  }
+ 
+-      meta_egl_destroy_surface (egl,
+-                                cogl_renderer_egl->edpy,
+-                                onscreen_egl->egl_surface,
+-                                NULL);
+-      onscreen_egl->egl_surface = EGL_NO_SURFACE;
+-    }
++  discard_onscreen_page_flip_retries (onscreen_native);
+ 
+   renderer_gpu_data =
+     meta_renderer_native_get_gpu_data (onscreen_native->renderer_native,
+@@ -3087,6 +3122,8 @@ meta_renderer_native_release_onscreen (C
+ 
+       free_current_bo (onscreen);
+ 
++      destroy_egl_surface (onscreen);
++
+       if (onscreen_native->gbm.surface)
+         {
+           gbm_surface_destroy (onscreen_native->gbm.surface);
+@@ -3097,6 +3134,9 @@ meta_renderer_native_release_onscreen (C
+     case META_RENDERER_NATIVE_MODE_EGL_DEVICE:
+       release_dumb_fb (&onscreen_native->egl.dumb_fb,
+                        onscreen_native->render_gpu);
++
++      destroy_egl_surface (onscreen);
++
+       if (onscreen_native->egl.stream != EGL_NO_STREAM_KHR)
+         {
+           MetaEgl *egl = meta_onscreen_native_get_egl (onscreen_native);
+@@ -3157,7 +3197,7 @@ meta_renderer_native_supports_mirroring
+   return TRUE;
+ }
+ 
+-void
++static void
+ meta_renderer_native_queue_modes_reset (MetaRendererNative *renderer_native)
+ {
+   MetaRenderer *renderer = META_RENDERER (renderer_native);
+@@ -3523,6 +3563,37 @@ meta_renderer_native_create_view (MetaRe
+   return view;
+ }
+ 
++static void
++discard_page_flip_retries (MetaRenderer *renderer)
++{
++   GList *l;
++
++   for (l = meta_renderer_get_views (renderer); l; l = l->next)
++   {
++      ClutterStageView *stage_view = l->data;
++      CoglFramebuffer *framebuffer = 
++         clutter_stage_view_get_onscreen (stage_view);
++      CoglOnscreen *onscreen = COGL_ONSCREEN (framebuffer);
++      CoglOnscreenEGL *onscreen_egl = onscreen->winsys;
++      MetaOnscreenNative *onscreen_native = onscreen_egl->platform;
++
++      discard_onscreen_page_flip_retries (onscreen_native);
++   }
++}
++
++static void
++meta_renderer_native_rebuild_views (MetaRenderer *renderer)
++{
++   MetaRendererClass *parent_renderer_class =
++      META_RENDERER_CLASS (meta_renderer_native_parent_class);
++
++   discard_page_flip_retries (renderer);
++
++   parent_renderer_class->rebuild_views (renderer);
++
++   meta_renderer_native_queue_modes_reset (META_RENDERER_NATIVE (renderer));
++}
++
+ void
+ meta_renderer_native_finish_frame (MetaRendererNative *renderer_native)
+ {
+@@ -4038,6 +4109,7 @@ create_renderer_gpu_data_egl_device (Met
+                    G_IO_ERROR_FAILED,
+                    "Missing EGL extensions required for EGLDevice renderer: %s",
+                    missing_extensions_str);
++      meta_egl_terminate (egl, egl_display, NULL);
+       g_free (missing_extensions_str);
+       g_free (missing_extensions);
+       return NULL;
+@@ -4320,6 +4392,7 @@ meta_renderer_native_class_init (MetaRen
+ 
+   renderer_class->create_cogl_renderer = meta_renderer_native_create_cogl_renderer;
+   renderer_class->create_view = meta_renderer_native_create_view;
++  renderer_class->rebuild_views = meta_renderer_native_rebuild_views;
+ 
+   obj_props[PROP_MONITOR_MANAGER] =
+     g_param_spec_object ("monitor-manager",
+diff -Naurp mutter-3.32.2.orig/src/backends/native/meta-renderer-native.h mutter-3.32.2/src/backends/native/meta-renderer-native.h
+--- mutter-3.32.2.orig/src/backends/native/meta-renderer-native.h	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/backends/native/meta-renderer-native.h	2019-07-01 21:32:29.002358942 -0500
+@@ -53,20 +53,6 @@ struct gbm_device * meta_gbm_device_from
+ 
+ gboolean meta_renderer_native_supports_mirroring (MetaRendererNative *renderer_native);
+ 
+-void meta_renderer_native_queue_modes_reset (MetaRendererNative *renderer_native);
+-
+-gboolean meta_renderer_native_set_legacy_view_size (MetaRendererNative *renderer_native,
+-                                                    MetaRendererView   *view,
+-                                                    int                 width,
+-                                                    int                 height,
+-                                                    GError            **error);
+-
+-void meta_renderer_native_set_ignore_crtc (MetaRendererNative *renderer_native,
+-                                           uint32_t            id,
+-                                           gboolean            ignore);
+-
+-MetaRendererView * meta_renderer_native_create_legacy_view (MetaRendererNative *renderer_native);
+-
+ void meta_renderer_native_finish_frame (MetaRendererNative *renderer_native);
+ 
+ int64_t meta_renderer_native_get_frame_counter (MetaRendererNative *renderer_native);
+diff -Naurp mutter-3.32.2.orig/src/backends/native/meta-stage-native.c mutter-3.32.2/src/backends/native/meta-stage-native.c
+--- mutter-3.32.2.orig/src/backends/native/meta-stage-native.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/backends/native/meta-stage-native.c	2019-07-01 21:32:42.082756164 -0500
+@@ -140,7 +140,6 @@ meta_stage_native_rebuild_views (MetaSta
+   ClutterActor *stage = meta_backend_get_stage (backend);
+ 
+   meta_renderer_rebuild_views (renderer);
+-  meta_renderer_native_queue_modes_reset (META_RENDERER_NATIVE (renderer));
+   clutter_stage_update_resource_scales (CLUTTER_STAGE (stage));
+   ensure_frame_callbacks (stage_native);
+ }
+diff -Naurp mutter-3.32.2.orig/src/compositor/meta-surface-actor-x11.c mutter-3.32.2/src/compositor/meta-surface-actor-x11.c
+--- mutter-3.32.2.orig/src/compositor/meta-surface-actor-x11.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/compositor/meta-surface-actor-x11.c	2019-07-01 21:56:24.326747542 -0500
+@@ -32,6 +32,7 @@
+ #include "cogl/winsys/cogl-texture-pixmap-x11.h"
+ #include "compositor/meta-cullable.h"
+ #include "compositor/meta-shaped-texture-private.h"
++#include "compositor/meta-window-actor-private.h"
+ #include "core/window-private.h"
+ #include "meta/meta-x11-errors.h"
+ #include "x11/meta-x11-display-private.h"
+@@ -71,11 +72,13 @@ static void
+ free_damage (MetaSurfaceActorX11 *self)
+ {
+   MetaDisplay *display = self->display;
+-  Display *xdisplay = meta_x11_display_get_xdisplay (display->x11_display);
++  Display *xdisplay;
+ 
+   if (self->damage == None)
+     return;
+ 
++  xdisplay = meta_x11_display_get_xdisplay (display->x11_display);
++
+   meta_x11_error_trap_push (display->x11_display);
+   XDamageDestroy (xdisplay, self->damage);
+   self->damage = None;
+@@ -86,12 +89,14 @@ static void
+ detach_pixmap (MetaSurfaceActorX11 *self)
+ {
+   MetaDisplay *display = self->display;
+-  Display *xdisplay = meta_x11_display_get_xdisplay (display->x11_display);
+   MetaShapedTexture *stex = meta_surface_actor_get_texture (META_SURFACE_ACTOR (self));
++  Display *xdisplay;
+ 
+   if (self->pixmap == None)
+     return;
+ 
++  xdisplay = meta_x11_display_get_xdisplay (display->x11_display);
++
+   /* Get rid of all references to the pixmap before freeing it; it's unclear whether
+    * you are supposed to be able to free a GLXPixmap after freeing the underlying
+    * pixmap, but it certainly doesn't work with current DRI/Mesa
+@@ -344,12 +349,18 @@ meta_surface_actor_x11_is_unredirected (
+ }
+ 
+ static void
++release_x11_resources (MetaSurfaceActorX11 *self)
++{
++   detach_pixmap (self);
++   free_damage (self);
++}
++
++static void
+ meta_surface_actor_x11_dispose (GObject *object)
+ {
+   MetaSurfaceActorX11 *self = META_SURFACE_ACTOR_X11 (object);
+ 
+-  detach_pixmap (self);
+-  free_damage (self);
++  release_x11_resources (self);
+ 
+   G_OBJECT_CLASS (meta_surface_actor_x11_parent_class)->dispose (object);
+ }
+@@ -403,8 +414,7 @@ window_decorated_notify (MetaWindow *win
+ {
+   MetaSurfaceActorX11 *self = META_SURFACE_ACTOR_X11 (user_data);
+ 
+-  detach_pixmap (self);
+-  free_damage (self);
++  release_x11_resources (self);
+   create_damage (self);
+ }
+ 
+@@ -441,6 +451,10 @@ meta_surface_actor_x11_new (MetaWindow *
+   g_signal_connect_object (self->window, "notify::decorated",
+                            G_CALLBACK (window_decorated_notify), self, 0);
+ 
++  g_signal_connect_object (meta_window_actor_from_window (window), "destroy",
++                           G_CALLBACK (release_x11_resources), self,
++                           G_CONNECT_SWAPPED);
++
+   self->unredirected = FALSE;
+   sync_unredirected (self);
+ 
+diff -Naurp mutter-3.32.2.orig/src/compositor/meta-window-actor.c mutter-3.32.2/src/compositor/meta-window-actor.c
+--- mutter-3.32.2.orig/src/compositor/meta-window-actor.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/compositor/meta-window-actor.c	2019-07-01 21:45:27.896855286 -0500
+@@ -417,7 +417,7 @@ meta_window_actor_update_surface (MetaWi
+   else
+     surface_actor = NULL;
+ 
+-  set_surface (self, surface_actor);
++  META_WINDOW_ACTOR_GET_CLASS (self)->set_surface_actor (self, surface_actor);
+ }
+ 
+ static void
+@@ -430,6 +430,9 @@ meta_window_actor_constructed (GObject *
+ 
+   priv->compositor = window->display->compositor;
+ 
++  /* Hang out compositor window state off the MetaWindow for fast retrieval */
++  meta_window_set_compositor_private (window, object);
++
+   meta_window_actor_update_surface (self);
+ 
+   meta_window_actor_update_opacity (self);
+@@ -446,9 +449,6 @@ meta_window_actor_constructed (GObject *
+     priv->first_frame_state = DRAWING_FIRST_FRAME;
+ 
+   meta_window_actor_sync_actor_geometry (self, priv->window->placed);
+-
+-  /* Hang our compositor window state off the MetaWindow for fast retrieval */
+-  meta_window_set_compositor_private (window, object);
+ }
+ 
+ static void
+@@ -476,7 +476,7 @@ meta_window_actor_dispose (GObject *obje
+ 
+   g_clear_object (&priv->window);
+ 
+-  set_surface (self, NULL);
++  META_WINDOW_ACTOR_GET_CLASS (self)->set_surface_actor (self, NULL);
+ 
+   G_OBJECT_CLASS (meta_window_actor_parent_class)->dispose (object);
+ }
+diff -Naurp mutter-3.32.2.orig/src/core/display.c mutter-3.32.2/src/core/display.c
+--- mutter-3.32.2.orig/src/core/display.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/core/display.c	2019-07-01 19:45:08.198338254 -0500
+@@ -920,10 +920,6 @@ meta_display_close (MetaDisplay *display
+ 
+   g_clear_object (&display->gesture_tracker);
+ 
+-  g_clear_pointer (&display->stack, meta_stack_free);
+-  g_clear_pointer (&display->stack_tracker,
+-                   meta_stack_tracker_free);
+-
+   if (display->focus_timeout_id)
+     g_source_remove (display->focus_timeout_id);
+   display->focus_timeout_id = 0;
+@@ -940,12 +936,6 @@ meta_display_close (MetaDisplay *display
+   /* Stop caring about events */
+   meta_display_free_events (display);
+ 
+-  /* Must be after all calls to meta_window_unmanage() since they
+-   * unregister windows
+-   */
+-  g_hash_table_destroy (display->wayland_windows);
+-  g_hash_table_destroy (display->stamps);
+-
+   if (display->compositor)
+     meta_compositor_destroy (display->compositor);
+ 
+@@ -956,6 +946,16 @@ meta_display_close (MetaDisplay *display
+       g_clear_object (&display->x11_display);
+     }
+ 
++  /* Must be after all calls to meta_window_unmanage() since they
++   * unregister windows.
++   */
++  g_hash_table_destroy (display->wayland_windows);
++  g_hash_table_destroy (display->stamps);
++
++  g_clear_pointer (&display->stack, meta_stack_free);
++  g_clear_pointer (&display->stack_tracker,
++                   meta_stack_tracker_free);
++
+   meta_display_shutdown_keys (display);
+ 
+   g_clear_object (&display->bell);
+diff -Naurp mutter-3.32.2.orig/src/core/window.c mutter-3.32.2/src/core/window.c
+--- mutter-3.32.2.orig/src/core/window.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/core/window.c	2019-07-01 21:26:50.469092870 -0500
+@@ -3683,6 +3683,12 @@ meta_window_activate_full (MetaWindow
+ {
+   MetaWorkspaceManager *workspace_manager = window->display->workspace_manager;
+   gboolean allow_workspace_switch;
++
++  if (window->unmanaging)
++  {
++     g_warning ("Trying to activate unmanaged window '%s'", window->desc);
++     return;
++  }
+   meta_topic (META_DEBUG_FOCUS,
+               "_NET_ACTIVE_WINDOW message sent for %s at time %u "
+               "by client type %u.\n",
+@@ -8562,6 +8568,8 @@ meta_window_shortcuts_inhibited (MetaWin
+ gboolean
+ meta_window_is_focusable (MetaWindow *window)
+ {
++  g_return_val_if_fail (!window->unmanaging, FALSE);
++
+   return META_WINDOW_GET_CLASS (window)->is_focusable (window);
+ }
+ 
+diff -Naurp mutter-3.32.2.orig/src/core/workspace.c mutter-3.32.2/src/core/workspace.c
+--- mutter-3.32.2.orig/src/core/workspace.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/core/workspace.c	2019-07-01 20:10:06.621801394 -0500
+@@ -85,6 +85,12 @@ typedef struct _MetaWorkspaceLogicalMoni
+   MetaRectangle logical_monitor_work_area;
+ } MetaWorkspaceLogicalMonitorData;
+ 
++typedef struct _MetaWorkspaceFocusableAncestorData
++{
++   MetaWorkspace *workspace;
++   MetaWindow *out_window;
++}  MetaWorkspaceFocusableAncestorData;
++
+ static MetaWorkspaceLogicalMonitorData *
+ meta_workspace_get_logical_monitor_data (MetaWorkspace      *workspace,
+                                          MetaLogicalMonitor *logical_monitor)
+@@ -1322,13 +1328,20 @@ meta_workspace_focus_default_window (Met
+ }
+ 
+ static gboolean
+-record_ancestor (MetaWindow *window,
+-                 void       *data)
++find_focusable_ancestor (MetaWindow *window,
++                         gpointer   user_data)
+ {
+-  MetaWindow **result = data;
++  MetaWorkspaceFocusableAncestorData *data = user_data;
++
++  if (!window->unmanaging && meta_window_is_focusable (window) &&
++      meta_window_located_on_workspace (window, data->workspace) &&
++      meta_window_showing_on_its_workspace (window))
++  {
++     data->out_window = window;
++     return FALSE;
++  }
+ 
+-  *result = window;
+-  return FALSE; /* quit with the first ancestor we find */
++  return TRUE;
+ }
+ 
+ /* Focus ancestor of not_this_one if there is one */
+@@ -1350,11 +1363,15 @@ focus_ancestor_or_top_window (MetaWorksp
+   if (not_this_one)
+     {
+       MetaWindow *ancestor;
+-      ancestor = NULL;
+-      meta_window_foreach_ancestor (not_this_one, record_ancestor, &ancestor);
+-      if (ancestor != NULL &&
+-          meta_window_located_on_workspace (ancestor, workspace) &&
+-          meta_window_showing_on_its_workspace (ancestor))
++      MetaWorkspaceFocusableAncestorData data;
++
++      data = (MetaWorkspaceFocusableAncestorData) {
++         .workspace = workspace,
++      };
++      meta_window_foreach_ancestor (not_this_one, find_focusable_ancestor, &data);
++      ancestor = data.out_window;
++
++      if (ancestor)
+         {
+           meta_topic (META_DEBUG_FOCUS,
+                       "Focusing %s, ancestor of %s\n",
+diff -Naurp mutter-3.32.2.orig/src/tests/headless-start-test.c mutter-3.32.2/src/tests/headless-start-test.c
+--- mutter-3.32.2.orig/src/tests/headless-start-test.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/tests/headless-start-test.c	2019-07-01 22:22:11.322620952 -0500
+@@ -32,6 +32,7 @@
+ #include "wayland/meta-wayland.h"
+ 
+ #define ALL_TRANSFORMS ((1 << (META_MONITOR_TRANSFORM_FLIPPED_270 + 1)) - 1)
++#define FRAME_WARNING "Frame has assigned frame counter but no frame drawn time"
+ 
+ static gboolean
+ run_tests (gpointer data)
+@@ -40,6 +41,8 @@ run_tests (gpointer data)
+   MetaSettings *settings = meta_backend_get_settings (backend);
+   gboolean ret;
+ 
++  g_test_log_set_fatal_handler (NULL, NULL);
++
+   meta_settings_override_experimental_features (settings);
+ 
+   meta_settings_enable_experimental_feature (
+@@ -53,6 +56,20 @@ run_tests (gpointer data)
+   return FALSE;
+ }
+ 
++static gboolean
++ignore_frame_counter_warning (const gchar       *log_domain,
++                              GLogLevelFlags    log_level,
++                              const gchar       *message,
++                              gpointer          user_data)
++{
++   if ((log_level & G_LOG_LEVEL_WARNING) &&
++      g_strcmp0 (log_domain, "mutter") == 0 &&
++      g_str_has_suffix (message, FRAME_WARNING))
++      return FALSE;
++
++   return TRUE;
++}
++
+ static void
+ meta_test_headless_start (void)
+ {
+@@ -193,6 +210,8 @@ main (int argc, char *argv[])
+   meta_init ();
+   meta_register_with_session ();
+ 
++  g_test_log_set_fatal_handler (ignore_frame_counter_warning, NULL);
++
+   g_idle_add (run_tests, NULL);
+ 
+   return meta_run ();
+diff -Naurp mutter-3.32.2.orig/src/tests/meson.build mutter-3.32.2/src/tests/meson.build
+--- mutter-3.32.2.orig/src/tests/meson.build	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/tests/meson.build	2019-07-01 21:10:58.824632410 -0500
+@@ -38,6 +38,7 @@ test_client = executable('mutter-test-cl
+   dependencies: [
+     gtk3_dep,
+     gio_unix_dep,
++    x11_dep,
+     xext_dep,
+   ],
+   install: have_installed_tests,
+@@ -104,6 +105,10 @@ headless_start_test = executable('mutter
+ stacking_tests = files([
+   'stacking/basic-x11.metatest',
+   'stacking/basic-wayland.metatest',
++  'stacking/closed-transient-no-input-no-take-focus-parent.metatest',
++  'stacking/closed-transient-no-input-no-take-focus-parents.metatest',
++  'stacking/closed-transient-no-input-parent.metatest',
++  'stacking/closed-transient-no-input-parent-delayed-focus-default-cancelled.metatest',
+   'stacking/minimized.metatest',
+   'stacking/mixed-windows.metatest',
+   'stacking/set-parent.metatest',
+diff -Naurp mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-no-take-focus-parent.metatest mutter-3.32.2/src/tests/stacking/closed-transient-no-input-no-take-focus-parent.metatest
+--- mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-no-take-focus-parent.metatest	1969-12-31 18:00:00.000000000 -0600
++++ mutter-3.32.2/src/tests/stacking/closed-transient-no-input-no-take-focus-parent.metatest	2019-07-01 21:02:07.799603150 -0500
+@@ -0,0 +1,23 @@
++new_client 1 x11
++create 1/1
++show 1/1
++
++create 1/2 csd
++set_parent 1/2 1
++can_take_focus 1/2 false
++accept_focus 1/2 false
++show 1/2
++
++create 1/3 csd
++set_parent 1/3 2
++show 1/3
++
++wait
++assert_focused 1/3
++assert_stacking 1/1 1/2 1/3
++
++destroy 1/3
++
++wait
++assert_focused 1/1
++assert_stacking 1/1 1/2
+diff -Naurp mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-no-take-focus-parents.metatest mutter-3.32.2/src/tests/stacking/closed-transient-no-input-no-take-focus-parents.metatest
+--- mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-no-take-focus-parents.metatest	1969-12-31 18:00:00.000000000 -0600
++++ mutter-3.32.2/src/tests/stacking/closed-transient-no-input-no-take-focus-parents.metatest	2019-07-01 21:03:13.105379567 -0500
+@@ -0,0 +1,30 @@
++new_client 2 x11
++create 2/1
++show 2/1
++wait
++
++new_client 1 x11
++create 1/1
++accept_focus 1/1 false
++can_take_focus 1/1 false
++show 1/1
++
++create 1/2 csd
++set_parent 1/2 1
++can_take_focus 1/2 false
++accept_focus 1/2 false
++show 1/2
++
++create 1/3 csd
++set_parent 1/3 2
++show 1/3
++
++wait
++assert_focused 1/3
++assert_stacking 2/1 1/1 1/2 1/3
++
++destroy 1/3
++
++wait
++assert_stacking 1/1 1/2 2/1
++assert_focused 2/1
+diff -Naurp mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-parent-delayed-focus-default-cancelled.metatest mutter-3.32.2/src/tests/stacking/closed-transient-no-input-parent-delayed-focus-default-cancelled.metatest
+--- mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-parent-delayed-focus-default-cancelled.metatest	1969-12-31 18:00:00.000000000 -0600
++++ mutter-3.32.2/src/tests/stacking/closed-transient-no-input-parent-delayed-focus-default-cancelled.metatest	2019-07-01 21:13:19.449765239 -0500
+@@ -0,0 +1,36 @@
++new_client 2 x11
++create 2/1
++show 2/1
++
++new_client 1 x11
++create 1/1
++show 1/1
++
++create 1/2 csd
++set_parent 1/2 1
++accept_focus 1/2 false
++show 1/2
++
++create 1/3 csd
++set_parent 1/3 2
++show 1/3
++
++wait
++assert_focused 1/3
++assert_stacking 2/1 1/1 1/2 1/3
++
++destroy 1/3
++sleep 10
++
++assert_focused none
++assert_stacking 2/1 1/1 1/2
++
++activate 2/1
++wait
++
++assert_focused 2/1
++assert_stacking 1/1 1/2 2/1
++
++sleep 250
++assert_focused 2/1
++assert_stacking 1/1 1/2 2/1
+diff -Naurp mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-parent.metatest mutter-3.32.2/src/tests/stacking/closed-transient-no-input-parent.metatest
+--- mutter-3.32.2.orig/src/tests/stacking/closed-transient-no-input-parent.metatest	1969-12-31 18:00:00.000000000 -0600
++++ mutter-3.32.2/src/tests/stacking/closed-transient-no-input-parent.metatest	2019-07-01 21:14:55.447607995 -0500
+@@ -0,0 +1,30 @@
++new_client 2 x11
++create 2/1
++show 2/1
++
++new_client 1 x11
++create 1/1
++show 1/1
++
++create 1/2 csd
++set_parent 1/2 1
++accept_focus 1/2 false
++show 1/2
++
++create 1/3 csd
++set_parent 1/3 2
++show 1/3
++
++wait
++assert_focused 1/3
++assert_stacking 2/1 1/1 1/2 1/3
++
++destroy 1/3
++dispatch
++
++assert_focused none
++assert_stacking 2/1 1/1 1/2
++
++sleep 250
++assert_focused 1/1
++assert_stacking 2/1 1/1 1/2
+diff -Naurp mutter-3.32.2.orig/src/tests/test-client.c mutter-3.32.2/src/tests/test-client.c
+--- mutter-3.32.2.orig/src/tests/test-client.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/tests/test-client.c	2019-07-01 20:30:52.597491726 -0500
+@@ -196,6 +196,74 @@ process_line (const char *line)
+                                              NULL))
+         g_print ("Fail to export handle for window id %s", argv[2]);
+     }
++  else if (strcmp (argv[0], "accept_focus") == 0)
++  {
++     if (argc != 3)
++     {
++        g_print ("usage: %s <window-id> [true|false", argv[0]);
++        goto out;
++     }
++
++     GtkWidget *window = lookup_window (argv[1]);
++     if (!window)
++     {
++        g_print ("unknown window %s", argv[1]);
++        goto out;
++     }
++
++     gboolean enabled = g_ascii_strcasecmp (argv[2], "true") == 0;
++     gtk_window_set_accept_focus (GTK_WINDOW (window), enabled);
++  }
++  else if (strcmp (argv[0], "can_take_focus") == 0)
++  {
++     if (argc != 3)
++     {
++        g_print ("usage: %s <window-id> [true|false]", argv[0]);
++        goto out;
++     }
++
++     GtkWidget *window = lookup_window (argv[1]);
++     if (!window)
++     {
++        g_print ("unknown window %s", argv[1]);
++        goto out;
++     }
++
++     if (wayland)
++     {
++        g_print ("%s is not supported under wayland", argv[0]);
++        goto out;
++     }
++
++     GdkDisplay *display = gdk_display_get_default ();
++     GdkWindow *gdkwindow = gtk_widget_get_window (window);
++     Display *xdisplay = gdk_x11_display_get_xdisplay (display);
++     Window xwindow = GDK_WINDOW_XID (gdkwindow);
++     Atom wm_take_focus = gdk_x11_get_xatom_by_name_for_display (display, "WM_TAKE_FOCUS");
++     gboolean add = g_ascii_strcasecmp(argv[2], "true") == 0;
++     Atom *protocols = NULL;
++     Atom *new_protocols;
++     int n_protocols = 0;
++     int i, n = 0;
++
++     gdk_display_sync (display);
++     XGetWMProtocols (xdisplay, xwindow, &protocols, &n_protocols);
++     new_protocols = g_new0 (Atom, n_protocols + (add ? 1 : 0));
++
++     for (i = 0; i < n_protocols; ++i)
++     {
++        if (protocols[i] != wm_take_focus)
++           new_protocols[n++] = protocols[i];
++     }
++
++     if (add)
++        new_protocols[n++] = wm_take_focus;
++
++     XSetWMProtocols (xdisplay, xwindow, new_protocols, n);
++
++     XFree (new_protocols);
++     XFree (protocols);
++  }
+   else if (strcmp (argv[0], "show") == 0)
+     {
+       if (argc != 2)
+diff -Naurp mutter-3.32.2.orig/src/tests/test-runner.c mutter-3.32.2/src/tests/test-runner.c
+--- mutter-3.32.2.orig/src/tests/test-runner.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/tests/test-runner.c	2019-07-01 21:10:08.129153559 -0500
+@@ -77,7 +77,7 @@ test_case_new (void)
+ }
+ 
+ static gboolean
+-test_case_before_redraw (gpointer data)
++test_case_loop_quit (gpointer data)
+ {
+   TestCase *test = data;
+ 
+@@ -87,6 +87,23 @@ test_case_before_redraw (gpointer data)
+ }
+ 
+ static gboolean
++test_case_dispatch (TestCase *test,
++                    GError  **error)
++{
++   /* Wait until we've done any outstanding queued up work.
++    * Although we add this as BEFORE_REDRAW, the iteration that runs the
++    * BEFORE_REDRAW idles will proceed on and do the redraw, so we're
++    * waiting until after *ALL* frame processing is completed.
++    */
++   meta_later_add (META_LATER_BEFORE_REDRAW,
++                   test_case_loop_quit,
++                   test,
++                   NULL);
++   g_main_loop_run (test->loop);
++
++   return TRUE;
++}
++static gboolean
+ test_case_wait (TestCase *test,
+                 GError  **error)
+ {
+@@ -102,16 +119,8 @@ test_case_wait (TestCase *test,
+     if (!test_client_wait (value, error))
+       return FALSE;
+ 
+-  /* Then wait until we've done any outstanding queued up work.
+-   * Though we add this as BEFORE_REDRAW, the iteration that runs the
+-   * BEFORE_REDRAW idles will proceed on and do the redraw, so we're
+-   * waiting until after *all* frame processing.
+-   */
+-  meta_later_add (META_LATER_BEFORE_REDRAW,
+-                  test_case_before_redraw,
+-                  test,
+-                  NULL);
+-  g_main_loop_run (test->loop);
++  /* Now, we need to wait until we've done any outstanding work.*/
++  test_case_dispatch (test, error);
+ 
+   /* Then set an XSync counter ourselves and and wait until
+    * we receive the resulting event - this makes sure that we've
+@@ -121,6 +130,16 @@ test_case_wait (TestCase *test,
+   return TRUE;
+ }
+ 
++static gboolean
++test_case_sleep (TestCase  *test,
++                 guint32   interval,
++                 GError   **error)
++{
++   g_timeout_add_full (G_PRIORITY_LOW, interval, test_case_loop_quit, test, NULL);
++   g_main_loop_run (test->loop);
++
++   return TRUE;
++}
+ #define BAD_COMMAND(...)                                                \
+   G_STMT_START {                                                        \
+       g_set_error (error,                                               \
+@@ -238,6 +257,37 @@ test_case_assert_stacking (TestCase *tes
+ }
+ 
+ static gboolean
++test_case_assert_focused (TestCase     *test,
++                          const char   *expected_window,
++                          GError      **error)
++{
++   MetaDisplay *display = meta_get_display ();
++
++   if (!display -> focus_window)
++   {
++      if (g_strcmp0 (expected_window, "none") != 0)
++      {
++         g_set_error (error, TEST_RUNNER_ERROR, TEST_RUNNER_ERROR_ASSERTION_FAILED,
++                      "focus: expected='%s', actual='none'", expected_window);
++      }
++   }
++   else
++   {
++      const char *focused = display->focus_window->title;
++
++      if (g_str_has_prefix (focused, "test/"))
++         focused += 5;
++
++      if (g_strcmp0 (focused, "test/"))
++         g_set_error(error, TEST_RUNNER_ERROR, TEST_RUNNER_ERROR_ASSERTION_FAILED,
++                     "focus: expected='%s', actual='%s'",
++                     expected_window, focused);
++   }
++
++   return *error == NULL;
++}
++
++static gboolean
+ test_case_check_xserver_stacking (TestCase *test,
+                                   GError  **error)
+ {
+@@ -385,6 +435,9 @@ test_case_do (TestCase *test,
+                            argc == 3 ? argv[2] : NULL,
+                            NULL))
+         return FALSE;
++
++      if (!test_client_wait (client, error))
++         return FALSE;
+     }
+   else if (strcmp (argv[0], "set_parent") == 0 ||
+            strcmp (argv[0], "set_parent_exported") == 0)
+@@ -404,6 +457,44 @@ test_case_do (TestCase *test,
+                            NULL))
+         return FALSE;
+     }
++  else if (strcmp (argv[0], "accept_focus") == 0)
++  {
++     if (argc != 3 ||
++         (g_ascii_strcasecmp (argv[2], "true") != 0 &&
++          g_ascii_strcasecmp (argv[2], "false") != 0))
++        BAD_COMMAND("usage: %s <client-id>/<window-id> [true|false]",
++                    argv[0]);
++
++     TestClient *client;
++     const char *window_id;
++     if (!test_case_parse_window_id (test, argv[1], &client, &window_id, error))
++        return FALSE;
++
++     if (!test_client_do (client, error,
++                          argv[0], window_id,
++                          argv[2],
++                          NULL))
++        return FALSE;
++  }
++  else if (strcmp (argv[0], "can_take_focus") == 0)
++  {
++     if (argc != 3 ||
++         (g_ascii_strcasecmp (argv[2], "true") != 0 &&
++          g_ascii_strcasecmp (argv[2], "false") != 0))
++        BAD_COMMAND("usage: %s <client-id>/<window-id> [true|false]",
++                    argv[0]);
++
++     TestClient *client;
++     const char *window_id;
++     if (!test_case_parse_window_id (test, argv[1], &client, &window_id, error))
++        return FALSE;
++
++     if (!test_client_do (client, error,
++                          argv[0], window_id,
++                          argv[2],
++                          NULL))
++        return FALSE;
++  }
+   else if (strcmp (argv[0], "show") == 0)
+     {
+       if (argc != 2)
+@@ -477,6 +568,28 @@ test_case_do (TestCase *test,
+       if (!test_case_wait (test, error))
+         return FALSE;
+     }
++  else if (strcmp (argv[0], "dispatch") == 0)
++  {
++     if (argc != 1)
++        BAD_COMMAND("usage: %s", argv[0]);
++
++     if (!test_case_dispatch (test,error))
++        return FALSE;
++  }
++  else if (strcmp (argv[0], "sleep") == 0)
++  {
++     guint64 interval;
++
++     if (argc != 2)
++        BAD_COMMAND("usage: %s <milliseconds>", argv[0]);
++
++     if (!g_ascii_string_to_unsigned (argv[1], 10, 0, G_MAXUINT32,
++                                      &interval, error))
++        return FALSE;
++
++     if (!test_case_sleep (test, (guint32) interval, error))
++        return FALSE;
++  }
+   else if (strcmp (argv[0], "assert_stacking") == 0)
+     {
+       if (!test_case_assert_stacking (test, argv + 1, argc - 1, error))
+@@ -485,6 +598,11 @@ test_case_do (TestCase *test,
+       if (!test_case_check_xserver_stacking (test, error))
+         return FALSE;
+     }
++  else if (strcmp (argv[0], "assert_focused") == 0)
++  {
++     if (!test_case_assert_focused (test, argv[1], error))
++        return FALSE;
++  }
+   else
+     {
+       BAD_COMMAND("Unknown command %s", argv[0]);
+diff -Naurp mutter-3.32.2.orig/src/wayland/meta-wayland-cursor-surface.c mutter-3.32.2/src/wayland/meta-wayland-cursor-surface.c
+--- mutter-3.32.2.orig/src/wayland/meta-wayland-cursor-surface.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/wayland/meta-wayland-cursor-surface.c	2019-07-01 19:36:41.018322852 -0500
+@@ -170,8 +170,9 @@ meta_wayland_cursor_surface_commit (Meta
+   wl_list_init (&pending->frame_callback_list);
+ 
+   if (pending->newly_attached &&
+-      (!cairo_region_is_empty (pending->surface_damage) ||
+-       !cairo_region_is_empty (pending->buffer_damage)))
++      ((!cairo_region_is_empty (pending->surface_damage) ||
++       !cairo_region_is_empty (pending->buffer_damage))  ||
++       !priv->buffer))
+     update_cursor_sprite_texture (META_WAYLAND_CURSOR_SURFACE (surface_role));
+ }
+ 
+diff -Naurp mutter-3.32.2.orig/src/wayland/meta-wayland-seat.c mutter-3.32.2/src/wayland/meta-wayland-seat.c
+--- mutter-3.32.2.orig/src/wayland/meta-wayland-seat.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/wayland/meta-wayland-seat.c	2019-07-01 15:33:03.077805423 -0500
+@@ -266,7 +266,7 @@ meta_wayland_seat_free (MetaWaylandSeat
+   meta_wayland_gtk_text_input_destroy (seat->gtk_text_input);
+   meta_wayland_text_input_destroy (seat->text_input);
+ 
+-  g_slice_free (MetaWaylandSeat, seat);
++  g_free (seat);
+ }
+ 
+ static gboolean
+diff -Naurp mutter-3.32.2.orig/src/wayland/meta-wayland-surface.c mutter-3.32.2/src/wayland/meta-wayland-surface.c
+--- mutter-3.32.2.orig/src/wayland/meta-wayland-surface.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/wayland/meta-wayland-surface.c	2019-07-01 19:34:56.417500382 -0500
+@@ -738,6 +738,10 @@ meta_wayland_surface_apply_pending_state
+             }
+         }
+ 
++      else
++      {
++         cogl_clear_object (&surface->texture);
++      }
+       /* If the newly attached buffer is going to be accessed directly without
+        * making a copy, such as an EGL buffer, mark it as in-use don't release
+        * it until is replaced by a subsequent wl_surface.commit or when the
+diff -Naurp mutter-3.32.2.orig/src/x11/window-x11.c mutter-3.32.2/src/x11/window-x11.c
+--- mutter-3.32.2.orig/src/x11/window-x11.c	2019-05-14 12:57:10.000000000 -0500
++++ mutter-3.32.2/src/x11/window-x11.c	2019-07-01 21:59:53.764106326 -0500
+@@ -50,6 +50,8 @@
+ #include "x11/window-props.h"
+ #include "x11/xprops.h"
+ 
++#define TAKE_FOCUS_FALLBACK_DELAY_MS 250
++
+ enum _MetaGtkEdgeConstraints
+ {
+   META_GTK_EDGE_CONSTRAINT_TOP_TILED = 1 << 0,
+@@ -776,6 +778,64 @@ request_take_focus (MetaWindow *window,
+   send_icccm_message (window, display->x11_display->atom_WM_TAKE_FOCUS, timestamp);
+ }
+ 
++typedef struct
++{
++   MetaWindow *window;
++   guint32 timestamp;
++   guint timeout_id;
++   gulong unmanaged_id;
++   gulong focused_changed_id;
++} MetaWindowX11DelayedFocusData;
++
++static void
++meta_window_x11_delayed_focus_data_free (MetaWindowX11DelayedFocusData *data)
++{
++   g_signal_handler_disconnect (data->window, data->unmanaged_id);
++   g_signal_handler_disconnect (data->window->display, data->focused_changed_id);
++
++   g_clear_handle_id (&data->timeout_id, g_source_remove);
++   g_free (data);
++}
++
++static gboolean
++focus_window_delayed_timeout (gpointer user_data)
++{
++   MetaWindowX11DelayedFocusData *data = user_data;
++   MetaWindow *window = data->window;
++   guint32 timestamp = data->timestamp;
++
++   data->timeout_id = 0;
++   meta_window_x11_delayed_focus_data_free (data);
++
++   meta_window_focus (window, timestamp);
++
++   return G_SOURCE_REMOVE;
++}
++
++static void
++meta_window_x11_maybe_focus_delayed (MetaWindow *window,
++                                     guint32    timestamp)
++{
++   MetaWindowX11DelayedFocusData *data;
++
++   data = g_new0 (MetaWindowX11DelayedFocusData, 1);
++   data->window = window;
++   data->timestamp = timestamp;
++
++   data->unmanaged_id =
++      g_signal_connect_swapped (window, "unmanaged",
++                                G_CALLBACK (meta_window_x11_delayed_focus_data_free),
++                                data);
++
++   data->focused_changed_id = 
++      g_signal_connect_swapped (window->display, "notify::focus-window",
++                                G_CALLBACK (meta_window_x11_delayed_focus_data_free),
++                                data);
++
++   data->timeout_id = g_timeout_add (TAKE_FOCUS_FALLBACK_DELAY_MS,
++                                     focus_window_delayed_timeout, data);
++}
++
+ static void
+ meta_window_x11_focus (MetaWindow *window,
+                        guint32     timestamp)
+@@ -827,13 +887,44 @@ meta_window_x11_focus (MetaWindow *windo
+                * Normally, we want to just leave the focus undisturbed until
+                * the window responds to WM_TAKE_FOCUS, but if we're unmanaging
+                * the current focus window we *need* to move the focus away, so
+-               * we focus the no_focus_window now (and set
+-               * display->focus_window to that) before sending WM_TAKE_FOCUS.
++               * we focus the no_focus_window before sending WM_TAKE_FOCUS,
++               * and eventually the default focus window excluding this one,
++               * if meanwhile we don't get any focus request.
+                */
+               if (window->display->focus_window != NULL &&
+                   window->display->focus_window->unmanaging)
+-                meta_x11_display_focus_the_no_focus_window (window->display->x11_display,
+-                                                            timestamp);
++                {
++                   MetaWindow *focus_window = window;
++                   MetaX11Display *x11_display = window->display->x11_display;
++                   MetaWorkspace *workspace = window->workspace;
++                   MetaStack *stack = workspace->display->stack;
++
++                   while (TRUE)
++                   {
++                      focus_window = meta_stack_get_default_focus_window (stack,
++                                                                          workspace,
++                                                                          focus_window);
++
++                      if (!focus_window)
++                         break;
++
++                      if (focus_window->unmanaging)
++                         continue;
++
++                      if (focus_window->input)
++                         break;
++
++                      if (focus_window->shaded && focus_window->frame)
++                         break;
++                   }
++
++                   meta_x11_display_focus_the_no_focus_window (x11_display,
++                                                               timestamp);
++
++                   if (focus_window)
++                      meta_window_x11_maybe_focus_delayed (focus_window,
++                                                           timestamp);
++                }
+             }
+ 
+           request_take_focus (window, timestamp);
