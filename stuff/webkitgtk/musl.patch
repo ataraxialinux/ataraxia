@@ -1,0 +1,176 @@
+diff -ruN webkitgtk-2.24.3-orig/Source/cmake/OptionsCommon.cmake webkitgtk-2.24.3/Source/cmake/OptionsCommon.cmake
+--- webkitgtk-2.24.3-orig/Source/cmake/OptionsCommon.cmake	2019-02-12 03:21:19.000000000 -0800
++++ webkitgtk-2.24.3/Source/cmake/OptionsCommon.cmake	2019-08-19 06:40:09.342473394 -0700
+@@ -117,7 +117,6 @@
+ WEBKIT_CHECK_HAVE_INCLUDE(HAVE_ERRNO_H errno.h)
+ WEBKIT_CHECK_HAVE_INCLUDE(HAVE_LANGINFO_H langinfo.h)
+ WEBKIT_CHECK_HAVE_INCLUDE(HAVE_MMAP sys/mman.h)
+-WEBKIT_CHECK_HAVE_INCLUDE(HAVE_PTHREAD_NP_H pthread_np.h)
+ WEBKIT_CHECK_HAVE_INCLUDE(HAVE_STRINGS_H strings.h)
+ WEBKIT_CHECK_HAVE_INCLUDE(HAVE_SYS_PARAM_H sys/param.h)
+ WEBKIT_CHECK_HAVE_INCLUDE(HAVE_SYS_TIME_H sys/time.h)
+@@ -135,9 +134,6 @@
+ 
+ # Check for symbols
+ WEBKIT_CHECK_HAVE_SYMBOL(HAVE_REGEX_H regexec regex.h)
+-if (NOT (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
+-WEBKIT_CHECK_HAVE_SYMBOL(HAVE_PTHREAD_MAIN_NP pthread_main_np pthread_np.h)
+-endif ()
+ # Windows has signal.h but is missing symbols that are used in calls to signal.
+ WEBKIT_CHECK_HAVE_SYMBOL(HAVE_SIGNAL_H SIGTRAP signal.h)
+ 
+diff -ruN webkitgtk-2.24.3-orig/Source/JavaScriptCore/runtime/MachineContext.h webkitgtk-2.24.3/Source/JavaScriptCore/runtime/MachineContext.h
+--- webkitgtk-2.24.3-orig/Source/JavaScriptCore/runtime/MachineContext.h	2019-02-12 03:21:03.000000000 -0800
++++ webkitgtk-2.24.3/Source/JavaScriptCore/runtime/MachineContext.h	2019-08-19 06:33:23.526996613 -0700
+@@ -188,7 +188,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif OS(FUCHSIA) || defined(__GLIBC__) || defined(__BIONIC__)
++#elif OS(FUCHSIA) || defined(__linux__)
+ 
+ #if CPU(X86)
+     return reinterpret_cast<void*&>((uintptr_t&) machineContext.gregs[REG_ESP]);
+@@ -335,7 +335,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif OS(FUCHSIA) || defined(__GLIBC__) || defined(__BIONIC__)
++#elif OS(FUCHSIA) || defined(__linux__)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+@@ -482,7 +482,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif OS(FUCHSIA) || defined(__GLIBC__) || defined(__BIONIC__)
++#elif OS(FUCHSIA) || defined(__linux__)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+@@ -639,7 +639,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif OS(FUCHSIA) || defined(__GLIBC__) || defined(__BIONIC__)
++#elif OS(FUCHSIA) || defined(__linux__)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+@@ -756,7 +756,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif OS(FUCHSIA) || defined(__GLIBC__) || defined(__BIONIC__)
++#elif OS(FUCHSIA) || defined(__linux__)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+diff -ruN webkitgtk-2.24.3-orig/Source/JavaScriptCore/runtime/Options.h webkitgtk-2.24.3/Source/JavaScriptCore/runtime/Options.h
+--- webkitgtk-2.24.3-orig/Source/JavaScriptCore/runtime/Options.h	2019-03-05 07:17:43.000000000 -0800
++++ webkitgtk-2.24.3/Source/JavaScriptCore/runtime/Options.h	2019-08-19 06:34:14.558044909 -0700
+@@ -138,9 +138,9 @@
+     \
+     v(bool, reportMustSucceedExecutableAllocations, false, Normal, nullptr) \
+     \
+-    v(unsigned, maxPerThreadStackUsage, 4 * MB, Normal, "Max allowed stack usage by the VM") \
+-    v(unsigned, softReservedZoneSize, 128 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
+-    v(unsigned, reservedZoneSize, 64 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
++    v(unsigned, maxPerThreadStackUsage, 80 * KB, Normal, "Max allowed stack usage by the VM") \
++    v(unsigned, softReservedZoneSize, 32 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
++    v(unsigned, reservedZoneSize, 16 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
+     \
+     v(bool, crashIfCantAllocateJITMemory, false, Normal, nullptr) \
+     v(unsigned, jitMemoryReservationSize, 0, Normal, "Set this number to change the executable allocation size in ExecutableAllocatorFixedVMPool. (In bytes.)") \
+diff -ruN webkitgtk-2.24.3-orig/Source/JavaScriptCore/wasm/WasmFaultSignalHandler.cpp webkitgtk-2.24.3/Source/JavaScriptCore/wasm/WasmFaultSignalHandler.cpp
+--- webkitgtk-2.24.3-orig/Source/JavaScriptCore/wasm/WasmFaultSignalHandler.cpp	2019-02-12 03:21:03.000000000 -0800
++++ webkitgtk-2.24.3/Source/JavaScriptCore/wasm/WasmFaultSignalHandler.cpp	2019-08-19 06:38:48.817691073 -0700
+@@ -118,7 +118,11 @@
+ 
+ bool fastMemoryEnabled()
+ {
+-    return fastHandlerInstalled;
++#if ENABLE(WEBASSEMBLY_FAST_MEMORY)
++     return fastHandlerInstalled;
++#else
++    return false;
++#endif // ENABLE(WEBASSEMBLY_FAST_MEMORY)
+ }
+ 
+ void enableFastMemory()
+diff -ruN webkitgtk-2.24.3-orig/Source/ThirdParty/ANGLE/src/compiler/preprocessor/ExpressionParser.cpp webkitgtk-2.24.3/Source/ThirdParty/ANGLE/src/compiler/preprocessor/ExpressionParser.cpp
+--- webkitgtk-2.24.3-orig/Source/ThirdParty/ANGLE/src/compiler/preprocessor/ExpressionParser.cpp	2019-02-12 03:21:03.000000000 -0800
++++ webkitgtk-2.24.3/Source/ThirdParty/ANGLE/src/compiler/preprocessor/ExpressionParser.cpp	2019-08-19 06:34:43.309089956 -0700
+@@ -836,7 +836,7 @@
+ #if YYERROR_VERBOSE
+ 
+ # ifndef yystrlen
+-#  if defined __GLIBC__ && defined _STRING_H
++#  if defined __linux__ && defined _STRING_H
+ #   define yystrlen strlen
+ #  else
+ /* Return the length of YYSTR.  */
+@@ -852,7 +852,7 @@
+ # endif
+ 
+ # ifndef yystpcpy
+-#  if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
++#  if defined __linux__ && defined _STRING_H && defined _GNU_SOURCE
+ #   define yystpcpy stpcpy
+ #  else
+ /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+diff -ruN webkitgtk-2.24.3-orig/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab.cpp webkitgtk-2.24.3/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab.cpp
+--- webkitgtk-2.24.3-orig/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab.cpp	2019-02-12 03:21:03.000000000 -0800
++++ webkitgtk-2.24.3/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab.cpp	2019-08-19 06:35:56.613515609 -0700
+@@ -1975,7 +1975,7 @@
+ #if YYERROR_VERBOSE
+ 
+ # ifndef yystrlen
+-#  if defined __GLIBC__ && defined _STRING_H
++#  if defined __linux__ && defined _STRING_H
+ #   define yystrlen strlen
+ #  else
+ /* Return the length of YYSTR.  */
+@@ -1991,7 +1991,7 @@
+ # endif
+ 
+ # ifndef yystpcpy
+-#  if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
++#  if defined __linux__ && defined _STRING_H && defined _GNU_SOURCE
+ #   define yystpcpy stpcpy
+ #  else
+ /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+diff -ruN webkitgtk-2.24.3-orig/Source/WebCore/xml/XPathGrammar.cpp webkitgtk-2.24.3/Source/WebCore/xml/XPathGrammar.cpp
+--- webkitgtk-2.24.3-orig/Source/WebCore/xml/XPathGrammar.cpp	2019-02-12 03:21:18.000000000 -0800
++++ webkitgtk-2.24.3/Source/WebCore/xml/XPathGrammar.cpp	2019-08-19 06:36:58.212231498 -0700
+@@ -966,7 +966,7 @@
+ #if YYERROR_VERBOSE
+ 
+ # ifndef yystrlen
+-#  if defined __GLIBC__ && defined _STRING_H
++#  if defined __linux__ && defined _STRING_H
+ #   define yystrlen strlen
+ #  else
+ /* Return the length of YYSTR.  */
+@@ -989,7 +989,7 @@
+ # endif
+ 
+ # ifndef yystpcpy
+-#  if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
++#  if defined __linux__ && defined _STRING_H && defined _GNU_SOURCE
+ #   define yystpcpy stpcpy
+ #  else
+ /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+diff -ruN webkitgtk-2.24.3-orig/Source/WTF/wtf/Platform.h webkitgtk-2.24.3/Source/WTF/wtf/Platform.h
+--- webkitgtk-2.24.3-orig/Source/WTF/wtf/Platform.h	2019-03-05 07:32:47.000000000 -0800
++++ webkitgtk-2.24.3/Source/WTF/wtf/Platform.h	2019-08-19 06:36:22.860998847 -0700
+@@ -710,7 +710,7 @@
+ 
+ #endif /* OS(DARWIN) */
+ 
+-#if OS(DARWIN) || OS(FUCHSIA) || ((OS(FREEBSD) || defined(__GLIBC__) || defined(__BIONIC__)) && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)))
++#if OS(DARWIN) || OS(FUCHSIA) || ((OS(FREEBSD) || defined(__linux__)) && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)))
+ #define HAVE_MACHINE_CONTEXT 1
+ #endif
+ 

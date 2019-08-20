@@ -1,0 +1,21 @@
+# Description: C library implementing OAuth Core RFC 5849
+# URL:         https://github.com/x42/liboauth
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl nss
+# Section:     libs
+
+name=liboauth
+version=1.0.3
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-nss
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,25 @@
+# Description: An open source reference implementation of the icalendar data type and serialization format
+# URL:         https://github.com/libical/libical
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
+# Section:     libs
+
+name=libical
+version=3.0.5
+release=1
+source=("https://github.com/libical/libical/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DSHARED_ONLY=yes \
+		-DICAL_BUILD_DOCS=false \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

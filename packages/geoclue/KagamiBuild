@@ -1,0 +1,21 @@
+# Description: Modular geoinformation service built on the D-Bus messaging system
+# URL:         https://gitlab.gnome.org/GNOME/gcr
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson vala json-glib libsoup modemmanager
+# Section:     gnome
+
+name=geoclue
+version=2.5.3
+release=1
+source=("https://gitlab.freedesktop.org/geoclue/$name/-/archive/$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgtk-doc=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+}

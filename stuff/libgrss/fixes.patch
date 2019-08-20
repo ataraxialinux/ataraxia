@@ -1,0 +1,822 @@
+Submitted By:            Douglas R. Reno <renodr at linuxfromscratch dot org>
+Date:                    2019-09-10
+Initial Package Version: 0.7.0
+Upstream Status:         Submitted (PR)
+Origin:                  Self
+Description:             Fixes several bugs in libgrss. This includes porting
+                         to the new libsoup API, fixing memory leaks, bumping
+                         the version to the one that tracker-miners wants,
+                         fixing signal emission problems, upgrading g-i files,
+                         fixing authentication bugs, and porting from
+                         GSimpleAsync to GTask.
+
+diff -Naurp libgrss-0.7.0.orig/configure.ac libgrss-0.7.0/configure.ac
+--- libgrss-0.7.0.orig/configure.ac	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/configure.ac	2019-04-10 00:01:12.448526750 -0500
+@@ -2,13 +2,13 @@
+ # bump micro_version to the next odd number after each release
+ m4_define([grss_major_version], [0])
+ m4_define([grss_minor_version], [7])
+-m4_define([grss_micro_version], [0])
++m4_define([grss_micro_version], [1])
+ m4_define([grss_version],
+           [grss_major_version.grss_minor_version.grss_micro_version])
+ 
+ # bump up by 1 for every micro release with no API changes, otherwise
+ # set to 0. after release, bump up by 1
+-m4_define([grss_interface_age], [0])
++m4_define([grss_interface_age], [1])
+ m4_define([grss_binary_age], [m4_eval(100 * grss_minor_version + grss_micro_version)])
+ 
+ m4_define([lt_current], [m4_eval(100 * grss_minor_version + grss_micro_version - grss_interface_age)])
+diff -Naurp libgrss-0.7.0.orig/doc/reference/libgrss-docs.sgml libgrss-0.7.0/doc/reference/libgrss-docs.sgml
+--- libgrss-0.7.0.orig/doc/reference/libgrss-docs.sgml	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/doc/reference/libgrss-docs.sgml	2019-04-09 23:51:42.414042258 -0500
+@@ -55,7 +55,6 @@
+ 
+     <xi:include href="xml/feed-atom-handler.xml"/>
+     <xi:include href="xml/feed-handler.xml"/>
+-    <xi:include href="xml/feed-marshal.xml"/>
+     <xi:include href="xml/feed-pie-handler.xml"/>
+     <xi:include href="xml/feed-rss-handler.xml"/>
+     <xi:include href="xml/feeds-group-handler.xml"/>
+diff -Naurp libgrss-0.7.0.orig/doc/reference/version.xml.in libgrss-0.7.0/doc/reference/version.xml.in
+--- libgrss-0.7.0.orig/doc/reference/version.xml.in	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/doc/reference/version.xml.in	2019-04-10 00:01:52.056757372 -0500
+@@ -1 +1 @@
+-@LIBGRSS_VERSION@
++@GRSS_VERSION@
+diff -Naurp libgrss-0.7.0.orig/src/feed-atom-handler.c libgrss-0.7.0/src/feed-atom-handler.c
+--- libgrss-0.7.0.orig/src/feed-atom-handler.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feed-atom-handler.c	2019-04-10 00:28:07.125200045 -0500
+@@ -63,6 +63,14 @@ feed_atom_handler_error_quark ()
+ static void
+ feed_atom_handler_finalize (GObject *object)
+ {
++   /* Ensure that the Feed Atom Handler's hash tables and objects are cleared
++    * properly. Without this, we risk triggering a memory leak. */
++   FeedAtomHandler *self = FEED_ATOM_HANDLER (object);
++
++   g_clear_object (&self->priv->handler);
++   g_hash_table_destroy (self->priv->feed_elements_hash);
++   g_hash_table_destroy (self->priv->entry_elements_hash);
++
+ 	G_OBJECT_CLASS (feed_atom_handler_parent_class)->finalize (object);
+ }
+ 
+@@ -329,6 +337,8 @@ atom10_parse_link (xmlNodePtr cur, GrssF
+ 	const gchar *home;
+ 	gchar *alternate = NULL;
+ 
++   g_return_val_if_fail (GRSS_IS_FEED_CHANNEL (feed), NULL);
++
+ 	href = (gchar*) xmlGetNsProp (cur, BAD_CAST"href", NULL);
+ 
+ 	if (href) {
+@@ -384,11 +394,9 @@ atom10_parse_link (xmlNodePtr cur, GrssF
+ 			*/
+ 		}
+ 		else if (g_str_equal (relation, "hub")) {
+-			if (feed != NULL)
+ 				grss_feed_channel_set_pubsubhub (feed, url);
+ 		}
+ 		else if (g_str_equal (relation, "self")) {
+-			if (feed != NULL)
+ 				grss_feed_channel_set_source (feed, url);
+ 		}
+ 
+@@ -782,7 +790,7 @@ feed_atom_handler_parse (FeedHandler *se
+ 	parser = FEED_ATOM_HANDLER (self);
+ 
+ 	while (TRUE) {
+-		if (xmlStrcmp (cur->name, BAD_CAST"feed")) {
++		if (!cur || xmlStrcmp (cur->name, BAD_CAST"feed")) {
+ 			g_set_error (error, FEED_ATOM_HANDLER_ERROR, FEED_ATOM_HANDLER_PARSE_ERROR, "Could not find Atom 1.0 header!");
+ 			break;
+ 		}
+diff -Naurp libgrss-0.7.0.orig/src/feed-channel.c libgrss-0.7.0/src/feed-channel.c
+--- libgrss-0.7.0.orig/src/feed-channel.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feed-channel.c	2019-04-10 00:45:23.191159682 -0500
+@@ -103,6 +103,8 @@ grss_feed_channel_finalize (GObject *obj
+ 	FREE_STRING (chan->priv->rsscloud.path);
+ 	FREE_STRING (chan->priv->rsscloud.protocol);
+ 	FREE_STRING (chan->priv->copyright);
++   FREE_STRING (chan->priv->format);
++   FREE_STRING (chan->priv->source);
+ 	if (chan->priv->editor)
+ 		grss_person_unref (chan->priv->editor);
+ 	FREE_STRING (chan->priv->webmaster);
+@@ -215,6 +217,7 @@ GrssFeedChannel*
+ grss_feed_channel_new_from_memory (const gchar *data, GError **error)
+ {
+ 	xmlDocPtr doc;
++   GrssFeedChannel *ret;
+ 
+ 	doc = content_to_xml (data, strlen (data));
+ 	if (doc == NULL) {
+@@ -222,7 +225,11 @@ grss_feed_channel_new_from_memory (const
+ 		return NULL;
+ 	}
+ 
+-	return grss_feed_channel_new_from_xml (doc, error);
++	ret = grss_feed_channel_new_from_xml (doc, error);
++
++   xmlFreeDoc (doc);
++
++   return ret;
+ }
+ 
+ /**
+@@ -944,7 +951,6 @@ static gboolean
+ quick_and_dirty_parse (GrssFeedChannel *channel, SoupMessage *msg, GList **save_items)
+ {
+ 	GList *items;
+-	GList *iter;
+ 	xmlDocPtr doc;
+ 	GrssFeedParser *parser;
+ 
+@@ -1010,7 +1016,7 @@ grss_feed_channel_fetch (GrssFeedChannel
+ 
+ 	ret = FALSE;
+ 
+-	session = soup_session_sync_new ();
++	session = soup_session_new ();
+ 	init_soup_session (session, channel);
+ 
+ 	msg = soup_message_new ("GET", grss_feed_channel_get_source (channel));
+@@ -1036,26 +1042,27 @@ grss_feed_channel_fetch (GrssFeedChannel
+ static void
+ feed_downloaded (SoupSession *session, SoupMessage *msg, gpointer user_data) {
+ 	guint status;
+-	GSimpleAsyncResult *result;
++   GTask *task;
+ 	GrssFeedChannel *channel;
+ 
+-	result = user_data;
+-	channel = GRSS_FEED_CHANNEL (g_async_result_get_source_object (G_ASYNC_RESULT (result)));
++	task = user_data;
++	channel = GRSS_FEED_CHANNEL (g_task_get_source_object (task));
+ 	g_object_get (msg, "status-code", &status, NULL);
+ 
+ 	if (status >= 200 && status <= 299) {
+ 		if (quick_and_dirty_parse (channel, msg, NULL) == FALSE)
+-			g_simple_async_result_set_error (result, FEED_CHANNEL_ERROR, FEED_CHANNEL_PARSE_ERROR,
++			g_task_return_new_error (task, FEED_CHANNEL_ERROR, FEED_CHANNEL_PARSE_ERROR,
+ 						 "Unable to parse feed from %s", grss_feed_channel_get_source (channel));
++      else
++         g_task_return_boolean (task, TRUE);
+ 	}
+ 	else {
+-		g_simple_async_result_set_error (result, FEED_CHANNEL_ERROR, FEED_CHANNEL_FETCH_ERROR,
++		g_task_return_new_error (task, FEED_CHANNEL_ERROR, FEED_CHANNEL_FETCH_ERROR,
+ 						 "Unable to download from %s", grss_feed_channel_get_source (channel));
+ 	}
+ 
+-	g_simple_async_result_complete_in_idle (result);
+ 	g_clear_object (&channel->priv->fetchcancel);
+-	g_object_unref (result);
++	g_object_unref (task);
+ }
+ 
+ /**
+@@ -1074,10 +1081,7 @@ feed_downloaded (SoupSession *session, S
+ gboolean
+ grss_feed_channel_fetch_finish (GrssFeedChannel *channel, GAsyncResult *res, GError **error)
+ {
+-	if (g_simple_async_result_propagate_error (G_SIMPLE_ASYNC_RESULT (res), error))
+-		return FALSE;
+-	else
+-		return TRUE;
++   return g_task_propagate_boolean (G_TASK (res), error);
+ }
+ 
+ static void
+@@ -1098,7 +1102,7 @@ do_prefetch (GrssFeedChannel *channel)
+ void
+ grss_feed_channel_fetch_async (GrssFeedChannel *channel, GAsyncReadyCallback callback, gpointer user_data)
+ {
+-	GSimpleAsyncResult *result;
++	GTask *task;
+ 	SoupMessage *msg;
+ 	SoupSession *session;
+ 
+@@ -1107,16 +1111,15 @@ grss_feed_channel_fetch_async (GrssFeedC
+ 	*/
+ 
+ 	do_prefetch (channel);
+-	result = g_simple_async_result_new (G_OBJECT (channel), callback, user_data, grss_feed_channel_fetch_async);
+-	g_simple_async_result_set_check_cancellable (result, channel->priv->fetchcancel);
++	task = g_task_new (channel, channel->priv->fetchcancel, callback, user_data);
+ 
+-	session = soup_session_async_new ();
++	session = soup_session_new ();
+ 	init_soup_session (session, channel);
+ 
+ 	msg = soup_message_new ("GET", grss_feed_channel_get_source (channel));
+ 	init_soup_message (msg, channel);
+ 
+-	soup_session_queue_message (session, msg, feed_downloaded, result);
++	soup_session_queue_message (session, msg, feed_downloaded, task);
+ }
+ 
+ /**
+@@ -1140,7 +1143,7 @@ grss_feed_channel_fetch_all (GrssFeedCha
+ 	SoupMessage *msg;
+ 	SoupSession *session;
+ 
+-	session = soup_session_sync_new ();
++	session = soup_session_new ();
+ 	init_soup_session (session, channel);
+ 
+ 	msg = soup_message_new ("GET", grss_feed_channel_get_source (channel));
+@@ -1182,30 +1185,29 @@ feed_downloaded_return_items (SoupSessio
+ {
+ 	guint status;
+ 	GList *items;
+-	GSimpleAsyncResult *result;
++	GTask *task;
+ 	GrssFeedChannel *channel;
+ 
+-	result = user_data;
+-	channel = GRSS_FEED_CHANNEL (g_async_result_get_source_object (G_ASYNC_RESULT (result)));
++	task = user_data;
++	channel = GRSS_FEED_CHANNEL (g_task_get_source_object (task));
+ 	g_object_get (msg, "status-code", &status, NULL);
+ 
+ 	if (status >= 200 && status <= 299) {
+ 		items = NULL;
+ 
+ 		if (quick_and_dirty_parse (channel, msg, &items) == TRUE)
+-			g_simple_async_result_set_op_res_gpointer (result, items, free_items_list);
++			g_task_return_pointer (task, items, free_items_list);
+ 		else
+-			g_simple_async_result_set_error (result, FEED_CHANNEL_ERROR, FEED_CHANNEL_PARSE_ERROR,
++			g_task_return_new_error (task, FEED_CHANNEL_ERROR, FEED_CHANNEL_PARSE_ERROR,
+ 						 "Unable to parse feed from %s", grss_feed_channel_get_source (channel));
+ 	}
+ 	else {
+-		g_simple_async_result_set_error (result, FEED_CHANNEL_ERROR, FEED_CHANNEL_FETCH_ERROR,
++		g_task_return_new_error (task, FEED_CHANNEL_ERROR, FEED_CHANNEL_FETCH_ERROR,
+ 						 "Unable to download from %s", grss_feed_channel_get_source (channel));
+ 	}
+ 
+-	g_simple_async_result_complete_in_idle (result);
+ 	g_clear_object (&channel->priv->fetchcancel);
+-	g_object_unref (result);
++	g_object_unref (task);
+ }
+ 
+ /**
+@@ -1219,21 +1221,20 @@ feed_downloaded_return_items (SoupSessio
+ void
+ grss_feed_channel_fetch_all_async (GrssFeedChannel *channel, GAsyncReadyCallback callback, gpointer user_data)
+ {
+-	GSimpleAsyncResult *result;
++	GTask *task;
+ 	SoupMessage *msg;
+ 	SoupSession *session;
+ 
+ 	do_prefetch (channel);
+-	result = g_simple_async_result_new (G_OBJECT (channel), callback, user_data, grss_feed_channel_fetch_async);
+-	g_simple_async_result_set_check_cancellable (result, channel->priv->fetchcancel);
++	task = g_task_new (channel, channel->priv->fetchcancel, callback, user_data);
+ 
+-	session = soup_session_async_new ();
++	session = soup_session_new ();
+ 	init_soup_session (session, channel);
+ 
+ 	msg = soup_message_new ("GET", grss_feed_channel_get_source (channel));
+ 	init_soup_message (msg, channel);
+ 
+-	soup_session_queue_message (session, msg, feed_downloaded_return_items, result);
++	soup_session_queue_message (session, msg, feed_downloaded_return_items, task);
+ }
+ 
+ /**
+@@ -1254,10 +1255,7 @@ grss_feed_channel_fetch_all_async (GrssF
+ GList*
+ grss_feed_channel_fetch_all_finish (GrssFeedChannel *channel, GAsyncResult *res, GError **error)
+ {
+-	if (g_simple_async_result_propagate_error (G_SIMPLE_ASYNC_RESULT (res), error))
+-		return NULL;
+-	else
+-		return (GList*) g_simple_async_result_get_op_res_gpointer (G_SIMPLE_ASYNC_RESULT (res));
++	return g_task_propagate_pointer (G_TASK (res), error);
+ }
+ 
+ /**
+@@ -1275,11 +1273,10 @@ grss_feed_channel_fetch_cancel (GrssFeed
+ {
+ 	if (channel->priv->fetchcancel != NULL) {
+ 		g_cancellable_cancel (channel->priv->fetchcancel);
+-		g_object_unref (channel->priv->fetchcancel);
++		g_clear_object (&channel->priv->fetchcancel);
+ 		return TRUE;
+ 	}
+ 	else {
+ 		return FALSE;
+ 	}
+ }
+-
+diff -Naurp libgrss-0.7.0.orig/src/feed-enclosure.c libgrss-0.7.0/src/feed-enclosure.c
+--- libgrss-0.7.0.orig/src/feed-enclosure.c	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/feed-enclosure.c	2019-04-10 00:21:24.288851984 -0500
+@@ -219,7 +219,7 @@ grss_feed_enclosure_fetch (GrssFeedEnclo
+ 	ret = NULL;
+ 	url = grss_feed_enclosure_get_url (enclosure);
+ 
+-	session = soup_session_sync_new ();
++	session = soup_session_new ();
+ 	msg = soup_message_new ("GET", url);
+ 	status = soup_session_send_message (session, msg);
+ 
+@@ -239,12 +239,12 @@ enclosure_downloaded (SoupSession *sessi
+ 	guint status;
+ 	const gchar *url;
+ 	GFile *file;
+-	GSimpleAsyncResult *result;
++	GTask *task;
+ 	GrssFeedEnclosure *enclosure;
+ 	GError *error;
+ 
+-	result = user_data;
+-	enclosure = GRSS_FEED_ENCLOSURE (g_async_result_get_source_object (G_ASYNC_RESULT (result)));
++	task = user_data;
++	enclosure = GRSS_FEED_ENCLOSURE (g_task_get_source_object (task));
+ 	url = grss_feed_enclosure_get_url (enclosure);
+ 	g_object_get (msg, "status-code", &status, NULL);
+ 
+@@ -253,17 +253,16 @@ enclosure_downloaded (SoupSession *sessi
+ 		file = msg_to_internal_file (enclosure, msg, &error);
+ 
+ 		if (file != NULL)
+-			g_simple_async_result_set_op_res_gpointer (result, file, g_object_unref);
++			g_task_return_pointer (task, file, g_object_unref);
+ 		else
+-			g_simple_async_result_take_error (result, error);
++			g_task_return_error (task, error);
+ 	}
+ 	else {
+-		g_simple_async_result_set_error (result, FEED_ENCLOSURE_ERROR, FEED_ENCLOSURE_FETCH_ERROR,
++		g_task_return_new_error (task, FEED_ENCLOSURE_ERROR, FEED_ENCLOSURE_FETCH_ERROR,
+ 						 "Unable to download from %s", url);
+ 	}
+ 
+-	g_simple_async_result_complete_in_idle (result);
+-	g_object_unref (result);
++	g_object_unref (task);
+ }
+ 
+ /**
+@@ -277,14 +276,14 @@ enclosure_downloaded (SoupSession *sessi
+ void
+ grss_feed_enclosure_fetch_async (GrssFeedEnclosure *enclosure, GAsyncReadyCallback callback, gpointer user_data)
+ {
+-	GSimpleAsyncResult *result;
++	GTask *task;
+ 	SoupMessage *msg;
+ 	SoupSession *session;
+ 
+-	result = g_simple_async_result_new (G_OBJECT (enclosure), callback, user_data, grss_feed_enclosure_fetch_async);
+-	session = soup_session_async_new ();
++	task = g_task_new (enclosure, NULL, callback, user_data);
++	session = soup_session_new ();
+ 	msg = soup_message_new ("GET", grss_feed_enclosure_get_url (enclosure));
+-	soup_session_queue_message (session, msg, enclosure_downloaded, result);
++	soup_session_queue_message (session, msg, enclosure_downloaded, task);
+ }
+ 
+ /**
+@@ -303,8 +302,5 @@ grss_feed_enclosure_fetch_async (GrssFee
+ GFile*
+ grss_feed_enclosure_fetch_finish (GrssFeedEnclosure *enclosure, GAsyncResult *res, GError **error)
+ {
+-	if (g_simple_async_result_propagate_error (G_SIMPLE_ASYNC_RESULT (res), error))
+-		return NULL;
+-	else
+-		return (GFile*) g_simple_async_result_get_op_res_gpointer (G_SIMPLE_ASYNC_RESULT (res));
++	return g_task_propagate_pointer (G_TASK (res), error);
+ }
+diff -Naurp libgrss-0.7.0.orig/src/feed-item.c libgrss-0.7.0/src/feed-item.c
+--- libgrss-0.7.0.orig/src/feed-item.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feed-item.c	2019-04-10 00:02:49.610543227 -0500
+@@ -136,7 +136,6 @@ grss_feed_item_new (GrssFeedChannel *par
+ 
+ 	item = GRSS_FEED_ITEM (g_object_new (GRSS_FEED_ITEM_TYPE, NULL));
+ 	item->priv->parent = parent;
+-	item->priv->pub_time = time (NULL);
+ 	return item;
+ }
+ 
+diff -Naurp libgrss-0.7.0.orig/src/feed-parser.c libgrss-0.7.0/src/feed-parser.c
+--- libgrss-0.7.0.orig/src/feed-parser.c	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/feed-parser.c	2019-04-09 23:31:31.714083101 -0500
+@@ -65,6 +65,9 @@ grss_feed_parser_error_quark ()
+ static void
+ grss_feed_parser_finalize (GObject *object)
+ {
++   GrssFeedParser *parser = GRSS_FEED_PARSER (object);
++   g_slist_free_full (parser->priv->handlers, g_object_unref);
++
+ 	G_OBJECT_CLASS (grss_feed_parser_parent_class)->finalize (object);
+ }
+ 
+@@ -89,24 +92,26 @@ feed_parsers_get_list (GrssFeedParser *p
+ 	FeedHandler *feed;
+ 	NSHandler *ns;
+ 
+-	ns = ns_handler_new ();
+-
+ 	if (parser->priv->handlers == NULL) {
+ 		/*
+-			TODO	Parsers may be dinamically loaded and managed as external plugins
++			TODO	Parsers may be dynamically loaded and managed as external plugins
+ 		*/
+ 
++      ns = ns_handler_new (); 
++
+ 		feed = FEED_HANDLER (feed_rss_handler_new ());
+-		feed_handler_set_ns_handler (feed, ns);
++		feed_handler_set_ns_handler (feed, g_object_ref (ns));
+ 		parser->priv->handlers = g_slist_append (parser->priv->handlers, feed);
+ 
+ 		feed = FEED_HANDLER (feed_atom_handler_new ());					/* Must be before pie */
+-		feed_handler_set_ns_handler (feed, ns);
++		feed_handler_set_ns_handler (feed, g_object_ref (ns));
+ 		parser->priv->handlers = g_slist_append (parser->priv->handlers, feed);
+ 
+ 		feed = FEED_HANDLER (feed_pie_handler_new ());
+-		feed_handler_set_ns_handler (feed, ns);
++		feed_handler_set_ns_handler (feed, g_object_ref (ns));
+ 		parser->priv->handlers = g_slist_append (parser->priv->handlers, feed);
++
++      g_object_unref (ns);
+ 	}
+ 
+ 	return parser->priv->handlers;
+diff -Naurp libgrss-0.7.0.orig/src/feed-pie-handler.c libgrss-0.7.0/src/feed-pie-handler.c
+--- libgrss-0.7.0.orig/src/feed-pie-handler.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feed-pie-handler.c	2019-04-10 00:24:39.979851646 -0500
+@@ -62,7 +62,11 @@ feed_pie_handler_error_quark ()
+ static void
+ feed_pie_handler_finalize (GObject *object)
+ {
+-	G_OBJECT_CLASS (feed_pie_handler_parent_class)->finalize (object);
++	FeedPieHandler *self = FEED_PIE_HANDLER (object);
++
++   g_clear_object (&self->priv->handler);
++   
++   G_OBJECT_CLASS (feed_pie_handler_parent_class)->finalize (object);
+ }
+ 
+ static void
+@@ -326,7 +330,7 @@ feed_pie_handler_parse (FeedHandler *sel
+ 		cur = cur->next;
+ 
+ 	while (TRUE) {
+-		if (xmlStrcmp (cur->name, BAD_CAST"feed")) {
++		if (!cur || xmlStrcmp (cur->name, BAD_CAST"feed")) {
+ 			g_set_error (error, FEED_PIE_HANDLER_ERROR, FEED_PIE_HANDLER_PARSE_ERROR, "Could not find Atom/PIE header!");
+ 			break;
+ 		}
+diff -Naurp libgrss-0.7.0.orig/src/feed-rss-formatter.c libgrss-0.7.0/src/feed-rss-formatter.c
+--- libgrss-0.7.0.orig/src/feed-rss-formatter.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feed-rss-formatter.c	2019-04-09 23:35:19.729038185 -0500
+@@ -41,8 +41,7 @@ feed_rss_formatter_format (GrssFeedForma
+ 	time_t date;
+ 	GList *iter;
+ 	GList *items;
+-        GrssPerson *person;
+-	const GList *list;
++   GrssPerson *person;
+ 	GString *text;
+ 	GrssFeedChannel *channel;
+ 	GrssFeedItem *item;
+diff -Naurp libgrss-0.7.0.orig/src/feed-rss-handler.c libgrss-0.7.0/src/feed-rss-handler.c
+--- libgrss-0.7.0.orig/src/feed-rss-handler.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feed-rss-handler.c	2019-04-10 00:26:49.126809861 -0500
+@@ -75,6 +75,11 @@ feed_rss_handler_error_quark ()
+ static void
+ feed_rss_handler_finalize (GObject *object)
+ {
++
++   FeedRssHandler *self = FEED_RSS_HANDLER (object);
++
++   g_clear_object (&self->priv->handler);
++
+ 	G_OBJECT_CLASS (feed_rss_handler_parent_class)->finalize (object);
+ }
+ 
+@@ -452,16 +457,17 @@ feed_rss_handler_parse (FeedHandler *sel
+ 	while (cur && xmlIsBlankNode (cur))
+ 		cur = cur->next;
+ 
+-	if (!xmlStrcmp (cur->name, BAD_CAST"rss")) {
++	if (cur && !xmlStrcmp (cur->name, BAD_CAST"rss")) {
+ 		cur = cur->xmlChildrenNode;
+ 		rdf = FALSE;
+ 	}
+-	else if (!xmlStrcmp (cur->name, BAD_CAST"rdf") ||
+-	         !xmlStrcmp (cur->name, BAD_CAST"RDF")) {
++	else if (cur &&
++      (!xmlStrcmp (cur->name, BAD_CAST"rdf") ||
++	    !xmlStrcmp (cur->name, BAD_CAST"RDF"))) {
+ 		cur = cur->xmlChildrenNode;
+ 		rdf = TRUE;
+ 	}
+-	else if (!xmlStrcmp (cur->name, BAD_CAST"Channel")) {
++	else if (cur && !xmlStrcmp (cur->name, BAD_CAST"Channel")) {
+ 		rdf = FALSE;
+ 	}
+ 	else {
+diff -Naurp libgrss-0.7.0.orig/src/feeds-group.c libgrss-0.7.0/src/feeds-group.c
+--- libgrss-0.7.0.orig/src/feeds-group.c	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/feeds-group.c	2019-04-10 00:37:07.985868698 -0500
+@@ -238,7 +238,7 @@ grss_feeds_group_parse_file (GrssFeedsGr
+  * @error: location for eventual errors.
+  *
+  * Creates a new file with the list of @channels rappresented in the required
+- * @format. It a file already exists at the @uri location, it is overwritten.
++ * @format. It the file already exists at the @uri location, it is overwritten.
+  *
+  * Returns: %TRUE if the file is created correctly, or %FALSE if an error
+  * occours and @error is set.
+@@ -273,7 +273,7 @@ grss_feeds_group_export_file (GrssFeedsG
+ 			}
+ 
+ 			file = g_file_new_for_uri (uri);
+-			stream = g_file_append_to (file, G_FILE_CREATE_NONE, NULL, &err);
++			stream = g_file_replace (file, NULL, TRUE, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &err);
+ 
+ 			if (stream == NULL) {
+ 				g_propagate_error (error, err);
+diff -Naurp libgrss-0.7.0.orig/src/feeds-pool.c libgrss-0.7.0/src/feeds-pool.c
+--- libgrss-0.7.0.orig/src/feeds-pool.c	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/feeds-pool.c	2019-04-10 00:53:11.331558847 -0500
+@@ -177,7 +177,7 @@ grss_feeds_pool_init (GrssFeedsPool *nod
+ 	node->priv = FEEDS_POOL_GET_PRIVATE (node);
+ 	memset (node->priv, 0, sizeof (GrssFeedsPoolPrivate));
+ 	node->priv->parser = grss_feed_parser_new ();
+-	node->priv->soupsession = soup_session_async_new ();
++	node->priv->soupsession = soup_session_new ();
+ }
+ 
+ /**
+@@ -291,19 +291,21 @@ feed_downloaded (GObject *source, GAsync
+ {
+ 	GList *items;
+ 	GrssFeedChannelWrap *feed;
++   GError *error = NULL;
+ 
+ 	feed = (GrssFeedChannelWrap*) user_data;
+ 	if (feed->pool->priv->running == FALSE)
+ 		return;
+ 
+-	items = grss_feed_channel_fetch_all_finish (GRSS_FEED_CHANNEL (source), res, NULL);
++	items = grss_feed_channel_fetch_all_finish (GRSS_FEED_CHANNEL (source), res, &error);
+ 
+-	if (items != NULL)
++	if (error == NULL)
+ 		g_signal_emit (feed->pool, signals [FEED_READY], 0, feed->channel, items, NULL);
+ 	else
+ 		g_signal_emit (feed->pool, signals [FEED_FAIL], 0, feed->channel, NULL);
+ 
+ 	feed->next_fetch = time (NULL) + (grss_feed_channel_get_update_interval (feed->channel) * 60);
++   g_clear_error (&error);
+ }
+ 
+ static gboolean
+@@ -324,9 +326,11 @@ fetch_feeds (gpointer data)
+ 
+ 	for (iter = pool->priv->feeds_list; iter; iter = g_list_next (iter)) {
+ 		feed = (GrssFeedChannelWrap*) iter->data;
+-		if (feed->next_fetch <= now)
++		if (feed->next_fetch <= now) {
++         g_signal_emit (feed->pool, signals[FEED_FETCHING], 0, feed->channel);
+ 			grss_feed_channel_fetch_all_async (feed->channel, feed_downloaded, feed);
+-	}
++	   }
++   }
+ 
+ 	return TRUE;
+ }
+diff -Naurp libgrss-0.7.0.orig/src/feeds-publisher.c libgrss-0.7.0/src/feeds-publisher.c
+--- libgrss-0.7.0.orig/src/feeds-publisher.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/feeds-publisher.c	2019-04-10 00:34:22.232723193 -0500
+@@ -102,7 +102,7 @@ enum {
+ G_DEFINE_TYPE (GrssFeedsPublisher, grss_feeds_publisher, G_TYPE_OBJECT);
+ 
+ static GQuark
+-feeds_publisher_error_quark ()
++feeds_publisher_error_quark (void)
+ {
+ 	return g_quark_from_static_string ("feeds_publisher_error");
+ }
+@@ -219,7 +219,7 @@ grss_feeds_publisher_init (GrssFeedsPubl
+  * Returns: a new #GrssFeedsPublisher.
+  */
+ GrssFeedsPublisher*
+-grss_feeds_publisher_new ()
++grss_feeds_publisher_new (void)
+ {
+ 	return g_object_new (FEEDS_PUBLISHER_TYPE, NULL);
+ }
+@@ -624,7 +624,7 @@ remove_client_to_topic (GrssFeedsPublish
+ }
+ 
+ static gchar*
+-random_string ()
++random_string (void)
+ {
+ 	register int i;
+ 	gchar str [50];
+@@ -663,7 +663,7 @@ verification_message_for_client (RemoteS
+ 			break;
+ 	}
+ 
+-	body = g_strdup_printf ("%s?hub.mode=%s&hub.topic=%s&hub.challenge=%s&hub.lease_seconds=%lld",
++	body = g_strdup_printf ("%s?hub.mode=%s&hub.topic=%s&hub.challenge=%s&hub.lease_seconds=%ld",
+ 				client->callback, mode, client->topic, client->challenge, client->lease_interval);
+ 
+ 	ret = soup_message_new ("GET", body);
+@@ -840,12 +840,18 @@ handle_incoming_requests_cb (SoupServer
+ 			}
+ 		}
+ 		else if (strcmp (mode, "unsubscribe") == 0) {
+-			client = search_subscriber_by_topic_and_callback (pub, topic, callback);
+-			if (client != NULL)
+-				client->status = REMOTE_UNSUBSCRIBING;
++			if (callback == NULL) {
++            soup_message_set_status (msg, 400);
++         }
++         else {
++            client = search_subscriber_by_topic_and_callback (pub, topic, callback);
++
++            if (client != NULL)
++               client->status = REMOTE_UNSUBSCRIBING;
++         }
+ 		}
+ 
+-		if (client != NULL) {
++		if (client != NULL && verify != NULL) {
+ 			verify_msg = verification_message_for_client (client);
+ 
+ 			if (strcmp (verify, "sync") == 0) {
+@@ -859,6 +865,9 @@ handle_incoming_requests_cb (SoupServer
+ 				soup_message_set_status (msg, 202);
+ 			}
+ 		}
++      else if (client != NULL) {
++         soup_message_set_status (msg, 400);
++      }
+ 	}
+ 
+ 	g_strfreev (contents);
+@@ -869,7 +878,7 @@ close_server (GrssFeedsPublisher *pub)
+ {
+ 	if (pub->priv->server != NULL) {
+ 		soup_server_remove_handler (pub->priv->server, NULL);
+-		soup_server_quit (pub->priv->server);
++		soup_server_disconnect (pub->priv->server);
+ 		g_object_unref (pub->priv->server);
+ 		pub->priv->server = NULL;
+ 	}
+@@ -881,14 +890,15 @@ create_and_run_server (GrssFeedsPublishe
+ 	SoupAddress *soup_addr;
+ 
+ 	if (pub->priv->soupsession == NULL)
+-		pub->priv->soupsession = soup_session_async_new ();
++		pub->priv->soupsession = soup_session_new ();
+ 
+ 	soup_addr = soup_address_new_any (SOUP_ADDRESS_FAMILY_IPV4, pub->priv->port);
+ 	pub->priv->server = soup_server_new ("port", pub->priv->port, "interface", soup_addr, NULL);
+ 	g_object_unref (soup_addr);
+ 
+ 	soup_server_add_handler (pub->priv->server, NULL, handle_incoming_requests_cb, pub, NULL);
+-	soup_server_run_async (pub->priv->server);
++   /* TODO - Add IPv6 support - Send PR upstream */
++	soup_server_listen_all (pub->priv->server, pub->priv->port, SOUP_SERVER_LISTEN_IPV4_ONLY, NULL);
+ }
+ 
+ /**
+diff -Naurp libgrss-0.7.0.orig/src/feeds-publisher.h libgrss-0.7.0/src/feeds-publisher.h
+--- libgrss-0.7.0.orig/src/feeds-publisher.h	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/feeds-publisher.h	2019-04-10 00:34:54.054712602 -0500
+@@ -45,9 +45,9 @@ typedef struct {
+ 	void (*delete_subscription) (GrssFeedsPublisher *pub, GrssFeedChannel *topic, gchar *callback);
+ } GrssFeedsPublisherClass;
+ 
+-GType			grss_feeds_publisher_get_type		() G_GNUC_CONST;
++GType			grss_feeds_publisher_get_type		(void) G_GNUC_CONST;
+ 
+-GrssFeedsPublisher*	grss_feeds_publisher_new		();
++GrssFeedsPublisher*	grss_feeds_publisher_new		(void);
+ 
+ gchar*			grss_feeds_publisher_format_content	(GrssFeedsPublisher *pub, GrssFeedChannel *channel, GList *items, GError **error);
+ gboolean		grss_feeds_publisher_publish_web	(GrssFeedsPublisher *pub, GrssFeedChannel *channel, GList *items, const gchar *id, GError **error);
+diff -Naurp libgrss-0.7.0.orig/src/feeds-subscriber.c libgrss-0.7.0/src/feeds-subscriber.c
+--- libgrss-0.7.0.orig/src/feeds-subscriber.c	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/feeds-subscriber.c	2019-04-09 23:47:50.782967714 -0500
+@@ -389,7 +389,7 @@ close_server (GrssFeedsSubscriber *sub)
+ {
+ 	if (sub->priv->server != NULL) {
+ 		unregister_handlers (sub);
+-		soup_server_quit (sub->priv->server);
++		soup_server_disconnect (sub->priv->server);
+ 		g_object_unref (sub->priv->server);
+ 		sub->priv->server = NULL;
+ 	}
+@@ -514,7 +514,7 @@ init_run_server (GrssFeedsSubscriber *su
+ 	GInetAddress *addr;
+ 
+ 	if (sub->priv->soupsession == NULL)
+-		sub->priv->soupsession = soup_session_async_new ();
++		sub->priv->soupsession = soup_session_new ();
+ 
+ 	/*
+ 		Flow:
+diff -Naurp libgrss-0.7.0.orig/src/Makefile.am libgrss-0.7.0/src/Makefile.am
+--- libgrss-0.7.0.orig/src/Makefile.am	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/Makefile.am	2019-04-10 00:22:54.753625871 -0500
+@@ -1,4 +1,4 @@
+-SUBDIRS = tests
++SUBDIRS = . tests
+ 
+ NULL =
+ 
+@@ -128,6 +128,8 @@ introspection_sources = \
+ 
+ Grss-0.7.gir: libgrss.la
+ Grss_0_7_gir_INCLUDES = GObject-2.0 Gio-2.0 Soup-2.4 libxml2-2.0
++Grss_0_7_gir_C_INCLUDES = libgrss.h
++Grss_0_7_gir_EXPORT_PACKAGES = libgrss_
+ Grss_0_7_gir_CFLAGS = $(INCLUDES)
+ Grss_0_7_gir_LIBS = libgrss.la
+ Grss_0_7_gir_FILES = $(introspection_sources)
+diff -Naurp libgrss-0.7.0.orig/src/ns-handler.c libgrss-0.7.0/src/ns-handler.c
+--- libgrss-0.7.0.orig/src/ns-handler.c	2015-07-18 16:43:44.000000000 -0500
++++ libgrss-0.7.0/src/ns-handler.c	2019-04-09 23:48:42.071534115 -0500
+@@ -502,7 +502,7 @@ ns_handler_init (NSHandler *node)
+ 	memset (node->priv, 0, sizeof (NSHandlerPrivate));
+ 
+ 	node->priv->href_handlers = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
+-	node->priv->prefix_handlers = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
++	node->priv->prefix_handlers = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
+ 
+ 	nsh = g_new0 (InternalNsHandler, 1);
+ 	nsh->handle_channel = ns_admin_channel;
+@@ -545,7 +545,7 @@ ns_handler_init (NSHandler *node)
+ 	nsh->handle_item = ns_dc_item;
+ 	g_hash_table_insert (node->priv->prefix_handlers, "dc", nsh);
+ 	g_hash_table_insert (node->priv->href_handlers, "http://purl.org/dc/elements/1.1/", nsh);
+-	g_hash_table_insert (node->priv->href_handlers, "http://purl.org/dc/elements/1.0/", nsh);
++	g_hash_table_insert (node->priv->href_handlers, "http://purl.org/dc/elements/1.0/", g_memdup (nsh, sizeof(InternalNsHandler)));
+ 
+ 	nsh = g_new0 (InternalNsHandler, 1);
+ 	nsh->handle_channel = NULL;
+diff -Naurp libgrss-0.7.0.orig/src/tests/formatter.c libgrss-0.7.0/src/tests/formatter.c
+--- libgrss-0.7.0.orig/src/tests/formatter.c	2015-07-18 15:22:27.000000000 -0500
++++ libgrss-0.7.0/src/tests/formatter.c	2019-04-09 23:50:47.141354039 -0500
+@@ -66,6 +66,9 @@ test_format_atom ()
+ 
+ 	formatter = grss_feed_atom_formatter_new ();
+ 	do_the_job (GRSS_FEED_FORMATTER (formatter));
++
++   grss_feed_formatter_reset (GRSS_FEED_FORMATTER (formatter));
++   g_object_unref (formatter);
+ }
+ 
+ static void
+@@ -75,6 +78,9 @@ test_format_rss ()
+ 
+ 	formatter = grss_feed_rss_formatter_new ();
+ 	do_the_job (GRSS_FEED_FORMATTER (formatter));
++
++   grss_feed_formatter_reset (GRSS_FEED_FORMATTER (formatter));
++   g_object_unref (formatter);
+ }
+ 
+ int
+diff -Naurp libgrss-0.7.0.orig/src/utils.c libgrss-0.7.0/src/utils.c
+--- libgrss-0.7.0.orig/src/utils.c	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/utils.c	2019-04-10 00:33:27.328014093 -0500
+@@ -559,7 +559,7 @@ detect_internet_address ()
+ 		return NULL;
+ 
+ 	sockfd = socket (AF_INET, SOCK_DGRAM, 0);
+-	if (!sockfd)
++	if (sockfd < 0)
+ 		return NULL;
+ 
+ 	if (connect (sockfd, (struct sockaddr*) &serv_add, sizeof (serv_add)) == -1) {
+diff -Naurp libgrss-0.7.0.orig/src/utils.h libgrss-0.7.0/src/utils.h
+--- libgrss-0.7.0.orig/src/utils.h	2015-07-15 15:59:07.000000000 -0500
++++ libgrss-0.7.0/src/utils.h	2019-04-10 00:05:27.316424768 -0500
+@@ -33,6 +33,7 @@
+ #include <unistd.h>
+ #include <errno.h>
+ #include <sys/types.h>
++#include <sys/socket.h>
+ #include <sys/stat.h>
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
