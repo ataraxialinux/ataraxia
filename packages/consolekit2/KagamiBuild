@@ -1,0 +1,28 @@
+# Description: Framework for defining and tracking users, login sessions, and seats
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib acl eudev dbus-glib libx11 polkit pm-utils
+
+name=consolekit2
+version=1.2.1
+release=1
+source=("https://github.com/Consolekit2/ConsoleKit2/releases/download/$version/ConsoleKit2-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/ConsoleKit2-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/consolekit \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-rundir=/run \
+		--localstatedir=/var \
+		--with-dbus-services=/usr/share/dbus-1/services \
+		--with-dbus-sys=/usr/share/dbus-1/system.d \
+		--with-xinitrc-dir=/etc/X11/xinit/xinitrc.d \
+		--without-systemdsystemunitdir \
+		--enable-polkit \
+		--enable-udev-acl
+	make
+	make DESTDIR="$PKG" install
+}
