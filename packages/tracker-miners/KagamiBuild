@@ -1,0 +1,19 @@
+# Description: Collection of data extractors for Tracker/Nepomuk
+# URL:         https://wiki.gnome.org/Projects/Tracker
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gst-plugins-base tracker exempi gexiv2 ffmpeg flac icu libexif libgrss libgxps poppler
+# Section:     gnome
+
+name=tracker-miners
+version=2.2.2
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
