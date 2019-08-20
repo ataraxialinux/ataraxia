@@ -1,0 +1,20 @@
+# Description: GNOME's main interface to configure various aspects of the desktop
+# URL:         https://gitlab.gnome.org/GNOME/gnome-control-center
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson accountsservice clutter-gtk colord-gtk gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality shared-mime-info gnome-bluetooth
+# Section:     gnome
+
+name=gnome-control-center
+version=3.32.2
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dkerberos=disabled
+	ninja
+	DESTDIR="$PKG" ninja install
+}
