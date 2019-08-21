@@ -1,0 +1,18 @@
+# Description: Symas Lightning Memory-Mapped Database
+# URL:         https://symas.com/mdb
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=lmdb
+version=0.9.24
+release=1
+options=('~emptydirs')
+source=("https://github.com/LMDB/lmdb/archive/LMDB_${version}.tar.gz")
+
+build() {
+	install -dm755 "$PKG"/usr/{bin,lib,include,man/man1,share}
+
+	cd "$SRC"/LMDB_${version}/libraries/liblmdb
+	make
+	make DESTDIR="$PKG" prefix=/usr install
+}
