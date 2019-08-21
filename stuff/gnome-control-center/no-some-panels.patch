@@ -1,0 +1,58 @@
+diff -ruN gnome-control-center-3.32.2-orig/meson.build gnome-control-center-3.32.2/meson.build
+--- gnome-control-center-3.32.2-orig/meson.build	2019-05-24 11:50:58.000000000 -0700
++++ gnome-control-center-3.32.2/meson.build	2019-08-21 08:24:39.856074784 -0700
+@@ -144,26 +144,6 @@
+   dependency('gtk+-3.0', version: '>= 3.22.20')
+ ]
+ 
+-# Check for CUPS 1.4 or newer
+-cups_dep = dependency('cups', version : '>= 1.4', required: false)
+-assert(cups_dep.found(), 'CUPS 1.4 or newer not found')
+-
+-# https://bugzilla.gnome.org/show_bug.cgi?id=696766
+-cups_cflags = []
+-if cups_dep.version().version_compare('>= 1.6')
+-  cups_cflags += '-D_PPD_DEPRECATED=""'
+-endif
+-
+-# cups headers
+-check_headers = [
+-  ['HAVE_CUPS_CUPS_H', 'cups/cups.h'],
+-  ['HAVE_CUPS_PPD_H', 'cups/ppd.h']
+-]
+-
+-foreach header: check_headers
+-  assert(cc.has_header(header[1], args: cups_cflags), 'CUPS headers not found: ' + header[1])
+-endforeach
+-
+ # Optional dependency for the user accounts panel
+ enable_cheese = get_option('cheese')
+ if enable_cheese
+diff -ruN gnome-control-center-3.32.2-orig/panels/meson.build gnome-control-center-3.32.2/panels/meson.build
+--- gnome-control-center-3.32.2-orig/panels/meson.build	2019-05-24 11:50:58.000000000 -0700
++++ gnome-control-center-3.32.2/panels/meson.build	2019-08-21 08:24:32.288064059 -0700
+@@ -12,14 +12,12 @@
+   'notifications',
+   'online-accounts',
+   'power',
+-  'printers',
+   'privacy',
+   'region',
+   'search',
+   'sharing',
+   'sound',
+-  'universal-access',
+-  'user-accounts'
++  'universal-access'
+ ]
+ 
+ if host_is_linux
+diff -ruN gnome-control-center-3.32.2-orig/tests/meson.build gnome-control-center-3.32.2/tests/meson.build
+--- gnome-control-center-3.32.2-orig/tests/meson.build	2019-05-24 11:51:00.000000000 -0700
++++ gnome-control-center-3.32.2/tests/meson.build	2019-08-21 08:25:55.466597048 -0700
+@@ -6,5 +6,4 @@
+ 
+ subdir('interactive-panels')
+ 
+-subdir('printers')
+ subdir('info')
