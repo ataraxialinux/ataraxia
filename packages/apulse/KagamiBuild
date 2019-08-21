@@ -15,7 +15,6 @@ build() {
 	cd build
 	cmake "$SRC"/$name-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-Wno-dev -G Ninja
 	ninja
@@ -27,4 +26,7 @@ build() {
 
 	mkdir -p "$PKG"/usr/include
 	cp -av "$SRC"/$name-$version/3rdparty/pulseaudio-headers/pulse "$PKG"/usr/include
+
+	mv "$PKG"/usr/lib/apulse/* "$PKG"/usr/lib
+	rm -rf "$PKG"/usr/lib/apulse
 }
