@@ -44,5 +44,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm644 "$STUFF"/cups/samba "$PKG"/etc/logrotate.d/samba
+	install -Dm644 "$STUFF"/samba/logrotate "$PKG"/etc/logrotate.d/samba
+
+	for svc in smbd nmdb; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
 }
