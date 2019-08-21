@@ -1,0 +1,21 @@
+# Description: A library for manipulating block devices
+# URL:         https://github.com/rhinstaller/libblockdev
+# Depends on:  gobject-introspection libbytesize yaml parted volume_key
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libblockdev
+version=2.22
+release=1
+source=("https://github.com/rhinstaller/libblockdev/archive/$version-1.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version-1
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--without-nvdimm
+	make
+	make DESTDIR="$PKG" install
+}
