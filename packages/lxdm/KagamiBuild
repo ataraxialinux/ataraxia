@@ -1,0 +1,31 @@
+# Description: Lightweight X11 Display Manager
+# URL:         https://lxde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool xorg-server gtk
+# Section:     x11
+
+name=lxdm
+version=0.5.3
+release=1
+source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lxdm/execinfo.patch
+	patch -Np1 -i "$STUFF"/lxdm/fix-msghdr-usage.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lxdm \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--without-pam \
+		--enable-gtk3
+	make
+	make DESTDIR="$PKG" install
+
+	for svc in lxdm; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+}
