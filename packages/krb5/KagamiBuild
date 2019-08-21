@@ -1,0 +1,41 @@
+# Description: The Kerberos network authentication system
+# URL:         https://web.mit.edu/kerberos/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl libressl e2fsprogs
+# Section:     admin
+
+name=krb5
+version=1.17
+release=1
+options=('~emptydirs')
+backup=('etc/krb5.conf'
+	'var/lib/krb5kdc/kdc.conf')
+source=("https://kerberos.org/dist/krb5/$version/krb5-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/krb5/libressl.patch
+
+	cd src
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var/lib \
+		--with-system-et \
+		--with-system-ss \
+		--with-system-verto=no \
+		--enable-dns-for-realm \
+		--enable-shared \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/var/log/kadmind
+	mkdir -p "$PKG"/var/log/krb5kdc
+
+	for svc in kadmind krb5kdc; do
+		install -Dm0755 "$STUFF"/svc/$svc "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/svc/$svc-log "$PKG"/etc/service/$svc/log/run
+	done
+}

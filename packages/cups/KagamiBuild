@@ -12,7 +12,8 @@ backup=('etc/cups/cupsd.conf'
 	'etc/cups/printers.conf'
 	'etc/cups/classes.conf'
 	'etc/cups/cups-files.conf'
-	'etc/cups/subscriptions.conf')
+	'etc/cups/subscriptions.conf'
+	'etc/logrotate.d/cups')
 source=("https://github.com/apple/cups/releases/download/v$version/$name-$version-source.tar.gz")
 
 build() {
@@ -68,4 +69,6 @@ build() {
 	find "$PKG"/usr/share/cups/model -name "*.ppd" | xargs gzip -n9f
 
 	echo "ServerName /run/cups/cups.sock" > "$PKG"/etc/cups/client.conf
+
+	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
 }
