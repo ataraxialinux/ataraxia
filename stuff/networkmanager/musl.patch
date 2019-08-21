@@ -1,0 +1,284 @@
+diff -ruN NetworkManager-1.20.0-orig/libnm-core/nm-json.c NetworkManager-1.20.0/libnm-core/nm-json.c
+--- NetworkManager-1.20.0-orig/libnm-core/nm-json.c	2019-07-26 05:46:12.000000000 -0700
++++ NetworkManager-1.20.0/libnm-core/nm-json.c	2019-08-21 06:54:09.524417283 -0700
+@@ -23,6 +23,10 @@
+ 
+ #include <dlfcn.h>
+ 
++#ifndef RTLD_DEEPBIND
++#define RTLD_DEEPBIND 0
++#endif
++
+ void *_nm_jansson_json_object_iter_value;
+ void *_nm_jansson_json_object_key_to_iter;
+ void *_nm_jansson_json_integer;
+diff -ruN NetworkManager-1.20.0-orig/libnm-core/nm-utils.h NetworkManager-1.20.0/libnm-core/nm-utils.h
+--- NetworkManager-1.20.0-orig/libnm-core/nm-utils.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/libnm-core/nm-utils.h	2019-08-21 06:57:44.098285135 -0700
+@@ -29,7 +29,11 @@
+ #include <netinet/in.h>
+ 
+ /* For ETH_ALEN and INFINIBAND_ALEN */
++#if defined(__GLIBC__)
+ #include <linux/if_ether.h>
++#else
++#define ETH_ALEN	6		/* Octets in one ethernet addr	 */
++#endif
+ #include <linux/if_infiniband.h>
+ 
+ #include "nm-core-enum-types.h"
+diff -ruN NetworkManager-1.20.0-orig/shared/n-dhcp4/src/n-dhcp4-c-probe.c NetworkManager-1.20.0/shared/n-dhcp4/src/n-dhcp4-c-probe.c
+--- NetworkManager-1.20.0-orig/shared/n-dhcp4/src/n-dhcp4-c-probe.c	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/n-dhcp4/src/n-dhcp4-c-probe.c	2019-08-21 07:00:52.351931122 -0700
+@@ -362,7 +362,12 @@
+         seed16v[1] = (u64 >> 16) ^ (u64 >>  0);
+         seed16v[2] = (u64 >> 32) ^ (u64 >> 16);
+ 
+-        r = seed48_r(seed16v, &config->entropy);
++#ifdef __GLIBC__
++         r = seed48_r(seed16v, &config->entropy);
++         c_assert(!r);
++#else
++        memcpy(config->entropy, seed16v, sizeof seed16v);
++#endif
+         c_assert(!r);
+ }
+ 
+@@ -377,10 +382,14 @@
+  */
+ uint32_t n_dhcp4_client_probe_config_get_random(NDhcp4ClientProbeConfig *config) {
+         long int result;
+-        int r;
+-
+-        r = mrand48_r(&config->entropy, &result);
+-        c_assert(!r);
++#ifdef __GLIBC__
++         int r;
++ 
++         r = mrand48_r(&config->entropy, &result);
++         c_assert(!r);
++#else
++        result = jrand48(config->entropy);
++#endif
+ 
+         return result;
+ };
+diff -ruN NetworkManager-1.20.0-orig/shared/n-dhcp4/src/n-dhcp4-private.h NetworkManager-1.20.0/shared/n-dhcp4/src/n-dhcp4-private.h
+--- NetworkManager-1.20.0-orig/shared/n-dhcp4/src/n-dhcp4-private.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/n-dhcp4/src/n-dhcp4-private.h	2019-08-21 07:01:17.018926742 -0700
+@@ -259,7 +259,11 @@
+         bool inform_only;
+         bool init_reboot;
+         struct in_addr requested_ip;
+-        struct drand48_data entropy;    /* entropy pool */
++#ifdef __GLIBC__
++         struct drand48_data entropy;    /* entropy pool */
++#else
++        unsigned short entropy[3];      /* entropy pool */
++#endif
+         uint64_t ms_start_delay;        /* max ms to wait before starting probe */
+         NDhcp4ClientProbeOption *options[UINT8_MAX + 1];
+         int8_t request_parameters[UINT8_MAX + 1];
+diff -ruN NetworkManager-1.20.0-orig/shared/systemd/src/basic/process-util.c NetworkManager-1.20.0/shared/systemd/src/basic/process-util.c
+--- NetworkManager-1.20.0-orig/shared/systemd/src/basic/process-util.c	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/systemd/src/basic/process-util.c	2019-08-21 06:59:34.310884893 -0700
+@@ -19,6 +19,9 @@
+ #include <sys/wait.h>
+ #include <syslog.h>
+ #include <unistd.h>
++#ifndef __GLIBC__
++#include <pthread.h>
++#endif
+ #if 0 /* NM_IGNORED */
+ #if HAVE_VALGRIND_VALGRIND_H
+ #include <valgrind/valgrind.h>
+@@ -1105,11 +1108,13 @@
+         cached_pid = CACHED_PID_UNSET;
+ }
+ 
++#ifdef __GLIBC__
+ /* We use glibc __register_atfork() + __dso_handle directly here, as they are not included in the glibc
+  * headers. __register_atfork() is mostly equivalent to pthread_atfork(), but doesn't require us to link against
+  * libpthread, as it is part of glibc anyway. */
+ extern int __register_atfork(void (*prepare) (void), void (*parent) (void), void (*child) (void), void *dso_handle);
+ extern void* __dso_handle _weak_;
++#endif
+ 
+ pid_t getpid_cached(void) {
+         static bool installed = false;
+@@ -1138,7 +1143,11 @@
+                          * only half-documented (glibc doesn't document it but LSB does — though only superficially)
+                          * we'll check for errors only in the most generic fashion possible. */
+ 
+-                        if (__register_atfork(NULL, NULL, reset_cached_pid, __dso_handle) != 0) {
++                        #ifdef __GLIBC__
++                            if (__register_atfork(NULL, NULL, reset_cached_pid, __dso_handle) != 0) {
++                        #else
++                            if (pthread_atfork(NULL, NULL, reset_cached_pid) != 0) {
++                        #endif
+                                 /* OOM? Let's try again later */
+                                 cached_pid = CACHED_PID_UNSET;
+                                 return new_pid;
+diff -ruN NetworkManager-1.20.0-orig/shared/systemd/src/basic/socket-util.h NetworkManager-1.20.0/shared/systemd/src/basic/socket-util.h
+--- NetworkManager-1.20.0-orig/shared/systemd/src/basic/socket-util.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/systemd/src/basic/socket-util.h	2019-08-21 06:58:21.685248090 -0700
+@@ -13,6 +13,11 @@
+ #include <sys/socket.h>
+ #include <sys/types.h>
+ #include <sys/un.h>
++#if !defined(__GLIBC__)
++/* SIOCGSTAMPNS from linux/asm-generic.h 
++ * for src/systemd/src/libsystemd-network/sd-lldp.c */
++#include <linux/sockios.h>
++#endif
+ 
+ #include "macro.h"
+ #include "missing_socket.h"
+diff -ruN NetworkManager-1.20.0-orig/shared/systemd/src/basic/sort-util.h NetworkManager-1.20.0/shared/systemd/src/basic/sort-util.h
+--- NetworkManager-1.20.0-orig/shared/systemd/src/basic/sort-util.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/systemd/src/basic/sort-util.h	2019-08-21 07:04:34.238057767 -0700
+@@ -5,6 +5,14 @@
+ 
+ #include "macro.h"
+ 
++
++#ifndef __COMPAR_FN_T
++# define __COMPAR_FN_T
++typedef int (*__compar_fn_t) (const void *, const void *);
++typedef __compar_fn_t comparison_fn_t;
++typedef int (*__compar_d_fn_t) (const void *, const void *, void *);
++#endif
++
+ void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
+                  __compar_d_fn_t compar, void *arg);
+ 
+@@ -60,7 +68,11 @@
+                 return;
+ 
+         assert(base);
+-        qsort_r(base, nmemb, size, compar, userdata);
++#ifdef __GLIBC__
++         qsort_r(base, nmemb, size, compar, userdata);
++#else
++        g_qsort_with_data(base, nmemb, size, compar, userdata);
++#endif
+ }
+ 
+ #define typesafe_qsort_r(p, n, func, userdata)                          \
+diff -ruN NetworkManager-1.20.0-orig/shared/systemd/src/basic/stdio-util.h NetworkManager-1.20.0/shared/systemd/src/basic/stdio-util.h
+--- NetworkManager-1.20.0-orig/shared/systemd/src/basic/stdio-util.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/systemd/src/basic/stdio-util.h	2019-08-21 06:54:24.976555115 -0700
+@@ -1,7 +1,9 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ #pragma once
+ 
++#if defined(__GLIBC__)
+ #include <printf.h>
++#endif
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <sys/types.h>
+diff -ruN NetworkManager-1.20.0-orig/shared/systemd/src/basic/util.h NetworkManager-1.20.0/shared/systemd/src/basic/util.h
+--- NetworkManager-1.20.0-orig/shared/systemd/src/basic/util.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/shared/systemd/src/basic/util.h	2019-08-21 06:54:47.476655672 -0700
+@@ -46,6 +46,12 @@
+ #endif
+ }
+ 
++#if !defined(__GLIBC__)
++typedef int (*__compar_fn_t) (const void*, const void*);
++typedef __compar_fn_t comparison_fn_t;
++typedef int (*__compar_d_fn_t) (const void *, const void *, void *);
++#endif
++
+ static inline unsigned u32ctz(uint32_t n) {
+ #if __SIZEOF_INT__ == 4
+         return n != 0 ? __builtin_ctz(n) : 32;
+diff -ruN NetworkManager-1.20.0-orig/src/devices/nm-device.c NetworkManager-1.20.0/src/devices/nm-device.c
+--- NetworkManager-1.20.0-orig/src/devices/nm-device.c	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/src/devices/nm-device.c	2019-08-21 06:56:00.900268149 -0700
+@@ -31,7 +31,11 @@
+ #include <arpa/inet.h>
+ #include <fcntl.h>
+ #include <linux/if_addr.h>
++#if defined(__GLIBC__)
+ #include <linux/if_arp.h>
++#else
++#include <linux/if.h>
++#endif
+ #include <linux/rtnetlink.h>
+ #include <linux/pkt_sched.h>
+ 
+diff -ruN NetworkManager-1.20.0-orig/src/nm-manager.c NetworkManager-1.20.0/src/nm-manager.c
+--- NetworkManager-1.20.0-orig/src/nm-manager.c	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/src/nm-manager.c	2019-08-21 06:56:10.608145473 -0700
+@@ -25,6 +25,7 @@
+ #include <stdlib.h>
+ #include <fcntl.h>
+ #include <unistd.h>
++#include <asm/types.h>
+ 
+ #include "nm-glib-aux/nm-c-list.h"
+ 
+diff -ruN NetworkManager-1.20.0-orig/src/platform/nm-linux-platform.c NetworkManager-1.20.0/src/platform/nm-linux-platform.c
+--- NetworkManager-1.20.0-orig/src/platform/nm-linux-platform.c	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/src/platform/nm-linux-platform.c	2019-08-21 06:56:35.835759156 -0700
+@@ -19,6 +19,7 @@
+ #include "nm-default.h"
+ 
+ #include "nm-linux-platform.h"
++#include "wpan/nm-wpan-utils.h"
+ 
+ #include <arpa/inet.h>
+ #include <dlfcn.h>
+@@ -27,7 +28,11 @@
+ #include <libudev.h>
+ #include <linux/fib_rules.h>
+ #include <linux/ip.h>
++#if defined(__GLIBC__)
+ #include <linux/if_arp.h>
++#else
++#include <linux/if.h>
++#endif
+ #include <linux/if_bridge.h>
+ #include <linux/if_link.h>
+ #include <linux/if_tun.h>
+diff -ruN NetworkManager-1.20.0-orig/src/platform/wifi/nm-wifi-utils.h NetworkManager-1.20.0/src/platform/wifi/nm-wifi-utils.h
+--- NetworkManager-1.20.0-orig/src/platform/wifi/nm-wifi-utils.h	2019-08-06 03:22:08.000000000 -0700
++++ NetworkManager-1.20.0/src/platform/wifi/nm-wifi-utils.h	2019-08-21 06:58:04.165749160 -0700
+@@ -21,7 +21,11 @@
+ #ifndef __WIFI_UTILS_H__
+ #define __WIFI_UTILS_H__
+ 
++#if defined(__GLIBC__)
+ #include <net/ethernet.h>
++#else /* musl libc */
++#define ETH_ALEN	6		/* Octets in one ethernet addr	 */
++#endif
+ 
+ #include "nm-dbus-interface.h"
+ #include "nm-setting-wireless.h"
+diff -ruN NetworkManager-1.20.0-orig/src/systemd/sd-adapt-core/nm-sd-adapt-core.h NetworkManager-1.20.0/src/systemd/sd-adapt-core/nm-sd-adapt-core.h
+--- NetworkManager-1.20.0-orig/src/systemd/sd-adapt-core/nm-sd-adapt-core.h	2019-08-06 03:22:09.000000000 -0700
++++ NetworkManager-1.20.0/src/systemd/sd-adapt-core/nm-sd-adapt-core.h	2019-08-21 06:57:06.311172915 -0700
+@@ -63,7 +63,7 @@
+ #  ifdef HAVE___SECURE_GETENV
+ #    define secure_getenv __secure_getenv
+ #  else
+-#    error neither secure_getenv nor __secure_getenv is available
++#    define secure_getenv getenv
+ #  endif
+ #endif
+ 
+diff -ruN NetworkManager-1.20.0-orig/src/systemd/src/libsystemd-network/sd-dhcp6-client.c NetworkManager-1.20.0/src/systemd/src/libsystemd-network/sd-dhcp6-client.c
+--- NetworkManager-1.20.0-orig/src/systemd/src/libsystemd-network/sd-dhcp6-client.c	2019-08-06 03:22:09.000000000 -0700
++++ NetworkManager-1.20.0/src/systemd/src/libsystemd-network/sd-dhcp6-client.c	2019-08-21 07:05:29.903716280 -0700
+@@ -8,7 +8,7 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <sys/ioctl.h>
+-#include <linux/if_arp.h>
++#include <net/if_arp.h>
+ #include <linux/if_infiniband.h>
+ 
+ #include "sd-dhcp6-client.h"
