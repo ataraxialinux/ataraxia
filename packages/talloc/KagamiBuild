@@ -1,0 +1,24 @@
+# Description: Hierarchical pool based memory allocator with destructors
+# URL:         http://talloc.samba.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python
+# Section:     libs
+
+name=talloc
+version=2.2.0
+release=1
+source=("https://samba.org/ftp/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc/samba \
+		--localstatedir=/var \
+		--bundled-libraries=NONE \
+		--builtin-libraries=replace \
+		--without-gettext \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}

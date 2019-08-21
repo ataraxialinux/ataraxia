@@ -1,0 +1,24 @@
+# Description: An event system based on the talloc memory management library
+# URL:         https://tevent.samba.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python talloc
+# Section:     libs
+
+name=tevent
+version=0.10.0
+release=1
+source=("https://samba.org/ftp/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/tevent/fix-public-header.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bundled-libraries=NONE \
+		--builtin-libraries=replace \
+		--without-gettext \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}
