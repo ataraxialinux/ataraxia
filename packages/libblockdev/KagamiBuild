@@ -7,14 +7,17 @@
 name=libblockdev
 version=2.22
 release=1
-source=("https://github.com/rhinstaller/libblockdev/archive/$version-1.tar.gz")
+source=("https://github.com/storaged-project/libblockdev/releases/download/${version}-1/libblockdev-${version}.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version-1
-	./autogen.sh
+	cd "$SRC"/$name-$version
+	sed -i 's,temp_file=$(mktemp --tmpdir XXXXX.c),temp_file=$(mktemp),g' acinclude.m4
+
+	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
+		--without-dm \
 		--without-nvdimm
 	make
 	make DESTDIR="$PKG" install
