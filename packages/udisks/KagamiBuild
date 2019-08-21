@@ -13,6 +13,9 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/udisks/O_CLOEXEC.patch
 
+	msg "Busyboxing udisks..."
+	sed -i 's,ln -r -s,ln -sf,g' modules/*/Makefile*
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
@@ -24,6 +27,7 @@ build() {
 		--enable-compile-warnings=minimum \
 		--enable-lvm2 \
 		--enable-vdo \
+		--disable-man \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install

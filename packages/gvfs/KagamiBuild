@@ -1,7 +1,7 @@
 # Description: Virtual filesystem implementation for GIO
 # URL:         https://wiki.gnome.org/Projects/gvfs
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson dbus fuse glib libusb libsecret libsoup gcr gtk libcdio-paranoia libgdata libgudev libimobiledevice libmtp udisks
+# Depends on:  meson dbus glib libusb libsecret libsoup gcr gtk libcdio-paranoia libgdata libgudev libimobiledevice libmtp udisks gnome-online-accounts openssh
 # Section:     gnome
 
 name=gvfs
@@ -14,8 +14,17 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
+		-Dafc=false \
+		-Dbluray=false \
+		-Ddnssd=false \
+		-Dfuse=false \
+		-Dgphoto2=false \
 		-Dlogind=false \
-		-Dman=false
+		-Dman=false \
+		-Dnfs=false \
+		-Dsmb=false \
+		-Dsystemduserunitdir=no \
+		-Dtmpfilesdir=no
 	ninja
 	DESTDIR="$PKG" ninja install
 }
