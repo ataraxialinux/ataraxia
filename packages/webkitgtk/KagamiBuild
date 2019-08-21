@@ -1,16 +1,19 @@
 # Description: GTK+ Web content engine library
 # URL:         https://webkitgtk.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  busybox cmake ninja gtk gtk2 gst-plugins-bad icu libgudev libsecret libsoup libwebp openjpeg ruby sqlite enchant geoclue libnotify
+# Depends on:  busybox cmake ninja gtk gtk2 gst-plugins-bad icu libgudev libsecret libsoup libwebp openjpeg ruby sqlite enchant libnotify geoclue
 # Section:     gnome
 
 name=webkitgtk
 version=2.24.3
 release=1
+options=('~ccache')
 source=("https://webkitgtk.org/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/webkitgtk/musl.patch
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
