@@ -1,0 +1,90 @@
+diff -ruN Linux-PAM-1.3.1-orig/modules/pam_exec/pam_exec.c Linux-PAM-1.3.1/modules/pam_exec/pam_exec.c
+--- Linux-PAM-1.3.1-orig/modules/pam_exec/pam_exec.c	2017-02-10 19:10:15.000000000 +0900
++++ Linux-PAM-1.3.1/modules/pam_exec/pam_exec.c	2019-06-12 01:48:32.254297617 +0900
+@@ -103,11 +103,14 @@
+   int optargc;
+   const char *logfile = NULL;
+   const char *authtok = NULL;
++  char authtok_buf[PAM_MAX_RESP_SIZE+1];
++
+   pid_t pid;
+   int fds[2];
+   int stdout_fds[2];
+   FILE *stdout_file = NULL;
+ 
++  memset(authtok_buf, 0, sizeof(authtok_buf));
+   if (argc < 1) {
+     pam_syslog (pamh, LOG_ERR,
+ 		"This module needs at least one argument");
+@@ -180,12 +183,12 @@
+ 	      if (resp)
+ 		{
+ 		  pam_set_item (pamh, PAM_AUTHTOK, resp);
+-		  authtok = strndupa (resp, PAM_MAX_RESP_SIZE);
++		  authtok = strncpy(authtok_buf, resp, sizeof(authtok_buf));
+ 		  _pam_drop (resp);
+ 		}
+ 	    }
+ 	  else
+-	    authtok = strndupa (void_pass, PAM_MAX_RESP_SIZE);
++	    authtok = strncpy(authtok_buf, void_pass, sizeof(authtok_buf));
+ 
+ 	  if (pipe(fds) != 0)
+ 	    {
+diff -ruN Linux-PAM-1.3.1-orig/modules/pam_lastlog/pam_lastlog.c Linux-PAM-1.3.1/modules/pam_lastlog/pam_lastlog.c
+--- Linux-PAM-1.3.1-orig/modules/pam_lastlog/pam_lastlog.c	2017-02-10 19:10:15.000000000 +0900
++++ Linux-PAM-1.3.1/modules/pam_lastlog/pam_lastlog.c	2019-06-12 01:45:31.750401266 +0900
+@@ -26,6 +26,7 @@
+ #include <sys/types.h>
+ #include <syslog.h>
+ #include <unistd.h>
++#include <paths.h>
+ 
+ #if defined(hpux) || defined(sunos) || defined(solaris)
+ # ifndef _PATH_LASTLOG
+@@ -403,7 +404,9 @@
+ 
+     if (announce & LASTLOG_WTMP) {
+ 	/* write wtmp entry for user */
++#ifdef HAVE_LOGWTMP
+ 	logwtmp(last_login.ll_line, user, remote_host);
++#endif
+     }
+ 
+     /* cleanup */
+@@ -714,7 +717,9 @@
+     terminal_line = get_tty(pamh);
+ 
+     /* Wipe out utmp logout entry */
++#ifdef HAVE_LOGWTMP
+     logwtmp(terminal_line, "", "");
++#endif
+ 
+     return PAM_SUCCESS;
+ }
+diff -ruN Linux-PAM-1.3.1-orig/modules/pam_rhosts/pam_rhosts.c Linux-PAM-1.3.1/modules/pam_rhosts/pam_rhosts.c
+--- Linux-PAM-1.3.1-orig/modules/pam_rhosts/pam_rhosts.c	2017-02-10 19:10:15.000000000 +0900
++++ Linux-PAM-1.3.1/modules/pam_rhosts/pam_rhosts.c	2019-06-12 01:46:16.469383082 +0900
+@@ -112,8 +112,10 @@
+ 
+ #ifdef HAVE_RUSEROK_AF
+     retval = ruserok_af (rhost, as_root, ruser, luser, PF_UNSPEC);
+-#else
++#elif HAVE_RUSEROK
+     retval = ruserok (rhost, as_root, ruser, luser);
++#else
++    retval = 1;
+ #endif
+     if (retval != 0) {
+       if (!opt_silent || opt_debug)
+diff -ruN Linux-PAM-1.3.1-orig/modules/pam_unix/pam_unix_acct.c Linux-PAM-1.3.1/modules/pam_unix/pam_unix_acct.c
+--- Linux-PAM-1.3.1-orig/modules/pam_unix/pam_unix_acct.c	2017-02-10 19:10:15.000000000 +0900
++++ Linux-PAM-1.3.1/modules/pam_unix/pam_unix_acct.c	2019-06-12 01:46:48.168661988 +0900
+@@ -48,6 +48,7 @@
+ #include <time.h>		/* for time() */
+ #include <errno.h>
+ #include <sys/wait.h>
++#include <sys/resource.h>	/* for RLIMIT_NOFILE */
+ 
+ #include <security/_pam_macros.h>
+ 
