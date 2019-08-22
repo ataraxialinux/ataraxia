@@ -1,10 +1,11 @@
 # Welcome to Ataraxia Linux 
 
 ## Introduction
-Ataraxia Linux is an efficient, optimized and compact [Linux](https://www.kernel.org/) distribution which uses [musl libc](http://www.musl-libc.org/). It is an independent distribution, which uses its own package management utils called "[kagami](https://github.com/ataraxialinux/kagami)". Ataraxia Linux is a general-use distribution oriented towards advanced Linux users. Ataraxia Linux was compiled with a hardened toolchain for better security. This is a rolling-release distribution, allowing you to use the latest software. We have pretty good hardware support.
+Ataraxia Linux is an **independent** multi-platform general purpose operating system, based on [Linux kernel](http://kernel.org/), [musl libc](http://www.musl-libc.org/) and [busybox](https://busybox.net/). Ataraxia Linux is aimed to be simple, compact and safe, because was founded on the KISS and could be used on desktop, servers and embedded devices. Ataraxia Linux is available for x86, ARM, MIPS, Motorola 68000 and RISC-V. It uses it's own package manager called "[ne](https://github.com/ataraxialinux/ne)" which is used to be friendly wrapper for "[dpkg](https://wiki.debian.org/Teams/Dpkg)" and compatible with [CRUX](https://crux.nu/) Pkgfiles. Ataraxia Linux is oriented towards advanced Linux users, who know what they're doing.
 
-## Join the community
-We have a [discord community](https://discord.gg/KrrkEEG) where you can share your questions, suggestions and experiences. We can also be contacted via [e-mail](mailto:AtaraxiaLinux@protonmail.ch) and have a [mailing list.](https://www.freelists.org/list/januslinux)
+If you want to get help or advice, please, check out our [IRC](irc://irc.freenode.net/#ataraxialinux), [Telegram](https://t.me/ataraxialinux), [Matrix](https://matrix.to/#/#ataraxialinux:matrix.org) and [Discord](https://discord.gg/KrrkEEG).
+
+Also, you can help us with finances. Check out our [Patreon page](https://www.patreon.com/ataraxialinux).
 
 ## Documentation
 * [About the build system](docs/aboutbuildsystem.md)
