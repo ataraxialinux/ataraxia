@@ -11,6 +11,14 @@ source=("https://github.com/dinhviethoa/libetpan/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libetpan/fix-build.patch
+
+	libtoolize --force --copy
+	aclocal -I m4
+	autoheader
+	autoconf
+	automake --add-missing --foreign --force --copy
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-gnutls=yes \

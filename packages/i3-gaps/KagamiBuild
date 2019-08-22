@@ -12,8 +12,12 @@ source=("https://github.com/Airblader/i3/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/i3-$version
+	patch -Np1 -i "$STUFF"/i3/i3wm-musl-glob-tilde.patch
+
 	autoreconf -fvi
-	./configure $BUILDFLAGS \
+	mkdir -p build
+	cd build
+	../configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc
 	make

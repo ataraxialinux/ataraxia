@@ -1,0 +1,74 @@
+# Description: The CUPS Printing System
+# URL:         https://www.cups.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gnutls colord dbus libusb
+# Section:     admin
+
+name=cups
+version=2.2.12
+release=1
+backup=('etc/cups/cupsd.conf'
+	'etc/cups/snmp.conf'
+	'etc/cups/printers.conf'
+	'etc/cups/classes.conf'
+	'etc/cups/cups-files.conf'
+	'etc/cups/subscriptions.conf'
+	'etc/logrotate.d/cups')
+source=("https://github.com/apple/cups/releases/download/v$version/$name-$version-source.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-menudir=/usr/share/applications \
+		--with-icondir=/usr/share/icons \
+		--with-logdir=/var/log/cups \
+		--with-docdir=/usr/share/cups \
+		--with-rundir=/run/cups \
+		--with-cupsd-file-perm=0755 \
+		--with-dbusdir=/usr/share/dbus-1 \
+		--with-cups-user=lp \
+		--with-cups-group=lp \
+		--with-system-groups=lpadmin \
+		--with-optim="$CFLAGS" \
+		--enable-gnutls \
+		--enable-ssl=yes \
+		--enable-threads \
+		--disable-pam \
+		--disable-systemd
+	make
+	make BUILDROOT="$PKG" install
+
+	for svc in cupsd; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+
+	rm -rf "$PKG"/etc/rc*.d
+	rm -rf "$PKG"/etc/init.d
+
+	chmod 755 "$PKG"/var/spool
+	chmod 755 "$PKG"/etc
+
+	install -dm700 -g 209 "$PKG"/etc/cups/ssl
+	rm -rf "$PKG"/run
+
+	touch "$PKG"/etc/cups/printers.conf
+	touch "$PKG"/etc/cups/classes.conf
+	touch "$PKG"/etc/cups/subscriptions.conf
+	chgrp -R 209 "$PKG"/etc/cups
+
+	install -dm755 "$PKG"/usr/share/dbus-1/system.d
+	mv "$PKG"/etc/dbus-1/system.d/cups.conf "$PKG"/usr/share/dbus-1/system.d
+	rm -rf "$PKG"/etc/dbus-1
+
+	sed -i 's|^Exec=htmlview http://localhost:631/|Exec=xdg-open http://localhost:631/|g' "$PKG"/usr/share/applications/cups.desktop
+	find "$PKG"/usr/share/cups/model -name "*.ppd" | xargs gzip -n9f
+
+	echo "ServerName /run/cups/cups.sock" > "$PKG"/etc/cups/client.conf
+
+	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
+}

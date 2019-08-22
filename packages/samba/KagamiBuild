@@ -1,0 +1,52 @@
+# Description: SMB server and client for unix
+# URL:         http://www.samba.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python libcap popt libarchive rpcsvc-proto lmdb jansson libtirpc tevent tdb
+# Section:     net
+
+name=samba
+version=4.10.6
+release=1
+backup=('etc/samba/smb.conf'
+	'etc/logrotate.d/samba')
+source=("https://www.samba.org/ftp/samba/stable/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/samba/getpwent_r.patch
+	patch -Np1 -i "$STUFF"/samba/musl_uintptr.patch
+	patch -Np1 -i "$STUFF"/samba/netdb-defines.patch
+	patch -Np1 -i "$STUFF"/samba/netapp.patch
+	patch -Np1 -i "$STUFF"/samba/missing-headers.patch
+	patch -Np1 -i "$STUFF"/samba/musl_rm_unistd_incl.patch
+
+	CFLAGS="-I/usr/include/tirpc $CFLAGS" \
+	LDFLAGS="-ltirpc" \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib/samba \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-configdir=/etc/samba \
+		--with-lockdir=/var/cache/samba \
+		--with-sockets-dir=/run/samba \
+		--with-piddir=/run \
+		--bundled-libraries=!tdb,!talloc,!tevent,!popt \
+		--without-ad-dc \
+		--without-ads \
+		--without-ldap \
+		--without-pam \
+		--without-systemd \
+		--enable-fhs \
+		--disable-rpath-install
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/samba/logrotate "$PKG"/etc/logrotate.d/samba
+
+	for svc in smbd nmbd; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+}

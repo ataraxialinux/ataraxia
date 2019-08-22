@@ -1,7 +1,7 @@
 # Description: A library for bits of crypto UI and parsing
 # URL:         https://gitlab.gnome.org/GNOME/gcr
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson gobject-introspection vala gcr json-glib rest telepathy-glib webkitgtk
+# Depends on:  gobject-introspection vala gcr json-glib rest telepathy-glib webkitgtk
 # Section:     gnome
 
 name=gnome-online-accounts
@@ -11,10 +11,9 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
-	mkdir -p build
-	cd build
-	ataraxia-meson "$SRC"/$name-$version \
-		-Dman=false
-	ninja
-	DESTDIR="$PKG" ninja install
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib
+	make
+	make DESTDIR="$PKG" install
 }

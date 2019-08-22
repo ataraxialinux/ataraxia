@@ -1,7 +1,7 @@
 # Description: Disk Management Service, version 2
 # URL:         https://www.freedesktop.org/wiki/Software/udisks
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gobject-introspection libatasmart libblockdev libgudev libxslt polkit mdadm gptfdisk dbus dosfstools e2fsprogs reiserfsprogs lvm2
+# Depends on:  gobject-introspection libatasmart libblockdev libgudev libxslt polkit mdadm gptfdisk dbus lvm2
 # Section:     admin
 
 name=udisks
@@ -12,6 +12,9 @@ source=("https://github.com/storaged-project/udisks/releases/download/$name-$ver
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/udisks/O_CLOEXEC.patch
+
+	msg "Busyboxing udisks..."
+	sed -i 's,ln -r -s,ln -sf,g' modules/*/Makefile*
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -24,6 +27,7 @@ build() {
 		--enable-compile-warnings=minimum \
 		--enable-lvm2 \
 		--enable-vdo \
+		--disable-man \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install

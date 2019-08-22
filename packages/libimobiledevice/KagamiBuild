@@ -1,0 +1,21 @@
+# Description: Library that talks the protocols to support iPhone and iPod Touch devices on Linux
+# URL:         http://libimobiledevice.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl libplist libusbmuxd
+# Section:     libs
+
+name=libimobiledevice
+version=1.2.0
+release=1
+source=("https://www.libimobiledevice.org/downloads/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libimobiledevice/libressl.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-cython
+	make
+	make DESTDIR="$PKG" install
+}

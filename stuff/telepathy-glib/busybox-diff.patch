@@ -1,0 +1,24 @@
+diff -ruN telepathy-glib-0.24.1-orig/telepathy-glib/abi.am telepathy-glib-0.24.1/telepathy-glib/abi.am
+--- telepathy-glib-0.24.1-orig/telepathy-glib/abi.am	2014-08-25 05:23:51.000000000 -0700
++++ telepathy-glib-0.24.1/telepathy-glib/abi.am	2019-08-20 12:51:08.258671308 -0700
+@@ -140,7 +140,7 @@
+ 	sed -n -e "s/^[	 ]*\\(tp_.*\\);/\\1/p" < $@ > _gen/versioned-abi.tmp
+ 	sort -u < _gen/versioned-abi.tmp > _gen/versioned-abi.txt
+ 	: # the versioned API should always match the ^tp API
+-	diff -c _gen/versioned-abi.txt _gen/abi.txt
++	diff _gen/versioned-abi.txt _gen/abi.txt
+ 
+ _gen/abi.txt: libtelepathy-glib-internal.la abi.am
+ 	$(NM) .libs/libtelepathy-glib-internal.a > _gen/abi.nm
+diff -ruN telepathy-glib-0.24.1-orig/telepathy-glib/Makefile.in telepathy-glib-0.24.1/telepathy-glib/Makefile.in
+--- telepathy-glib-0.24.1-orig/telepathy-glib/Makefile.in	2014-08-25 05:30:47.000000000 -0700
++++ telepathy-glib-0.24.1/telepathy-glib/Makefile.in	2019-08-20 12:51:12.674684573 -0700
+@@ -1843,7 +1843,7 @@
+ @HAVE_LD_VERSION_SCRIPT_TRUE@	sed -n -e "s/^[	 ]*\\(tp_.*\\);/\\1/p" < $@ > _gen/versioned-abi.tmp
+ @HAVE_LD_VERSION_SCRIPT_TRUE@	sort -u < _gen/versioned-abi.tmp > _gen/versioned-abi.txt
+ @HAVE_LD_VERSION_SCRIPT_TRUE@	: # the versioned API should always match the ^tp API
+-@HAVE_LD_VERSION_SCRIPT_TRUE@	diff -c _gen/versioned-abi.txt _gen/abi.txt
++@HAVE_LD_VERSION_SCRIPT_TRUE@	diff _gen/versioned-abi.txt _gen/abi.txt
+ 
+ @HAVE_LD_VERSION_SCRIPT_TRUE@_gen/abi.txt: libtelepathy-glib-internal.la abi.am
+ @HAVE_LD_VERSION_SCRIPT_TRUE@	$(NM) .libs/libtelepathy-glib-internal.a > _gen/abi.nm

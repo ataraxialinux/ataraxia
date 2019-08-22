@@ -1,0 +1,24 @@
+# Description: A helper that makes system-config-printer use PolicyKit
+# URL:         https://www.freedesktop.org/software/cups-pk-helper/releases/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool cups polkit
+# Section:     libs
+
+name=cups-pk-helper
+version=0.2.6
+release=1
+source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/cups-pk-helper \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+
+	install -dm755 "$PKG"/usr/share/dbus-1/system.d
+	mv "$PKG"/etc/dbus-1/system.d/* "$PKG"/usr/share/dbus-1/system.d
+	rm -rf "$PKG"/etc/dbus-1
+}

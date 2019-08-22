@@ -8,11 +8,15 @@ name=i3
 version=4.17
 release=1
 backup=('etc/i3/config')
-source=("https://i3wm.org/$name/$name-$version.tar.bz2")
+source=("https://i3wm.org/downloads/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
+	patch -Np1 -i "$STUFF"/i3/i3wm-musl-glob-tilde.patch
+
+	mkdir -p build
+	cd build
+	../configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc
 	make

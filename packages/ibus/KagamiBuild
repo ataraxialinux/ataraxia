@@ -1,0 +1,34 @@
+# Description: Next Generation Input Bus for Linux
+# URL:         https://github.com/ibus/ibus/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gobject-introspection vala gtk iso-codes libnotify
+# Section:     utils
+
+name=ibus
+version=1.5.20
+ucdver=12.1.0
+release=1
+options=('~emptydirs')
+source=("https://github.com/ibus/ibus/releases/download/$version/$name-$version.tar.gz"
+	"https://www.unicode.org/Public/zipped/$ucdver/UCD.zip")
+noextract=('UCD.zip')
+
+build() {
+	cd "$SRC"
+	mkdir -p "$PKG"/usr/share/unicode/ucd
+	bsdtar -C "$PKG"/usr/share/unicode/ucd -x -v --no-same-owner --no-same-permissions -f "$SRC"/UCD.zip
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/ibus \
+		--sysconfdir=/etc \
+		--with-python=python3 \
+		--with-ucd-dir=/usr/share/unicode/ \
+		--enable-wayland \
+		--disable-emoji-dict \
+		--disable-gtk2 \
+		--disable-unicode-dict
+	make
+	make DESTDIR="$PKG" install
+}

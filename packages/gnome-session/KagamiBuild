@@ -1,0 +1,27 @@
+# Description: The GNOME Session Handler
+# URL:         https://gitlab.gnome.org/GNOME/gnome-session
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson json-glib consolekit2 gnome-desktop mesa upower
+# Section:     gnome
+
+name=gnome-session
+version=3.32.0
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed 's@/bin/sh@/bin/sh -l@' -i gnome-session/gnome-session.in
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dconsolekit=true \
+		-Ddocbook=false \
+		-Dman=false \
+		-Dsystemd=false \
+		-Dsystemd_session=false \
+		-Dsystemd_journal=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}

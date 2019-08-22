@@ -1,7 +1,7 @@
 # Description: Library with common API for various GNOME modules
 # URL:         https://gitlab.gnome.org/GNOME/gnome-desktop
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson gsettings-desktop-schemas gtk iso-codes itstool libseccomp libxml xkeyboard-config bubblewrap
+# Depends on:  meson gsettings-desktop-schemas gtk iso-codes itstool libseccomp libxml2 xkeyboard-config bubblewrap
 # Section:     gnome
 
 name=gnome-desktop
@@ -14,7 +14,9 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Dgnome_distributor="Ataraxia Linux"
+		-Ddesktop_docs=false \
+		-Dgnome_distributor="Ataraxia Linux" \
+		-Dgtk_doc=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }

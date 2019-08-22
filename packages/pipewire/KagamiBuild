@@ -1,0 +1,21 @@
+# Description: Server and user space API to deal with multimedia pipelines
+# URL:         https://pipewire.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ffmpeg gst-plugins-base libva sbc sdl2
+# Section:     libs
+
+name=pipewire
+version=0.2.6
+release=1
+source=("https://github.com/PipeWire/pipewire/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/pipewire/fix-glibc-error_h-usage.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}

@@ -19,7 +19,7 @@ build() {
 		sed -i 's@sbin@bin@g' $i
 	done
 
-	./configure $TOOLFLAGS \
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-root-prefix="" \
 		--libdir=/usr/lib \
@@ -34,6 +34,7 @@ build() {
 	make -j1 MKDIR_P="install -d" DESTDIR="$PKG" install install-libs
 
 	sed -i -e 's/^AWK=.*/AWK=awk/' "$PKG"/usr/bin/compile_et
+	sed -i -e 's/^AWK=.*/AWK=awk/' "$PKG"/usr/bin/mk_cmds
 	sed -i -e 's#^SS_DIR=.*#SS_DIR="/share/ss"#' "$PKG"/usr/bin/mk_cmds
 	sed -i -e 's#^ET_DIR=.*#ET_DIR="/share/et"#' "$PKG"/usr/bin/compile_et
 }

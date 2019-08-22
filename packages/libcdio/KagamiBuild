@@ -1,0 +1,20 @@
+# Description: GNU Compact Disc Input and Control Library
+# URL:         http://www.gnu.org/software/libcdio
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+# Section:     libs
+
+name=libcdio
+version=2.1.0
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,7 +1,7 @@
 # Description: A simple virtual terminal emulator for X
 # URL:         http://st.suckless.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses libxext libxft
+# Depends on:  ncurses libxext libxft desktop-file-utils
 # Section:     x11
 
 name=st
@@ -22,14 +22,21 @@ build() {
 
 	ln -sf st "$PKG"/usr/bin/xterm
 
-	cat > "$pkgdir"/usr/share/applications/xterm.desktop <<-EOF
+	mkdir -p "$PKG"/usr/share/icons
+	mkdir -p "$PKG"/usr/share/applications
+
+	for size in 16 32 48 64 128; do
+		install -Dm644 "$STUFF"/st/st-${size}.png "$PKG"/usr/share/icons/hicolor/${size}x${size}/apps/moest.png
+	done
+
+	cat > "$PKG"/usr/share/applications/xterm.desktop <<-EOF
 		[Desktop Entry]
-		Name=xterm
+		Name=X Terminal
 		Comment=st is a simple virtual terminal emulator for X which sucks less
 		Exec=st
 		Terminal=false
 		Type=Application
-		Icon=gnome-xterm
+		Icon=moest
 		Categories=System;TerminalEmulator;
 	EOF
 }
