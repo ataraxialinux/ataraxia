@@ -1,7 +1,7 @@
 # Description: GNOME's main interface to configure various aspects of the desktop
 # URL:         https://gitlab.gnome.org/GNOME/gnome-control-center
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson accountsservice clutter-gtk colord-gtk gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality krb5 shared-mime-info cheese cups-pk-helper samba gnome-bluetooth ibus network-manager-applet gnome-color-manager sound-theme-freedesktop libgnomekbd
+# Depends on:  meson accountsservice clutter-gtk colord-gtk gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality krb5 shared-mime-info cups-pk-helper samba gnome-bluetooth ibus network-manager-applet libgnomekbd
 # Section:     gnome
 
 name=gnome-control-center
@@ -16,7 +16,9 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Ddocumentation=false
+		-Dcheese=false \
+		-Ddocumentation=false \
+		-Dgnome_session_libexecdir=/usr/lib
 	ninja
 	DESTDIR="$PKG" ninja install
 }
