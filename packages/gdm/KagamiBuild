@@ -53,5 +53,9 @@ build() {
 
 	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make -C libgdm
+	make -C data
 	make DESTDIR="$PKG" -C libgdm install
+	make DESTDIR="$PKG" -C data install
+
+	rm -rf "$PKG"/etc/pam.d
 }

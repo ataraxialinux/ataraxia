@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.20.0
-release=1
+release=2
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -51,6 +51,20 @@ build() {
 # Configuration file for NetworkManager.
 # See "man 5 NetworkManager.conf" for details.
 END
+
+cat > "$PKG"/etc/NetworkManager/conf.d/polkit.conf << "EOF"
+[main]
+auth-polkit=true
+EOF
+
+	mkdir -p "$PKG"/usr/share/polkit-1/rules.d/
+cat > "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules << "EOF"
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.isInGroup("netdev")) {
+        return polkit.Result.YES;
+    }
+});
+EOF
 
 	for svc in networkmanager; do
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
