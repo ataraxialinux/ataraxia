@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.20.0
-release=2
+release=3
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -21,17 +21,16 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/NetworkManager-$version \
 		-Dconfig_plugins_default=ifupdown \
-		-Ddbus_conf_dir=/usr/share/dbus-1/systemd.d \
+		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
 		-Difupdown=true \
 		-Diptables=/usr/bin/iptables \
 		-Diwd=true \
-		-Dmodify_system=true \
-		-Dvapi=true \
 		-Djson_validation=false \
 		-Dlibaudit=no \
 		-Dlibnm_glib=true \
+		-Dmodify_system=true \
 		-Dnmtui=true \
 		-Dovs=false \
 		-Dpolkit_agent=true \
@@ -42,7 +41,8 @@ build() {
 		-Dsystemd_journal=false \
 		-Dsystemdsystemunitdir=no \
 		-Dtests=no \
-		-Dudev_dir=/usr/lib/udev
+		-Dudev_dir=/usr/lib/udev \
+		-Dvapi=true
 	ninja
 	DESTDIR="$PKG" ninja install
 
