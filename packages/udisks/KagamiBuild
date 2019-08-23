@@ -14,7 +14,7 @@ build() {
 	patch -Np1 -i "$STUFF"/udisks/O_CLOEXEC.patch
 
 	msg "Busyboxing udisks..."
-	sed -i 's,ln -r -s,ln -sf,g' modules/*/Makefile*
+	sed -i 's,ln -r -s,ln -s,g' modules/*/Makefile*
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -23,10 +23,13 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--without-systemdsystemunitdir \
+		--with-udevdir=/usr/lib/udev \
 		--enable-bcache \
 		--enable-compile-warnings=minimum \
 		--enable-lvm2 \
+		--enable-lvmcache \
 		--enable-vdo \
+		--enable-zram \
 		--disable-man \
 		--disable-static
 	make
