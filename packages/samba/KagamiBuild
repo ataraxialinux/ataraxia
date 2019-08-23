@@ -6,7 +6,7 @@
 
 name=samba
 version=4.10.7
-release=1
+release=2
 backup=('etc/samba/smb.conf'
 	'etc/logrotate.d/samba')
 source=("https://www.samba.org/ftp/samba/stable/$name-$version.tar.gz")
@@ -43,6 +43,8 @@ build() {
 		--disable-rpath-install
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 examples/smb.conf.default "$PKG"/etc/samba/smb.conf
 
 	install -Dm644 "$STUFF"/samba/logrotate "$PKG"/etc/logrotate.d/samba
 
