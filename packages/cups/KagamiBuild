@@ -6,7 +6,7 @@
 
 name=cups
 version=2.2.12
-release=1
+release=2
 backup=('etc/cups/cupsd.conf'
 	'etc/cups/snmp.conf'
 	'etc/cups/printers.conf'
@@ -47,28 +47,15 @@ build() {
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
 	done
 
+	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
+
 	rm -rf "$PKG"/etc/rc*.d
 	rm -rf "$PKG"/etc/init.d
-
-	chmod 755 "$PKG"/var/spool
-	chmod 755 "$PKG"/etc
+	rm -rf "$PKG"/run
+	rm -r "$PKG"/usr/share/cups/{banners,data}
+	rm -rf "$PKG"/usr/share/{applications,icons}
+	chmod 0755 "$PKG"/var/{cache,spool}   
+	chmod -R +w "$PKG"
 
 	install -dm700 -g 209 "$PKG"/etc/cups/ssl
-	rm -rf "$PKG"/run
-
-	touch "$PKG"/etc/cups/printers.conf
-	touch "$PKG"/etc/cups/classes.conf
-	touch "$PKG"/etc/cups/subscriptions.conf
-	chgrp -R 209 "$PKG"/etc/cups
-
-	install -dm755 "$PKG"/usr/share/dbus-1/system.d
-	mv "$PKG"/etc/dbus-1/system.d/cups.conf "$PKG"/usr/share/dbus-1/system.d
-	rm -rf "$PKG"/etc/dbus-1
-
-	sed -i 's|^Exec=htmlview http://localhost:631/|Exec=xdg-open http://localhost:631/|g' "$PKG"/usr/share/applications/cups.desktop
-	find "$PKG"/usr/share/cups/model -name "*.ppd" | xargs gzip -n9f
-
-	echo "ServerName /run/cups/cups.sock" > "$PKG"/etc/cups/client.conf
-
-	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
 }
