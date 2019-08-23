@@ -1,12 +1,12 @@
 # Description: GNOME's main interface to configure various aspects of the desktop
 # URL:         https://gitlab.gnome.org/GNOME/gnome-control-center
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson accountsservice clutter-gtk colord-gtk gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality krb5 shared-mime-info cups-pk-helper samba gnome-bluetooth ibus network-manager-applet libgnomekbd
+# Depends on:  meson accountsservice clutter-gtk colord-gtk gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality krb5 shared-mime-info cups-pk-helper samba gnome-bluetooth ibus network-manager-applet libgnomekbd bolt
 # Section:     gnome
 
 name=gnome-control-center
 version=3.32.2
-release=1
+release=2
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -21,4 +21,6 @@ build() {
 		-Dgnome_session_libexecdir=/usr/lib
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 }

@@ -1,0 +1,25 @@
+# Description: Thunderbolt 3 device manager
+# URL:         https://gitlab.freedesktop.org/bolt/bolt
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson pygobject eudev polkit
+# Section:     admin
+
+name=bolt
+version=0.8
+release=1
+source=("https://gitlab.freedesktop.org/bolt/bolt/-/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dman=false \
+		-Dsystemd=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	for svc in boltd; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+}
