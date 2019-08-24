@@ -1,3 +1,64 @@
 #!/bin/sh
 export PATH="/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"
-exec runsvdir -P /var/service 'log: ................................................................................................................................................................................................................................................................'
+
+ . /etc/rc.conf
+
+if [ -f "/etc/environment" ]; then
+ . /etc/environment
+fi
+
+live="0"
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)        live="${arg#*=}" ;;
+		single=*)      single="${arg#*=}" ;;
+	esac
+done
+
+if [ "$single" != "1" ]; then
+	if [ -n "$keymap" ] ;then
+		loadkeys $keymap
+	fi
+
+	if [ -n "$fontname" ] ;then
+		setfont $fontname
+	fi
+
+	if [ "$IPTABLES" = "yes" ]; then
+		/etc/rc.d/rc.iptables start
+	fi
+
+	if [ "$IP6TABLES" = "yes" ]; then
+		/etc/rc.d/rc.ip6tables start
+	fi
+
+	if [ "$NFTABLES" = "yes" ]; then
+		/etc/rc.d/rc.nftables start
+	fi
+
+	if [ "$IPSET" = "yes" ]; then
+		/etc/rc.d/rc.ipset start
+	fi
+
+	if [ "$ALSA" = "yes" ]; then
+		/etc/rc.d/rc.alsa start
+	fi
+
+	if [ -x /etc/rc.local ]; then
+		/etc/rc.local
+	fi
+
+	exec runsvdir -P /var/service &
+
+	if [ -n "$(ls /etc/ttys)" ]; then
+		for ttys in $(ls /etc/ttys); do
+			runsv /var/service/$ttys &
+		done
+	else
+		echo "No ttys found!"
+	fi
+else
+	exec setsid cttyhack /bin/mksh
+	reboot -f
+fi

@@ -1,74 +1,95 @@
 #!/bin/sh
 #
-# System shutdown script
+# /etc/rc.d/rc.boot:	System shutdown script.
 #
 
- . /etc/rc.conf
+. /etc/rc.conf
 
 live="0"
+single="0"
 for arg in $(cat /proc/cmdline);do
 	case "$arg" in
 		live=*)        live="${arg#*=}" ;;
+		single=*)      single="${arg#*=}" ;;
 	esac
 done
 
+if [ "$single" != "1" ]; then
+	sv down /var/service/*
+
+	if [ "$ALSA" = "yes" ]; then
+		/etc/rc.d/rc.alsa stop
+	fi
+
+	if [ "$IPSET" = "yes" ]; then
+		/etc/rc.d/rc.ipset stop
+	fi
+
+	if [ "$NFTABLES" = "yes" ]; then
+		/etc/rc.d/rc.nftables stop
+	fi
+
+	if [ "$IP6TABLES" = "yes" ]; then
+		/etc/rc.d/rc.ip6tables stop
+	fi
+
+	if [ "$IPTABLES" = "yes" ]; then
+		/etc/rc.d/rc.iptables stop
+	fi
+fi
+
 echo; stty onlcr
 
-sv down /var/service/*
+umount -a -r -t nfs,smbfs
 
-if [ "$ALSA" = "yes" ]; then
-	/etc/rc.d/rc.alsa stop
+if ! grep -wq nonet /proc/cmdline; then
+	ifdown -a
 fi
-
-if [ "$IPSET" = "yes" ]; then
-	/etc/rc.d/rc.ipset stop
-fi
-
-if [ "$NFTABLES" = "yes" ]; then
-	/etc/rc.d/rc.nftables stop
-fi
-
-if [ "$IP6TABLES" = "yes" ]; then
-	/etc/rc.d/rc.ip6tables stop
-fi
-
-if [ "$IPTABLES" = "yes" ]; then
-	/etc/rc.d/rc.iptables stop
-fi
-
-ifdown -a
 
 hwclock --systohc
 
-if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
-	if type quotaoff > /dev/null; then
-		quotaoff -va
-	fi
-fi
-
-if [ "$live" != "1" ]; then
-	if [ -x /usr/bin/vgchange ]; then
-		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
-	fi
-fi
-
 udevadm control --exit
 
-killall5 -15
+killall5 -15 
 sleep 1
 killall5 -9
 
-dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+if fgrep quota /etc/fstab 1> /dev/null 2> /dev/null ; then
+	if [ -x /usr/bin/quotaoff ]; then
+		quotaoff -a
+	fi
+fi
 
-swapoff -a
-
-umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512
 
 if [ "$live" != "1" ]; then
-	mount -o remount,ro /
+	swapoff -a
+	umount -a -r -t nonfs,noumsdos,nosmbfs,noproc
 fi
 
 sync
+
+if [ "$live" != "1" ]; then
+	if [ -f /etc/crypttab -a -x /usr/bin/cryptsetup ]; then
+		cat /etc/crypttab | grep -v "^#" | grep -v "^$" | while read line; do
+			LUKS=$(echo $line | tr '\t' ' ' | tr -s ' ' | cut -f1 -d' ')
+			DEV=$(echo $line | tr '\t' ' ' | tr -s ' ' | cut -f2 -d' ')
+			OPTS=$(echo $line | tr '\t' ' ' | tr -s ' ' | cut -f4 -d' ')
+			if /usr/bin/cryptsetup isLuks $DEV 2>/dev/null ; then
+				cryptsetup luksClose ${LUKS}
+			elif echo $OPTS | grep -wq swap ; then
+				cryptsetup remove ${LUKS}
+				mkswap $DEV
+			fi
+		done
+	fi
+
+	if [ -r /etc/lvmtab -o -d /etc/lvm/backup ]; then
+		vgchange -an
+	fi
+fi
+
+wait
 
 if [ "$live" != "1" ]; then
 	if [ "$1" = "reboot" ]; then
