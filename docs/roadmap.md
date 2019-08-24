@@ -13,9 +13,10 @@ Stage 1 is complete!
 ## Stage 2
  - [x] Add "update" files for packages
  - [x] Add main packages for development (eg. cmake, llvm and clang, python, ruby, ninja, meson, dejagnu, nasm, yasm)
- - [ ] Add extra packages for networking (eg. nftables, openresolv, whois, wget, mail clients, tcpdump, wpa_supplicant, dhcpcd, openssh, ntp)
+ - [x] Add extra packages for networking (eg. nftables, openresolv, whois, wget, mail clients, tcpdump, wpa_supplicant, dhcpcd, openssh, ntp)
  - [x] Add basic system administartion packages and daemons (eg. sudo, dcron, logrotate)
  - [x] Add user packages (eg. vim, nano, groff, texinfo, lynx)
+ - [ ] Add some packages: anthy, ibus-anthy, thunderbird, fail2ban, spamassasin, a2ps, stunnel, ddrescue, hexedit, audit, procmail, fetchmail, mutt, neomutt, alpine, libical, bluez, lxc, distcc, firewalld
 
 ## Stage 3
 TODO 
