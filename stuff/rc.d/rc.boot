@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # /etc/rc.d/rc.boot:	System initialization script.
 #
@@ -114,8 +114,10 @@ if ! grep -wq nofsck /proc/cmdline; then
 	fi
 fi
 
-if [ ! -r /etc/fastboot ]; then
-	fsck $FORCEFSCK -C -R -A -a
+if ! grep -wq nofsck /proc/cmdline; then
+	if [ ! -r /etc/fastboot ]; then
+		fsck $FORCEFSCK -C -R -A -a
+	fi
 fi
 
 if grep -wq rw /proc/cmdline ; then
@@ -172,3 +174,8 @@ chmod 600 /etc/random-seed
 
 dmesg > /var/log/dmesg.log
 chmod 600 /var/log/dmesg.log
+
+if [ "$single" = "1" ]; then
+	setsid cttyhack /usr/bin/mksh
+	reboot -f
+fi
