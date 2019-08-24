@@ -1,4 +1,11 @@
 #!/bin/sh
-mkdir -p /run/dbus
-dbus-uuidgen --ensure
+if [ -f "/var/lib/dbus/machine-id" ]; then
+	rm -rf /var/lib/dbus/machine-id
+fi
+
+if [ ! -f "/var/lib/dbus/machine-id" ]; then
+	dbus-uuidgen --ensure
+fi
+
+[ ! -d /run/dbus ] && mkdir -p /run/dbus
 exec dbus-daemon --system --nofork --nopidfile 2>&1
