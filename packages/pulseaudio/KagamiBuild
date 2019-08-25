@@ -7,6 +7,9 @@
 name=pulseaudio
 version=12.2
 release=1
+backup=(etc/pulse/daemon.conf
+	etc/pulse/default.pa
+	etc/pulse/system.pa)
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz")
 
 build() {
@@ -30,6 +33,8 @@ build() {
 		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/etc/dbus-1
 
 	for svc in pulseaudio; do
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
