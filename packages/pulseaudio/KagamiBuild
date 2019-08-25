@@ -1,0 +1,37 @@
+# Description: A featureful, general-purpose sound server
+# URL:         https://www.freedesktop.org/wiki/Software/PulseAudio/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libsndfile alsa-lib jack dbus glib libcap speex libxtst libsm sbc
+# Section:     audio
+
+name=pulseaudio
+version=12.2
+release=1
+source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i "s:asoundlib.h:alsa/asoundlib.h:" src/modules/alsa/*.{c,h}
+	sed -i "s:use-case.h:alsa/use-case.h:" configure.ac
+	sed -i "s:use-case.h:alsa/use-case.h:" src/modules/alsa/alsa-ucm.h
+
+	NOCONFIGURE=1 ./bootstrap.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-bash-completion-dir=/usr/share/bash-completion/completions \
+		--with-pulsedsp-location=/usr/lib/pulseaudio \
+		--with-systemduserunitdir=no \
+		--with-udev-rules-dir=/usr/lib/udev/rules.d \
+		--disable-bluez4 \
+		--disable-bluez5 \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	for svc in pulseaudio; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+}
