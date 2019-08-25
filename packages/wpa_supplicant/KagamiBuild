@@ -22,4 +22,9 @@ build() {
 	make PREFIX=/usr BINDIR=/usr/bin
 	make PREFIX=/usr BINDIR=/usr/bin DESTDIR="$PKG" install
 	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
+
+	for svc in wpa_supplicant; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/svc/$svc-finish "$PKG"/etc/service/$svc/finish
+	done
 }

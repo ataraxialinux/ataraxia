@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -r ./conf ] && . ./conf
+ip link set ${WPAIF:-wlan0} up
+exec wpa_supplicant -u -c /etc/wpa_supplicant/wpa_supplicant.conf -i ${WPAIF:-wlan0} && \
+exec dhcpcd ${WPAIF:-wlan0}
