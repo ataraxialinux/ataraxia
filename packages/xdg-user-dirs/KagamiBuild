@@ -1,0 +1,19 @@
+# Description: Well known user directories
+# URL:         https://www.freedesktop.org/wiki/Software/xdg-user-dirs
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     x11
+
+name=xdg-user-dirs
+version=0.17
+release=1
+source=("https://user-dirs.freedesktop.org/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-documentation
+	make
+	make DESTDIR="$PKG" install
+}
