@@ -11,6 +11,10 @@ backup=('etc/gdb/gdbinit')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
+	case "$BARCH" in
+		ppc64le|ppc64)	BUILDFLAGS="$BUILDFLAGS --enable-build-with-cxx=no"	;;
+	esac
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

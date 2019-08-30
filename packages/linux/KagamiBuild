@@ -81,8 +81,21 @@ generate_config() {
 		mips64|mips64el|mips|mipsel)
 			export DEFCONFIG="malta_defconfig"
 			;;
-		m68k)
-			export DEFCONFIG="mac_defconfig"
+		ppc64le)
+			export DEFCONFIG="pseries_le_defconfig"
+			;;
+		ppc64)
+			case $BPPCBOARD in
+				pseries)
+					export DEFCONFIG="pseries_defconfig"
+					;;
+				ps3)
+					export DEFCONFIG="ps3_defconfig"
+					;;
+				*)
+					export DEFCONFIG="g5_defconfig"
+					;;
+			esac
 			;;
 		riscv64)
 			export DEFCONFIG="defconfig"
@@ -907,8 +920,8 @@ build() {
 			export XKARCH="mips"
 			export IMAGELOC="vmlinux"
 			;;
-		m68k)
-			export XKARCH="m68k"
+		ppc64le|ppc64)
+			export XKARCH="powerpc"
 			export IMAGELOC="vmlinux"
 			;;
 		riscv64|riscv32)

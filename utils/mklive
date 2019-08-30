@@ -120,6 +120,24 @@ CEOF
 		"$ISODIR"/
 }
 
+make_iso_ppc() {
+	mkdir -p "$TOOLS"/share/grub
+	cp "$STUFF"/mklive/unicode.pf2 "$TOOLS"/share/grub/unicode.pf2
+
+	mkdir -p "$ISODIR"/boot/grub
+
+cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
+menuentry "Ataraxia Linux" {
+linux	/seiba/seiba live=1 nofsck rw
+initrd	/seiba/seiba.xz
+}
+CEOF
+
+	grub-mkrescue \
+		--output "$BUILD"/ataraxialinux-$BARCH.iso "$ISODIR"/ \
+		-A 'ataraxialinux' -V 'ataraxialinux'
+}
+
 main() {
 	ISODIR="$BUILD/rootcd"
 	INITRAMFS="$BUILD/initramfs"
@@ -133,6 +151,9 @@ main() {
 	case $BARCH in
 		amd64|i386)
 			make_iso_x86
+			;;
+		ppc64le|ppc64)
+			make_iso_ppc
 			;;
 	esac
 }

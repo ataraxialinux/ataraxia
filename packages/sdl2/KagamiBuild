@@ -10,6 +10,12 @@ release=1
 source=("http://www.libsdl.org/release/SDL2-$version.tar.gz")
 
 build() {
+	case $BARCH in
+		ppc64le|ppc64)
+			export BUILDFLAGS="$BUILDFLAGS --disable-altivec"
+			;;
+	esac
+
 	cd "$SRC"/SDL2-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
