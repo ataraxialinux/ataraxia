@@ -189,3 +189,31 @@ diff -ruN webkitgtk-2.24.3-orig/Source/WTF/wtf/Platform.h webkitgtk-2.24.3/Sourc
  #define HAVE_MACHINE_CONTEXT 1
  #endif
  
+--- webkitgtk-2.24.4-orig/Source/WTF/wtf/DateMath.cpp
++++ webkitgtk-2.24.4/Source/WTF/wtf/DateMath.cpp
+@@ -125,11 +125,7 @@
+ #if !OS(WINDOWS) || HAVE(TM_GMTOFF)
+ static inline void getLocalTime(const time_t* localTime, struct tm* localTM)
+ {
+-#if HAVE(LOCALTIME_R)
+     localtime_r(localTime, localTM);
+-#else
+-    localtime_s(localTime, localTM);
+-#endif
+ }
+ #endif
+ 
+--- webkitgtk-2.24.4-orig/Source/WTF/wtf/GregorianDateTime.cpp
++++ webkitgtk-2.24.4/Source/WTF/wtf/GregorianDateTime.cpp
+@@ -67,11 +67,7 @@
+ #else
+     tm localTM;
+     time_t localTime = time(0);
+-#if HAVE(LOCALTIME_R)
+     localtime_r(&localTime, &localTM);
+-#else
+-    localtime_s(&localTime, &localTM);
+-#endif
+ 
+     m_year = localTM.tm_year + 1900;
+     m_month = localTM.tm_mon;
