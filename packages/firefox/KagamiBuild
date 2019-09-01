@@ -1,16 +1,18 @@
 # Description: Standalone web browser from mozilla.org
 # URL:         https://www.mozilla.org/firefox/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python cbindgen clang nasm yasm gtk gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
 # Section:     net
 
 name=firefox
 version=68.0.2
 release=1
-options=('~emptydirs')
+options=('~emptydirs' '~ccache')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
+	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
 	patch -Np1 -i "$STUFF"/firefox/fix-seccomp-bpf.patch
@@ -31,18 +33,20 @@ build() {
 		ac_add_options --disable-pulseaudio
 		ac_add_options --enable-alsa
 		ac_add_options --enable-av1
+		ac_add_options --enable-ffmpeg
 		ac_add_options --disable-debug-symbols
 		ac_add_options --prefix=/usr
 		ac_add_options --enable-application=browser
 		ac_add_options --disable-elf-hack
-		ac_add_options --enable-hardening
-		ac_add_options --enable-rust-simd
 		ac_add_options --disable-gold
 		ac_add_options --disable-jemalloc
+		ac_add_options --disable-profiling
+		ac_add_options --enable-release
+		ac_add_options --enable-rust-simd
+		ac_add_options --enable-hardening
 		ac_add_options --disable-crashreporter
 		ac_add_options --disable-updater
 		ac_add_options --disable-tests
-		ac_add_options --enable-optimize
 		ac_add_options --enable-system-ffi
 		ac_add_options --enable-system-pixman
 		ac_add_options --enable-system-sqlite
@@ -64,19 +68,18 @@ build() {
 		ac_add_options --target=$XTARGET
 	EOF
 
-	./mach build
+	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
-	for i in 16 22 24 32 48 64 128 256; do
+	for i in 16 32 48 64 128; do
 		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
-	install -Dm644 browser/branding/unofficial/content/about-logo.png "$PKG"/usr/share/icons/hicolor/192x192/apps/firefox.png
-	install -Dm644 browser/branding/unofficial/content/about-logo@2x.png "$PKG"/usr/share/icons/hicolor/384x384/apps/firefox.png
-
+	mkdir -p "$PKG"/usr/bin/
 	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
 
-	cat > "$pkgdir"/usr/share/applications/firefox.desktop <<-EOF
+	mkdir -p "$PKG"/usr/share/applications/
+	cat > "$PKG"/usr/share/applications/firefox.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
 		Name=Firefox Web Browser
