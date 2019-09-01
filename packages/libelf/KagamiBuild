@@ -6,40 +6,28 @@
 # Section:     devel
 
 name=libelf
-version=0.176
+version=0.177
 release=1
 options=('bootstrap')
 source=("https://sourceware.org/elfutils/ftp/$version/elfutils-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/elfutils-$version
-	patch -Np1 -i "$STUFF"/libelf/0001-dso-link-change.patch
-	patch -Np1 -i "$STUFF"/libelf/0002-Fix-elf_cvt_gunhash-if-dest-and-src-are-same.patch
-	patch -Np1 -i "$STUFF"/libelf/0003-fixheadercheck.patch
-	patch -Np1 -i "$STUFF"/libelf/0004-Disable-the-test-to-convert-euc-jp.patch
 	patch -Np1 -i "$STUFF"/libelf/0006-Fix-build-on-aarch64-musl.patch
 	patch -Np1 -i "$STUFF"/libelf/0007-Fix-control-path-where-we-have-str-as-uninitialized-.patch
-	patch -Np1 -i "$STUFF"/libelf/0001-libasm-may-link-with-libbz2-if-found.patch
-	patch -Np1 -i "$STUFF"/libelf/0001-libelf-elf_end.c-check-data_list.data.d.d_buf-before.patch
-	patch -Np1 -i "$STUFF"/libelf/hppa_backend.diff
-	patch -Np1 -i "$STUFF"/libelf/arm_backend.diff
-	patch -Np1 -i "$STUFF"/libelf/mips_backend.diff
-	patch -Np1 -i "$STUFF"/libelf/mips_readelf_w.patch
-	patch -Np1 -i "$STUFF"/libelf/kfreebsd_path.patch
-	patch -Np1 -i "$STUFF"/libelf/0001-Ignore-differences-between-mips-machine-identifiers.patch
-	patch -Np1 -i "$STUFF"/libelf/0002-Add-support-for-mips64-abis-in-mips_retval.c.patch
-	patch -Np1 -i "$STUFF"/libelf/0003-Add-mips-n64-relocation-format-hack.patch
-	patch -Np1 -i "$STUFF"/libelf/hurd_path.patch
-	patch -Np1 -i "$STUFF"/libelf/ignore_strmerge.diff
-	patch -Np1 -i "$STUFF"/libelf/disable_werror.patch
-	patch -Np1 -i "$STUFF"/libelf/0008-build-Provide-alternatives-for-glibc-assumptions-hel.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-libs.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-obstack-fts.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-tests.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-utils.patch
+	patch -Np1 -i "$STUFF"/libelf/no-werror.patch
 
 	autoreconf -fiv
 
 	./configure $TOOLFLAGS \
 		--prefix=/usr \
 		--enable-deterministic-archives \
-		--disable-nls
+		--disable-nls \
+		--disable-werror
 	make
 	make -C libelf DESTDIR="$PKG" install
 
