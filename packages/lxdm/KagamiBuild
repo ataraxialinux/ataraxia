@@ -6,13 +6,15 @@
 
 name=lxdm
 version=0.5.3
-release=1
+release=2
 source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/lxdm/execinfo.patch
 	patch -Np1 -i "$STUFF"/lxdm/fix-msghdr-usage.patch
+
+	cp "$STUFF"/lxdm/Xsession data/Xsession
 
 	libtoolize --force && aclocal && autoheader && autoconf \
 		&& automake --add-missing
