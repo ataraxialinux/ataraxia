@@ -21,8 +21,8 @@ ne -E libisoburn python mtools pixz
 Ataraxia Linux uses kagami as its package manager. You should do this commands to install pkgutils (**AS ROOT**):
 ```
 cd /tmp
-git clone https://github.com/ataraxialinux/kagami.git --depth 1
-cd kagami
+git clone https://github.com/ataraxialinux/ne.git --depth 1
+cd ne
 ./build.sh -B
 ./build.sh -I
 ```
