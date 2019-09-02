@@ -6,7 +6,7 @@
 
 name=firefox
 version=68.1.0
-release=3
+release=4
 options=('~emptydirs' '~ccache')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz"
 	"https://archive.mozilla.org/pub/$name/releases/${version}esr/linux-x86_64/xpi/ru.xpi"
@@ -75,42 +75,6 @@ build() {
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
-	mkdir -p "$PKG"/usr/lib/firefox/browser/defaults/preferences/
-	cat > "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js <<-EOF
-		pref("browser.shell.checkDefaultBrowser", false);
-		pref("toolkit.telemetry.enabled", false);
-		pref("datareporting.healthreport.service.enabled", false);
-		pref("datareporting.healthreport.uploadEnabled", false);
-		pref("network.websocket.enabled", false);
-		pref("dom.event.clipboardevents.enabled", false);
-		pref("dom.battery.enabled", false);
-		pref("browser.send_pings", false);
-		pref("webgl.disabled", true);
-		pref("browser.pocket.enabled", false);
-		pref("media.peerconnection.enabled", false);
-		pref("loop.enabled", false);
-		pref("media.eme.enabled", false);
-		pref("media.gmp-eme-adobe.enabled", false);
-		pref("browser.beacen.enabled", false);
-		pref("geo.enabled", false);
-		pref("geo.wifi.logging.enabled", false);
-		pref("geo.wifi.uri", "");
-		pref("browser.safebrowsing.enabled", false);
-		pref("browser.safebrowsing.downloads.enabled", false);
-		pref("browser.safebrowsing.malware.enabled", false);
-		pref("social.directories", "");
-		pref("social.whitelist", "");
-		pref("social.manifest.facebook", "");
-		pref("social.remote-install.enabled", false);
-		pref("social.toast-notifications.enabled", false);
-		pref("device.sensors.enabled", false);
-		pref("camera.control.face_detection.enabled", false);
-		pref("camera.control.autofocus_moving_callback.enabled", false);
-		pref("privacy.trackingprotection.enabled", true);
-		pref("privacy.donottrackheader.enabled", true);
-		pref("network.http.speculative-parallel-limit", 0);
-	EOF
-
 	for i in 16 32 48 64 128; do
 		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
@@ -122,7 +86,7 @@ build() {
 	cat > "$PKG"/usr/share/applications/firefox.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
-		Name=Nightly
+		Name=Firefox Web Browser
 		Comment=Browse the World Wide Web
 		GenericName=Web Browser
 		Exec=firefox %u
