@@ -6,17 +6,9 @@
 
 name=firefox
 version=68.1.0
-release=2
+release=1
 options=('~emptydirs' '~ccache')
-source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz"
-	"https://archive.mozilla.org/pub/$name/releases/${version}esr/linux-x86_64/xpi/ru.xpi"
-	"https://archive.mozilla.org/pub/$name/releases/${version}esr/linux-x86_64/xpi/hu.xpi"
-	"https://archive.mozilla.org/pub/$name/releases/${version}esr/linux-x86_64/xpi/lt.xpi"
-	"https://archive.mozilla.org/pub/$name/releases/${version}esr/linux-x86_64/xpi/jp.xpi")
-noextract=("ru.xpi"
-           "hu.xpi"
-           "lt.xpi"
-           "jp.xpi")
+source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
@@ -101,8 +93,4 @@ build() {
 		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
 		StartupNotify=true
 	EOF
-
-	for a in ru hu lt jp; do
-		install -Dm644 "$SRC"/${a}.xpi "$PKG"/usr/lib/firefox/browser/extensions/langpack-${a}@firefox.mozilla.org.xpi
-	done
 }
