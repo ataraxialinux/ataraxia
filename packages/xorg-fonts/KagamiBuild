@@ -7,8 +7,9 @@
 name=xorg-fonts
 fonts="font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 \
 	font-misc-ethiopic font-xfree86-type1 font-adobe-100dpi font-adobe-75dpi \
-	font-jis-misc font-daewoo-misc font-isas-misc"
-version=20190715
+	font-jis-misc font-daewoo-misc font-isas-misc font-cronyx-cyrillic font-misc-cyrillic \
+	font-screen-cyrillic font-winitzki-cyrillic"
+version=20190902
 verfont_alias=1.0.3
 verfont_adobe_utopia_type1=1.0.4
 verfont_bh_ttf=1.0.3
@@ -21,8 +22,13 @@ verfont_adobe_75dpi=1.0.3
 verfont_jis_misc=1.0.3
 verfont_daewoo_misc=1.0.3
 verfont_isas_misc=1.0.3
+verfont_cronyx_cyrillic=1.0.3
+verfont_misc_cyrillic=1.0.3
+verfont_screen_cyrillic=1.0.4
+verfont_winitzki_cyrillic=1.0.3
+verfont_ipa=00303
 release=1
-source=()
+source=("https://github.com/ataraxialinux/storage/raw/master/IPAfont${verfont_ipa}.zip")
 
 for i in $fonts; do
 	xname=$i
@@ -54,6 +60,9 @@ build() {
 			make DESTDIR="$PKG" install
 		popd
 	done
+
+	cd "$SRC"/IPAfont${verfont_ipa}
+	install -Dm644 *.ttf "$PKG"/usr/share/fonts/OTF/
 }
 
 
