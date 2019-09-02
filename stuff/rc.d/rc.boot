@@ -23,6 +23,8 @@ for arg in $(cat /proc/cmdline);do
 	case "$arg" in
 		live=*)        live="${arg#*=}" ;;
 		single=*)      single="${arg#*=}" ;;
+		timezone=*)    timezone="${arg#*=}" ;;
+		hostname=*)    hostname="${arg#*=}" ;;
 	esac
 done
 
