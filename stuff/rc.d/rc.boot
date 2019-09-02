@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# /etc/rc.d/rc.boot:	System initialization script.
+# System startup script
 #
 
-. /etc/rc.conf
+ . /etc/rc.conf
 
 dmesg -n 1
 
@@ -11,7 +11,7 @@ mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,
 mountpoint -q /sys                 || mount -t sysfs sys /sys -o nosuid,noexec,nodev
 mountpoint -q /run                 || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
 mountpoint -q /dev                 || mount -t devtmpfs dev /dev -o mode=0755,nosuid
-mkdir -p -m0755 /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
+mkdir -p -m0755 /run/runit /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
 mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
 mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
@@ -43,11 +43,9 @@ if [ "$live" != "1" ]; then
 		mdadm -As
 	fi
 
-	if [ -r /etc/lvmtab -o -d /etc/lvm/backup ]; then
-		vgscan --mknodes --ignorelockingfailure 2> /dev/null
-		if [ $? = 0 ]; then
-			vgchange -ay --ignorelockingfailure
-		fi
+	if [ -x /usr/bin/vgchange ]; then
+		vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1
+		vgchange --sysinit --activate y >/dev/null 2>&1
 	fi
 
 	if [ -f /etc/crypttab -a -x /usr/bin/cryptsetup ]; then
@@ -79,64 +77,44 @@ if [ "$live" != "1" ]; then
 	fi
 fi
 
-if ! grep -wq nofsck /proc/cmdline; then
-	if [ -r /etc/forcefsck ]; then
+if [ "$live" != "1" ]; then
+	if [ -f /forcefsck ]; then
 		FORCEFSCK="-f"
 	fi
-	RETVAL=0
-	if [ ! -r /etc/fastboot ]; then
-		fsck $FORCEFSCK -C -a /
-		RETVAL=$?
-	fi
-	if [ $RETVAL -ge 2 ]; then
-			if [ $RETVAL -ge 4 ]; then
-				echo
-				echo "***********************************************************"
-				echo "*** An error occurred during the root filesystem check. ***"
-				echo "*** You will now be given a chance to log into the      ***"
-				echo "*** system in single-user mode to fix the problem.      ***"
-				echo "***                                                     ***"
-				echo "***********************************************************"
-				echo
-				echo "Once you exit the single-user shell, the system will reboot."
-				echo
-				PS1="(Repair filesystem) \# "; export PS1
-				sulogin
-			else
-				echo
-				echo "***********************************"
-				echo "*** The filesystem was changed. ***"
-				echo "*** The system will now reboot. ***"
-				echo "***********************************"
-				echo
-			fi
-			umount -a -r
-			mount -n -o remount,ro /
-			reboot -f
+
+	fsck $FORCEFSCK -A -T -C -a
+	if [ $? -gt 1 ]; then
+		echo
+		echo "***************  FILESYSTEM CHECK FAILED  ******************"
+		echo "*                                                          *"
+		echo "*  Please repair manually and reboot. Note that the root   *"
+		echo "*  file system is currently mounted read-only. To remount  *"
+		echo "*  it read-write type: mount -n -o remount,rw /            *"
+		echo "*  When you exit the maintainance shell the system will    *"
+		echo "*  reboot automatically.                                   *"
+		echo "*                                                          *"
+		echo "************************************************************"
+		echo
+		sulogin -p
+		halt -r
 	fi
 fi
 
-if ! grep -wq nofsck /proc/cmdline; then
-	if [ ! -r /etc/fastboot ]; then
-		fsck $FORCEFSCK -C -R -A -a
-	fi
+mount -o remount,rw /
+
+if [ "$live" != "1" ]; then
+	swapon -a
+	mount -a -t "nosysfs,nonfs,nonfs4,nosmbfs,nocifs" -O no_netdev
 fi
 
-if grep -wq rw /proc/cmdline ; then
-	mount -o remount,rw /
-fi
-
-mount -a -t nonfs,nonfs4,nosmbfs,nocifs -O no_netdev  &>/dev/null
-
-swapon -a
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 
 if [ -n "$hostname" ] ;then
 	hostname $hostname
 fi
 
-if ! grep -wq nonet /proc/cmdline; then
-	ifup -a
-fi
+ifup -a
 
 if [ -n "$timezone" ] ;then
 	ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
@@ -149,9 +127,11 @@ hwclock --hctosys
 
 sysctl -qp /etc/sysctl.d/*.conf
 
-rm -f /run/* /run/*pid /etc/nologin /run/lpd* \
-	/run/ppp* /etc/forcefsck /etc/fastboot /tmp/.Xauth* &>/dev/null
-( cd /tmp && rm -rf kde-[a-zA-Z]* ksocket-[a-zA-Z]* hsperfdata_[a-zA-Z]* plugtmp* &>/dev/null )
+: > /run/utmp
+rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+(cd /run && /usr/bin/find . -name "*.pid" -delete)
+(cd /run/lock && /usr/bin/find . ! -type d -delete)
+(cd /tmp && /usr/bin/find . ! -name . -delete)
 
 if [ ! -e /tmp/.ICE-unix ]; then
 	mkdir -p /tmp/.ICE-unix
@@ -163,16 +143,6 @@ if [ ! -e /tmp/.X11-unix ]; then
 fi
 
 cat /dev/null > /run/utmp
-
-if [ -f /etc/random-seed ]; then
-	cat /etc/random-seed > /dev/urandom
-fi
-if [ -r /proc/sys/kernel/random/poolsize ]; then
-	dd if=/dev/urandom of=/etc/random-seed count=1 bs=$(cat /proc/sys/kernel/random/poolsize) 2> /dev/null
-else
-	dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2> /dev/null
-fi
-chmod 600 /etc/random-seed
 
 dmesg > /var/log/dmesg.log
 chmod 600 /var/log/dmesg.log

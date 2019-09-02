@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# /etc/rc.d/rc.boot:	System shutdown script.
+# System shutdown script
 #
 
-. /etc/rc.conf
+ . /etc/rc.conf
 
 live="0"
 single="0"
@@ -40,31 +40,30 @@ fi
 
 echo; stty onlcr
 
-umount -a -r -t nfs,smbfs
-
-if ! grep -wq nonet /proc/cmdline; then
-	ifdown -a
-fi
+ifdown -a
 
 hwclock --systohc
 
 udevadm control --exit
 
-killall5 -15 
+killall5 -15
 sleep 1
 killall5 -9
 
-if fgrep quota /etc/fstab 1> /dev/null 2> /dev/null ; then
-	if [ -x /usr/bin/quotaoff ]; then
-		quotaoff -a
+if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
+	if type quotaoff > /dev/null; then
+		quotaoff -va
 	fi
 fi
 
-dd if=/dev/urandom of=/etc/random-seed count=1 bs=512
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+swapoff -a
+
+umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
 
 if [ "$live" != "1" ]; then
-	swapoff -a
-	umount -a -r -t nonfs,noumsdos,nosmbfs,noproc
+	mount -o remount,ro /
 fi
 
 sync
@@ -85,7 +84,7 @@ if [ "$live" != "1" ]; then
 	fi
 
 	if [ -r /etc/lvmtab -o -d /etc/lvm/backup ]; then
-		vgchange -an
+		vgchange --ignorelockingfailure -a n >/dev/null 2>&1
 	fi
 fi
 
