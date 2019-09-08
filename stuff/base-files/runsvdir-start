@@ -20,27 +20,47 @@ if [ -n "$fontname" ] ;then
 fi
 
 if [ "$IPTABLES" = "yes" ]; then
-	/etc/rc.d/rc.iptables start
+	if [ -x "/etc/rc.d/rc.iptables" ]; then
+		/etc/rc.d/rc.iptables start
+	fi
 fi
 
 if [ "$IP6TABLES" = "yes" ]; then
-	/etc/rc.d/rc.ip6tables start
+	if [ -x "/etc/rc.d/rc.ip6tables" ]; then
+		/etc/rc.d/rc.ip6tables start
+	fi
 fi
 
 if [ "$NFTABLES" = "yes" ]; then
-	/etc/rc.d/rc.nftables start
+	if [ -x "/etc/rc.d/rc.nftables" ]; then
+		/etc/rc.d/rc.nftables start
+	fi
 fi
 
 if [ "$IPSET" = "yes" ]; then
-	/etc/rc.d/rc.ipset start
+	if [ -x "/etc/rc.d/rc.ipset" ]; then
+		/etc/rc.d/rc.ipset start
+	fi
 fi
 
 if [ "$ALSA" = "yes" ]; then
-	/etc/rc.d/rc.alsa start
+	if [ -x "/etc/rc.d/rc.alsa" ]; then
+		/etc/rc.d/rc.alsa start
+	fi
 fi
 
 if [ -x /etc/rc.local ]; then
 	/etc/rc.local
 fi
 
-exec runsvdir -P /var/service 'log: ................................................................................................................................................................................................................................................................'
+if [ -d "/var/service/" ]; then
+	(
+		cd /var/service/
+		for i in * ; do
+			cp -rf /etc/service/$i /run/service/
+		done
+	)
+fi
+
+exec env - PATH=$PATH \
+ runsvdir -P /run/service 'log: ................................................................................................................................................................................................................................................................'

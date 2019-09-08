@@ -2,6 +2,11 @@
 
 case $1 in
 	start)
+		if [ ! -f "/var/lib/alsa/asound.state" ]; then
+			mkdir -p /var/lib/alsa/
+			alsactl restore
+			alsactl store
+		fi
 		alsactl restore
 		;;
 	stop)

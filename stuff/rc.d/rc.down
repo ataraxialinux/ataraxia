@@ -15,26 +15,36 @@ for arg in $(cat /proc/cmdline);do
 done
 
 if [ "$single" != "1" ]; then
-	sv down /var/service/*
+	sv down /run/service/*
 
 	if [ "$ALSA" = "yes" ]; then
-		/etc/rc.d/rc.alsa stop
+		if [ -x "/etc/rc.d/rc.alsa" ]; then
+			/etc/rc.d/rc.alsa stop
+		fi
 	fi
 
 	if [ "$IPSET" = "yes" ]; then
-		/etc/rc.d/rc.ipset stop
+		if [ -x "/etc/rc.d/rc.ipset" ]; then
+			/etc/rc.d/rc.ipset stop
+		fi
 	fi
 
 	if [ "$NFTABLES" = "yes" ]; then
-		/etc/rc.d/rc.nftables stop
+		if [ -x "/etc/rc.d/rc.nftables" ]; then
+			/etc/rc.d/rc.nftables stop
+		fi
 	fi
 
 	if [ "$IP6TABLES" = "yes" ]; then
-		/etc/rc.d/rc.ip6tables stop
+		if [ -x "/etc/rc.d/rc.ip6tables" ]; then
+			/etc/rc.d/rc.ip6tables stop
+		fi
 	fi
 
 	if [ "$IPTABLES" = "yes" ]; then
-		/etc/rc.d/rc.iptables stop
+		if [ -x "/etc/rc.d/rc.iptables" ]; then
+			/etc/rc.d/rc.iptables stop
+		fi
 	fi
 fi
 
