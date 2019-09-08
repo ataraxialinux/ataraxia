@@ -95,8 +95,12 @@ if [ "$live" != "1" ]; then
 		echo "*                                                          *"
 		echo "************************************************************"
 		echo
-		sulogin -p
-		halt -r
+		setsid cttyhack /usr/bin/mksh
+		if [ "$live" != "1" ]; then
+			umount -a -r
+			mount -o remount,ro /
+		fi
+		reboot -f
 	fi
 fi
 
@@ -149,5 +153,9 @@ chmod 600 /var/log/dmesg.log
 
 if [ "$single" = "1" ]; then
 	setsid cttyhack /usr/bin/mksh
+	if [ "$live" != "1" ]; then
+		umount -a -r
+		mount -o remount,ro /
+	fi
 	reboot -f
 fi

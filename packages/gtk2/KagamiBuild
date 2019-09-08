@@ -6,7 +6,7 @@
 
 name=gtk2
 version=2.24.32
-release=3
+release=4
 source=("http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz")
 
 build() {
@@ -21,23 +21,4 @@ build() {
 	make DESTDIR="$PKG" install
 
 	rm "$PKG"/usr/bin/gtk-update-icon-cache
-
-	if [ "$OPT_LOCALES" = "0" ]; then
-		msg "Removing locales"
-
-		for a in ru ja; do
-			if [ -d "$PKG/usr/lib/locale/$a" ]; then
-				mv "$PKG"/usr/lib/locale/$a "$WORK"/$a
-			fi
-		done
-
-		rm -rf "$PKG"/usr/lib/locale
-
-		mkdir -p "$PKG"/usr/lib/locale/
-		for a in ru ja; do
-			if [ -d "$WORK/$a" ]; then
-				mv "$WORK"/$a "$PKG"/usr/lib/locale/$a
-			fi
-		done
-	fi
 }
