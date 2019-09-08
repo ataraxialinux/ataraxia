@@ -1,0 +1,99 @@
+# Description: Standalone mail and news reader from mozilla.org
+# URL:         https://www.mozilla.org/thunderbird/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  autoconf2.13 gtk gtk2 rust zip unzip nasm yasm icu libevent nss sqlite startup-notification ffmpeg
+# Section:     net
+
+name=thunderbird
+version=68.0
+release=1
+options=('~emptydirs' '~ccache')
+source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
+
+build() {
+	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/thunderbird/fix-fortify-system-wrappers.patch
+	patch -Np1 -i "$STUFF"/thunderbird/fix-seccomp-bpf.patch
+	patch -Np1 -i "$STUFF"/thunderbird/fix-toolkit.patch
+	patch -Np1 -i "$STUFF"/thunderbird/fix-tools.patch
+	patch -Np1 -i "$STUFF"/thunderbird/mallinfo.patch
+	patch -Np1 -i "$STUFF"/thunderbird/disable-moz-stackwalk.patch
+	patch -Np1 -i "$STUFF"/thunderbird/fix-musl.patch
+	patch -Np1 -i "$STUFF"/thunderbird/fix-webrtc-glibcisms.patch
+	patch -Np1 -i "$STUFF"/thunderbird/fix-sandbox-membarrier.patch
+
+	sed -i -e '/#!\[deny(missing_docs)\]/d' servo/components/style/lib.rs
+	sed -i -e 's/#!\[deny(unsafe_code, missing_docs)\]/#!\[deny(unsafe_code)\]/g' servo/components/style_traits/lib.rs
+	sed -i -e '/pid_t gettid/s@^@//@' tools/profiler/core/platform.h	
+
+	cp "$STUFF"/thunderbird/stab.h toolkit/crashreporter/google-breakpad/src/
+
+	cat > mozconfig <<-EOF
+		ac_add_options --disable-dbus
+		ac_add_options --disable-necko-wifi
+		ac_add_options --disable-startup-notification
+		ac_add_options --disable-pulseaudio
+		ac_add_options --enable-alsa
+		ac_add_options --enable-av1
+		ac_add_options --enable-ffmpeg
+		ac_add_options --disable-debug-symbols
+		ac_add_options --prefix=/usr
+		ac_add_options --enable-application=comm/mail
+		ac_add_options --disable-elf-hack
+		ac_add_options --disable-gold
+		ac_add_options --disable-jemalloc
+		ac_add_options --disable-profiling
+		ac_add_options --enable-release
+		ac_add_options --enable-rust-simd
+		ac_add_options --enable-hardening
+		ac_add_options --disable-crashreporter
+		ac_add_options --disable-updater
+		ac_add_options --disable-tests
+		ac_add_options --enable-system-ffi
+		ac_add_options --enable-system-pixman
+		ac_add_options --enable-system-sqlite
+		ac_add_options --enable-startup-notification
+		ac_add_options --with-system-bz2
+		ac_add_options --with-system-icu
+		ac_add_options --with-system-libevent
+		ac_add_options --with-system-nspr
+		ac_add_options --with-system-nss
+		ac_add_options --with-system-pixman
+		ac_add_options --with-system-png
+		ac_add_options --with-system-webp
+		ac_add_options --with-system-zlib
+		ac_add_options --disable-official-branding
+		ac_add_options --with-branding=comm/mail/branding/nightly
+		ac_add_options --enable-update-channel=release
+		ac_add_options --disable-gconf
+		ac_add_options --host=$XTARGET
+		ac_add_options --target=$XTARGET
+	EOF
+
+	./mach build -j$(nproc)
+	DESTDIR="$PKG" ./mach install
+
+	for i in 16 32 48 64 128; do
+		install -Dm644 comm/mail/branding/nightly/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/thunderbird.png
+	done
+
+	mkdir -p "$PKG"/usr/bin/
+	ln -sf /usr/lib/thunderbird/thunderbird "$PKG"/usr/bin/thunderbird
+
+	mkdir -p "$PKG"/usr/share/applications/
+	cat > "$PKG"/usr/share/applications/thunderbird.desktop <<-EOF
+[Desktop Entry]
+		Name=Thunderbird Mail
+		Comment=Send and receive mail with Thunderbird
+		GenericName=Mail Client
+		Exec=thunderbird %u
+		Terminal=false
+		Type=Application
+		Icon=thunderbird
+		Categories=Network;Email;
+		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/xml;application/rss+xml;x-scheme-handler/mailto;
+		StartupNotify=true
+	EOF
+}
