@@ -104,7 +104,13 @@ EOF
 	else
   cat << EOF > "$PKG"/init
 #!/bin/sh
-export PATH=/bin
+reboot() {
+	RB=1
+}
+
+export PATH=/usr/bin
+export -f reboot
+
 mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
 mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
 mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
@@ -180,7 +186,11 @@ sync
 
 wait
 
-reboot -f
+if [ "$RB" = "1" ]; then
+	reboot -f
+else
+	poweroff -f
+fi
 EOF
 
 		chmod +x "$PKG"/init
