@@ -35,15 +35,18 @@ build() {
 	make
 	make -j1 DESTDIR="$PKG" install
 
-	for lib in ncurses form panel menu ; do
+	for lib in ncurses form panel menu; do
 		echo "INPUT(-l${lib}w)" > "$PKG"/usr/lib/lib${lib}.so
-		ln -sf lib${lib}w.a "$PKG"/usr/lib/lib${lib}.a
 		ln -sf ${lib}w.pc "$PKG"/usr/lib/pkgconfig/${lib}.pc
 	done
 
-	echo "INPUT(-lncursesw)" > "$PKG"/usr/lib/libcursesw.so
+	for lib in tic tinfo; do
+		echo "INPUT(libncursesw.so.${version:0:1})" > "$PKG"/usr/lib/lib${lib}.so
+		ln -sf libncursesw.so.${version:0:1} "$PKG"/usr/lib/lib${lib}.so.${version:0:1}
+	done
+
+	echo 'INPUT(-lncursesw)' > "$PKG"/usr/lib/libcursesw.so
 	ln -sf libncurses.so "$PKG"/usr/lib/libcurses.so
-	ln -sf libncursesw.a "$PKG"/usr/lib/libcurses.a
 
 	ln -sf ncursesw6-config "$PKG"/usr/bin/ncurses6-config
 

@@ -45,7 +45,7 @@ build() {
 
 	touch etc/ataraxialinux-release
 
-	for f in doas.conf fstab group host.conf hosts inittab issue issue.net motd os-release passwd profile protocols resolv.conf rc.conf securetty services shells; do
+	for f in doas.conf fstab group host.conf hosts issue issue.net motd os-release passwd profile protocols resolv.conf rc.conf securetty services shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
 	done
 
@@ -93,11 +93,98 @@ EOF
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
-	for rc in boot down; do
-		install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
-	done
+	if [ "$EMBEDDED" != "1" ]; then
+		for rc in boot down; do
+			install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
+		done
 
-	install -D -m755 "$STUFF"/rc.d/rc.local "$PKG"/etc/rc.local
+		install -D -m755 "$STUFF"/rc.d/rc.local "$PKG"/etc/rc.local
+
+		install -m644 "$STUFF"/base-files/inittab "$PKG"/etc/inittab
+	else
+  cat << EOF > "$PKG"/init
+#!/bin/sh
+export PATH=/bin
+mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev     || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p /dev/pts /dev/shm
+mountpoint -q /dev/pts || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+
+if [ -x /bin/udevd ]; then
+	udevd --daemon
+	udevadm trigger --action=add --type=subsystems
+	udevadm trigger --action=add --type=devices
+	udevadm trigger --action=change --type=devices
+	udevadm settle
+fi
+
+mount -o remount,ro /
+
+fsck -ATa
+if [ $? -eq 1 ]; the
+	echo "Filesystem errors exist, fix manually."
+	export PS1="(Repair) # "
+	setsid cttyhack /usr/bin/mksh
+	umount -a -r
+	mount -o remount,ro /
+	reboot -f
+fi
+
+if grep -wq rw /proc/cmdline ; then
+	mount -o remount,rw /
+fi
+
+mount -a -t nonfs,nonfs4,nosmbfs,nocifs -O no_netdev  &>/dev/null
+swapon -a
+
+hwclock -u -s
+
+hostname $(cat /etc/hostname)
+
+ifup -a
+
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+cat /dev/null > /run/utmp
+
+dmesg > /var/log/dmesg.log
+chmod 600 /var/log/dmesg.log
+
+setsid cttyhack /usr/bin/mksh
+
+echo; stty onlcr
+
+ifdown -a
+
+hwclock --systohc
+
+udevadm control --exit
+
+killall5 -15
+sleep 1
+killall5 -9
+
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+swapoff -a
+
+umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+
+mount -o remount,ro /
+
+sync
+
+wait
+
+reboot -f
+EOF
+
+		chmod +x "$PKG"/init
+	fi
 
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
 	install -D -m755 "$STUFF"/base-files/runsvdir-start "$PKG"/usr/bin/runsvdir-start
