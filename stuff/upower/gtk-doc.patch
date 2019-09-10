@@ -1,0 +1,56 @@
+--- upower-UPOWER_0_99_11-orig/Makefile.am
++++ upower-UPOWER_0_99_11/Makefile.am
+@@ -2,7 +2,7 @@
+ 
+ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
+ 
+-SUBDIRS = etc dbus libupower-glib src doc tools po
++SUBDIRS = etc dbus libupower-glib src tools po
+ 
+ if BACKEND_TYPE_LINUX
+ SUBDIRS += rules
+@@ -35,7 +35,6 @@
+ 	build-aux		\
+ 	ChangeLog		\
+ 	config.h.in		\
+-	gtk-doc.make		\
+ 	po/Makefile.in.in~	\
+ 	po/Makevars.template	\
+ 	po/Rules-quot		\
+--- upower-UPOWER_0_99_11-orig/autogen.sh
++++ upower-UPOWER_0_99_11/autogen.sh
+@@ -13,13 +13,6 @@
+         exit 1
+ fi
+ 
+-GTKDOCIZE=`which gtkdocize`
+-if test -z $GTKDOCIZE; then
+-        echo "*** No GTK-Doc found, please install it ***"
+-        exit 1
+-fi
+-
+-gtkdocize --copy || exit 1
+ autoreconf --verbose --force --install || exit 1
+ 
+ cd $olddir
+--- upower-UPOWER_0_99_11-orig/configure.ac
++++ upower-UPOWER_0_99_11/configure.ac
+@@ -80,8 +80,6 @@
+ fi
+ AM_CONDITIONAL(MAN_PAGES_ENABLED, test x$enable_man_pages = xyes)
+ 
+-GTK_DOC_CHECK([1.11],[--flavour no-tmpl])
+-
+ AC_ARG_WITH([udevrulesdir],
+             AS_HELP_STRING([--with-udevrulesdir=DIR], [Directory for udev rules]),
+             [],
+@@ -248,9 +246,6 @@
+ src/linux/Makefile
+ src/bsd/Makefile
+ tools/Makefile
+-doc/Makefile
+-doc/version.xml
+-doc/man/Makefile
+ rules/Makefile
+ libupower-glib/Makefile
+ libupower-glib/up-version.h

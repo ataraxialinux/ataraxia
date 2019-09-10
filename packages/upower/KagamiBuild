@@ -6,13 +6,15 @@
 
 name=upower
 version=0.99.11
-commit=93cfe7c8d66ed486001c4f3f55399b7a
-release=1
+release=2
 backup=('etc/UPower/UPower.conf')
-source=("https://gitlab.freedesktop.org/upower/upower/uploads/$commit/$name-$version.tar.xz")
+source=("https://gitlab.freedesktop.org/upower/upower/-/archive/UPOWER_${version//./_}/upower-UPOWER_${version//./_}.tar.bz2")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/upower-UPOWER_${version//./_}
+	patch -Np1 -i "$STUFF"/upower/gtk-doc.patch
+	NOCONFIGURE=1 ./autogen.sh
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \

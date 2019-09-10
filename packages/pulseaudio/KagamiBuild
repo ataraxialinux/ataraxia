@@ -6,7 +6,7 @@
 
 name=pulseaudio
 version=12.2
-release=3
+release=4
 backup=('etc/pulse/daemon.conf'
 	'etc/pulse/default.pa'
 	'etc/pulse/system.pa')
@@ -34,5 +34,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	mkdir -p "$PKG"/usr/share/dbus-1/system.d
+	mv "$PKG"/etc/dbus-1/system.d/* "$PKG"/usr/share/dbus-1/system.d
 	rm -rf "$PKG"/etc/dbus-1
 }
