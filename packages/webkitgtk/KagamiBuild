@@ -1,7 +1,7 @@
 # Description: GTK+ Web content engine library
 # URL:         https://webkitgtk.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  busybox cmake ninja gtk gtk2 gst-plugins-bad icu libgudev libsecret libsoup libwebp openjpeg ruby sqlite enchant libnotify geoclue
+# Depends on:  busybox cmake ninja gtk gtk2 gst-plugins-bad icu libgudev libsecret libsoup libwebp openjpeg ruby sqlite enchant libnotify geoclue wpebackend-fdo libseccomp bubblewrap xdg-dbus-proxy
 # Section:     gnome
 
 name=webkitgtk
@@ -14,8 +14,6 @@ build() {
 	export CXXFLAGS="$CXXFLAGS -g1"
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/webkitgtk/musl.patch
-
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
@@ -28,7 +26,6 @@ build() {
 		-DUSE_WOFF2=OFF \
 		-DENABLE_GTKDOC=OFF \
 		-DUSE_LIBHYPHEN=OFF \
-		-DENABLE_MINIBROWSER=OFF \
 		-DUSE_LD_GOLD=OFF \
 		-Wno-dev -G Ninja
 	ninja

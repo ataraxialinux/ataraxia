@@ -6,13 +6,13 @@
 
 name=polkit
 version=0.116
-release=2
+release=3
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/polkit/make-innetgr-optional.patch
-	autoreconf -fi
+	autoreconf -vif
 
 	sed -e 's,/sys/fs/cgroup/systemd/,/sys/fs/cgroup,g' -i configure
 
@@ -22,7 +22,6 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-authfw=shadow \
-		--with-os-type=Ataraxia \
 		--disable-libelogind \
 		--disable-libsystemd-login \
 		--disable-man-pages \
