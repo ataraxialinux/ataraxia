@@ -170,9 +170,11 @@ check_updates() {
 			if [ $? = 255 ]; then
 				if [ "$AUTODUMP" = "yes" ]; then
 					msg "Auto-updating ${original_pkgname} to ${found_version}"
-					local oldver
+					local oldver oldrel
 					oldver="$(grep ^version $mypkg/KagamiBuild | sed -e 's,version=,,g' )"
+					oldrel="$(grep ^release $mypkg/KagamiBuild | sed -e 's,release=,,g' )"
 					sed -i "s,${oldver},${found_version},g" "$mypkg/KagamiBuild"
+					sed -i "s,${oldrel},1,g" "$mypkg/KagamiBuild"
 				else
 					msg "Update ${original_pkgname} to ${found_version}"
 				fi
