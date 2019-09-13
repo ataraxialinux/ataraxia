@@ -6,9 +6,11 @@
 
 name=busybox
 version=1.31.0
-release=5
+runitver=2.1.2
+release=4
 options=('bootstrap')
-source=("http://busybox.net/downloads/$name-$version.tar.bz2")
+source=("http://busybox.net/downloads/$name-$version.tar.bz2"
+	"http://smarden.org/runit/runit-$runitver.tar.gz")
 
 
 build_busybox_standard() {
@@ -34,6 +36,7 @@ build_busybox_standard() {
 
 	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+		install -Dm0755 "$STUFF"/svc/$svc-finish "$PKG"/etc/service/$svc/finish
 		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
 	done
 
@@ -115,4 +118,20 @@ build() {
 	else
 		build_busybox_standard
 	fi
+
+	cd "$SRC"/admin/runit-$runitver/src
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		echo "$CC $CFLAGS -static" > conf-cc
+		echo "$CC -s -static" > conf-ld
+		sed -i "s,strip,$STRIP,g" Makefile
+	else
+		echo "cc $CFLAGS -static" > conf-cc
+		echo "cc -s -static" > conf-ld
+	fi
+
+	make utmpset 
+
+	for cmds in utmpset; do
+		install -Dm775 $cmds "$PKG"/usr/bin/$cmds
+	done
 }
