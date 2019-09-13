@@ -11,7 +11,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=2
+release=3
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
@@ -29,6 +29,7 @@ build() {
 		--without-python \
 		--without-systemd \
 		--without-systemdsystemunitdir \
+		--enable-all-programs \
 		--enable-fs-paths-default=/usr/bin \
 		--enable-fdisks \
 		--enable-fsck \
@@ -39,17 +40,57 @@ build() {
 		--enable-libsmartcols \
 		--enable-libuuid \
 		--enable-losetup \
+		--enable-mesg \
 		--enable-mount \
 		--enable-mountpoint \
 		--enable-partx \
 		--enable-raw \
+		--enable-rfkill \
+		--enable-tunelp \
 		--enable-wall \
 		--enable-write \
 		--enable-zramctl \
-		--disable-all-programs \
+		--disable-agetty \
+		--disable-bfs \
+		--disable-cal \
+		--disable-chfn-chsh \
+		--disable-chmem \
+		--disable-cramfs \
+		--disable-eject \
+		--disable-fallocate \
+		--disable-fdformat \
+		--disable-hardlink \
+		--disable-ipcrm \
+		--disable-ipcs \
+		--disable-kill \
+		--disable-last \
+		--disable-line \
+		--disable-login \
+		--disable-lslogins \
+		--disable-lsmem \
 		--disable-makeinstall-chown \
+		--disable-minix \
+		--disable-more \
+		--disable-newgrp \
 		--disable-nls \
-		--disable-rpath
+		--disable-nologin \
+		--disable-nsenter \
+		--disable-pg \
+		--disable-pivot_root \
+		--disable-rename \
+		--disable-rpath \
+		--disable-runuser \
+		--disable-schedutils \
+		--disable-setpriv \
+		--disable-setterm \
+		--disable-su \
+		--disable-sulogin \
+		--disable-switch_root \
+		--disable-ul \
+		--disable-unshare \
+		--disable-utmpdump \
+		--disable-vipw \
+		--disable-wdctl
 	make
 	make DESTDIR="$PKG" install
 
