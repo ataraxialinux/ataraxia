@@ -6,7 +6,7 @@
 
 name=qt5
 version=5.13.0
-release=1
+release=2
 source=("https://download.qt.io/official_releases/qt/${version::4}/$version/single/qt-everywhere-src-$version.tar.xz")
 
 build() {
@@ -19,12 +19,6 @@ build() {
 	sed -i 's/python /python3 /' qtdeclarative/qtdeclarative.pro qtdeclarative/src/3rdparty/masm/masm.pri
 	sed -i 's/SIOCGSTAMP/0x8906/' qtserialbus/src/plugins/canbus/socketcan/socketcanbackend.cpp
 	sed -i 's/SIOCGSTAMP/0x8906/' qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
-
-	case $BARCH in
-		riscv64|riscv32|m68k)
-			QTWEBENGINE="-skip qtwebengine"
-			;;
-	esac
 
 	./configure \
 		-prefix /usr \
@@ -46,7 +40,8 @@ build() {
 		-openssl-linked \
 		-reduce-relocations \
 		-system-harfbuzz \
-		-system-sqlite $QTWEBENGINE
+		-system-sqlite \
+		-skip qtwebengine
 	make
 	make INSTALL_ROOT="$PKG" install
 
