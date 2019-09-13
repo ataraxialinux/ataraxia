@@ -6,11 +6,9 @@
 
 name=busybox
 version=1.31.0
-runitver=2.1.2
-release=4
+release=5
 options=('bootstrap')
-source=("http://busybox.net/downloads/$name-$version.tar.bz2"
-	"http://smarden.org/runit/runit-$runitver.tar.gz")
+source=("http://busybox.net/downloads/$name-$version.tar.bz2")
 
 
 build_busybox_standard() {
@@ -36,10 +34,6 @@ build_busybox_standard() {
 
 	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
 		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
-		install -Dm0755 "$STUFF"/svc/$svc-finish "$PKG"/etc/service/$svc/finish
-	done
-
-	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
 		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
 	done
 
@@ -52,6 +46,8 @@ build_busybox_standard() {
 	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/apply
 	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/who
 	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static doas.c env.c y.tab.c persist.c reallocarray.c setprogname.c strtonum.c -o "$PKG"/usr/bin/doas
+
+	rm -rf y.tab.c
 
 	for a in apply.1 pr.1 what.1 who.1 doas.1; do
 		install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
@@ -119,20 +115,4 @@ build() {
 	else
 		build_busybox_standard
 	fi
-
-	cd "$SRC"/admin/runit-$runitver/src
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		echo "$CC $CFLAGS -static" > conf-cc
-		echo "$CC -s -static" > conf-ld
-		sed -i "s,strip,$STRIP,g" Makefile
-	else
-		echo "cc $CFLAGS -static" > conf-cc
-		echo "cc -s -static" > conf-ld
-	fi
-
-	make utmpset 
-
-	for cmds in utmpset; do
-		install -Dm775 $cmds "$PKG"/usr/bin/$cmds
-	done
 }

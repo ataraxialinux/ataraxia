@@ -11,7 +11,7 @@ mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,
 mountpoint -q /sys                 || mount -t sysfs sys /sys -o nosuid,noexec,nodev
 mountpoint -q /run                 || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
 mountpoint -q /dev                 || mount -t devtmpfs dev /dev -o mode=0755,nosuid
-mkdir -p -m0755 /run/services /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
+mkdir -p -m0755 /run/service /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
 mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
 mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
