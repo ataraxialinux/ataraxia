@@ -1,0 +1,94 @@
+--- a/LEGAL
++++ b/LEGAL
+@@ -657,31 +657,6 @@ ext/digest/sha2/sha2.h::
+     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+     SUCH DAMAGE.
+
+-ext/json/generator/generator.c::
+-
+-  The file contains the following copyright notice.
+-
+-  >>>
+-    Copyright 2001-2004 Unicode, Inc.
+-
+-    Disclaimer::
+-
+-      This source code is provided as is by Unicode, Inc. No claims are
+-      made as to fitness for any particular purpose. No warranties of any
+-      kind are expressed or implied. The recipient agrees to determine
+-      applicability of information provided. If this file has been
+-      purchased on magnetic or optical media from Unicode, Inc., the
+-      sole remedy for any claim will be exchange of defective media
+-      within 90 days of receipt.
+-
+-    Limitations on Rights to Redistribute This Code::
+-
+-      Unicode, Inc. hereby grants the right to freely use the information
+-      supplied in this file in the creation of products supporting the
+-      Unicode Standard, and to make copies of this file in any form
+-      for internal or external distribution as long as this notice
+-      remains attached.
+-
+ ext/nkf/nkf-utf8/config.h::
+ ext/nkf/nkf-utf8/nkf.c::
+ ext/nkf/nkf-utf8/utf8tbl.c::
+--- a/common.mk
++++ b/common.mk
+@@ -989,8 +989,7 @@ srcs-ext: $(EXT_SRCS)
+ realclean-srcs-ext::
+ 	     $(Q)$(RM) $(EXT_SRCS)
+
+-EXTRA_SRCS = $(srcdir)/ext/json/parser/parser.c \
+-	     $(srcdir)/ext/date/zonetab.h \
++EXTRA_SRCS = $(srcdir)/ext/date/zonetab.h \
+ 	     $(empty)
+
+ srcs-extra: $(EXTRA_SRCS)
+@@ -1006,11 +1005,6 @@
+ 		Q=$(Q) ECHO=$(ECHO) RM="$(RM)" top_srcdir=../.. srcdir=. VPATH="$${VPATH}" \
+ 		RUBY="$(BASERUBY)" PATH_SEPARATOR="$(PATH_SEPARATOR)"
+ 
+-$(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
+-	$(ECHO) generating $@
+-	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(mflags) \
+-		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. BASERUBY="$(BASERUBY)"
+-
+ $(srcdir)/ext/date/zonetab.h: $(srcdir)/ext/date/zonetab.list
+ 	$(ECHO) generating $@
+ 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(mflags) \
+--- a/doc/maintainers.rdoc	2017-12-22 18:08:05.000000000 -0500
++++ b/doc/maintainers.rdoc	2018-01-07 09:57:59.999596681 -0500
+@@ -253,9 +253,6 @@
+ [ext/io/console]
+   Nobuyuki Nakada (nobu)
+   https://github.com/ruby/io-console
+-[ext/json]
+-  NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
+-  https://github.com/flori/json
+ [ext/openssl]
+   Kazuki Yamaguchi (rhe)
+   https://github.com/ruby/openssl
+--- a/ext/.document	2017-09-03 08:31:34.000000000 -0500
++++ b/ext/.document	2018-01-07 09:58:54.180475610 -0500
+@@ -27,9 +27,6 @@
+ io/console/console.c
+ io/nonblock/nonblock.c
+ io/wait/wait.c
+-json/generator/generator.c
+-json/lib
+-json/parser/parser.c
+ nkf/lib
+ nkf/nkf.c
+ objspace/objspace.c
+--- a/ext/Setup	2017-04-20 03:21:24.000000000 -0500
++++ b/ext/Setup	2018-01-07 10:06:52.168822642 -0500
+@@ -20,9 +20,6 @@
+ #io/console
+ #io/nonblock
+ #io/wait
+-#json
+-#json/generator
+-#json/parser
+ #nkf
+ #objspace
+ #openssl

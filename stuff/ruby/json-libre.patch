@@ -1,0 +1,32 @@
+--- a/lib/json.rb	2017-04-18 04:16:28.000000000 -0500
++++ b/lib/json.rb	2018-01-07 12:54:09.516275320 -0500
+@@ -55,9 +55,5 @@
+ module JSON
+   require 'json/version'
+ 
+-  begin
+-    require 'json/ext'
+-  rescue LoadError
+-    require 'json/pure'
+-  end
++  require 'json/pure'
+ end
+--- a/tests/test_helper.rb	2017-04-18 04:16:28.000000000 -0500
++++ b/tests/test_helper.rb	2018-01-07 12:55:21.359687486 -0500
+@@ -1,14 +1,5 @@
+-case ENV['JSON']
+-when 'pure'
+-  $:.unshift 'lib'
+-  require 'json/pure'
+-when 'ext'
+-  $:.unshift 'ext', 'lib'
+-  require 'json/ext'
+-else
+-  $:.unshift 'ext', 'lib'
+-  require 'json'
+-end
++$:.unshift 'lib'
++require 'json'
+ 
+ require 'test/unit'
+ begin

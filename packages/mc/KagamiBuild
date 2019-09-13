@@ -6,7 +6,7 @@
 
 name=mc
 version=4.8.23
-release=1
+release=2
 backup=('etc/mc/edit.indent.rc'
 	'etc/mc/filehighlight.ini'
 	'etc/mc/mc.ext'
@@ -19,6 +19,8 @@ source=("http://ftp.midnight-commander.org/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/mc/libre.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \

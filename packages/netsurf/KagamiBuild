@@ -6,13 +6,15 @@
 
 name=netsurf
 version=3.9
-release=2
+release=3
 source=("http://download.netsurf-browser.org/netsurf/releases/source-full/netsurf-all-$version.tar.gz")
 
 build() {
-	cd "$SRC"/netsurf-all-$version
-	setconf netsurf/frontends/gtk/res/netsurf-gtk.desktop 'Exec=netsurf %u'
+	cd "$SRC"/netsurf-all-$version/netsurf
+	patch -Np1 -i "$STUFF"/netsurf/remove_nonprivacy_options.patch
+	setconf frontends/gtk/res/netsurf-gtk.desktop 'Exec=netsurf %u'
 
+	cd "$SRC"/netsurf-all-$version
 	make \
 		PREFIX=/usr \
 		LIBDIR=lib \

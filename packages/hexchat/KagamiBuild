@@ -6,11 +6,16 @@
 
 name=hexchat
 version=2.14.2
-release=1
+release=2
 source=("https://dl.hexchat.net/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+
+	# Remove firefox references
+	sed -i '\|NAME Open Link| s|Firefox|Iceweasel|' src/common/hexchat.c
+	sed -i '\|NAME Open Link| s|firefox -new-window %s\\n\\n";|iceweasel -new-window %s\\n\\n"\\\n		"NAME Open Link in a new Icecat Window\\n"		"CMD !icecat -new-window %s\\n\\n";|' src/common/hexchat.c
+
 	mkdir -p build
 	cd build
 

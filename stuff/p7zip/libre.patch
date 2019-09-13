@@ -1,0 +1,959 @@
+diff --git a/C/Sha1.c b/C/Sha1.c
+index 55c1c63..48b4c5d 100644
+--- a/C/Sha1.c
++++ b/C/Sha1.c
+@@ -104,39 +104,6 @@ void Sha1_GetBlockDigest(CSha1 *p, const UInt32 *data, UInt32 *destDigest)
+   destDigest[4] = p->state[4] + e;
+ }
+ 
+-void Sha1_UpdateBlock_Rar(CSha1 *p, UInt32 *data, int returnRes)
+-{
+-  UInt32 a, b, c, d, e;
+-  UInt32 W[kNumW];
+-
+-  a = p->state[0];
+-  b = p->state[1];
+-  c = p->state[2];
+-  d = p->state[3];
+-  e = p->state[4];
+-  
+-  RX_15
+-
+-  RX_1_4(R0, R1, 15);
+-
+-  RX_20(R2, 20);
+-  RX_20(R3, 40);
+-  RX_20(R4, 60);
+-
+-  p->state[0] += a;
+-  p->state[1] += b;
+-  p->state[2] += c;
+-  p->state[3] += d;
+-  p->state[4] += e;
+-
+-  if (returnRes)
+-  {
+-    unsigned i;
+-    for (i = 0 ; i < SHA1_NUM_BLOCK_WORDS; i++)
+-      data[i] = W[kNumW - SHA1_NUM_BLOCK_WORDS + i];
+-  }
+-}
+-
+ #define Sha1_UpdateBlock(p) Sha1_GetBlockDigest(p, p->buffer, p->state)
+ 
+ void Sha1_Update(CSha1 *p, const Byte *data, size_t size)
+@@ -212,46 +179,6 @@ void Sha1_Update(CSha1 *p, const Byte *data, size_t size)
+   }
+ }
+ 
+-void Sha1_Update_Rar(CSha1 *p, Byte *data, size_t size /* , int rar350Mode */)
+-{
+-  int returnRes = False;
+-  
+-  unsigned pos = (unsigned)p->count & 0x3F;
+-  p->count += size;
+-
+-  while (size--)
+-  {
+-    unsigned pos2 = (pos & 3);
+-    UInt32 v = ((UInt32)*data++) << (8 * (3 - pos2));
+-    UInt32 *ref = &(p->buffer[pos >> 2]);
+-    pos++;
+-    if (pos2 == 0)
+-    {
+-      *ref = v;
+-      continue;
+-    }
+-    *ref |= v;
+-    
+-    if (pos == SHA1_BLOCK_SIZE)
+-    {
+-      pos = 0;
+-      Sha1_UpdateBlock_Rar(p, p->buffer, returnRes);
+-      if (returnRes)
+-      {
+-        unsigned i;
+-        for (i = 0; i < SHA1_NUM_BLOCK_WORDS; i++)
+-        {
+-          UInt32 d = p->buffer[i];
+-          Byte *prev = data + i * 4 - SHA1_BLOCK_SIZE;
+-          SetUi32(prev, d);
+-        }
+-      }
+-      // returnRes = rar350Mode;
+-      returnRes = True;
+-    }
+-  }
+-}
+-
+ void Sha1_Final(CSha1 *p, Byte *digest)
+ {
+   unsigned pos = (unsigned)p->count & 0x3F;
+diff --git a/C/Sha1.h b/C/Sha1.h
+index aa22ec3..9c45653 100644
+--- a/C/Sha1.h
++++ b/C/Sha1.h
+@@ -27,8 +27,6 @@ void Sha1_GetBlockDigest(CSha1 *p, const UInt32 *data, UInt32 *destDigest);
+ void Sha1_Update(CSha1 *p, const Byte *data, size_t size);
+ void Sha1_Final(CSha1 *p, Byte *digest);
+ 
+-void Sha1_Update_Rar(CSha1 *p, Byte *data, size_t size /* , int rar350Mode */);
+-
+ void Sha1_32_PrepareBlock(const CSha1 *p, UInt32 *block, unsigned size);
+ void Sha1_32_Update(CSha1 *p, const UInt32 *data, size_t size);
+ void Sha1_32_Final(CSha1 *p, UInt32 *digest);
+diff --git a/CPP/7zip/Archive/7z/7zUpdate.cpp b/CPP/7zip/Archive/7z/7zUpdate.cpp
+index a0571e7..43ad3e9 100644
+--- a/CPP/7zip/Archive/7z/7zUpdate.cpp
++++ b/CPP/7zip/Archive/7z/7zUpdate.cpp
+@@ -562,7 +562,7 @@ static int CompareEmptyItems(const unsigned *p1, const unsigned *p2, void *param
+ }
+ 
+ static const char *g_Exts =
+-  " 7z xz lzma ace arc arj bz tbz bz2 tbz2 cab deb gz tgz ha lha lzh lzo lzx pak rar rpm sit zoo"
++  " 7z xz lzma ace arc arj bz tbz bz2 tbz2 cab deb gz tgz ha lha lzh lzo lzx pak rpm sit zoo"
+   " zip jar ear war msi"
+   " 3gp avi mov mpeg mpg mpe wmv"
+   " aac ape fla flac la mp3 m4a mp4 ofr ogg pac ra rm rka shn swa tta wv wma wav"
+diff --git a/CPP/7zip/Bundles/Format7zFree/makefile.list b/CPP/7zip/Bundles/Format7zFree/makefile.list
+index da2056b..1dcf1a5 100644
+--- a/CPP/7zip/Bundles/Format7zFree/makefile.list
++++ b/CPP/7zip/Bundles/Format7zFree/makefile.list
+@@ -87,8 +87,6 @@ SRCS=\
+   ../../../../CPP/7zip/Archive/PeHandler.cpp \
+   ../../../../CPP/7zip/Archive/PpmdHandler.cpp \
+   ../../../../CPP/7zip/Archive/QcowHandler.cpp \
+-  ../../../../CPP/7zip/Archive/Rar/RarHandler.cpp \
+-  ../../../../CPP/7zip/Archive/Rar/Rar5Handler.cpp \
+   ../../../../CPP/7zip/Archive/RpmHandler.cpp \
+   ../../../../CPP/7zip/Archive/SplitHandler.cpp \
+   ../../../../CPP/7zip/Archive/SquashfsHandler.cpp \
+@@ -191,9 +189,6 @@ SRCS=\
+   ../../../../CPP/7zip/Crypto/MyAesReg.cpp \
+   ../../../../CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp \
+   ../../../../CPP/7zip/Crypto/RandGen.cpp \
+-  ../../../../CPP/7zip/Crypto/Rar20Crypto.cpp \
+-  ../../../../CPP/7zip/Crypto/Rar5Aes.cpp \
+-  ../../../../CPP/7zip/Crypto/RarAes.cpp \
+   ../../../../CPP/7zip/Crypto/WzAes.cpp \
+   ../../../../CPP/7zip/Crypto/ZipCrypto.cpp \
+   ../../../../CPP/7zip/Crypto/ZipStrong.cpp \
+@@ -485,10 +480,6 @@ PpmdHandler.o : ../../../../CPP/7zip/Archive/PpmdHandler.cpp
+ 	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Archive/PpmdHandler.cpp
+ QcowHandler.o : ../../../../CPP/7zip/Archive/QcowHandler.cpp
+ 	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Archive/QcowHandler.cpp
+-RarHandler.o : ../../../../CPP/7zip/Archive/Rar/RarHandler.cpp
+-	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Archive/Rar/RarHandler.cpp
+-Rar5Handler.o : ../../../../CPP/7zip/Archive/Rar/Rar5Handler.cpp
+-	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Archive/Rar/Rar5Handler.cpp
+ RpmHandler.o : ../../../../CPP/7zip/Archive/RpmHandler.cpp
+ 	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Archive/RpmHandler.cpp
+ SplitHandler.o : ../../../../CPP/7zip/Archive/SplitHandler.cpp
+@@ -693,12 +684,6 @@ Pbkdf2HmacSha1.o : ../../../../CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp
+ 	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp
+ RandGen.o : ../../../../CPP/7zip/Crypto/RandGen.cpp
+ 	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Crypto/RandGen.cpp
+-Rar20Crypto.o : ../../../../CPP/7zip/Crypto/Rar20Crypto.cpp
+-	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Crypto/Rar20Crypto.cpp
+-Rar5Aes.o : ../../../../CPP/7zip/Crypto/Rar5Aes.cpp
+-	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Crypto/Rar5Aes.cpp
+-RarAes.o : ../../../../CPP/7zip/Crypto/RarAes.cpp
+-	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Crypto/RarAes.cpp
+ WzAes.o : ../../../../CPP/7zip/Crypto/WzAes.cpp
+ 	$(CXX) $(CXXFLAGS) ../../../../CPP/7zip/Crypto/WzAes.cpp
+ ZipCrypto.o : ../../../../CPP/7zip/Crypto/ZipCrypto.cpp
+@@ -869,8 +854,6 @@ OBJS=\
+  PeHandler.o \
+  PpmdHandler.o \
+  QcowHandler.o \
+- RarHandler.o \
+- Rar5Handler.o \
+  RpmHandler.o \
+  SplitHandler.o \
+  SquashfsHandler.o \
+@@ -973,9 +956,6 @@ OBJS=\
+  MyAesReg.o \
+  Pbkdf2HmacSha1.o \
+  RandGen.o \
+- Rar20Crypto.o \
+- Rar5Aes.o \
+- RarAes.o \
+  WzAes.o \
+  ZipCrypto.o \
+  ZipStrong.o \
+diff --git a/CPP/7zip/CMAKE/Format7zFree/CMakeLists.txt b/CPP/7zip/CMAKE/Format7zFree/CMakeLists.txt
+index 61f41f9..adc7117 100644
+--- a/CPP/7zip/CMAKE/Format7zFree/CMakeLists.txt
++++ b/CPP/7zip/CMAKE/Format7zFree/CMakeLists.txt
+@@ -126,8 +126,6 @@ add_library(7z MODULE
+   "../../../../CPP/7zip/Archive/PeHandler.cpp"
+   "../../../../CPP/7zip/Archive/PpmdHandler.cpp"
+   "../../../../CPP/7zip/Archive/QcowHandler.cpp"
+-  "../../../../CPP/7zip/Archive/Rar/RarHandler.cpp"
+-  "../../../../CPP/7zip/Archive/Rar/Rar5Handler.cpp"
+   "../../../../CPP/7zip/Archive/RpmHandler.cpp"
+   "../../../../CPP/7zip/Archive/SplitHandler.cpp"
+   "../../../../CPP/7zip/Archive/SquashfsHandler.cpp"
+@@ -230,9 +228,6 @@ add_library(7z MODULE
+   "../../../../CPP/7zip/Crypto/MyAesReg.cpp"
+   "../../../../CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp"
+   "../../../../CPP/7zip/Crypto/RandGen.cpp"
+-  "../../../../CPP/7zip/Crypto/Rar20Crypto.cpp"
+-  "../../../../CPP/7zip/Crypto/Rar5Aes.cpp"
+-  "../../../../CPP/7zip/Crypto/RarAes.cpp"
+   "../../../../CPP/7zip/Crypto/WzAes.cpp"
+   "../../../../CPP/7zip/Crypto/ZipCrypto.cpp"
+   "../../../../CPP/7zip/Crypto/ZipStrong.cpp"
+diff --git a/CPP/7zip/Crypto/Sha1Cls.h b/CPP/7zip/Crypto/Sha1Cls.h
+index 71acbde..cde4a57 100644
+--- a/CPP/7zip/Crypto/Sha1Cls.h
++++ b/CPP/7zip/Crypto/Sha1Cls.h
+@@ -28,7 +28,6 @@ class CContext: public CContextBase
+ {
+ public:
+   void Update(const Byte *data, size_t size) throw() { Sha1_Update(&_s, data, size); }
+-  void UpdateRar(Byte *data, size_t size /* , bool rar350Mode */) throw() { Sha1_Update_Rar(&_s, data, size /* , rar350Mode ? 1 : 0 */); }
+   void Final(Byte *digest) throw() { Sha1_Final(&_s, digest); }
+ };
+ 
+diff --git a/CPP/7zip/Guid.txt b/CPP/7zip/Guid.txt
+index 7edab6e..cc22992 100644
+--- a/CPP/7zip/Guid.txt
++++ b/CPP/7zip/Guid.txt
+@@ -151,7 +151,6 @@ Handler GUIDs:
+ 
+   01 Zip
+   02 BZip2
+-  03 Rar
+   04 Arj
+   05 Z
+   06 Lzh
+@@ -168,7 +167,6 @@ Handler GUIDs:
+   C9 VDI
+   CA Qcow
+   CB GPT
+-  CC Rar5
+   CD IHex
+   CE Hxs
+   CF TE
+diff --git a/CPP/7zip/QMAKE/Format7zFree/Format7zFree.pro b/CPP/7zip/QMAKE/Format7zFree/Format7zFree.pro
+index afa36d4..93c45c7 100644
+--- a/CPP/7zip/QMAKE/Format7zFree/Format7zFree.pro
++++ b/CPP/7zip/QMAKE/Format7zFree/Format7zFree.pro
+@@ -137,8 +137,6 @@ SOURCES +=  \
+   ../../../../CPP/7zip/Archive/PeHandler.cpp \
+   ../../../../CPP/7zip/Archive/PpmdHandler.cpp \
+   ../../../../CPP/7zip/Archive/QcowHandler.cpp \
+-  ../../../../CPP/7zip/Archive/Rar/RarHandler.cpp \
+-  ../../../../CPP/7zip/Archive/Rar/Rar5Handler.cpp \
+   ../../../../CPP/7zip/Archive/RpmHandler.cpp \
+   ../../../../CPP/7zip/Archive/SplitHandler.cpp \
+   ../../../../CPP/7zip/Archive/SquashfsHandler.cpp \
+@@ -241,9 +239,6 @@ SOURCES +=  \
+   ../../../../CPP/7zip/Crypto/MyAesReg.cpp \
+   ../../../../CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp \
+   ../../../../CPP/7zip/Crypto/RandGen.cpp \
+-  ../../../../CPP/7zip/Crypto/Rar20Crypto.cpp \
+-  ../../../../CPP/7zip/Crypto/Rar5Aes.cpp \
+-  ../../../../CPP/7zip/Crypto/RarAes.cpp \
+   ../../../../CPP/7zip/Crypto/WzAes.cpp \
+   ../../../../CPP/7zip/Crypto/ZipCrypto.cpp \
+   ../../../../CPP/7zip/Crypto/ZipStrong.cpp \
+diff --git a/CPP/7zip/QMAKE/all.pro b/CPP/7zip/QMAKE/all.pro
+index a565ba8..6668619 100644
+--- a/CPP/7zip/QMAKE/all.pro
++++ b/CPP/7zip/QMAKE/all.pro
+@@ -4,7 +4,6 @@ SUBDIRS = 7za \
+           7zr \
+           7z_ \
+           Format7zFree \
+-          Rar \
+           Lzham \
+           test_lib
+ 
+diff --git a/CPP/7zip/UI/Client7z/Client7z.cpp b/CPP/7zip/UI/Client7z/Client7z.cpp
+index d0eca6d..7f4e6e2 100644
+--- a/CPP/7zip/UI/Client7z/Client7z.cpp
++++ b/CPP/7zip/UI/Client7z/Client7z.cpp
+@@ -32,7 +32,7 @@ HINSTANCE g_hInstance = 0;
+ #endif
+ 
+ // Tou can find the list of all GUIDs in Guid.txt file.
+-// use another CLSIDs, if you want to support other formats (zip, rar, ...).
++// use another CLSIDs, if you want to support other formats (zip, ...).
+ // {23170F69-40C1-278A-1000-000110070000}
+ 
+ DEFINE_GUID(CLSID_CFormat7z,
+diff --git a/CPP/7zip/UI/Common/LoadCodecs.h b/CPP/7zip/UI/Common/LoadCodecs.h
+index ac9eeac..076bd1c 100644
+--- a/CPP/7zip/UI/Common/LoadCodecs.h
++++ b/CPP/7zip/UI/Common/LoadCodecs.h
+@@ -158,7 +158,6 @@ struct CArcInfoEx
+   void AddExts(const UString &ext, const UString &addExt);
+ 
+   bool IsSplit() const { return StringsAreEqualNoCase_Ascii(Name, "Split"); }
+-  // bool IsRar() const { return StringsAreEqualNoCase_Ascii(Name, "Rar"); }
+ 
+   CArcInfoEx():
+       Flags(0),
+diff --git a/CPP/7zip/UI/Common/OpenArchive.cpp b/CPP/7zip/UI/Common/OpenArchive.cpp
+index 7d5b0c4..88ea5ab 100644
+--- a/CPP/7zip/UI/Common/OpenArchive.cpp
++++ b/CPP/7zip/UI/Common/OpenArchive.cpp
+@@ -1063,7 +1063,6 @@ static const char * const k_Formats_with_simple_signuature[] =
+ {
+     "7z"
+   , "xz"
+-  , "rar"
+   , "bzip2"
+   , "gzip"
+   , "cab"
+@@ -1720,29 +1719,6 @@ HRESULT CArc::OpenStream2(const COpenOptions &op)
+         {
+           // signature search was here
+         }
+-        else if (extension.IsEqualTo("000") || extension.IsEqualTo("001"))
+-        {
+-          int i = FindFormatForArchiveType(op.codecs, orderIndices, "rar");
+-          if (i >= 0)
+-          {
+-            const size_t kBufSize = (1 << 10);
+-            byteBuffer.Alloc(kBufSize);
+-            size_t processedSize = kBufSize;
+-            RINOK(ReadStream(op.stream, byteBuffer, &processedSize));
+-            if (processedSize >= 16)
+-            {
+-              const Byte *buf = byteBuffer;
+-              const Byte kRarHeader[] = { 0x52 , 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00 };
+-              if (TestSignature(buf, kRarHeader, 7) && buf[9] == 0x73 && (buf[10] & 1) != 0)
+-              {
+-                orderIndices2.Add(orderIndices[i]);
+-                orderIndices[i] = -1;
+-                if (i >= (int)numFinded)
+-                  numFinded++;
+-              }
+-            }
+-          }
+-        }
+         else
+         {
+           const size_t kBufSize = (1 << 10);
+diff --git a/CPP/7zip/UI/FileManager/FM_rc.cpp b/CPP/7zip/UI/FileManager/FM_rc.cpp
+index 83578ed..034feed 100644
+--- a/CPP/7zip/UI/FileManager/FM_rc.cpp
++++ b/CPP/7zip/UI/FileManager/FM_rc.cpp
+@@ -821,8 +821,6 @@ REGISTER_STRINGTABLE(g_stringTable)
+ 
+ /////////////////////////////////////////////////////
+ 
+-#include "res/ParentFolder.h"
+-
+ 	SevenZipPanel::SevenZipPanel(MyFrame *frame, wxWindow *parent,int id,int panelIndex) :
+ 	       	wxPanel(parent,id) , m_frame(frame), _wList(0)
+ 	{
+@@ -840,7 +838,7 @@ REGISTER_STRINGTABLE(g_stringTable)
+ 		int sizes[] = {150, 250, 350, -1};
+ 		wxArrayString pathArray;
+ 		wxBoxSizer *pPathSizer = new wxBoxSizer(wxHORIZONTAL);
+-		m_pBmpButtonParentFolder = new wxBitmapButton(this, kParentFolderID, wxGetBitmapFromMemory(PARENT_FOLDER), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
++		m_pBmpButtonParentFolder = new wxBitmapButton(this, kParentFolderID, wxArtProvider::GetBitmap(wxART_GO_DIR_UP, wxART_TOOLBAR, wxDefaultSize), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
+ 		m_pComboBoxPath = new wxComboBox(this, _comboBoxID, wxEmptyString, wxDefaultPosition, wxSize(300,-1), pathArray, wxCB_DROPDOWN | wxCB_SORT );
+ 		pPathSizer->Add(m_pBmpButtonParentFolder, 0, wxALL|wxEXPAND, 0);
+ 		pPathSizer->Add(m_pComboBoxPath, 1, wxALL|wxEXPAND, 5);
+diff --git a/CPP/ANDROID/Format7zFree/jni/Android.mk b/CPP/ANDROID/Format7zFree/jni/Android.mk
+index 7c74e73..48cb4fa 100644
+--- a/CPP/ANDROID/Format7zFree/jni/Android.mk
++++ b/CPP/ANDROID/Format7zFree/jni/Android.mk
+@@ -91,8 +91,6 @@ LOCAL_SRC_FILES := \
+   ../../../../CPP/7zip/Archive/PeHandler.cpp \
+   ../../../../CPP/7zip/Archive/PpmdHandler.cpp \
+   ../../../../CPP/7zip/Archive/QcowHandler.cpp \
+-  ../../../../CPP/7zip/Archive/Rar/RarHandler.cpp \
+-  ../../../../CPP/7zip/Archive/Rar/Rar5Handler.cpp \
+   ../../../../CPP/7zip/Archive/RpmHandler.cpp \
+   ../../../../CPP/7zip/Archive/SplitHandler.cpp \
+   ../../../../CPP/7zip/Archive/SquashfsHandler.cpp \
+@@ -195,9 +193,6 @@ LOCAL_SRC_FILES := \
+   ../../../../CPP/7zip/Crypto/MyAesReg.cpp \
+   ../../../../CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp \
+   ../../../../CPP/7zip/Crypto/RandGen.cpp \
+-  ../../../../CPP/7zip/Crypto/Rar20Crypto.cpp \
+-  ../../../../CPP/7zip/Crypto/Rar5Aes.cpp \
+-  ../../../../CPP/7zip/Crypto/RarAes.cpp \
+   ../../../../CPP/7zip/Crypto/WzAes.cpp \
+   ../../../../CPP/7zip/Crypto/ZipCrypto.cpp \
+   ../../../../CPP/7zip/Crypto/ZipStrong.cpp \
+diff --git a/ChangeLog b/ChangeLog
+index daabd8e..f2a01d6 100644
+--- a/ChangeLog
++++ b/ChangeLog
+@@ -28,7 +28,6 @@ Version 16.00 (never published)
+       - 7z update bcj bugs were fixed.
+       - split (aaa.001) fixed
+       - iso loop fix
+-      - rar4 multivol -stdin kpidSize
+       - drag and drop 1<2.txt
+       - memory access violation fix
+ 
+@@ -80,11 +79,6 @@ Version 15.12 (never published)
+     - "There are no errors" string after "Test" operation inside archive.
+     - The bugs in LZMA SDK were fixed (but these bugs are not related directly to 7-Zip's code).
+ 
+-
+-  - From Windows version of 7-Zip 15.11 :
+-        - Some bugs were fixed.
+-        - 7-Zip 15.10 showed incorrect error message about missing volume for multivolume RAR archives.
+-
+    - ..../LZHAM added
+    
+ 
+@@ -104,9 +98,6 @@ Version 15.10 beta
+ 	  version (-m switch).
+     - Some bugs were fixed.
+       - extracting from solid wim archives worked incorrectly in some cases,
+-    - Also there are some minor changes.
+-      - 7-Zip can show the name of missing volume for multivolume RAR and VMDK archives.
+-      - Some internal changes with 7-Zip Benchmark.
+ 
+ Version 15.09 beta
+ ==================
+@@ -128,8 +119,6 @@ Version 15.08 beta
+ Version 15.07 beta
+ ==================
+ 
+-  - "bin/Codecs/Rar29.so" renamed to "bin/Codecs/Rar.so"
+-  
+   - support for cygwin 64 bits
+   
+   - support for cygwin 64 bits with asm
+@@ -153,15 +142,12 @@ Version 15.07 beta
+ 
+   - From Windows version of 7-zip 15.06 beta:
+ 
+-    - 7-Zip now can extract RAR5 archives.
+     - 7-Zip now doesn't sort files by type while adding to solid 7z archive.
+       new -mqs switch to sort files by type while adding to solid 7z archive.
+     - The BUG in 7-Zip File Manager was fixed:
+       The "Move" operation to open 7z archive didn't delete empty files.
+     - The BUG in 15.05 was fixed:
+       console version added some text to the end of stdout stream, is -so switch was used.
+-    - The BUG in 9.30 - 15.05 was fixed:
+-      7-Zip could not open multivolume sfx RAR archive.
+     - Some bugs were fixed.
+ 
+   - From Windows version of 7-zip 15.05 beta:
+@@ -214,9 +200,6 @@ Version 9.38
+   - bug #139 "password from commanline is visible in processes list"
+       Now the characters of the password are replaced with *.
+ 
+-  - From Windows version of 7-zip
+-     - bug#138 If you extract the password with # program crashes
+-       7z now supports long password in RAR 3 and 4.
+ 
+ 
+ 
+@@ -247,12 +230,6 @@ Version 9.22
+   - #3283518 : Asm/x{32,64}/7zCrcT8U.asm introduces executable stack
+ 
+ 
+-Version 9.20.1
+-==============
+-
+-  - #3211479 "p7zip 9.20 - "unsupported method" with RAR files - " fixed
+-    "install.sh" installs again "bin/Codecs/Rar29.so"
+-
+ Version 9.20
+ ============
+ 
+@@ -325,8 +302,6 @@ Version 9.13
+     - Some bugs were fixed.
+ 
+ 
+-  - #2863580 "Crash in Rar decoder on a corrupted file" fixed
+-
+   - #2860898 "Dereferencing a zero pointer in cab handler" fixed
+ 
+   - #2860679 "Division by zero in cab decoder" fixed
+@@ -455,7 +430,7 @@ Version 4.59 (never published)
+     - It's allowed to use -t switch for "list" and "extract" commands.
+     - Some bugs were fixed.
+ 
+-  - Bug : wrong timestamp for files extracted from .zip or .rar archives
++  - Bug : wrong timestamp for files extracted from .zip archives
+ 
+ 
+ Version 4.58
+@@ -468,8 +443,6 @@ Version 4.58
+         2) -mcu switch:  7-Zip uses UTF-8, if there are non-ASCII symbols.
+         3) -mcl switch:  7-Zip uses local code page.
+     - Now it's possible to store file creation time in 7z and ZIP archives (-mtc switch).
+-    - 7-Zip now can unpack multivolume RAR archives created with
+-      "old style volume names" scheme and names *.001, *.002, ...
+     - Now it's possible to use -mSW- and -mSW+ switches instead of -mSW=off and -mSW=on
+     - Some bugs were fixed.
+ 
+@@ -685,7 +658,7 @@ Version 4.44
+ 
+   - From Windows version of 7-zip 4.44 :
+     - 7za : Cab support
+-    - Speed optimizations for LZMA, Deflate, BZip2 and unRAR.
++    - Speed optimizations for LZMA, Deflate and BZip2.
+     - fix : now, updating a crypted header archive keeps the crypted header
+ 
+   - fixes in the help displayed by 7za/7z/7zr.
+@@ -805,8 +778,6 @@ Version 4.38
+ 
+   - patch #1465026 - Patch for install.sh for packagers
+ 
+-  - DosDateTimeToFileTime fixed (rar format)
+-
+   - contrib/VirtualFileSystemForMidnightCommander/u7z updated
+     (thank sgh_punk)
+ 
+@@ -923,8 +894,6 @@ Version 4.25
+     - Some bugs were fixed
+     - DOCS/MANUAL/exit_codes.htm added
+ 
+-  - new plugin for 7z : RAR format support (extracting only)
+-
+   - better dependencies in makefile
+ 
+ Version 4.23
+@@ -1112,9 +1081,6 @@ Version 4.10
+   - new port of 7za from the source of 7za 4.10Beta for Windows
+     => p7zip now work on big endian CPU.
+ 
+-  - 7z for Unix is not maintain anymore (because as the source of unrar plugin for 7z
+-    is not available, 7z is unless on Unix).
+-
+ Version 0.91
+ ============
+   - add support for FreeBSD 5.2.1
+diff --git a/DOC/License.txt b/DOC/License.txt
+index 0bcbe26..5b0dfaa 100644
+--- a/DOC/License.txt
++++ b/DOC/License.txt
+@@ -5,15 +5,6 @@
+ 
+   7-Zip Copyright (C) 1999-2016 Igor Pavlov.
+ 
+-  Licenses for files are:
+-
+-    1) CPP/7zip/Compress/Rar* files:  GNU LGPL + unRAR restriction
+-    2) All other files:  GNU LGPL
+-
+-  The GNU LGPL + unRAR restriction means that you must follow both 
+-  GNU LGPL rules and unRAR restriction rules.
+-
+-
+   GNU LGPL information
+   --------------------
+ 
+@@ -33,21 +24,5 @@
+     USA
+ 
+ 
+-  unRAR restriction
+-  -----------------
+-
+-    The decompression engine for RAR archives was developed using source 
+-    code of unRAR program.
+-    All copyrights to original unRAR code are owned by Alexander Roshal.
+-
+-    The license for original unRAR code has the following restriction:
+-
+-    The unRAR sources cannot be used to re-create the RAR compression algorithm, 
+-    which is proprietary. Distribution of modified unRAR sources in separate form 
+-    or as a part of other software is permitted, provided that it is clearly
+-    stated in the documentation and source comments that the code may
+-    not be used to develop a RAR (WinRAR) compatible archiver.
+-
+-
+   --
+   Igor Pavlov
+diff --git a/DOC/MANUAL/cmdline/switches/update.htm b/DOC/MANUAL/cmdline/switches/update.htm
+index 27385b1..0190fc1 100644
+--- a/DOC/MANUAL/cmdline/switches/update.htm
++++ b/DOC/MANUAL/cmdline/switches/update.htm
+@@ -139,7 +139,7 @@ someone in another time zone.</P>
+ <LI>UTC file systems: NTFS
+ <LI>UTC archive formats: .zip with -mtc switch, 7z, tar, gzip2, iso, wim
+ <LI>Local time file systems : FAT, FAT32
+-<LI>Local time archive formats : rar, zip, cab
++<LI>Local time archive formats : zip, cab
+ </UL>
+ 
+ <H4>Examples</H4>
+diff --git a/DOC/MANUAL/general/formats.htm b/DOC/MANUAL/general/formats.htm
+index 7996c5c..cd01bd6 100644
+--- a/DOC/MANUAL/general/formats.htm
++++ b/DOC/MANUAL/general/formats.htm
+@@ -47,7 +47,6 @@
+   <TR> <TD align="center">NSIS</TD> <TD></TD> <TD>nsis</TD> </TR>
+   <TR> <TD align="center">NTFS</TD> <TD></TD> <TD>ntfs img</TD> </TR>
+   <TR> <TD align="center">MBR</TD> <TD></TD> <TD>mbr</TD> </TR>
+-  <TR> <TD align="center">RAR</TD> <TD></TD> <TD>rar r00</TD> </TR>
+   <TR> <TD align="center">RPM</TD>  <TD></TD> <TD>rpm</TD></TR>
+   <TR> <TD align="center">PPMD</TD> <TD></TD> <TD>ppmd</TD> </TR>
+   <TR> <TD align="center">QCOW2</TD> <TD></TD> <TD>qcow qcow2 qcow2c</TD> </TR>
+diff --git a/DOC/Methods.txt b/DOC/Methods.txt
+index 1a1c54c..daa94e2 100644
+--- a/DOC/Methods.txt
++++ b/DOC/Methods.txt
+@@ -97,12 +97,6 @@ List of defined IDs
+    02 - 
+       02 - BZip2
+ 
+-   03 - [Rar]
+-      01 - Rar1
+-      02 - Rar2
+-      03 - Rar3
+-      05 - Rar5
+-
+    04 - [Arj]
+       01 - Arj(1,2,3)
+       02 - Arj4
+@@ -146,10 +140,6 @@ List of defined IDs
+       01 - [Zip]
+          01 - ZipCrypto (Main Zip crypto algo)
+ 
+-      03 - [RAR]
+-         02 - 
+-         03 - Rar29AES (AES-128 + modified SHA-1)
+-
+       07 - [7z]
+          01 - 7zAES (AES-256 + SHA-256)
+ 
+diff --git a/DOC/readme.txt b/DOC/readme.txt
+index 4a6998c..00591d4 100644
+--- a/DOC/readme.txt
++++ b/DOC/readme.txt
+@@ -9,30 +9,9 @@
+ License Info
+ ------------
+ 
+-7-Zip is free software distributed under the GNU LGPL 
+-(except for unRar code).
++7-Zip is free software distributed under the GNU LGPL.
+ read License.txt for more infomation about license.
+ 
+-Notes about unRAR license:
+-
+-Please check main restriction from unRar license:
+-
+-   2. The unRAR sources may be used in any software to handle RAR
+-      archives without limitations free of charge, but cannot be used
+-      to re-create the RAR compression algorithm, which is proprietary.
+-      Distribution of modified unRAR sources in separate form or as a
+-      part of other software is permitted, provided that it is clearly
+-      stated in the documentation and source comments that the code may
+-      not be used to develop a RAR (WinRAR) compatible archiver.
+-
+-In brief it means:
+-1) You can compile and use compiled files under GNU LGPL rules, since 
+-   unRAR license almost has no restrictions for compiled files.
+-   You can link these compiled files to LGPL programs.
+-2) You can fix bugs in source code and use compiled fixed version.
+-3) You can not use unRAR sources to re-create the RAR compression algorithm.
+-
+-
+ LZMA SDK
+ --------
+ 
+@@ -96,7 +75,6 @@ DOC                Documentation
+ ---
+   7zFormat.txt   - 7z format description
+   copying.txt    - GNU LGPL license
+-  unRarLicense.txt - License for unRAR part of source code
+   src-history.txt  - Sources history
+   Methods.txt    - Compression method IDs
+   readme.txt     - Readme file
+diff --git a/DOC/src-history.txt b/DOC/src-history.txt
+index 6b48c80..dda8057 100644
+--- a/DOC/src-history.txt
++++ b/DOC/src-history.txt
+@@ -188,8 +188,6 @@ HISTORY of the 7-Zip source code
+ - 7-Zip now has 128 MB dictionary limit for 32-bit version:
+   It's for speed optimization: kNumLogBits = 9 + sizeof(size_t) / 2;
+ - TAR: 'D' link flag support.
+-- 7-Zip now can unpack multivolume RAR archives created with 
+-  "old style volume names" scheme (-vn switch) and names *.001, *.002, ...
+ - Fixed bugs:
+   - 7-Zip FM could not copy / move files to root network folders like \\COMPNAME\FOLDERNAME\
+     In case of move it removed original files.
+@@ -200,8 +198,6 @@ HISTORY of the 7-Zip source code
+       7-zip tries to delete all extra fileds (except for WzAES).
+       And that code could hang.
+   -  7-Zip GUI didn't suggest BZip2 dictionary size used in previous run.
+-  -  If creation time stamp was included in .RAR archive, 7-zip used creation time stamp 
+-     as modification time stamp.
+ 
+ 4.58 alpha 2   2007-12-31
+ -------------------------
+@@ -251,7 +247,6 @@ HISTORY of the 7-Zip source code
+   stratup code, or you must add CPP/Common/CRC.cpp to your project.
+ - Method ID in .7z now is 63-bit integer (UInt64).
+ - Open error messages
+-- unRar 1.5 fixed
+ - unShrink fixed
+ - BUG of 4.43 beta and 4.44 beta was fixed.
+   7-Zip compressing to .zip in multi-threading mode didn't work in some cases.
+@@ -433,11 +428,6 @@ HISTORY of the 7-Zip source code
+     contains common resurces
+ 
+ 
+-2.30 Beta 19   2002-04-11
+--------------------------
+-- SDK/Archive/Rar/Handler.cpp
+-    supporting RAR29
+-
+ 2.30 Beta 18   2002-03-25
+ -------------------------
+ - SDK/Archive/Cab/MSZipDecoder.cpp
+diff --git a/GUI/Contents/Info.plist b/GUI/Contents/Info.plist
+index 71650e1..d60b262 100644
+--- a/GUI/Contents/Info.plist
++++ b/GUI/Contents/Info.plist
+@@ -311,24 +311,6 @@
+ 		<dict>
+ 			<key>CFBundleTypeExtensions</key>
+ 			<array>
+-				<string>rar</string>
+-				<string>RAR</string>
+-				<string>.r00</string>
+-			</array>
+-			<key>CFBundleTypeIconFile</key>
+-			<string>p7zip</string>
+-			<key>CFBundleTypeName</key>
+-			<string>Rar</string>
+-			<key>CFBundleTypeRole</key>
+-			<string>Viewer</string>
+-			<key>LSTypeIsPackage</key>
+-			<false/>
+-			<key>NSPersistentStoreTypeKey</key>
+-			<string>XML</string>
+-		</dict>
+-		<dict>
+-			<key>CFBundleTypeExtensions</key>
+-			<array>
+ 				<string>ace</string>
+ 				<string>ACE</string>
+ 				<string>.c00</string>
+diff --git a/README b/README
+index b76407f..c03917b 100644
+--- a/README
++++ b/README
+@@ -8,7 +8,7 @@ p7zip is a port of the Windows programs 7z.exe and 7za.exe provided by 7-zip.
+ 7-zip is a file archiver with the highest compression ratio.
+ Homepage : www.7-zip.org
+ 
+-  7z uses plugins (7z.so and Codecs/Rar.so) to handle archives.
++  7z uses plugins (7z.so) to handle archives.
+   7za is a stand-alone executable (7za handles less archive formats than 7z).
+   7zr is a light stand-alone executable that supports only 7z/LZMA/BCJ/BCJ2.
+ 
+@@ -63,7 +63,6 @@ BUILD :
+     make sfx      : to build bin/7zCon.sfx (7za can now create SFX archive)
+     make 7z       : to build bin/7z and its plugins :
+                           - "bin/7z.so" (GNU LGPL + AES code license)
+-                          - "bin/Codecs/Rar.so" (GNU LGPL + unRAR restriction)
+     make 7zr      : to build bin/7zr
+     make all      : to build bin/7za and bin/7zCon.sfx
+     make all2     : to build bin/7za, bin/7z (with its plugins) and bin/7zCon.sfx
+@@ -74,7 +73,6 @@ BUILD :
+ 
+     make 7zG      : to build bin/7zG and its plugins :
+                           - "bin/7z.so" (GNU LGPL + AES code license)
+-                          - "bin/Codecs/Rar.so" (GNU LGPL + unRAR restriction)
+     make test_7zG : to test bin/7zG (extracting, archiving, ...)
+ 
+ 
+diff --git a/Utils/bin_to_sources.py b/Utils/bin_to_sources.py
+index 1be72ec..7da359a 100644
+--- a/Utils/bin_to_sources.py
++++ b/Utils/bin_to_sources.py
+@@ -13,9 +13,6 @@ file0='Utils/file_7zCon_sfx.py'
+ dir0='CPP/7zip/UI/Console'
+ file0='Utils/file_7z.py'
+ 
+-dir0='CPP/7zip/Compress/Rar'
+-file0='Utils/file_Codecs_Rar_so.py'
+-
+ dir0='CPP/7zip/Bundles/Format7zFree'
+ file0='Utils/file_7z_so.py'
+ 
+diff --git a/Utils/file_7z_so.py b/Utils/file_7z_so.py
+index 7ca9fff..43edb87 100644
+--- a/Utils/file_7z_so.py
++++ b/Utils/file_7z_so.py
+@@ -111,8 +111,6 @@ files_cpp=[
+  'CPP/7zip/Archive/PeHandler.cpp',
+  'CPP/7zip/Archive/PpmdHandler.cpp',
+  'CPP/7zip/Archive/QcowHandler.cpp',
+- 'CPP/7zip/Archive/Rar/RarHandler.cpp',
+- 'CPP/7zip/Archive/Rar/Rar5Handler.cpp',
+  'CPP/7zip/Archive/RpmHandler.cpp',
+  'CPP/7zip/Archive/SplitHandler.cpp',
+  'CPP/7zip/Archive/SquashfsHandler.cpp',
+@@ -215,9 +213,6 @@ files_cpp=[
+  'CPP/7zip/Crypto/MyAesReg.cpp',
+  'CPP/7zip/Crypto/Pbkdf2HmacSha1.cpp',
+  'CPP/7zip/Crypto/RandGen.cpp',
+- 'CPP/7zip/Crypto/Rar20Crypto.cpp',
+- 'CPP/7zip/Crypto/Rar5Aes.cpp',
+- 'CPP/7zip/Crypto/RarAes.cpp',
+  'CPP/7zip/Crypto/WzAes.cpp',
+  'CPP/7zip/Crypto/ZipCrypto.cpp',
+  'CPP/7zip/Crypto/ZipStrong.cpp',
+diff --git a/Utils/generate.py b/Utils/generate.py
+index 132024a..62c0456 100755
+--- a/Utils/generate.py
++++ b/Utils/generate.py
+@@ -281,7 +281,6 @@ import file_7zr
+ import file_7zG
+ import file_7zFM
+ import file_7z_so
+-import file_Codecs_Rar_so
+ import file_Codecs_Lzham_so
+ import file_LzmaCon
+ import file_Client7z
+@@ -440,43 +439,6 @@ LOCAL_CFLAGS := -DANDROID_NDK  -fexceptions \
+ -I../../../include_windows
+ ''')
+ 
+-project_Codecs_Rar=Structure(name="Rar",name2="Rar",
+-	type=TYPE_DLL,
+-	need_AES=False,
+-	includedirs=includedirs_7za,
+-	defines=[ "EXTERNAL_CODECS", "_FILE_OFFSET_BITS=64", "_LARGEFILE_SOURCE", "_REENTRANT", "ENV_UNIX", "BREAK_HANDLER", "UNICODE", "_UNICODE", "UNIX_USE_WIN_FILE" ],
+-	files_c=file_Codecs_Rar_so.files_c,
+-	files_cpp=file_Codecs_Rar_so.files_cpp,
+-	cmake_end='''
+-
+-find_library(DL_LIB dl)
+-
+-link_directories(${DL_LIB_PATH})
+-
+-IF(APPLE)
+-   TARGET_LINK_LIBRARIES(Rar ${COREFOUNDATION_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+-ELSE(APPLE)
+-  IF(HAVE_PTHREADS)
+-   TARGET_LINK_LIBRARIES(Rar ${CMAKE_THREAD_LIBS_INIT} dl)
+-  ENDIF(HAVE_PTHREADS)
+-ENDIF(APPLE)
+-
+-''',
+-android_header=r'''
+-LOCAL_CFLAGS := -DANDROID_NDK  -fexceptions \
+-	-DNDEBUG -D_REENTRANT -DENV_UNIX \
+-	-DEXTERNAL_CODECS \
+-	-DBREAK_HANDLER \
+-	-DUNICODE -D_UNICODE -DUNIX_USE_WIN_FILE \
+-	-I../../../Windows \
+-	-I../../../Common \
+-	-I../../../../C \
+--I../../../myWindows \
+--I../../../ \
+--I../../../include_windows
+-''')
+-
+-
+ 
+ project_Codecs_Lzham=Structure(name="Lzham",name2="Lzham",
+ 	type=TYPE_DLL,
+@@ -762,7 +724,6 @@ generate_makefile_list('../CPP/7zip/Bundles/Alone/makefile.list',project_7za)
+ generate_makefile_list('../CPP/7zip/Bundles/Alone7z/makefile.list',project_7zr)
+ generate_makefile_list('../CPP/7zip/UI/Console/makefile.list',project_7z)
+ generate_makefile_list('../CPP/7zip/Bundles/Format7zFree/makefile.list',project_Format7zFree)
+-generate_makefile_list('../CPP/7zip/Compress/Rar/makefile.list',project_Codecs_Rar,'../../../../bin/Codecs')
+ generate_makefile_list('../CPP/7zip/Compress/Lzham/makefile.list',project_Codecs_Lzham,'../../../../bin/Codecs')
+ generate_makefile_list('../CPP/7zip/Bundles/SFXCon/makefile.list',project_7zCon_sfx)
+ generate_makefile_list('../CPP/7zip/UI/GUI/makefile.list',project_7zG)
+@@ -776,7 +737,6 @@ generate_pro('../CPP/7zip/QMAKE/7za/7za.pro',project_7za)
+ generate_pro('../CPP/7zip/QMAKE/7zr/7zr.pro',project_7zr)
+ generate_pro('../CPP/7zip/QMAKE/7z_/7z_.pro',project_7z)
+ generate_pro('../CPP/7zip/QMAKE/Format7zFree/Format7zFree.pro',project_Format7zFree)
+-generate_pro('../CPP/7zip/QMAKE/Rar/Rar.pro',project_Codecs_Rar)
+ generate_pro('../CPP/7zip/QMAKE/Lzham/Lzham.pro',project_Codecs_Lzham)
+ 
+ generate_premake4('../CPP/7zip/PREMAKE/premake4.lua',project_7za)
+diff --git a/contrib/qnx630sp3/qnx630sp3-shared b/contrib/qnx630sp3/qnx630sp3-shared
+index 6f5481f..ea07114 100644
+--- a/contrib/qnx630sp3/qnx630sp3-shared
++++ b/contrib/qnx630sp3/qnx630sp3-shared
+@@ -8,7 +8,7 @@ mv ./bin/7z ../${BIN} && mv ./bin/7za ../${BIN} && mv ./bin/7zr ../${BIN} && mv
+ make clean && \
+ cp makefile.qnx_shared.so makefile.machine && \
+ make 7z && \
+-mv ./bin/7z.so ../${BIN} && mv ./bin/Codecs/Rar.so ../${BIN}/Codecs && \
++mv ./bin/7z.so ../${BIN} && \
+ make clean && \
+ mv makefile.machine.bak makefile.machine
+ echo "All done - look for binaries in ../${BIN}"
+diff --git a/makefile b/makefile
+index 745c8ed..f8e8e33 100644
+--- a/makefile
++++ b/makefile
+@@ -31,7 +31,6 @@ depend:
+ 	$(MAKE) -C CPP/7zip/UI/Client7z           depend
+ 	$(MAKE) -C CPP/7zip/UI/Console            depend
+ 	$(MAKE) -C CPP/7zip/Bundles/Format7zFree  depend
+-	$(MAKE) -C CPP/7zip/Compress/Rar          depend
+ 	$(MAKE) -C CPP/7zip/UI/GUI                depend
+ 	$(MAKE) -C CPP/7zip/UI/FileManager        depend
+ 
+@@ -42,7 +41,6 @@ sfx: common
+ common7z:common
+ 	$(MKDIR) bin/Codecs
+ 	$(MAKE) -C CPP/7zip/Bundles/Format7zFree all
+-	$(MAKE) -C CPP/7zip/Compress/Rar         all
+ 
+ lzham:common
+ 	$(MKDIR) bin/Codecs
+@@ -67,7 +65,6 @@ clean_C:
+ 	$(MAKE) -C CPP/7zip/UI/FileManager       clean
+ 	$(MAKE) -C CPP/7zip/UI/GUI               clean
+ 	$(MAKE) -C CPP/7zip/Bundles/Format7zFree clean
+-	$(MAKE) -C CPP/7zip/Compress/Rar         clean
+ 	$(MAKE) -C CPP/7zip/Compress/Lzham       clean
+ 	$(MAKE) -C CPP/7zip/Bundles/LzmaCon      clean2
+ 	$(MAKE) -C CPP/7zip/Bundles/AloneGCOV    clean
+diff --git a/makefile.oldmake b/makefile.oldmake
+index afc681c..690af08 100644
+--- a/makefile.oldmake
++++ b/makefile.oldmake
+@@ -31,7 +31,6 @@ depend:
+ 	cd CPP/7zip/UI/Client7z           ; $(MAKE) depend
+ 	cd CPP/7zip/UI/Console            ; $(MAKE) depend
+ 	cd CPP/7zip/Bundles/Format7zFree  ; $(MAKE) depend
+-	cd CPP/7zip/Compress/Rar          ; $(MAKE) depend
+ 	cd CPP/7zip/UI/GUI                ; $(MAKE) depend
+ 	cd CPP/7zip/UI/FileManager        ; $(MAKE) depend
+ 
+@@ -42,7 +41,6 @@ sfx: common
+ common7z:common
+ 	$(MKDIR) bin/Codecs
+ 	cd CPP/7zip/Bundles/Format7zFree ; $(MAKE) all
+-	cd CPP/7zip/Compress/Rar         ; $(MAKE) all
+ 
+ lzham:common
+ 	$(MKDIR) bin/Codecs
+@@ -67,7 +65,6 @@ clean_C:
+ 	cd CPP/7zip/UI/FileManager       ; $(MAKE) clean
+ 	cd CPP/7zip/UI/GUI               ; $(MAKE) clean
+ 	cd CPP/7zip/Bundles/Format7zFree ; $(MAKE) clean
+-	cd CPP/7zip/Compress/Rar         ; $(MAKE) clean
+ 	cd CPP/7zip/Compress/Lzham       ; $(MAKE) clean
+ 	cd CPP/7zip/Bundles/LzmaCon      ; $(MAKE) clean2
+ 	cd CPP/7zip/Bundles/AloneGCOV    ; $(MAKE) clean
+diff --git a/makefile.qnx_shared.so b/makefile.qnx_shared.so
+index abd1caf..cff5485 100644
+--- a/makefile.qnx_shared.so
++++ b/makefile.qnx_shared.so
+@@ -1,5 +1,5 @@
+ ###################################################
+-# makefile.machine for "7z.so , Codecs/Rar.so" :
++# makefile.machine for "7z.so" :
+ # tested with p7zip-4.47_beta on qnx-6.3.0 sp3 x86 target
+ 
+ OPTFLAGS=-O -s
