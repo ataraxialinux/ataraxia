@@ -5,8 +5,8 @@
 # Section:     audio
 
 name=pulseaudio
-version=12.2
-release=4
+version=13.0
+release=1
 backup=('etc/pulse/daemon.conf'
 	'etc/pulse/default.pa'
 	'etc/pulse/system.pa')
@@ -14,9 +14,6 @@ source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.
 
 build() {
 	cd "$SRC"/$name-$version
-	sed -i "s:asoundlib.h:alsa/asoundlib.h:" src/modules/alsa/*.{c,h}
-	sed -i "s:use-case.h:alsa/use-case.h:" configure.ac
-	sed -i "s:use-case.h:alsa/use-case.h:" src/modules/alsa/alsa-ucm.h
 
 	NOCONFIGURE=1 ./bootstrap.sh
 	./configure $BUILDFLAGS \
