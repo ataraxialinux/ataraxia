@@ -20,6 +20,8 @@ fi
 
 build() {
 	cd "$SRC"/$musldir
+	patch -Np1 -i "$STUFF"/musl/utmp.patch
+
 	${CROSS_COMPILE}cc $CFLAGS -c "$STUFF"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
 	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
 
