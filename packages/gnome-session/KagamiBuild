@@ -11,17 +11,15 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
-	sed 's@/bin/sh@/bin/sh -l@' -i gnome-session/gnome-session.in
-
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Dconsolekit=true \
-		-Ddocbook=false \
+		-Dconsolekit=enabled \
+		-Ddocbook=disabled \
 		-Dman=false \
-		-Dsystemd=false \
-		-Dsystemd_session=false \
-		-Dsystemd_journal=false
+		-Dsystemd=disabled \
+		-Dsystemd_session=disabled \
+		-Dsystemd_journal=disabled
 	ninja
 	DESTDIR="$PKG" ninja install
 }
