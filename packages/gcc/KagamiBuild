@@ -8,7 +8,7 @@
 name=gcc
 version=9.2.0
 islver=0.21
-release=1
+release=2
 options=('~emptydirs' '~strip' 'bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version/$name-$version.tar.xz"
 	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
@@ -65,12 +65,6 @@ build() {
 		esac
 	fi
 
-	if [ -n "$EXTRALANG" ]; then
-		LANGS="c,c++,lto,$EXTRALANG"
-	else
-		LANGS="c,c++,lto"
-	fi
-
 	case "$BARCH" in
 		mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
 		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
@@ -125,7 +119,7 @@ build() {
 		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-install-libiberty \
-		--enable-languages="$LANGS" \
+		--enable-languages= c,c++,fortran,lto,objc,obj-c++ \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -173,6 +167,7 @@ build() {
 		cd "$PKG"/usr/bin
 		mv g++ g++-gcc-$version
 		mv gcc gcc-$version
+		mv $XTARGET-gfortran gfortran-gcc-$version
 		ln -sf g++-gcc-$version g++
 		ln -sf gcc-$version gcc
 		ln -sf g++ c++
@@ -184,21 +179,14 @@ build() {
 		ln -sf gcc-ranlib $XTARGET-gcc-ranlib
 		ln -sf g++-gcc-$version $XTARGET-c++
 		ln -sf g++-gcc-$version $XTARGET-g++
+		ln -sf gfortran-gcc-$version gfortran
+		ln -sf gfortran-gcc-$version $XTARGET-gfortran
+		ln -sf gfortran-gcc-$version $XTARGET-gfortran-$version
+		ln -sf gfortran-gcc-$version $XTARGET-g95
+		ln -sf gfortran g95
+		ln -sf gfortran f95
+		ln -sf gfortran-gcc-$version $XTARGET-g77
+		ln -sf gfortran g77
+		ln -sf gfortran f77
 	)
-
-	if [ -n "$(echo $EXTRALANG | grep -oh 'fortran')" ]; then
-		(
-			cd "$PKG"/usr/bin
-			mv $XTARGET-gfortran gfortran-gcc-$version
-			ln -sf gfortran-gcc-$version gfortran
-			ln -sf gfortran-gcc-$version $XTARGET-gfortran
-			ln -sf gfortran-gcc-$version $XTARGET-gfortran-$version
-			ln -sf gfortran-gcc-$version $XTARGET-g95
-			ln -sf gfortran g95
-			ln -sf gfortran f95
-			ln -sf gfortran-gcc-$version $XTARGET-g77
-			ln -sf gfortran g77
-			ln -sf gfortran f77
-		)
-	fi
 }
