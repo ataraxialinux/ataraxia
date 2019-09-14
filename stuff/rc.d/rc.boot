@@ -137,8 +137,6 @@ rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
 (cd /tmp && /usr/bin/find . ! -name . -delete)
 
 install -m0664 -o root -g utmp /dev/null /run/utmp
-utmpwrite
-
 if [ ! -e /var/log/wtmp ]; then
 	install -m0664 -o root -g utmp /dev/null /var/log/wtmp
 fi
