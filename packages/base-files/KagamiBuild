@@ -53,19 +53,6 @@ build() {
 		install -m600 "$STUFF"/base-files/$f etc/
 	done
 
-	mkdir -p \
-		etc/network/if-down.d \
-		etc/network/if-post-down.d \
-		etc/network/if-post-up.d \
-		etc/network/if-pre-down.d \
-		etc/network/if-pre-up.d \
-		etc/network/if-up.d
-
-cat > etc/network/interfaces << "EOF"
-auto lo
-iface lo inet loopback
-EOF
-
 	for d in cache local opt log/old lib/misc empty service spool/cron/crontabs; do
 		install -d -m755 var/$d
 	done
@@ -94,7 +81,7 @@ EOF
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
 	if [ "$EMBEDDED" != "1" ]; then
-		for rc in boot down; do
+		for rc in boot down network; do
 			install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
 		done
 
@@ -130,7 +117,7 @@ fi
 mount -o remount,ro /
 
 fsck -ATa
-if [ $? -eq 1 ]; the
+if [ $? -eq 1 ]; then
 	echo "Filesystem errors exist, fix manually."
 	export PS1="(Repair) # "
 	setsid cttyhack /usr/bin/mksh

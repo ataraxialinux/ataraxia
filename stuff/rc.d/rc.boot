@@ -118,7 +118,9 @@ if [ -n "$hostname" ] ;then
 	hostname $hostname
 fi
 
-ifup -a
+if [ -x "/etc/rc.d/rc.network" ]; then
+	/etc/rc.d/rc.network start
+fi
 
 if [ -n "$timezone" ] ;then
 	ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
