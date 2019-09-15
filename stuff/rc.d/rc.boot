@@ -118,6 +118,8 @@ if [ -n "$hostname" ] ;then
 	hostname $hostname
 fi
 
+ip link set lo up
+
 if [ -x "/etc/rc.d/rc.network" ]; then
 	/etc/rc.d/rc.network start
 fi
