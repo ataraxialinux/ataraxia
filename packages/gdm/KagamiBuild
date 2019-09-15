@@ -53,8 +53,10 @@ build() {
 		--disable-systemd-journal
 
 	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+	make -C common
 	make -C libgdm
 	make -C data
+	make DESTDIR="$PKG" -C common install
 	make DESTDIR="$PKG" -C libgdm install
 	make DESTDIR="$PKG" -C data install
 
