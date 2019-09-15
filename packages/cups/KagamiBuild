@@ -6,7 +6,7 @@
 
 name=cups
 version=2.3.0
-release=2
+release=3
 backup=('etc/cups/cupsd.conf'
 	'etc/cups/snmp.conf'
 	'etc/cups/printers.conf'
@@ -30,7 +30,6 @@ build() {
 		--with-docdir=/usr/share/cups \
 		--with-rundir=/run/cups \
 		--with-cupsd-file-perm=0755 \
-		--with-dbusdir=/usr/share/dbus-1 \
 		--with-cups-user=lp \
 		--with-cups-group=lp \
 		--with-system-groups=lpadmin \
@@ -48,10 +47,6 @@ build() {
 	done
 
 	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
-
-	install -dm755 "$PKG"/usr/share/dbus-1/system.d
-	mv "$PKG"/etc/dbus-1/system.d/cups.conf "$PKG"/usr/share/dbus-1/system.d
-	rm -rf "$PKG"/etc/dbus-1
 
 	rm -rf "$PKG"/etc/rc*.d
 	rm -rf "$PKG"/etc/init.d

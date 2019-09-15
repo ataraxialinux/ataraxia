@@ -1,12 +1,12 @@
 # Description: Lightweight, easy to configure DNS forwarder and DHCP server
 # URL:         http://www.thekelleys.org.uk/dnsmasq/doc.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp libidn2 libnetfilter_conntrack dbus nettle
+# Depends on:  nettle
 # Section:     net
 
 name=dnsmasq
 version=2.80
-release=1
+release=2
 backup=('etc/dnsmasq.conf')
 source=("http://www.thekelleys.org.uk/$pkgname/$pkgname-$pkgver.tar.xz")
 
@@ -16,18 +16,16 @@ build() {
 
 	make \
 		CFLAGS="$CFLAGS" \
-		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS -DHAVE_LIBIDN2 -DHAVE_CONNTRACK" \
+		COPTS="-DHAVE_DNSSEC" \
 		PREFIX=/usr \
-		BINDIR=/usr/bin \
-		all-i18n
+		BINDIR=/usr/bin
 	make \
-		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS -DHAVE_LIBIDN2 -DHAVE_CONNTRACK" \
+		COPTS="-DHAVE_DNSSEC" \
 		PREFIX=/usr \
 		BINDIR=/usr/bin \
 		DESTDIR="$PKG" \
 		install install-i18n
 
-	install -Dm644 dbus/dnsmasq.conf "$PKG"/usr/share/dbus-1/system.d/dnsmasq.conf
 	install -Dm644 dnsmasq.conf.example "$PKG"/etc/dnsmasq.conf
 
 	sed -i 's,%%PREFIX%%,/usr,' "$PKG"/etc/dnsmasq.conf
