@@ -6,7 +6,7 @@
 
 name=cups-pk-helper
 version=0.2.6
-release=2
+release=3
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz")
 
 build() {
@@ -17,4 +17,8 @@ build() {
 		--sysconfdir=/etc
 	make
 	make DESTDIR="$PKG" install
+
+	install -dm755 "$PKG"/usr/share/dbus-1/system.d
+	mv "$PKG"/etc/dbus-1/system.d/* "$PKG"/usr/share/dbus-1/system.d
+	rm -rf "$PKG"/etc/dbus-1
 }
