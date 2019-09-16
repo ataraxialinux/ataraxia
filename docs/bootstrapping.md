@@ -2,15 +2,15 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 #### Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 gawk bc bison flex texinfo python3 perl libtool autoconf automake autopoint gperf bsdtar xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev zlib1g-dev
+apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev zlib1g-dev zstd rsync
 ```
 #### Arch Linux (and derivatives):
 ```
-pacman -S base-devel xorriso mtools git pigz python pixz
+pacman -S base-devel xorriso mtools git pigz python pixz rsync
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel xorriso mtools git patch pigz python3 pixz zlib-devel liblzma-devel zstd
+xbps-install -S base-devel xorriso mtools git patch pigz python3 python pixz zlib-devel liblzma-devel zstd rsync
 ```
 #### Ataraxia Linux:
 ```
