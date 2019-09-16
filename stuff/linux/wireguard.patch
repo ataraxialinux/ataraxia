@@ -1,5 +1,5 @@
---- /dev/null
-+++ b/net/wireguard/allowedips.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/allowedips.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,377 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -378,8 +378,8 @@
 +}
 +
 +#include "selftest/allowedips.c"
---- /dev/null
-+++ b/net/wireguard/compat/dst_cache/dst_cache.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/dst_cache/dst_cache.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,175 @@
 +/*
 + * net/core/dst_cache.c - dst entry cache
@@ -556,8 +556,8 @@
 +
 +	free_percpu(dst_cache->cache);
 +}
---- /dev/null
-+++ b/net/wireguard/compat/memneq/memneq.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/memneq/memneq.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,170 @@
 +/*
 + * Constant-time equality testing of memory regions.
@@ -729,8 +729,8 @@
 +}
 +
 +#endif /* __HAVE_ARCH_CRYPTO_MEMNEQ */
---- /dev/null
-+++ b/net/wireguard/compat/siphash/siphash.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/siphash/siphash.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,539 @@
 +/* Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
 + *
@@ -1271,8 +1271,8 @@
 +	HPOSTAMBLE
 +}
 +#endif
---- /dev/null
-+++ b/net/wireguard/compat/udp_tunnel/udp_tunnel.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/udp_tunnel/udp_tunnel.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,387 @@
 +#include <linux/module.h>
 +#include <linux/errno.h>
@@ -1661,8 +1661,8 @@
 +	return 0;
 +}
 +#endif
---- /dev/null
-+++ b/net/wireguard/cookie.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/cookie.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,236 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -1900,83 +1900,8 @@
 +out:
 +	wg_peer_put(peer);
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/blake2s/blake2s-x86_64-glue.c
-@@ -0,0 +1,72 @@
-+// SPDX-License-Identifier: GPL-2.0 OR MIT
-+/*
-+ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-+ */
-+
-+#include <linux/simd.h>
-+#include <asm/cpufeature.h>
-+#include <asm/processor.h>
-+#include <asm/fpu/api.h>
-+
-+asmlinkage void blake2s_compress_ssse3(struct blake2s_state *state,
-+				       const u8 *block, const size_t nblocks,
-+				       const u32 inc);
-+asmlinkage void blake2s_compress_avx512(struct blake2s_state *state,
-+					const u8 *block, const size_t nblocks,
-+					const u32 inc);
-+
-+static bool blake2s_use_ssse3 __ro_after_init;
-+static bool blake2s_use_avx512 __ro_after_init;
-+static bool *const blake2s_nobs[] __initconst = { &blake2s_use_ssse3,
-+						  &blake2s_use_avx512 };
-+
-+static void __init blake2s_fpu_init(void)
-+{
-+	blake2s_use_ssse3 = boot_cpu_has(X86_FEATURE_SSSE3);
-+#ifndef COMPAT_CANNOT_USE_AVX512
-+	blake2s_use_avx512 =
-+		boot_cpu_has(X86_FEATURE_AVX) &&
-+		boot_cpu_has(X86_FEATURE_AVX2) &&
-+		boot_cpu_has(X86_FEATURE_AVX512F) &&
-+		boot_cpu_has(X86_FEATURE_AVX512VL) &&
-+		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM |
-+				  XFEATURE_MASK_AVX512, NULL);
-+#endif
-+}
-+
-+static inline bool blake2s_compress_arch(struct blake2s_state *state,
-+					 const u8 *block, size_t nblocks,
-+					 const u32 inc)
-+{
-+	simd_context_t simd_context;
-+	bool used_arch = false;
-+
-+	/* SIMD disables preemption, so relax after processing each page. */
-+	BUILD_BUG_ON(PAGE_SIZE / BLAKE2S_BLOCK_SIZE < 8);
-+
-+	simd_get(&simd_context);
-+
-+	if (!IS_ENABLED(CONFIG_AS_SSSE3) || !blake2s_use_ssse3 ||
-+	    !simd_use(&simd_context))
-+		goto out;
-+	used_arch = true;
-+
-+	for (;;) {
-+		const size_t blocks = min_t(size_t, nblocks,
-+					    PAGE_SIZE / BLAKE2S_BLOCK_SIZE);
-+
-+		if (IS_ENABLED(CONFIG_AS_AVX512) && blake2s_use_avx512)
-+			blake2s_compress_avx512(state, block, blocks, inc);
-+		else
-+			blake2s_compress_ssse3(state, block, blocks, inc);
-+
-+		nblocks -= blocks;
-+		if (!nblocks)
-+			break;
-+		block += blocks * BLAKE2S_BLOCK_SIZE;
-+		simd_relax(&simd_context);
-+	}
-+out:
-+	simd_put(&simd_context);
-+	return used_arch;
-+}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/blake2s/blake2s.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/blake2s/blake2s.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,276 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -2254,8 +2179,83 @@
 +MODULE_DESCRIPTION("BLAKE2s hash function");
 +MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
 +#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-arm-glue.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/blake2s/blake2s-x86_64-glue.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,72 @@
++// SPDX-License-Identifier: GPL-2.0 OR MIT
++/*
++ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
++ */
++
++#include <linux/simd.h>
++#include <asm/cpufeature.h>
++#include <asm/processor.h>
++#include <asm/fpu/api.h>
++
++asmlinkage void blake2s_compress_ssse3(struct blake2s_state *state,
++				       const u8 *block, const size_t nblocks,
++				       const u32 inc);
++asmlinkage void blake2s_compress_avx512(struct blake2s_state *state,
++					const u8 *block, const size_t nblocks,
++					const u32 inc);
++
++static bool blake2s_use_ssse3 __ro_after_init;
++static bool blake2s_use_avx512 __ro_after_init;
++static bool *const blake2s_nobs[] __initconst = { &blake2s_use_ssse3,
++						  &blake2s_use_avx512 };
++
++static void __init blake2s_fpu_init(void)
++{
++	blake2s_use_ssse3 = boot_cpu_has(X86_FEATURE_SSSE3);
++#ifndef COMPAT_CANNOT_USE_AVX512
++	blake2s_use_avx512 =
++		boot_cpu_has(X86_FEATURE_AVX) &&
++		boot_cpu_has(X86_FEATURE_AVX2) &&
++		boot_cpu_has(X86_FEATURE_AVX512F) &&
++		boot_cpu_has(X86_FEATURE_AVX512VL) &&
++		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM |
++				  XFEATURE_MASK_AVX512, NULL);
++#endif
++}
++
++static inline bool blake2s_compress_arch(struct blake2s_state *state,
++					 const u8 *block, size_t nblocks,
++					 const u32 inc)
++{
++	simd_context_t simd_context;
++	bool used_arch = false;
++
++	/* SIMD disables preemption, so relax after processing each page. */
++	BUILD_BUG_ON(PAGE_SIZE / BLAKE2S_BLOCK_SIZE < 8);
++
++	simd_get(&simd_context);
++
++	if (!IS_ENABLED(CONFIG_AS_SSSE3) || !blake2s_use_ssse3 ||
++	    !simd_use(&simd_context))
++		goto out;
++	used_arch = true;
++
++	for (;;) {
++		const size_t blocks = min_t(size_t, nblocks,
++					    PAGE_SIZE / BLAKE2S_BLOCK_SIZE);
++
++		if (IS_ENABLED(CONFIG_AS_AVX512) && blake2s_use_avx512)
++			blake2s_compress_avx512(state, block, blocks, inc);
++		else
++			blake2s_compress_ssse3(state, block, blocks, inc);
++
++		nblocks -= blocks;
++		if (!nblocks)
++			break;
++		block += blocks * BLAKE2S_BLOCK_SIZE;
++		simd_relax(&simd_context);
++	}
++out:
++	simd_put(&simd_context);
++	return used_arch;
++}
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-arm-glue.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,98 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -2355,146 +2355,8 @@
 +	}
 +	return false;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-mips-glue.c
-@@ -0,0 +1,27 @@
-+// SPDX-License-Identifier: GPL-2.0 OR MIT
-+/*
-+ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-+ */
-+
-+asmlinkage void chacha20_mips(u32 state[16], u8 *out, const u8 *in,
-+			      const size_t len);
-+static bool *const chacha20_nobs[] __initconst = { };
-+static void __init chacha20_fpu_init(void)
-+{
-+}
-+
-+static inline bool chacha20_arch(struct chacha20_ctx *ctx, u8 *dst,
-+				 const u8 *src, size_t len,
-+				 simd_context_t *simd_context)
-+{
-+	chacha20_mips(ctx->state, dst, src, len);
-+	return true;
-+}
-+
-+static inline bool hchacha20_arch(u32 derived_key[CHACHA20_KEY_WORDS],
-+				  const u8 nonce[HCHACHA20_NONCE_SIZE],
-+				  const u8 key[HCHACHA20_KEY_SIZE],
-+				  simd_context_t *simd_context)
-+{
-+	return false;
-+}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-x86_64-glue.c
-@@ -0,0 +1,105 @@
-+// SPDX-License-Identifier: GPL-2.0 OR MIT
-+/*
-+ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-+ */
-+
-+#include <asm/fpu/api.h>
-+#include <asm/cpufeature.h>
-+#include <asm/processor.h>
-+#include <asm/intel-family.h>
-+
-+asmlinkage void hchacha20_ssse3(u32 *derived_key, const u8 *nonce,
-+				const u8 *key);
-+asmlinkage void chacha20_ssse3(u8 *out, const u8 *in, const size_t len,
-+			       const u32 key[8], const u32 counter[4]);
-+asmlinkage void chacha20_avx2(u8 *out, const u8 *in, const size_t len,
-+			      const u32 key[8], const u32 counter[4]);
-+asmlinkage void chacha20_avx512(u8 *out, const u8 *in, const size_t len,
-+				const u32 key[8], const u32 counter[4]);
-+asmlinkage void chacha20_avx512vl(u8 *out, const u8 *in, const size_t len,
-+				  const u32 key[8], const u32 counter[4]);
-+
-+static bool chacha20_use_ssse3 __ro_after_init;
-+static bool chacha20_use_avx2 __ro_after_init;
-+static bool chacha20_use_avx512 __ro_after_init;
-+static bool chacha20_use_avx512vl __ro_after_init;
-+static bool *const chacha20_nobs[] __initconst = {
-+	&chacha20_use_ssse3, &chacha20_use_avx2, &chacha20_use_avx512,
-+	&chacha20_use_avx512vl };
-+
-+static void __init chacha20_fpu_init(void)
-+{
-+	chacha20_use_ssse3 = boot_cpu_has(X86_FEATURE_SSSE3);
-+	chacha20_use_avx2 =
-+		boot_cpu_has(X86_FEATURE_AVX) &&
-+		boot_cpu_has(X86_FEATURE_AVX2) &&
-+		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM, NULL);
-+#ifndef COMPAT_CANNOT_USE_AVX512
-+	chacha20_use_avx512 =
-+		boot_cpu_has(X86_FEATURE_AVX) &&
-+		boot_cpu_has(X86_FEATURE_AVX2) &&
-+		boot_cpu_has(X86_FEATURE_AVX512F) &&
-+		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM |
-+				  XFEATURE_MASK_AVX512, NULL) &&
-+		/* Skylake downclocks unacceptably much when using zmm. */
-+		boot_cpu_data.x86_model != INTEL_FAM6_SKYLAKE_X;
-+	chacha20_use_avx512vl =
-+		boot_cpu_has(X86_FEATURE_AVX) &&
-+		boot_cpu_has(X86_FEATURE_AVX2) &&
-+		boot_cpu_has(X86_FEATURE_AVX512F) &&
-+		boot_cpu_has(X86_FEATURE_AVX512VL) &&
-+		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM |
-+				  XFEATURE_MASK_AVX512, NULL);
-+#endif
-+}
-+
-+static inline bool chacha20_arch(struct chacha20_ctx *ctx, u8 *dst,
-+				 const u8 *src, size_t len,
-+				 simd_context_t *simd_context)
-+{
-+	/* SIMD disables preemption, so relax after processing each page. */
-+	BUILD_BUG_ON(PAGE_SIZE < CHACHA20_BLOCK_SIZE ||
-+		     PAGE_SIZE % CHACHA20_BLOCK_SIZE);
-+
-+	if (!IS_ENABLED(CONFIG_AS_SSSE3) || !chacha20_use_ssse3 ||
-+	    len <= CHACHA20_BLOCK_SIZE || !simd_use(simd_context))
-+		return false;
-+
-+	for (;;) {
-+		const size_t bytes = min_t(size_t, len, PAGE_SIZE);
-+
-+		if (IS_ENABLED(CONFIG_AS_AVX512) && chacha20_use_avx512 &&
-+		    len >= CHACHA20_BLOCK_SIZE * 8)
-+			chacha20_avx512(dst, src, bytes, ctx->key, ctx->counter);
-+		else if (IS_ENABLED(CONFIG_AS_AVX512) && chacha20_use_avx512vl &&
-+			 len >= CHACHA20_BLOCK_SIZE * 4)
-+			chacha20_avx512vl(dst, src, bytes, ctx->key, ctx->counter);
-+		else if (IS_ENABLED(CONFIG_AS_AVX2) && chacha20_use_avx2 &&
-+			 len >= CHACHA20_BLOCK_SIZE * 4)
-+			chacha20_avx2(dst, src, bytes, ctx->key, ctx->counter);
-+		else
-+			chacha20_ssse3(dst, src, bytes, ctx->key, ctx->counter);
-+		ctx->counter[0] += (bytes + 63) / 64;
-+		len -= bytes;
-+		if (!len)
-+			break;
-+		dst += bytes;
-+		src += bytes;
-+		simd_relax(simd_context);
-+	}
-+
-+	return true;
-+}
-+
-+static inline bool hchacha20_arch(u32 derived_key[CHACHA20_KEY_WORDS],
-+				  const u8 nonce[HCHACHA20_NONCE_SIZE],
-+				  const u8 key[HCHACHA20_KEY_SIZE],
-+				  simd_context_t *simd_context)
-+{
-+	if (IS_ENABLED(CONFIG_AS_SSSE3) && chacha20_use_ssse3 &&
-+	    simd_use(simd_context)) {
-+		hchacha20_ssse3(derived_key, nonce, key);
-+		return true;
-+	}
-+	return false;
-+}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,193 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -2689,8 +2551,146 @@
 +MODULE_DESCRIPTION("ChaCha20 stream cipher");
 +MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
 +#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20poly1305.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-mips-glue.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,27 @@
++// SPDX-License-Identifier: GPL-2.0 OR MIT
++/*
++ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
++ */
++
++asmlinkage void chacha20_mips(u32 state[16], u8 *out, const u8 *in,
++			      const size_t len);
++static bool *const chacha20_nobs[] __initconst = { };
++static void __init chacha20_fpu_init(void)
++{
++}
++
++static inline bool chacha20_arch(struct chacha20_ctx *ctx, u8 *dst,
++				 const u8 *src, size_t len,
++				 simd_context_t *simd_context)
++{
++	chacha20_mips(ctx->state, dst, src, len);
++	return true;
++}
++
++static inline bool hchacha20_arch(u32 derived_key[CHACHA20_KEY_WORDS],
++				  const u8 nonce[HCHACHA20_NONCE_SIZE],
++				  const u8 key[HCHACHA20_KEY_SIZE],
++				  simd_context_t *simd_context)
++{
++	return false;
++}
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-x86_64-glue.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,105 @@
++// SPDX-License-Identifier: GPL-2.0 OR MIT
++/*
++ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
++ */
++
++#include <asm/fpu/api.h>
++#include <asm/cpufeature.h>
++#include <asm/processor.h>
++#include <asm/intel-family.h>
++
++asmlinkage void hchacha20_ssse3(u32 *derived_key, const u8 *nonce,
++				const u8 *key);
++asmlinkage void chacha20_ssse3(u8 *out, const u8 *in, const size_t len,
++			       const u32 key[8], const u32 counter[4]);
++asmlinkage void chacha20_avx2(u8 *out, const u8 *in, const size_t len,
++			      const u32 key[8], const u32 counter[4]);
++asmlinkage void chacha20_avx512(u8 *out, const u8 *in, const size_t len,
++				const u32 key[8], const u32 counter[4]);
++asmlinkage void chacha20_avx512vl(u8 *out, const u8 *in, const size_t len,
++				  const u32 key[8], const u32 counter[4]);
++
++static bool chacha20_use_ssse3 __ro_after_init;
++static bool chacha20_use_avx2 __ro_after_init;
++static bool chacha20_use_avx512 __ro_after_init;
++static bool chacha20_use_avx512vl __ro_after_init;
++static bool *const chacha20_nobs[] __initconst = {
++	&chacha20_use_ssse3, &chacha20_use_avx2, &chacha20_use_avx512,
++	&chacha20_use_avx512vl };
++
++static void __init chacha20_fpu_init(void)
++{
++	chacha20_use_ssse3 = boot_cpu_has(X86_FEATURE_SSSE3);
++	chacha20_use_avx2 =
++		boot_cpu_has(X86_FEATURE_AVX) &&
++		boot_cpu_has(X86_FEATURE_AVX2) &&
++		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM, NULL);
++#ifndef COMPAT_CANNOT_USE_AVX512
++	chacha20_use_avx512 =
++		boot_cpu_has(X86_FEATURE_AVX) &&
++		boot_cpu_has(X86_FEATURE_AVX2) &&
++		boot_cpu_has(X86_FEATURE_AVX512F) &&
++		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM |
++				  XFEATURE_MASK_AVX512, NULL) &&
++		/* Skylake downclocks unacceptably much when using zmm. */
++		boot_cpu_data.x86_model != INTEL_FAM6_SKYLAKE_X;
++	chacha20_use_avx512vl =
++		boot_cpu_has(X86_FEATURE_AVX) &&
++		boot_cpu_has(X86_FEATURE_AVX2) &&
++		boot_cpu_has(X86_FEATURE_AVX512F) &&
++		boot_cpu_has(X86_FEATURE_AVX512VL) &&
++		cpu_has_xfeatures(XFEATURE_MASK_SSE | XFEATURE_MASK_YMM |
++				  XFEATURE_MASK_AVX512, NULL);
++#endif
++}
++
++static inline bool chacha20_arch(struct chacha20_ctx *ctx, u8 *dst,
++				 const u8 *src, size_t len,
++				 simd_context_t *simd_context)
++{
++	/* SIMD disables preemption, so relax after processing each page. */
++	BUILD_BUG_ON(PAGE_SIZE < CHACHA20_BLOCK_SIZE ||
++		     PAGE_SIZE % CHACHA20_BLOCK_SIZE);
++
++	if (!IS_ENABLED(CONFIG_AS_SSSE3) || !chacha20_use_ssse3 ||
++	    len <= CHACHA20_BLOCK_SIZE || !simd_use(simd_context))
++		return false;
++
++	for (;;) {
++		const size_t bytes = min_t(size_t, len, PAGE_SIZE);
++
++		if (IS_ENABLED(CONFIG_AS_AVX512) && chacha20_use_avx512 &&
++		    len >= CHACHA20_BLOCK_SIZE * 8)
++			chacha20_avx512(dst, src, bytes, ctx->key, ctx->counter);
++		else if (IS_ENABLED(CONFIG_AS_AVX512) && chacha20_use_avx512vl &&
++			 len >= CHACHA20_BLOCK_SIZE * 4)
++			chacha20_avx512vl(dst, src, bytes, ctx->key, ctx->counter);
++		else if (IS_ENABLED(CONFIG_AS_AVX2) && chacha20_use_avx2 &&
++			 len >= CHACHA20_BLOCK_SIZE * 4)
++			chacha20_avx2(dst, src, bytes, ctx->key, ctx->counter);
++		else
++			chacha20_ssse3(dst, src, bytes, ctx->key, ctx->counter);
++		ctx->counter[0] += (bytes + 63) / 64;
++		len -= bytes;
++		if (!len)
++			break;
++		dst += bytes;
++		src += bytes;
++		simd_relax(simd_context);
++	}
++
++	return true;
++}
++
++static inline bool hchacha20_arch(u32 derived_key[CHACHA20_KEY_WORDS],
++				  const u8 nonce[HCHACHA20_NONCE_SIZE],
++				  const u8 key[HCHACHA20_KEY_SIZE],
++				  simd_context_t *simd_context)
++{
++	if (IS_ENABLED(CONFIG_AS_SSSE3) && chacha20_use_ssse3 &&
++	    simd_use(simd_context)) {
++		hchacha20_ssse3(derived_key, nonce, key);
++		return true;
++	}
++	return false;
++}
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20poly1305.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,364 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -3056,8 +3056,8 @@
 +MODULE_DESCRIPTION("ChaCha20Poly1305 AEAD construction");
 +MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
 +#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519-arm-glue.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519-arm-glue.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,43 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -3102,8 +3102,124 @@
 +{
 +	return false;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519-fiat32.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,113 @@
++// SPDX-License-Identifier: GPL-2.0 OR MIT
++/*
++ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
++ *
++ * This is an implementation of the Curve25519 ECDH algorithm, using either
++ * a 32-bit implementation or a 64-bit implementation with 128-bit integers,
++ * depending on what is supported by the target compiler.
++ *
++ * Information: https://cr.yp.to/ecdh.html
++ */
++
++#include <zinc/curve25519.h>
++#include "../selftest/run.h"
++
++#include <asm/unaligned.h>
++#include <linux/version.h>
++#include <linux/string.h>
++#include <linux/random.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <crypto/algapi.h> // For crypto_memneq.
++
++#if defined(CONFIG_ZINC_ARCH_X86_64)
++#include "curve25519-x86_64-glue.c"
++#elif defined(CONFIG_ZINC_ARCH_ARM)
++#include "curve25519-arm-glue.c"
++#else
++static bool *const curve25519_nobs[] __initconst = { };
++static void __init curve25519_fpu_init(void)
++{
++}
++static inline bool curve25519_arch(u8 mypublic[CURVE25519_KEY_SIZE],
++				   const u8 secret[CURVE25519_KEY_SIZE],
++				   const u8 basepoint[CURVE25519_KEY_SIZE])
++{
++	return false;
++}
++static inline bool curve25519_base_arch(u8 pub[CURVE25519_KEY_SIZE],
++					const u8 secret[CURVE25519_KEY_SIZE])
++{
++	return false;
++}
++#endif
++
++#if defined(CONFIG_ARCH_SUPPORTS_INT128) && defined(__SIZEOF_INT128__)
++#include "curve25519-hacl64.c"
++#else
++#include "curve25519-fiat32.c"
++#endif
++
++static const u8 null_point[CURVE25519_KEY_SIZE] = { 0 };
++
++bool curve25519(u8 mypublic[CURVE25519_KEY_SIZE],
++		const u8 secret[CURVE25519_KEY_SIZE],
++		const u8 basepoint[CURVE25519_KEY_SIZE])
++{
++	if (!curve25519_arch(mypublic, secret, basepoint))
++		curve25519_generic(mypublic, secret, basepoint);
++	return crypto_memneq(mypublic, null_point, CURVE25519_KEY_SIZE);
++}
++EXPORT_SYMBOL(curve25519);
++
++bool curve25519_generate_public(u8 pub[CURVE25519_KEY_SIZE],
++				const u8 secret[CURVE25519_KEY_SIZE])
++{
++	static const u8 basepoint[CURVE25519_KEY_SIZE] __aligned(32) = { 9 };
++
++	if (unlikely(!crypto_memneq(secret, null_point, CURVE25519_KEY_SIZE)))
++		return false;
++
++	if (curve25519_base_arch(pub, secret))
++		return crypto_memneq(pub, null_point, CURVE25519_KEY_SIZE);
++	return curve25519(pub, secret, basepoint);
++}
++EXPORT_SYMBOL(curve25519_generate_public);
++
++void curve25519_generate_secret(u8 secret[CURVE25519_KEY_SIZE])
++{
++	get_random_bytes_wait(secret, CURVE25519_KEY_SIZE);
++	curve25519_clamp_secret(secret);
++}
++EXPORT_SYMBOL(curve25519_generate_secret);
++
++#include "../selftest/curve25519.c"
++
++static bool nosimd __initdata = false;
++
++#ifndef COMPAT_ZINC_IS_A_MODULE
++int __init curve25519_mod_init(void)
++#else
++static int __init mod_init(void)
++#endif
++{
++	if (!nosimd)
++		curve25519_fpu_init();
++	if (!selftest_run("curve25519", curve25519_selftest, curve25519_nobs,
++			  ARRAY_SIZE(curve25519_nobs)))
++		return -ENOTRECOVERABLE;
++	return 0;
++}
++
++#ifdef COMPAT_ZINC_IS_A_MODULE
++static void __exit mod_exit(void)
++{
++}
++
++module_param(nosimd, bool, 0);
++module_init(mod_init);
++module_exit(mod_exit);
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Curve25519 scalar multiplication");
++MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
++#endif
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519-fiat32.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,860 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -3965,8 +4081,8 @@
 +	memzero_explicit(&x3l, sizeof(x3l));
 +	memzero_explicit(&e, sizeof(e));
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519-hacl64.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519-hacl64.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,784 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -4752,61 +4868,8 @@
 +	}
 +	memzero_explicit(buf0, sizeof(buf0));
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519-x86_64-glue.c
-@@ -0,0 +1,50 @@
-+// SPDX-License-Identifier: GPL-2.0 OR MIT
-+/*
-+ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-+ */
-+
-+#include <asm/cpufeature.h>
-+#include <asm/processor.h>
-+
-+#include "curve25519-x86_64.c"
-+
-+static bool curve25519_use_bmi2 __ro_after_init;
-+static bool curve25519_use_adx __ro_after_init;
-+static bool *const curve25519_nobs[] __initconst = {
-+	&curve25519_use_bmi2, &curve25519_use_adx };
-+
-+static void __init curve25519_fpu_init(void)
-+{
-+	curve25519_use_bmi2 = IS_ENABLED(CONFIG_AS_BMI2) &&
-+			      boot_cpu_has(X86_FEATURE_BMI2);
-+	curve25519_use_adx = IS_ENABLED(CONFIG_AS_ADX) &&
-+			     boot_cpu_has(X86_FEATURE_BMI2) &&
-+			     boot_cpu_has(X86_FEATURE_ADX);
-+}
-+
-+static inline bool curve25519_arch(u8 mypublic[CURVE25519_KEY_SIZE],
-+				   const u8 secret[CURVE25519_KEY_SIZE],
-+				   const u8 basepoint[CURVE25519_KEY_SIZE])
-+{
-+	if (IS_ENABLED(CONFIG_AS_ADX) && curve25519_use_adx) {
-+		curve25519_adx(mypublic, secret, basepoint);
-+		return true;
-+	} else if (IS_ENABLED(CONFIG_AS_BMI2) && curve25519_use_bmi2) {
-+		curve25519_bmi2(mypublic, secret, basepoint);
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static inline bool curve25519_base_arch(u8 pub[CURVE25519_KEY_SIZE],
-+					const u8 secret[CURVE25519_KEY_SIZE])
-+{
-+	if (IS_ENABLED(CONFIG_AS_ADX) && curve25519_use_adx) {
-+		curve25519_adx_base(pub, secret);
-+		return true;
-+	} else if (IS_ENABLED(CONFIG_AS_BMI2) && curve25519_use_bmi2) {
-+		curve25519_bmi2_base(pub, secret);
-+		return true;
-+	}
-+	return false;
-+}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519-x86_64.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519-x86_64.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,2366 @@
 +// SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
 +/*
@@ -7174,124 +7237,61 @@
 +	memzero_explicit(&m, sizeof(m));
 +#endif
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519.c
-@@ -0,0 +1,113 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519-x86_64-glue.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,50 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-+ *
-+ * This is an implementation of the Curve25519 ECDH algorithm, using either
-+ * a 32-bit implementation or a 64-bit implementation with 128-bit integers,
-+ * depending on what is supported by the target compiler.
-+ *
-+ * Information: https://cr.yp.to/ecdh.html
 + */
 +
-+#include <zinc/curve25519.h>
-+#include "../selftest/run.h"
++#include <asm/cpufeature.h>
++#include <asm/processor.h>
 +
-+#include <asm/unaligned.h>
-+#include <linux/version.h>
-+#include <linux/string.h>
-+#include <linux/random.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <crypto/algapi.h> // For crypto_memneq.
++#include "curve25519-x86_64.c"
 +
-+#if defined(CONFIG_ZINC_ARCH_X86_64)
-+#include "curve25519-x86_64-glue.c"
-+#elif defined(CONFIG_ZINC_ARCH_ARM)
-+#include "curve25519-arm-glue.c"
-+#else
-+static bool *const curve25519_nobs[] __initconst = { };
++static bool curve25519_use_bmi2 __ro_after_init;
++static bool curve25519_use_adx __ro_after_init;
++static bool *const curve25519_nobs[] __initconst = {
++	&curve25519_use_bmi2, &curve25519_use_adx };
++
 +static void __init curve25519_fpu_init(void)
 +{
++	curve25519_use_bmi2 = IS_ENABLED(CONFIG_AS_BMI2) &&
++			      boot_cpu_has(X86_FEATURE_BMI2);
++	curve25519_use_adx = IS_ENABLED(CONFIG_AS_ADX) &&
++			     boot_cpu_has(X86_FEATURE_BMI2) &&
++			     boot_cpu_has(X86_FEATURE_ADX);
 +}
++
 +static inline bool curve25519_arch(u8 mypublic[CURVE25519_KEY_SIZE],
 +				   const u8 secret[CURVE25519_KEY_SIZE],
 +				   const u8 basepoint[CURVE25519_KEY_SIZE])
 +{
++	if (IS_ENABLED(CONFIG_AS_ADX) && curve25519_use_adx) {
++		curve25519_adx(mypublic, secret, basepoint);
++		return true;
++	} else if (IS_ENABLED(CONFIG_AS_BMI2) && curve25519_use_bmi2) {
++		curve25519_bmi2(mypublic, secret, basepoint);
++		return true;
++	}
 +	return false;
 +}
++
 +static inline bool curve25519_base_arch(u8 pub[CURVE25519_KEY_SIZE],
 +					const u8 secret[CURVE25519_KEY_SIZE])
 +{
++	if (IS_ENABLED(CONFIG_AS_ADX) && curve25519_use_adx) {
++		curve25519_adx_base(pub, secret);
++		return true;
++	} else if (IS_ENABLED(CONFIG_AS_BMI2) && curve25519_use_bmi2) {
++		curve25519_bmi2_base(pub, secret);
++		return true;
++	}
 +	return false;
 +}
-+#endif
-+
-+#if defined(CONFIG_ARCH_SUPPORTS_INT128) && defined(__SIZEOF_INT128__)
-+#include "curve25519-hacl64.c"
-+#else
-+#include "curve25519-fiat32.c"
-+#endif
-+
-+static const u8 null_point[CURVE25519_KEY_SIZE] = { 0 };
-+
-+bool curve25519(u8 mypublic[CURVE25519_KEY_SIZE],
-+		const u8 secret[CURVE25519_KEY_SIZE],
-+		const u8 basepoint[CURVE25519_KEY_SIZE])
-+{
-+	if (!curve25519_arch(mypublic, secret, basepoint))
-+		curve25519_generic(mypublic, secret, basepoint);
-+	return crypto_memneq(mypublic, null_point, CURVE25519_KEY_SIZE);
-+}
-+EXPORT_SYMBOL(curve25519);
-+
-+bool curve25519_generate_public(u8 pub[CURVE25519_KEY_SIZE],
-+				const u8 secret[CURVE25519_KEY_SIZE])
-+{
-+	static const u8 basepoint[CURVE25519_KEY_SIZE] __aligned(32) = { 9 };
-+
-+	if (unlikely(!crypto_memneq(secret, null_point, CURVE25519_KEY_SIZE)))
-+		return false;
-+
-+	if (curve25519_base_arch(pub, secret))
-+		return crypto_memneq(pub, null_point, CURVE25519_KEY_SIZE);
-+	return curve25519(pub, secret, basepoint);
-+}
-+EXPORT_SYMBOL(curve25519_generate_public);
-+
-+void curve25519_generate_secret(u8 secret[CURVE25519_KEY_SIZE])
-+{
-+	get_random_bytes_wait(secret, CURVE25519_KEY_SIZE);
-+	curve25519_clamp_secret(secret);
-+}
-+EXPORT_SYMBOL(curve25519_generate_secret);
-+
-+#include "../selftest/curve25519.c"
-+
-+static bool nosimd __initdata = false;
-+
-+#ifndef COMPAT_ZINC_IS_A_MODULE
-+int __init curve25519_mod_init(void)
-+#else
-+static int __init mod_init(void)
-+#endif
-+{
-+	if (!nosimd)
-+		curve25519_fpu_init();
-+	if (!selftest_run("curve25519", curve25519_selftest, curve25519_nobs,
-+			  ARRAY_SIZE(curve25519_nobs)))
-+		return -ENOTRECOVERABLE;
-+	return 0;
-+}
-+
-+#ifdef COMPAT_ZINC_IS_A_MODULE
-+static void __exit mod_exit(void)
-+{
-+}
-+
-+module_param(nosimd, bool, 0);
-+module_init(mod_init);
-+module_exit(mod_exit);
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Curve25519 scalar multiplication");
-+MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
-+#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-arm-glue.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-arm-glue.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,140 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -7433,8 +7433,179 @@
 +		poly1305_emit_neon(ctx, mac, nonce);
 +	return true;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-donna32.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,168 @@
++// SPDX-License-Identifier: GPL-2.0 OR MIT
++/*
++ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
++ *
++ * Implementation of the Poly1305 message authenticator.
++ *
++ * Information: https://cr.yp.to/mac.html
++ */
++
++#include <zinc/poly1305.h>
++#include "../selftest/run.h"
++
++#include <asm/unaligned.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/module.h>
++#include <linux/init.h>
++
++#if defined(CONFIG_ZINC_ARCH_X86_64)
++#include "poly1305-x86_64-glue.c"
++#elif defined(CONFIG_ZINC_ARCH_ARM) || defined(CONFIG_ZINC_ARCH_ARM64)
++#include "poly1305-arm-glue.c"
++#elif defined(CONFIG_ZINC_ARCH_MIPS) || defined(CONFIG_ZINC_ARCH_MIPS64)
++#include "poly1305-mips-glue.c"
++#else
++static inline bool poly1305_init_arch(void *ctx,
++				      const u8 key[POLY1305_KEY_SIZE])
++{
++	return false;
++}
++static inline bool poly1305_blocks_arch(void *ctx, const u8 *input,
++					size_t len, const u32 padbit,
++					simd_context_t *simd_context)
++{
++	return false;
++}
++static inline bool poly1305_emit_arch(void *ctx, u8 mac[POLY1305_MAC_SIZE],
++				      const u32 nonce[4],
++				      simd_context_t *simd_context)
++{
++	return false;
++}
++static bool *const poly1305_nobs[] __initconst = { };
++static void __init poly1305_fpu_init(void)
++{
++}
++#endif
++
++#if defined(CONFIG_ARCH_SUPPORTS_INT128) && defined(__SIZEOF_INT128__)
++#include "poly1305-donna64.c"
++#else
++#include "poly1305-donna32.c"
++#endif
++
++void poly1305_init(struct poly1305_ctx *ctx, const u8 key[POLY1305_KEY_SIZE])
++{
++	ctx->nonce[0] = get_unaligned_le32(&key[16]);
++	ctx->nonce[1] = get_unaligned_le32(&key[20]);
++	ctx->nonce[2] = get_unaligned_le32(&key[24]);
++	ctx->nonce[3] = get_unaligned_le32(&key[28]);
++
++	if (!poly1305_init_arch(ctx->opaque, key))
++		poly1305_init_generic(ctx->opaque, key);
++
++	ctx->num = 0;
++}
++EXPORT_SYMBOL(poly1305_init);
++
++static inline void poly1305_blocks(void *ctx, const u8 *input, const size_t len,
++				   const u32 padbit,
++				   simd_context_t *simd_context)
++{
++	if (!poly1305_blocks_arch(ctx, input, len, padbit, simd_context))
++		poly1305_blocks_generic(ctx, input, len, padbit);
++}
++
++static inline void poly1305_emit(void *ctx, u8 mac[POLY1305_KEY_SIZE],
++				 const u32 nonce[4],
++				 simd_context_t *simd_context)
++{
++	if (!poly1305_emit_arch(ctx, mac, nonce, simd_context))
++		poly1305_emit_generic(ctx, mac, nonce);
++}
++
++void poly1305_update(struct poly1305_ctx *ctx, const u8 *input, size_t len,
++		     simd_context_t *simd_context)
++{
++	const size_t num = ctx->num;
++	size_t rem;
++
++	if (num) {
++		rem = POLY1305_BLOCK_SIZE - num;
++		if (len < rem) {
++			memcpy(ctx->data + num, input, len);
++			ctx->num = num + len;
++			return;
++		}
++		memcpy(ctx->data + num, input, rem);
++		poly1305_blocks(ctx->opaque, ctx->data, POLY1305_BLOCK_SIZE, 1,
++				simd_context);
++		input += rem;
++		len -= rem;
++	}
++
++	rem = len % POLY1305_BLOCK_SIZE;
++	len -= rem;
++
++	if (len >= POLY1305_BLOCK_SIZE) {
++		poly1305_blocks(ctx->opaque, input, len, 1, simd_context);
++		input += len;
++	}
++
++	if (rem)
++		memcpy(ctx->data, input, rem);
++
++	ctx->num = rem;
++}
++EXPORT_SYMBOL(poly1305_update);
++
++void poly1305_final(struct poly1305_ctx *ctx, u8 mac[POLY1305_MAC_SIZE],
++		    simd_context_t *simd_context)
++{
++	size_t num = ctx->num;
++
++	if (num) {
++		ctx->data[num++] = 1;
++		while (num < POLY1305_BLOCK_SIZE)
++			ctx->data[num++] = 0;
++		poly1305_blocks(ctx->opaque, ctx->data, POLY1305_BLOCK_SIZE, 0,
++				simd_context);
++	}
++
++	poly1305_emit(ctx->opaque, mac, ctx->nonce, simd_context);
++
++	memzero_explicit(ctx, sizeof(*ctx));
++}
++EXPORT_SYMBOL(poly1305_final);
++
++#include "../selftest/poly1305.c"
++
++static bool nosimd __initdata = false;
++
++#ifndef COMPAT_ZINC_IS_A_MODULE
++int __init poly1305_mod_init(void)
++#else
++static int __init mod_init(void)
++#endif
++{
++	if (!nosimd)
++		poly1305_fpu_init();
++	if (!selftest_run("poly1305", poly1305_selftest, poly1305_nobs,
++			  ARRAY_SIZE(poly1305_nobs)))
++		return -ENOTRECOVERABLE;
++	return 0;
++}
++
++#ifdef COMPAT_ZINC_IS_A_MODULE
++static void __exit mod_exit(void)
++{
++}
++
++module_param(nosimd, bool, 0);
++module_init(mod_init);
++module_exit(mod_exit);
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Poly1305 one-time authenticator");
++MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
++#endif
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-donna32.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,205 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -7641,8 +7812,8 @@
 +	put_unaligned_le32(h2, &mac[8]);
 +	put_unaligned_le32(h3, &mac[12]);
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-donna64.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-donna64.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,182 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -7826,8 +7997,8 @@
 +	put_unaligned_le64(h0, &mac[0]);
 +	put_unaligned_le64(h1, &mac[8]);
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-mips-glue.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-mips-glue.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,37 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -7866,8 +8037,8 @@
 +	poly1305_emit_mips(ctx, mac, nonce);
 +	return true;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-x86_64-glue.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-x86_64-glue.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,156 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -8025,179 +8196,8 @@
 +		poly1305_emit_avx(ctx, mac, nonce);
 +	return true;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305.c
-@@ -0,0 +1,168 @@
-+// SPDX-License-Identifier: GPL-2.0 OR MIT
-+/*
-+ * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
-+ *
-+ * Implementation of the Poly1305 message authenticator.
-+ *
-+ * Information: https://cr.yp.to/mac.html
-+ */
-+
-+#include <zinc/poly1305.h>
-+#include "../selftest/run.h"
-+
-+#include <asm/unaligned.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+
-+#if defined(CONFIG_ZINC_ARCH_X86_64)
-+#include "poly1305-x86_64-glue.c"
-+#elif defined(CONFIG_ZINC_ARCH_ARM) || defined(CONFIG_ZINC_ARCH_ARM64)
-+#include "poly1305-arm-glue.c"
-+#elif defined(CONFIG_ZINC_ARCH_MIPS) || defined(CONFIG_ZINC_ARCH_MIPS64)
-+#include "poly1305-mips-glue.c"
-+#else
-+static inline bool poly1305_init_arch(void *ctx,
-+				      const u8 key[POLY1305_KEY_SIZE])
-+{
-+	return false;
-+}
-+static inline bool poly1305_blocks_arch(void *ctx, const u8 *input,
-+					size_t len, const u32 padbit,
-+					simd_context_t *simd_context)
-+{
-+	return false;
-+}
-+static inline bool poly1305_emit_arch(void *ctx, u8 mac[POLY1305_MAC_SIZE],
-+				      const u32 nonce[4],
-+				      simd_context_t *simd_context)
-+{
-+	return false;
-+}
-+static bool *const poly1305_nobs[] __initconst = { };
-+static void __init poly1305_fpu_init(void)
-+{
-+}
-+#endif
-+
-+#if defined(CONFIG_ARCH_SUPPORTS_INT128) && defined(__SIZEOF_INT128__)
-+#include "poly1305-donna64.c"
-+#else
-+#include "poly1305-donna32.c"
-+#endif
-+
-+void poly1305_init(struct poly1305_ctx *ctx, const u8 key[POLY1305_KEY_SIZE])
-+{
-+	ctx->nonce[0] = get_unaligned_le32(&key[16]);
-+	ctx->nonce[1] = get_unaligned_le32(&key[20]);
-+	ctx->nonce[2] = get_unaligned_le32(&key[24]);
-+	ctx->nonce[3] = get_unaligned_le32(&key[28]);
-+
-+	if (!poly1305_init_arch(ctx->opaque, key))
-+		poly1305_init_generic(ctx->opaque, key);
-+
-+	ctx->num = 0;
-+}
-+EXPORT_SYMBOL(poly1305_init);
-+
-+static inline void poly1305_blocks(void *ctx, const u8 *input, const size_t len,
-+				   const u32 padbit,
-+				   simd_context_t *simd_context)
-+{
-+	if (!poly1305_blocks_arch(ctx, input, len, padbit, simd_context))
-+		poly1305_blocks_generic(ctx, input, len, padbit);
-+}
-+
-+static inline void poly1305_emit(void *ctx, u8 mac[POLY1305_KEY_SIZE],
-+				 const u32 nonce[4],
-+				 simd_context_t *simd_context)
-+{
-+	if (!poly1305_emit_arch(ctx, mac, nonce, simd_context))
-+		poly1305_emit_generic(ctx, mac, nonce);
-+}
-+
-+void poly1305_update(struct poly1305_ctx *ctx, const u8 *input, size_t len,
-+		     simd_context_t *simd_context)
-+{
-+	const size_t num = ctx->num;
-+	size_t rem;
-+
-+	if (num) {
-+		rem = POLY1305_BLOCK_SIZE - num;
-+		if (len < rem) {
-+			memcpy(ctx->data + num, input, len);
-+			ctx->num = num + len;
-+			return;
-+		}
-+		memcpy(ctx->data + num, input, rem);
-+		poly1305_blocks(ctx->opaque, ctx->data, POLY1305_BLOCK_SIZE, 1,
-+				simd_context);
-+		input += rem;
-+		len -= rem;
-+	}
-+
-+	rem = len % POLY1305_BLOCK_SIZE;
-+	len -= rem;
-+
-+	if (len >= POLY1305_BLOCK_SIZE) {
-+		poly1305_blocks(ctx->opaque, input, len, 1, simd_context);
-+		input += len;
-+	}
-+
-+	if (rem)
-+		memcpy(ctx->data, input, rem);
-+
-+	ctx->num = rem;
-+}
-+EXPORT_SYMBOL(poly1305_update);
-+
-+void poly1305_final(struct poly1305_ctx *ctx, u8 mac[POLY1305_MAC_SIZE],
-+		    simd_context_t *simd_context)
-+{
-+	size_t num = ctx->num;
-+
-+	if (num) {
-+		ctx->data[num++] = 1;
-+		while (num < POLY1305_BLOCK_SIZE)
-+			ctx->data[num++] = 0;
-+		poly1305_blocks(ctx->opaque, ctx->data, POLY1305_BLOCK_SIZE, 0,
-+				simd_context);
-+	}
-+
-+	poly1305_emit(ctx->opaque, mac, ctx->nonce, simd_context);
-+
-+	memzero_explicit(ctx, sizeof(*ctx));
-+}
-+EXPORT_SYMBOL(poly1305_final);
-+
-+#include "../selftest/poly1305.c"
-+
-+static bool nosimd __initdata = false;
-+
-+#ifndef COMPAT_ZINC_IS_A_MODULE
-+int __init poly1305_mod_init(void)
-+#else
-+static int __init mod_init(void)
-+#endif
-+{
-+	if (!nosimd)
-+		poly1305_fpu_init();
-+	if (!selftest_run("poly1305", poly1305_selftest, poly1305_nobs,
-+			  ARRAY_SIZE(poly1305_nobs)))
-+		return -ENOTRECOVERABLE;
-+	return 0;
-+}
-+
-+#ifdef COMPAT_ZINC_IS_A_MODULE
-+static void __exit mod_exit(void)
-+{
-+}
-+
-+module_param(nosimd, bool, 0);
-+module_init(mod_init);
-+module_exit(mod_exit);
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Poly1305 one-time authenticator");
-+MODULE_AUTHOR("Jason A. Donenfeld <Jason@zx2c4.com>");
-+#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/selftest/blake2s.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/selftest/blake2s.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,2090 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -10289,8 +10289,8 @@
 +	}
 +	return success;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/selftest/chacha20.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/selftest/chacha20.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,2698 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -12990,8 +12990,8 @@
 +	vfree(massive_input);
 +	return success;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/selftest/chacha20poly1305.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/selftest/chacha20poly1305.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,9034 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -22027,8 +22027,8 @@
 +	kfree(computed_output);
 +	return success;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/selftest/curve25519.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/selftest/curve25519.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,1315 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -23345,8 +23345,8 @@
 +
 +	return success;
 +}
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/selftest/poly1305.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/selftest/poly1305.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,1107 @@
 +// SPDX-License-Identifier: GPL-2.0 OR MIT
 +/*
@@ -24455,9 +24455,9 @@
 +
 +	return success;
 +}
---- /dev/null
-+++ b/net/wireguard/device.c
-@@ -0,0 +1,472 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/device.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,470 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -24572,9 +24572,7 @@
 +		wg_timers_stop(peer);
 +		wg_noise_handshake_clear(&peer->handshake);
 +		wg_noise_keypairs_clear(&peer->keypairs);
-+		atomic64_set(&peer->last_sent_handshake,
-+			     ktime_get_coarse_boottime_ns() -
-+				     (u64)(REKEY_TIMEOUT + 1) * NSEC_PER_SEC);
++		wg_noise_reset_last_sent_handshake(&peer->last_sent_handshake);
 +	}
 +	mutex_unlock(&wg->device_update_lock);
 +	skb_queue_purge(&wg->incoming_handshakes);
@@ -24930,8 +24928,8 @@
 +#endif
 +	rcu_barrier();
 +}
---- /dev/null
-+++ b/net/wireguard/main.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/main.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,69 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -25002,9 +25000,9 @@
 +MODULE_VERSION(WIREGUARD_VERSION);
 +MODULE_ALIAS_RTNL_LINK(KBUILD_MODNAME);
 +MODULE_ALIAS_GENL_FAMILY(WG_GENL_NAME);
---- /dev/null
-+++ b/net/wireguard/netlink.c
-@@ -0,0 +1,644 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/netlink.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,667 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -25020,6 +25018,7 @@
 +#include <linux/if.h>
 +#include <net/genetlink.h>
 +#include <net/sock.h>
++#include <crypto/algapi.h>
 +
 +static struct genl_family genl_family;
 +
@@ -25380,8 +25379,12 @@
 +	if (attrs[WGPEER_A_PRESHARED_KEY] &&
 +	    nla_len(attrs[WGPEER_A_PRESHARED_KEY]) == NOISE_SYMMETRIC_KEY_LEN)
 +		preshared_key = nla_data(attrs[WGPEER_A_PRESHARED_KEY]);
++
 +	if (attrs[WGPEER_A_FLAGS])
 +		flags = nla_get_u32(attrs[WGPEER_A_FLAGS]);
++	ret = -EOPNOTSUPP;
++	if (flags & ~__WGPEER_F_ALL)
++		goto out;
 +
 +	ret = -EPFNOSUPPORT;
 +	if (attrs[WGPEER_A_PROTOCOL_VERSION]) {
@@ -25415,10 +25418,16 @@
 +		}
 +		up_read(&wg->static_identity.lock);
 +
-+		ret = -ENOMEM;
 +		peer = wg_peer_create(wg, public_key, preshared_key);
-+		if (!peer)
++		if (IS_ERR(peer)) {
++			/* Similar to the above, if the key is invalid, we skip
++			 * it without fanfare, so that services don't need to
++			 * worry about doing key validation themselves.
++			 */
++			ret = PTR_ERR(peer) == -EKEYREJECTED ? 0 : PTR_ERR(peer);
++			peer = NULL;
 +			goto out;
++		}
 +		/* Take additional reference, as though we've just been
 +		 * looked up.
 +		 */
@@ -25499,6 +25508,7 @@
 +static int wg_set_device(struct sk_buff *skb, struct genl_info *info)
 +{
 +	struct wg_device *wg = lookup_interface(info->attrs, skb);
++	u32 flags = 0;
 +	int ret;
 +
 +	if (IS_ERR(wg)) {
@@ -25508,6 +25518,12 @@
 +
 +	rtnl_lock();
 +	mutex_lock(&wg->device_update_lock);
++
++	if (info->attrs[WGDEVICE_A_FLAGS])
++		flags = nla_get_u32(info->attrs[WGDEVICE_A_FLAGS]);
++	ret = -EOPNOTSUPP;
++	if (flags & ~__WGDEVICE_F_ALL)
++		goto out;
 +
 +	ret = -EPERM;
 +	if ((info->attrs[WGDEVICE_A_LISTEN_PORT] ||
@@ -25532,9 +25548,7 @@
 +			goto out;
 +	}
 +
-+	if (info->attrs[WGDEVICE_A_FLAGS] &&
-+	    nla_get_u32(info->attrs[WGDEVICE_A_FLAGS]) &
-+		    WGDEVICE_F_REPLACE_PEERS)
++	if (flags & WGDEVICE_F_REPLACE_PEERS)
 +		wg_peer_remove_all(wg);
 +
 +	if (info->attrs[WGDEVICE_A_PRIVATE_KEY] &&
@@ -25543,6 +25557,10 @@
 +		u8 *private_key = nla_data(info->attrs[WGDEVICE_A_PRIVATE_KEY]);
 +		u8 public_key[NOISE_PUBLIC_KEY_LEN];
 +		struct wg_peer *peer, *temp;
++
++		if (!crypto_memneq(wg->static_identity.static_private,
++				   private_key, NOISE_PUBLIC_KEY_LEN))
++			goto skip_set_private_key;
 +
 +		/* We remove before setting, to prevent race, which means doing
 +		 * two 25519-genpub ops.
@@ -25561,12 +25579,15 @@
 +							 private_key);
 +		list_for_each_entry_safe(peer, temp, &wg->peer_list,
 +					 peer_list) {
-+			if (!wg_noise_precompute_static_static(peer))
++			if (wg_noise_precompute_static_static(peer))
++				wg_noise_expire_current_peer_keypairs(peer);
++			else
 +				wg_peer_remove(peer);
 +		}
 +		wg_cookie_checker_precompute_device_keys(&wg->cookie_checker);
 +		up_write(&wg->static_identity.lock);
 +	}
++skip_set_private_key:
 +
 +	if (info->attrs[WGDEVICE_A_PEERS]) {
 +		struct nlattr *attr, *peer[WGPEER_A_MAX + 1];
@@ -25649,9 +25670,9 @@
 +{
 +	genl_unregister_family(&genl_family);
 +}
---- /dev/null
-+++ b/net/wireguard/noise.c
-@@ -0,0 +1,807 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/noise.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,826 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -25835,6 +25856,25 @@
 +	wg_noise_keypair_put(old, true);
 +
 +	spin_unlock_bh(&keypairs->keypair_update_lock);
++}
++
++void wg_noise_expire_current_peer_keypairs(struct wg_peer *peer)
++{
++	struct noise_keypair *keypair;
++
++	wg_noise_handshake_clear(&peer->handshake);
++	wg_noise_reset_last_sent_handshake(&peer->last_sent_handshake);
++
++	spin_lock_bh(&peer->keypairs.keypair_update_lock);
++	keypair = rcu_dereference_protected(peer->keypairs.next_keypair,
++			lockdep_is_held(&peer->keypairs.keypair_update_lock));
++	if (keypair)
++		keypair->sending.is_valid = false;
++	keypair = rcu_dereference_protected(peer->keypairs.current_keypair,
++			lockdep_is_held(&peer->keypairs.keypair_update_lock));
++	if (keypair)
++		keypair->sending.is_valid = false;
++	spin_unlock_bh(&peer->keypairs.keypair_update_lock);
 +}
 +
 +static void add_new_keypair(struct noise_keypairs *keypairs,
@@ -26459,9 +26499,9 @@
 +	up_write(&handshake->lock);
 +	return ret;
 +}
---- /dev/null
-+++ b/net/wireguard/peer.c
-@@ -0,0 +1,239 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/peer.c	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,240 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -26486,20 +26526,23 @@
 +			       const u8 preshared_key[NOISE_SYMMETRIC_KEY_LEN])
 +{
 +	struct wg_peer *peer;
++	int ret = -ENOMEM;
 +
 +	lockdep_assert_held(&wg->device_update_lock);
 +
 +	if (wg->num_peers >= MAX_PEERS_PER_DEVICE)
-+		return NULL;
++		return ERR_PTR(ret);
 +
 +	peer = kzalloc(sizeof(*peer), GFP_KERNEL);
 +	if (unlikely(!peer))
-+		return NULL;
++		return ERR_PTR(ret);
 +	peer->device = wg;
 +
 +	if (!wg_noise_handshake_init(&peer->handshake, &wg->static_identity,
-+				     public_key, preshared_key, peer))
++				     public_key, preshared_key, peer)) {
++		ret = -EKEYREJECTED;
 +		goto err_1;
++	}
 +	if (dst_cache_init(&peer->endpoint_cache, GFP_KERNEL))
 +		goto err_1;
 +	if (wg_packet_queue_init(&peer->tx_queue, wg_packet_tx_worker, false,
@@ -26520,9 +26563,7 @@
 +	rwlock_init(&peer->endpoint_lock);
 +	kref_init(&peer->refcount);
 +	skb_queue_head_init(&peer->staged_packet_queue);
-+	atomic64_set(&peer->last_sent_handshake,
-+		     ktime_get_coarse_boottime_ns() -
-+			     (u64)(REKEY_TIMEOUT + 1) * NSEC_PER_SEC);
++	wg_noise_reset_last_sent_handshake(&peer->last_sent_handshake);
 +	set_bit(NAPI_STATE_NO_BUSY_POLL, &peer->napi.state);
 +	netif_napi_add(wg->dev, &peer->napi, wg_packet_rx_poll,
 +		       NAPI_POLL_WEIGHT);
@@ -26540,7 +26581,7 @@
 +	dst_cache_destroy(&peer->endpoint_cache);
 +err_1:
 +	kfree(peer);
-+	return NULL;
++	return ERR_PTR(ret);
 +}
 +
 +struct wg_peer *wg_peer_get_maybe_zero(struct wg_peer *peer)
@@ -26701,8 +26742,8 @@
 +		return;
 +	kref_put(&peer->refcount, kref_release);
 +}
---- /dev/null
-+++ b/net/wireguard/peerlookup.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/peerlookup.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,221 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -26925,8 +26966,8 @@
 +	rcu_read_unlock_bh();
 +	return entry;
 +}
---- /dev/null
-+++ b/net/wireguard/queueing.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/queueing.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,53 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -26981,8 +27022,8 @@
 +	WARN_ON(!__ptr_ring_empty(&queue->ring));
 +	ptr_ring_cleanup(&queue->ring, NULL);
 +}
---- /dev/null
-+++ b/net/wireguard/ratelimiter.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/ratelimiter.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,235 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -27219,8 +27260,8 @@
 +}
 +
 +#include "selftest/ratelimiter.c"
---- /dev/null
-+++ b/net/wireguard/receive.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/receive.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,605 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -27827,8 +27868,8 @@
 +err:
 +	dev_kfree_skb(skb);
 +}
---- /dev/null
-+++ b/net/wireguard/selftest/allowedips.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/selftest/allowedips.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,682 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -28512,8 +28553,8 @@
 +#undef init_peer
 +
 +#endif
---- /dev/null
-+++ b/net/wireguard/selftest/counter.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/selftest/counter.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,104 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -28619,8 +28660,8 @@
 +	return success;
 +}
 +#endif
---- /dev/null
-+++ b/net/wireguard/selftest/ratelimiter.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/selftest/ratelimiter.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,226 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -28848,8 +28889,8 @@
 +	return success;
 +}
 +#endif
---- /dev/null
-+++ b/net/wireguard/send.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/send.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,431 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -29282,8 +29323,8 @@
 +	 */
 +	wg_packet_send_queued_handshake_initiation(peer, false);
 +}
---- /dev/null
-+++ b/net/wireguard/socket.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/socket.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,436 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -29721,8 +29762,8 @@
 +	sock_free(old4);
 +	sock_free(old6);
 +}
---- /dev/null
-+++ b/net/wireguard/timers.c
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/timers.c	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,243 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -29967,8 +30008,8 @@
 +	del_timer_sync(&peer->timer_persistent_keepalive);
 +	flush_work(&peer->clear_peer_work);
 +}
---- /dev/null
-+++ b/net/wireguard/allowedips.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/allowedips.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,59 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -30029,8 +30070,8 @@
 +#endif
 +
 +#endif /* _WG_ALLOWEDIPS_H */
---- /dev/null
-+++ b/net/wireguard/compat/checksum/checksum_partial_compat.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/checksum/checksum_partial_compat.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,208 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -30240,8 +30281,8 @@
 +	}
 +	return err;
 +}
---- /dev/null
-+++ b/net/wireguard/compat/compat-asm.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/compat-asm.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,43 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -30286,9 +30327,9 @@
 +#endif
 +
 +#endif /* _WG_COMPATASM_H */
---- /dev/null
-+++ b/net/wireguard/compat/compat.h
-@@ -0,0 +1,907 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/compat.h	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,923 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -30312,6 +30353,8 @@
 +#ifdef UTS_UBUNTU_RELEASE_ABI
 +#if LINUX_VERSION_CODE == KERNEL_VERSION(3, 13, 11)
 +#define ISUBUNTU1404
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0)
++#define ISUBUNTU1604
 +#endif
 +#endif
 +#ifdef CONFIG_SUSE_KERNEL
@@ -30336,6 +30379,7 @@
 +#endif
 +
 +#include <linux/cache.h>
++#include <linux/init.h>
 +#ifndef __ro_after_init
 +#define __ro_after_init __read_mostly
 +#endif
@@ -30378,7 +30422,7 @@
 +    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 18, 27) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0)) || \
 +    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 8) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 15, 0)) || \
 +    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 40) && LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)) || \
-+    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 54))) && !defined(ISUBUNTU1404)
++    (LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 54))) && !defined(ISUBUNTU1404) && (!defined(ISRHEL7) || RHEL_MINOR < 7) /* TODO: remove < 7 workaround once CentOS 7.7 comes out. */
 +#include <linux/if.h>
 +#include <net/ip_tunnels.h>
 +#define IP6_ECN_set_ce(a, b) IP6_ECN_set_ce(b)
@@ -30697,7 +30741,7 @@
 +{
 +#if !(NSEC_PER_SEC % HZ)
 +	return (NSEC_PER_SEC / HZ) * j;
-+# else
++#else
 +	return div_u64(j * HZ_TO_USEC_NUM, HZ_TO_USEC_DEN) * 1000;
 +#endif
 +}
@@ -30889,10 +30933,6 @@
 +
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
 +#define COMPAT_CANNOT_USE_IN6_DEV_GET
-+#endif
-+
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
-+#define COMPAT_CANNOT_USE_DEV_CNF
 +#endif
 +
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 3, 0)
@@ -31135,6 +31175,23 @@
 +#define cpu_have_named_feature(name) (elf_hwcap & (HWCAP_ ## name))
 +#endif
 +
++#if defined(ISUBUNTU1604)
++#include <linux/siphash.h>
++#ifndef _WG_LINUX_SIPHASH_H
++#define hsiphash_2u32 siphash_2u32
++#define hsiphash_3u32 siphash_3u32
++#define hsiphash_key_t siphash_key_t
++#endif
++#endif
++
++#ifdef CONFIG_VE
++#include <linux/netdev_features.h>
++#ifdef NETIF_F_VIRTUAL
++#undef NETIF_F_LLTX
++#define NETIF_F_LLTX (__NETIF_F(LLTX) | __NETIF_F(VIRTUAL))
++#endif
++#endif
++
 +/* https://github.com/ClangBuiltLinux/linux/issues/7 */
 +#if defined( __clang__) && (!defined(CONFIG_CLANG_VERSION) || CONFIG_CLANG_VERSION < 80000)
 +#include <linux/bug.h>
@@ -31196,8 +31253,8 @@
 +#endif
 +
 +#endif /* _WG_COMPAT_H */
---- /dev/null
-+++ b/net/wireguard/compat/dst_cache/include/net/dst_cache.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/dst_cache/include/net/dst_cache.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,97 @@
 +#ifndef _WG_NET_DST_CACHE_H
 +#define _WG_NET_DST_CACHE_H
@@ -31296,12 +31353,12 @@
 +void dst_cache_destroy(struct dst_cache *dst_cache);
 +
 +#endif /* _WG_NET_DST_CACHE_H */
---- /dev/null
-+++ b/net/wireguard/compat/fpu-x86/include/asm/fpu/api.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/fpu-x86/include/asm/fpu/api.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1 @@
 +#include <asm/i387.h>
---- /dev/null
-+++ b/net/wireguard/compat/intel-family-x86/include/asm/intel-family.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/intel-family-x86/include/asm/intel-family.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,73 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +#ifndef _ASM_X86_INTEL_FAMILY_H
@@ -31376,16 +31433,16 @@
 +#define INTEL_FAM6_XEON_PHI_KNM		0x85 /* Knights Mill */
 +
 +#endif /* _ASM_X86_INTEL_FAMILY_H */
---- /dev/null
-+++ b/net/wireguard/compat/memneq/include.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/memneq/include.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,5 @@
 +extern noinline unsigned long __crypto_memneq(const void *a, const void *b, size_t size);
 +static inline int crypto_memneq(const void *a, const void *b, size_t size)
 +{
 +	return __crypto_memneq(a, b, size) != 0UL ? 1 : 0;
 +}
---- /dev/null
-+++ b/net/wireguard/compat/neon-arm/include/asm/neon.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/neon-arm/include/asm/neon.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,7 @@
 +#ifndef _ARCH_ARM_ASM_NEON
 +#define _ARCH_ARM_ASM_NEON
@@ -31394,8 +31451,8 @@
 +#define kernel_neon_end() \
 +	BUILD_BUG_ON_MSG(1, "This kernel does not support ARM NEON")
 +#endif
---- /dev/null
-+++ b/net/wireguard/compat/ptr_ring/include/linux/ptr_ring.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/ptr_ring/include/linux/ptr_ring.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,640 @@
 +/*
 + *	Definitions for the 'struct ptr_ring' datastructure.
@@ -32037,8 +32094,8 @@
 +}
 +
 +#endif /* _LINUX_PTR_RING_H  */
---- /dev/null
-+++ b/net/wireguard/compat/simd-asm/include/asm/simd.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/simd-asm/include/asm/simd.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,21 @@
 +#ifndef _COMPAT_ASM_SIMD_H
 +#define _COMPAT_ASM_SIMD_H
@@ -32061,8 +32118,8 @@
 +}
 +
 +#endif
---- /dev/null
-+++ b/net/wireguard/compat/simd/include/linux/simd.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/simd/include/linux/simd.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,70 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -32134,8 +32191,8 @@
 +}
 +
 +#endif /* _WG_SIMD_H */
---- /dev/null
-+++ b/net/wireguard/compat/siphash/include/linux/siphash.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/siphash/include/linux/siphash.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,140 @@
 +/* Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
 + *
@@ -32277,8 +32334,8 @@
 +}
 +
 +#endif /* _WG_LINUX_SIPHASH_H */
---- /dev/null
-+++ b/net/wireguard/compat/udp_tunnel/include/net/udp_tunnel.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/udp_tunnel/include/net/udp_tunnel.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,94 @@
 +#ifndef _WG_NET_UDP_TUNNEL_H
 +#define _WG_NET_UDP_TUNNEL_H
@@ -32374,8 +32431,8 @@
 +void udp_tunnel_sock_release(struct socket *sock);
 +
 +#endif /* _WG_NET_UDP_TUNNEL_H */
---- /dev/null
-+++ b/net/wireguard/compat/udp_tunnel/udp_tunnel_partial_compat.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/udp_tunnel/udp_tunnel_partial_compat.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,226 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -32603,8 +32660,8 @@
 +#define udp_port_cfg __compat_udp_port_cfg
 +#define udp_sock_create(a, b, c) __compat_udp_sock_create(a, b, c)
 +#endif
---- /dev/null
-+++ b/net/wireguard/cookie.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/cookie.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,59 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -32665,8 +32722,8 @@
 +			       struct wg_device *wg);
 +
 +#endif /* _WG_COOKIE_H */
---- /dev/null
-+++ b/net/wireguard/crypto/include/zinc/blake2s.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/include/zinc/blake2s.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,56 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32724,8 +32781,8 @@
 +		  const size_t inlen, const size_t keylen);
 +
 +#endif /* _ZINC_BLAKE2S_H */
---- /dev/null
-+++ b/net/wireguard/crypto/include/zinc/chacha20.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/include/zinc/chacha20.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,70 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32797,8 +32854,8 @@
 +	       const u8 key[HCHACHA20_KEY_SIZE], simd_context_t *simd_context);
 +
 +#endif /* _ZINC_CHACHA20_H */
---- /dev/null
-+++ b/net/wireguard/crypto/include/zinc/chacha20poly1305.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/include/zinc/chacha20poly1305.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,50 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32850,8 +32907,8 @@
 +	const u8 key[CHACHA20POLY1305_KEY_SIZE]);
 +
 +#endif /* _ZINC_CHACHA20POLY1305_H */
---- /dev/null
-+++ b/net/wireguard/crypto/include/zinc/curve25519.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/include/zinc/curve25519.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,28 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32881,8 +32938,8 @@
 +}
 +
 +#endif /* _ZINC_CURVE25519_H */
---- /dev/null
-+++ b/net/wireguard/crypto/include/zinc/poly1305.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/include/zinc/poly1305.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,31 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32915,8 +32972,8 @@
 +		    simd_context_t *simd_context);
 +
 +#endif /* _ZINC_POLY1305_H */
---- /dev/null
-+++ b/net/wireguard/crypto/zinc.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,15 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32933,8 +32990,8 @@
 +int curve25519_mod_init(void);
 +
 +#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/selftest/run.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/selftest/run.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,48 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -32984,8 +33041,8 @@
 +}
 +
 +#endif
---- /dev/null
-+++ b/net/wireguard/device.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/device.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,65 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33052,8 +33109,8 @@
 +void wg_device_uninit(void);
 +
 +#endif /* _WG_DEVICE_H */
---- /dev/null
-+++ b/net/wireguard/messages.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/messages.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,128 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33183,8 +33240,8 @@
 +enum { HANDSHAKE_DSCP = 0x88 /* AF41, plus 00 ECN */ };
 +
 +#endif /* _WG_MESSAGES_H */
---- /dev/null
-+++ b/net/wireguard/netlink.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/netlink.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,12 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33198,9 +33255,9 @@
 +void wg_genetlink_uninit(void);
 +
 +#endif /* _WG_NETLINK_H */
---- /dev/null
-+++ b/net/wireguard/noise.h
-@@ -0,0 +1,130 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/noise.h	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,137 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -33303,11 +33360,18 @@
 +			   const u8 peer_preshared_key[NOISE_SYMMETRIC_KEY_LEN],
 +			   struct wg_peer *peer);
 +void wg_noise_handshake_clear(struct noise_handshake *handshake);
++static inline void wg_noise_reset_last_sent_handshake(atomic64_t *handshake_ns)
++{
++	atomic64_set(handshake_ns, ktime_get_coarse_boottime_ns() -
++				       (u64)(REKEY_TIMEOUT + 1) * NSEC_PER_SEC);
++}
++
 +void wg_noise_keypair_put(struct noise_keypair *keypair, bool unreference_now);
 +struct noise_keypair *wg_noise_keypair_get(struct noise_keypair *keypair);
 +void wg_noise_keypairs_clear(struct noise_keypairs *keypairs);
 +bool wg_noise_received_with_keypair(struct noise_keypairs *keypairs,
 +				    struct noise_keypair *received_keypair);
++void wg_noise_expire_current_peer_keypairs(struct wg_peer *peer);
 +
 +void wg_noise_set_static_identity_private_key(
 +	struct noise_static_identity *static_identity,
@@ -33331,8 +33395,8 @@
 +				      struct noise_keypairs *keypairs);
 +
 +#endif /* _WG_NOISE_H */
---- /dev/null
-+++ b/net/wireguard/peer.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/peer.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,83 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33417,8 +33481,8 @@
 +void wg_peer_remove_all(struct wg_device *wg);
 +
 +#endif /* _WG_PEER_H */
---- /dev/null
-+++ b/net/wireguard/peerlookup.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/peerlookup.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,64 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33484,8 +33548,8 @@
 +			  const __le32 index, struct wg_peer **peer);
 +
 +#endif /* _WG_PEERLOOKUP_H */
---- /dev/null
-+++ b/net/wireguard/queueing.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/queueing.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,197 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33684,8 +33748,8 @@
 +#endif
 +
 +#endif /* _WG_QUEUEING_H */
---- /dev/null
-+++ b/net/wireguard/ratelimiter.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/ratelimiter.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,19 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33706,8 +33770,8 @@
 +#endif
 +
 +#endif /* _WG_RATELIMITER_H */
---- /dev/null
-+++ b/net/wireguard/socket.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/socket.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,44 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33753,8 +33817,8 @@
 +#endif
 +
 +#endif /* _WG_SOCKET_H */
---- /dev/null
-+++ b/net/wireguard/timers.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/timers.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,31 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -33787,9 +33851,9 @@
 +}
 +
 +#endif /* _WG_TIMERS_H */
---- /dev/null
-+++ b/net/wireguard/uapi/wireguard.h
-@@ -0,0 +1,190 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/uapi/wireguard.h	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,192 @@
 +/* SPDX-License-Identifier: (GPL-2.0 WITH Linux-syscall-note) OR MIT */
 +/*
 + * Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -33934,7 +33998,8 @@
 +#define WG_CMD_MAX (__WG_CMD_MAX - 1)
 +
 +enum wgdevice_flag {
-+	WGDEVICE_F_REPLACE_PEERS = 1U << 0
++	WGDEVICE_F_REPLACE_PEERS = 1U << 0,
++	__WGDEVICE_F_ALL = WGDEVICE_F_REPLACE_PEERS
 +};
 +enum wgdevice_attribute {
 +	WGDEVICE_A_UNSPEC,
@@ -33952,7 +34017,8 @@
 +
 +enum wgpeer_flag {
 +	WGPEER_F_REMOVE_ME = 1U << 0,
-+	WGPEER_F_REPLACE_ALLOWEDIPS = 1U << 1
++	WGPEER_F_REPLACE_ALLOWEDIPS = 1U << 1,
++	__WGPEER_F_ALL = WGPEER_F_REMOVE_ME | WGPEER_F_REPLACE_ALLOWEDIPS
 +};
 +enum wgpeer_attribute {
 +	WGPEER_A_UNSPEC,
@@ -33980,12 +34046,12 @@
 +#define WGALLOWEDIP_A_MAX (__WGALLOWEDIP_A_LAST - 1)
 +
 +#endif /* _WG_UAPI_WIREGUARD_H */
---- /dev/null
-+++ b/net/wireguard/version.h
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/version.h	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1 @@
-+#define WIREGUARD_VERSION "0.0.20190702"
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/blake2s/blake2s-x86_64.S
++#define WIREGUARD_VERSION "0.0.20190913"
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/blake2s/blake2s-x86_64.S	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,258 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -34245,8 +34311,8 @@
 +	retq
 +ENDPROC(blake2s_compress_avx512)
 +#endif /* CONFIG_AS_AVX512 */
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-mips.S
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-mips.S	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,424 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -34672,8 +34738,8 @@
 +	FOR_EACH_WORD(JMPTBL_UNALIGNED)
 +.end chacha20_mips
 +.set at
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-unrolled-arm.S
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-unrolled-arm.S	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,461 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
@@ -35136,8 +35202,8 @@
 +
 +	pop		{r4-r11,pc}
 +ENDPROC(hchacha20_arm)
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/curve25519/curve25519-arm.S
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/curve25519/curve25519-arm.S	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,2064 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -37203,8 +37269,8 @@
 +	pop		{r4-r11, pc}
 +ENDPROC(curve25519_neon)
 +#endif
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-mips.S
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-mips.S	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,407 @@
 +/* SPDX-License-Identifier: GPL-2.0 OR MIT */
 +/*
@@ -37613,8 +37679,1174 @@
 +	/* Jump Back  */
 +	jr	$ra
 +.end poly1305_init_mips
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-arm.pl
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-arm64.pl	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,1163 @@
++#!/usr/bin/env perl
++# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
++#
++# This code is taken from the OpenSSL project but the author, Andy Polyakov,
++# has relicensed it under the licenses specified in the SPDX header above.
++# The original headers, including the original license headers, are
++# included below for completeness.
++#
++# ====================================================================
++# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
++# project. The module is, however, dual licensed under OpenSSL and
++# CRYPTOGAMS licenses depending on where you obtain it. For further
++# details see http://www.openssl.org/~appro/cryptogams/.
++# ====================================================================
++#
++# June 2015
++#
++# ChaCha20 for ARMv8.
++#
++# Performance in cycles per byte out of large buffer.
++#
++#			IALU/gcc-4.9    3xNEON+1xIALU	6xNEON+2xIALU(*)
++#
++# Apple A7		5.50/+49%       3.33            1.70
++# Cortex-A53		8.40/+80%       4.72		4.72(**)
++# Cortex-A57		8.06/+43%       4.90            4.43(***)
++# Denver		4.50/+82%       2.63		2.67(**)
++# X-Gene		9.50/+46%       8.82		8.89(**)
++# Mongoose		8.00/+44%	3.64		3.25(***)
++# Kryo			8.17/+50%	4.83		4.65(***)
++#
++# (*)	since no non-Apple processor exhibits significantly better
++#	performance, the code path is #ifdef __APPLE__-ed;
++# (**)	it's expected that doubling interleave factor doesn't help
++#	all processors, only those with higher NEON latency and
++#	higher instruction issue rate;
++# (***)	expected improvement was actually higher;
++
++$flavour=shift;
++if ($flavour=~/\w[\w\-]*\.\w+$/) { $output=$flavour; undef $flavour; }
++else { while (($output=shift) && ($output!~/\w[\w\-]*\.\w+$/)) {} }
++
++if ($flavour && $flavour ne "void") {
++    $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
++    ( $xlate="${dir}arm-xlate.pl" and -f $xlate ) or
++    ( $xlate="${dir}../../perlasm/arm-xlate.pl" and -f $xlate) or
++    die "can't locate arm-xlate.pl";
++
++    open STDOUT,"| \"$^X\" $xlate $flavour $output";
++} else {
++    open STDOUT,">$output";
++}
++
++sub AUTOLOAD()		# thunk [simplified] x86-style perlasm
++{ my $opcode = $AUTOLOAD; $opcode =~ s/.*:://; $opcode =~ s/_/\./;
++  my $arg = pop;
++    $arg = "#$arg" if ($arg*1 eq $arg);
++    $code .= "\t$opcode\t".join(',',@_,$arg)."\n";
++}
++
++my ($out,$inp,$len,$key,$ctr) = map("x$_",(0..4));
++
++my @x=map("x$_",(5..17,19..21));
++my @d=map("x$_",(22..28,30));
++
++sub ROUND {
++my ($a0,$b0,$c0,$d0)=@_;
++my ($a1,$b1,$c1,$d1)=map(($_&~3)+(($_+1)&3),($a0,$b0,$c0,$d0));
++my ($a2,$b2,$c2,$d2)=map(($_&~3)+(($_+1)&3),($a1,$b1,$c1,$d1));
++my ($a3,$b3,$c3,$d3)=map(($_&~3)+(($_+1)&3),($a2,$b2,$c2,$d2));
++
++    (
++	"&add_32	(@x[$a0],@x[$a0],@x[$b0])",
++	 "&add_32	(@x[$a1],@x[$a1],@x[$b1])",
++	  "&add_32	(@x[$a2],@x[$a2],@x[$b2])",
++	   "&add_32	(@x[$a3],@x[$a3],@x[$b3])",
++	"&eor_32	(@x[$d0],@x[$d0],@x[$a0])",
++	 "&eor_32	(@x[$d1],@x[$d1],@x[$a1])",
++	  "&eor_32	(@x[$d2],@x[$d2],@x[$a2])",
++	   "&eor_32	(@x[$d3],@x[$d3],@x[$a3])",
++	"&ror_32	(@x[$d0],@x[$d0],16)",
++	 "&ror_32	(@x[$d1],@x[$d1],16)",
++	  "&ror_32	(@x[$d2],@x[$d2],16)",
++	   "&ror_32	(@x[$d3],@x[$d3],16)",
++
++	"&add_32	(@x[$c0],@x[$c0],@x[$d0])",
++	 "&add_32	(@x[$c1],@x[$c1],@x[$d1])",
++	  "&add_32	(@x[$c2],@x[$c2],@x[$d2])",
++	   "&add_32	(@x[$c3],@x[$c3],@x[$d3])",
++	"&eor_32	(@x[$b0],@x[$b0],@x[$c0])",
++	 "&eor_32	(@x[$b1],@x[$b1],@x[$c1])",
++	  "&eor_32	(@x[$b2],@x[$b2],@x[$c2])",
++	   "&eor_32	(@x[$b3],@x[$b3],@x[$c3])",
++	"&ror_32	(@x[$b0],@x[$b0],20)",
++	 "&ror_32	(@x[$b1],@x[$b1],20)",
++	  "&ror_32	(@x[$b2],@x[$b2],20)",
++	   "&ror_32	(@x[$b3],@x[$b3],20)",
++
++	"&add_32	(@x[$a0],@x[$a0],@x[$b0])",
++	 "&add_32	(@x[$a1],@x[$a1],@x[$b1])",
++	  "&add_32	(@x[$a2],@x[$a2],@x[$b2])",
++	   "&add_32	(@x[$a3],@x[$a3],@x[$b3])",
++	"&eor_32	(@x[$d0],@x[$d0],@x[$a0])",
++	 "&eor_32	(@x[$d1],@x[$d1],@x[$a1])",
++	  "&eor_32	(@x[$d2],@x[$d2],@x[$a2])",
++	   "&eor_32	(@x[$d3],@x[$d3],@x[$a3])",
++	"&ror_32	(@x[$d0],@x[$d0],24)",
++	 "&ror_32	(@x[$d1],@x[$d1],24)",
++	  "&ror_32	(@x[$d2],@x[$d2],24)",
++	   "&ror_32	(@x[$d3],@x[$d3],24)",
++
++	"&add_32	(@x[$c0],@x[$c0],@x[$d0])",
++	 "&add_32	(@x[$c1],@x[$c1],@x[$d1])",
++	  "&add_32	(@x[$c2],@x[$c2],@x[$d2])",
++	   "&add_32	(@x[$c3],@x[$c3],@x[$d3])",
++	"&eor_32	(@x[$b0],@x[$b0],@x[$c0])",
++	 "&eor_32	(@x[$b1],@x[$b1],@x[$c1])",
++	  "&eor_32	(@x[$b2],@x[$b2],@x[$c2])",
++	   "&eor_32	(@x[$b3],@x[$b3],@x[$c3])",
++	"&ror_32	(@x[$b0],@x[$b0],25)",
++	 "&ror_32	(@x[$b1],@x[$b1],25)",
++	  "&ror_32	(@x[$b2],@x[$b2],25)",
++	   "&ror_32	(@x[$b3],@x[$b3],25)"
++    );
++}
++
++$code.=<<___;
++#ifndef	__KERNEL__
++# include "arm_arch.h"
++.extern	OPENSSL_armcap_P
++#else
++# define ChaCha20_ctr32 chacha20_arm
++# define ChaCha20_neon  chacha20_neon
++#endif
++
++.text
++
++.align	5
++.Lsigma:
++.quad	0x3320646e61707865,0x6b20657479622d32		// endian-neutral
++.Lone:
++.long	1,0,0,0
++#ifndef	__KERNEL__
++.LOPENSSL_armcap_P:
++# ifdef	__ILP32__
++.long	OPENSSL_armcap_P-.
++# else
++.quad	OPENSSL_armcap_P-.
++# endif
++#endif
++
++.globl	ChaCha20_ctr32
++.type	ChaCha20_ctr32,%function
++.align	5
++ChaCha20_ctr32:
++	cbz	$len,.Labort
++#ifndef	__KERNEL__
++	adr	@x[0],.LOPENSSL_armcap_P
++	cmp	$len,#192
++	b.lo	.Lshort
++# ifdef	__ILP32__
++	ldrsw	@x[1],[@x[0]]
++# else
++	ldr	@x[1],[@x[0]]
++# endif
++	ldr	w17,[@x[1],@x[0]]
++	tst	w17,#ARMV7_NEON
++	b.ne	ChaCha20_neon
++
++.Lshort:
++#endif
++	stp	x29,x30,[sp,#-96]!
++	add	x29,sp,#0
++
++	adr	@x[0],.Lsigma
++	stp	x19,x20,[sp,#16]
++	stp	x21,x22,[sp,#32]
++	stp	x23,x24,[sp,#48]
++	stp	x25,x26,[sp,#64]
++	stp	x27,x28,[sp,#80]
++	sub	sp,sp,#64
++
++	ldp	@d[0],@d[1],[@x[0]]		// load sigma
++	ldp	@d[2],@d[3],[$key]		// load key
++	ldp	@d[4],@d[5],[$key,#16]
++	ldp	@d[6],@d[7],[$ctr]		// load counter
++#ifdef	__AARCH64EB__
++	ror	@d[2],@d[2],#32
++	ror	@d[3],@d[3],#32
++	ror	@d[4],@d[4],#32
++	ror	@d[5],@d[5],#32
++	ror	@d[6],@d[6],#32
++	ror	@d[7],@d[7],#32
++#endif
++
++.Loop_outer:
++	mov.32	@x[0],@d[0]			// unpack key block
++	lsr	@x[1],@d[0],#32
++	mov.32	@x[2],@d[1]
++	lsr	@x[3],@d[1],#32
++	mov.32	@x[4],@d[2]
++	lsr	@x[5],@d[2],#32
++	mov.32	@x[6],@d[3]
++	lsr	@x[7],@d[3],#32
++	mov.32	@x[8],@d[4]
++	lsr	@x[9],@d[4],#32
++	mov.32	@x[10],@d[5]
++	lsr	@x[11],@d[5],#32
++	mov.32	@x[12],@d[6]
++	lsr	@x[13],@d[6],#32
++	mov.32	@x[14],@d[7]
++	lsr	@x[15],@d[7],#32
++
++	mov	$ctr,#10
++	subs	$len,$len,#64
++.Loop:
++	sub	$ctr,$ctr,#1
++___
++	foreach (&ROUND(0, 4, 8,12)) { eval; }
++	foreach (&ROUND(0, 5,10,15)) { eval; }
++$code.=<<___;
++	cbnz	$ctr,.Loop
++
++	add.32	@x[0],@x[0],@d[0]		// accumulate key block
++	add	@x[1],@x[1],@d[0],lsr#32
++	add.32	@x[2],@x[2],@d[1]
++	add	@x[3],@x[3],@d[1],lsr#32
++	add.32	@x[4],@x[4],@d[2]
++	add	@x[5],@x[5],@d[2],lsr#32
++	add.32	@x[6],@x[6],@d[3]
++	add	@x[7],@x[7],@d[3],lsr#32
++	add.32	@x[8],@x[8],@d[4]
++	add	@x[9],@x[9],@d[4],lsr#32
++	add.32	@x[10],@x[10],@d[5]
++	add	@x[11],@x[11],@d[5],lsr#32
++	add.32	@x[12],@x[12],@d[6]
++	add	@x[13],@x[13],@d[6],lsr#32
++	add.32	@x[14],@x[14],@d[7]
++	add	@x[15],@x[15],@d[7],lsr#32
++
++	b.lo	.Ltail
++
++	add	@x[0],@x[0],@x[1],lsl#32	// pack
++	add	@x[2],@x[2],@x[3],lsl#32
++	ldp	@x[1],@x[3],[$inp,#0]		// load input
++	add	@x[4],@x[4],@x[5],lsl#32
++	add	@x[6],@x[6],@x[7],lsl#32
++	ldp	@x[5],@x[7],[$inp,#16]
++	add	@x[8],@x[8],@x[9],lsl#32
++	add	@x[10],@x[10],@x[11],lsl#32
++	ldp	@x[9],@x[11],[$inp,#32]
++	add	@x[12],@x[12],@x[13],lsl#32
++	add	@x[14],@x[14],@x[15],lsl#32
++	ldp	@x[13],@x[15],[$inp,#48]
++	add	$inp,$inp,#64
++#ifdef	__AARCH64EB__
++	rev	@x[0],@x[0]
++	rev	@x[2],@x[2]
++	rev	@x[4],@x[4]
++	rev	@x[6],@x[6]
++	rev	@x[8],@x[8]
++	rev	@x[10],@x[10]
++	rev	@x[12],@x[12]
++	rev	@x[14],@x[14]
++#endif
++	eor	@x[0],@x[0],@x[1]
++	eor	@x[2],@x[2],@x[3]
++	eor	@x[4],@x[4],@x[5]
++	eor	@x[6],@x[6],@x[7]
++	eor	@x[8],@x[8],@x[9]
++	eor	@x[10],@x[10],@x[11]
++	eor	@x[12],@x[12],@x[13]
++	eor	@x[14],@x[14],@x[15]
++
++	stp	@x[0],@x[2],[$out,#0]		// store output
++	 add	@d[6],@d[6],#1			// increment counter
++	stp	@x[4],@x[6],[$out,#16]
++	stp	@x[8],@x[10],[$out,#32]
++	stp	@x[12],@x[14],[$out,#48]
++	add	$out,$out,#64
++
++	b.hi	.Loop_outer
++
++	ldp	x19,x20,[x29,#16]
++	add	sp,sp,#64
++	ldp	x21,x22,[x29,#32]
++	ldp	x23,x24,[x29,#48]
++	ldp	x25,x26,[x29,#64]
++	ldp	x27,x28,[x29,#80]
++	ldp	x29,x30,[sp],#96
++.Labort:
++	ret
++
++.align	4
++.Ltail:
++	add	$len,$len,#64
++.Less_than_64:
++	sub	$out,$out,#1
++	add	$inp,$inp,$len
++	add	$out,$out,$len
++	add	$ctr,sp,$len
++	neg	$len,$len
++
++	add	@x[0],@x[0],@x[1],lsl#32	// pack
++	add	@x[2],@x[2],@x[3],lsl#32
++	add	@x[4],@x[4],@x[5],lsl#32
++	add	@x[6],@x[6],@x[7],lsl#32
++	add	@x[8],@x[8],@x[9],lsl#32
++	add	@x[10],@x[10],@x[11],lsl#32
++	add	@x[12],@x[12],@x[13],lsl#32
++	add	@x[14],@x[14],@x[15],lsl#32
++#ifdef	__AARCH64EB__
++	rev	@x[0],@x[0]
++	rev	@x[2],@x[2]
++	rev	@x[4],@x[4]
++	rev	@x[6],@x[6]
++	rev	@x[8],@x[8]
++	rev	@x[10],@x[10]
++	rev	@x[12],@x[12]
++	rev	@x[14],@x[14]
++#endif
++	stp	@x[0],@x[2],[sp,#0]
++	stp	@x[4],@x[6],[sp,#16]
++	stp	@x[8],@x[10],[sp,#32]
++	stp	@x[12],@x[14],[sp,#48]
++
++.Loop_tail:
++	ldrb	w10,[$inp,$len]
++	ldrb	w11,[$ctr,$len]
++	add	$len,$len,#1
++	eor	w10,w10,w11
++	strb	w10,[$out,$len]
++	cbnz	$len,.Loop_tail
++
++	stp	xzr,xzr,[sp,#0]
++	stp	xzr,xzr,[sp,#16]
++	stp	xzr,xzr,[sp,#32]
++	stp	xzr,xzr,[sp,#48]
++
++	ldp	x19,x20,[x29,#16]
++	add	sp,sp,#64
++	ldp	x21,x22,[x29,#32]
++	ldp	x23,x24,[x29,#48]
++	ldp	x25,x26,[x29,#64]
++	ldp	x27,x28,[x29,#80]
++	ldp	x29,x30,[sp],#96
++	ret
++.size	ChaCha20_ctr32,.-ChaCha20_ctr32
++___
++
++{{{
++my ($A0,$B0,$C0,$D0,$A1,$B1,$C1,$D1,$A2,$B2,$C2,$D2,$T0,$T1,$T2,$T3) =
++    map("v$_.4s",(0..7,16..23));
++my (@K)=map("v$_.4s",(24..30));
++my $ONE="v31.4s";
++
++sub NEONROUND {
++my $odd = pop;
++my ($a,$b,$c,$d,$t)=@_;
++
++	(
++	"&add		('$a','$a','$b')",
++	"&eor		('$d','$d','$a')",
++	"&rev32_16	('$d','$d')",		# vrot ($d,16)
++
++	"&add		('$c','$c','$d')",
++	"&eor		('$t','$b','$c')",
++	"&ushr		('$b','$t',20)",
++	"&sli		('$b','$t',12)",
++
++	"&add		('$a','$a','$b')",
++	"&eor		('$t','$d','$a')",
++	"&ushr		('$d','$t',24)",
++	"&sli		('$d','$t',8)",
++
++	"&add		('$c','$c','$d')",
++	"&eor		('$t','$b','$c')",
++	"&ushr		('$b','$t',25)",
++	"&sli		('$b','$t',7)",
++
++	"&ext		('$a','$a','$a',$odd?4:12)",
++	"&ext		('$d','$d','$d',8)",
++	"&ext		('$c','$c','$c',$odd?12:4)"
++	);
++}
++
++$code.=<<___;
++#if !defined(__KERNEL__) || defined(CONFIG_KERNEL_MODE_NEON)
++#ifdef __KERNEL__
++.globl  ChaCha20_neon
++.type   ChaCha20_neon,%function
++#endif
++.type	ChaCha20_neon,%function
++.align	5
++ChaCha20_neon:
++	stp	x29,x30,[sp,#-96]!
++	add	x29,sp,#0
++
++	adr	@x[0],.Lsigma
++	stp	x19,x20,[sp,#16]
++	stp	x21,x22,[sp,#32]
++	stp	x23,x24,[sp,#48]
++	stp	x25,x26,[sp,#64]
++	stp	x27,x28,[sp,#80]
++#ifdef	__APPLE__
++	cmp	$len,#512
++	b.hs	.L512_or_more_neon
++#endif
++
++	sub	sp,sp,#64
++
++	ldp	@d[0],@d[1],[@x[0]]		// load sigma
++	ld1	{@K[0]},[@x[0]],#16
++	ldp	@d[2],@d[3],[$key]		// load key
++	ldp	@d[4],@d[5],[$key,#16]
++	ld1	{@K[1],@K[2]},[$key]
++	ldp	@d[6],@d[7],[$ctr]		// load counter
++	ld1	{@K[3]},[$ctr]
++	ld1	{$ONE},[@x[0]]
++#ifdef	__AARCH64EB__
++	rev64	@K[0],@K[0]
++	ror	@d[2],@d[2],#32
++	ror	@d[3],@d[3],#32
++	ror	@d[4],@d[4],#32
++	ror	@d[5],@d[5],#32
++	ror	@d[6],@d[6],#32
++	ror	@d[7],@d[7],#32
++#endif
++	add	@K[3],@K[3],$ONE		// += 1
++	add	@K[4],@K[3],$ONE
++	add	@K[5],@K[4],$ONE
++	shl	$ONE,$ONE,#2			// 1 -> 4
++
++.Loop_outer_neon:
++	mov.32	@x[0],@d[0]			// unpack key block
++	lsr	@x[1],@d[0],#32
++	 mov	$A0,@K[0]
++	mov.32	@x[2],@d[1]
++	lsr	@x[3],@d[1],#32
++	 mov	$A1,@K[0]
++	mov.32	@x[4],@d[2]
++	lsr	@x[5],@d[2],#32
++	 mov	$A2,@K[0]
++	mov.32	@x[6],@d[3]
++	 mov	$B0,@K[1]
++	lsr	@x[7],@d[3],#32
++	 mov	$B1,@K[1]
++	mov.32	@x[8],@d[4]
++	 mov	$B2,@K[1]
++	lsr	@x[9],@d[4],#32
++	 mov	$D0,@K[3]
++	mov.32	@x[10],@d[5]
++	 mov	$D1,@K[4]
++	lsr	@x[11],@d[5],#32
++	 mov	$D2,@K[5]
++	mov.32	@x[12],@d[6]
++	 mov	$C0,@K[2]
++	lsr	@x[13],@d[6],#32
++	 mov	$C1,@K[2]
++	mov.32	@x[14],@d[7]
++	 mov	$C2,@K[2]
++	lsr	@x[15],@d[7],#32
++
++	mov	$ctr,#10
++	subs	$len,$len,#256
++.Loop_neon:
++	sub	$ctr,$ctr,#1
++___
++	my @thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,0);
++	my @thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,0);
++	my @thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,0);
++	my @thread3=&ROUND(0,4,8,12);
++
++	foreach (@thread0) {
++		eval;			eval(shift(@thread3));
++		eval(shift(@thread1));	eval(shift(@thread3));
++		eval(shift(@thread2));	eval(shift(@thread3));
++	}
++
++	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,1);
++	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,1);
++	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,1);
++	@thread3=&ROUND(0,5,10,15);
++
++	foreach (@thread0) {
++		eval;			eval(shift(@thread3));
++		eval(shift(@thread1));	eval(shift(@thread3));
++		eval(shift(@thread2));	eval(shift(@thread3));
++	}
++$code.=<<___;
++	cbnz	$ctr,.Loop_neon
++
++	add.32	@x[0],@x[0],@d[0]		// accumulate key block
++	 add	$A0,$A0,@K[0]
++	add	@x[1],@x[1],@d[0],lsr#32
++	 add	$A1,$A1,@K[0]
++	add.32	@x[2],@x[2],@d[1]
++	 add	$A2,$A2,@K[0]
++	add	@x[3],@x[3],@d[1],lsr#32
++	 add	$C0,$C0,@K[2]
++	add.32	@x[4],@x[4],@d[2]
++	 add	$C1,$C1,@K[2]
++	add	@x[5],@x[5],@d[2],lsr#32
++	 add	$C2,$C2,@K[2]
++	add.32	@x[6],@x[6],@d[3]
++	 add	$D0,$D0,@K[3]
++	add	@x[7],@x[7],@d[3],lsr#32
++	add.32	@x[8],@x[8],@d[4]
++	 add	$D1,$D1,@K[4]
++	add	@x[9],@x[9],@d[4],lsr#32
++	add.32	@x[10],@x[10],@d[5]
++	 add	$D2,$D2,@K[5]
++	add	@x[11],@x[11],@d[5],lsr#32
++	add.32	@x[12],@x[12],@d[6]
++	 add	$B0,$B0,@K[1]
++	add	@x[13],@x[13],@d[6],lsr#32
++	add.32	@x[14],@x[14],@d[7]
++	 add	$B1,$B1,@K[1]
++	add	@x[15],@x[15],@d[7],lsr#32
++	 add	$B2,$B2,@K[1]
++
++	b.lo	.Ltail_neon
++
++	add	@x[0],@x[0],@x[1],lsl#32	// pack
++	add	@x[2],@x[2],@x[3],lsl#32
++	ldp	@x[1],@x[3],[$inp,#0]		// load input
++	add	@x[4],@x[4],@x[5],lsl#32
++	add	@x[6],@x[6],@x[7],lsl#32
++	ldp	@x[5],@x[7],[$inp,#16]
++	add	@x[8],@x[8],@x[9],lsl#32
++	add	@x[10],@x[10],@x[11],lsl#32
++	ldp	@x[9],@x[11],[$inp,#32]
++	add	@x[12],@x[12],@x[13],lsl#32
++	add	@x[14],@x[14],@x[15],lsl#32
++	ldp	@x[13],@x[15],[$inp,#48]
++	add	$inp,$inp,#64
++#ifdef	__AARCH64EB__
++	rev	@x[0],@x[0]
++	rev	@x[2],@x[2]
++	rev	@x[4],@x[4]
++	rev	@x[6],@x[6]
++	rev	@x[8],@x[8]
++	rev	@x[10],@x[10]
++	rev	@x[12],@x[12]
++	rev	@x[14],@x[14]
++#endif
++	ld1.8	{$T0-$T3},[$inp],#64
++	eor	@x[0],@x[0],@x[1]
++	eor	@x[2],@x[2],@x[3]
++	eor	@x[4],@x[4],@x[5]
++	eor	@x[6],@x[6],@x[7]
++	eor	@x[8],@x[8],@x[9]
++	 eor	$A0,$A0,$T0
++	eor	@x[10],@x[10],@x[11]
++	 eor	$B0,$B0,$T1
++	eor	@x[12],@x[12],@x[13]
++	 eor	$C0,$C0,$T2
++	eor	@x[14],@x[14],@x[15]
++	 eor	$D0,$D0,$T3
++	 ld1.8	{$T0-$T3},[$inp],#64
++
++	stp	@x[0],@x[2],[$out,#0]		// store output
++	 add	@d[6],@d[6],#4			// increment counter
++	stp	@x[4],@x[6],[$out,#16]
++	 add	@K[3],@K[3],$ONE		// += 4
++	stp	@x[8],@x[10],[$out,#32]
++	 add	@K[4],@K[4],$ONE
++	stp	@x[12],@x[14],[$out,#48]
++	 add	@K[5],@K[5],$ONE
++	add	$out,$out,#64
++
++	st1.8	{$A0-$D0},[$out],#64
++	ld1.8	{$A0-$D0},[$inp],#64
++
++	eor	$A1,$A1,$T0
++	eor	$B1,$B1,$T1
++	eor	$C1,$C1,$T2
++	eor	$D1,$D1,$T3
++	st1.8	{$A1-$D1},[$out],#64
++
++	eor	$A2,$A2,$A0
++	eor	$B2,$B2,$B0
++	eor	$C2,$C2,$C0
++	eor	$D2,$D2,$D0
++	st1.8	{$A2-$D2},[$out],#64
++
++	b.hi	.Loop_outer_neon
++
++	ldp	x19,x20,[x29,#16]
++	add	sp,sp,#64
++	ldp	x21,x22,[x29,#32]
++	ldp	x23,x24,[x29,#48]
++	ldp	x25,x26,[x29,#64]
++	ldp	x27,x28,[x29,#80]
++	ldp	x29,x30,[sp],#96
++	ret
++
++.Ltail_neon:
++	add	$len,$len,#256
++	cmp	$len,#64
++	b.lo	.Less_than_64
++
++	add	@x[0],@x[0],@x[1],lsl#32	// pack
++	add	@x[2],@x[2],@x[3],lsl#32
++	ldp	@x[1],@x[3],[$inp,#0]		// load input
++	add	@x[4],@x[4],@x[5],lsl#32
++	add	@x[6],@x[6],@x[7],lsl#32
++	ldp	@x[5],@x[7],[$inp,#16]
++	add	@x[8],@x[8],@x[9],lsl#32
++	add	@x[10],@x[10],@x[11],lsl#32
++	ldp	@x[9],@x[11],[$inp,#32]
++	add	@x[12],@x[12],@x[13],lsl#32
++	add	@x[14],@x[14],@x[15],lsl#32
++	ldp	@x[13],@x[15],[$inp,#48]
++	add	$inp,$inp,#64
++#ifdef	__AARCH64EB__
++	rev	@x[0],@x[0]
++	rev	@x[2],@x[2]
++	rev	@x[4],@x[4]
++	rev	@x[6],@x[6]
++	rev	@x[8],@x[8]
++	rev	@x[10],@x[10]
++	rev	@x[12],@x[12]
++	rev	@x[14],@x[14]
++#endif
++	eor	@x[0],@x[0],@x[1]
++	eor	@x[2],@x[2],@x[3]
++	eor	@x[4],@x[4],@x[5]
++	eor	@x[6],@x[6],@x[7]
++	eor	@x[8],@x[8],@x[9]
++	eor	@x[10],@x[10],@x[11]
++	eor	@x[12],@x[12],@x[13]
++	eor	@x[14],@x[14],@x[15]
++
++	stp	@x[0],@x[2],[$out,#0]		// store output
++	 add	@d[6],@d[6],#4			// increment counter
++	stp	@x[4],@x[6],[$out,#16]
++	stp	@x[8],@x[10],[$out,#32]
++	stp	@x[12],@x[14],[$out,#48]
++	add	$out,$out,#64
++	b.eq	.Ldone_neon
++	sub	$len,$len,#64
++	cmp	$len,#64
++	b.lo	.Less_than_128
++
++	ld1.8	{$T0-$T3},[$inp],#64
++	eor	$A0,$A0,$T0
++	eor	$B0,$B0,$T1
++	eor	$C0,$C0,$T2
++	eor	$D0,$D0,$T3
++	st1.8	{$A0-$D0},[$out],#64
++	b.eq	.Ldone_neon
++	sub	$len,$len,#64
++	cmp	$len,#64
++	b.lo	.Less_than_192
++
++	ld1.8	{$T0-$T3},[$inp],#64
++	eor	$A1,$A1,$T0
++	eor	$B1,$B1,$T1
++	eor	$C1,$C1,$T2
++	eor	$D1,$D1,$T3
++	st1.8	{$A1-$D1},[$out],#64
++	b.eq	.Ldone_neon
++	sub	$len,$len,#64
++
++	st1.8	{$A2-$D2},[sp]
++	b	.Last_neon
++
++.Less_than_128:
++	st1.8	{$A0-$D0},[sp]
++	b	.Last_neon
++.Less_than_192:
++	st1.8	{$A1-$D1},[sp]
++	b	.Last_neon
++
++.align	4
++.Last_neon:
++	sub	$out,$out,#1
++	add	$inp,$inp,$len
++	add	$out,$out,$len
++	add	$ctr,sp,$len
++	neg	$len,$len
++
++.Loop_tail_neon:
++	ldrb	w10,[$inp,$len]
++	ldrb	w11,[$ctr,$len]
++	add	$len,$len,#1
++	eor	w10,w10,w11
++	strb	w10,[$out,$len]
++	cbnz	$len,.Loop_tail_neon
++
++	stp	xzr,xzr,[sp,#0]
++	stp	xzr,xzr,[sp,#16]
++	stp	xzr,xzr,[sp,#32]
++	stp	xzr,xzr,[sp,#48]
++
++.Ldone_neon:
++	ldp	x19,x20,[x29,#16]
++	add	sp,sp,#64
++	ldp	x21,x22,[x29,#32]
++	ldp	x23,x24,[x29,#48]
++	ldp	x25,x26,[x29,#64]
++	ldp	x27,x28,[x29,#80]
++	ldp	x29,x30,[sp],#96
++	ret
++.size	ChaCha20_neon,.-ChaCha20_neon
++___
++{
++my ($T0,$T1,$T2,$T3,$T4,$T5)=@K;
++my ($A0,$B0,$C0,$D0,$A1,$B1,$C1,$D1,$A2,$B2,$C2,$D2,
++    $A3,$B3,$C3,$D3,$A4,$B4,$C4,$D4,$A5,$B5,$C5,$D5) = map("v$_.4s",(0..23));
++
++$code.=<<___;
++#ifdef	__APPLE__
++.type	ChaCha20_512_neon,%function
++.align	5
++ChaCha20_512_neon:
++	stp	x29,x30,[sp,#-96]!
++	add	x29,sp,#0
++
++	adr	@x[0],.Lsigma
++	stp	x19,x20,[sp,#16]
++	stp	x21,x22,[sp,#32]
++	stp	x23,x24,[sp,#48]
++	stp	x25,x26,[sp,#64]
++	stp	x27,x28,[sp,#80]
++
++.L512_or_more_neon:
++	sub	sp,sp,#128+64
++
++	ldp	@d[0],@d[1],[@x[0]]		// load sigma
++	ld1	{@K[0]},[@x[0]],#16
++	ldp	@d[2],@d[3],[$key]		// load key
++	ldp	@d[4],@d[5],[$key,#16]
++	ld1	{@K[1],@K[2]},[$key]
++	ldp	@d[6],@d[7],[$ctr]		// load counter
++	ld1	{@K[3]},[$ctr]
++	ld1	{$ONE},[@x[0]]
++# ifdef	__AARCH64EB__
++	rev64	@K[0],@K[0]
++	ror	@d[2],@d[2],#32
++	ror	@d[3],@d[3],#32
++	ror	@d[4],@d[4],#32
++	ror	@d[5],@d[5],#32
++	ror	@d[6],@d[6],#32
++	ror	@d[7],@d[7],#32
++# endif
++	add	@K[3],@K[3],$ONE		// += 1
++	stp	@K[0],@K[1],[sp,#0]		// off-load key block, invariant part
++	add	@K[3],@K[3],$ONE		// not typo
++	str	@K[2],[sp,#32]
++	add	@K[4],@K[3],$ONE
++	add	@K[5],@K[4],$ONE
++	add	@K[6],@K[5],$ONE
++	shl	$ONE,$ONE,#2			// 1 -> 4
++
++	stp	d8,d9,[sp,#128+0]		// meet ABI requirements
++	stp	d10,d11,[sp,#128+16]
++	stp	d12,d13,[sp,#128+32]
++	stp	d14,d15,[sp,#128+48]
++
++	sub	$len,$len,#512			// not typo
++
++.Loop_outer_512_neon:
++	 mov	$A0,@K[0]
++	 mov	$A1,@K[0]
++	 mov	$A2,@K[0]
++	 mov	$A3,@K[0]
++	 mov	$A4,@K[0]
++	 mov	$A5,@K[0]
++	 mov	$B0,@K[1]
++	mov.32	@x[0],@d[0]			// unpack key block
++	 mov	$B1,@K[1]
++	lsr	@x[1],@d[0],#32
++	 mov	$B2,@K[1]
++	mov.32	@x[2],@d[1]
++	 mov	$B3,@K[1]
++	lsr	@x[3],@d[1],#32
++	 mov	$B4,@K[1]
++	mov.32	@x[4],@d[2]
++	 mov	$B5,@K[1]
++	lsr	@x[5],@d[2],#32
++	 mov	$D0,@K[3]
++	mov.32	@x[6],@d[3]
++	 mov	$D1,@K[4]
++	lsr	@x[7],@d[3],#32
++	 mov	$D2,@K[5]
++	mov.32	@x[8],@d[4]
++	 mov	$D3,@K[6]
++	lsr	@x[9],@d[4],#32
++	 mov	$C0,@K[2]
++	mov.32	@x[10],@d[5]
++	 mov	$C1,@K[2]
++	lsr	@x[11],@d[5],#32
++	 add	$D4,$D0,$ONE			// +4
++	mov.32	@x[12],@d[6]
++	 add	$D5,$D1,$ONE			// +4
++	lsr	@x[13],@d[6],#32
++	 mov	$C2,@K[2]
++	mov.32	@x[14],@d[7]
++	 mov	$C3,@K[2]
++	lsr	@x[15],@d[7],#32
++	 mov	$C4,@K[2]
++	 stp	@K[3],@K[4],[sp,#48]		// off-load key block, variable part
++	 mov	$C5,@K[2]
++	 str	@K[5],[sp,#80]
++
++	mov	$ctr,#5
++	subs	$len,$len,#512
++.Loop_upper_neon:
++	sub	$ctr,$ctr,#1
++___
++	my @thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,0);
++	my @thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,0);
++	my @thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,0);
++	my @thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,0);
++	my @thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,0);
++	my @thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,0);
++	my @thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
++	my $diff = ($#thread0+1)*6 - $#thread67 - 1;
++	my $i = 0;
++
++	foreach (@thread0) {
++		eval;			eval(shift(@thread67));
++		eval(shift(@thread1));	eval(shift(@thread67));
++		eval(shift(@thread2));	eval(shift(@thread67));
++		eval(shift(@thread3));	eval(shift(@thread67));
++		eval(shift(@thread4));	eval(shift(@thread67));
++		eval(shift(@thread5));	eval(shift(@thread67));
++	}
++
++	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,1);
++	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,1);
++	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,1);
++	@thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,1);
++	@thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,1);
++	@thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,1);
++	@thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
++
++	foreach (@thread0) {
++		eval;			eval(shift(@thread67));
++		eval(shift(@thread1));	eval(shift(@thread67));
++		eval(shift(@thread2));	eval(shift(@thread67));
++		eval(shift(@thread3));	eval(shift(@thread67));
++		eval(shift(@thread4));	eval(shift(@thread67));
++		eval(shift(@thread5));	eval(shift(@thread67));
++	}
++$code.=<<___;
++	cbnz	$ctr,.Loop_upper_neon
++
++	add.32	@x[0],@x[0],@d[0]		// accumulate key block
++	add	@x[1],@x[1],@d[0],lsr#32
++	add.32	@x[2],@x[2],@d[1]
++	add	@x[3],@x[3],@d[1],lsr#32
++	add.32	@x[4],@x[4],@d[2]
++	add	@x[5],@x[5],@d[2],lsr#32
++	add.32	@x[6],@x[6],@d[3]
++	add	@x[7],@x[7],@d[3],lsr#32
++	add.32	@x[8],@x[8],@d[4]
++	add	@x[9],@x[9],@d[4],lsr#32
++	add.32	@x[10],@x[10],@d[5]
++	add	@x[11],@x[11],@d[5],lsr#32
++	add.32	@x[12],@x[12],@d[6]
++	add	@x[13],@x[13],@d[6],lsr#32
++	add.32	@x[14],@x[14],@d[7]
++	add	@x[15],@x[15],@d[7],lsr#32
++
++	add	@x[0],@x[0],@x[1],lsl#32	// pack
++	add	@x[2],@x[2],@x[3],lsl#32
++	ldp	@x[1],@x[3],[$inp,#0]		// load input
++	add	@x[4],@x[4],@x[5],lsl#32
++	add	@x[6],@x[6],@x[7],lsl#32
++	ldp	@x[5],@x[7],[$inp,#16]
++	add	@x[8],@x[8],@x[9],lsl#32
++	add	@x[10],@x[10],@x[11],lsl#32
++	ldp	@x[9],@x[11],[$inp,#32]
++	add	@x[12],@x[12],@x[13],lsl#32
++	add	@x[14],@x[14],@x[15],lsl#32
++	ldp	@x[13],@x[15],[$inp,#48]
++	add	$inp,$inp,#64
++# ifdef	__AARCH64EB__
++	rev	@x[0],@x[0]
++	rev	@x[2],@x[2]
++	rev	@x[4],@x[4]
++	rev	@x[6],@x[6]
++	rev	@x[8],@x[8]
++	rev	@x[10],@x[10]
++	rev	@x[12],@x[12]
++	rev	@x[14],@x[14]
++# endif
++	eor	@x[0],@x[0],@x[1]
++	eor	@x[2],@x[2],@x[3]
++	eor	@x[4],@x[4],@x[5]
++	eor	@x[6],@x[6],@x[7]
++	eor	@x[8],@x[8],@x[9]
++	eor	@x[10],@x[10],@x[11]
++	eor	@x[12],@x[12],@x[13]
++	eor	@x[14],@x[14],@x[15]
++
++	 stp	@x[0],@x[2],[$out,#0]		// store output
++	 add	@d[6],@d[6],#1			// increment counter
++	mov.32	@x[0],@d[0]			// unpack key block
++	lsr	@x[1],@d[0],#32
++	 stp	@x[4],@x[6],[$out,#16]
++	mov.32	@x[2],@d[1]
++	lsr	@x[3],@d[1],#32
++	 stp	@x[8],@x[10],[$out,#32]
++	mov.32	@x[4],@d[2]
++	lsr	@x[5],@d[2],#32
++	 stp	@x[12],@x[14],[$out,#48]
++	 add	$out,$out,#64
++	mov.32	@x[6],@d[3]
++	lsr	@x[7],@d[3],#32
++	mov.32	@x[8],@d[4]
++	lsr	@x[9],@d[4],#32
++	mov.32	@x[10],@d[5]
++	lsr	@x[11],@d[5],#32
++	mov.32	@x[12],@d[6]
++	lsr	@x[13],@d[6],#32
++	mov.32	@x[14],@d[7]
++	lsr	@x[15],@d[7],#32
++
++	mov	$ctr,#5
++.Loop_lower_neon:
++	sub	$ctr,$ctr,#1
++___
++	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,0);
++	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,0);
++	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,0);
++	@thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,0);
++	@thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,0);
++	@thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,0);
++	@thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
++
++	foreach (@thread0) {
++		eval;			eval(shift(@thread67));
++		eval(shift(@thread1));	eval(shift(@thread67));
++		eval(shift(@thread2));	eval(shift(@thread67));
++		eval(shift(@thread3));	eval(shift(@thread67));
++		eval(shift(@thread4));	eval(shift(@thread67));
++		eval(shift(@thread5));	eval(shift(@thread67));
++	}
++
++	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,1);
++	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,1);
++	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,1);
++	@thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,1);
++	@thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,1);
++	@thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,1);
++	@thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
++
++	foreach (@thread0) {
++		eval;			eval(shift(@thread67));
++		eval(shift(@thread1));	eval(shift(@thread67));
++		eval(shift(@thread2));	eval(shift(@thread67));
++		eval(shift(@thread3));	eval(shift(@thread67));
++		eval(shift(@thread4));	eval(shift(@thread67));
++		eval(shift(@thread5));	eval(shift(@thread67));
++	}
++$code.=<<___;
++	cbnz	$ctr,.Loop_lower_neon
++
++	add.32	@x[0],@x[0],@d[0]		// accumulate key block
++	 ldp	@K[0],@K[1],[sp,#0]
++	add	@x[1],@x[1],@d[0],lsr#32
++	 ldp	@K[2],@K[3],[sp,#32]
++	add.32	@x[2],@x[2],@d[1]
++	 ldp	@K[4],@K[5],[sp,#64]
++	add	@x[3],@x[3],@d[1],lsr#32
++	 add	$A0,$A0,@K[0]
++	add.32	@x[4],@x[4],@d[2]
++	 add	$A1,$A1,@K[0]
++	add	@x[5],@x[5],@d[2],lsr#32
++	 add	$A2,$A2,@K[0]
++	add.32	@x[6],@x[6],@d[3]
++	 add	$A3,$A3,@K[0]
++	add	@x[7],@x[7],@d[3],lsr#32
++	 add	$A4,$A4,@K[0]
++	add.32	@x[8],@x[8],@d[4]
++	 add	$A5,$A5,@K[0]
++	add	@x[9],@x[9],@d[4],lsr#32
++	 add	$C0,$C0,@K[2]
++	add.32	@x[10],@x[10],@d[5]
++	 add	$C1,$C1,@K[2]
++	add	@x[11],@x[11],@d[5],lsr#32
++	 add	$C2,$C2,@K[2]
++	add.32	@x[12],@x[12],@d[6]
++	 add	$C3,$C3,@K[2]
++	add	@x[13],@x[13],@d[6],lsr#32
++	 add	$C4,$C4,@K[2]
++	add.32	@x[14],@x[14],@d[7]
++	 add	$C5,$C5,@K[2]
++	add	@x[15],@x[15],@d[7],lsr#32
++	 add	$D4,$D4,$ONE			// +4
++	add	@x[0],@x[0],@x[1],lsl#32	// pack
++	 add	$D5,$D5,$ONE			// +4
++	add	@x[2],@x[2],@x[3],lsl#32
++	 add	$D0,$D0,@K[3]
++	ldp	@x[1],@x[3],[$inp,#0]		// load input
++	 add	$D1,$D1,@K[4]
++	add	@x[4],@x[4],@x[5],lsl#32
++	 add	$D2,$D2,@K[5]
++	add	@x[6],@x[6],@x[7],lsl#32
++	 add	$D3,$D3,@K[6]
++	ldp	@x[5],@x[7],[$inp,#16]
++	 add	$D4,$D4,@K[3]
++	add	@x[8],@x[8],@x[9],lsl#32
++	 add	$D5,$D5,@K[4]
++	add	@x[10],@x[10],@x[11],lsl#32
++	 add	$B0,$B0,@K[1]
++	ldp	@x[9],@x[11],[$inp,#32]
++	 add	$B1,$B1,@K[1]
++	add	@x[12],@x[12],@x[13],lsl#32
++	 add	$B2,$B2,@K[1]
++	add	@x[14],@x[14],@x[15],lsl#32
++	 add	$B3,$B3,@K[1]
++	ldp	@x[13],@x[15],[$inp,#48]
++	 add	$B4,$B4,@K[1]
++	add	$inp,$inp,#64
++	 add	$B5,$B5,@K[1]
++
++# ifdef	__AARCH64EB__
++	rev	@x[0],@x[0]
++	rev	@x[2],@x[2]
++	rev	@x[4],@x[4]
++	rev	@x[6],@x[6]
++	rev	@x[8],@x[8]
++	rev	@x[10],@x[10]
++	rev	@x[12],@x[12]
++	rev	@x[14],@x[14]
++# endif
++	ld1.8	{$T0-$T3},[$inp],#64
++	eor	@x[0],@x[0],@x[1]
++	eor	@x[2],@x[2],@x[3]
++	eor	@x[4],@x[4],@x[5]
++	eor	@x[6],@x[6],@x[7]
++	eor	@x[8],@x[8],@x[9]
++	 eor	$A0,$A0,$T0
++	eor	@x[10],@x[10],@x[11]
++	 eor	$B0,$B0,$T1
++	eor	@x[12],@x[12],@x[13]
++	 eor	$C0,$C0,$T2
++	eor	@x[14],@x[14],@x[15]
++	 eor	$D0,$D0,$T3
++	 ld1.8	{$T0-$T3},[$inp],#64
++
++	stp	@x[0],@x[2],[$out,#0]		// store output
++	 add	@d[6],@d[6],#7			// increment counter
++	stp	@x[4],@x[6],[$out,#16]
++	stp	@x[8],@x[10],[$out,#32]
++	stp	@x[12],@x[14],[$out,#48]
++	add	$out,$out,#64
++	st1.8	{$A0-$D0},[$out],#64
++
++	ld1.8	{$A0-$D0},[$inp],#64
++	eor	$A1,$A1,$T0
++	eor	$B1,$B1,$T1
++	eor	$C1,$C1,$T2
++	eor	$D1,$D1,$T3
++	st1.8	{$A1-$D1},[$out],#64
++
++	ld1.8	{$A1-$D1},[$inp],#64
++	eor	$A2,$A2,$A0
++	 ldp	@K[0],@K[1],[sp,#0]
++	eor	$B2,$B2,$B0
++	 ldp	@K[2],@K[3],[sp,#32]
++	eor	$C2,$C2,$C0
++	eor	$D2,$D2,$D0
++	st1.8	{$A2-$D2},[$out],#64
++
++	ld1.8	{$A2-$D2},[$inp],#64
++	eor	$A3,$A3,$A1
++	eor	$B3,$B3,$B1
++	eor	$C3,$C3,$C1
++	eor	$D3,$D3,$D1
++	st1.8	{$A3-$D3},[$out],#64
++
++	ld1.8	{$A3-$D3},[$inp],#64
++	eor	$A4,$A4,$A2
++	eor	$B4,$B4,$B2
++	eor	$C4,$C4,$C2
++	eor	$D4,$D4,$D2
++	st1.8	{$A4-$D4},[$out],#64
++
++	shl	$A0,$ONE,#1			// 4 -> 8
++	eor	$A5,$A5,$A3
++	eor	$B5,$B5,$B3
++	eor	$C5,$C5,$C3
++	eor	$D5,$D5,$D3
++	st1.8	{$A5-$D5},[$out],#64
++
++	add	@K[3],@K[3],$A0			// += 8
++	add	@K[4],@K[4],$A0
++	add	@K[5],@K[5],$A0
++	add	@K[6],@K[6],$A0
++
++	b.hs	.Loop_outer_512_neon
++
++	adds	$len,$len,#512
++	ushr	$A0,$ONE,#2			// 4 -> 1
++
++	ldp	d8,d9,[sp,#128+0]		// meet ABI requirements
++	ldp	d10,d11,[sp,#128+16]
++	ldp	d12,d13,[sp,#128+32]
++	ldp	d14,d15,[sp,#128+48]
++
++	stp	@K[0],$ONE,[sp,#0]		// wipe off-load area
++	stp	@K[0],$ONE,[sp,#32]
++	stp	@K[0],$ONE,[sp,#64]
++
++	b.eq	.Ldone_512_neon
++
++	cmp	$len,#192
++	sub	@K[3],@K[3],$A0			// -= 1
++	sub	@K[4],@K[4],$A0
++	sub	@K[5],@K[5],$A0
++	add	sp,sp,#128
++	b.hs	.Loop_outer_neon
++
++	eor	@K[1],@K[1],@K[1]
++	eor	@K[2],@K[2],@K[2]
++	eor	@K[3],@K[3],@K[3]
++	eor	@K[4],@K[4],@K[4]
++	eor	@K[5],@K[5],@K[5]
++	eor	@K[6],@K[6],@K[6]
++	b	.Loop_outer
++
++.Ldone_512_neon:
++	ldp	x19,x20,[x29,#16]
++	add	sp,sp,#128+64
++	ldp	x21,x22,[x29,#32]
++	ldp	x23,x24,[x29,#48]
++	ldp	x25,x26,[x29,#64]
++	ldp	x27,x28,[x29,#80]
++	ldp	x29,x30,[sp],#96
++	ret
++.size	ChaCha20_512_neon,.-ChaCha20_512_neon
++#endif
++#endif
++___
++}
++}}}
++
++open SELF,$0;
++while(<SELF>) {
++	next if (/^#!/);
++	last if (!s/^#/\/\// and !/^$/);
++	print;
++}
++close SELF;
++
++foreach (split("\n",$code)) {
++	s/\`([^\`]*)\`/eval $1/geo;
++
++	(s/\b([a-z]+)\.32\b/$1/ and (s/x([0-9]+)/w$1/g or 1))	or
++	(m/\b(eor|ext|mov)\b/ and (s/\.4s/\.16b/g or 1))	or
++	(s/\b((?:ld|st)1)\.8\b/$1/ and (s/\.4s/\.16b/g or 1))	or
++	(m/\b(ld|st)[rp]\b/ and (s/v([0-9]+)\.4s/q$1/g or 1))	or
++	(s/\brev32\.16\b/rev32/ and (s/\.4s/\.8h/g or 1));
++
++	print $_,"\n";
++}
++close STDOUT;	# flush
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-arm.pl	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,1227 @@
 +#!/usr/bin/env perl
 +# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
@@ -38843,1174 +40075,8 @@
 +	print $_,"\n";
 +}
 +close STDOUT;
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-arm64.pl
-@@ -0,0 +1,1163 @@
-+#!/usr/bin/env perl
-+# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
-+#
-+# This code is taken from the OpenSSL project but the author, Andy Polyakov,
-+# has relicensed it under the licenses specified in the SPDX header above.
-+# The original headers, including the original license headers, are
-+# included below for completeness.
-+#
-+# ====================================================================
-+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-+# project. The module is, however, dual licensed under OpenSSL and
-+# CRYPTOGAMS licenses depending on where you obtain it. For further
-+# details see http://www.openssl.org/~appro/cryptogams/.
-+# ====================================================================
-+#
-+# June 2015
-+#
-+# ChaCha20 for ARMv8.
-+#
-+# Performance in cycles per byte out of large buffer.
-+#
-+#			IALU/gcc-4.9    3xNEON+1xIALU	6xNEON+2xIALU(*)
-+#
-+# Apple A7		5.50/+49%       3.33            1.70
-+# Cortex-A53		8.40/+80%       4.72		4.72(**)
-+# Cortex-A57		8.06/+43%       4.90            4.43(***)
-+# Denver		4.50/+82%       2.63		2.67(**)
-+# X-Gene		9.50/+46%       8.82		8.89(**)
-+# Mongoose		8.00/+44%	3.64		3.25(***)
-+# Kryo			8.17/+50%	4.83		4.65(***)
-+#
-+# (*)	since no non-Apple processor exhibits significantly better
-+#	performance, the code path is #ifdef __APPLE__-ed;
-+# (**)	it's expected that doubling interleave factor doesn't help
-+#	all processors, only those with higher NEON latency and
-+#	higher instruction issue rate;
-+# (***)	expected improvement was actually higher;
-+
-+$flavour=shift;
-+if ($flavour=~/\w[\w\-]*\.\w+$/) { $output=$flavour; undef $flavour; }
-+else { while (($output=shift) && ($output!~/\w[\w\-]*\.\w+$/)) {} }
-+
-+if ($flavour && $flavour ne "void") {
-+    $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
-+    ( $xlate="${dir}arm-xlate.pl" and -f $xlate ) or
-+    ( $xlate="${dir}../../perlasm/arm-xlate.pl" and -f $xlate) or
-+    die "can't locate arm-xlate.pl";
-+
-+    open STDOUT,"| \"$^X\" $xlate $flavour $output";
-+} else {
-+    open STDOUT,">$output";
-+}
-+
-+sub AUTOLOAD()		# thunk [simplified] x86-style perlasm
-+{ my $opcode = $AUTOLOAD; $opcode =~ s/.*:://; $opcode =~ s/_/\./;
-+  my $arg = pop;
-+    $arg = "#$arg" if ($arg*1 eq $arg);
-+    $code .= "\t$opcode\t".join(',',@_,$arg)."\n";
-+}
-+
-+my ($out,$inp,$len,$key,$ctr) = map("x$_",(0..4));
-+
-+my @x=map("x$_",(5..17,19..21));
-+my @d=map("x$_",(22..28,30));
-+
-+sub ROUND {
-+my ($a0,$b0,$c0,$d0)=@_;
-+my ($a1,$b1,$c1,$d1)=map(($_&~3)+(($_+1)&3),($a0,$b0,$c0,$d0));
-+my ($a2,$b2,$c2,$d2)=map(($_&~3)+(($_+1)&3),($a1,$b1,$c1,$d1));
-+my ($a3,$b3,$c3,$d3)=map(($_&~3)+(($_+1)&3),($a2,$b2,$c2,$d2));
-+
-+    (
-+	"&add_32	(@x[$a0],@x[$a0],@x[$b0])",
-+	 "&add_32	(@x[$a1],@x[$a1],@x[$b1])",
-+	  "&add_32	(@x[$a2],@x[$a2],@x[$b2])",
-+	   "&add_32	(@x[$a3],@x[$a3],@x[$b3])",
-+	"&eor_32	(@x[$d0],@x[$d0],@x[$a0])",
-+	 "&eor_32	(@x[$d1],@x[$d1],@x[$a1])",
-+	  "&eor_32	(@x[$d2],@x[$d2],@x[$a2])",
-+	   "&eor_32	(@x[$d3],@x[$d3],@x[$a3])",
-+	"&ror_32	(@x[$d0],@x[$d0],16)",
-+	 "&ror_32	(@x[$d1],@x[$d1],16)",
-+	  "&ror_32	(@x[$d2],@x[$d2],16)",
-+	   "&ror_32	(@x[$d3],@x[$d3],16)",
-+
-+	"&add_32	(@x[$c0],@x[$c0],@x[$d0])",
-+	 "&add_32	(@x[$c1],@x[$c1],@x[$d1])",
-+	  "&add_32	(@x[$c2],@x[$c2],@x[$d2])",
-+	   "&add_32	(@x[$c3],@x[$c3],@x[$d3])",
-+	"&eor_32	(@x[$b0],@x[$b0],@x[$c0])",
-+	 "&eor_32	(@x[$b1],@x[$b1],@x[$c1])",
-+	  "&eor_32	(@x[$b2],@x[$b2],@x[$c2])",
-+	   "&eor_32	(@x[$b3],@x[$b3],@x[$c3])",
-+	"&ror_32	(@x[$b0],@x[$b0],20)",
-+	 "&ror_32	(@x[$b1],@x[$b1],20)",
-+	  "&ror_32	(@x[$b2],@x[$b2],20)",
-+	   "&ror_32	(@x[$b3],@x[$b3],20)",
-+
-+	"&add_32	(@x[$a0],@x[$a0],@x[$b0])",
-+	 "&add_32	(@x[$a1],@x[$a1],@x[$b1])",
-+	  "&add_32	(@x[$a2],@x[$a2],@x[$b2])",
-+	   "&add_32	(@x[$a3],@x[$a3],@x[$b3])",
-+	"&eor_32	(@x[$d0],@x[$d0],@x[$a0])",
-+	 "&eor_32	(@x[$d1],@x[$d1],@x[$a1])",
-+	  "&eor_32	(@x[$d2],@x[$d2],@x[$a2])",
-+	   "&eor_32	(@x[$d3],@x[$d3],@x[$a3])",
-+	"&ror_32	(@x[$d0],@x[$d0],24)",
-+	 "&ror_32	(@x[$d1],@x[$d1],24)",
-+	  "&ror_32	(@x[$d2],@x[$d2],24)",
-+	   "&ror_32	(@x[$d3],@x[$d3],24)",
-+
-+	"&add_32	(@x[$c0],@x[$c0],@x[$d0])",
-+	 "&add_32	(@x[$c1],@x[$c1],@x[$d1])",
-+	  "&add_32	(@x[$c2],@x[$c2],@x[$d2])",
-+	   "&add_32	(@x[$c3],@x[$c3],@x[$d3])",
-+	"&eor_32	(@x[$b0],@x[$b0],@x[$c0])",
-+	 "&eor_32	(@x[$b1],@x[$b1],@x[$c1])",
-+	  "&eor_32	(@x[$b2],@x[$b2],@x[$c2])",
-+	   "&eor_32	(@x[$b3],@x[$b3],@x[$c3])",
-+	"&ror_32	(@x[$b0],@x[$b0],25)",
-+	 "&ror_32	(@x[$b1],@x[$b1],25)",
-+	  "&ror_32	(@x[$b2],@x[$b2],25)",
-+	   "&ror_32	(@x[$b3],@x[$b3],25)"
-+    );
-+}
-+
-+$code.=<<___;
-+#ifndef	__KERNEL__
-+# include "arm_arch.h"
-+.extern	OPENSSL_armcap_P
-+#else
-+# define ChaCha20_ctr32 chacha20_arm
-+# define ChaCha20_neon  chacha20_neon
-+#endif
-+
-+.text
-+
-+.align	5
-+.Lsigma:
-+.quad	0x3320646e61707865,0x6b20657479622d32		// endian-neutral
-+.Lone:
-+.long	1,0,0,0
-+#ifndef	__KERNEL__
-+.LOPENSSL_armcap_P:
-+# ifdef	__ILP32__
-+.long	OPENSSL_armcap_P-.
-+# else
-+.quad	OPENSSL_armcap_P-.
-+# endif
-+#endif
-+
-+.globl	ChaCha20_ctr32
-+.type	ChaCha20_ctr32,%function
-+.align	5
-+ChaCha20_ctr32:
-+	cbz	$len,.Labort
-+#ifndef	__KERNEL__
-+	adr	@x[0],.LOPENSSL_armcap_P
-+	cmp	$len,#192
-+	b.lo	.Lshort
-+# ifdef	__ILP32__
-+	ldrsw	@x[1],[@x[0]]
-+# else
-+	ldr	@x[1],[@x[0]]
-+# endif
-+	ldr	w17,[@x[1],@x[0]]
-+	tst	w17,#ARMV7_NEON
-+	b.ne	ChaCha20_neon
-+
-+.Lshort:
-+#endif
-+	stp	x29,x30,[sp,#-96]!
-+	add	x29,sp,#0
-+
-+	adr	@x[0],.Lsigma
-+	stp	x19,x20,[sp,#16]
-+	stp	x21,x22,[sp,#32]
-+	stp	x23,x24,[sp,#48]
-+	stp	x25,x26,[sp,#64]
-+	stp	x27,x28,[sp,#80]
-+	sub	sp,sp,#64
-+
-+	ldp	@d[0],@d[1],[@x[0]]		// load sigma
-+	ldp	@d[2],@d[3],[$key]		// load key
-+	ldp	@d[4],@d[5],[$key,#16]
-+	ldp	@d[6],@d[7],[$ctr]		// load counter
-+#ifdef	__AARCH64EB__
-+	ror	@d[2],@d[2],#32
-+	ror	@d[3],@d[3],#32
-+	ror	@d[4],@d[4],#32
-+	ror	@d[5],@d[5],#32
-+	ror	@d[6],@d[6],#32
-+	ror	@d[7],@d[7],#32
-+#endif
-+
-+.Loop_outer:
-+	mov.32	@x[0],@d[0]			// unpack key block
-+	lsr	@x[1],@d[0],#32
-+	mov.32	@x[2],@d[1]
-+	lsr	@x[3],@d[1],#32
-+	mov.32	@x[4],@d[2]
-+	lsr	@x[5],@d[2],#32
-+	mov.32	@x[6],@d[3]
-+	lsr	@x[7],@d[3],#32
-+	mov.32	@x[8],@d[4]
-+	lsr	@x[9],@d[4],#32
-+	mov.32	@x[10],@d[5]
-+	lsr	@x[11],@d[5],#32
-+	mov.32	@x[12],@d[6]
-+	lsr	@x[13],@d[6],#32
-+	mov.32	@x[14],@d[7]
-+	lsr	@x[15],@d[7],#32
-+
-+	mov	$ctr,#10
-+	subs	$len,$len,#64
-+.Loop:
-+	sub	$ctr,$ctr,#1
-+___
-+	foreach (&ROUND(0, 4, 8,12)) { eval; }
-+	foreach (&ROUND(0, 5,10,15)) { eval; }
-+$code.=<<___;
-+	cbnz	$ctr,.Loop
-+
-+	add.32	@x[0],@x[0],@d[0]		// accumulate key block
-+	add	@x[1],@x[1],@d[0],lsr#32
-+	add.32	@x[2],@x[2],@d[1]
-+	add	@x[3],@x[3],@d[1],lsr#32
-+	add.32	@x[4],@x[4],@d[2]
-+	add	@x[5],@x[5],@d[2],lsr#32
-+	add.32	@x[6],@x[6],@d[3]
-+	add	@x[7],@x[7],@d[3],lsr#32
-+	add.32	@x[8],@x[8],@d[4]
-+	add	@x[9],@x[9],@d[4],lsr#32
-+	add.32	@x[10],@x[10],@d[5]
-+	add	@x[11],@x[11],@d[5],lsr#32
-+	add.32	@x[12],@x[12],@d[6]
-+	add	@x[13],@x[13],@d[6],lsr#32
-+	add.32	@x[14],@x[14],@d[7]
-+	add	@x[15],@x[15],@d[7],lsr#32
-+
-+	b.lo	.Ltail
-+
-+	add	@x[0],@x[0],@x[1],lsl#32	// pack
-+	add	@x[2],@x[2],@x[3],lsl#32
-+	ldp	@x[1],@x[3],[$inp,#0]		// load input
-+	add	@x[4],@x[4],@x[5],lsl#32
-+	add	@x[6],@x[6],@x[7],lsl#32
-+	ldp	@x[5],@x[7],[$inp,#16]
-+	add	@x[8],@x[8],@x[9],lsl#32
-+	add	@x[10],@x[10],@x[11],lsl#32
-+	ldp	@x[9],@x[11],[$inp,#32]
-+	add	@x[12],@x[12],@x[13],lsl#32
-+	add	@x[14],@x[14],@x[15],lsl#32
-+	ldp	@x[13],@x[15],[$inp,#48]
-+	add	$inp,$inp,#64
-+#ifdef	__AARCH64EB__
-+	rev	@x[0],@x[0]
-+	rev	@x[2],@x[2]
-+	rev	@x[4],@x[4]
-+	rev	@x[6],@x[6]
-+	rev	@x[8],@x[8]
-+	rev	@x[10],@x[10]
-+	rev	@x[12],@x[12]
-+	rev	@x[14],@x[14]
-+#endif
-+	eor	@x[0],@x[0],@x[1]
-+	eor	@x[2],@x[2],@x[3]
-+	eor	@x[4],@x[4],@x[5]
-+	eor	@x[6],@x[6],@x[7]
-+	eor	@x[8],@x[8],@x[9]
-+	eor	@x[10],@x[10],@x[11]
-+	eor	@x[12],@x[12],@x[13]
-+	eor	@x[14],@x[14],@x[15]
-+
-+	stp	@x[0],@x[2],[$out,#0]		// store output
-+	 add	@d[6],@d[6],#1			// increment counter
-+	stp	@x[4],@x[6],[$out,#16]
-+	stp	@x[8],@x[10],[$out,#32]
-+	stp	@x[12],@x[14],[$out,#48]
-+	add	$out,$out,#64
-+
-+	b.hi	.Loop_outer
-+
-+	ldp	x19,x20,[x29,#16]
-+	add	sp,sp,#64
-+	ldp	x21,x22,[x29,#32]
-+	ldp	x23,x24,[x29,#48]
-+	ldp	x25,x26,[x29,#64]
-+	ldp	x27,x28,[x29,#80]
-+	ldp	x29,x30,[sp],#96
-+.Labort:
-+	ret
-+
-+.align	4
-+.Ltail:
-+	add	$len,$len,#64
-+.Less_than_64:
-+	sub	$out,$out,#1
-+	add	$inp,$inp,$len
-+	add	$out,$out,$len
-+	add	$ctr,sp,$len
-+	neg	$len,$len
-+
-+	add	@x[0],@x[0],@x[1],lsl#32	// pack
-+	add	@x[2],@x[2],@x[3],lsl#32
-+	add	@x[4],@x[4],@x[5],lsl#32
-+	add	@x[6],@x[6],@x[7],lsl#32
-+	add	@x[8],@x[8],@x[9],lsl#32
-+	add	@x[10],@x[10],@x[11],lsl#32
-+	add	@x[12],@x[12],@x[13],lsl#32
-+	add	@x[14],@x[14],@x[15],lsl#32
-+#ifdef	__AARCH64EB__
-+	rev	@x[0],@x[0]
-+	rev	@x[2],@x[2]
-+	rev	@x[4],@x[4]
-+	rev	@x[6],@x[6]
-+	rev	@x[8],@x[8]
-+	rev	@x[10],@x[10]
-+	rev	@x[12],@x[12]
-+	rev	@x[14],@x[14]
-+#endif
-+	stp	@x[0],@x[2],[sp,#0]
-+	stp	@x[4],@x[6],[sp,#16]
-+	stp	@x[8],@x[10],[sp,#32]
-+	stp	@x[12],@x[14],[sp,#48]
-+
-+.Loop_tail:
-+	ldrb	w10,[$inp,$len]
-+	ldrb	w11,[$ctr,$len]
-+	add	$len,$len,#1
-+	eor	w10,w10,w11
-+	strb	w10,[$out,$len]
-+	cbnz	$len,.Loop_tail
-+
-+	stp	xzr,xzr,[sp,#0]
-+	stp	xzr,xzr,[sp,#16]
-+	stp	xzr,xzr,[sp,#32]
-+	stp	xzr,xzr,[sp,#48]
-+
-+	ldp	x19,x20,[x29,#16]
-+	add	sp,sp,#64
-+	ldp	x21,x22,[x29,#32]
-+	ldp	x23,x24,[x29,#48]
-+	ldp	x25,x26,[x29,#64]
-+	ldp	x27,x28,[x29,#80]
-+	ldp	x29,x30,[sp],#96
-+	ret
-+.size	ChaCha20_ctr32,.-ChaCha20_ctr32
-+___
-+
-+{{{
-+my ($A0,$B0,$C0,$D0,$A1,$B1,$C1,$D1,$A2,$B2,$C2,$D2,$T0,$T1,$T2,$T3) =
-+    map("v$_.4s",(0..7,16..23));
-+my (@K)=map("v$_.4s",(24..30));
-+my $ONE="v31.4s";
-+
-+sub NEONROUND {
-+my $odd = pop;
-+my ($a,$b,$c,$d,$t)=@_;
-+
-+	(
-+	"&add		('$a','$a','$b')",
-+	"&eor		('$d','$d','$a')",
-+	"&rev32_16	('$d','$d')",		# vrot ($d,16)
-+
-+	"&add		('$c','$c','$d')",
-+	"&eor		('$t','$b','$c')",
-+	"&ushr		('$b','$t',20)",
-+	"&sli		('$b','$t',12)",
-+
-+	"&add		('$a','$a','$b')",
-+	"&eor		('$t','$d','$a')",
-+	"&ushr		('$d','$t',24)",
-+	"&sli		('$d','$t',8)",
-+
-+	"&add		('$c','$c','$d')",
-+	"&eor		('$t','$b','$c')",
-+	"&ushr		('$b','$t',25)",
-+	"&sli		('$b','$t',7)",
-+
-+	"&ext		('$a','$a','$a',$odd?4:12)",
-+	"&ext		('$d','$d','$d',8)",
-+	"&ext		('$c','$c','$c',$odd?12:4)"
-+	);
-+}
-+
-+$code.=<<___;
-+#if !defined(__KERNEL__) || defined(CONFIG_KERNEL_MODE_NEON)
-+#ifdef __KERNEL__
-+.globl  ChaCha20_neon
-+.type   ChaCha20_neon,%function
-+#endif
-+.type	ChaCha20_neon,%function
-+.align	5
-+ChaCha20_neon:
-+	stp	x29,x30,[sp,#-96]!
-+	add	x29,sp,#0
-+
-+	adr	@x[0],.Lsigma
-+	stp	x19,x20,[sp,#16]
-+	stp	x21,x22,[sp,#32]
-+	stp	x23,x24,[sp,#48]
-+	stp	x25,x26,[sp,#64]
-+	stp	x27,x28,[sp,#80]
-+#ifdef	__APPLE__
-+	cmp	$len,#512
-+	b.hs	.L512_or_more_neon
-+#endif
-+
-+	sub	sp,sp,#64
-+
-+	ldp	@d[0],@d[1],[@x[0]]		// load sigma
-+	ld1	{@K[0]},[@x[0]],#16
-+	ldp	@d[2],@d[3],[$key]		// load key
-+	ldp	@d[4],@d[5],[$key,#16]
-+	ld1	{@K[1],@K[2]},[$key]
-+	ldp	@d[6],@d[7],[$ctr]		// load counter
-+	ld1	{@K[3]},[$ctr]
-+	ld1	{$ONE},[@x[0]]
-+#ifdef	__AARCH64EB__
-+	rev64	@K[0],@K[0]
-+	ror	@d[2],@d[2],#32
-+	ror	@d[3],@d[3],#32
-+	ror	@d[4],@d[4],#32
-+	ror	@d[5],@d[5],#32
-+	ror	@d[6],@d[6],#32
-+	ror	@d[7],@d[7],#32
-+#endif
-+	add	@K[3],@K[3],$ONE		// += 1
-+	add	@K[4],@K[3],$ONE
-+	add	@K[5],@K[4],$ONE
-+	shl	$ONE,$ONE,#2			// 1 -> 4
-+
-+.Loop_outer_neon:
-+	mov.32	@x[0],@d[0]			// unpack key block
-+	lsr	@x[1],@d[0],#32
-+	 mov	$A0,@K[0]
-+	mov.32	@x[2],@d[1]
-+	lsr	@x[3],@d[1],#32
-+	 mov	$A1,@K[0]
-+	mov.32	@x[4],@d[2]
-+	lsr	@x[5],@d[2],#32
-+	 mov	$A2,@K[0]
-+	mov.32	@x[6],@d[3]
-+	 mov	$B0,@K[1]
-+	lsr	@x[7],@d[3],#32
-+	 mov	$B1,@K[1]
-+	mov.32	@x[8],@d[4]
-+	 mov	$B2,@K[1]
-+	lsr	@x[9],@d[4],#32
-+	 mov	$D0,@K[3]
-+	mov.32	@x[10],@d[5]
-+	 mov	$D1,@K[4]
-+	lsr	@x[11],@d[5],#32
-+	 mov	$D2,@K[5]
-+	mov.32	@x[12],@d[6]
-+	 mov	$C0,@K[2]
-+	lsr	@x[13],@d[6],#32
-+	 mov	$C1,@K[2]
-+	mov.32	@x[14],@d[7]
-+	 mov	$C2,@K[2]
-+	lsr	@x[15],@d[7],#32
-+
-+	mov	$ctr,#10
-+	subs	$len,$len,#256
-+.Loop_neon:
-+	sub	$ctr,$ctr,#1
-+___
-+	my @thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,0);
-+	my @thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,0);
-+	my @thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,0);
-+	my @thread3=&ROUND(0,4,8,12);
-+
-+	foreach (@thread0) {
-+		eval;			eval(shift(@thread3));
-+		eval(shift(@thread1));	eval(shift(@thread3));
-+		eval(shift(@thread2));	eval(shift(@thread3));
-+	}
-+
-+	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,1);
-+	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,1);
-+	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,1);
-+	@thread3=&ROUND(0,5,10,15);
-+
-+	foreach (@thread0) {
-+		eval;			eval(shift(@thread3));
-+		eval(shift(@thread1));	eval(shift(@thread3));
-+		eval(shift(@thread2));	eval(shift(@thread3));
-+	}
-+$code.=<<___;
-+	cbnz	$ctr,.Loop_neon
-+
-+	add.32	@x[0],@x[0],@d[0]		// accumulate key block
-+	 add	$A0,$A0,@K[0]
-+	add	@x[1],@x[1],@d[0],lsr#32
-+	 add	$A1,$A1,@K[0]
-+	add.32	@x[2],@x[2],@d[1]
-+	 add	$A2,$A2,@K[0]
-+	add	@x[3],@x[3],@d[1],lsr#32
-+	 add	$C0,$C0,@K[2]
-+	add.32	@x[4],@x[4],@d[2]
-+	 add	$C1,$C1,@K[2]
-+	add	@x[5],@x[5],@d[2],lsr#32
-+	 add	$C2,$C2,@K[2]
-+	add.32	@x[6],@x[6],@d[3]
-+	 add	$D0,$D0,@K[3]
-+	add	@x[7],@x[7],@d[3],lsr#32
-+	add.32	@x[8],@x[8],@d[4]
-+	 add	$D1,$D1,@K[4]
-+	add	@x[9],@x[9],@d[4],lsr#32
-+	add.32	@x[10],@x[10],@d[5]
-+	 add	$D2,$D2,@K[5]
-+	add	@x[11],@x[11],@d[5],lsr#32
-+	add.32	@x[12],@x[12],@d[6]
-+	 add	$B0,$B0,@K[1]
-+	add	@x[13],@x[13],@d[6],lsr#32
-+	add.32	@x[14],@x[14],@d[7]
-+	 add	$B1,$B1,@K[1]
-+	add	@x[15],@x[15],@d[7],lsr#32
-+	 add	$B2,$B2,@K[1]
-+
-+	b.lo	.Ltail_neon
-+
-+	add	@x[0],@x[0],@x[1],lsl#32	// pack
-+	add	@x[2],@x[2],@x[3],lsl#32
-+	ldp	@x[1],@x[3],[$inp,#0]		// load input
-+	add	@x[4],@x[4],@x[5],lsl#32
-+	add	@x[6],@x[6],@x[7],lsl#32
-+	ldp	@x[5],@x[7],[$inp,#16]
-+	add	@x[8],@x[8],@x[9],lsl#32
-+	add	@x[10],@x[10],@x[11],lsl#32
-+	ldp	@x[9],@x[11],[$inp,#32]
-+	add	@x[12],@x[12],@x[13],lsl#32
-+	add	@x[14],@x[14],@x[15],lsl#32
-+	ldp	@x[13],@x[15],[$inp,#48]
-+	add	$inp,$inp,#64
-+#ifdef	__AARCH64EB__
-+	rev	@x[0],@x[0]
-+	rev	@x[2],@x[2]
-+	rev	@x[4],@x[4]
-+	rev	@x[6],@x[6]
-+	rev	@x[8],@x[8]
-+	rev	@x[10],@x[10]
-+	rev	@x[12],@x[12]
-+	rev	@x[14],@x[14]
-+#endif
-+	ld1.8	{$T0-$T3},[$inp],#64
-+	eor	@x[0],@x[0],@x[1]
-+	eor	@x[2],@x[2],@x[3]
-+	eor	@x[4],@x[4],@x[5]
-+	eor	@x[6],@x[6],@x[7]
-+	eor	@x[8],@x[8],@x[9]
-+	 eor	$A0,$A0,$T0
-+	eor	@x[10],@x[10],@x[11]
-+	 eor	$B0,$B0,$T1
-+	eor	@x[12],@x[12],@x[13]
-+	 eor	$C0,$C0,$T2
-+	eor	@x[14],@x[14],@x[15]
-+	 eor	$D0,$D0,$T3
-+	 ld1.8	{$T0-$T3},[$inp],#64
-+
-+	stp	@x[0],@x[2],[$out,#0]		// store output
-+	 add	@d[6],@d[6],#4			// increment counter
-+	stp	@x[4],@x[6],[$out,#16]
-+	 add	@K[3],@K[3],$ONE		// += 4
-+	stp	@x[8],@x[10],[$out,#32]
-+	 add	@K[4],@K[4],$ONE
-+	stp	@x[12],@x[14],[$out,#48]
-+	 add	@K[5],@K[5],$ONE
-+	add	$out,$out,#64
-+
-+	st1.8	{$A0-$D0},[$out],#64
-+	ld1.8	{$A0-$D0},[$inp],#64
-+
-+	eor	$A1,$A1,$T0
-+	eor	$B1,$B1,$T1
-+	eor	$C1,$C1,$T2
-+	eor	$D1,$D1,$T3
-+	st1.8	{$A1-$D1},[$out],#64
-+
-+	eor	$A2,$A2,$A0
-+	eor	$B2,$B2,$B0
-+	eor	$C2,$C2,$C0
-+	eor	$D2,$D2,$D0
-+	st1.8	{$A2-$D2},[$out],#64
-+
-+	b.hi	.Loop_outer_neon
-+
-+	ldp	x19,x20,[x29,#16]
-+	add	sp,sp,#64
-+	ldp	x21,x22,[x29,#32]
-+	ldp	x23,x24,[x29,#48]
-+	ldp	x25,x26,[x29,#64]
-+	ldp	x27,x28,[x29,#80]
-+	ldp	x29,x30,[sp],#96
-+	ret
-+
-+.Ltail_neon:
-+	add	$len,$len,#256
-+	cmp	$len,#64
-+	b.lo	.Less_than_64
-+
-+	add	@x[0],@x[0],@x[1],lsl#32	// pack
-+	add	@x[2],@x[2],@x[3],lsl#32
-+	ldp	@x[1],@x[3],[$inp,#0]		// load input
-+	add	@x[4],@x[4],@x[5],lsl#32
-+	add	@x[6],@x[6],@x[7],lsl#32
-+	ldp	@x[5],@x[7],[$inp,#16]
-+	add	@x[8],@x[8],@x[9],lsl#32
-+	add	@x[10],@x[10],@x[11],lsl#32
-+	ldp	@x[9],@x[11],[$inp,#32]
-+	add	@x[12],@x[12],@x[13],lsl#32
-+	add	@x[14],@x[14],@x[15],lsl#32
-+	ldp	@x[13],@x[15],[$inp,#48]
-+	add	$inp,$inp,#64
-+#ifdef	__AARCH64EB__
-+	rev	@x[0],@x[0]
-+	rev	@x[2],@x[2]
-+	rev	@x[4],@x[4]
-+	rev	@x[6],@x[6]
-+	rev	@x[8],@x[8]
-+	rev	@x[10],@x[10]
-+	rev	@x[12],@x[12]
-+	rev	@x[14],@x[14]
-+#endif
-+	eor	@x[0],@x[0],@x[1]
-+	eor	@x[2],@x[2],@x[3]
-+	eor	@x[4],@x[4],@x[5]
-+	eor	@x[6],@x[6],@x[7]
-+	eor	@x[8],@x[8],@x[9]
-+	eor	@x[10],@x[10],@x[11]
-+	eor	@x[12],@x[12],@x[13]
-+	eor	@x[14],@x[14],@x[15]
-+
-+	stp	@x[0],@x[2],[$out,#0]		// store output
-+	 add	@d[6],@d[6],#4			// increment counter
-+	stp	@x[4],@x[6],[$out,#16]
-+	stp	@x[8],@x[10],[$out,#32]
-+	stp	@x[12],@x[14],[$out,#48]
-+	add	$out,$out,#64
-+	b.eq	.Ldone_neon
-+	sub	$len,$len,#64
-+	cmp	$len,#64
-+	b.lo	.Less_than_128
-+
-+	ld1.8	{$T0-$T3},[$inp],#64
-+	eor	$A0,$A0,$T0
-+	eor	$B0,$B0,$T1
-+	eor	$C0,$C0,$T2
-+	eor	$D0,$D0,$T3
-+	st1.8	{$A0-$D0},[$out],#64
-+	b.eq	.Ldone_neon
-+	sub	$len,$len,#64
-+	cmp	$len,#64
-+	b.lo	.Less_than_192
-+
-+	ld1.8	{$T0-$T3},[$inp],#64
-+	eor	$A1,$A1,$T0
-+	eor	$B1,$B1,$T1
-+	eor	$C1,$C1,$T2
-+	eor	$D1,$D1,$T3
-+	st1.8	{$A1-$D1},[$out],#64
-+	b.eq	.Ldone_neon
-+	sub	$len,$len,#64
-+
-+	st1.8	{$A2-$D2},[sp]
-+	b	.Last_neon
-+
-+.Less_than_128:
-+	st1.8	{$A0-$D0},[sp]
-+	b	.Last_neon
-+.Less_than_192:
-+	st1.8	{$A1-$D1},[sp]
-+	b	.Last_neon
-+
-+.align	4
-+.Last_neon:
-+	sub	$out,$out,#1
-+	add	$inp,$inp,$len
-+	add	$out,$out,$len
-+	add	$ctr,sp,$len
-+	neg	$len,$len
-+
-+.Loop_tail_neon:
-+	ldrb	w10,[$inp,$len]
-+	ldrb	w11,[$ctr,$len]
-+	add	$len,$len,#1
-+	eor	w10,w10,w11
-+	strb	w10,[$out,$len]
-+	cbnz	$len,.Loop_tail_neon
-+
-+	stp	xzr,xzr,[sp,#0]
-+	stp	xzr,xzr,[sp,#16]
-+	stp	xzr,xzr,[sp,#32]
-+	stp	xzr,xzr,[sp,#48]
-+
-+.Ldone_neon:
-+	ldp	x19,x20,[x29,#16]
-+	add	sp,sp,#64
-+	ldp	x21,x22,[x29,#32]
-+	ldp	x23,x24,[x29,#48]
-+	ldp	x25,x26,[x29,#64]
-+	ldp	x27,x28,[x29,#80]
-+	ldp	x29,x30,[sp],#96
-+	ret
-+.size	ChaCha20_neon,.-ChaCha20_neon
-+___
-+{
-+my ($T0,$T1,$T2,$T3,$T4,$T5)=@K;
-+my ($A0,$B0,$C0,$D0,$A1,$B1,$C1,$D1,$A2,$B2,$C2,$D2,
-+    $A3,$B3,$C3,$D3,$A4,$B4,$C4,$D4,$A5,$B5,$C5,$D5) = map("v$_.4s",(0..23));
-+
-+$code.=<<___;
-+#ifdef	__APPLE__
-+.type	ChaCha20_512_neon,%function
-+.align	5
-+ChaCha20_512_neon:
-+	stp	x29,x30,[sp,#-96]!
-+	add	x29,sp,#0
-+
-+	adr	@x[0],.Lsigma
-+	stp	x19,x20,[sp,#16]
-+	stp	x21,x22,[sp,#32]
-+	stp	x23,x24,[sp,#48]
-+	stp	x25,x26,[sp,#64]
-+	stp	x27,x28,[sp,#80]
-+
-+.L512_or_more_neon:
-+	sub	sp,sp,#128+64
-+
-+	ldp	@d[0],@d[1],[@x[0]]		// load sigma
-+	ld1	{@K[0]},[@x[0]],#16
-+	ldp	@d[2],@d[3],[$key]		// load key
-+	ldp	@d[4],@d[5],[$key,#16]
-+	ld1	{@K[1],@K[2]},[$key]
-+	ldp	@d[6],@d[7],[$ctr]		// load counter
-+	ld1	{@K[3]},[$ctr]
-+	ld1	{$ONE},[@x[0]]
-+# ifdef	__AARCH64EB__
-+	rev64	@K[0],@K[0]
-+	ror	@d[2],@d[2],#32
-+	ror	@d[3],@d[3],#32
-+	ror	@d[4],@d[4],#32
-+	ror	@d[5],@d[5],#32
-+	ror	@d[6],@d[6],#32
-+	ror	@d[7],@d[7],#32
-+# endif
-+	add	@K[3],@K[3],$ONE		// += 1
-+	stp	@K[0],@K[1],[sp,#0]		// off-load key block, invariant part
-+	add	@K[3],@K[3],$ONE		// not typo
-+	str	@K[2],[sp,#32]
-+	add	@K[4],@K[3],$ONE
-+	add	@K[5],@K[4],$ONE
-+	add	@K[6],@K[5],$ONE
-+	shl	$ONE,$ONE,#2			// 1 -> 4
-+
-+	stp	d8,d9,[sp,#128+0]		// meet ABI requirements
-+	stp	d10,d11,[sp,#128+16]
-+	stp	d12,d13,[sp,#128+32]
-+	stp	d14,d15,[sp,#128+48]
-+
-+	sub	$len,$len,#512			// not typo
-+
-+.Loop_outer_512_neon:
-+	 mov	$A0,@K[0]
-+	 mov	$A1,@K[0]
-+	 mov	$A2,@K[0]
-+	 mov	$A3,@K[0]
-+	 mov	$A4,@K[0]
-+	 mov	$A5,@K[0]
-+	 mov	$B0,@K[1]
-+	mov.32	@x[0],@d[0]			// unpack key block
-+	 mov	$B1,@K[1]
-+	lsr	@x[1],@d[0],#32
-+	 mov	$B2,@K[1]
-+	mov.32	@x[2],@d[1]
-+	 mov	$B3,@K[1]
-+	lsr	@x[3],@d[1],#32
-+	 mov	$B4,@K[1]
-+	mov.32	@x[4],@d[2]
-+	 mov	$B5,@K[1]
-+	lsr	@x[5],@d[2],#32
-+	 mov	$D0,@K[3]
-+	mov.32	@x[6],@d[3]
-+	 mov	$D1,@K[4]
-+	lsr	@x[7],@d[3],#32
-+	 mov	$D2,@K[5]
-+	mov.32	@x[8],@d[4]
-+	 mov	$D3,@K[6]
-+	lsr	@x[9],@d[4],#32
-+	 mov	$C0,@K[2]
-+	mov.32	@x[10],@d[5]
-+	 mov	$C1,@K[2]
-+	lsr	@x[11],@d[5],#32
-+	 add	$D4,$D0,$ONE			// +4
-+	mov.32	@x[12],@d[6]
-+	 add	$D5,$D1,$ONE			// +4
-+	lsr	@x[13],@d[6],#32
-+	 mov	$C2,@K[2]
-+	mov.32	@x[14],@d[7]
-+	 mov	$C3,@K[2]
-+	lsr	@x[15],@d[7],#32
-+	 mov	$C4,@K[2]
-+	 stp	@K[3],@K[4],[sp,#48]		// off-load key block, variable part
-+	 mov	$C5,@K[2]
-+	 str	@K[5],[sp,#80]
-+
-+	mov	$ctr,#5
-+	subs	$len,$len,#512
-+.Loop_upper_neon:
-+	sub	$ctr,$ctr,#1
-+___
-+	my @thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,0);
-+	my @thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,0);
-+	my @thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,0);
-+	my @thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,0);
-+	my @thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,0);
-+	my @thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,0);
-+	my @thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
-+	my $diff = ($#thread0+1)*6 - $#thread67 - 1;
-+	my $i = 0;
-+
-+	foreach (@thread0) {
-+		eval;			eval(shift(@thread67));
-+		eval(shift(@thread1));	eval(shift(@thread67));
-+		eval(shift(@thread2));	eval(shift(@thread67));
-+		eval(shift(@thread3));	eval(shift(@thread67));
-+		eval(shift(@thread4));	eval(shift(@thread67));
-+		eval(shift(@thread5));	eval(shift(@thread67));
-+	}
-+
-+	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,1);
-+	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,1);
-+	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,1);
-+	@thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,1);
-+	@thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,1);
-+	@thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,1);
-+	@thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
-+
-+	foreach (@thread0) {
-+		eval;			eval(shift(@thread67));
-+		eval(shift(@thread1));	eval(shift(@thread67));
-+		eval(shift(@thread2));	eval(shift(@thread67));
-+		eval(shift(@thread3));	eval(shift(@thread67));
-+		eval(shift(@thread4));	eval(shift(@thread67));
-+		eval(shift(@thread5));	eval(shift(@thread67));
-+	}
-+$code.=<<___;
-+	cbnz	$ctr,.Loop_upper_neon
-+
-+	add.32	@x[0],@x[0],@d[0]		// accumulate key block
-+	add	@x[1],@x[1],@d[0],lsr#32
-+	add.32	@x[2],@x[2],@d[1]
-+	add	@x[3],@x[3],@d[1],lsr#32
-+	add.32	@x[4],@x[4],@d[2]
-+	add	@x[5],@x[5],@d[2],lsr#32
-+	add.32	@x[6],@x[6],@d[3]
-+	add	@x[7],@x[7],@d[3],lsr#32
-+	add.32	@x[8],@x[8],@d[4]
-+	add	@x[9],@x[9],@d[4],lsr#32
-+	add.32	@x[10],@x[10],@d[5]
-+	add	@x[11],@x[11],@d[5],lsr#32
-+	add.32	@x[12],@x[12],@d[6]
-+	add	@x[13],@x[13],@d[6],lsr#32
-+	add.32	@x[14],@x[14],@d[7]
-+	add	@x[15],@x[15],@d[7],lsr#32
-+
-+	add	@x[0],@x[0],@x[1],lsl#32	// pack
-+	add	@x[2],@x[2],@x[3],lsl#32
-+	ldp	@x[1],@x[3],[$inp,#0]		// load input
-+	add	@x[4],@x[4],@x[5],lsl#32
-+	add	@x[6],@x[6],@x[7],lsl#32
-+	ldp	@x[5],@x[7],[$inp,#16]
-+	add	@x[8],@x[8],@x[9],lsl#32
-+	add	@x[10],@x[10],@x[11],lsl#32
-+	ldp	@x[9],@x[11],[$inp,#32]
-+	add	@x[12],@x[12],@x[13],lsl#32
-+	add	@x[14],@x[14],@x[15],lsl#32
-+	ldp	@x[13],@x[15],[$inp,#48]
-+	add	$inp,$inp,#64
-+# ifdef	__AARCH64EB__
-+	rev	@x[0],@x[0]
-+	rev	@x[2],@x[2]
-+	rev	@x[4],@x[4]
-+	rev	@x[6],@x[6]
-+	rev	@x[8],@x[8]
-+	rev	@x[10],@x[10]
-+	rev	@x[12],@x[12]
-+	rev	@x[14],@x[14]
-+# endif
-+	eor	@x[0],@x[0],@x[1]
-+	eor	@x[2],@x[2],@x[3]
-+	eor	@x[4],@x[4],@x[5]
-+	eor	@x[6],@x[6],@x[7]
-+	eor	@x[8],@x[8],@x[9]
-+	eor	@x[10],@x[10],@x[11]
-+	eor	@x[12],@x[12],@x[13]
-+	eor	@x[14],@x[14],@x[15]
-+
-+	 stp	@x[0],@x[2],[$out,#0]		// store output
-+	 add	@d[6],@d[6],#1			// increment counter
-+	mov.32	@x[0],@d[0]			// unpack key block
-+	lsr	@x[1],@d[0],#32
-+	 stp	@x[4],@x[6],[$out,#16]
-+	mov.32	@x[2],@d[1]
-+	lsr	@x[3],@d[1],#32
-+	 stp	@x[8],@x[10],[$out,#32]
-+	mov.32	@x[4],@d[2]
-+	lsr	@x[5],@d[2],#32
-+	 stp	@x[12],@x[14],[$out,#48]
-+	 add	$out,$out,#64
-+	mov.32	@x[6],@d[3]
-+	lsr	@x[7],@d[3],#32
-+	mov.32	@x[8],@d[4]
-+	lsr	@x[9],@d[4],#32
-+	mov.32	@x[10],@d[5]
-+	lsr	@x[11],@d[5],#32
-+	mov.32	@x[12],@d[6]
-+	lsr	@x[13],@d[6],#32
-+	mov.32	@x[14],@d[7]
-+	lsr	@x[15],@d[7],#32
-+
-+	mov	$ctr,#5
-+.Loop_lower_neon:
-+	sub	$ctr,$ctr,#1
-+___
-+	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,0);
-+	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,0);
-+	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,0);
-+	@thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,0);
-+	@thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,0);
-+	@thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,0);
-+	@thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
-+
-+	foreach (@thread0) {
-+		eval;			eval(shift(@thread67));
-+		eval(shift(@thread1));	eval(shift(@thread67));
-+		eval(shift(@thread2));	eval(shift(@thread67));
-+		eval(shift(@thread3));	eval(shift(@thread67));
-+		eval(shift(@thread4));	eval(shift(@thread67));
-+		eval(shift(@thread5));	eval(shift(@thread67));
-+	}
-+
-+	@thread0=&NEONROUND($A0,$B0,$C0,$D0,$T0,1);
-+	@thread1=&NEONROUND($A1,$B1,$C1,$D1,$T1,1);
-+	@thread2=&NEONROUND($A2,$B2,$C2,$D2,$T2,1);
-+	@thread3=&NEONROUND($A3,$B3,$C3,$D3,$T3,1);
-+	@thread4=&NEONROUND($A4,$B4,$C4,$D4,$T4,1);
-+	@thread5=&NEONROUND($A5,$B5,$C5,$D5,$T5,1);
-+	@thread67=(&ROUND(0,4,8,12),&ROUND(0,5,10,15));
-+
-+	foreach (@thread0) {
-+		eval;			eval(shift(@thread67));
-+		eval(shift(@thread1));	eval(shift(@thread67));
-+		eval(shift(@thread2));	eval(shift(@thread67));
-+		eval(shift(@thread3));	eval(shift(@thread67));
-+		eval(shift(@thread4));	eval(shift(@thread67));
-+		eval(shift(@thread5));	eval(shift(@thread67));
-+	}
-+$code.=<<___;
-+	cbnz	$ctr,.Loop_lower_neon
-+
-+	add.32	@x[0],@x[0],@d[0]		// accumulate key block
-+	 ldp	@K[0],@K[1],[sp,#0]
-+	add	@x[1],@x[1],@d[0],lsr#32
-+	 ldp	@K[2],@K[3],[sp,#32]
-+	add.32	@x[2],@x[2],@d[1]
-+	 ldp	@K[4],@K[5],[sp,#64]
-+	add	@x[3],@x[3],@d[1],lsr#32
-+	 add	$A0,$A0,@K[0]
-+	add.32	@x[4],@x[4],@d[2]
-+	 add	$A1,$A1,@K[0]
-+	add	@x[5],@x[5],@d[2],lsr#32
-+	 add	$A2,$A2,@K[0]
-+	add.32	@x[6],@x[6],@d[3]
-+	 add	$A3,$A3,@K[0]
-+	add	@x[7],@x[7],@d[3],lsr#32
-+	 add	$A4,$A4,@K[0]
-+	add.32	@x[8],@x[8],@d[4]
-+	 add	$A5,$A5,@K[0]
-+	add	@x[9],@x[9],@d[4],lsr#32
-+	 add	$C0,$C0,@K[2]
-+	add.32	@x[10],@x[10],@d[5]
-+	 add	$C1,$C1,@K[2]
-+	add	@x[11],@x[11],@d[5],lsr#32
-+	 add	$C2,$C2,@K[2]
-+	add.32	@x[12],@x[12],@d[6]
-+	 add	$C3,$C3,@K[2]
-+	add	@x[13],@x[13],@d[6],lsr#32
-+	 add	$C4,$C4,@K[2]
-+	add.32	@x[14],@x[14],@d[7]
-+	 add	$C5,$C5,@K[2]
-+	add	@x[15],@x[15],@d[7],lsr#32
-+	 add	$D4,$D4,$ONE			// +4
-+	add	@x[0],@x[0],@x[1],lsl#32	// pack
-+	 add	$D5,$D5,$ONE			// +4
-+	add	@x[2],@x[2],@x[3],lsl#32
-+	 add	$D0,$D0,@K[3]
-+	ldp	@x[1],@x[3],[$inp,#0]		// load input
-+	 add	$D1,$D1,@K[4]
-+	add	@x[4],@x[4],@x[5],lsl#32
-+	 add	$D2,$D2,@K[5]
-+	add	@x[6],@x[6],@x[7],lsl#32
-+	 add	$D3,$D3,@K[6]
-+	ldp	@x[5],@x[7],[$inp,#16]
-+	 add	$D4,$D4,@K[3]
-+	add	@x[8],@x[8],@x[9],lsl#32
-+	 add	$D5,$D5,@K[4]
-+	add	@x[10],@x[10],@x[11],lsl#32
-+	 add	$B0,$B0,@K[1]
-+	ldp	@x[9],@x[11],[$inp,#32]
-+	 add	$B1,$B1,@K[1]
-+	add	@x[12],@x[12],@x[13],lsl#32
-+	 add	$B2,$B2,@K[1]
-+	add	@x[14],@x[14],@x[15],lsl#32
-+	 add	$B3,$B3,@K[1]
-+	ldp	@x[13],@x[15],[$inp,#48]
-+	 add	$B4,$B4,@K[1]
-+	add	$inp,$inp,#64
-+	 add	$B5,$B5,@K[1]
-+
-+# ifdef	__AARCH64EB__
-+	rev	@x[0],@x[0]
-+	rev	@x[2],@x[2]
-+	rev	@x[4],@x[4]
-+	rev	@x[6],@x[6]
-+	rev	@x[8],@x[8]
-+	rev	@x[10],@x[10]
-+	rev	@x[12],@x[12]
-+	rev	@x[14],@x[14]
-+# endif
-+	ld1.8	{$T0-$T3},[$inp],#64
-+	eor	@x[0],@x[0],@x[1]
-+	eor	@x[2],@x[2],@x[3]
-+	eor	@x[4],@x[4],@x[5]
-+	eor	@x[6],@x[6],@x[7]
-+	eor	@x[8],@x[8],@x[9]
-+	 eor	$A0,$A0,$T0
-+	eor	@x[10],@x[10],@x[11]
-+	 eor	$B0,$B0,$T1
-+	eor	@x[12],@x[12],@x[13]
-+	 eor	$C0,$C0,$T2
-+	eor	@x[14],@x[14],@x[15]
-+	 eor	$D0,$D0,$T3
-+	 ld1.8	{$T0-$T3},[$inp],#64
-+
-+	stp	@x[0],@x[2],[$out,#0]		// store output
-+	 add	@d[6],@d[6],#7			// increment counter
-+	stp	@x[4],@x[6],[$out,#16]
-+	stp	@x[8],@x[10],[$out,#32]
-+	stp	@x[12],@x[14],[$out,#48]
-+	add	$out,$out,#64
-+	st1.8	{$A0-$D0},[$out],#64
-+
-+	ld1.8	{$A0-$D0},[$inp],#64
-+	eor	$A1,$A1,$T0
-+	eor	$B1,$B1,$T1
-+	eor	$C1,$C1,$T2
-+	eor	$D1,$D1,$T3
-+	st1.8	{$A1-$D1},[$out],#64
-+
-+	ld1.8	{$A1-$D1},[$inp],#64
-+	eor	$A2,$A2,$A0
-+	 ldp	@K[0],@K[1],[sp,#0]
-+	eor	$B2,$B2,$B0
-+	 ldp	@K[2],@K[3],[sp,#32]
-+	eor	$C2,$C2,$C0
-+	eor	$D2,$D2,$D0
-+	st1.8	{$A2-$D2},[$out],#64
-+
-+	ld1.8	{$A2-$D2},[$inp],#64
-+	eor	$A3,$A3,$A1
-+	eor	$B3,$B3,$B1
-+	eor	$C3,$C3,$C1
-+	eor	$D3,$D3,$D1
-+	st1.8	{$A3-$D3},[$out],#64
-+
-+	ld1.8	{$A3-$D3},[$inp],#64
-+	eor	$A4,$A4,$A2
-+	eor	$B4,$B4,$B2
-+	eor	$C4,$C4,$C2
-+	eor	$D4,$D4,$D2
-+	st1.8	{$A4-$D4},[$out],#64
-+
-+	shl	$A0,$ONE,#1			// 4 -> 8
-+	eor	$A5,$A5,$A3
-+	eor	$B5,$B5,$B3
-+	eor	$C5,$C5,$C3
-+	eor	$D5,$D5,$D3
-+	st1.8	{$A5-$D5},[$out],#64
-+
-+	add	@K[3],@K[3],$A0			// += 8
-+	add	@K[4],@K[4],$A0
-+	add	@K[5],@K[5],$A0
-+	add	@K[6],@K[6],$A0
-+
-+	b.hs	.Loop_outer_512_neon
-+
-+	adds	$len,$len,#512
-+	ushr	$A0,$ONE,#2			// 4 -> 1
-+
-+	ldp	d8,d9,[sp,#128+0]		// meet ABI requirements
-+	ldp	d10,d11,[sp,#128+16]
-+	ldp	d12,d13,[sp,#128+32]
-+	ldp	d14,d15,[sp,#128+48]
-+
-+	stp	@K[0],$ONE,[sp,#0]		// wipe off-load area
-+	stp	@K[0],$ONE,[sp,#32]
-+	stp	@K[0],$ONE,[sp,#64]
-+
-+	b.eq	.Ldone_512_neon
-+
-+	cmp	$len,#192
-+	sub	@K[3],@K[3],$A0			// -= 1
-+	sub	@K[4],@K[4],$A0
-+	sub	@K[5],@K[5],$A0
-+	add	sp,sp,#128
-+	b.hs	.Loop_outer_neon
-+
-+	eor	@K[1],@K[1],@K[1]
-+	eor	@K[2],@K[2],@K[2]
-+	eor	@K[3],@K[3],@K[3]
-+	eor	@K[4],@K[4],@K[4]
-+	eor	@K[5],@K[5],@K[5]
-+	eor	@K[6],@K[6],@K[6]
-+	b	.Loop_outer
-+
-+.Ldone_512_neon:
-+	ldp	x19,x20,[x29,#16]
-+	add	sp,sp,#128+64
-+	ldp	x21,x22,[x29,#32]
-+	ldp	x23,x24,[x29,#48]
-+	ldp	x25,x26,[x29,#64]
-+	ldp	x27,x28,[x29,#80]
-+	ldp	x29,x30,[sp],#96
-+	ret
-+.size	ChaCha20_512_neon,.-ChaCha20_512_neon
-+#endif
-+#endif
-+___
-+}
-+}}}
-+
-+open SELF,$0;
-+while(<SELF>) {
-+	next if (/^#!/);
-+	last if (!s/^#/\/\// and !/^$/);
-+	print;
-+}
-+close SELF;
-+
-+foreach (split("\n",$code)) {
-+	s/\`([^\`]*)\`/eval $1/geo;
-+
-+	(s/\b([a-z]+)\.32\b/$1/ and (s/x([0-9]+)/w$1/g or 1))	or
-+	(m/\b(eor|ext|mov)\b/ and (s/\.4s/\.16b/g or 1))	or
-+	(s/\b((?:ld|st)1)\.8\b/$1/ and (s/\.4s/\.16b/g or 1))	or
-+	(m/\b(ld|st)[rp]\b/ and (s/v([0-9]+)\.4s/q$1/g or 1))	or
-+	(s/\brev32\.16\b/rev32/ and (s/\.4s/\.8h/g or 1));
-+
-+	print $_,"\n";
-+}
-+close STDOUT;	# flush
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/chacha20/chacha20-x86_64.pl
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/chacha20/chacha20-x86_64.pl	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,4106 @@
 +#!/usr/bin/env perl
 +# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
@@ -44118,8 +44184,985 @@
 +}
 +
 +close STDOUT;
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-arm.pl
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-arm64.pl	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,974 @@
++#!/usr/bin/env perl
++# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
++#
++# This code is taken from the OpenSSL project but the author, Andy Polyakov,
++# has relicensed it under the licenses specified in the SPDX header above.
++# The original headers, including the original license headers, are
++# included below for completeness.
++#
++# ====================================================================
++# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
++# project. The module is, however, dual licensed under OpenSSL and
++# CRYPTOGAMS licenses depending on where you obtain it. For further
++# details see http://www.openssl.org/~appro/cryptogams/.
++# ====================================================================
++#
++# This module implements Poly1305 hash for ARMv8.
++#
++# June 2015
++#
++# Numbers are cycles per processed byte with poly1305_blocks alone.
++#
++#		IALU/gcc-4.9	NEON
++#
++# Apple A7	1.86/+5%	0.72
++# Cortex-A53	2.69/+58%	1.47
++# Cortex-A57	2.70/+7%	1.14
++# Denver	1.64/+50%	1.18(*)
++# X-Gene	2.13/+68%	2.27
++# Mongoose	1.77/+75%	1.12
++# Kryo		2.70/+55%	1.13
++#
++# (*)	estimate based on resources availability is less than 1.0,
++#	i.e. measured result is worse than expected, presumably binary
++#	translator is not almighty;
++
++$flavour=shift;
++if ($flavour=~/\w[\w\-]*\.\w+$/) { $output=$flavour; undef $flavour; }
++else { while (($output=shift) && ($output!~/\w[\w\-]*\.\w+$/)) {} }
++
++if ($flavour && $flavour ne "void") {
++    $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
++    ( $xlate="${dir}arm-xlate.pl" and -f $xlate ) or
++    ( $xlate="${dir}../../perlasm/arm-xlate.pl" and -f $xlate) or
++    die "can't locate arm-xlate.pl";
++
++    open STDOUT,"| \"$^X\" $xlate $flavour $output";
++} else {
++    open STDOUT,">$output";
++}
++
++my ($ctx,$inp,$len,$padbit) = map("x$_",(0..3));
++my ($mac,$nonce)=($inp,$len);
++
++my ($h0,$h1,$h2,$r0,$r1,$s1,$t0,$t1,$d0,$d1,$d2) = map("x$_",(4..14));
++
++$code.=<<___;
++#ifndef	__KERNEL__
++# include "arm_arch.h"
++.extern	OPENSSL_armcap_P
++#else
++# define poly1305_init   poly1305_init_arm
++# define poly1305_blocks poly1305_blocks_arm
++# define poly1305_emit   poly1305_emit_arm
++#endif
++
++.text
++
++// forward "declarations" are required for Apple
++.globl	poly1305_blocks
++.globl	poly1305_emit
++.globl	poly1305_init
++.type	poly1305_init,%function
++.align	5
++poly1305_init:
++	cmp	$inp,xzr
++	stp	xzr,xzr,[$ctx]		// zero hash value
++	stp	xzr,xzr,[$ctx,#16]	// [along with is_base2_26]
++
++	csel	x0,xzr,x0,eq
++	b.eq	.Lno_key
++
++#ifndef	__KERNEL__
++# ifdef	__ILP32__
++	ldrsw	$t1,.LOPENSSL_armcap_P
++# else
++	ldr	$t1,.LOPENSSL_armcap_P
++# endif
++	adr	$t0,.LOPENSSL_armcap_P
++	ldr	w17,[$t0,$t1]
++#endif
++
++	ldp	$r0,$r1,[$inp]		// load key
++	mov	$s1,#0xfffffffc0fffffff
++	movk	$s1,#0x0fff,lsl#48
++#ifdef	__AARCH64EB__
++	rev	$r0,$r0			// flip bytes
++	rev	$r1,$r1
++#endif
++	and	$r0,$r0,$s1		// &=0ffffffc0fffffff
++	and	$s1,$s1,#-4
++	and	$r1,$r1,$s1		// &=0ffffffc0ffffffc
++	stp	$r0,$r1,[$ctx,#32]	// save key value
++
++#ifndef	__KERNEL__
++	tst	w17,#ARMV7_NEON
++
++	adr	$d0,poly1305_blocks
++	adr	$r0,poly1305_blocks_neon
++	adr	$d1,poly1305_emit
++	adr	$r1,poly1305_emit_neon
++
++	csel	$d0,$d0,$r0,eq
++	csel	$d1,$d1,$r1,eq
++
++# ifdef	__ILP32__
++	stp	w12,w13,[$len]
++# else
++	stp	$d0,$d1,[$len]
++# endif
++
++	mov	x0,#1
++#else
++	mov	x0,#0
++#endif
++.Lno_key:
++	ret
++.size	poly1305_init,.-poly1305_init
++
++.type	poly1305_blocks,%function
++.align	5
++poly1305_blocks:
++	ands	$len,$len,#-16
++	b.eq	.Lno_data
++
++	ldp	$h0,$h1,[$ctx]		// load hash value
++	ldp	$r0,$r1,[$ctx,#32]	// load key value
++	ldr	$h2,[$ctx,#16]
++	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
++	b	.Loop
++
++.align	5
++.Loop:
++	ldp	$t0,$t1,[$inp],#16	// load input
++	sub	$len,$len,#16
++#ifdef	__AARCH64EB__
++	rev	$t0,$t0
++	rev	$t1,$t1
++#endif
++	adds	$h0,$h0,$t0		// accumulate input
++	adcs	$h1,$h1,$t1
++
++	mul	$d0,$h0,$r0		// h0*r0
++	adc	$h2,$h2,$padbit
++	umulh	$d1,$h0,$r0
++
++	mul	$t0,$h1,$s1		// h1*5*r1
++	umulh	$t1,$h1,$s1
++
++	adds	$d0,$d0,$t0
++	mul	$t0,$h0,$r1		// h0*r1
++	adc	$d1,$d1,$t1
++	umulh	$d2,$h0,$r1
++
++	adds	$d1,$d1,$t0
++	mul	$t0,$h1,$r0		// h1*r0
++	adc	$d2,$d2,xzr
++	umulh	$t1,$h1,$r0
++
++	adds	$d1,$d1,$t0
++	mul	$t0,$h2,$s1		// h2*5*r1
++	adc	$d2,$d2,$t1
++	mul	$t1,$h2,$r0		// h2*r0
++
++	adds	$d1,$d1,$t0
++	adc	$d2,$d2,$t1
++
++	and	$t0,$d2,#-4		// final reduction
++	and	$h2,$d2,#3
++	add	$t0,$t0,$d2,lsr#2
++	adds	$h0,$d0,$t0
++	adcs	$h1,$d1,xzr
++	adc	$h2,$h2,xzr
++
++	cbnz	$len,.Loop
++
++	stp	$h0,$h1,[$ctx]		// store hash value
++	str	$h2,[$ctx,#16]
++
++.Lno_data:
++	ret
++.size	poly1305_blocks,.-poly1305_blocks
++
++.type	poly1305_emit,%function
++.align	5
++poly1305_emit:
++	ldp	$h0,$h1,[$ctx]		// load hash base 2^64
++	ldr	$h2,[$ctx,#16]
++	ldp	$t0,$t1,[$nonce]	// load nonce
++
++	adds	$d0,$h0,#5		// compare to modulus
++	adcs	$d1,$h1,xzr
++	adc	$d2,$h2,xzr
++
++	tst	$d2,#-4			// see if it's carried/borrowed
++
++	csel	$h0,$h0,$d0,eq
++	csel	$h1,$h1,$d1,eq
++
++#ifdef	__AARCH64EB__
++	ror	$t0,$t0,#32		// flip nonce words
++	ror	$t1,$t1,#32
++#endif
++	adds	$h0,$h0,$t0		// accumulate nonce
++	adc	$h1,$h1,$t1
++#ifdef	__AARCH64EB__
++	rev	$h0,$h0			// flip output bytes
++	rev	$h1,$h1
++#endif
++	stp	$h0,$h1,[$mac]		// write result
++
++	ret
++.size	poly1305_emit,.-poly1305_emit
++___
++my ($R0,$R1,$S1,$R2,$S2,$R3,$S3,$R4,$S4) = map("v$_.4s",(0..8));
++my ($IN01_0,$IN01_1,$IN01_2,$IN01_3,$IN01_4) = map("v$_.2s",(9..13));
++my ($IN23_0,$IN23_1,$IN23_2,$IN23_3,$IN23_4) = map("v$_.2s",(14..18));
++my ($ACC0,$ACC1,$ACC2,$ACC3,$ACC4) = map("v$_.2d",(19..23));
++my ($H0,$H1,$H2,$H3,$H4) = map("v$_.2s",(24..28));
++my ($T0,$T1,$MASK) = map("v$_",(29..31));
++
++my ($in2,$zeros)=("x16","x17");
++my $is_base2_26 = $zeros;		# borrow
++
++$code.=<<___;
++.type	__poly1305_mult,%function
++.align	5
++__poly1305_mult:
++	mul	$d0,$h0,$r0		// h0*r0
++	umulh	$d1,$h0,$r0
++
++	mul	$t0,$h1,$s1		// h1*5*r1
++	umulh	$t1,$h1,$s1
++
++	adds	$d0,$d0,$t0
++	mul	$t0,$h0,$r1		// h0*r1
++	adc	$d1,$d1,$t1
++	umulh	$d2,$h0,$r1
++
++	adds	$d1,$d1,$t0
++	mul	$t0,$h1,$r0		// h1*r0
++	adc	$d2,$d2,xzr
++	umulh	$t1,$h1,$r0
++
++	adds	$d1,$d1,$t0
++	mul	$t0,$h2,$s1		// h2*5*r1
++	adc	$d2,$d2,$t1
++	mul	$t1,$h2,$r0		// h2*r0
++
++	adds	$d1,$d1,$t0
++	adc	$d2,$d2,$t1
++
++	and	$t0,$d2,#-4		// final reduction
++	and	$h2,$d2,#3
++	add	$t0,$t0,$d2,lsr#2
++	adds	$h0,$d0,$t0
++	adcs	$h1,$d1,xzr
++	adc	$h2,$h2,xzr
++
++	ret
++.size	__poly1305_mult,.-__poly1305_mult
++
++.type	__poly1305_splat,%function
++.align	5
++__poly1305_splat:
++	and	x12,$h0,#0x03ffffff	// base 2^64 -> base 2^26
++	ubfx	x13,$h0,#26,#26
++	extr	x14,$h1,$h0,#52
++	and	x14,x14,#0x03ffffff
++	ubfx	x15,$h1,#14,#26
++	extr	x16,$h2,$h1,#40
++
++	str	w12,[$ctx,#16*0]	// r0
++	add	w12,w13,w13,lsl#2	// r1*5
++	str	w13,[$ctx,#16*1]	// r1
++	add	w13,w14,w14,lsl#2	// r2*5
++	str	w12,[$ctx,#16*2]	// s1
++	str	w14,[$ctx,#16*3]	// r2
++	add	w14,w15,w15,lsl#2	// r3*5
++	str	w13,[$ctx,#16*4]	// s2
++	str	w15,[$ctx,#16*5]	// r3
++	add	w15,w16,w16,lsl#2	// r4*5
++	str	w14,[$ctx,#16*6]	// s3
++	str	w16,[$ctx,#16*7]	// r4
++	str	w15,[$ctx,#16*8]	// s4
++
++	ret
++.size	__poly1305_splat,.-__poly1305_splat
++
++#if !defined(__KERNEL__) || defined(CONFIG_KERNEL_MODE_NEON)
++#ifdef	__KERNEL__
++.globl	poly1305_blocks_neon
++.globl	poly1305_emit_neon
++#endif
++
++.type	poly1305_blocks_neon,%function
++.align	5
++poly1305_blocks_neon:
++	ldr	$is_base2_26,[$ctx,#24]
++	cmp	$len,#128
++	b.hs	.Lblocks_neon
++	cbz	$is_base2_26,poly1305_blocks
++
++.Lblocks_neon:
++	stp	x29,x30,[sp,#-80]!
++	add	x29,sp,#0
++
++	ands	$len,$len,#-16
++	b.eq	.Lno_data_neon
++
++	cbz	$is_base2_26,.Lbase2_64_neon
++
++	ldp	w10,w11,[$ctx]		// load hash value base 2^26
++	ldp	w12,w13,[$ctx,#8]
++	ldr	w14,[$ctx,#16]
++
++	tst	$len,#31
++	b.eq	.Leven_neon
++
++	ldp	$r0,$r1,[$ctx,#32]	// load key value
++
++	add	$h0,x10,x11,lsl#26	// base 2^26 -> base 2^64
++	lsr	$h1,x12,#12
++	adds	$h0,$h0,x12,lsl#52
++	add	$h1,$h1,x13,lsl#14
++	adc	$h1,$h1,xzr
++	lsr	$h2,x14,#24
++	adds	$h1,$h1,x14,lsl#40
++	adc	$d2,$h2,xzr		// can be partially reduced...
++
++	ldp	$d0,$d1,[$inp],#16	// load input
++	sub	$len,$len,#16
++	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
++
++	and	$t0,$d2,#-4		// ... so reduce
++	and	$h2,$d2,#3
++	add	$t0,$t0,$d2,lsr#2
++	adds	$h0,$h0,$t0
++	adcs	$h1,$h1,xzr
++	adc	$h2,$h2,xzr
++
++#ifdef	__AARCH64EB__
++	rev	$d0,$d0
++	rev	$d1,$d1
++#endif
++	adds	$h0,$h0,$d0		// accumulate input
++	adcs	$h1,$h1,$d1
++	adc	$h2,$h2,$padbit
++
++	bl	__poly1305_mult
++	ldr	x30,[sp,#8]
++
++	cbz	$padbit,.Lstore_base2_64_neon
++
++	and	x10,$h0,#0x03ffffff	// base 2^64 -> base 2^26
++	ubfx	x11,$h0,#26,#26
++	extr	x12,$h1,$h0,#52
++	and	x12,x12,#0x03ffffff
++	ubfx	x13,$h1,#14,#26
++	extr	x14,$h2,$h1,#40
++
++	cbnz	$len,.Leven_neon
++
++	stp	w10,w11,[$ctx]		// store hash value base 2^26
++	stp	w12,w13,[$ctx,#8]
++	str	w14,[$ctx,#16]
++	b	.Lno_data_neon
++
++.align	4
++.Lstore_base2_64_neon:
++	stp	$h0,$h1,[$ctx]		// store hash value base 2^64
++	stp	$h2,xzr,[$ctx,#16]	// note that is_base2_26 is zeroed
++	b	.Lno_data_neon
++
++.align	4
++.Lbase2_64_neon:
++	ldp	$r0,$r1,[$ctx,#32]	// load key value
++
++	ldp	$h0,$h1,[$ctx]		// load hash value base 2^64
++	ldr	$h2,[$ctx,#16]
++
++	tst	$len,#31
++	b.eq	.Linit_neon
++
++	ldp	$d0,$d1,[$inp],#16	// load input
++	sub	$len,$len,#16
++	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
++#ifdef	__AARCH64EB__
++	rev	$d0,$d0
++	rev	$d1,$d1
++#endif
++	adds	$h0,$h0,$d0		// accumulate input
++	adcs	$h1,$h1,$d1
++	adc	$h2,$h2,$padbit
++
++	bl	__poly1305_mult
++
++.Linit_neon:
++	and	x10,$h0,#0x03ffffff	// base 2^64 -> base 2^26
++	ubfx	x11,$h0,#26,#26
++	extr	x12,$h1,$h0,#52
++	and	x12,x12,#0x03ffffff
++	ubfx	x13,$h1,#14,#26
++	extr	x14,$h2,$h1,#40
++
++	stp	d8,d9,[sp,#16]		// meet ABI requirements
++	stp	d10,d11,[sp,#32]
++	stp	d12,d13,[sp,#48]
++	stp	d14,d15,[sp,#64]
++
++	fmov	${H0},x10
++	fmov	${H1},x11
++	fmov	${H2},x12
++	fmov	${H3},x13
++	fmov	${H4},x14
++
++	////////////////////////////////// initialize r^n table
++	mov	$h0,$r0			// r^1
++	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
++	mov	$h1,$r1
++	mov	$h2,xzr
++	add	$ctx,$ctx,#48+12
++	bl	__poly1305_splat
++
++	bl	__poly1305_mult		// r^2
++	sub	$ctx,$ctx,#4
++	bl	__poly1305_splat
++
++	bl	__poly1305_mult		// r^3
++	sub	$ctx,$ctx,#4
++	bl	__poly1305_splat
++
++	bl	__poly1305_mult		// r^4
++	sub	$ctx,$ctx,#4
++	bl	__poly1305_splat
++	ldr	x30,[sp,#8]
++
++	add	$in2,$inp,#32
++	adr	$zeros,.Lzeros
++	subs	$len,$len,#64
++	csel	$in2,$zeros,$in2,lo
++
++	mov	x4,#1
++	str	x4,[$ctx,#-24]		// set is_base2_26
++	sub	$ctx,$ctx,#48		// restore original $ctx
++	b	.Ldo_neon
++
++.align	4
++.Leven_neon:
++	add	$in2,$inp,#32
++	adr	$zeros,.Lzeros
++	subs	$len,$len,#64
++	csel	$in2,$zeros,$in2,lo
++
++	stp	d8,d9,[sp,#16]		// meet ABI requirements
++	stp	d10,d11,[sp,#32]
++	stp	d12,d13,[sp,#48]
++	stp	d14,d15,[sp,#64]
++
++	fmov	${H0},x10
++	fmov	${H1},x11
++	fmov	${H2},x12
++	fmov	${H3},x13
++	fmov	${H4},x14
++
++.Ldo_neon:
++	ldp	x8,x12,[$in2],#16	// inp[2:3] (or zero)
++	ldp	x9,x13,[$in2],#48
++
++	lsl	$padbit,$padbit,#24
++	add	x15,$ctx,#48
++
++#ifdef	__AARCH64EB__
++	rev	x8,x8
++	rev	x12,x12
++	rev	x9,x9
++	rev	x13,x13
++#endif
++	and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
++	and	x5,x9,#0x03ffffff
++	ubfx	x6,x8,#26,#26
++	ubfx	x7,x9,#26,#26
++	add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
++	extr	x8,x12,x8,#52
++	extr	x9,x13,x9,#52
++	add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
++	fmov	$IN23_0,x4
++	and	x8,x8,#0x03ffffff
++	and	x9,x9,#0x03ffffff
++	ubfx	x10,x12,#14,#26
++	ubfx	x11,x13,#14,#26
++	add	x12,$padbit,x12,lsr#40
++	add	x13,$padbit,x13,lsr#40
++	add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
++	fmov	$IN23_1,x6
++	add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
++	add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
++	fmov	$IN23_2,x8
++	fmov	$IN23_3,x10
++	fmov	$IN23_4,x12
++
++	ldp	x8,x12,[$inp],#16	// inp[0:1]
++	ldp	x9,x13,[$inp],#48
++
++	ld1	{$R0,$R1,$S1,$R2},[x15],#64
++	ld1	{$S2,$R3,$S3,$R4},[x15],#64
++	ld1	{$S4},[x15]
++
++#ifdef	__AARCH64EB__
++	rev	x8,x8
++	rev	x12,x12
++	rev	x9,x9
++	rev	x13,x13
++#endif
++	and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
++	and	x5,x9,#0x03ffffff
++	ubfx	x6,x8,#26,#26
++	ubfx	x7,x9,#26,#26
++	add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
++	extr	x8,x12,x8,#52
++	extr	x9,x13,x9,#52
++	add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
++	fmov	$IN01_0,x4
++	and	x8,x8,#0x03ffffff
++	and	x9,x9,#0x03ffffff
++	ubfx	x10,x12,#14,#26
++	ubfx	x11,x13,#14,#26
++	add	x12,$padbit,x12,lsr#40
++	add	x13,$padbit,x13,lsr#40
++	add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
++	fmov	$IN01_1,x6
++	add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
++	add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
++	movi	$MASK.2d,#-1
++	fmov	$IN01_2,x8
++	fmov	$IN01_3,x10
++	fmov	$IN01_4,x12
++	ushr	$MASK.2d,$MASK.2d,#38
++
++	b.ls	.Lskip_loop
++
++.align	4
++.Loop_neon:
++	////////////////////////////////////////////////////////////////
++	// ((inp[0]*r^4+inp[2]*r^2+inp[4])*r^4+inp[6]*r^2
++	// ((inp[1]*r^4+inp[3]*r^2+inp[5])*r^3+inp[7]*r
++	//   \___________________/
++	// ((inp[0]*r^4+inp[2]*r^2+inp[4])*r^4+inp[6]*r^2+inp[8])*r^2
++	// ((inp[1]*r^4+inp[3]*r^2+inp[5])*r^4+inp[7]*r^2+inp[9])*r
++	//   \___________________/ \____________________/
++	//
++	// Note that we start with inp[2:3]*r^2. This is because it
++	// doesn't depend on reduction in previous iteration.
++	////////////////////////////////////////////////////////////////
++	// d4 = h0*r4 + h1*r3   + h2*r2   + h3*r1   + h4*r0
++	// d3 = h0*r3 + h1*r2   + h2*r1   + h3*r0   + h4*5*r4
++	// d2 = h0*r2 + h1*r1   + h2*r0   + h3*5*r4 + h4*5*r3
++	// d1 = h0*r1 + h1*r0   + h2*5*r4 + h3*5*r3 + h4*5*r2
++	// d0 = h0*r0 + h1*5*r4 + h2*5*r3 + h3*5*r2 + h4*5*r1
++
++	subs	$len,$len,#64
++	umull	$ACC4,$IN23_0,${R4}[2]
++	csel	$in2,$zeros,$in2,lo
++	umull	$ACC3,$IN23_0,${R3}[2]
++	umull	$ACC2,$IN23_0,${R2}[2]
++	 ldp	x8,x12,[$in2],#16	// inp[2:3] (or zero)
++	umull	$ACC1,$IN23_0,${R1}[2]
++	 ldp	x9,x13,[$in2],#48
++	umull	$ACC0,$IN23_0,${R0}[2]
++#ifdef	__AARCH64EB__
++	 rev	x8,x8
++	 rev	x12,x12
++	 rev	x9,x9
++	 rev	x13,x13
++#endif
++
++	umlal	$ACC4,$IN23_1,${R3}[2]
++	 and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
++	umlal	$ACC3,$IN23_1,${R2}[2]
++	 and	x5,x9,#0x03ffffff
++	umlal	$ACC2,$IN23_1,${R1}[2]
++	 ubfx	x6,x8,#26,#26
++	umlal	$ACC1,$IN23_1,${R0}[2]
++	 ubfx	x7,x9,#26,#26
++	umlal	$ACC0,$IN23_1,${S4}[2]
++	 add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
++
++	umlal	$ACC4,$IN23_2,${R2}[2]
++	 extr	x8,x12,x8,#52
++	umlal	$ACC3,$IN23_2,${R1}[2]
++	 extr	x9,x13,x9,#52
++	umlal	$ACC2,$IN23_2,${R0}[2]
++	 add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
++	umlal	$ACC1,$IN23_2,${S4}[2]
++	 fmov	$IN23_0,x4
++	umlal	$ACC0,$IN23_2,${S3}[2]
++	 and	x8,x8,#0x03ffffff
++
++	umlal	$ACC4,$IN23_3,${R1}[2]
++	 and	x9,x9,#0x03ffffff
++	umlal	$ACC3,$IN23_3,${R0}[2]
++	 ubfx	x10,x12,#14,#26
++	umlal	$ACC2,$IN23_3,${S4}[2]
++	 ubfx	x11,x13,#14,#26
++	umlal	$ACC1,$IN23_3,${S3}[2]
++	 add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
++	umlal	$ACC0,$IN23_3,${S2}[2]
++	 fmov	$IN23_1,x6
++
++	add	$IN01_2,$IN01_2,$H2
++	 add	x12,$padbit,x12,lsr#40
++	umlal	$ACC4,$IN23_4,${R0}[2]
++	 add	x13,$padbit,x13,lsr#40
++	umlal	$ACC3,$IN23_4,${S4}[2]
++	 add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
++	umlal	$ACC2,$IN23_4,${S3}[2]
++	 add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
++	umlal	$ACC1,$IN23_4,${S2}[2]
++	 fmov	$IN23_2,x8
++	umlal	$ACC0,$IN23_4,${S1}[2]
++	 fmov	$IN23_3,x10
++
++	////////////////////////////////////////////////////////////////
++	// (hash+inp[0:1])*r^4 and accumulate
++
++	add	$IN01_0,$IN01_0,$H0
++	 fmov	$IN23_4,x12
++	umlal	$ACC3,$IN01_2,${R1}[0]
++	 ldp	x8,x12,[$inp],#16	// inp[0:1]
++	umlal	$ACC0,$IN01_2,${S3}[0]
++	 ldp	x9,x13,[$inp],#48
++	umlal	$ACC4,$IN01_2,${R2}[0]
++	umlal	$ACC1,$IN01_2,${S4}[0]
++	umlal	$ACC2,$IN01_2,${R0}[0]
++#ifdef	__AARCH64EB__
++	 rev	x8,x8
++	 rev	x12,x12
++	 rev	x9,x9
++	 rev	x13,x13
++#endif
++
++	add	$IN01_1,$IN01_1,$H1
++	umlal	$ACC3,$IN01_0,${R3}[0]
++	umlal	$ACC4,$IN01_0,${R4}[0]
++	 and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
++	umlal	$ACC2,$IN01_0,${R2}[0]
++	 and	x5,x9,#0x03ffffff
++	umlal	$ACC0,$IN01_0,${R0}[0]
++	 ubfx	x6,x8,#26,#26
++	umlal	$ACC1,$IN01_0,${R1}[0]
++	 ubfx	x7,x9,#26,#26
++
++	add	$IN01_3,$IN01_3,$H3
++	 add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
++	umlal	$ACC3,$IN01_1,${R2}[0]
++	 extr	x8,x12,x8,#52
++	umlal	$ACC4,$IN01_1,${R3}[0]
++	 extr	x9,x13,x9,#52
++	umlal	$ACC0,$IN01_1,${S4}[0]
++	 add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
++	umlal	$ACC2,$IN01_1,${R1}[0]
++	 fmov	$IN01_0,x4
++	umlal	$ACC1,$IN01_1,${R0}[0]
++	 and	x8,x8,#0x03ffffff
++
++	add	$IN01_4,$IN01_4,$H4
++	 and	x9,x9,#0x03ffffff
++	umlal	$ACC3,$IN01_3,${R0}[0]
++	 ubfx	x10,x12,#14,#26
++	umlal	$ACC0,$IN01_3,${S2}[0]
++	 ubfx	x11,x13,#14,#26
++	umlal	$ACC4,$IN01_3,${R1}[0]
++	 add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
++	umlal	$ACC1,$IN01_3,${S3}[0]
++	 fmov	$IN01_1,x6
++	umlal	$ACC2,$IN01_3,${S4}[0]
++	 add	x12,$padbit,x12,lsr#40
++
++	umlal	$ACC3,$IN01_4,${S4}[0]
++	 add	x13,$padbit,x13,lsr#40
++	umlal	$ACC0,$IN01_4,${S1}[0]
++	 add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
++	umlal	$ACC4,$IN01_4,${R0}[0]
++	 add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
++	umlal	$ACC1,$IN01_4,${S2}[0]
++	 fmov	$IN01_2,x8
++	umlal	$ACC2,$IN01_4,${S3}[0]
++	 fmov	$IN01_3,x10
++	 fmov	$IN01_4,x12
++
++	/////////////////////////////////////////////////////////////////
++	// lazy reduction as discussed in "NEON crypto" by D.J. Bernstein
++	// and P. Schwabe
++	//
++	// [see discussion in poly1305-armv4 module]
++
++	ushr	$T0.2d,$ACC3,#26
++	xtn	$H3,$ACC3
++	 ushr	$T1.2d,$ACC0,#26
++	 and	$ACC0,$ACC0,$MASK.2d
++	add	$ACC4,$ACC4,$T0.2d	// h3 -> h4
++	bic	$H3,#0xfc,lsl#24	// &=0x03ffffff
++	 add	$ACC1,$ACC1,$T1.2d	// h0 -> h1
++
++	ushr	$T0.2d,$ACC4,#26
++	xtn	$H4,$ACC4
++	 ushr	$T1.2d,$ACC1,#26
++	 xtn	$H1,$ACC1
++	bic	$H4,#0xfc,lsl#24
++	 add	$ACC2,$ACC2,$T1.2d	// h1 -> h2
++
++	add	$ACC0,$ACC0,$T0.2d
++	shl	$T0.2d,$T0.2d,#2
++	 shrn	$T1.2s,$ACC2,#26
++	 xtn	$H2,$ACC2
++	add	$ACC0,$ACC0,$T0.2d	// h4 -> h0
++	 bic	$H1,#0xfc,lsl#24
++	 add	$H3,$H3,$T1.2s		// h2 -> h3
++	 bic	$H2,#0xfc,lsl#24
++
++	shrn	$T0.2s,$ACC0,#26
++	xtn	$H0,$ACC0
++	 ushr	$T1.2s,$H3,#26
++	 bic	$H3,#0xfc,lsl#24
++	 bic	$H0,#0xfc,lsl#24
++	add	$H1,$H1,$T0.2s		// h0 -> h1
++	 add	$H4,$H4,$T1.2s		// h3 -> h4
++
++	b.hi	.Loop_neon
++
++.Lskip_loop:
++	dup	$IN23_2,${IN23_2}[0]
++	add	$IN01_2,$IN01_2,$H2
++
++	////////////////////////////////////////////////////////////////
++	// multiply (inp[0:1]+hash) or inp[2:3] by r^2:r^1
++
++	adds	$len,$len,#32
++	b.ne	.Long_tail
++
++	dup	$IN23_2,${IN01_2}[0]
++	add	$IN23_0,$IN01_0,$H0
++	add	$IN23_3,$IN01_3,$H3
++	add	$IN23_1,$IN01_1,$H1
++	add	$IN23_4,$IN01_4,$H4
++
++.Long_tail:
++	dup	$IN23_0,${IN23_0}[0]
++	umull2	$ACC0,$IN23_2,${S3}
++	umull2	$ACC3,$IN23_2,${R1}
++	umull2	$ACC4,$IN23_2,${R2}
++	umull2	$ACC2,$IN23_2,${R0}
++	umull2	$ACC1,$IN23_2,${S4}
++
++	dup	$IN23_1,${IN23_1}[0]
++	umlal2	$ACC0,$IN23_0,${R0}
++	umlal2	$ACC2,$IN23_0,${R2}
++	umlal2	$ACC3,$IN23_0,${R3}
++	umlal2	$ACC4,$IN23_0,${R4}
++	umlal2	$ACC1,$IN23_0,${R1}
++
++	dup	$IN23_3,${IN23_3}[0]
++	umlal2	$ACC0,$IN23_1,${S4}
++	umlal2	$ACC3,$IN23_1,${R2}
++	umlal2	$ACC2,$IN23_1,${R1}
++	umlal2	$ACC4,$IN23_1,${R3}
++	umlal2	$ACC1,$IN23_1,${R0}
++
++	dup	$IN23_4,${IN23_4}[0]
++	umlal2	$ACC3,$IN23_3,${R0}
++	umlal2	$ACC4,$IN23_3,${R1}
++	umlal2	$ACC0,$IN23_3,${S2}
++	umlal2	$ACC1,$IN23_3,${S3}
++	umlal2	$ACC2,$IN23_3,${S4}
++
++	umlal2	$ACC3,$IN23_4,${S4}
++	umlal2	$ACC0,$IN23_4,${S1}
++	umlal2	$ACC4,$IN23_4,${R0}
++	umlal2	$ACC1,$IN23_4,${S2}
++	umlal2	$ACC2,$IN23_4,${S3}
++
++	b.eq	.Lshort_tail
++
++	////////////////////////////////////////////////////////////////
++	// (hash+inp[0:1])*r^4:r^3 and accumulate
++
++	add	$IN01_0,$IN01_0,$H0
++	umlal	$ACC3,$IN01_2,${R1}
++	umlal	$ACC0,$IN01_2,${S3}
++	umlal	$ACC4,$IN01_2,${R2}
++	umlal	$ACC1,$IN01_2,${S4}
++	umlal	$ACC2,$IN01_2,${R0}
++
++	add	$IN01_1,$IN01_1,$H1
++	umlal	$ACC3,$IN01_0,${R3}
++	umlal	$ACC0,$IN01_0,${R0}
++	umlal	$ACC4,$IN01_0,${R4}
++	umlal	$ACC1,$IN01_0,${R1}
++	umlal	$ACC2,$IN01_0,${R2}
++
++	add	$IN01_3,$IN01_3,$H3
++	umlal	$ACC3,$IN01_1,${R2}
++	umlal	$ACC0,$IN01_1,${S4}
++	umlal	$ACC4,$IN01_1,${R3}
++	umlal	$ACC1,$IN01_1,${R0}
++	umlal	$ACC2,$IN01_1,${R1}
++
++	add	$IN01_4,$IN01_4,$H4
++	umlal	$ACC3,$IN01_3,${R0}
++	umlal	$ACC0,$IN01_3,${S2}
++	umlal	$ACC4,$IN01_3,${R1}
++	umlal	$ACC1,$IN01_3,${S3}
++	umlal	$ACC2,$IN01_3,${S4}
++
++	umlal	$ACC3,$IN01_4,${S4}
++	umlal	$ACC0,$IN01_4,${S1}
++	umlal	$ACC4,$IN01_4,${R0}
++	umlal	$ACC1,$IN01_4,${S2}
++	umlal	$ACC2,$IN01_4,${S3}
++
++.Lshort_tail:
++	////////////////////////////////////////////////////////////////
++	// horizontal add
++
++	addp	$ACC3,$ACC3,$ACC3
++	 ldp	d8,d9,[sp,#16]		// meet ABI requirements
++	addp	$ACC0,$ACC0,$ACC0
++	 ldp	d10,d11,[sp,#32]
++	addp	$ACC4,$ACC4,$ACC4
++	 ldp	d12,d13,[sp,#48]
++	addp	$ACC1,$ACC1,$ACC1
++	 ldp	d14,d15,[sp,#64]
++	addp	$ACC2,$ACC2,$ACC2
++
++	////////////////////////////////////////////////////////////////
++	// lazy reduction, but without narrowing
++
++	ushr	$T0.2d,$ACC3,#26
++	and	$ACC3,$ACC3,$MASK.2d
++	 ushr	$T1.2d,$ACC0,#26
++	 and	$ACC0,$ACC0,$MASK.2d
++
++	add	$ACC4,$ACC4,$T0.2d	// h3 -> h4
++	 add	$ACC1,$ACC1,$T1.2d	// h0 -> h1
++
++	ushr	$T0.2d,$ACC4,#26
++	and	$ACC4,$ACC4,$MASK.2d
++	 ushr	$T1.2d,$ACC1,#26
++	 and	$ACC1,$ACC1,$MASK.2d
++	 add	$ACC2,$ACC2,$T1.2d	// h1 -> h2
++
++	add	$ACC0,$ACC0,$T0.2d
++	shl	$T0.2d,$T0.2d,#2
++	 ushr	$T1.2d,$ACC2,#26
++	 and	$ACC2,$ACC2,$MASK.2d
++	add	$ACC0,$ACC0,$T0.2d	// h4 -> h0
++	 add	$ACC3,$ACC3,$T1.2d	// h2 -> h3
++
++	ushr	$T0.2d,$ACC0,#26
++	and	$ACC0,$ACC0,$MASK.2d
++	 ushr	$T1.2d,$ACC3,#26
++	 and	$ACC3,$ACC3,$MASK.2d
++	add	$ACC1,$ACC1,$T0.2d	// h0 -> h1
++	 add	$ACC4,$ACC4,$T1.2d	// h3 -> h4
++
++	////////////////////////////////////////////////////////////////
++	// write the result, can be partially reduced
++
++	st4	{$ACC0,$ACC1,$ACC2,$ACC3}[0],[$ctx],#16
++	st1	{$ACC4}[0],[$ctx]
++
++.Lno_data_neon:
++	ldr	x29,[sp],#80
++	ret
++.size	poly1305_blocks_neon,.-poly1305_blocks_neon
++
++.type	poly1305_emit_neon,%function
++.align	5
++poly1305_emit_neon:
++	ldr	$is_base2_26,[$ctx,#24]
++	cbz	$is_base2_26,poly1305_emit
++
++	ldp	w10,w11,[$ctx]		// load hash value base 2^26
++	ldp	w12,w13,[$ctx,#8]
++	ldr	w14,[$ctx,#16]
++
++	add	$h0,x10,x11,lsl#26	// base 2^26 -> base 2^64
++	lsr	$h1,x12,#12
++	adds	$h0,$h0,x12,lsl#52
++	add	$h1,$h1,x13,lsl#14
++	adc	$h1,$h1,xzr
++	lsr	$h2,x14,#24
++	adds	$h1,$h1,x14,lsl#40
++	adc	$h2,$h2,xzr		// can be partially reduced...
++
++	ldp	$t0,$t1,[$nonce]	// load nonce
++
++	and	$d0,$h2,#-4		// ... so reduce
++	add	$d0,$d0,$h2,lsr#2
++	and	$h2,$h2,#3
++	adds	$h0,$h0,$d0
++	adcs	$h1,$h1,xzr
++	adc	$h2,$h2,xzr
++
++	adds	$d0,$h0,#5		// compare to modulus
++	adcs	$d1,$h1,xzr
++	adc	$d2,$h2,xzr
++
++	tst	$d2,#-4			// see if it's carried/borrowed
++
++	csel	$h0,$h0,$d0,eq
++	csel	$h1,$h1,$d1,eq
++
++#ifdef	__AARCH64EB__
++	ror	$t0,$t0,#32		// flip nonce words
++	ror	$t1,$t1,#32
++#endif
++	adds	$h0,$h0,$t0		// accumulate nonce
++	adc	$h1,$h1,$t1
++#ifdef	__AARCH64EB__
++	rev	$h0,$h0			// flip output bytes
++	rev	$h1,$h1
++#endif
++	stp	$h0,$h1,[$mac]		// write result
++
++	ret
++.size	poly1305_emit_neon,.-poly1305_emit_neon
++#endif
++
++.align	5
++.Lzeros:
++.long	0,0,0,0,0,0,0,0
++#ifndef __KERNEL__
++.LOPENSSL_armcap_P:
++#ifdef	__ILP32__
++.long	OPENSSL_armcap_P-.
++#else
++.quad	OPENSSL_armcap_P-.
++#endif
++#endif
++.align	2
++___
++
++open SELF,$0;
++while(<SELF>) {
++	next if (/^#!/);
++	last if (!s/^#/\/\// and !/^$/);
++	print;
++}
++close SELF;
++
++foreach (split("\n",$code)) {
++	s/\b(shrn\s+v[0-9]+)\.[24]d/$1.2s/			or
++	s/\b(fmov\s+)v([0-9]+)[^,]*,\s*x([0-9]+)/$1d$2,x$3/	or
++	(m/\bdup\b/ and (s/\.[24]s/.2d/g or 1))			or
++	(m/\b(eor|and)/ and (s/\.[248][sdh]/.16b/g or 1))	or
++	(m/\bum(ul|la)l\b/ and (s/\.4s/.2s/g or 1))		or
++	(m/\bum(ul|la)l2\b/ and (s/\.2s/.4s/g or 1))		or
++	(m/\bst[1-4]\s+{[^}]+}\[/ and (s/\.[24]d/.s/g or 1));
++
++	s/\.[124]([sd])\[/.$1\[/;
++
++	print $_,"\n";
++}
++close STDOUT;
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-arm.pl	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,1276 @@
 +#!/usr/bin/env perl
 +# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
@@ -45397,985 +46440,8 @@
 +	print $_,"\n";
 +}
 +close STDOUT; # enforce flush
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-arm64.pl
-@@ -0,0 +1,974 @@
-+#!/usr/bin/env perl
-+# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
-+#
-+# This code is taken from the OpenSSL project but the author, Andy Polyakov,
-+# has relicensed it under the licenses specified in the SPDX header above.
-+# The original headers, including the original license headers, are
-+# included below for completeness.
-+#
-+# ====================================================================
-+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
-+# project. The module is, however, dual licensed under OpenSSL and
-+# CRYPTOGAMS licenses depending on where you obtain it. For further
-+# details see http://www.openssl.org/~appro/cryptogams/.
-+# ====================================================================
-+#
-+# This module implements Poly1305 hash for ARMv8.
-+#
-+# June 2015
-+#
-+# Numbers are cycles per processed byte with poly1305_blocks alone.
-+#
-+#		IALU/gcc-4.9	NEON
-+#
-+# Apple A7	1.86/+5%	0.72
-+# Cortex-A53	2.69/+58%	1.47
-+# Cortex-A57	2.70/+7%	1.14
-+# Denver	1.64/+50%	1.18(*)
-+# X-Gene	2.13/+68%	2.27
-+# Mongoose	1.77/+75%	1.12
-+# Kryo		2.70/+55%	1.13
-+#
-+# (*)	estimate based on resources availability is less than 1.0,
-+#	i.e. measured result is worse than expected, presumably binary
-+#	translator is not almighty;
-+
-+$flavour=shift;
-+if ($flavour=~/\w[\w\-]*\.\w+$/) { $output=$flavour; undef $flavour; }
-+else { while (($output=shift) && ($output!~/\w[\w\-]*\.\w+$/)) {} }
-+
-+if ($flavour && $flavour ne "void") {
-+    $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
-+    ( $xlate="${dir}arm-xlate.pl" and -f $xlate ) or
-+    ( $xlate="${dir}../../perlasm/arm-xlate.pl" and -f $xlate) or
-+    die "can't locate arm-xlate.pl";
-+
-+    open STDOUT,"| \"$^X\" $xlate $flavour $output";
-+} else {
-+    open STDOUT,">$output";
-+}
-+
-+my ($ctx,$inp,$len,$padbit) = map("x$_",(0..3));
-+my ($mac,$nonce)=($inp,$len);
-+
-+my ($h0,$h1,$h2,$r0,$r1,$s1,$t0,$t1,$d0,$d1,$d2) = map("x$_",(4..14));
-+
-+$code.=<<___;
-+#ifndef	__KERNEL__
-+# include "arm_arch.h"
-+.extern	OPENSSL_armcap_P
-+#else
-+# define poly1305_init   poly1305_init_arm
-+# define poly1305_blocks poly1305_blocks_arm
-+# define poly1305_emit   poly1305_emit_arm
-+#endif
-+
-+.text
-+
-+// forward "declarations" are required for Apple
-+.globl	poly1305_blocks
-+.globl	poly1305_emit
-+.globl	poly1305_init
-+.type	poly1305_init,%function
-+.align	5
-+poly1305_init:
-+	cmp	$inp,xzr
-+	stp	xzr,xzr,[$ctx]		// zero hash value
-+	stp	xzr,xzr,[$ctx,#16]	// [along with is_base2_26]
-+
-+	csel	x0,xzr,x0,eq
-+	b.eq	.Lno_key
-+
-+#ifndef	__KERNEL__
-+# ifdef	__ILP32__
-+	ldrsw	$t1,.LOPENSSL_armcap_P
-+# else
-+	ldr	$t1,.LOPENSSL_armcap_P
-+# endif
-+	adr	$t0,.LOPENSSL_armcap_P
-+	ldr	w17,[$t0,$t1]
-+#endif
-+
-+	ldp	$r0,$r1,[$inp]		// load key
-+	mov	$s1,#0xfffffffc0fffffff
-+	movk	$s1,#0x0fff,lsl#48
-+#ifdef	__AARCH64EB__
-+	rev	$r0,$r0			// flip bytes
-+	rev	$r1,$r1
-+#endif
-+	and	$r0,$r0,$s1		// &=0ffffffc0fffffff
-+	and	$s1,$s1,#-4
-+	and	$r1,$r1,$s1		// &=0ffffffc0ffffffc
-+	stp	$r0,$r1,[$ctx,#32]	// save key value
-+
-+#ifndef	__KERNEL__
-+	tst	w17,#ARMV7_NEON
-+
-+	adr	$d0,poly1305_blocks
-+	adr	$r0,poly1305_blocks_neon
-+	adr	$d1,poly1305_emit
-+	adr	$r1,poly1305_emit_neon
-+
-+	csel	$d0,$d0,$r0,eq
-+	csel	$d1,$d1,$r1,eq
-+
-+# ifdef	__ILP32__
-+	stp	w12,w13,[$len]
-+# else
-+	stp	$d0,$d1,[$len]
-+# endif
-+
-+	mov	x0,#1
-+#else
-+	mov	x0,#0
-+#endif
-+.Lno_key:
-+	ret
-+.size	poly1305_init,.-poly1305_init
-+
-+.type	poly1305_blocks,%function
-+.align	5
-+poly1305_blocks:
-+	ands	$len,$len,#-16
-+	b.eq	.Lno_data
-+
-+	ldp	$h0,$h1,[$ctx]		// load hash value
-+	ldp	$r0,$r1,[$ctx,#32]	// load key value
-+	ldr	$h2,[$ctx,#16]
-+	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
-+	b	.Loop
-+
-+.align	5
-+.Loop:
-+	ldp	$t0,$t1,[$inp],#16	// load input
-+	sub	$len,$len,#16
-+#ifdef	__AARCH64EB__
-+	rev	$t0,$t0
-+	rev	$t1,$t1
-+#endif
-+	adds	$h0,$h0,$t0		// accumulate input
-+	adcs	$h1,$h1,$t1
-+
-+	mul	$d0,$h0,$r0		// h0*r0
-+	adc	$h2,$h2,$padbit
-+	umulh	$d1,$h0,$r0
-+
-+	mul	$t0,$h1,$s1		// h1*5*r1
-+	umulh	$t1,$h1,$s1
-+
-+	adds	$d0,$d0,$t0
-+	mul	$t0,$h0,$r1		// h0*r1
-+	adc	$d1,$d1,$t1
-+	umulh	$d2,$h0,$r1
-+
-+	adds	$d1,$d1,$t0
-+	mul	$t0,$h1,$r0		// h1*r0
-+	adc	$d2,$d2,xzr
-+	umulh	$t1,$h1,$r0
-+
-+	adds	$d1,$d1,$t0
-+	mul	$t0,$h2,$s1		// h2*5*r1
-+	adc	$d2,$d2,$t1
-+	mul	$t1,$h2,$r0		// h2*r0
-+
-+	adds	$d1,$d1,$t0
-+	adc	$d2,$d2,$t1
-+
-+	and	$t0,$d2,#-4		// final reduction
-+	and	$h2,$d2,#3
-+	add	$t0,$t0,$d2,lsr#2
-+	adds	$h0,$d0,$t0
-+	adcs	$h1,$d1,xzr
-+	adc	$h2,$h2,xzr
-+
-+	cbnz	$len,.Loop
-+
-+	stp	$h0,$h1,[$ctx]		// store hash value
-+	str	$h2,[$ctx,#16]
-+
-+.Lno_data:
-+	ret
-+.size	poly1305_blocks,.-poly1305_blocks
-+
-+.type	poly1305_emit,%function
-+.align	5
-+poly1305_emit:
-+	ldp	$h0,$h1,[$ctx]		// load hash base 2^64
-+	ldr	$h2,[$ctx,#16]
-+	ldp	$t0,$t1,[$nonce]	// load nonce
-+
-+	adds	$d0,$h0,#5		// compare to modulus
-+	adcs	$d1,$h1,xzr
-+	adc	$d2,$h2,xzr
-+
-+	tst	$d2,#-4			// see if it's carried/borrowed
-+
-+	csel	$h0,$h0,$d0,eq
-+	csel	$h1,$h1,$d1,eq
-+
-+#ifdef	__AARCH64EB__
-+	ror	$t0,$t0,#32		// flip nonce words
-+	ror	$t1,$t1,#32
-+#endif
-+	adds	$h0,$h0,$t0		// accumulate nonce
-+	adc	$h1,$h1,$t1
-+#ifdef	__AARCH64EB__
-+	rev	$h0,$h0			// flip output bytes
-+	rev	$h1,$h1
-+#endif
-+	stp	$h0,$h1,[$mac]		// write result
-+
-+	ret
-+.size	poly1305_emit,.-poly1305_emit
-+___
-+my ($R0,$R1,$S1,$R2,$S2,$R3,$S3,$R4,$S4) = map("v$_.4s",(0..8));
-+my ($IN01_0,$IN01_1,$IN01_2,$IN01_3,$IN01_4) = map("v$_.2s",(9..13));
-+my ($IN23_0,$IN23_1,$IN23_2,$IN23_3,$IN23_4) = map("v$_.2s",(14..18));
-+my ($ACC0,$ACC1,$ACC2,$ACC3,$ACC4) = map("v$_.2d",(19..23));
-+my ($H0,$H1,$H2,$H3,$H4) = map("v$_.2s",(24..28));
-+my ($T0,$T1,$MASK) = map("v$_",(29..31));
-+
-+my ($in2,$zeros)=("x16","x17");
-+my $is_base2_26 = $zeros;		# borrow
-+
-+$code.=<<___;
-+.type	__poly1305_mult,%function
-+.align	5
-+__poly1305_mult:
-+	mul	$d0,$h0,$r0		// h0*r0
-+	umulh	$d1,$h0,$r0
-+
-+	mul	$t0,$h1,$s1		// h1*5*r1
-+	umulh	$t1,$h1,$s1
-+
-+	adds	$d0,$d0,$t0
-+	mul	$t0,$h0,$r1		// h0*r1
-+	adc	$d1,$d1,$t1
-+	umulh	$d2,$h0,$r1
-+
-+	adds	$d1,$d1,$t0
-+	mul	$t0,$h1,$r0		// h1*r0
-+	adc	$d2,$d2,xzr
-+	umulh	$t1,$h1,$r0
-+
-+	adds	$d1,$d1,$t0
-+	mul	$t0,$h2,$s1		// h2*5*r1
-+	adc	$d2,$d2,$t1
-+	mul	$t1,$h2,$r0		// h2*r0
-+
-+	adds	$d1,$d1,$t0
-+	adc	$d2,$d2,$t1
-+
-+	and	$t0,$d2,#-4		// final reduction
-+	and	$h2,$d2,#3
-+	add	$t0,$t0,$d2,lsr#2
-+	adds	$h0,$d0,$t0
-+	adcs	$h1,$d1,xzr
-+	adc	$h2,$h2,xzr
-+
-+	ret
-+.size	__poly1305_mult,.-__poly1305_mult
-+
-+.type	__poly1305_splat,%function
-+.align	5
-+__poly1305_splat:
-+	and	x12,$h0,#0x03ffffff	// base 2^64 -> base 2^26
-+	ubfx	x13,$h0,#26,#26
-+	extr	x14,$h1,$h0,#52
-+	and	x14,x14,#0x03ffffff
-+	ubfx	x15,$h1,#14,#26
-+	extr	x16,$h2,$h1,#40
-+
-+	str	w12,[$ctx,#16*0]	// r0
-+	add	w12,w13,w13,lsl#2	// r1*5
-+	str	w13,[$ctx,#16*1]	// r1
-+	add	w13,w14,w14,lsl#2	// r2*5
-+	str	w12,[$ctx,#16*2]	// s1
-+	str	w14,[$ctx,#16*3]	// r2
-+	add	w14,w15,w15,lsl#2	// r3*5
-+	str	w13,[$ctx,#16*4]	// s2
-+	str	w15,[$ctx,#16*5]	// r3
-+	add	w15,w16,w16,lsl#2	// r4*5
-+	str	w14,[$ctx,#16*6]	// s3
-+	str	w16,[$ctx,#16*7]	// r4
-+	str	w15,[$ctx,#16*8]	// s4
-+
-+	ret
-+.size	__poly1305_splat,.-__poly1305_splat
-+
-+#if !defined(__KERNEL__) || defined(CONFIG_KERNEL_MODE_NEON)
-+#ifdef	__KERNEL__
-+.globl	poly1305_blocks_neon
-+.globl	poly1305_emit_neon
-+#endif
-+
-+.type	poly1305_blocks_neon,%function
-+.align	5
-+poly1305_blocks_neon:
-+	ldr	$is_base2_26,[$ctx,#24]
-+	cmp	$len,#128
-+	b.hs	.Lblocks_neon
-+	cbz	$is_base2_26,poly1305_blocks
-+
-+.Lblocks_neon:
-+	stp	x29,x30,[sp,#-80]!
-+	add	x29,sp,#0
-+
-+	ands	$len,$len,#-16
-+	b.eq	.Lno_data_neon
-+
-+	cbz	$is_base2_26,.Lbase2_64_neon
-+
-+	ldp	w10,w11,[$ctx]		// load hash value base 2^26
-+	ldp	w12,w13,[$ctx,#8]
-+	ldr	w14,[$ctx,#16]
-+
-+	tst	$len,#31
-+	b.eq	.Leven_neon
-+
-+	ldp	$r0,$r1,[$ctx,#32]	// load key value
-+
-+	add	$h0,x10,x11,lsl#26	// base 2^26 -> base 2^64
-+	lsr	$h1,x12,#12
-+	adds	$h0,$h0,x12,lsl#52
-+	add	$h1,$h1,x13,lsl#14
-+	adc	$h1,$h1,xzr
-+	lsr	$h2,x14,#24
-+	adds	$h1,$h1,x14,lsl#40
-+	adc	$d2,$h2,xzr		// can be partially reduced...
-+
-+	ldp	$d0,$d1,[$inp],#16	// load input
-+	sub	$len,$len,#16
-+	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
-+
-+	and	$t0,$d2,#-4		// ... so reduce
-+	and	$h2,$d2,#3
-+	add	$t0,$t0,$d2,lsr#2
-+	adds	$h0,$h0,$t0
-+	adcs	$h1,$h1,xzr
-+	adc	$h2,$h2,xzr
-+
-+#ifdef	__AARCH64EB__
-+	rev	$d0,$d0
-+	rev	$d1,$d1
-+#endif
-+	adds	$h0,$h0,$d0		// accumulate input
-+	adcs	$h1,$h1,$d1
-+	adc	$h2,$h2,$padbit
-+
-+	bl	__poly1305_mult
-+	ldr	x30,[sp,#8]
-+
-+	cbz	$padbit,.Lstore_base2_64_neon
-+
-+	and	x10,$h0,#0x03ffffff	// base 2^64 -> base 2^26
-+	ubfx	x11,$h0,#26,#26
-+	extr	x12,$h1,$h0,#52
-+	and	x12,x12,#0x03ffffff
-+	ubfx	x13,$h1,#14,#26
-+	extr	x14,$h2,$h1,#40
-+
-+	cbnz	$len,.Leven_neon
-+
-+	stp	w10,w11,[$ctx]		// store hash value base 2^26
-+	stp	w12,w13,[$ctx,#8]
-+	str	w14,[$ctx,#16]
-+	b	.Lno_data_neon
-+
-+.align	4
-+.Lstore_base2_64_neon:
-+	stp	$h0,$h1,[$ctx]		// store hash value base 2^64
-+	stp	$h2,xzr,[$ctx,#16]	// note that is_base2_26 is zeroed
-+	b	.Lno_data_neon
-+
-+.align	4
-+.Lbase2_64_neon:
-+	ldp	$r0,$r1,[$ctx,#32]	// load key value
-+
-+	ldp	$h0,$h1,[$ctx]		// load hash value base 2^64
-+	ldr	$h2,[$ctx,#16]
-+
-+	tst	$len,#31
-+	b.eq	.Linit_neon
-+
-+	ldp	$d0,$d1,[$inp],#16	// load input
-+	sub	$len,$len,#16
-+	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
-+#ifdef	__AARCH64EB__
-+	rev	$d0,$d0
-+	rev	$d1,$d1
-+#endif
-+	adds	$h0,$h0,$d0		// accumulate input
-+	adcs	$h1,$h1,$d1
-+	adc	$h2,$h2,$padbit
-+
-+	bl	__poly1305_mult
-+
-+.Linit_neon:
-+	and	x10,$h0,#0x03ffffff	// base 2^64 -> base 2^26
-+	ubfx	x11,$h0,#26,#26
-+	extr	x12,$h1,$h0,#52
-+	and	x12,x12,#0x03ffffff
-+	ubfx	x13,$h1,#14,#26
-+	extr	x14,$h2,$h1,#40
-+
-+	stp	d8,d9,[sp,#16]		// meet ABI requirements
-+	stp	d10,d11,[sp,#32]
-+	stp	d12,d13,[sp,#48]
-+	stp	d14,d15,[sp,#64]
-+
-+	fmov	${H0},x10
-+	fmov	${H1},x11
-+	fmov	${H2},x12
-+	fmov	${H3},x13
-+	fmov	${H4},x14
-+
-+	////////////////////////////////// initialize r^n table
-+	mov	$h0,$r0			// r^1
-+	add	$s1,$r1,$r1,lsr#2	// s1 = r1 + (r1 >> 2)
-+	mov	$h1,$r1
-+	mov	$h2,xzr
-+	add	$ctx,$ctx,#48+12
-+	bl	__poly1305_splat
-+
-+	bl	__poly1305_mult		// r^2
-+	sub	$ctx,$ctx,#4
-+	bl	__poly1305_splat
-+
-+	bl	__poly1305_mult		// r^3
-+	sub	$ctx,$ctx,#4
-+	bl	__poly1305_splat
-+
-+	bl	__poly1305_mult		// r^4
-+	sub	$ctx,$ctx,#4
-+	bl	__poly1305_splat
-+	ldr	x30,[sp,#8]
-+
-+	add	$in2,$inp,#32
-+	adr	$zeros,.Lzeros
-+	subs	$len,$len,#64
-+	csel	$in2,$zeros,$in2,lo
-+
-+	mov	x4,#1
-+	str	x4,[$ctx,#-24]		// set is_base2_26
-+	sub	$ctx,$ctx,#48		// restore original $ctx
-+	b	.Ldo_neon
-+
-+.align	4
-+.Leven_neon:
-+	add	$in2,$inp,#32
-+	adr	$zeros,.Lzeros
-+	subs	$len,$len,#64
-+	csel	$in2,$zeros,$in2,lo
-+
-+	stp	d8,d9,[sp,#16]		// meet ABI requirements
-+	stp	d10,d11,[sp,#32]
-+	stp	d12,d13,[sp,#48]
-+	stp	d14,d15,[sp,#64]
-+
-+	fmov	${H0},x10
-+	fmov	${H1},x11
-+	fmov	${H2},x12
-+	fmov	${H3},x13
-+	fmov	${H4},x14
-+
-+.Ldo_neon:
-+	ldp	x8,x12,[$in2],#16	// inp[2:3] (or zero)
-+	ldp	x9,x13,[$in2],#48
-+
-+	lsl	$padbit,$padbit,#24
-+	add	x15,$ctx,#48
-+
-+#ifdef	__AARCH64EB__
-+	rev	x8,x8
-+	rev	x12,x12
-+	rev	x9,x9
-+	rev	x13,x13
-+#endif
-+	and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
-+	and	x5,x9,#0x03ffffff
-+	ubfx	x6,x8,#26,#26
-+	ubfx	x7,x9,#26,#26
-+	add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
-+	extr	x8,x12,x8,#52
-+	extr	x9,x13,x9,#52
-+	add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
-+	fmov	$IN23_0,x4
-+	and	x8,x8,#0x03ffffff
-+	and	x9,x9,#0x03ffffff
-+	ubfx	x10,x12,#14,#26
-+	ubfx	x11,x13,#14,#26
-+	add	x12,$padbit,x12,lsr#40
-+	add	x13,$padbit,x13,lsr#40
-+	add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
-+	fmov	$IN23_1,x6
-+	add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
-+	add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
-+	fmov	$IN23_2,x8
-+	fmov	$IN23_3,x10
-+	fmov	$IN23_4,x12
-+
-+	ldp	x8,x12,[$inp],#16	// inp[0:1]
-+	ldp	x9,x13,[$inp],#48
-+
-+	ld1	{$R0,$R1,$S1,$R2},[x15],#64
-+	ld1	{$S2,$R3,$S3,$R4},[x15],#64
-+	ld1	{$S4},[x15]
-+
-+#ifdef	__AARCH64EB__
-+	rev	x8,x8
-+	rev	x12,x12
-+	rev	x9,x9
-+	rev	x13,x13
-+#endif
-+	and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
-+	and	x5,x9,#0x03ffffff
-+	ubfx	x6,x8,#26,#26
-+	ubfx	x7,x9,#26,#26
-+	add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
-+	extr	x8,x12,x8,#52
-+	extr	x9,x13,x9,#52
-+	add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
-+	fmov	$IN01_0,x4
-+	and	x8,x8,#0x03ffffff
-+	and	x9,x9,#0x03ffffff
-+	ubfx	x10,x12,#14,#26
-+	ubfx	x11,x13,#14,#26
-+	add	x12,$padbit,x12,lsr#40
-+	add	x13,$padbit,x13,lsr#40
-+	add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
-+	fmov	$IN01_1,x6
-+	add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
-+	add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
-+	movi	$MASK.2d,#-1
-+	fmov	$IN01_2,x8
-+	fmov	$IN01_3,x10
-+	fmov	$IN01_4,x12
-+	ushr	$MASK.2d,$MASK.2d,#38
-+
-+	b.ls	.Lskip_loop
-+
-+.align	4
-+.Loop_neon:
-+	////////////////////////////////////////////////////////////////
-+	// ((inp[0]*r^4+inp[2]*r^2+inp[4])*r^4+inp[6]*r^2
-+	// ((inp[1]*r^4+inp[3]*r^2+inp[5])*r^3+inp[7]*r
-+	//   \___________________/
-+	// ((inp[0]*r^4+inp[2]*r^2+inp[4])*r^4+inp[6]*r^2+inp[8])*r^2
-+	// ((inp[1]*r^4+inp[3]*r^2+inp[5])*r^4+inp[7]*r^2+inp[9])*r
-+	//   \___________________/ \____________________/
-+	//
-+	// Note that we start with inp[2:3]*r^2. This is because it
-+	// doesn't depend on reduction in previous iteration.
-+	////////////////////////////////////////////////////////////////
-+	// d4 = h0*r4 + h1*r3   + h2*r2   + h3*r1   + h4*r0
-+	// d3 = h0*r3 + h1*r2   + h2*r1   + h3*r0   + h4*5*r4
-+	// d2 = h0*r2 + h1*r1   + h2*r0   + h3*5*r4 + h4*5*r3
-+	// d1 = h0*r1 + h1*r0   + h2*5*r4 + h3*5*r3 + h4*5*r2
-+	// d0 = h0*r0 + h1*5*r4 + h2*5*r3 + h3*5*r2 + h4*5*r1
-+
-+	subs	$len,$len,#64
-+	umull	$ACC4,$IN23_0,${R4}[2]
-+	csel	$in2,$zeros,$in2,lo
-+	umull	$ACC3,$IN23_0,${R3}[2]
-+	umull	$ACC2,$IN23_0,${R2}[2]
-+	 ldp	x8,x12,[$in2],#16	// inp[2:3] (or zero)
-+	umull	$ACC1,$IN23_0,${R1}[2]
-+	 ldp	x9,x13,[$in2],#48
-+	umull	$ACC0,$IN23_0,${R0}[2]
-+#ifdef	__AARCH64EB__
-+	 rev	x8,x8
-+	 rev	x12,x12
-+	 rev	x9,x9
-+	 rev	x13,x13
-+#endif
-+
-+	umlal	$ACC4,$IN23_1,${R3}[2]
-+	 and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
-+	umlal	$ACC3,$IN23_1,${R2}[2]
-+	 and	x5,x9,#0x03ffffff
-+	umlal	$ACC2,$IN23_1,${R1}[2]
-+	 ubfx	x6,x8,#26,#26
-+	umlal	$ACC1,$IN23_1,${R0}[2]
-+	 ubfx	x7,x9,#26,#26
-+	umlal	$ACC0,$IN23_1,${S4}[2]
-+	 add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
-+
-+	umlal	$ACC4,$IN23_2,${R2}[2]
-+	 extr	x8,x12,x8,#52
-+	umlal	$ACC3,$IN23_2,${R1}[2]
-+	 extr	x9,x13,x9,#52
-+	umlal	$ACC2,$IN23_2,${R0}[2]
-+	 add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
-+	umlal	$ACC1,$IN23_2,${S4}[2]
-+	 fmov	$IN23_0,x4
-+	umlal	$ACC0,$IN23_2,${S3}[2]
-+	 and	x8,x8,#0x03ffffff
-+
-+	umlal	$ACC4,$IN23_3,${R1}[2]
-+	 and	x9,x9,#0x03ffffff
-+	umlal	$ACC3,$IN23_3,${R0}[2]
-+	 ubfx	x10,x12,#14,#26
-+	umlal	$ACC2,$IN23_3,${S4}[2]
-+	 ubfx	x11,x13,#14,#26
-+	umlal	$ACC1,$IN23_3,${S3}[2]
-+	 add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
-+	umlal	$ACC0,$IN23_3,${S2}[2]
-+	 fmov	$IN23_1,x6
-+
-+	add	$IN01_2,$IN01_2,$H2
-+	 add	x12,$padbit,x12,lsr#40
-+	umlal	$ACC4,$IN23_4,${R0}[2]
-+	 add	x13,$padbit,x13,lsr#40
-+	umlal	$ACC3,$IN23_4,${S4}[2]
-+	 add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
-+	umlal	$ACC2,$IN23_4,${S3}[2]
-+	 add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
-+	umlal	$ACC1,$IN23_4,${S2}[2]
-+	 fmov	$IN23_2,x8
-+	umlal	$ACC0,$IN23_4,${S1}[2]
-+	 fmov	$IN23_3,x10
-+
-+	////////////////////////////////////////////////////////////////
-+	// (hash+inp[0:1])*r^4 and accumulate
-+
-+	add	$IN01_0,$IN01_0,$H0
-+	 fmov	$IN23_4,x12
-+	umlal	$ACC3,$IN01_2,${R1}[0]
-+	 ldp	x8,x12,[$inp],#16	// inp[0:1]
-+	umlal	$ACC0,$IN01_2,${S3}[0]
-+	 ldp	x9,x13,[$inp],#48
-+	umlal	$ACC4,$IN01_2,${R2}[0]
-+	umlal	$ACC1,$IN01_2,${S4}[0]
-+	umlal	$ACC2,$IN01_2,${R0}[0]
-+#ifdef	__AARCH64EB__
-+	 rev	x8,x8
-+	 rev	x12,x12
-+	 rev	x9,x9
-+	 rev	x13,x13
-+#endif
-+
-+	add	$IN01_1,$IN01_1,$H1
-+	umlal	$ACC3,$IN01_0,${R3}[0]
-+	umlal	$ACC4,$IN01_0,${R4}[0]
-+	 and	x4,x8,#0x03ffffff	// base 2^64 -> base 2^26
-+	umlal	$ACC2,$IN01_0,${R2}[0]
-+	 and	x5,x9,#0x03ffffff
-+	umlal	$ACC0,$IN01_0,${R0}[0]
-+	 ubfx	x6,x8,#26,#26
-+	umlal	$ACC1,$IN01_0,${R1}[0]
-+	 ubfx	x7,x9,#26,#26
-+
-+	add	$IN01_3,$IN01_3,$H3
-+	 add	x4,x4,x5,lsl#32		// bfi	x4,x5,#32,#32
-+	umlal	$ACC3,$IN01_1,${R2}[0]
-+	 extr	x8,x12,x8,#52
-+	umlal	$ACC4,$IN01_1,${R3}[0]
-+	 extr	x9,x13,x9,#52
-+	umlal	$ACC0,$IN01_1,${S4}[0]
-+	 add	x6,x6,x7,lsl#32		// bfi	x6,x7,#32,#32
-+	umlal	$ACC2,$IN01_1,${R1}[0]
-+	 fmov	$IN01_0,x4
-+	umlal	$ACC1,$IN01_1,${R0}[0]
-+	 and	x8,x8,#0x03ffffff
-+
-+	add	$IN01_4,$IN01_4,$H4
-+	 and	x9,x9,#0x03ffffff
-+	umlal	$ACC3,$IN01_3,${R0}[0]
-+	 ubfx	x10,x12,#14,#26
-+	umlal	$ACC0,$IN01_3,${S2}[0]
-+	 ubfx	x11,x13,#14,#26
-+	umlal	$ACC4,$IN01_3,${R1}[0]
-+	 add	x8,x8,x9,lsl#32		// bfi	x8,x9,#32,#32
-+	umlal	$ACC1,$IN01_3,${S3}[0]
-+	 fmov	$IN01_1,x6
-+	umlal	$ACC2,$IN01_3,${S4}[0]
-+	 add	x12,$padbit,x12,lsr#40
-+
-+	umlal	$ACC3,$IN01_4,${S4}[0]
-+	 add	x13,$padbit,x13,lsr#40
-+	umlal	$ACC0,$IN01_4,${S1}[0]
-+	 add	x10,x10,x11,lsl#32	// bfi	x10,x11,#32,#32
-+	umlal	$ACC4,$IN01_4,${R0}[0]
-+	 add	x12,x12,x13,lsl#32	// bfi	x12,x13,#32,#32
-+	umlal	$ACC1,$IN01_4,${S2}[0]
-+	 fmov	$IN01_2,x8
-+	umlal	$ACC2,$IN01_4,${S3}[0]
-+	 fmov	$IN01_3,x10
-+	 fmov	$IN01_4,x12
-+
-+	/////////////////////////////////////////////////////////////////
-+	// lazy reduction as discussed in "NEON crypto" by D.J. Bernstein
-+	// and P. Schwabe
-+	//
-+	// [see discussion in poly1305-armv4 module]
-+
-+	ushr	$T0.2d,$ACC3,#26
-+	xtn	$H3,$ACC3
-+	 ushr	$T1.2d,$ACC0,#26
-+	 and	$ACC0,$ACC0,$MASK.2d
-+	add	$ACC4,$ACC4,$T0.2d	// h3 -> h4
-+	bic	$H3,#0xfc,lsl#24	// &=0x03ffffff
-+	 add	$ACC1,$ACC1,$T1.2d	// h0 -> h1
-+
-+	ushr	$T0.2d,$ACC4,#26
-+	xtn	$H4,$ACC4
-+	 ushr	$T1.2d,$ACC1,#26
-+	 xtn	$H1,$ACC1
-+	bic	$H4,#0xfc,lsl#24
-+	 add	$ACC2,$ACC2,$T1.2d	// h1 -> h2
-+
-+	add	$ACC0,$ACC0,$T0.2d
-+	shl	$T0.2d,$T0.2d,#2
-+	 shrn	$T1.2s,$ACC2,#26
-+	 xtn	$H2,$ACC2
-+	add	$ACC0,$ACC0,$T0.2d	// h4 -> h0
-+	 bic	$H1,#0xfc,lsl#24
-+	 add	$H3,$H3,$T1.2s		// h2 -> h3
-+	 bic	$H2,#0xfc,lsl#24
-+
-+	shrn	$T0.2s,$ACC0,#26
-+	xtn	$H0,$ACC0
-+	 ushr	$T1.2s,$H3,#26
-+	 bic	$H3,#0xfc,lsl#24
-+	 bic	$H0,#0xfc,lsl#24
-+	add	$H1,$H1,$T0.2s		// h0 -> h1
-+	 add	$H4,$H4,$T1.2s		// h3 -> h4
-+
-+	b.hi	.Loop_neon
-+
-+.Lskip_loop:
-+	dup	$IN23_2,${IN23_2}[0]
-+	add	$IN01_2,$IN01_2,$H2
-+
-+	////////////////////////////////////////////////////////////////
-+	// multiply (inp[0:1]+hash) or inp[2:3] by r^2:r^1
-+
-+	adds	$len,$len,#32
-+	b.ne	.Long_tail
-+
-+	dup	$IN23_2,${IN01_2}[0]
-+	add	$IN23_0,$IN01_0,$H0
-+	add	$IN23_3,$IN01_3,$H3
-+	add	$IN23_1,$IN01_1,$H1
-+	add	$IN23_4,$IN01_4,$H4
-+
-+.Long_tail:
-+	dup	$IN23_0,${IN23_0}[0]
-+	umull2	$ACC0,$IN23_2,${S3}
-+	umull2	$ACC3,$IN23_2,${R1}
-+	umull2	$ACC4,$IN23_2,${R2}
-+	umull2	$ACC2,$IN23_2,${R0}
-+	umull2	$ACC1,$IN23_2,${S4}
-+
-+	dup	$IN23_1,${IN23_1}[0]
-+	umlal2	$ACC0,$IN23_0,${R0}
-+	umlal2	$ACC2,$IN23_0,${R2}
-+	umlal2	$ACC3,$IN23_0,${R3}
-+	umlal2	$ACC4,$IN23_0,${R4}
-+	umlal2	$ACC1,$IN23_0,${R1}
-+
-+	dup	$IN23_3,${IN23_3}[0]
-+	umlal2	$ACC0,$IN23_1,${S4}
-+	umlal2	$ACC3,$IN23_1,${R2}
-+	umlal2	$ACC2,$IN23_1,${R1}
-+	umlal2	$ACC4,$IN23_1,${R3}
-+	umlal2	$ACC1,$IN23_1,${R0}
-+
-+	dup	$IN23_4,${IN23_4}[0]
-+	umlal2	$ACC3,$IN23_3,${R0}
-+	umlal2	$ACC4,$IN23_3,${R1}
-+	umlal2	$ACC0,$IN23_3,${S2}
-+	umlal2	$ACC1,$IN23_3,${S3}
-+	umlal2	$ACC2,$IN23_3,${S4}
-+
-+	umlal2	$ACC3,$IN23_4,${S4}
-+	umlal2	$ACC0,$IN23_4,${S1}
-+	umlal2	$ACC4,$IN23_4,${R0}
-+	umlal2	$ACC1,$IN23_4,${S2}
-+	umlal2	$ACC2,$IN23_4,${S3}
-+
-+	b.eq	.Lshort_tail
-+
-+	////////////////////////////////////////////////////////////////
-+	// (hash+inp[0:1])*r^4:r^3 and accumulate
-+
-+	add	$IN01_0,$IN01_0,$H0
-+	umlal	$ACC3,$IN01_2,${R1}
-+	umlal	$ACC0,$IN01_2,${S3}
-+	umlal	$ACC4,$IN01_2,${R2}
-+	umlal	$ACC1,$IN01_2,${S4}
-+	umlal	$ACC2,$IN01_2,${R0}
-+
-+	add	$IN01_1,$IN01_1,$H1
-+	umlal	$ACC3,$IN01_0,${R3}
-+	umlal	$ACC0,$IN01_0,${R0}
-+	umlal	$ACC4,$IN01_0,${R4}
-+	umlal	$ACC1,$IN01_0,${R1}
-+	umlal	$ACC2,$IN01_0,${R2}
-+
-+	add	$IN01_3,$IN01_3,$H3
-+	umlal	$ACC3,$IN01_1,${R2}
-+	umlal	$ACC0,$IN01_1,${S4}
-+	umlal	$ACC4,$IN01_1,${R3}
-+	umlal	$ACC1,$IN01_1,${R0}
-+	umlal	$ACC2,$IN01_1,${R1}
-+
-+	add	$IN01_4,$IN01_4,$H4
-+	umlal	$ACC3,$IN01_3,${R0}
-+	umlal	$ACC0,$IN01_3,${S2}
-+	umlal	$ACC4,$IN01_3,${R1}
-+	umlal	$ACC1,$IN01_3,${S3}
-+	umlal	$ACC2,$IN01_3,${S4}
-+
-+	umlal	$ACC3,$IN01_4,${S4}
-+	umlal	$ACC0,$IN01_4,${S1}
-+	umlal	$ACC4,$IN01_4,${R0}
-+	umlal	$ACC1,$IN01_4,${S2}
-+	umlal	$ACC2,$IN01_4,${S3}
-+
-+.Lshort_tail:
-+	////////////////////////////////////////////////////////////////
-+	// horizontal add
-+
-+	addp	$ACC3,$ACC3,$ACC3
-+	 ldp	d8,d9,[sp,#16]		// meet ABI requirements
-+	addp	$ACC0,$ACC0,$ACC0
-+	 ldp	d10,d11,[sp,#32]
-+	addp	$ACC4,$ACC4,$ACC4
-+	 ldp	d12,d13,[sp,#48]
-+	addp	$ACC1,$ACC1,$ACC1
-+	 ldp	d14,d15,[sp,#64]
-+	addp	$ACC2,$ACC2,$ACC2
-+
-+	////////////////////////////////////////////////////////////////
-+	// lazy reduction, but without narrowing
-+
-+	ushr	$T0.2d,$ACC3,#26
-+	and	$ACC3,$ACC3,$MASK.2d
-+	 ushr	$T1.2d,$ACC0,#26
-+	 and	$ACC0,$ACC0,$MASK.2d
-+
-+	add	$ACC4,$ACC4,$T0.2d	// h3 -> h4
-+	 add	$ACC1,$ACC1,$T1.2d	// h0 -> h1
-+
-+	ushr	$T0.2d,$ACC4,#26
-+	and	$ACC4,$ACC4,$MASK.2d
-+	 ushr	$T1.2d,$ACC1,#26
-+	 and	$ACC1,$ACC1,$MASK.2d
-+	 add	$ACC2,$ACC2,$T1.2d	// h1 -> h2
-+
-+	add	$ACC0,$ACC0,$T0.2d
-+	shl	$T0.2d,$T0.2d,#2
-+	 ushr	$T1.2d,$ACC2,#26
-+	 and	$ACC2,$ACC2,$MASK.2d
-+	add	$ACC0,$ACC0,$T0.2d	// h4 -> h0
-+	 add	$ACC3,$ACC3,$T1.2d	// h2 -> h3
-+
-+	ushr	$T0.2d,$ACC0,#26
-+	and	$ACC0,$ACC0,$MASK.2d
-+	 ushr	$T1.2d,$ACC3,#26
-+	 and	$ACC3,$ACC3,$MASK.2d
-+	add	$ACC1,$ACC1,$T0.2d	// h0 -> h1
-+	 add	$ACC4,$ACC4,$T1.2d	// h3 -> h4
-+
-+	////////////////////////////////////////////////////////////////
-+	// write the result, can be partially reduced
-+
-+	st4	{$ACC0,$ACC1,$ACC2,$ACC3}[0],[$ctx],#16
-+	st1	{$ACC4}[0],[$ctx]
-+
-+.Lno_data_neon:
-+	ldr	x29,[sp],#80
-+	ret
-+.size	poly1305_blocks_neon,.-poly1305_blocks_neon
-+
-+.type	poly1305_emit_neon,%function
-+.align	5
-+poly1305_emit_neon:
-+	ldr	$is_base2_26,[$ctx,#24]
-+	cbz	$is_base2_26,poly1305_emit
-+
-+	ldp	w10,w11,[$ctx]		// load hash value base 2^26
-+	ldp	w12,w13,[$ctx,#8]
-+	ldr	w14,[$ctx,#16]
-+
-+	add	$h0,x10,x11,lsl#26	// base 2^26 -> base 2^64
-+	lsr	$h1,x12,#12
-+	adds	$h0,$h0,x12,lsl#52
-+	add	$h1,$h1,x13,lsl#14
-+	adc	$h1,$h1,xzr
-+	lsr	$h2,x14,#24
-+	adds	$h1,$h1,x14,lsl#40
-+	adc	$h2,$h2,xzr		// can be partially reduced...
-+
-+	ldp	$t0,$t1,[$nonce]	// load nonce
-+
-+	and	$d0,$h2,#-4		// ... so reduce
-+	add	$d0,$d0,$h2,lsr#2
-+	and	$h2,$h2,#3
-+	adds	$h0,$h0,$d0
-+	adcs	$h1,$h1,xzr
-+	adc	$h2,$h2,xzr
-+
-+	adds	$d0,$h0,#5		// compare to modulus
-+	adcs	$d1,$h1,xzr
-+	adc	$d2,$h2,xzr
-+
-+	tst	$d2,#-4			// see if it's carried/borrowed
-+
-+	csel	$h0,$h0,$d0,eq
-+	csel	$h1,$h1,$d1,eq
-+
-+#ifdef	__AARCH64EB__
-+	ror	$t0,$t0,#32		// flip nonce words
-+	ror	$t1,$t1,#32
-+#endif
-+	adds	$h0,$h0,$t0		// accumulate nonce
-+	adc	$h1,$h1,$t1
-+#ifdef	__AARCH64EB__
-+	rev	$h0,$h0			// flip output bytes
-+	rev	$h1,$h1
-+#endif
-+	stp	$h0,$h1,[$mac]		// write result
-+
-+	ret
-+.size	poly1305_emit_neon,.-poly1305_emit_neon
-+#endif
-+
-+.align	5
-+.Lzeros:
-+.long	0,0,0,0,0,0,0,0
-+#ifndef __KERNEL__
-+.LOPENSSL_armcap_P:
-+#ifdef	__ILP32__
-+.long	OPENSSL_armcap_P-.
-+#else
-+.quad	OPENSSL_armcap_P-.
-+#endif
-+#endif
-+.align	2
-+___
-+
-+open SELF,$0;
-+while(<SELF>) {
-+	next if (/^#!/);
-+	last if (!s/^#/\/\// and !/^$/);
-+	print;
-+}
-+close SELF;
-+
-+foreach (split("\n",$code)) {
-+	s/\b(shrn\s+v[0-9]+)\.[24]d/$1.2s/			or
-+	s/\b(fmov\s+)v([0-9]+)[^,]*,\s*x([0-9]+)/$1d$2,x$3/	or
-+	(m/\bdup\b/ and (s/\.[24]s/.2d/g or 1))			or
-+	(m/\b(eor|and)/ and (s/\.[248][sdh]/.16b/g or 1))	or
-+	(m/\bum(ul|la)l\b/ and (s/\.4s/.2s/g or 1))		or
-+	(m/\bum(ul|la)l2\b/ and (s/\.2s/.4s/g or 1))		or
-+	(m/\bst[1-4]\s+{[^}]+}\[/ and (s/\.[24]d/.s/g or 1));
-+
-+	s/\.[124]([sd])\[/.$1\[/;
-+
-+	print $_,"\n";
-+}
-+close STDOUT;
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-mips64.pl
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-mips64.pl	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,467 @@
 +#!/usr/bin/env perl
 +# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
@@ -46844,8 +46910,8 @@
 +print $code;
 +close STDOUT;
 +
---- /dev/null
-+++ b/net/wireguard/crypto/zinc/poly1305/poly1305-x86_64.pl
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/zinc/poly1305/poly1305-x86_64.pl	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,4266 @@
 +#!/usr/bin/env perl
 +# SPDX-License-Identifier: GPL-2.0 OR BSD-3-Clause
@@ -51113,9 +51179,9 @@
 +	print $_,"\n";
 +}
 +close STDOUT;
---- /dev/null
-+++ b/net/wireguard/compat/Makefile.include
-@@ -0,0 +1,88 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/compat/Makefile.include	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,98 @@
 +# SPDX-License-Identifier: GPL-2.0
 +#
 +# Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -51165,6 +51231,16 @@
 +wireguard-y += compat/memneq/memneq.o
 +endif
 +
++ifeq ($(shell grep -s -F "addr_gen_mode" "$(srctree)/include/linux/ipv6.h"),)
++ccflags-y += -DCOMPAT_CANNOT_USE_DEV_CNF
++endif
++
++ifdef CONFIG_HZ
++ifeq ($(wildcard $(srctree)/include/generated/timeconst.h),)
++ccflags-y += $(shell echo 'define gcd(a,b){auto t;while(b){t=b;b=a%b;a=t;};return a;};hz=$(CONFIG_HZ);cd=gcd(hz,1000000);print "-DHZ_TO_USEC_NUM=",1000000/cd," -DHZ_TO_USEC_DEN=",hz/cd;halt;' | bc -q)
++endif
++endif
++
 +ifeq ($(wildcard $(srctree)/arch/arm/include/asm/neon.h)$(CONFIG_ARM),y)
 +ccflags-y += -I$(kbuild-dir)/compat/neon-arm/include
 +endif
@@ -51204,8 +51280,8 @@
 +		asflags-y += $(adx_instr)
 +	endif
 +endif
---- /dev/null
-+++ b/net/wireguard/crypto/Makefile.include
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/crypto/Makefile.include	2019-09-14 07:01:58.000000000 +0900
 @@ -0,0 +1,57 @@
 +ifeq ($(CONFIG_X86_64)$(if $(CONFIG_UML),y,n),yn)
 +CONFIG_ZINC_ARCH_X86_64 := y
@@ -51264,9 +51340,9 @@
 +ccflags-$(CONFIG_ZINC_ARCH_MIPS) += -DCONFIG_ZINC_ARCH_MIPS
 +ccflags-$(CONFIG_ZINC_ARCH_MIPS64) += -DCONFIG_ZINC_ARCH_MIPS64
 +ccflags-$(CONFIG_WIREGUARD_DEBUG) += -DCONFIG_ZINC_SELFTEST
---- /dev/null
-+++ b/net/wireguard/Makefile
-@@ -0,0 +1,14 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/Makefile	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,15 @@
 +# SPDX-License-Identifier: GPL-2.0
 +#
 +# Copyright (C) 2015-2019 Jason A. Donenfeld <Jason@zx2c4.com>. All Rights Reserved.
@@ -51274,6 +51350,7 @@
 +ccflags-y := -O3 -fvisibility=hidden
 +ccflags-$(CONFIG_WIREGUARD_DEBUG) += -DDEBUG -g
 +ccflags-y += -D'pr_fmt(fmt)=KBUILD_MODNAME ": " fmt'
++ccflags-y += -Wframe-larger-than=2048
 +
 +wireguard-y := main.o noise.o device.o peer.o timers.o queueing.o send.o receive.o socket.o peerlookup.o allowedips.o ratelimiter.o cookie.o netlink.o
 +
@@ -51281,16 +51358,18 @@
 +include $(src)/compat/Makefile.include
 +
 +obj-$(if $(KBUILD_EXTMOD),m,$(CONFIG_WIREGUARD)) := wireguard.o
---- /dev/null
-+++ b/net/wireguard/Kconfig
-@@ -0,0 +1,32 @@
+--- /dev/null	2019-09-17 00:07:38.986351890 +0900
++++ b/net/wireguard/Kconfig	2019-09-14 07:01:58.000000000 +0900
+@@ -0,0 +1,34 @@
 +config WIREGUARD
 +	tristate "IP: WireGuard secure network tunnel"
 +	depends on NET && INET
 +	depends on IPV6 || !IPV6
 +	select NET_UDP_TUNNEL
 +	select DST_CACHE
++	select CRYPTO
 +	select CRYPTO_BLKCIPHER
++	select XOR_BLOCKS
 +	select VFP
 +	select VFPv3 if CPU_V7
 +	select NEON if CPU_V7
