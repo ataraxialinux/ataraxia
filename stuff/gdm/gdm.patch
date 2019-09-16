@@ -1,6 +1,6 @@
 diff -ruN gdm-3.34.0-orig/common/gdm-address.c gdm-3.34.0/common/gdm-address.c
 --- gdm-3.34.0-orig/common/gdm-address.c	2019-02-22 04:44:14.000000000 +0900
-+++ gdm-3.34.0/common/gdm-address.c	2019-09-15 18:37:06.306856105 +0900
++++ gdm-3.34.0/common/gdm-address.c	2019-09-17 00:40:47.181447114 +0900
 @@ -29,6 +29,8 @@
  #include <stropts.h>
  #endif
@@ -28,7 +28,7 @@ diff -ruN gdm-3.34.0-orig/common/gdm-address.c gdm-3.34.0/common/gdm-address.c
  
 diff -ruN gdm-3.34.0-orig/common/gdm-common.c gdm-3.34.0/common/gdm-common.c
 --- gdm-3.34.0-orig/common/gdm-common.c	2019-08-14 04:42:23.000000000 +0900
-+++ gdm-3.34.0/common/gdm-common.c	2019-09-15 18:37:06.306856105 +0900
++++ gdm-3.34.0/common/gdm-common.c	2019-09-17 00:49:44.395147803 +0900
 @@ -36,12 +36,25 @@
  
  #include "gdm-common.h"
@@ -423,9 +423,47 @@ diff -ruN gdm-3.34.0-orig/common/gdm-common.c gdm-3.34.0/common/gdm-common.c
  }
  
  static void
+@@ -850,7 +1164,11 @@
+         int saved_errno;
+         g_autofree gchar *type = NULL;
+ 
++#ifdef HAVE_SYSTEMD
+         saved_errno = sd_session_get_type (session_id, &type);
++#else
++        saved_errno = 1;
++#endif
+         if (saved_errno < 0) {
+                 g_warning ("Couldn't get type for session '%s': %s",
+                            session_id,
+@@ -881,7 +1199,11 @@
+          * checking for a race condition since we specified
+          * GDM_SYSTEMD_SESSION_REQUIRE_ONLINE)
+          */
++#ifdef HAVE_SYSTEMD
+         saved_errno = sd_session_get_state (session_id, &state);
++#else
++        saved_errno = 1;
++#endif
+         if (saved_errno < 0) {
+                 g_warning ("Couldn't get state for session '%s': %s",
+                            session_id,
+@@ -910,9 +1232,13 @@
+ 
+         g_debug ("Finding a graphical session for user %d", uid);
+ 
++#ifdef HAVE_SYSTEMD
+         n_sessions = sd_uid_get_sessions (uid,
+                                           GDM_SYSTEMD_SESSION_REQUIRE_ONLINE,
+                                           &sessions);
++#else
++        n_sessions = 1;
++#endif
+ 
+         if (n_sessions < 0) {
+                 g_set_error (error,
 diff -ruN gdm-3.34.0-orig/common/gdm-common.h gdm-3.34.0/common/gdm-common.h
 --- gdm-3.34.0-orig/common/gdm-common.h	2019-08-14 04:42:23.000000000 +0900
-+++ gdm-3.34.0/common/gdm-common.h	2019-09-15 18:37:06.306856105 +0900
++++ gdm-3.34.0/common/gdm-common.h	2019-09-17 00:40:47.185447032 +0900
 @@ -37,6 +37,9 @@
  
  #define GDM_SYSTEMD_SESSION_REQUIRE_ONLINE 0
@@ -449,7 +487,7 @@ diff -ruN gdm-3.34.0-orig/common/gdm-common.h gdm-3.34.0/common/gdm-common.h
  #endif /* _GDM_COMMON_H */
 diff -ruN gdm-3.34.0-orig/common/gdm-log.c gdm-3.34.0/common/gdm-log.c
 --- gdm-3.34.0-orig/common/gdm-log.c	2019-02-22 04:44:14.000000000 +0900
-+++ gdm-3.34.0/common/gdm-log.c	2019-09-15 18:37:06.310856063 +0900
++++ gdm-3.34.0/common/gdm-log.c	2019-09-17 00:40:47.185447032 +0900
 @@ -30,7 +30,9 @@
  #include <unistd.h>
  
@@ -498,7 +536,7 @@ diff -ruN gdm-3.34.0-orig/common/gdm-log.c gdm-3.34.0/common/gdm-log.c
  void
 diff -ruN gdm-3.34.0-orig/configure.ac gdm-3.34.0/configure.ac
 --- gdm-3.34.0-orig/configure.ac	2019-09-11 21:45:59.000000000 +0900
-+++ gdm-3.34.0/configure.ac	2019-09-15 18:37:06.310856063 +0900
++++ gdm-3.34.0/configure.ac	2019-09-17 00:40:47.185447032 +0900
 @@ -224,12 +224,6 @@
  AM_CONDITIONAL(ENABLE_LFS_PAM_CONFIG, test x$with_default_pam_config = xlfs)
  AM_CONDITIONAL(ENABLE_ARCH_PAM_CONFIG, test x$with_default_pam_config = xarch)
@@ -639,7 +677,7 @@ diff -ruN gdm-3.34.0-orig/configure.ac gdm-3.34.0/configure.ac
 +
 diff -ruN gdm-3.34.0-orig/daemon/gdm-display.c gdm-3.34.0/daemon/gdm-display.c
 --- gdm-3.34.0-orig/daemon/gdm-display.c	2019-09-05 04:22:28.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-display.c	2019-09-15 18:37:06.310856063 +0900
++++ gdm-3.34.0/daemon/gdm-display.c	2019-09-17 00:40:47.185447032 +0900
 @@ -242,8 +242,8 @@
          host_entries[1].address   = "localuser\0" GDM_USERNAME;
          host_entries[1].length    = sizeof ("localuser\0" GDM_USERNAME);
@@ -661,7 +699,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-display.c gdm-3.34.0/daemon/gdm-display.c
  
 diff -ruN gdm-3.34.0-orig/daemon/gdm-launch-environment.c gdm-3.34.0/daemon/gdm-launch-environment.c
 --- gdm-3.34.0-orig/daemon/gdm-launch-environment.c	2019-08-14 10:37:16.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-launch-environment.c	2019-09-15 18:37:06.310856063 +0900
++++ gdm-3.34.0/daemon/gdm-launch-environment.c	2019-09-17 00:40:47.189446949 +0900
 @@ -50,7 +50,7 @@
  #include "gdm-settings-direct.h"
  #include "gdm-settings-keys.h"
@@ -692,7 +730,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-launch-environment.c gdm-3.34.0/daemon/gdm-
  static void
 diff -ruN gdm-3.34.0-orig/daemon/gdm-local-display-factory.c gdm-3.34.0/daemon/gdm-local-display-factory.c
 --- gdm-3.34.0-orig/daemon/gdm-local-display-factory.c	2019-09-05 04:22:36.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-local-display-factory.c	2019-09-15 18:37:06.314856021 +0900
++++ gdm-3.34.0/daemon/gdm-local-display-factory.c	2019-09-17 00:40:47.189446949 +0900
 @@ -28,7 +28,9 @@
  #include <glib-object.h>
  #include <gio/gio.h>
@@ -863,7 +901,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-local-display-factory.c gdm-3.34.0/daemon/g
  }
 diff -ruN gdm-3.34.0-orig/daemon/gdm-manager.c gdm-3.34.0/daemon/gdm-manager.c
 --- gdm-3.34.0-orig/daemon/gdm-manager.c	2019-09-04 23:57:30.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-manager.c	2019-09-15 18:37:06.314856021 +0900
++++ gdm-3.34.0/daemon/gdm-manager.c	2019-09-17 00:40:47.189446949 +0900
 @@ -36,7 +36,9 @@
  
  #include <act/act-user-manager.h>
@@ -1643,7 +1681,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-manager.c gdm-3.34.0/daemon/gdm-manager.c
           * used an unlock screen instead of a user switched login screen),
 diff -ruN gdm-3.34.0-orig/daemon/gdm-server.c gdm-3.34.0/daemon/gdm-server.c
 --- gdm-3.34.0-orig/daemon/gdm-server.c	2019-08-03 04:44:36.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-server.c	2019-09-15 18:37:06.318855979 +0900
++++ gdm-3.34.0/daemon/gdm-server.c	2019-09-17 00:40:47.189446949 +0900
 @@ -43,7 +43,9 @@
  #include <linux/vt.h>
  #endif
@@ -1904,7 +1942,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-server.c gdm-3.34.0/daemon/gdm-server.c
          g_free (server->command);
 diff -ruN gdm-3.34.0-orig/daemon/gdm-session.c gdm-3.34.0/daemon/gdm-session.c
 --- gdm-3.34.0-orig/daemon/gdm-session.c	2019-08-29 00:17:33.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-session.c	2019-09-15 18:37:06.318855979 +0900
++++ gdm-3.34.0/daemon/gdm-session.c	2019-09-17 00:40:47.193446866 +0900
 @@ -3228,6 +3228,10 @@
          g_return_val_if_fail (self != NULL, FALSE);
          g_return_val_if_fail (GDM_IS_SESSION (self), FALSE);
@@ -1946,7 +1984,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-session.c gdm-3.34.0/daemon/gdm-session.c
  {
 diff -ruN gdm-3.34.0-orig/daemon/gdm-session.h gdm-3.34.0/daemon/gdm-session.h
 --- gdm-3.34.0-orig/daemon/gdm-session.h	2019-08-03 04:44:36.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-session.h	2019-09-15 18:37:06.318855979 +0900
++++ gdm-3.34.0/daemon/gdm-session.h	2019-09-17 00:40:47.193446866 +0900
 @@ -122,6 +122,8 @@
                                                             const char *text);
  void              gdm_session_select_program              (GdmSession *session,
@@ -1958,7 +1996,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-session.h gdm-3.34.0/daemon/gdm-session.h
  void              gdm_session_select_user                 (GdmSession *session,
 diff -ruN gdm-3.34.0-orig/daemon/gdm-session-record.c gdm-3.34.0/daemon/gdm-session-record.c
 --- gdm-3.34.0-orig/daemon/gdm-session-record.c	2019-08-14 10:37:16.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-session-record.c	2019-09-15 18:37:06.318855979 +0900
++++ gdm-3.34.0/daemon/gdm-session-record.c	2019-09-17 00:40:47.193446866 +0900
 @@ -33,6 +33,16 @@
  #include <utmp.h>
  #endif
@@ -2096,7 +2134,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-session-record.c gdm-3.34.0/daemon/gdm-sess
  
 diff -ruN gdm-3.34.0-orig/daemon/gdm-session-worker.c gdm-3.34.0/daemon/gdm-session-worker.c
 --- gdm-3.34.0-orig/daemon/gdm-session-worker.c	2019-09-05 04:22:28.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-session-worker.c	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/daemon/gdm-session-worker.c	2019-09-17 00:40:47.193446866 +0900
 @@ -28,9 +28,11 @@
  #include <string.h>
  #include <sys/types.h>
@@ -2672,7 +2710,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-session-worker.c gdm-3.34.0/daemon/gdm-sess
          interface->handle_start_program = gdm_session_worker_handle_start_program;
 diff -ruN gdm-3.34.0-orig/daemon/gdm-session-worker-job.c gdm-3.34.0/daemon/gdm-session-worker-job.c
 --- gdm-3.34.0-orig/daemon/gdm-session-worker-job.c	2019-08-03 04:44:36.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-session-worker-job.c	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/daemon/gdm-session-worker-job.c	2019-09-17 00:40:47.193446866 +0900
 @@ -36,7 +36,9 @@
  #include <sys/prctl.h>
  #endif
@@ -2685,7 +2723,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-session-worker-job.c gdm-3.34.0/daemon/gdm-
  #include <systemd/sd-journal.h>
 diff -ruN gdm-3.34.0-orig/daemon/gdm-session-worker.xml gdm-3.34.0/daemon/gdm-session-worker.xml
 --- gdm-3.34.0-orig/daemon/gdm-session-worker.xml	2019-08-03 04:44:36.000000000 +0900
-+++ gdm-3.34.0/daemon/gdm-session-worker.xml	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/daemon/gdm-session-worker.xml	2019-09-17 00:40:47.197446784 +0900
 @@ -13,6 +13,9 @@
      <method name="SetSessionName">
        <arg name="session_name" direction="in" type="s" />
@@ -2698,7 +2736,7 @@ diff -ruN gdm-3.34.0-orig/daemon/gdm-session-worker.xml gdm-3.34.0/daemon/gdm-se
      </method>
 diff -ruN gdm-3.34.0-orig/daemon/main.c gdm-3.34.0/daemon/main.c
 --- gdm-3.34.0-orig/daemon/main.c	2019-02-22 04:44:14.000000000 +0900
-+++ gdm-3.34.0/daemon/main.c	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/daemon/main.c	2019-09-17 00:40:47.197446784 +0900
 @@ -289,19 +289,6 @@
          return debug;
  }
@@ -2730,7 +2768,7 @@ diff -ruN gdm-3.34.0-orig/daemon/main.c gdm-3.34.0/daemon/main.c
          setlocale (LC_ALL, "");
 diff -ruN gdm-3.34.0-orig/daemon/Makefile.am gdm-3.34.0/daemon/Makefile.am
 --- gdm-3.34.0-orig/daemon/Makefile.am	2019-08-14 04:42:23.000000000 +0900
-+++ gdm-3.34.0/daemon/Makefile.am	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/daemon/Makefile.am	2019-09-17 00:40:47.197446784 +0900
 @@ -21,6 +21,7 @@
  	-DGDM_SCREENSHOT_DIR=\"$(GDM_SCREENSHOT_DIR)\"		\
  	-DGDM_CACHE_DIR=\""$(localstatedir)/cache/gdm"\"	\
@@ -2764,7 +2802,7 @@ diff -ruN gdm-3.34.0-orig/daemon/Makefile.am gdm-3.34.0/daemon/Makefile.am
  	gdm-local-display-factory-glue.c	\
 diff -ruN gdm-3.34.0-orig/data/Init.in gdm-3.34.0/data/Init.in
 --- gdm-3.34.0-orig/data/Init.in	2019-02-22 04:44:14.000000000 +0900
-+++ gdm-3.34.0/data/Init.in	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/data/Init.in	2019-09-17 00:40:47.197446784 +0900
 @@ -6,6 +6,15 @@
  PATH="@X_PATH@:$PATH"
  OLD_IFS=$IFS
@@ -2798,7 +2836,7 @@ diff -ruN gdm-3.34.0-orig/data/Init.in gdm-3.34.0/data/Init.in
  exit 0
 diff -ruN gdm-3.34.0-orig/data/Makefile.am gdm-3.34.0/data/Makefile.am
 --- gdm-3.34.0-orig/data/Makefile.am	2019-08-14 04:42:23.000000000 +0900
-+++ gdm-3.34.0/data/Makefile.am	2019-09-15 18:37:06.322855937 +0900
++++ gdm-3.34.0/data/Makefile.am	2019-09-17 00:40:47.197446784 +0900
 @@ -220,6 +220,7 @@
  Xsession: $(srcdir)/Xsession.in
  	sed	-e 's,[@]XSESSION_SHELL[@],$(XSESSION_SHELL),g' \
@@ -2809,7 +2847,7 @@ diff -ruN gdm-3.34.0-orig/data/Makefile.am gdm-3.34.0/data/Makefile.am
  CLEANFILES += Xsession
 diff -ruN gdm-3.34.0-orig/data/PostSession.in gdm-3.34.0/data/PostSession.in
 --- gdm-3.34.0-orig/data/PostSession.in	2018-10-13 06:05:26.000000000 +0900
-+++ gdm-3.34.0/data/PostSession.in	2019-09-15 18:37:06.326855895 +0900
++++ gdm-3.34.0/data/PostSession.in	2019-09-17 00:40:47.197446784 +0900
 @@ -1,3 +1,11 @@
  #!/bin/sh
  
@@ -2824,7 +2862,7 @@ diff -ruN gdm-3.34.0-orig/data/PostSession.in gdm-3.34.0/data/PostSession.in
  exit 0
 diff -ruN gdm-3.34.0-orig/data/PreSession.in gdm-3.34.0/data/PreSession.in
 --- gdm-3.34.0-orig/data/PreSession.in	2018-10-13 06:05:26.000000000 +0900
-+++ gdm-3.34.0/data/PreSession.in	2019-09-15 18:37:06.326855895 +0900
++++ gdm-3.34.0/data/PreSession.in	2019-09-17 00:40:47.197446784 +0900
 @@ -7,3 +7,11 @@
  # Note that output goes into the .xsession-errors file for easy debugging
  #
@@ -2839,7 +2877,7 @@ diff -ruN gdm-3.34.0-orig/data/PreSession.in gdm-3.34.0/data/PreSession.in
 +fi
 diff -ruN gdm-3.34.0-orig/libgdm/gdm-user-switching.c gdm-3.34.0/libgdm/gdm-user-switching.c
 --- gdm-3.34.0-orig/libgdm/gdm-user-switching.c	2019-08-14 04:42:23.000000000 +0900
-+++ gdm-3.34.0/libgdm/gdm-user-switching.c	2019-09-15 18:37:06.326855895 +0900
++++ gdm-3.34.0/libgdm/gdm-user-switching.c	2019-09-17 00:40:47.197446784 +0900
 @@ -31,12 +31,25 @@
  #include <glib-object.h>
  #include <gio/gio.h>
@@ -3252,7 +3290,7 @@ diff -ruN gdm-3.34.0-orig/libgdm/gdm-user-switching.c gdm-3.34.0/libgdm/gdm-user
  }
 diff -ruN gdm-3.34.0-orig/Makefile.am gdm-3.34.0/Makefile.am
 --- gdm-3.34.0-orig/Makefile.am	2019-08-03 04:44:35.000000000 +0900
-+++ gdm-3.34.0/Makefile.am	2019-09-15 18:37:06.326855895 +0900
++++ gdm-3.34.0/Makefile.am	2019-09-17 00:40:47.197446784 +0900
 @@ -7,7 +7,6 @@
  	daemon 			\
  	libgdm 			\
