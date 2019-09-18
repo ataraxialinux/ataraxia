@@ -352,7 +352,11 @@ if [ "$mode" = "check-updates" ] || [ "$mode" = "autobumb" ]; then
 	for packages in $(ls "$REPO/"); do
 		case $packages in
 			linux|linux-api-headers)
-				check-updates $packages
+				pushd "$REPO"
+					(
+						check-updates $packages
+					)
+				popd
 				;;
 			*)
 				pushd "$REPO"

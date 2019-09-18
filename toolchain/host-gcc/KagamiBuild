@@ -65,6 +65,12 @@ build() {
 		*)		HASHCONFIG="--with-linker-hash-style=gnu"	;;
 	esac
 
+	if [ "$EMBEDDED" = "1" ]; then
+		LANGS="c,c++,fortran,lto,objc,obj-c++"
+	else
+		LANGS="c,c++,lto"
+	fi
+
 	export CFLAGS_FOR_BUILD=" "
 	export FFLAGS_FOR_BUILD=" "
 	export CXXFLAGS_FOR_BUILD=" "
@@ -122,7 +128,7 @@ build() {
 		--enable-clocale=generic \
 		--enable-default-pie \
 		--enable-default-ssp \
-		--enable-languages=c,c++,fortran,lto,objc,obj-c++ \
+		--enable-languages="$LANGS" \
 		--enable-libstdcxx-time \
 		--enable-linker-build-id \
 		--enable-lto \
