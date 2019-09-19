@@ -14,7 +14,7 @@ case $version in
 esac
 release=1
 options=('~strip' 'bootstrap')
-source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
+source=("http://linux-libre.fsfla.org/pub/linux-libre/releases/${version}-gnu/linux-libre-${version}-gnu.tar.xz"
 	"https://sourceforge.net/projects/reiser4/files/reiser4-for-linux-5.x/reiser4-for-$reiser4ver.patch.gz")
 
 yconfig() {
@@ -862,8 +862,6 @@ generate_config() {
 		DRM_I915_USERPTR DRM_I915_GVT DRM_GMA600 DRM_GMA3600 DRM_FBDEV_EMULATION DRM_BRIDGE DRM_PANEL_BRIDGE USB_VIDEO_CLASS_INPUT_EVDEV \
 		USB_PWC_INPUT_EVDEV CHARGER_MANAGER DRM_I915_ALPHA_SUPPORT
 
-	strconfig DEFAULT_HOSTNAME azusa
-	strconfig LOCALVERSION -ataraxia
 	strconfig UEVENT_HELPER_PATH ""
 	strconfig NLS_DEFAULT "utf8"
 	strconfig FAT_DEFAULT_IOCHARSET "ascii"
@@ -989,7 +987,7 @@ build() {
 		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
-	depmod -a -v -b "$PKG"/usr ${kver}-ataraxia
+	depmod -a -v -b "$PKG"/usr ${kver}-gnu
 
 	case $BARCH in
 		arm64|armhf|armel)
@@ -1005,6 +1003,6 @@ build() {
 	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-linux
 	cp .config "$PKG"/boot/config-linux
 
-	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
-	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
+	rm -rf "$PKG"/usr/lib/modules/${kver}-gnu/build
+	rm -rf "$PKG"/usr/lib/modules/${kver}-gnu/source
 }
