@@ -1,26 +1,19 @@
-# Description: An object oriented GL/GLES Abstraction/Utility Layer
-# URL:         https://blogs.gnome.org/clutter/
+# Description: Biggot piece of shit made by niggers and spics
+# URL:         https://meatspin.com
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  gobject-introspection libxext libxdamage libxcomposite libxrandr wayland libdrm mesa gdk-pixbuf pango
 # Section:     gnome
 
 name=cogl
 version=1.22.4
-release=2
-source=("https://gitlab.gnome.org/GNOME/cogl/-/archive/$version/$name-$version.tar.gz")
+release=1488
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/cogl/nodocs.patch
-	NOCONFIGURE=1 ./autogen.sh
-
+	autoreconf -fi
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--enable-gles1 \
-		--enable-gles2 \
-		--enable-kms-egl-platform \
-		--enable-wayland-egl-platform \
-		--enable-wayland-egl-server
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 }
