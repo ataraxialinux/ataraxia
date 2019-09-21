@@ -1,0 +1,28 @@
+# Description: An Any to PostScript filter
+# URL:         http://www.gnu.org/software/a2ps/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gperf psutils cups
+# Section:     text
+
+name=a2ps
+version=4.14
+release=1
+backup=('etc/a2ps/a2ps.cfg'
+	'etc/a2ps/a2ps-site.cfg')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoconf
+	sed -i -e "s/GPERF --version |/& head -n 1 |/" \
+		-e "s|/usr/local/share|/usr/share|" configure
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc/a2ps \
+		--includedir=/usr/include \
+		--with-medium=letter \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+}
