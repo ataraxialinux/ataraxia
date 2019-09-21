@@ -1,0 +1,33 @@
+# Description: Bans IPs after too many failed authentication attempts
+# URL:         https://www.fail2ban.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python iptables
+# Section:     net
+
+name=fail2ban
+version=0.10.4
+release=1
+backup=('etc/fail2ban/fail2ban.conf'
+	'etc/fail2ban/jail.conf'
+	'etc/logrotate.d/fail2ban')
+source=("https://github.com/fail2ban/fail2ban/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|self.install_dir|"/usr/bin"|' setup.py
+
+	./fail2ban-2to3
+	python3 setup.py build
+	python3 setup.py install --root "$PKG" --optimize=1
+
+	sed -i 's/sbin/bin/g' "$PKG"/etc/fail2ban/action.d/sendmail*.conf
+
+	install -Dm644 files/fail2ban-logrotate "$PKG"/etc/logrotate.d/fail2ban
+	install -Dm644 files/bash-completion "$PKG"/usr/share/bash-completion/completions/fail2ban
+
+	for svc in fail2ban; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+
+	rm -rf "$PKG"/run
+}
