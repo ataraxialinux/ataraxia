@@ -1,31 +1,36 @@
-# Description: A ELF object file access library
-# URL:         http://www.mr511.de/software/
+# Description: Utilities to handle ELF object files and DWARF debugging information
+# URL:         https://sourceware.org/elfutils/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 xz libuargp
 # Priority:    required
-# Section:     libs
+# Section:     devel
 
 name=libelf
-version=0.8.13
+version=0.177
 release=1
 options=('bootstrap')
-source=("https://fossies.org/linux/misc/old/$name-$version.tar.gz")
+source=("https://sourceware.org/elfutils/ftp/$version/elfutils-$version.tar.bz2")
 
 build() {
-	export mr_cv_target_elf=yes
+	cd "$SRC"/elfutils-$version
+	patch -Np1 -i "$STUFF"/libelf/0006-Fix-build-on-aarch64-musl.patch
+	patch -Np1 -i "$STUFF"/libelf/0007-Fix-control-path-where-we-have-str-as-uninitialized-.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-libs.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-tests.patch
+	patch -Np1 -i "$STUFF"/libelf/musl-utils.patch
+	patch -Np1 -i "$STUFF"/libelf/no-werror.patch
 
-	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/libelf/dont-hardcode-ar.patch
-	patch -Np1 -i "$STUFF"/libelf/preprocessor-warnings.patch
+	autoreconf -fiv
 
-	./configure $BUILDFLAGS \
+	./configure $TOOLFLAGS \
 		--prefix=/usr \
-		--enable-shared \
-		--disable-nls
-	make
-	make \
-		prefix="$PKG"/usr \
-		libdir="$PKG"/usr/lib \
-		install \
-		install-compat \
-		-j1
+		--enable-deterministic-archives \
+		--disable-nls \
+		--disable-werror
+	make -C lib
+	make -C libelf
+	make -C libelf DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/pkgconfig
+	cp config/libelf.pc "$PKG"/usr/lib/pkgconfig
 }
