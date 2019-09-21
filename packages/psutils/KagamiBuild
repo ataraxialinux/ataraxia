@@ -1,0 +1,22 @@
+# Description: A set of postscript utilities
+# URL:         http://knackered.org/angus/psutils/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     text
+
+name=psutils
+version=1.17
+release=1
+source=("http://pkgs.fedoraproject.org/repo/pkgs/psutils/psutils-p{version}.tar.gz/b161522f3bd1507655326afa7db4a0ad/psutils-p{version}.tar.gz")
+
+build() {
+	install -d -m755 "$PKG"/usr/include
+	install -d -m755 "$PKG"/usr/share/man
+
+	cd "$SRC"/$name
+	sed 's@/usr/local@/usr@g' Makefile.unix > Makefile
+	make
+	make install \
+		BINDIR="$PKG"/usr/bin \
+		INCLUDEDIR="$PKG"/usr/include/psutils PERL=/usr/bin/perl \
+		MANDIR="$PKG"/usr/share/man/man1
+}
