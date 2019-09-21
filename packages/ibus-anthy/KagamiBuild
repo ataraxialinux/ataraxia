@@ -1,0 +1,21 @@
+# Description: Japanese input method Anthy IMEngine for IBus Framework
+# URL:         http://ibus.googlecode.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  anthy ibus pygobject
+# Section:     localization
+
+name=ibus-anthy
+version=1.5.11
+release=1
+source=("https://github.com/ibus/ibus-anthy/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	NOCONFIGURE=1 ./autogen.sh
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexec=/usr/lib/ibus
+	make
+	make DESTDIR="$PKG" install
+}
