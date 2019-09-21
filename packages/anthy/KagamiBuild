@@ -1,0 +1,27 @@
+# Description: Hiragana text to Kana Kanji mixed text Japanese input method
+# URL:         http://sourceforge.jp/projects/anthy/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     localization
+
+name=anthy
+version=9100h
+filecode=37536
+release=1
+source=("http://dl.sourceforge.jp/anthy/$filecode/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
