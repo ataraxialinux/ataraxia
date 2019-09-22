@@ -15,6 +15,14 @@ build() {
 	sed -i '19,21s/^/#/' Makefile.am
 	autoreconf -vi
 
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-ssl=/usr \
