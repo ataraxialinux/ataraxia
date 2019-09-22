@@ -23,4 +23,28 @@ build() {
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	cd "$SRC"/$name-$commit
+
+	mkdir -p "$PKG"/usr/include/pppd
+	for file in pppd/*.h; do
+		cp -p $file "$PKG"/usr/include/pppd
+		chmod 644 "$PKG"/usr/include/pppd/${file##*/}
+	done
+
+	mkdir -p "$PKG"/usr/include/net
+	cp -p include/net/ppp_defs.h "$PKG"/usr/include/net
+	chmod 644  "$PKG"/usr/include/net/ppp_defs.h
+
+	mkdir -p "$PKG"/etc/ppp/peers
+	for file in etc.ppp/*; do
+		cp -p $file "$PKG"/etc/ppp
+		chmod 644 "$PKG"/etc/ppp/${file##*/}
+	done
+
+	chmod 600 "$PKG"/etc/ppp/*-secrets*
+
+	for file in plog poff pon; do
+		install -Dm755 scripts/${file} "$PKG"/usr/bin/$file
+	done
 }
