@@ -13,6 +13,14 @@ source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13c-fnmatch-replacement.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13c-emacs.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13-manpage-chmod.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.14-check-mempcpy.patch
+	patch -p0 -i "$STUFF"/a2ps/a2ps-4.14-fix-stpcpy-proto.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-texinfo5.patch
+	patch -p1 -i "$STUFF"/a2ps/a2ps-4.13-security.patch
+
 	autoconf
 	sed -i -e "s/GPERF --version |/& head -n 1 |/" \
 		-e "s|/usr/local/share|/usr/share|" configure
