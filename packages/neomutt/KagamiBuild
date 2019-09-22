@@ -1,17 +1,23 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: A version of mutt with added features
+# URL:         https://neomutt.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Section:     devel
+# Depends on:  tcl ncurses gdbm libressl libidn gpgme
+# Section:     mail
 
-name=m4
-version=1.4.18
+name=neomutt
+version=20180716
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://github.com/neomutt/neomutt/archive/$name-$verion.tar.gz")
 
 build() {
+	export CFLAGS="-D_FILE_OFFSET_BITS=64 -DLARGEFILE_SOURCE=1 $CFLAGS"
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--disable-doc \
+		--gpgme \
+		--gdbm \
+		--ssl
 	make
 	make DESTDIR="$PKG" install
 }
