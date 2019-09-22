@@ -20,11 +20,11 @@ case $1 in
 			ip route add default via ${gateway}
 		elif [ "$nettype" = "dhcp" ]; then
 			ip link set ${interface} up
-			exec dhclient ${interface}
+			exec dhcpcd ${interface}
 		elif [ "$nettype" = "wireless" ]; then
 			ip link set ${interface} up
 			exec wpa_supplicant -B -i ${interface} -c /etc/wpa_supplicant/wpa_supplicant.conf
-			exec dhclient ${interface}
+			exec dhcpcd ${interface}
 		fi
 		;;
 	stop)
@@ -33,10 +33,10 @@ case $1 in
 			ip link set ${interface} down
 			ip addr del ${address}/${mask} dev  ${interface}
 		elif [ "$nettype" = "dhcp" ]; then
-			killall dhclient
+			killall dhcpcd
 			ip link set ${interface} down
 		elif [ "$nettype" = "wireless" ]; then
-			killall dhclient
+			killall dhcpcd
 			killall wpa_supplicant
 			ip link set ${interface} down
 		fi
