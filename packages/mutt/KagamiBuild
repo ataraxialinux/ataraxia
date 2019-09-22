@@ -1,17 +1,30 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Small but very powerful text-based mail client
+# URL:         http://www.mutt.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Section:     devel
+# Depends on:  ncurses gdbm libressl libidn2 gpgme
+# Section:     mail
 
-name=m4
-version=1.4.18
+name=mutt
+version=1.12.2
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://ftp.mutt.org/pub/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-idn2 \
+		--with-ssl \
+		--enable-external-dotlock \
+		--enable-gpgme \
+		--enable-hcache \
+		--enable-imap \
+		--enable-pop \
+		--enable-sidebar
 	make
 	make DESTDIR="$PKG" install
+
+	chown root:mail "$PKG"/usr/bin/mutt_dotlock
+	chmod 2755 "$PKG"/usr/bin/mutt_dotlock
 }
