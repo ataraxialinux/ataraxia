@@ -1,17 +1,44 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: Userspace components of the audit framework
+# URL:         https://people.redhat.com/sgrubb/audit
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Section:     devel
+# Depends on:  swig libcap-ng
+# Section:     admin
 
-name=m4
-version=1.4.18
+name=audit
+version=2.8.5
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+backup=('etc/libaudit.conf'
+	'etc/audit/audit-stop.rules'
+	'etc/audit/auditd.conf'
+	'etc/audisp/audispd.conf'
+	'etc/audisp/audisp-remote.conf'
+	'etc/audisp/plugins.d/af_unix.conf'
+	'etc/audisp/plugins.d/au-remote.conf'
+	'etc/audisp/plugins.d/syslog.conf')
+source=("https://people.redhat.com/sgrubb/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/audit/fix.patch
+
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--libexecdir=/usr/lib/audit \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--without-python \
+		--without-python3 \
+		--enable-shared=audit \
+		--disable-zos-remote
 	make
-	make DESTDIR="$PKG" install
+	make DESTDIR="$PKG" INSTALL='install -p' install
+
+	install -d "$PKG"/var/log/audit
+
+	sed -ri 's|/sbin|/usr/bin|' \
+		"$PKG"/etc/audit/*.conf \
+		"$PKG"/etc/audisp/plugins.d/*.conf
+
+	rm -rf "$PKG"/etc/rc.d
+	rm -rf "$PKG"/etc/sysconfig
 }
