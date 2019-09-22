@@ -17,6 +17,14 @@ build() {
 	sed -i -e "s/GPERF --version |/& head -n 1 |/" \
 		-e "s|/usr/local/share|/usr/share|" configure
 
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc/a2ps \
