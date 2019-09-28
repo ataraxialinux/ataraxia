@@ -1,7 +1,7 @@
-diff -ruN rustc-1.37.0-src-orig/src/bootstrap/compile.rs rustc-1.37.0-src/src/bootstrap/compile.rs
---- rustc-1.37.0-src-orig/src/bootstrap/compile.rs	2019-08-12 23:27:22.000000000 -0700
-+++ rustc-1.37.0-src/src/bootstrap/compile.rs	2019-08-17 02:56:03.893753627 -0700
-@@ -116,28 +116,6 @@
+diff -ruN rustc-1.38.0-src-orig/src/bootstrap/compile.rs rustc-1.38.0-src/src/bootstrap/compile.rs
+--- rustc-1.38.0-src-orig/src/bootstrap/compile.rs	2019-09-24 06:15:52.000000000 +0900
++++ rustc-1.38.0-src/src/bootstrap/compile.rs	2019-09-28 19:18:04.644135810 +0900
+@@ -115,28 +115,6 @@
  fn copy_third_party_objects(builder: &Builder<'_>, compiler: &Compiler, target: Interned<String>) {
      let libdir = builder.sysroot_libdir(*compiler, target);
  
@@ -30,10 +30,10 @@ diff -ruN rustc-1.37.0-src-orig/src/bootstrap/compile.rs rustc-1.37.0-src/src/bo
      // Copies libunwind.a compiled to be linked wit x86_64-fortanix-unknown-sgx.
      //
      // This target needs to be linked to Fortanix's port of llvm's libunwind.
-diff -ruN rustc-1.37.0-src-orig/src/bootstrap/sanity.rs rustc-1.37.0-src/src/bootstrap/sanity.rs
---- rustc-1.37.0-src-orig/src/bootstrap/sanity.rs	2019-08-12 23:27:22.000000000 -0700
-+++ rustc-1.37.0-src/src/bootstrap/sanity.rs	2019-08-17 03:06:51.725807452 -0700
-@@ -176,34 +176,6 @@
+diff -ruN rustc-1.38.0-src-orig/src/bootstrap/sanity.rs rustc-1.38.0-src/src/bootstrap/sanity.rs
+--- rustc-1.38.0-src-orig/src/bootstrap/sanity.rs	2019-09-24 06:15:52.000000000 +0900
++++ rustc-1.38.0-src/src/bootstrap/sanity.rs	2019-09-28 19:17:51.228395776 +0900
+@@ -187,34 +187,6 @@
              }
          }
  
@@ -68,9 +68,9 @@ diff -ruN rustc-1.37.0-src-orig/src/bootstrap/sanity.rs rustc-1.37.0-src/src/boo
          if target.contains("msvc") {
              // There are three builds of cmake on windows: MSVC, MinGW, and
              // Cygwin. The Cygwin build does not have generators for Visual
-diff -ruN rustc-1.37.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rustc-1.37.0-src/src/librustc_target/spec/linux_musl_base.rs
---- rustc-1.37.0-src-orig/src/librustc_target/spec/linux_musl_base.rs	2019-08-12 23:27:22.000000000 -0700
-+++ rustc-1.37.0-src/src/librustc_target/spec/linux_musl_base.rs	2019-08-17 02:56:53.553119774 -0700
+diff -ruN rustc-1.38.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rustc-1.38.0-src/src/librustc_target/spec/linux_musl_base.rs
+--- rustc-1.38.0-src-orig/src/librustc_target/spec/linux_musl_base.rs	2019-09-24 06:15:52.000000000 +0900
++++ rustc-1.38.0-src/src/librustc_target/spec/linux_musl_base.rs	2019-09-28 19:17:38.400647357 +0900
 @@ -26,7 +26,7 @@
      base.post_link_objects_crt.push("crtn.o".to_string());
  
@@ -80,37 +80,43 @@ diff -ruN rustc-1.37.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rust
      // These targets allow the user to choose between static and dynamic linking.
      base.crt_static_respected = true;
  
-diff -ruN rustc-1.37.0-src-orig/src/libunwind/build.rs rustc-1.37.0-src/src/libunwind/build.rs
---- rustc-1.37.0-src-orig/src/libunwind/build.rs	2019-08-12 23:27:22.000000000 -0700
-+++ rustc-1.37.0-src/src/libunwind/build.rs	2019-08-17 03:07:40.245230990 -0700
-@@ -11,9 +11,7 @@
-         #[cfg(feature = "llvm-libunwind")]
+diff -ruN rustc-1.38.0-src-orig/src/libunwind/build.rs rustc-1.38.0-src/src/libunwind/build.rs
+--- rustc-1.38.0-src-orig/src/libunwind/build.rs	2019-09-24 06:15:52.000000000 +0900
++++ rustc-1.38.0-src/src/libunwind/build.rs	2019-09-28 19:17:04.069335706 +0900
+@@ -13,11 +13,9 @@
+         #[cfg(all(not(bootstrap), feature = "llvm-libunwind"))]
          llvm_libunwind::compile();
      } else if target.contains("linux") {
 -        if target.contains("musl") {
 -            // musl is handled in lib.rs
 -        } else if !target.contains("android") {
-+         if !target.contains("android") {
++       if !target.contains("android") {
              println!("cargo:rustc-link-lib=gcc_s");
-         }
+-        }
++       }
      } else if target.contains("freebsd") {
-diff -ruN rustc-1.37.0-src-orig/src/libunwind/lib.rs rustc-1.37.0-src/src/libunwind/lib.rs
---- rustc-1.37.0-src-orig/src/libunwind/lib.rs	2019-08-12 23:27:22.000000000 -0700
-+++ rustc-1.37.0-src/src/libunwind/lib.rs	2019-08-17 03:06:59.005720850 -0700
-@@ -21,8 +21,3 @@
-         pub use libunwind::*;
+         println!("cargo:rustc-link-lib=gcc_s");
+     } else if target.contains("rumprun") {
+diff -ruN rustc-1.38.0-src-orig/src/libunwind/lib.rs rustc-1.38.0-src/src/libunwind/lib.rs
+--- rustc-1.38.0-src-orig/src/libunwind/lib.rs	2019-09-24 06:15:52.000000000 +0900
++++ rustc-1.38.0-src/src/libunwind/lib.rs	2019-09-28 19:16:39.221848224 +0900
+@@ -20,11 +20,6 @@
      }
  }
--
+ 
 -#[cfg(target_env = "musl")]
 -#[link(name = "unwind", kind = "static", cfg(target_feature = "crt-static"))]
 -#[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
 -extern {}
-diff -ruN rustc-1.37.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.37.0-src/vendor/libc/src/unix/mod.rs
---- rustc-1.37.0-src-orig/vendor/libc/src/unix/mod.rs	2019-08-13 01:30:01.000000000 -0700
-+++ rustc-1.37.0-src/vendor/libc/src/unix/mod.rs	2019-08-17 02:56:21.273531120 -0700
-@@ -306,13 +306,6 @@
-     } else if #[cfg(feature = "use_std")] {
+-
+ #[cfg(target_os = "redox")]
+ #[link(name = "gcc_eh", kind = "static-nobundle", cfg(target_feature = "crt-static"))]
+ #[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
+diff -ruN rustc-1.38.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.38.0-src/vendor/libc/src/unix/mod.rs
+--- rustc-1.38.0-src-orig/vendor/libc/src/unix/mod.rs	2019-09-24 08:15:02.000000000 +0900
++++ rustc-1.38.0-src/vendor/libc/src/unix/mod.rs	2019-09-28 19:16:16.046337686 +0900
+@@ -296,13 +296,6 @@
+     } else if #[cfg(feature = "std")] {
          // cargo build, don't pull in anything extra as the libstd dep
          // already pulls in all libs.
 -    } else if #[cfg(target_env = "musl")] {
@@ -123,14 +129,14 @@ diff -ruN rustc-1.37.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.37.0-src/ven
      } else if #[cfg(target_os = "emscripten")] {
          #[link(name = "c")]
          extern {}
-diff -ruN rustc-1.37.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.37.0-src/vendor/openssl-sys/build/main.rs
---- rustc-1.37.0-src-orig/vendor/openssl-sys/build/main.rs	2019-08-13 01:30:02.000000000 -0700
-+++ rustc-1.37.0-src/vendor/openssl-sys/build/main.rs	2019-08-17 02:55:12.634414453 -0700
+diff -ruN rustc-1.38.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.38.0-src/vendor/openssl-sys/build/main.rs
+--- rustc-1.38.0-src-orig/vendor/openssl-sys/build/main.rs	2019-09-24 08:15:03.000000000 +0900
++++ rustc-1.38.0-src/vendor/openssl-sys/build/main.rs	2019-09-28 19:15:30.143341802 +0900
 @@ -183,27 +183,30 @@
      if let Some(libressl_version) = libressl_version {
          println!("cargo:libressl_version_number={:x}", libressl_version);
  
-+	let major = (libressl_version >> 28) as u8;
++        let major = (libressl_version >> 28) as u8;
          let minor = (libressl_version >> 20) as u8;
          let fix = (libressl_version >> 12) as u8;
 -        let (minor, fix) = match (minor, fix) {
@@ -147,6 +153,8 @@ diff -ruN rustc-1.37.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.37.0-sr
 -            (8, 1) => ('8', '1'),
 -            (8, _) => ('8', 'x'),
 -            (9, 0) => ('9', '0'),
+-            _ => version_error(),
+-        };
 +        let (major, minor, fix) = match (major, minor, fix) {
 +            (2, 5, 0) => ('2', '5', '0'),
 +            (2, 5, 1) => ('2', '5', '1'),
@@ -163,8 +171,8 @@ diff -ruN rustc-1.37.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.37.0-sr
 +            (2, 9, 0) => ('2', '9', '0'),
 +            (2, 9, _) => ('2', '9', 'x'),
 +            (3, 0, 0) => ('3', '0', '0'),
-             _ => version_error(),
-         };
++             _ => version_error(),
++         };
  
          println!("cargo:libressl=true");
 -        println!("cargo:libressl_version=2{}{}", minor, fix);
