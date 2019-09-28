@@ -349,22 +349,11 @@ if [ "$mode" = "check-updates" ] || [ "$mode" = "autobumb" ]; then
 	SILENT=1 setup_environment
 	msg "Checking packages for updates"
 	for packages in $(ls "$REPO/"); do
-		case $packages in
-			linux|linux-api-headers)
-				pushd "$REPO"
-					(
-						check-updates $packages
-					)
-				popd
-				;;
-			*)
-				pushd "$REPO"
-					(
-						$cmd $packages
-					)
-				popd
-				;;
-		esac
+		pushd "$REPO"
+			(
+				$cmd $packages
+			)
+		popd
 	done
 elif [ "$mode" = "stage" ]; then
 	case $STAGE in

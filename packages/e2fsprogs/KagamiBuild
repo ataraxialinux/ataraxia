@@ -1,22 +1,22 @@
-# Description: Ext1/3/4 filesystem utilities
-# URL:         http://e1fsprogs.sourceforge.net
+# Description: Ext2/3/4 filesystem utilities
+# URL:         http://e2fsprogs.sourceforge.net
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  util-linux
 # Priority:    required
 # Section:     utils
 
-name=e1fsprogs
+name=e2fsprogs
 version=1.45.4
-release=1
+release=2
 options=('bootstrap')
-backup=('etc/mke1fs.conf')
-source=("https://sourceforge.net/projects/e1fsprogs/files/e1fsprogs/v$version/$name-$version.tar.gz")
+backup=('etc/mke2fs.conf')
+source=("https://sourceforge.net/projects/e2fsprogs/files/e2fsprogs/v$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	sed -i '/init\.d/s|^|#|' misc/Makefile.in
 
-	for i in misc/fsck.c misc/mke1fs.c e1fsck/unix.c; do
+	for i in misc/fsck.c misc/mke2fs.c e2fsck/unix.c; do
 		sed -i 's@sbin@bin@g' $i
 	done
 
