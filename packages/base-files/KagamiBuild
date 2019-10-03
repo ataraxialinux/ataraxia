@@ -89,15 +89,8 @@ build() {
 
 		install -m644 "$STUFF"/base-files/inittab "$PKG"/etc/inittab
 	else
-  cat << EOF > "$PKG"/init
+		cat << EOF > "$PKG"/etc/bootscript.sh
 #!/bin/sh
-reboot() {
-	RB=1
-}
-
-export PATH=/usr/bin
-export -f reboot
-
 mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
 mountpoint -q /sys     || mount -t sysfs sys /sys -o nosuid,noexec,nodev
 mountpoint -q /run     || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
@@ -116,16 +109,6 @@ fi
 
 mount -o remount,ro /
 
-fsck -ATa
-if [ $? -eq 1 ]; then
-	echo "Filesystem errors exist, fix manually."
-	export PS1="(Repair) # "
-	setsid cttyhack /usr/bin/mksh
-	umount -a -r
-	mount -o remount,ro /
-	reboot -f
-fi
-
 if grep -wq rw /proc/cmdline ; then
 	mount -o remount,rw /
 fi
@@ -135,9 +118,7 @@ swapon -a
 
 hwclock -u -s
 
-hostname $(cat /etc/hostname)
-
-ifup -a
+ifconfig lo up
 
 [ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
@@ -146,41 +127,26 @@ cat /dev/null > /run/utmp
 
 dmesg > /var/log/dmesg.log
 chmod 600 /var/log/dmesg.log
-
-setsid cttyhack /usr/bin/mksh
-
-echo; stty onlcr
-
-ifdown -a
-
-hwclock --systohc
-
-udevadm control --exit
-
-killall5 -15
-sleep 1
-killall5 -9
-
-dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
-
-swapoff -a
-
-umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
-
-mount -o remount,ro /
-
-sync
-
-wait
-
-if [ "$RB" = "1" ]; then
-	reboot -f
-else
-	poweroff -f
-fi
 EOF
 
-		chmod +x "$PKG"/init
+		cat << EOF > "$PKG"/init
+#!/bin/sh
+exec /sbin/init
+EOF
+
+		cat << EOF > "$PKG"/etc/inittab
+::sysinit:/etc/bootscript.sh
+::restart:/sbin/init
+::shutdown:sync
+::shutdown:swapoff -a
+::shutdown:umount -a -r
+::shutdown:sleep 1
+::ctrlaltdel:/sbin/reboot
+::respawn:/bin/cttyhack /bin/mksh
+hvc0::respawn:/bin/mksh
+EOF
+
+		chmod +X "$PKG"/etc/bootscript.sh "$PKG"/init
 	fi
 
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
