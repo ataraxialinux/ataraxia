@@ -5,7 +5,7 @@
 
 name=psutils
 version=17
-release=1
+release=2
 source=("http://pkgs.fedoraproject.org/repo/pkgs/psutils/psutils-p${version}.tar.gz/b161522f3bd1507655326afa7db4a0ad/psutils-p${version}.tar.gz")
 
 build() {
@@ -13,7 +13,10 @@ build() {
 	install -d -m755 "$PKG"/usr/share/man
 
 	cd "$SRC"/$name
+	patch -Np1 -i "$STUFF"/psutils/libre.patch
 	sed 's@/usr/local@/usr@g' Makefile.unix > Makefile
+	rm -v {fixmacps.{man,pl},md{68_0,71_0}.ps}
+
 	make
 	make install \
 		BINDIR="$PKG"/usr/bin \

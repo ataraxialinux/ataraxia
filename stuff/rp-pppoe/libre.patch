@@ -1,0 +1,89 @@
+diff -Nur rp-pppoe-3.11.orig/rp-pppoe.spec rp-pppoe-3.11/rp-pppoe.spec
+--- rp-pppoe-3.11.orig/rp-pppoe.spec	2012-08-17 15:31:25.000000000 -0300
++++ rp-pppoe-3.11/rp-pppoe.spec	2012-10-05 01:42:29.964508454 -0300
+@@ -55,7 +55,7 @@
+ 
+ %files
+ %defattr(-,root,root)
+-%doc doc/CHANGES doc/HOW-TO-CONNECT doc/LICENSE doc/KERNEL-MODE-PPPOE README SERVPOET
++%doc doc/CHANGES doc/HOW-TO-CONNECT doc/LICENSE doc/KERNEL-MODE-PPPOE README
+ %config(noreplace) /etc/ppp/pppoe.conf
+ %config(noreplace) /etc/ppp/pppoe-server-options
+ %config(noreplace) /etc/ppp/firewall-masq
+diff -Nur rp-pppoe-3.12.orig/src/Makefile.in rp-pppoe-3.12/src/Makefile.in
+--- rp-pppoe-3.12.orig/src/Makefile.in	2015-11-11 12:10:02.000000000 -0300
++++ rp-pppoe-3.12/src/Makefile.in	2016-01-14 15:09:01.441919395 -0300
+@@ -44,9 +44,6 @@
+ PPPOE_PATH=$(sbindir)/pppoe
+ PPPD_PATH=@PPPD@
+ 
+-# Include ServPoET version if we're building for ServPoET
+-@LIC_MAKEFILE_INCLUDE@
+-
+ # Kernel-mode plugin gets installed here.
+ PLUGIN_DIR=/etc/ppp/plugins
+ PLUGIN_PATH=$(PLUGIN_DIR)/rp-pppoe.so
+@@ -171,7 +168,6 @@
+ 	$(install) -m 644 ../doc/HOW-TO-CONNECT $(DESTDIR)$(docdir)
+ 	$(install) -m 644 ../doc/LICENSE $(DESTDIR)$(docdir)
+ 	$(install) -m 644 ../README $(DESTDIR)$(docdir)
+-	$(install) -m 644 ../SERVPOET $(DESTDIR)$(docdir)
+ 	$(install) -m 644 ../configs/pap-secrets $(DESTDIR)$(docdir)
+ 	-mkdir -p $(DESTDIR)$(mandir)/man8
+ 	for i in $(TARGETS) ; do \
+@@ -229,25 +225,15 @@
+ 	@echo ""
+ 	@echo "Type 'pppoe-setup' to configure the software."
+ 
+-servpoet-tgz: distro-servpoet
+-	cd .. && tar cvf servpoet-$(VERSION)$(BETA).tar servpoet-$(VERSION)$(BETA)
+-	gzip -f -v -9 ../servpoet-$(VERSION)$(BETA).tar
+-	rm -rf ../servpoet-$(VERSION)$(BETA)
+-
+ tgz: distro
+ 	cd .. && tar cvf rp-pppoe-$(VERSION)$(BETA).tar rp-pppoe-$(VERSION)$(BETA)
+ 	gzip -f -v -9 ../rp-pppoe-$(VERSION)$(BETA).tar
+ 	rm -rf ../rp-pppoe-$(VERSION)$(BETA)
+ 
+-distro-servpoet: distro
+-	cp ../servpoet.spec ../rp-pppoe-$(VERSION)$(BETA)
+-	$(MAKE) -C licensed-only distro VERSION=$(VERSION) BETA=$(BETA)
+-	mv ../rp-pppoe-$(VERSION)$(BETA) ../servpoet-$(VERSION)$(BETA)
+-
+ distro:
+ 	rm -rf ../rp-pppoe-$(VERSION)$(BETA)
+ 	mkdir ../rp-pppoe-$(VERSION)$(BETA)
+-	for i in README SERVPOET go go-gui rp-pppoe.spec ; do \
++	for i in README go go-gui rp-pppoe.spec ; do \
+ 		cp ../$$i ../rp-pppoe-$(VERSION)$(BETA) || exit 1; \
+ 	done
+ 	mkdir ../rp-pppoe-$(VERSION)$(BETA)/gui
+@@ -305,10 +291,6 @@
+ 		/usr/src/redhat/RPMS/i386/rp-pppoe-$(VERSION)-1.i386.rpm \
+ 		/usr/src/redhat/RPMS/i386/rp-pppoe-gui-$(VERSION)-1.i386.rpm
+ 
+-servpoet-rpms: servpoet-tgz
+-	cp ../servpoet-$(VERSION).tar.gz /usr/src/redhat/SOURCES
+-	cd .. && rpm -ba servpoet.spec
+-
+ clean:
+ 	rm -f *.o pppoe-relay pppoe pppoe-sniff pppoe-server core rp-pppoe.so plugin/*.o plugin/libplugin.a *~
+ 	test -f licensed-only/Makefile && $(MAKE) -C licensed-only clean || true
+@@ -323,15 +305,13 @@
+ update-version:
+ 	sed -e 's/^Version: .*$$/Version: $(VERSION)/' ../rp-pppoe.spec > ../rp-pppoe.spec.new && mv ../rp-pppoe.spec.new ../rp-pppoe.spec
+ 	sed -e 's+^Source: .*$$+Source: http://www.roaringpenguin.com/pppoe/rp-pppoe-$(VERSION).tar.gz+' ../rp-pppoe.spec > ../rp-pppoe.spec.new && mv ../rp-pppoe.spec.new ../rp-pppoe.spec
+-	test -f ../servpoet.spec && sed -e 's/^Version: .*$$/Version: $(VERSION)/' ../servpoet.spec > ../servpoet.spec.new && mv ../servpoet.spec.new ../servpoet.spec || true
+-	test -f ../servpoet.spec && sed -e 's+^Source: .*$$+Source: http://www.roaringpenguin.com/pppoe/servpoet-$(VERSION).tar.gz+' ../servpoet.spec > ../servpoet.spec.new && mv ../servpoet.spec.new ../servpoet.spec || true
+ 
+ # Convenience target for Dianne!  Don't try to use this one.
+ km:
+ 	./configure --enable-plugin=/home/dfs/Archive/PPP/ppp-2.4.0.pppoe4-patched-dfs
+ 
+ licensed-only:
+-	$(MAKE) -C licensed-only all VERSION=$(VERSION) SERVPOET_VERSION=$(SERVPOET_VERSION)
++	$(MAKE) -C licensed-only all VERSION=$(VERSION)
+ 
+ l2tp: libevent/libevent.a
+ 	$(MAKE) -C l2tp all
+

@@ -966,8 +966,8 @@ build() {
 
 
 	if [ "$USEBOOTSTRAP" != "yes" ]; then
-		if [ -f /boot/config-linux ]; then
-			cp /boot/config-linux .config
+		if [ -f /boot/config ]; then
+			cp /boot/config .config
 		else
 			generate_config
 		fi
@@ -1000,8 +1000,12 @@ build() {
 	esac
 
 	mkdir -p "$PKG"/boot
-	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-linux
-	cp .config "$PKG"/boot/config-linux
+	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-${version}-gnu
+	cp .config "$PKG"/boot/config-${version}-gnu
+
+	for a in vmlinuz config; do
+		ln -sf ${a}-${version}-gnu "$PKG"/boot/$a
+	done
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-gnu/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-gnu/source

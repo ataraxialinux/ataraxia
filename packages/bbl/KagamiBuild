@@ -21,12 +21,12 @@ build() {
 			exit 1
 	esac
 
-	if [[ ! -f "$TOOLS/.cross-elf" ]]; then
+	if [ ! -f "$TOOLS/.cross-elf" ]; then
 		echo "Compile ELF toolchain first!"
 		exit 1
 	fi
 
-	if [[ ! -f "$ROOTFS"/boot/vmlinuz-linux ]]; then
+	if [ ! -f "$ROOTFS/boot/vmlinuz" ]; then
 		echo "Compile kernel first!"
 		exit 1
 	fi
@@ -47,7 +47,7 @@ build() {
 
 	../configure --host=$ELFTARGET \
 		--prefix= \
-		--with-payload="$ROOTFS/boot/vmlinuz-linux" \
+		--with-payload="$(realpath $ROOTFS/boot/vmlinuz)" \
 		--enable-logo
 	make
 
