@@ -1,0 +1,33 @@
+# Description: Lightweight web browser, without non-privacy search engines
+# URL:         https://midori-browser.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja intltool vala webkitgtk gcr libpeas libxss json-glib
+# Section:     net
+
+name=midori
+version=9.0
+release=1
+options=('bootstrap')
+source=("https://github.com/midori-browser/core/releases/download/v$version/$name-v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-v$version
+	sed -i 's|Duck Duck Go|DuckDuckGo HTML|
+		s|duckduckgo[.]com|duckduckgo.com/html|
+		\|Yahoo|d
+		\|Google|d
+		' core/preferences.vala
+	sed -i 's|duckduckgo[.]com|duckduckgo.com/html|g' core/settings.vala
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-v$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_C_FLAGS="$CFLAGS -fPIC -w" \
+		-DVALA_CFLAGS="$CFLAGS -fPIC -w" \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
