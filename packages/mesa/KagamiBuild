@@ -6,7 +6,7 @@
 
 name=mesa
 version=19.2.0
-release=2
+release=3
 source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
 
 build() {
@@ -47,6 +47,7 @@ build() {
 	patch -Np1 -i "$STUFF"/mesa/glx-tls.patch
 	patch -Np1 -i "$STUFF"/mesa/includes.patch
 	patch -Np1 -i "$STUFF"/mesa/xvmc-libxv.patch
+	patch -Np1 -i "$STUFF"/mesa/libglvnd.patch
 
 	mkdir -p build
 	cd build
@@ -79,7 +80,4 @@ build() {
 	DESTDIR="$PKG" ninja install
 
 	ln -sf libGLX_mesa.so.0 "$PKG"/usr/lib/libGLX_indirect.so.0
-
-	install -Dm644 "$STUFF"/mesa/glesv2.pc "$PKG"/usr/lib/pkgconfig
-	sed -i "s,uncom,$version,g" "$PKG"/usr/lib/pkgconfig/glesv2.pc
 }
