@@ -201,9 +201,9 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	for toolchain in dpkg base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
-			linux-api-headers binutils gcc-static musl gcc; do
+			linux-libc-dev binutils gcc-static musl gcc; do
 		case $toolchain in
-			base-files|linux-api-headers)
+			base-files|linux-libc-dev)
 				ne -c "$BUILD"/host.config -r "$ROOTFS" -EWn ${toolchain}
 				;;
 			musl)
@@ -260,7 +260,7 @@ build_target() {
 	msg "Building target system for '${BARCH}' platform"
 
 	if [ -z "$LINUX" ]; then
-		LINUX="linux"
+		LINUX="linux-image"
 	fi
 
 	if [ "$EMBEDDED" = "1" ]; then
