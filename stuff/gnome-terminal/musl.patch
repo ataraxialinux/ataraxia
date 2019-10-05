@@ -1,0 +1,13 @@
+--- gnome-terminal-3.34.0-orig/src/terminal.c
++++ gnome-terminal-3.34.0/src/terminal.c
+@@ -47,6 +47,10 @@
+ GS_DEFINE_CLEANUP_FUNCTION0(TerminalOptions*, gs_local_options_free, terminal_options_free)
+ #define gs_free_options __attribute__ ((cleanup(gs_local_options_free)))
+ 
++#ifndef W_EXITCODE
++#define W_EXITCODE(ret, sig) ((ret) << 8 | (sig))
++#endif
++
+ /* Wait-for-exit helper */
+ 
+ typedef struct {
