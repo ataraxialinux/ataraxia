@@ -1,6 +1,5 @@
-diff -ruN rustc-1.38.0-src-orig/src/bootstrap/compile.rs rustc-1.38.0-src/src/bootstrap/compile.rs
---- rustc-1.38.0-src-orig/src/bootstrap/compile.rs	2019-09-24 06:15:52.000000000 +0900
-+++ rustc-1.38.0-src/src/bootstrap/compile.rs	2019-09-28 19:18:04.644135810 +0900
+--- rustc-1.38.0-src-orig/src/bootstrap/compile.rs
++++ rustc-1.38.0-src/src/bootstrap/compile.rs
 @@ -115,28 +115,6 @@
  fn copy_third_party_objects(builder: &Builder<'_>, compiler: &Compiler, target: Interned<String>) {
      let libdir = builder.sysroot_libdir(*compiler, target);
@@ -30,9 +29,8 @@ diff -ruN rustc-1.38.0-src-orig/src/bootstrap/compile.rs rustc-1.38.0-src/src/bo
      // Copies libunwind.a compiled to be linked wit x86_64-fortanix-unknown-sgx.
      //
      // This target needs to be linked to Fortanix's port of llvm's libunwind.
-diff -ruN rustc-1.38.0-src-orig/src/bootstrap/sanity.rs rustc-1.38.0-src/src/bootstrap/sanity.rs
---- rustc-1.38.0-src-orig/src/bootstrap/sanity.rs	2019-09-24 06:15:52.000000000 +0900
-+++ rustc-1.38.0-src/src/bootstrap/sanity.rs	2019-09-28 19:17:51.228395776 +0900
+--- rustc-1.38.0-src-orig/src/bootstrap/sanity.rs
++++ rustc-1.38.0-src/src/bootstrap/sanity.rs
 @@ -187,34 +187,6 @@
              }
          }
@@ -68,9 +66,8 @@ diff -ruN rustc-1.38.0-src-orig/src/bootstrap/sanity.rs rustc-1.38.0-src/src/boo
          if target.contains("msvc") {
              // There are three builds of cmake on windows: MSVC, MinGW, and
              // Cygwin. The Cygwin build does not have generators for Visual
-diff -ruN rustc-1.38.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rustc-1.38.0-src/src/librustc_target/spec/linux_musl_base.rs
---- rustc-1.38.0-src-orig/src/librustc_target/spec/linux_musl_base.rs	2019-09-24 06:15:52.000000000 +0900
-+++ rustc-1.38.0-src/src/librustc_target/spec/linux_musl_base.rs	2019-09-28 19:17:38.400647357 +0900
+--- rustc-1.38.0-src-orig/src/librustc_target/spec/linux_musl_base.rs
++++ rustc-1.38.0-src/src/librustc_target/spec/linux_musl_base.rs
 @@ -26,7 +26,7 @@
      base.post_link_objects_crt.push("crtn.o".to_string());
  
@@ -80,9 +77,8 @@ diff -ruN rustc-1.38.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rust
      // These targets allow the user to choose between static and dynamic linking.
      base.crt_static_respected = true;
  
-diff -ruN rustc-1.38.0-src-orig/src/libunwind/build.rs rustc-1.38.0-src/src/libunwind/build.rs
---- rustc-1.38.0-src-orig/src/libunwind/build.rs	2019-09-24 06:15:52.000000000 +0900
-+++ rustc-1.38.0-src/src/libunwind/build.rs	2019-09-28 19:17:04.069335706 +0900
+--- rustc-1.38.0-src-orig/src/libunwind/build.rs
++++ rustc-1.38.0-src/src/libunwind/build.rs
 @@ -13,11 +13,9 @@
          #[cfg(all(not(bootstrap), feature = "llvm-libunwind"))]
          llvm_libunwind::compile();
@@ -97,9 +93,8 @@ diff -ruN rustc-1.38.0-src-orig/src/libunwind/build.rs rustc-1.38.0-src/src/libu
      } else if target.contains("freebsd") {
          println!("cargo:rustc-link-lib=gcc_s");
      } else if target.contains("rumprun") {
-diff -ruN rustc-1.38.0-src-orig/src/libunwind/lib.rs rustc-1.38.0-src/src/libunwind/lib.rs
---- rustc-1.38.0-src-orig/src/libunwind/lib.rs	2019-09-24 06:15:52.000000000 +0900
-+++ rustc-1.38.0-src/src/libunwind/lib.rs	2019-09-28 19:16:39.221848224 +0900
+--- rustc-1.38.0-src-orig/src/libunwind/lib.rs
++++ rustc-1.38.0-src/src/libunwind/lib.rs
 @@ -20,11 +20,6 @@
      }
  }
@@ -112,9 +107,8 @@ diff -ruN rustc-1.38.0-src-orig/src/libunwind/lib.rs rustc-1.38.0-src/src/libunw
  #[cfg(target_os = "redox")]
  #[link(name = "gcc_eh", kind = "static-nobundle", cfg(target_feature = "crt-static"))]
  #[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
-diff -ruN rustc-1.38.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.38.0-src/vendor/libc/src/unix/mod.rs
---- rustc-1.38.0-src-orig/vendor/libc/src/unix/mod.rs	2019-09-24 08:15:02.000000000 +0900
-+++ rustc-1.38.0-src/vendor/libc/src/unix/mod.rs	2019-09-28 19:16:16.046337686 +0900
+--- rustc-1.38.0-src-orig/vendor/libc/src/unix/mod.rs
++++ rustc-1.38.0-src/vendor/libc/src/unix/mod.rs
 @@ -296,13 +296,6 @@
      } else if #[cfg(feature = "std")] {
          // cargo build, don't pull in anything extra as the libstd dep
@@ -129,10 +123,9 @@ diff -ruN rustc-1.38.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.38.0-src/ven
      } else if #[cfg(target_os = "emscripten")] {
          #[link(name = "c")]
          extern {}
-diff -ruN rustc-1.38.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.38.0-src/vendor/openssl-sys/build/main.rs
---- rustc-1.38.0-src-orig/vendor/openssl-sys/build/main.rs	2019-09-24 08:15:03.000000000 +0900
-+++ rustc-1.38.0-src/vendor/openssl-sys/build/main.rs	2019-09-28 19:15:30.143341802 +0900
-@@ -183,27 +183,30 @@
+--- rustc-1.38.0-src-orig/vendor/openssl-sys/build/main.rs
++++ rustc-1.38.0-src/vendor/openssl-sys/build/main.rs
+@@ -183,27 +183,31 @@
      if let Some(libressl_version) = libressl_version {
          println!("cargo:libressl_version_number={:x}", libressl_version);
  
@@ -171,6 +164,7 @@ diff -ruN rustc-1.38.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.38.0-sr
 +            (2, 9, 0) => ('2', '9', '0'),
 +            (2, 9, _) => ('2', '9', 'x'),
 +            (3, 0, 0) => ('3', '0', '0'),
++            (3, 0, _) => ('3', '0', 'x'),
 +             _ => version_error(),
 +         };
  
