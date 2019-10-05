@@ -4,12 +4,13 @@ generate_initramfs() {
 	packages="base-files musl musl-tools gettext-tiny zlib file ncurses readline bzip2 attr acl libcap pcre grep mksh bash expat \
 		libressl ca-certificates xz lzip lz4 zstd kmod busybox dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack \
 		libnl libpcap iptables iproute2 kbd tar vim libcap-ng util-linux e2fsprogs libaal reiser4progs dosfstools hwids eudev \
-		linux-image dpkg dhcpcd wireless_tools wpa_supplicant popt gptfdisk libssh2 c-ares libev nghttp2 curl"
+		linux-image dpkg dhcpcd wireless_tools wpa_supplicant popt gptfdisk wget keyring debootstrap lynx"
 
 	ne -c "$BUILD"/target.config -r "$INITRAMFS" -EWnd $packages
 
 	pushd "$INITRAMFS"
 		ln -sf usr/bin/init init
+		cp "$ROOTFS"/usr/bin/ar usr/bin/ar
 
 		rm -rf usr/include
 		rm -rf usr/share/man
