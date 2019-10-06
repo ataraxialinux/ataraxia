@@ -1,0 +1,21 @@
+# Description: Library full of GTK+ widgets for mobile phones
+# URL:         https://source.puri.sm/Librem5/libhandy
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson vala gtk glade
+# Section:     x11
+
+name=libhandy
+version=0.0.11
+release=1
+source=("https://source.puri.sm/Librem5/libhandy/-/archive/v${version}/$name-v${version}.tar.gz")
+
+build() {
+	cd "$SRC"/$name-v${version}
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-v${version} \
+		-Dexamples=false \
+		-Dgtk_doc=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
