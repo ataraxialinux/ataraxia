@@ -1,7 +1,7 @@
 # Description: A GObject plugins library
 # URL:         https://wiki.gnome.org/Projects/Libpeas
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gtk
+# Depends on:  meson gtk
 # Section:     gnome
 
 name=libpeas
@@ -11,12 +11,9 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--sysconfdir=/etc \
-		--localstatedir=/var
-
-	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
 }
