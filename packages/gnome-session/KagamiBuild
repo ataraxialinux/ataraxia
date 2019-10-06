@@ -6,7 +6,7 @@
 
 name=gnome-session
 version=3.34.0
-release=1
+release=2
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -22,4 +22,8 @@ build() {
 		-Dsystemd_journal=false
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	install -Dm0755 "$STUFF"/gnome-session/15-xdg-data-gnome-r1 "$PKG"/etc/X11/xinit/xinitrc.d/15-xdg-data-gnome
+	install -Dm0755 "$STUFF"/gnome-session/10-user-dirs-update-gnome-r1 "$PKG"/etc/X11/xinit/xinitrc.d/10-user-dirs-update-gnome
+	install -Dm0755 "$STUFF"/gnome-session/90-xcursor-theme-gnome "$PKG"/etc/X11/xinit/xinitrc.d/90-xcursor-theme-gnome
 }
