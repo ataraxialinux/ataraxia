@@ -21,4 +21,13 @@ Stage 1 is complete!
 Stage 2 is complete!
 
 ## Stage 3
-TODO 
+ - [ ] Move to sinit and perp
+ - [ ] Add more version control software (svn, mercurial, fossil)
+ - [ ] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, vsftpd, s6-dns, cyrus-sasl, openldap, cifs-utils)
+ - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa)
+ - [ ] Add container management software (lxc, docker)
+ - [ ] Add virtualization management software (libvirt, qemu, virt-manager)
+ - [ ] Add GNOME apps
+ - [ ] Add support for LXDE, Cinnamon, MATE and Enlightment
+ - [ ] Add misc software (snownews, aisterisk)
+ - [ ] Add misc GUI software
