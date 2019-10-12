@@ -12,6 +12,14 @@ source=("http://releases.llvm.org/$version/$name-$version.src.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version.src
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	mkdir build
 	cd build
 	cmake "$SRC"/$name-$version.src \

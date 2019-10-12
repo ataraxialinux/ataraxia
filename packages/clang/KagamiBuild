@@ -12,6 +12,15 @@ source=("https://releases.llvm.org/$version/cfe-$version.src.tar.xz"
 	"https://releases.llvm.org/$version/llvm-$version.src.tar.xz")
 
 build() {
+	cd "$SRC"
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	cd "$SRC"/cfe-$version.src
 	patch -Np1 -i "$STUFF"/clang/0001-add-musl-triplets.patch
 	patch -Np1 -i "$STUFF"/clang/0001-Add-support-for-Ataraxia-Linux.patch
