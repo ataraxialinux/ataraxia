@@ -11,6 +11,14 @@ source=("https://xorg.freedesktop.org/releases/individual/lib/$(echo $name | sed
 
 build() {
 	cd "$SRC"/$(echo $name | sed -e 's,libx,libX,g')-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc
