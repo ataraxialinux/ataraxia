@@ -11,6 +11,14 @@ source=("http://joewing.net/projects/$name/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	sed -i 's|/usr/local/share/|/usr/share/|' contrib/Makefile po/Makefile* example.jwmrc
 
 	./configure $BUILDFLAGS \
