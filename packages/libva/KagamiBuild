@@ -6,7 +6,7 @@
 
 name=libva
 version=2.5.0
-release=1
+release=2
 backup=('etc/libva.conf')
 source=("https://github.com/intel/libva/archive/$version.tar.gz")
 
@@ -15,7 +15,10 @@ build() {
 	mkdir -p build
 	cd build
 
-	ataraxia-meson "$SRC"/$name-$version
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dwith_glx=no \
+		-Dwith_wayland=yes \
+		-Dwith_egl=yes
 	ninja
 	DESTDIR="$PKG" ninja install
 }
