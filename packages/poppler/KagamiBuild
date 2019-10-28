@@ -5,12 +5,10 @@
 # Section:     libs
 
 name=poppler
-version=0.81.0
-dataver=0.4.9
+version=0.82.0
 release=1
 options=('~ccache')
-source=("https://poppler.freedesktop.org/$name-$version.tar.xz"
-	"https://poppler.freedesktop.org/poppler-data-$dataver.tar.gz")
+source=("https://poppler.freedesktop.org/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -24,7 +22,4 @@ build() {
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
-
-	cd "$SRC"/poppler-data-$dataver
-	make prefix=/usr DESTDIR="$PKG" install
 }
