@@ -1,0 +1,23 @@
+# Description: Cross-platform 3D audio library, software implementation
+# URL:         https://github.com/kcat/openal-soft
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja alsa-lib
+# Section:     audio
+
+name=openal
+version=1.19.1
+release=1
+source=("http://kcat.strangesoft.net/openal-releases/openal-soft-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/openal-soft-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/openal-soft-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
