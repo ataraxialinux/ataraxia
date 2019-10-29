@@ -1,0 +1,23 @@
+# Description: Color AsCii Art library
+# URL:         http://caca.zoy.org/wiki/libcaca
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libcaca
+version=0.99.beta19
+release=1
+options=('~emptydirs')
+source=("http://libcaca.zoy.org/files/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--enable-shared \
+		--disable-csharp \
+		--disable-cxx \
+		--disable-gl
+	make
+	make DESTDIR="$PKG" install
+}
