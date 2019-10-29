@@ -1,0 +1,22 @@
+# Description: Library that implements a custom algorithm for extracting fingerprints from any audio source
+# URL:         https://acoustid.org/chromaprint
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja ffmpeg
+# Section:     audio
+
+name=chromaprint
+version=1.4.3
+release=1
+source=("https://github.com/acoustid/chromaprint/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
