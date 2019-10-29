@@ -1,0 +1,26 @@
+# Description: A high-quality MPEG audio decoder
+# URL:         http://www.underbit.com/products/mad/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     sound
+
+name=libmad
+version=0.15.1b
+release=1
+source=("https://downloads.sourceforge.net/sourceforge/mad/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -p1 -i "$STUFF"/libmad/libmad.patch
+	patch -p1 -i "$STUFF"/libmad/amd64-64bit.diff
+	patch -p1 -i "$STUFF"/libmad/frame_length.diff
+	patch -p1 -i "$STUFF"/libmad/optimize.diff
+	patch -p0 -i "$STUFF"/libmad/mips-mode_di.patch
+
+	export CFLAGS="$CFLAGS -ftree-vectorize -ftree-vectorizer-verbose=1"
+	autoconf
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
