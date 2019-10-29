@@ -1,0 +1,20 @@
+# Description: Library to access Blu-Ray disks for video playback
+# URL:         https://www.videolan.org/developers/libbluray.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  fontconfig libxml2
+# Section:     video
+
+name=libbluray
+version=1.1.2
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-bdjava \
+		--disable-bdjava-jar
+	make
+	make DESTDIR="$PKG" install
+}
