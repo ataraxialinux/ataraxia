@@ -1,0 +1,19 @@
+# Description: A library for playing SID music files.
+# URL:         http://critical.ch/distfiles/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     audio
+
+name=libsidplay
+version=1.36.59
+release=1
+source=("https://critical.ch/distfiles/$name-$version.tgz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libsidplay/fix.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
