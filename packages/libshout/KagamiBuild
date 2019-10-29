@@ -1,0 +1,19 @@
+# Description: Library for accessing a shoutcast/icecast server
+# URL:         https://www.icecast.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl libtheora libvorbis speex
+# Section:     devel
+
+name=libshout
+version=2.4.3
+release=1
+options=('~emptydirs')
+source=("https://downloads.xiph.org/releases/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
