@@ -1,0 +1,21 @@
+# Description: Monospace bitmap font
+# URL:         https://sourceforge.net/projects/terminus-font
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python fontconfig encodings
+# Section:     fonts
+
+name=terminus-font
+version=4.46
+release=1
+source=("https://downloads.sourceforge.net/project/$name/$name-$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	chmod +x configure
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--psfdir=/usr/share/consolefonts \
+		--x11dir=/usr/share/fonts/misc
+	make
+	make DESTDIR="$PKG" install
+}
