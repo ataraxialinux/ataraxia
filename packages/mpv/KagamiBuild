@@ -1,0 +1,47 @@
+# Description: The GNU macro processor
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python ffmpeg lua52 libblueray libdvdnav libdvdread mesa lcms2 libjpeg-turbo openal sdl2 libx11 libxss libxext libxinerama libxrandr libxdamage libxv libxkbcommon wayland-protocols
+# Section:     video
+
+name=mpv
+version=0.30.0
+release=1
+source=("https://github.com/mpv-player/mpv/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./bootstrap.py
+
+	export CFLAGS="-D_GNU_SOURCE $CFLAGS"
+
+	./waf configure \
+		--prefix=/usr \
+		--confdir=/etc/mpv \
+		--enable-alsa \
+		--enable-drm \
+		--enable-dvdnav \
+		--enable-egl-drm \
+		--enable-egl-x11 \
+		--enable-gbm \
+		--enable-gl-wayland \
+		--enable-gl-x11 \
+		--enable-lcms2 \
+		--enable-libarchive \
+		--enable-libass \
+		--enable-libavdevice \
+		--enable-libbluray \
+		--enable-openal \
+		--enable-sdl2 \
+		--enable-wayland \
+		--enable-x11 \
+		--enable-xv \
+		--enable-zlib \
+		--disable-html-build \
+		--disable-manpage-build \
+		--disable-optimize \
+		--disable-pdf-build \
+		--disable-pulse
+	./waf build -j$JOBS
+	./waf install --destdir="$PKG"
+}
