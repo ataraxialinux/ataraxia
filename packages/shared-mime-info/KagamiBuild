@@ -8,7 +8,8 @@ name=shared-mime-info
 version=1.14
 oof=aee9ae9646cbef724bbb1bd2ba146556
 release=1
-source=("https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/$oof/$name-$version.tar.xz")
+source=("https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/$oof/$name-$version.tar.xz"
+	"$name.trigger")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -16,4 +17,6 @@ build() {
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm0644 "$SRC"/$name.trigger "$PKG"/var/lib/neko-triggers/$name
 }

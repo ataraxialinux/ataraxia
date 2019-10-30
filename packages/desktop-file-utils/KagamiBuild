@@ -7,7 +7,8 @@
 name=desktop-file-utils
 version=0.24
 release=1
-source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz")
+source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz"
+	"$name.trigger")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -15,4 +16,6 @@ build() {
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm0644 "$SRC"/$name.trigger "$PKG"/var/lib/neko-triggers/$name
 }

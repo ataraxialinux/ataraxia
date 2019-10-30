@@ -7,7 +7,8 @@
 name=dconf
 version=0.34.0
 release=2
-source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz"
+	"$name.trigger")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -20,4 +21,6 @@ build() {
 	DESTDIR="$PKG" ninja install
 
 	mkdir -p "$PKG"/etc/dconf/db
+
+	install -Dm0644 "$SRC"/$name.trigger "$PKG"/var/lib/neko-triggers/$name
 }
