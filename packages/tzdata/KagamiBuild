@@ -30,4 +30,7 @@ build() {
 
 	cp zone.tab zone1970.tab iso3166.tab $ZONEINFO
 	./zic -d $ZONEINFO -p America/New_York
+
+	mkdir -p "$PKG"/usr/bin
+	${CROSS_COMPILE}cc -I"$STUFF"/busybox -I"$STUFF"/tzdata -Wall -static "$STUFF"/busybox/reallocarray.c "$STUFF"/tzdata/zic.c -o "$PKG"/usr/bin/zic
 }
