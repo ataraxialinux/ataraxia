@@ -198,7 +198,7 @@ build_toolchain() {
 	touch "$TOOLS"/bin/ldconfig
 	chmod +x "$TOOLS"/bin/ldconfig
 
-	for toolchain in dpkg base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
+	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
 			linux-libc-dev binutils gcc-static musl gcc; do
 		case $toolchain in
 			base-files|linux-libc-dev)
@@ -208,14 +208,18 @@ build_toolchain() {
 				neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn ${toolchain}
 				;;
 			*)
-				neko install -c "$BUILD"/host.config -Wp host-${toolchain}
+				pushd "$TCREPO/host-$toolchain"
+					neko build -c "$BUILD"/host.config -WP
+				popd
 				;;
 		esac
 	done
 
 	case $BARCH in
 		amd64|i386|ppc64le|ppc64)
-				neko install -c "$BUILD"/host.config -Wp host-grub
+				pushd "$TCREPO/host-grub"
+					neko build -c "$BUILD"/host.config -WP
+				popd
 				;;
 	esac
 
