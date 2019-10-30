@@ -1,0 +1,367 @@
+#!/bin/bash
+
+set -e
+
+msg() {
+	if [ "$SILENT" != "1" ]; then
+		printf '[\033[32m INFO\033[m ] %s\n' "$@"
+	fi
+}
+
+die() {
+	if [ "$SILENT" != "1" ]; then
+		printf '[\033[31m FAIL\033[m ] %s\n' "$@"
+	fi
+	exit 1
+}
+
+pushd () { command pushd "$@" > /dev/null; }
+popd () { command popd "$@" > /dev/null; }
+
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die "You must be root to run 'build'"
+	fi
+}
+
+generate_config() {
+	local file="$1"
+
+if [ "$USE_TARGET" = "1" ]; then
+	cat > "$file" <<- EOF
+		export LC_ALL="$LC_ALL"
+		export BARCH="$BARCH"
+		export MKOPTS="$MKOPTS"
+		export OPTIONS=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' '~ccache')
+		export REPOS=("${REPO}")
+		export ROOTFS="$ROOTFS"
+		export TOOLS="$TOOLS"
+		export PKGDEST="$PACKAGES"
+		export SRCDEST="$SOURCES"
+		export CFLAGS="$CFLAGS"
+		export CXXFLAGS="$CXXFLAGS"
+		export XHOST="$XHOST"
+		export XTARGET="$XTARGET"
+		export CROSS_COMPILE="$XTARGET-"
+		export CC="$XTARGET-gcc"
+		export CXX="$XTARGET-g++"
+		export AR="$XTARGET-ar"
+		export AS="$XTARGET-as"
+		export RANLIB="$XTARGET-ranlib"
+		export LD="$XTARGET-ld"
+		export STRIP="$XTARGET-strip"
+		export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+		export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+		export PERLFLAGS="--target=$XTARGET"
+		export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+		export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+		export HOSTCC="$HOSTCC"
+		export HOSTCXX="$HOSTCXX"
+		export PATH="$PATH"
+		export STUFF="$STUFF"
+		export EMBEDDED="$EMBEDDED"
+	EOF
+elif [ "$USE_HOST" = "1" ]; then
+	cat > "$file" <<- EOF
+		export LC_ALL="$LC_ALL"
+		export BARCH="$BARCH"
+		export MKOPTS="$MKOPTS"
+		export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
+		export REPOS=("${TCREPO}" "${REPO}")
+		export ROOTFS="$ROOTFS"
+		export TOOLS="$TOOLS"
+		export PKGDEST="$PACKAGES"
+		export SRCDEST="$SOURCES"
+		export CFLAGS="$CFLAGS"
+		export CXXFLAGS="$CXXFLAGS"
+		export XHOST="$XHOST"
+		export XTARGET="$XTARGET"
+		export HOSTCC="$HOSTCC"
+		export HOSTCXX="$HOSTCXX"
+		export PATH="$PATH"
+		export STUFF="$STUFF"
+		export EMBEDDED="$EMBEDDED"
+	EOF
+fi
+}
+
+setup_architecture() {
+	case "$BARCH" in
+		amd64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="x86_64-linux-musl"
+			;;
+		i386)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="i586-linux-musl"
+			;;
+		arm64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="aarch64-linux-musl"
+			;;
+		armhf)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabihf"
+			;;
+		armel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="arm-linux-musleabi"
+			;;
+		mips64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64-linux-musl"
+			;;
+		mips64el)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips64el-linux-musl"
+			;;
+		mips)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mips-linux-musl"
+			;;
+		mipsel)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="mipsel-linux-musl"
+			;;
+		ppc64le)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64le-linux-musl"
+			;;
+		ppc64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="powerpc64-linux-musl"
+			;;
+		riscv64)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv64-linux-musl"
+			;;
+		riscv32)
+			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
+			export XTARGET="riscv32-linux-musl"
+			;;
+		*)
+			die "Architecture is not set or is not supported by 'build' script"
+	esac
+}
+
+setup_environment() {
+	msg "Setting up the build environment"
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$BARCH"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STUFF="$CWD/stuff"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export UTILS="$CWD/utils"
+
+	export LC_ALL="POSIX"
+	export PATH="$UTILS:$TOOLS/bin:$PATH"
+	export HOSTCC="gcc"
+	export HOSTCXX="g++"
+	export ORIGMAKE="$(which make)"
+
+	if [ -z "$JOBS" ]; then
+		export JOBS="$(expr $(nproc) + 1)"
+	fi
+
+	export MKOPTS="-j$JOBS"
+
+	if [ -z "$CFLAGS" ]; then
+		export CFLAGS="-g0 -Os -s -pipe"
+	fi
+	if [ -z "$CXXFLAGS" ]; then
+		export CXXFLAGS="$CFLAGS"
+	fi
+}
+
+build_environment() {
+	msg "Preparing the environment for build"
+
+	rm -rf "$BUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS"
+
+	USE_HOST=1 generate_config "$BUILD"/host.config
+	USE_TARGET=1 generate_config "$BUILD"/target.config
+}
+
+
+build_toolchain() {
+	msg "Building cross-toolchain for '${BARCH}' platform"
+
+	msg "Adding fake ldconfig"
+	mkdir -p "$TOOLS"/bin
+
+	touch "$TOOLS"/bin/ldconfig
+	chmod +x "$TOOLS"/bin/ldconfig
+
+	for toolchain in dpkg base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
+			linux-libc-dev binutils gcc-static musl gcc; do
+		case $toolchain in
+			base-files|linux-libc-dev)
+				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
+				;;
+			musl)
+				neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn ${toolchain}
+				;;
+			*)
+				neko install -c "$BUILD"/host.config -Wp host-${toolchain}
+				;;
+		esac
+	done
+
+	case $BARCH in
+		amd64|i386|ppc64le|ppc64)
+				neko install -c "$BUILD"/host.config -Wp host-grub
+				;;
+	esac
+
+	touch "$TOOLS"/.cross-linux
+
+	if [ "$BARCH" = "riscv32" ] || [ "$BARCH" = "riscv64" ]; then
+		if [ ! -f "$TOOLS/.cross-elf" ]; then
+			if [ -z "$ELFOPTS" ]; then
+				case $BARCH in
+					riscv64)
+						ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
+						;;
+					riscv32)
+						ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
+						;;
+				esac
+			fi
+
+			msg "Building cross-toolchain for '${BARCH}-elf' platform"
+			unset CFLAGS CXXFLAGS LDFLAGS
+
+			git clone https://github.com/protonesso/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
+			git clone https://github.com/riscv/riscv-gcc --depth 1 "$SOURCES"/riscv-tools/riscv-gcc
+			git clone https://github.com/riscv/riscv-binutils-gdb --depth 1 "$SOURCES"/riscv-tools/riscv-binutils
+			git clone https://github.com/riscv/riscv-newlib --depth 1 "$SOURCES"/riscv-tools/riscv-newlib
+
+			pushd "$SOURCES"/riscv-tools
+				./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
+				make -j$JOBS MAKEINFO="true"
+			popd
+
+			touch "$TOOLS"/.cross-elf
+		fi
+	fi
+
+	msg "Cleaning up"
+	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+}
+
+case $1 in
+	stage)
+		shift
+		while getopts :a:j:g:e:l:E opts; do
+			case $opts in
+				a)
+					BARCH="$OPTARG"
+					;;
+				j)
+					JOBS="$OPTARG"
+					;;
+				g)
+					GCCOPTS="$OPTARG"
+					;;
+				e)
+					ELFOPTS="$OPTARG"
+					;;
+				l)
+					LINUX="$OPTARG"
+					;;
+				E)
+					EMBEDDED="1"
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
+
+		case $1 in
+			meta-toolchain)
+				check_for_root
+				setup_architecture
+				setup_environment
+				build_environment
+				build_toolchain
+				;;
+			core-image-minimal)
+				check_for_root
+				setup_architecture
+				setup_environment
+				if [ ! -f "$TOOLS/.cross-linux" ]; then
+					build_environment
+					build_toolchain
+				fi
+				build_target
+				;;
+			*)
+				die "Specify target"
+				;;
+		esac
+		;;
+	image|installer|archive)
+		if [ -z "$1" ]; then
+			die "Specify target"
+		fi
+
+		case $1 in
+			installer)
+				prog="mklive"
+				;;
+			archive)
+				prog="mkstage"
+				;;
+			*)
+				prog="mk${1}"
+				;;
+		esac
+
+		shift
+		while getopts :a:j:l:E opts; do
+			case $opts in
+				a)
+					BARCH="$OPTARG"
+					;;
+				j)
+					JOBS="$OPTARG"
+					;;
+				l)
+					LINUX="$OPTARG"
+					;;
+				E)
+					EMBEDDED="1"
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
+
+		check_for_root
+		setup_architecture
+		setup_environment
+
+		source "$UTILS/$mode"
+		main
+		;;
+esac
+
+exit 0
+
