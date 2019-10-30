@@ -1,0 +1,48 @@
+# Description: Desktop-independent graphical login manager for X11
+# URL:         http://sourceforge.net/projects/slim.berlios/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja libpng libjpeg-turbo libxmu libxft libxrandr xorg-fonts
+# Section:     utils
+
+name=slim
+version=1.3.6
+release=1
+backup=('etc/slim.conf'
+	'etc/slimlock.conf'
+	'etc/logrotate.d/slim')
+source=("https://downloads.sourceforge.net/project/slim.berlios/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/slim/no-slimlock.patch
+	patch -Np1 -i "$STUFF"/slim/libslim-underlinking.patch
+	patch -Np1 -i "$STUFF"/slim/slim-freetype-dirs.patch
+	patch -Np1 -i "$STUFF"/slim/snprintf.patch
+	patch -Np1 -i "$STUFF"/slim/musl-includes.patch
+
+	sed -i -e 's|#xserver_arguments.*|xserver_arguments   -nolisten tcp vt07|'\
+		-e 's|/var/run/slim.lock|/run/lock/slim.lock|' \
+		-e 's|halt_cmd.*|halt_cmd            /sbin/poweroff|'\
+		-e 's|reboot_cmd.*|reboot_cmd          /sbin/reboot|'\
+		-e 's|console_cmd.*|console_cmd         /usr/bin/terminal|'\
+		-e 's|login_cmd.*|login_cmd           exec /bin/sh -l /etc/X11/xinit/xinitrc|' \
+		slim.conf
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_RPATH=ON \
+		-DUSE_CONSOLEKIT=no \
+		-DUSE_PAM=no \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	for svc in slim; do
+		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	done
+
+	install -Dm644 "$STUFF"/slim/logrotate "$PKG"/etc/logrotate.d/slim
+}
