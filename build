@@ -4,13 +4,13 @@ set -e
 
 msg() {
 	if [ "$SILENT" != "1" ]; then
-		printf '[\033[32m INFO\033[m ] %s\n' "$@"
+		printf "\033[1;32m *\033[0m %s\n" "$@"
 	fi
 }
 
 die() {
 	if [ "$SILENT" != "1" ]; then
-		printf '[\033[31m FAIL\033[m ] %s\n' "$@"
+		printf "\033[1;31m *\033[0m %s\n" "$@"
 	fi
 	exit 1
 }
@@ -28,11 +28,16 @@ generate_config() {
 	local file="$1"
 
 if [ "$USE_TARGET" = "1" ]; then
+	if [ "$EMBEDDED" = "1" ]; then
+		opts="emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool embedded"
+	else
+		opts="emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool"
+	fi
 	cat > "$file" <<- EOF
 		export LC_ALL="$LC_ALL"
 		export BARCH="$BARCH"
 		export MKOPTS="$MKOPTS"
-		export OPTIONS=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' '~ccache')
+		export OPTIONS=($opts)
 		export REPOS=("${REPO}")
 		export ROOTFS="$ROOTFS"
 		export TOOLS="$TOOLS"
@@ -66,7 +71,7 @@ elif [ "$USE_HOST" = "1" ]; then
 		export LC_ALL="$LC_ALL"
 		export BARCH="$BARCH"
 		export MKOPTS="$MKOPTS"
-		export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
+		export OPTIONS=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool)
 		export REPOS=("${TCREPO}" "${REPO}")
 		export ROOTFS="$ROOTFS"
 		export TOOLS="$TOOLS"

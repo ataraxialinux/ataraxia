@@ -12,11 +12,15 @@ options=('bootstrap' 'libtool')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
+		BUILDFLAGS="--build=$XTARGET"
+	fi
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 
-	cp libtoolize "$PKG"/usr/bin/libtoolize
+#	cp libtoolize "$PKG"/usr/bin/libtoolize
 }
