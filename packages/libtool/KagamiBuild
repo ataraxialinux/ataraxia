@@ -7,15 +7,16 @@
 
 name=libtool
 version=2.4.6
-release=1
-options=('bootstrap')
+release=2
+options=('bootstrap' 'libtool')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-static
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	cp libtoolize "$PKG"/usr/bin/libtoolize
 }
