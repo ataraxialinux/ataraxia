@@ -7,20 +7,16 @@
 
 name=libtool
 version=2.4.6
-release=2
-options=('bootstrap' 'libtool')
+release=3
+options=('~ccache' 'bootstrap' 'libtool')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
-	if [ "$USEBOOTSTRAP" != "yes" ]; then
-		BUILDFLAGS="--build=$XTARGET"
-	fi
-
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 
-#	cp libtoolize "$PKG"/usr/bin/libtoolize
+	mv libtoolize "$PKG"/usr/bin/
 }
