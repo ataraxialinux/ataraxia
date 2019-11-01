@@ -1,0 +1,22 @@
+# Description: Skinny libtool implementation, written in C
+# URL:         http://git.midipix.org/cgit.cgi/slibtool
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     devel
+
+name=slibtool
+version=2f64c91ead80bfb114a4a864c03e9b086be81ee5
+release=1
+options=('bootstrap')
+source=("https://github.com/midipix-project/slibtool/archive/$version.tar.gz")
+#source=("http://midipix.org/dl/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $TOOLFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf slibtool "$PKG"/usr/bin/libtool
+}
