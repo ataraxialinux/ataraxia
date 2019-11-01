@@ -401,7 +401,7 @@ case $1 in
 		while getopts a opts; do
 			case $opts in
 				a)
-					export AUTOBUMB="yes"
+					AUTOBUMB="yes"
 					;;
 				:)
 					die "Option '-${OPTARG}' needs an argument"
@@ -413,12 +413,16 @@ case $1 in
 		done
 		shift $((OPTIND - 1))
 
+		if [ "$AUTOBUMB" = "yes" ]; then
+			cuopt="-a"
+		fi
+
 		SILENT=1 setup_environment
 		msg "Checking packages for updates"
 		for packages in $(ls "$REPO/"); do
 			pushd "$REPO"
 				(
-					"$UTILS/check-updates" $packages
+					"$UTILS/check-updates" $cuopt $packages
 				)
 			popd
 		done
