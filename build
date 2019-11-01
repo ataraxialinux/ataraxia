@@ -396,6 +396,33 @@ case $1 in
 		source "$UTILS/$prog"
 		main
 		;;
+	check-updates)
+		shift
+		while getopts a opts; do
+			case $opts in
+				a)
+					export AUTOBUMB="yes"
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
+
+		SILENT=1 setup_environment
+		msg "Checking packages for updates"
+		for packages in $(ls "$REPO/"); do
+			pushd "$REPO"
+				(
+					"$UTILS/check-updates" $packages
+				)
+			popd
+		done
+		;;
 esac
 
 exit 0
