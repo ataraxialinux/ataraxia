@@ -1,19 +1,16 @@
 name=host-slibtool
-version=0.5.28
+version=2f64c91ead80bfb114a4a864c03e9b086be81ee5
 release=1
 options=('bootstrap')
-source=("http://midipix.org/dl/slibtool/slibtool-$version.tar.xz")
+source=("https://github.com/midipix-project/slibtool/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/slibtool-$version
-	CFLAGS_CMDLINE="$CFLAGS" CC="$HOSTCC" NATIVE_CC="$TOOLS/bin/XTARGET-gcc" \
 	./configure \
 		--prefix="$TOOLS" \
 		--sbindir="$TOOLS"/bin \
-		--target="$XTARGET" \
-		--toolchain=binutils \
-		--cross-compile="$TOOLS/bin/$XTARGET-" \
-		--compiler="$TOOLS/bin/$XTARGET-gcc"
+		--compiler="$XTARGET-gcc" \
+		--sysroot="$ROOTFS"
 	make
 	make install
 
