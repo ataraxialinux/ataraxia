@@ -1,0 +1,19 @@
+# Description: Low-latency audio communication codec
+# URL:         http://www.celt-codec.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libogg
+# Section:     audio
+
+name=celt
+version=0.11.3
+release=1
+source=("https://downloads.us.xiph.org/releases/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-custom-modes
+	make
+	make DESTDIR="$PKG" install
+}
