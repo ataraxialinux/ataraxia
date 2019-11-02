@@ -6,11 +6,12 @@
 
 name=glib
 version=2.62.2
-release=2
+release=3
 options=('~emptydirs')
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz"
 	"gio-modules.trigger" 
-	"glib-compile-schemas.trigger")
+	"glib-compile-schemas.trigger"
+	"update-glib-schemas")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -22,6 +23,8 @@ build() {
 		-Dselinux=disabled
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	install -Dm0755 "$SRC"/update-glib-schemas "$PKG"/usr/bin/update-glib-schemas
 
 	for a in gio-modules glib-compile-schemas; do
 		install -Dm0644 "$SRC"/$a.trigger "$PKG"/var/lib/neko-triggers/$a
