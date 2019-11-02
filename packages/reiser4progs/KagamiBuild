@@ -17,6 +17,12 @@ build() {
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--disable-shared
-	make
-	make DESTDIR="$PKG" install
+
+	if [ "$CROSS" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
 }
