@@ -1,19 +1,16 @@
 #!/bin/bash
-#
-# Utility to bootstrap Ataraxia Linux distribution
-#
 
 set -e
 
 msg() {
 	if [ "$SILENT" != "1" ]; then
-		printf '[\033[32m INFO\033[m ] %s\n' "$@"
+		printf "\033[1;32m *\033[0m %s\n" "$@"
 	fi
 }
 
 die() {
 	if [ "$SILENT" != "1" ]; then
-		printf '[\033[31m FAIL\033[m ] %s\n' "$@"
+		printf "\033[1;31m *\033[0m %s\n" "$@"
 	fi
 	exit 1
 }
@@ -31,11 +28,16 @@ generate_config() {
 	local file="$1"
 
 if [ "$USE_TARGET" = "1" ]; then
+	if [ "$EMBEDDED" = "1" ]; then
+		opts="emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool embedded"
+	else
+		opts="emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool"
+	fi
 	cat > "$file" <<- EOF
 		export LC_ALL="$LC_ALL"
 		export BARCH="$BARCH"
 		export MKOPTS="$MKOPTS"
-		export OPTIONS=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' '~ccache')
+		export OPTIONS=($opts)
 		export REPOS=("${REPO}")
 		export ROOTFS="$ROOTFS"
 		export TOOLS="$TOOLS"
@@ -60,6 +62,7 @@ if [ "$USE_TARGET" = "1" ]; then
 		export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
+		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 		export EMBEDDED="$EMBEDDED"
@@ -69,7 +72,7 @@ elif [ "$USE_HOST" = "1" ]; then
 		export LC_ALL="$LC_ALL"
 		export BARCH="$BARCH"
 		export MKOPTS="$MKOPTS"
-		export OPTIONS=('emptydirs' '~strip' 'makeflags' '~locales' '~docs' '~ccache')
+		export OPTIONS=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool)
 		export REPOS=("${TCREPO}" "${REPO}")
 		export ROOTFS="$ROOTFS"
 		export TOOLS="$TOOLS"
@@ -81,6 +84,7 @@ elif [ "$USE_HOST" = "1" ]; then
 		export XTARGET="$XTARGET"
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
+		export ORIGMAKE="$ORIGMAKE"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 		export EMBEDDED="$EMBEDDED"
@@ -191,6 +195,7 @@ build_environment() {
 	USE_TARGET=1 generate_config "$BUILD"/target.config
 }
 
+
 build_toolchain() {
 	msg "Building cross-toolchain for '${BARCH}' platform"
 
@@ -200,217 +205,230 @@ build_toolchain() {
 	touch "$TOOLS"/bin/ldconfig
 	chmod +x "$TOOLS"/bin/ldconfig
 
-	for toolchain in dpkg base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
-			linux-libc-dev binutils gcc-static musl gcc; do
+	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
+			linux-headers binutils gcc-static musl gcc slibtool; do
 		case $toolchain in
-			base-files|linux-libc-dev)
-				ne -c "$BUILD"/host.config -r "$ROOTFS" -EWn ${toolchain}
+			base-files|linux-headers)
+				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
 				;;
 			musl)
-				ne -c "$BUILD"/target.config -r "$ROOTFS" -EWn ${toolchain}
+				neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn ${toolchain}
 				;;
 			*)
-				ne -c "$BUILD"/host.config -EWp host-${toolchain}
+				pushd "$TCREPO/host-$toolchain"
+					neko build -c "$BUILD"/host.config -WP
+				popd
 				;;
 		esac
 	done
 
 	case $BARCH in
 		amd64|i386|ppc64le|ppc64)
-				ne -c "$BUILD"/host.config -EWp host-grub
+				pushd "$TCREPO/host-grub"
+					neko build -c "$BUILD"/host.config -WP
+				popd
 				;;
 	esac
 
 	touch "$TOOLS"/.cross-linux
 
 	if [ "$BARCH" = "riscv32" ] || [ "$BARCH" = "riscv64" ]; then
-		if [ -z "$ELFOPTS" ]; then
-			case $BARCH in
-				riscv64)
-					ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
-					;;
-				riscv32)
-					ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
-					;;
-			esac
+		if [ ! -f "$TOOLS/.cross-elf" ]; then
+			if [ -z "$ELFOPTS" ]; then
+				case $BARCH in
+					riscv64)
+						ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
+						;;
+					riscv32)
+						ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
+						;;
+				esac
+			fi
+
+			msg "Building cross-toolchain for '${BARCH}-elf' platform"
+			unset CFLAGS CXXFLAGS LDFLAGS
+
+			git clone https://github.com/protonesso/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
+			git clone https://github.com/riscv/riscv-gcc --depth 1 "$SOURCES"/riscv-tools/riscv-gcc
+			git clone https://github.com/riscv/riscv-binutils-gdb --depth 1 "$SOURCES"/riscv-tools/riscv-binutils
+			git clone https://github.com/riscv/riscv-newlib --depth 1 "$SOURCES"/riscv-tools/riscv-newlib
+
+			pushd "$SOURCES"/riscv-tools
+				./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
+				make -j$JOBS MAKEINFO="true"
+			popd
+
+			touch "$TOOLS"/.cross-elf
 		fi
-
-		msg "Building cross-toolchain for '${BARCH}-elf' platform"
-		unset CFLAGS CXXFLAGS LDFLAGS
-
-		git clone https://github.com/protonesso/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
-		git clone https://github.com/riscv/riscv-gcc --depth 1 "$SOURCES"/riscv-tools/riscv-gcc
-		git clone https://github.com/riscv/riscv-binutils-gdb --depth 1 "$SOURCES"/riscv-tools/riscv-binutils
-		git clone https://github.com/riscv/riscv-newlib --depth 1 "$SOURCES"/riscv-tools/riscv-newlib
-
-		pushd "$SOURCES"/riscv-tools
-			./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
-			make -j$JOBS MAKEINFO="true"
-		popd
-
-		touch "$TOOLS"/.cross-elf
 	fi
 
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
+	chmod +x "$TOOLS"/bin/make
 }
 
 build_target() {
 	msg "Building target system for '${BARCH}' platform"
 
 	if [ -z "$LINUX" ]; then
-		LINUX="linux-image"
+		LINUX="linux"
 	fi
 
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox mksh"
 	else
 		packages="tzdata man-pages musl-tools gettext-tiny zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-			ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
+			ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash slibtool gdbm db expat perl nettle libressl ca-certificates \
 			autoconf automake xz lzip lz4 zstd libarchive kmod libuargp libelf busybox mandoc dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack \
-			libnl libpcap iptables iproute2 kbd make patch tar vim libcap-ng util-linux e2fsprogs libaal reiser4progs dosfstools hwids gperf eudev \
-			$LINUX popt rsync dpkg dhcpcd wireless_tools wpa_supplicant gptfdisk wget keyring debootstrap lynx libssh2 c-ares libev nghttp2 curl ne"
+			libnl libpcap iptables iproute2 kbd make patch vim libcap-ng util-linux e2fsprogs libaal reiser4progs dosfstools hwids gperf eudev \
+			popt rsync dhcpcd wireless_tools wpa_supplicant gptfdisk wget keyring lynx libssh2 c-ares libev nghttp2 curl oniguruma jq neko $LINUX"
 	fi
 
-	ne -c "$BUILD"/target.config -r "$ROOTFS" -EWn $packages
+	neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn $packages
 }
 
-while getopts s:a:j:g:e:l:EuASLIcC options; do
-	case $options in
-		s)
-			mode=stage
-			STAGE="$OPTARG"
-			;;
-		u)
-			mode=check-updates
-			;;
-		A)
-			mode=autobumb
-			;;
-		S)
-			mode=mkstage
-			;;
-		L)
-			mode=mklive
-			;;
-		I)
-			mode=mkimage
-			;;
-		c)
-			mode=clean
-			dontreallyclean=0
-			;;
-		C)
-			mode=clean
-			dontreallyclean=1
-			;;
-		a)
-			BARCH="$OPTARG"
-			;;
-		j)
-			JOBS="$OPTARG"
-			;;
-		g)
-			GCCOPTS="$OPTARG"
-			;;
-		e)
-			ELFOPTS="$OPTARG"
-			;;
-		l)
-			LINUX="$OPTARG"
-			;;
-		E)
-			EMBEDDED="1"
-			;;
-		:)
-			die "Option '-${OPTARG}' needs an argument"
-			;;
-		\?)
-			die "Option '-${OPTARG}' is illegal"
-			;;
-	esac
-done
-if [ "$#" -eq 0 ]; then
-	die "Specify options."
-fi
-shift $((OPTIND - 1))
+case $1 in
+	stage)
+		shift
+		while getopts :a:j:g:e:l:E opts; do
+			case $opts in
+				a)
+					BARCH="$OPTARG"
+					;;
+				j)
+					JOBS="$OPTARG"
+					;;
+				g)
+					GCCOPTS="$OPTARG"
+					;;
+				e)
+					ELFOPTS="$OPTARG"
+					;;
+				l)
+					LINUX="$OPTARG"
+					;;
+				E)
+					EMBEDDED="1"
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
 
-if [ "$mode" = "check-updates" ] || [ "$mode" = "autobumb" ]; then
-	case $mode in
-		autobumb)
-			cmd="check-updates -a"
-			;;
-		check-updates)
-			cmd="check-updates"
-			;;
-	esac
-
-	SILENT=1 setup_environment
-	msg "Checking packages for updates"
-	for packages in $(ls "$REPO/"); do
-		pushd "$REPO"
-			(
-				$cmd $packages
-			)
-		popd
-	done
-elif [ "$mode" = "stage" ]; then
-	case $STAGE in
-		0)
-			check_for_root
-			setup_architecture
-			setup_environment
-			build_environment
-			build_toolchain
-			;;
-		1)
-			check_for_root
-			setup_architecture
-			setup_environment
-			if [ ! -f "$TOOLS/.cross-linux" ]; then
+		case $1 in
+			meta-toolchain)
+				check_for_root
+				setup_architecture
+				setup_environment
 				build_environment
 				build_toolchain
-			fi
-			build_target
-			;;
-		*)
-			die "Stage number was not selected or is not supported"
-			;;
-	esac
-elif [ "$mode" = "mkstage" ] || [ "$mode" = "mkimage" ] || [ "$mode" = "mklive" ]; then
-		check_for_root
-		setup_architecture
-		setup_environment
-
-		. "$UTILS/$mode"
-
-		main
-elif [ "$mode" = "clean" ]; then
-		check_for_root
-		setup_architecture
-		setup_environment
-
-		if [ "$dontreallyclean" = "1" ]; then
-			if [ -z "$LINUX" ]; then
-				LINUX="linux-image"
-			fi
-
-			if [ "$EMBEDDED" = "1" ]; then
-				packages="zlib kmod bc libuargp musl-obstrack bzip2 libuargp libelf lz4 xz zstd libressl $LINUX busybox"
-			else
-				packages="tzdata man-pages musl-tools zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-					ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
-					autoconf automake xz lzip lz4 zstd libarchive kmod gettext-tiny musl-fts libuargp libuargp libelf busybox mandoc dialog pigz libmnl libnftnl \
-					libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch tar vim libcap-ng util-linux e2fsprogs \
-					musl-obstack reiserfsprogs dosfstools hwids gperf eudev $LINUX dpkg dhcpcd wireless_tools wpa_supplicant popt gptfdisk wget keyring debootstrap lynx \
-					libssh2 c-ares libev nghttp2 curl ne"
-			fi
-
-			dpkg --root="$ROOTFS" --force-all -P $packages
-		else
-			rm -rf "$BUILD"
+				;;
+			core-image-minimal)
+				check_for_root
+				setup_architecture
+				setup_environment
+				if [ ! -f "$TOOLS/.cross-linux" ]; then
+					build_environment
+					build_toolchain
+				fi
+				build_target
+				;;
+			*)
+				die "Specify target"
+				;;
+		esac
+		;;
+	image|installer|archive)
+		if [ -z "$1" ]; then
+			die "Specify target"
 		fi
-fi
+
+		case $1 in
+			installer)
+				prog="mklive"
+				;;
+			archive)
+				prog="mkstage"
+				;;
+			*)
+				prog="mk${1}"
+				;;
+		esac
+
+		shift
+		while getopts :a:j:l:E opts; do
+			case $opts in
+				a)
+					BARCH="$OPTARG"
+					;;
+				j)
+					JOBS="$OPTARG"
+					;;
+				l)
+					LINUX="$OPTARG"
+					;;
+				E)
+					EMBEDDED="1"
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
+
+		check_for_root
+		setup_architecture
+		setup_environment
+
+		source "$UTILS/$prog"
+		main
+		;;
+	check-updates)
+		shift
+		while getopts a opts; do
+			case $opts in
+				a)
+					AUTOBUMB="yes"
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
+
+		if [ "$AUTOBUMB" = "yes" ]; then
+			cuopt="-a"
+		fi
+
+		SILENT=1 setup_environment
+		msg "Checking packages for updates"
+		for packages in $(ls "$REPO/"); do
+			pushd "$REPO"
+				(
+					"$UTILS/check-updates" $cuopt $packages
+				)
+			popd
+		done
+		;;
+esac
 
 exit 0
+

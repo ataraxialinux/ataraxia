@@ -1,0 +1,25 @@
+# Description: Command-line JSON processor
+# URL:         http://stedolan.github.io/jq/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  oniguruma
+# Priority:    required
+# Section:     utils
+
+name=jq
+version=1.6
+release=1
+options=('bootstrap')
+source=("https://github.com/stedolan/jq/releases/download/$name-$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/jq/711caddc7a7ddf42babca8799f5a77d8559917e2.patch
+	autoreconf -vif
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-all-static \
+		--disable-docs
+	make
+	make DESTDIR="$PKG" install
+}

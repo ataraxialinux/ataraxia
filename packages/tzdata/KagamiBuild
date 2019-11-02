@@ -8,15 +8,29 @@ name=tzdata
 version=2019c
 release=1
 options=('bootstrap' '~emptydirs')
-source=("https://data.iana.org/time-zones/releases/tzdb-$version.tar.lz")
+source=("https://www.iana.org/time-zones/repository/releases/tzdata${version}.tar.gz")
 
 build() {
-	cd "$SRC"/tzdb-$version
-	sed -i "s:sbin:bin:g" Makefile
-	make CFLAGS="$CFLAGS"
-	make DESTDIR="$PKG" install
+	HOSTCC=${HOSTCC:-cc}
 
-	rm -rf "$PKG"/etc
-	rm -rf "$PKG"/usr/share/man/man{5,8}
-	rm -rf "$PKG"/usr/bin "$PKG"/usr/lib
+	cd "$SRC"
+	$HOSTCC -I"$STUFF"/busybox -I"$STUFF"/tzdata -Wall -static "$STUFF"/busybox/reallocarray.c \
+		"$STUFF"/busybox/strlcpy.c "$STUFF"/busybox/strlcat.c \
+		"$STUFF"/tzdata/zic.c -o "$SRC"/zic
+
+	ZONEINFO="$PKG"/usr/share/zoneinfo
+	mkdir -pv $ZONEINFO/{posix,right}
+
+	for tz in etcetera southamerica northamerica europe africa antarctica  \
+		asia australasia backward pacificnew systemv; do
+		./zic -L /dev/null -d $ZONEINFO ${tz}
+		./zic -L /dev/null -d $ZONEINFO/posix ${tz}
+		./zic -L leapseconds -d $ZONEINFO/right ${tz}
+	done
+
+	cp zone.tab zone1970.tab iso3166.tab $ZONEINFO
+	./zic -d $ZONEINFO -p America/New_York
+
+	mkdir -p "$PKG"/usr/bin
+	${CROSS_COMPILE}cc -I"$STUFF"/busybox -I"$STUFF"/tzdata -Wall -static "$STUFF"/busybox/reallocarray.c "$STUFF"/tzdata/zic.c -o "$PKG"/usr/bin/zic
 }

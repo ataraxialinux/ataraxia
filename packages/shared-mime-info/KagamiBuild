@@ -5,15 +5,19 @@
 # Section:     x11
 
 name=shared-mime-info
-version=1.14
-oof=aee9ae9646cbef724bbb1bd2ba146556
+version=1.15
 release=1
-source=("https://gitlab.freedesktop.org/xdg/shared-mime-info/uploads/$oof/$name-$version.tar.xz")
+source=("https://github.com/freedesktop/xdg-shared-mime-info/archive/Release-${version//./-}.tar.gz"
+	"$name.trigger")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/xdg-shared-mime-info-Release-${version//./-}
+	autoreconf -vif
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm0644 "$SRC"/$name.trigger "$PKG"/var/lib/neko-triggers/$name
 }

@@ -2,59 +2,61 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 #### Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf bsdtar xorriso curl git mtools liblzma-dev pigz libgmp-dev libmpfr-dev libmpc-dev pixz libelf-dev libssl-dev zlib1g-dev zstd rsync
+apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz pixz zstd rsync jq liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libcurl4-openssl-dev libarchive-dev libzstd-dev
 ```
 #### Arch Linux (and derivatives):
 ```
-pacman -S base-devel xorriso mtools git pigz python pixz rsync
+pacman -S base-devel xorriso mtools git pigz python pixz rsync jq
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel xorriso mtools git patch pigz python3 python pixz zlib-devel liblzma-devel zstd rsync
+xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel
 ```
 #### Ataraxia Linux:
 ```
 ne -E libisoburn python mtools pixz
 ```
 
-### Compiling pkgutils
-Ataraxia Linux uses kagami as its package manager. You should do this commands to install pkgutils (**AS ROOT**):
+### Compiling package manager
+Ataraxia Linux uses `neko` as its package manager. You should do this commands to install pkgutils (**AS ROOT**):
 ```
 cd /tmp
-git clone https://github.com/ataraxialinux/ne.git --depth 1
-cd ne
-./build.sh -B
-./build.sh -I
+git clone https://github.com/ataraxialinux/neko.git --depth 1
+cd neko
+autoreconf -vif
+./configure --disable-libprotonesso
+make
+make install
 ```
 
 ### Building
 Arguments supported by "build script":
 ```
- -s <Stage number>		- Select stage for build
+stage		- Select stage for build
+image		- Build image to deploy to hard drive or sdcard
+installer	- Build installer image
+archive		- Build stage archive
+```
+Sub-arguments supported by "build script":
+```
  -a <Architecture>		- Select architecture for build
  -j <number of core>		- Specify number of cores/threads for build
  -g <Options for gcc>		- Specify options for GCC
  -l <Linux kernel package>	- Specify your custom Linux kernel package
  -E				- Enable build for embedded devices
- -S				- Build stage archive
- -L				- Build live/installer image
- -I				- Build image to deploy to hard drive or sdcard.
- -c				- Clean everything after build.
- -C				- Clean everything except toolchain.
 ```
 We have seperated the build process into seperate "stages":
 ```
- * 0          - This stage intended to compile cross-toolchain
- * 1          - This stage intended to compile basic target system with cross-compiler (You don't need to compile stage 0)
-
+ * meta-toolchain         - This stage intended to compile cross-toolchain
+ * core-image-minimal     - This stage intended to compile basic target system with cross-compiler (You don't need to compile stage 0)
 ```
 To begin the bootstrap process, **as root**:
-```
-./build -s [stage number] -a [supported architecture]
-```
 See [supported platforms and architecures.](platforms.md)
+```
+./build stage -a [supported architecture] [stage name]
+```
 After bootstrap you can build target images
 ```
-./build [-SLI] -a [supported architecture]
+./build [image|installer|archive] -a [supported architecture]
 ```
 And magic happens!

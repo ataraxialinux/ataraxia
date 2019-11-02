@@ -1,0 +1,100 @@
+# Description: A libre standalone web browser based on Mozilla Firefox
+# URL:         http://www.gnu.org/software/gnuzilla/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm dbus-glib ffmpeg gtk3 gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
+# Section:     net
+
+name=icecat
+version=68.2.0
+release=1
+options=('~emptydirs' '~ccache')
+source=("https://sagitter.fedorapeople.org/icecat/v${version}/$name-${version}-gnu1.tar.bz2")
+
+build() {
+	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/icecat/fix-fortify-system-wrappers.patch
+	patch -Np1 -i "$STUFF"/icecat/fix-seccomp-bpf.patch
+	patch -Np1 -i "$STUFF"/icecat/fix-toolkit.patch
+	patch -Np1 -i "$STUFF"/icecat/fix-tools.patch
+	patch -Np1 -i "$STUFF"/icecat/mallinfo.patch
+	patch -Np1 -i "$STUFF"/icecat/disable-moz-stackwalk.patch
+	patch -Np1 -i "$STUFF"/icecat/fix-musl.patch
+	patch -Np1 -i "$STUFF"/icecat/fix-webrtc-glibcisms.patch
+	patch -Np1 -i "$STUFF"/icecat/fix-sandbox-membarrier.patch
+
+	cp "$STUFF"/icecat/stab.h toolkit/crashreporter/google-breakpad/src/
+
+	cat > mozconfig <<-EOF
+		export BUILD_OFFICIAL=1	
+		export MOZILLA_OFFICIAL=1
+		mk_add_options BUILD_OFFICIAL=1
+		mk_add_options MOZILLA_OFFICIAL=1
+		ac_add_options --enable-dbus
+		ac_add_options --disable-necko-wifi
+		ac_add_options --enable-startup-notification
+		ac_add_options --disable-pulseaudio
+		ac_add_options --enable-alsa
+		ac_add_options --enable-av1
+		ac_add_options --enable-ffmpeg
+		ac_add_options --disable-debug-symbols
+		ac_add_options --prefix=/usr
+		ac_add_options --enable-application=browser
+		ac_add_options --disable-elf-hack
+		ac_add_options --disable-gold
+		ac_add_options --disable-jemalloc
+		ac_add_options --disable-profiling
+		ac_add_options --enable-release
+		ac_add_options --enable-rust-simd
+		ac_add_options --enable-hardening
+		ac_add_options --disable-crashreporter
+		ac_add_options --disable-updater
+		ac_add_options --disable-tests
+		ac_add_options --enable-system-ffi
+		ac_add_options --enable-system-pixman
+		ac_add_options --enable-system-sqlite
+		ac_add_options --enable-startup-notification
+		ac_add_options --with-system-bz2
+		ac_add_options --with-system-icu
+		ac_add_options --with-system-libevent
+		ac_add_options --with-system-nspr
+		ac_add_options --with-system-nss
+		ac_add_options --with-system-pixman
+		ac_add_options --with-system-png
+		ac_add_options --with-system-webp
+		ac_add_options --with-system-zlib
+		ac_add_options --enable-update-channel=release
+		ac_add_options --enable-official-branding
+		ac_add_options --disable-gconf
+		ac_add_options --host=$XTARGET
+		ac_add_options --target=$XTARGET
+		unset MOZ_TELEMETRY_REPORTING
+	EOF
+
+	./mach build -j$(nproc)
+	DESTDIR="$PKG" ./mach install
+
+	for i in 16 22 24 32 48 64 128; do
+		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/icecat.png
+	done
+
+	mkdir -p "$PKG"/usr/bin/
+	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
+
+	mkdir -p "$PKG"/usr/share/applications/
+	cat > "$PKG"/usr/share/applications/icecat.desktop <<-EOF
+		[Desktop Entry]
+		Encoding=UTF-8
+		Name=GNU IceCat
+		Comment=Browse the World Wide Web
+		GenericName=Web Browser
+		Exec=firefox %u
+		Terminal=false
+		Type=Application
+		Icon=icecat
+		Categories=GNOME;GTK;Network;WebBrowser;
+		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
+		StartupNotify=true
+	EOF
+}

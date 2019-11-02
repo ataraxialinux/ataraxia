@@ -159,6 +159,9 @@ fi
 dmesg > /var/log/dmesg.log
 chmod 600 /var/log/dmesg.log
 
+# https://github.com/ataraxialinux/ataraxia/blob/b4f1add0cc95e896ef9218482fbe023cc44c516c/stuff/rc.init#L88
+echo "Welcome to your box..."
+
 if [ "$single" = "1" ]; then
 	setsid cttyhack /usr/bin/mksh
 	if [ "$live" != "1" ]; then

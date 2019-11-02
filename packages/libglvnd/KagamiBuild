@@ -6,19 +6,23 @@
 
 name=libglvnd
 version=1.2.0
-release=3
+release=4
 source=("https://github.com/NVIDIA/libglvnd/archive/v$version.tar.gz")
 
 build() {
+	die -1 "Awaitng for new release"
+
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libglvnd/0001-Add-a-configure-option-to-disable-glesv1-or-glesv2.patch
+	patch -Np1 -i "$STUFF"/libglvnd/update-gl-h-to-match-mesa.patch
+	patch -Np1 -i "$STUFF"/libglvnd/egl-sync-with-khronos.patch
+	patch -Np1 -i "$STUFF"/libglvnd/EGL-Set-EGL_NO_X11-macro.patch
 	./autogen.sh
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--disable-headers \
+		--disable-gles1 \
 		--disable-tls
 	make
 	make DESTDIR="$PKG" install
-
-	rm "$PKG"/usr/lib/pkgconfig/glesv1*
-	rm "$PKG"/usr/lib/libGLESv1*
 }

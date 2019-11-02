@@ -43,6 +43,7 @@ build_busybox_standard() {
 
 	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static pr.c egetopt.c strtonum.c -o "$PKG"/usr/bin/pr
 	${CROSS_COMPILE}cc $CFLAGS -static apply.c -o "$PKG"/usr/bin/what
+	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static reallocarray.c fmt.c -o "$PKG"/usr/bin/fmt
 	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/apply
 	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/who
 	${CROSS_COMPILE}cc $CFLAGS -static nologin.c -o "$PKG"/usr/bin/nologin
@@ -50,7 +51,7 @@ build_busybox_standard() {
 
 	rm -rf y.tab.c
 
-	for a in apply.1 pr.1 what.1 who.1 doas.1; do
+	for a in apply.1 pr.1 what.1 who.1 doas.1 fmt.1; do
 		install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
 	done
 	install -Dm0644 "$STUFF"/busybox/doas.conf.5 "$PKG"/usr/share/man/man5/doas.conf.5
