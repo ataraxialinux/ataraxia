@@ -6,7 +6,7 @@
 
 name=sysprof
 version=3.34.1
-release=1
+release=2
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -15,7 +15,10 @@ build() {
 
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dsystemdunitdir=no
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	rm -rf "$PKG"/usr/no
 }
