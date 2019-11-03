@@ -19,6 +19,7 @@ build() {
 	bsdtar -C "$PKG"/usr/share/unicode/ucd -x -v --no-same-owner --no-same-permissions -f "$SRC"/UCD.zip
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/ibus/8f3ad9a37a28c7b9957870368449a10b83b8d77b.patch
 	sed -i 's@/desktop/ibus@/org/freedesktop/ibus@g' data/dconf/org.freedesktop.ibus.gschema.xml
 
 	./configure $BUILDFLAGS \

@@ -1,0 +1,51 @@
+From 8f3ad9a37a28c7b9957870368449a10b83b8d77b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <47295761+protonesso@users.noreply.github.com>
+Date: Mon, 4 Nov 2019 02:05:44 +0900
+Subject: [PATCH] get rid of dconf_is_key
+
+---
+ conf/dconf/config.c | 30 +++++++++++-------------------
+ 1 file changed, 11 insertions(+), 19 deletions(-)
+
+diff --git a/conf/dconf/config.c b/conf/dconf/config.c
+index 30ac137d..241246b3 100644
+--- a/conf/dconf/config.c
++++ b/conf/dconf/config.c
+@@ -176,26 +176,18 @@ _watch_func (DConfClient         *client,
+     g_return_if_fail (gpath != NULL);
+     g_return_if_fail (n_items >= 0);
+ 
+-    if (dconf_is_key (gpath, NULL)) {
+-        /* If path is a key, the notification should be taken to mean
+-           that one key may have changed. */
+-        n_items = 1;
+-        gkeys = g_malloc0_n (n_items + 1, sizeof (gchar *));
+-        gkeys[0] = g_strdup (gpath);
++    if (n_items == 0) {
++        /* If path is a dir and items is empty then it is an
++           indication that any key under path may have
++           changed. */
++        gkeys = dconf_client_list (config->client, gpath, &n_items);
+     } else {
+-        if (n_items == 0) {
+-            /* If path is a dir and items is empty then it is an
+-               indication that any key under path may have
+-               changed. */
+-            gkeys = dconf_client_list (config->client, gpath, &n_items);
+-        } else {
+-            gkeys = g_boxed_copy (G_TYPE_STRV, items);
+-        }
+-        for (i = 0; i < n_items; i++) {
+-            gchar *gname = gkeys[i];
+-            gkeys[i] = g_strdup_printf ("%s/%s", gpath, gname);
+-            g_free (gname);
+-        }
++        gkeys = g_boxed_copy (G_TYPE_STRV, items);
++    }
++    for (i = 0; i < n_items; i++) {
++        gchar *gname = gkeys[i];
++        gkeys[i] = g_strdup_printf ("%s/%s", gpath, gname);
++        g_free (gname);
+     }
+ 
+     for (i = 0; i < n_items; i++) {
