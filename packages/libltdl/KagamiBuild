@@ -1,0 +1,26 @@
+# Description: A generic library support script
+# URL:         http://www.gnu.org/software/libtool
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gcc
+# Section:     devel
+
+name=libltdl
+version=2.4.6
+release=1
+options=('bootstrap')
+source=("http://ftp.gnu.org/gnu/libtool/libtool-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-static
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE -C libltdl
+		$ORIGMAKE -C libltdl DESTDIR="$PKG" install
+	else
+		make -C libltdl
+		make -C libltdl DESTDIR="$PKG" install
+	fi
+}
