@@ -168,7 +168,7 @@ check_updates() {
 		if $consider; then
 			vercmp "$original_pkgname-${version}_1" "$original_pkgname-$(printf %s "$found_version" | tr - .)_1"
 			if [ $? = 255 ]; then
-				if [ "$AUTODUMP" = "yes" ]; then
+				if [ "$AUTOBUMB" = "yes" ]; then
 					msg "Auto-updating ${original_pkgname} to ${found_version}"
 					local oldver oldrel
 					oldver="$(grep ^version $mypkg/KagamiBuild | sed -e 's,version=,,g' )"
@@ -183,12 +183,12 @@ check_updates() {
 	done
 }
 
-AUTODUMP="no"
+AUTOBUMB="no"
 
 while getopts a options; do
 	case $options in
 		a)
-			AUTODUMP="yes"
+			AUTOBUMB="yes"
 			;;
 	esac
 done

@@ -421,12 +421,11 @@ case $1 in
 		SILENT=1 setup_environment
 		msg "Checking packages for updates"
 		for packages in $(ls "$REPO/"); do
-			if [ "$packages" = "libsass" ]; then
-				unset cuopt
-			fi
-
 			pushd "$REPO"
 				(
+					if [ "$packages" = "libsass" ]; then
+						cuopt=""
+					fi
 					"$UTILS/check-updates" $cuopt $packages
 				)
 			popd
