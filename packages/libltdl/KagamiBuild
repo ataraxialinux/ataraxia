@@ -17,10 +17,12 @@ build() {
 		--disable-static
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE -C libltdl
-		$ORIGMAKE -C libltdl DESTDIR="$PKG" install
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
 	else
-		make -C libltdl
-		make -C libltdl DESTDIR="$PKG" install
+		make
+		make DESTDIR="$PKG" install
 	fi
+
+	rm -rf "$PKG"/usr/share/aclocal "$PKG"/usr/bin
 }
