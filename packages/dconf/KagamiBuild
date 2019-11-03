@@ -12,6 +12,9 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i 's|link_whole|link_with|' common/meson.build
+	sed -i 's/module/& | grep -v mangle_path/' gsettings/abicheck.sh
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
