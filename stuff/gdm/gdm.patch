@@ -1,6 +1,15 @@
-diff -ruN gdm-3.34.1-orig/common/gdm-address.c gdm-3.34.1/common/gdm-address.c
---- gdm-3.34.1-orig/common/gdm-address.c	2017-07-11 19:44:52.000000000 +0900
-+++ gdm-3.34.1/common/gdm-address.c	2019-10-10 03:48:54.482667801 +0900
+--- gdm-3.34.1-orig/Makefile.am
++++ gdm-3.34.1/Makefile.am
+@@ -7,7 +7,6 @@
+ 	daemon 			\
+ 	libgdm 			\
+ 	utils 			\
+-	pam_gdm			\
+ 	po 			\
+ 	tests 			\
+ 	$(NULL)
+--- gdm-3.34.1-orig/common/gdm-address.c
++++ gdm-3.34.1/common/gdm-address.c
 @@ -29,6 +29,8 @@
  #include <stropts.h>
  #endif
@@ -26,9 +35,8 @@ diff -ruN gdm-3.34.1-orig/common/gdm-address.c gdm-3.34.1/common/gdm-address.c
  
  #include <glib-object.h>
  
-diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
---- gdm-3.34.1-orig/common/gdm-common.c	2019-09-25 03:10:25.000000000 +0900
-+++ gdm-3.34.1/common/gdm-common.c	2019-10-10 03:48:54.482667801 +0900
+--- gdm-3.34.1-orig/common/gdm-common.c
++++ gdm-3.34.1/common/gdm-common.c
 @@ -36,12 +36,25 @@
  
  #include "gdm-common.h"
@@ -60,7 +68,8 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
  }
  
 +#ifdef WITH_CONSOLE_KIT
-+gboolean
+ gboolean
+-gdm_activate_session_by_id (GDBusConnection *connection,
 +get_current_session_id (GDBusConnection  *connection,
 +                        char            **session_id)
 +{
@@ -138,8 +147,7 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
 +        return seat_id;
 +}
 +
- gboolean
--gdm_activate_session_by_id (GDBusConnection *connection,
++gboolean
 +activate_session_id_for_ck (GDBusConnection *connection,
                              const char      *seat_id,
                              const char      *session_id)
@@ -373,7 +381,7 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
  {
          gboolean   ret;
          int        res, i;
-@@ -476,8 +779,8 @@
+@@ -476,15 +779,14 @@
  }
  
  static gboolean
@@ -384,7 +392,27 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
  {
          gboolean        ret;
          int             res;
-@@ -530,9 +833,9 @@
+         char           *our_session;
+         char           *session_id;
+         char           *seat_id;
+-        GError         *local_error = NULL;
+ 
+         ret = FALSE;
+         session_id = NULL;
+@@ -497,8 +799,10 @@
+          * since the data allocated is from libsystemd-logind, which
+          * does not use GLib's g_malloc (). */
+ 
+-        if (!gdm_find_display_session_for_uid (getuid (), &our_session, &local_error)) {
+-                g_propagate_prefixed_error (error, local_error, _("Could not identify the current session: "));
++        res = sd_pid_get_session (0, &our_session);
++        if (res < 0) {
++                g_debug ("failed to determine own session: %s", strerror (-res));
++                g_set_error (error, GDM_COMMON_ERROR, 0, _("Could not identify the current session."));
+ 
+                 return FALSE;
+         }
+@@ -530,9 +834,9 @@
                  return FALSE;
          }
  
@@ -396,7 +424,7 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
  
                  if (res) {
                          ret = TRUE;
-@@ -551,6 +854,7 @@
+@@ -551,6 +855,7 @@
  
          return ret;
  }
@@ -404,7 +432,7 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
  
  gboolean
  gdm_goto_login_session (GError **error)
-@@ -566,7 +870,17 @@
+@@ -566,7 +871,17 @@
                  return FALSE;
          }
  
@@ -423,71 +451,159 @@ diff -ruN gdm-3.34.1-orig/common/gdm-common.c gdm-3.34.1/common/gdm-common.c
  }
  
  static void
-@@ -850,7 +1164,11 @@
-         int saved_errno;
-         g_autofree gchar *type = NULL;
- 
-+#ifdef HAVE_SYSTEMD
-         saved_errno = sd_session_get_type (session_id, &type);
-+#else
-+        saved_errno = 1;
-+#endif
-         if (saved_errno < 0) {
-                 g_warning ("Couldn't get type for session '%s': %s",
-                            session_id,
-@@ -881,7 +1199,11 @@
-          * checking for a race condition since we specified
-          * GDM_SYSTEMD_SESSION_REQUIRE_ONLINE)
-          */
-+#ifdef HAVE_SYSTEMD
-         saved_errno = sd_session_get_state (session_id, &state);
-+#else
-+        saved_errno = 1;
-+#endif
-         if (saved_errno < 0) {
-                 g_warning ("Couldn't get state for session '%s': %s",
-                            session_id,
-@@ -910,9 +1232,13 @@
- 
-         g_debug ("Finding a graphical session for user %d", uid);
- 
-+#ifdef HAVE_SYSTEMD
-         n_sessions = sd_uid_get_sessions (uid,
-                                           GDM_SYSTEMD_SESSION_REQUIRE_ONLINE,
-                                           &sessions);
-+#else
-+        n_sessions = 1;
-+#endif
- 
-         if (n_sessions < 0) {
-                 g_set_error (error,
-diff -ruN gdm-3.34.1-orig/common/gdm-common.h gdm-3.34.1/common/gdm-common.h
---- gdm-3.34.1-orig/common/gdm-common.h	2019-08-15 19:11:31.000000000 +0900
-+++ gdm-3.34.1/common/gdm-common.h	2019-10-10 03:48:54.482667801 +0900
-@@ -37,6 +37,9 @@
+@@ -841,114 +1156,4 @@
+                 }
+         }
+         return g_string_free (s, FALSE);
+-}
+-
+-static gboolean
+-_systemd_session_is_graphical (const char *session_id)
+-{
+-        const gchar * const graphical_session_types[] = { "wayland", "x11", "mir", NULL };
+-        int saved_errno;
+-        g_autofree gchar *type = NULL;
+-
+-        saved_errno = sd_session_get_type (session_id, &type);
+-        if (saved_errno < 0) {
+-                g_warning ("Couldn't get type for session '%s': %s",
+-                           session_id,
+-                           g_strerror (-saved_errno));
+-                return FALSE;
+-        }
+-
+-        if (!g_strv_contains (graphical_session_types, type)) {
+-                g_debug ("Session '%s' is not a graphical session (type: '%s')",
+-                         session_id,
+-                         type);
+-                return FALSE;
+-        }
+-
+-        return TRUE;
+-}
+-
+-static gboolean
+-_systemd_session_is_active (const char *session_id)
+-{
+-        const gchar * const active_states[] = { "active", "online", NULL };
+-        int saved_errno;
+-        g_autofree gchar *state = NULL;
+-
+-        /*
+-         * display sessions can be 'closing' if they are logged out but some
+-         * processes are lingering; we shouldn't consider these (this is
+-         * checking for a race condition since we specified
+-         * GDM_SYSTEMD_SESSION_REQUIRE_ONLINE)
+-         */
+-        saved_errno = sd_session_get_state (session_id, &state);
+-        if (saved_errno < 0) {
+-                g_warning ("Couldn't get state for session '%s': %s",
+-                           session_id,
+-                           g_strerror (-saved_errno));
+-                return FALSE;
+-        }
+-
+-        if (!g_strv_contains (active_states, state)) {
+-                g_debug ("Session '%s' is not active or online", session_id);
+-                return FALSE;
+-        }
+-
+-        return TRUE;
+-}
+-
+-gboolean
+-gdm_find_display_session_for_uid (const uid_t uid,
+-                                  char      **out_session_id,
+-                                  GError    **error)
+-{
+-        char *local_session_id = NULL;
+-        g_auto(GStrv) sessions = NULL;
+-        int n_sessions;
+-
+-        g_return_val_if_fail (out_session_id != NULL, FALSE);
+-
+-        g_debug ("Finding a graphical session for user %d", uid);
+-
+-        n_sessions = sd_uid_get_sessions (uid,
+-                                          GDM_SYSTEMD_SESSION_REQUIRE_ONLINE,
+-                                          &sessions);
+-
+-        if (n_sessions < 0) {
+-                g_set_error (error,
+-                             GDM_COMMON_ERROR,
+-                             0,
+-                             "Failed to get sessions for user %d",
+-                             uid);
+-                return FALSE;
+-        }
+-
+-        for (int i = 0; i < n_sessions; ++i) {
+-                g_debug ("Considering session '%s'", sessions[i]);
+-
+-                if (!_systemd_session_is_graphical (sessions[i]))
+-                        continue;
+-
+-                if (!_systemd_session_is_active (sessions[i]))
+-                        continue;
+-
+-                /*
+-                 * We get the sessions from newest to oldest, so take the last
+-                 * one we find that's good
+-                 */
+-                local_session_id = sessions[i];
+-        }
+-
+-        if (local_session_id == NULL) {
+-                g_set_error (error,
+-                             GDM_COMMON_ERROR,
+-                             0,
+-                             "Could not find a graphical session for user %d",
+-                             uid);
+-                return FALSE;
+-        }
+-
+-        *out_session_id = g_strdup (local_session_id);
+-
+-        return TRUE;
+ }
+--- gdm-3.34.1-orig/common/gdm-common.h
++++ gdm-3.34.1/common/gdm-common.h
+@@ -37,6 +37,11 @@
  
  #define GDM_SYSTEMD_SESSION_REQUIRE_ONLINE 0
  
 +/* check if logind is running */
 +#define LOGIND_RUNNING() (access("/run/systemd/seats/", F_OK) >= 0)
 +
++#define GDM_SYSTEMD_SESSION_REQUIRE_ONLINE 0
++
  GQuark gdm_common_error_quark (void);
  #define GDM_COMMON_ERROR gdm_common_error_quark()
  
-@@ -82,10 +85,6 @@
+@@ -51,10 +56,6 @@
+ int            gdm_signal_pid            (int pid,
+                                           int signal);
+ 
+-gboolean       gdm_find_display_session_for_uid (const uid_t uid,
+-                                                 char      **out_session_id,
+-                                                 GError    **error);
+-
+ gboolean       gdm_get_pwent_for_name    (const char     *name,
+                                           struct passwd **pwentp);
+ 
+@@ -81,10 +82,6 @@
+ char *        gdm_shell_expand            (const char *str,
                                             GdmExpandVarFunc expand_func,
                                             gpointer user_data);
- 
+-
 -gboolean      gdm_activate_session_by_id (GDBusConnection *connection,
 -                                          const char      *seat_id,
 -                                          const char      *session_id);
--
+ 
  G_END_DECLS
  
- #endif /* _GDM_COMMON_H */
-diff -ruN gdm-3.34.1-orig/common/gdm-log.c gdm-3.34.1/common/gdm-log.c
---- gdm-3.34.1-orig/common/gdm-log.c	2017-12-12 21:04:31.000000000 +0900
-+++ gdm-3.34.1/common/gdm-log.c	2019-10-10 03:48:54.482667801 +0900
+--- gdm-3.34.1-orig/common/gdm-log.c
++++ gdm-3.34.1/common/gdm-log.c
 @@ -30,7 +30,9 @@
  #include <unistd.h>
  
@@ -534,9 +650,8 @@ diff -ruN gdm-3.34.1-orig/common/gdm-log.c gdm-3.34.1/common/gdm-log.c
  }
  
  void
-diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
---- gdm-3.34.1-orig/configure.ac	2019-10-07 17:56:26.000000000 +0900
-+++ gdm-3.34.1/configure.ac	2019-10-10 03:48:54.486001091 +0900
+--- gdm-3.34.1-orig/configure.ac
++++ gdm-3.34.1/configure.ac
 @@ -224,12 +224,6 @@
  AM_CONDITIONAL(ENABLE_LFS_PAM_CONFIG, test x$with_default_pam_config = xlfs)
  AM_CONDITIONAL(ENABLE_ARCH_PAM_CONFIG, test x$with_default_pam_config = xarch)
@@ -568,10 +683,40 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
  AC_ARG_WITH([systemdsystemunitdir],
              AS_HELP_STRING([--with-systemdsystemunitdir=DIR],
                             [Directory for systemd service files]),
-@@ -493,44 +498,7 @@
- PAM_MOD_DIR="$with_pam_mod_dir"
- AC_SUBST(PAM_MOD_DIR)
+@@ -464,74 +469,8 @@
+ AC_SUBST(GDM_GROUPNAME)
+ AC_DEFINE_UNQUOTED([GDM_GROUPNAME], "$GDM_GROUPNAME", [Group to use])
  
++have_pam=yes
+ 
+-dnl ---------------------------------------------------------------------------
+-dnl - Check for PAM stuff
+-dnl ---------------------------------------------------------------------------
+-
+-dnl PAM prefix (configuration files)
+-withval=""
+-AC_ARG_WITH(pam-prefix,
+-            AS_HELP_STRING([--with-pam-prefix=<prefix>],
+-                           [specify where pam files go]),
+-            [if test x$withval != x; then
+-               AC_MSG_RESULT("PAM files will be installed in prefix ${withval}.")
+-             fi])
+-
+-if test x$withval != x; then
+-	PAM_PREFIX="$withval"
+-else
+-	PAM_PREFIX='${sysconfdir}'
+-fi
+-AC_SUBST(PAM_PREFIX)
+-
+-dnl PAM dir (dynamic modules)
+-AC_ARG_WITH([pam-mod-dir],
+-            [AS_HELP_STRING([--with-pam-mod-dir=DIR],
+-                            [directory to install pam modules in])],
+-            [], [with_pam_mod_dir='${libdir}/security'])
+-PAM_MOD_DIR="$with_pam_mod_dir"
+-AC_SUBST(PAM_MOD_DIR)
+-
 -have_pam=no
 -AC_CHECK_LIB(pam, pam_start, have_pam=yes)
 -
@@ -610,11 +755,11 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
 -	AM_CONDITIONAL(SUPPORTS_PAM_EXTENSIONS, true)
 -	AC_DEFINE(SUPPORTS_PAM_EXTENSIONS, 1, [Define if PAM supports GDMs custom extensions])
 -fi
-+have_pam=yes
- 
+-
  AC_CHECK_LIB(keyutils, keyctl_read, [
          AC_DEFINE(HAVE_KEYUTILS, 1, [Define if have keyutils])
-@@ -613,14 +581,8 @@
+         KEYUTILS_LIBS="-lkeyutils"
+@@ -613,14 +552,8 @@
  dnl - Check for utmp stuff
  dnl ---------------------------------------------------------------------------
  
@@ -631,7 +776,7 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
  AC_CHECK_LIB(util, logwtmp, [
  	  	   AC_DEFINE(HAVE_LOGWTMP, 1, [Define if have logwtmp])
  		       EXTRA_DAEMON_LIBS="$EXTRA_DAEMON_LIBS -lutil" ])
-@@ -829,12 +791,42 @@
+@@ -829,12 +762,42 @@
  CPPFLAGS="$xinerama_save_cppflags"
  
  dnl ---------------------------------------------------------------------------
@@ -654,7 +799,7 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
 -                  [libsystemd])
 +                  [libsystemd-login >= 186 libsystemd-daemon],
 +                  [have_systemd=yes], [have_systemd=no])
-+
+ 
 +if test "x$with_systemd" = "xauto" ; then
 +        if test x$have_systemd = xno ; then
 +                use_systemd=no
@@ -664,7 +809,7 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
 +else
 +        use_systemd="$with_systemd"
 +fi
- 
++
 +if test "x$use_systemd" != "xno" ; then
 +        if test "x$have_systemd" = "xno"; then
 +                AC_MSG_ERROR([Systemd support explicitly required, but systemd not found])
@@ -675,7 +820,7 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
  AC_SUBST(SYSTEMD_CFLAGS)
  AC_SUBST(SYSTEMD_LIBS)
  
-@@ -1027,6 +1019,14 @@
+@@ -1027,6 +990,14 @@
  AC_SUBST(GDM_CUSTOM_CONF)
  AC_SUBST(GDM_OLD_CONF, '${gdmconfdir}/gdm.conf')
  
@@ -690,16 +835,7 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
  AC_ARG_WITH(gnome-settings-daemon-directory,
                [AC_HELP_STRING([--with-gnome-settings-daemon-directory],
                                [Specify the directory of gnome-settings-daemon used by the chooser @<:@default=libexecdir@:>@])],,
-@@ -1080,7 +1080,7 @@
- if test ${check_sun_audit} = yes
- then
-    AC_DEFINE(HAVE_ADT, 1, [Define if have adt])
--   PAM_LIBS="$PAM_LIBS -lbsm"
-+   PAM_LIBS="$PAM_LIBS-lbsm"
-    AC_MSG_RESULT(yes)
- else
-    AC_MSG_RESULT(no)
-@@ -1490,6 +1490,7 @@
+@@ -1490,6 +1461,7 @@
          dmconfdir:                ${dmconfdir}
          localstatedir:            ${localstatedir}
          datadir:                  ${datadir}
@@ -707,7 +843,7 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
  	gnome-settings-daemon location: ${with_gnome_settings_daemon_directory}
  	gnome-session-check-accel location: ${with_check_accelerated_directory}
  	source code location:	  ${srcdir}
-@@ -1520,6 +1521,8 @@
+@@ -1520,6 +1492,8 @@
  "        Xinerama support:         ${XINERAMA_SUPPORT}
          XDMCP support:            ${XDMCP_SUPPORT}
          SELinux support:          ${use_selinux}
@@ -716,23 +852,14 @@ diff -ruN gdm-3.34.1-orig/configure.ac gdm-3.34.1/configure.ac
          systemd unit dir:         ${with_systemdsystemunitdir}
          udev dir:                 ${with_udevdir}
          plymouth support:         ${use_plymouth}
-@@ -1529,3 +1532,4 @@
+@@ -1529,3 +1503,4 @@
          Enable documentation:     ${enable_documentation}
          Install GDM's Xsession:   ${enable_gdm_xsession}
  "
 +
-diff -ruN gdm-3.34.1-orig/daemon/Makefile.am gdm-3.34.1/daemon/Makefile.am
---- gdm-3.34.1-orig/daemon/Makefile.am	2019-08-15 19:11:31.000000000 +0900
-+++ gdm-3.34.1/daemon/Makefile.am	2019-10-10 03:48:54.486001091 +0900
-@@ -21,6 +21,7 @@
- 	-DGDM_SCREENSHOT_DIR=\"$(GDM_SCREENSHOT_DIR)\"		\
- 	-DGDM_CACHE_DIR=\""$(localstatedir)/cache/gdm"\"	\
- 	-DGDM_SESSION_DEFAULT_PATH=\"$(GDM_SESSION_DEFAULT_PATH)\" \
-+	-DCONSOLEKIT_DIR=\"$(CONSOLEKIT_DIR)\" \
- 	$(DISABLE_DEPRECATED_CFLAGS)			\
- 	$(DAEMON_CFLAGS)				\
- 	$(XLIB_CFLAGS)					\
-@@ -141,10 +142,6 @@
+--- gdm-3.34.1-orig/daemon/Makefile.am
++++ gdm-3.34.1/daemon/Makefile.am
+@@ -141,10 +141,6 @@
  	gdm-dbus-util.h				\
  	$(NULL)
  
@@ -743,32 +870,8 @@ diff -ruN gdm-3.34.1-orig/daemon/Makefile.am gdm-3.34.1/daemon/Makefile.am
  nodist_gdm_session_worker_SOURCES =		\
  	gdm-session-glue.h			\
  	gdm-session-glue.c			\
-@@ -278,6 +275,11 @@
- 	$(XDMCP_SOURCES)	\
- 	$(NULL)
- 
-+CONSOLE_KIT_SOURCES = 		\
-+	$(NULL)
-+
-+EXTRA_gdm_SOURCES += $(CONSOLE_KIT_SOURCES)
-+
- gdm_LDADD = \
- 	$(top_builddir)/common/libgdmcommon.la	\
- 	$(XLIB_LIBS)				\
-@@ -289,6 +291,10 @@
- 	$(EXTRA_DAEMON_LIBS)			\
- 	$(NULL)
- 
-+if WITH_CONSOLE_KIT
-+gdm_SOURCES += $(CONSOLE_KIT_SOURCES)
-+endif
-+
- CLEANFILES =					\
- 	gdm-display-glue.c			\
- 	gdm-local-display-factory-glue.c	\
-diff -ruN gdm-3.34.1-orig/data/Init.in gdm-3.34.1/data/Init.in
---- gdm-3.34.1-orig/data/Init.in	2017-07-11 19:44:52.000000000 +0900
-+++ gdm-3.34.1/data/Init.in	2019-10-10 03:48:54.486001091 +0900
+--- gdm-3.34.1-orig/data/Init.in
++++ gdm-3.34.1/data/Init.in
 @@ -6,6 +6,15 @@
  PATH="@X_PATH@:$PATH"
  OLD_IFS=$IFS
@@ -785,10 +888,11 @@ diff -ruN gdm-3.34.1-orig/data/Init.in gdm-3.34.1/data/Init.in
  gdmwhich () {
    COMMAND="$1"
    OUTPUT=
-@@ -86,4 +95,14 @@
+@@ -85,5 +94,15 @@
+     fi
    fi
  fi
- 
++
 +# /etc/X11/xenodm/GiveConsole, fbtab(5)
 +if [ -c /dev/drm0 ]; then
 +    /sbin/chown _gdm /dev/drm0
@@ -798,11 +902,10 @@ diff -ruN gdm-3.34.1-orig/data/Init.in gdm-3.34.1/data/Init.in
 +fi
 +# XXX OpenBSD needs an implementation of XDG_RUNTIME_DIR
 +rm -rf /var/db/gdm/.cache/gnome-shell/runtime-state-*
-+
+ 
  exit 0
-diff -ruN gdm-3.34.1-orig/data/Makefile.am gdm-3.34.1/data/Makefile.am
---- gdm-3.34.1-orig/data/Makefile.am	2019-08-15 19:11:31.000000000 +0900
-+++ gdm-3.34.1/data/Makefile.am	2019-10-10 03:48:54.486001091 +0900
+--- gdm-3.34.1-orig/data/Makefile.am
++++ gdm-3.34.1/data/Makefile.am
 @@ -220,6 +220,7 @@
  Xsession: $(srcdir)/Xsession.in
  	sed	-e 's,[@]XSESSION_SHELL[@],$(XSESSION_SHELL),g' \
@@ -811,9 +914,52 @@ diff -ruN gdm-3.34.1-orig/data/Makefile.am gdm-3.34.1/data/Makefile.am
  		<$(srcdir)/Xsession.in >Xsession
  Xsession_files += Xsession
  CLEANFILES += Xsession
-diff -ruN gdm-3.34.1-orig/data/PostSession.in gdm-3.34.1/data/PostSession.in
---- gdm-3.34.1-orig/data/PostSession.in	2017-07-11 19:44:52.000000000 +0900
-+++ gdm-3.34.1/data/PostSession.in	2019-10-10 03:48:54.486001091 +0900
+@@ -293,7 +294,7 @@
+ 	if test '!' -d $(DESTDIR)$(logdir); then \
+ 		$(mkinstalldirs) $(DESTDIR)$(logdir); \
+ 		chmod 755 $(DESTDIR)$(logdir); \
+-		chown root:root $(DESTDIR)$(logdir) || : ; \
++		chown root:wheel $(DESTDIR)$(logdir) || : ; \
+ 	fi
+ 
+ 	system=`uname`; \
+@@ -316,29 +317,29 @@
+ 	if test '!' -d $(DESTDIR)$(xauthdir); then \
+ 		$(mkinstalldirs) $(DESTDIR)$(xauthdir); \
+ 		chmod 0711 $(DESTDIR)$(xauthdir); \
+-		chown root:gdm $(DESTDIR)$(xauthdir) || : ; \
++		chown root:676 $(DESTDIR)$(xauthdir) || : ; \
+ 	fi
+ 
+ 	if test '!' -d $(DESTDIR)$(screenshotdir); then \
+ 		$(mkinstalldirs) $(DESTDIR)$(screenshotdir); \
+ 		chmod 0755 $(DESTDIR)$(screenshotdir); \
+-		chown gdm:gdm $(DESTDIR)$(screenshotdir) || : ; \
++		chown 676:676 $(DESTDIR)$(screenshotdir) || : ; \
+ 	fi
+ 
+ 	if test '!' -d $(DESTDIR)$(workingdir); then \
+ 		$(mkinstalldirs) $(DESTDIR)$(workingdir); \
+ 		chmod 1770 $(DESTDIR)$(workingdir); \
+-		chown root:gdm $(DESTDIR)$(workingdir) || : ; \
++		chown root:676 $(DESTDIR)$(workingdir) || : ; \
+ 	fi
+ 
+ 	if test '!' -d $(DESTDIR)$(workingdir)/.local/share/applications; then \
+ 		$(mkinstalldirs) $(DESTDIR)$(workingdir)/.local/share/applications; \
+ 		chmod 0755 $(DESTDIR)$(workingdir)/.local/share/applications; \
+-		chown gdm:gdm $(DESTDIR)$(workingdir)/.local/share/applications || : ; \
++		chown 676:676 $(DESTDIR)$(workingdir)/.local/share/applications || : ; \
+ 	fi
+ 
+ 	if test '!' -d $(DESTDIR)$(cachedir); then \
+ 		$(mkinstalldirs) $(DESTDIR)$(cachedir); \
+ 		chmod 1755 $(DESTDIR)$(cachedir); \
+-		chown root:gdm $(DESTDIR)$(cachedir) || : ; \
++		chown root:676 $(DESTDIR)$(cachedir) || : ; \
+ 	fi
+--- gdm-3.34.1-orig/data/PostSession.in
++++ gdm-3.34.1/data/PostSession.in
 @@ -1,3 +1,11 @@
  #!/bin/sh
  
@@ -826,9 +972,8 @@ diff -ruN gdm-3.34.1-orig/data/PostSession.in gdm-3.34.1/data/PostSession.in
 +fi
 +
  exit 0
-diff -ruN gdm-3.34.1-orig/data/PreSession.in gdm-3.34.1/data/PreSession.in
---- gdm-3.34.1-orig/data/PreSession.in	2017-07-11 19:44:52.000000000 +0900
-+++ gdm-3.34.1/data/PreSession.in	2019-10-10 03:48:54.486001091 +0900
+--- gdm-3.34.1-orig/data/PreSession.in
++++ gdm-3.34.1/data/PreSession.in
 @@ -7,3 +7,11 @@
  # Note that output goes into the .xsession-errors file for easy debugging
  #
@@ -841,9 +986,18 @@ diff -ruN gdm-3.34.1-orig/data/PreSession.in gdm-3.34.1/data/PreSession.in
 +if [ -c /dev/drmR128 ]; then
 +    /sbin/chown $USER /dev/drmR128
 +fi
-diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user-switching.c
---- gdm-3.34.1-orig/libgdm/gdm-user-switching.c	2019-08-15 19:11:31.000000000 +0900
-+++ gdm-3.34.1/libgdm/gdm-user-switching.c	2019-10-10 03:49:34.499178123 +0900
+--- gdm-3.34.1-orig/libgdm/Makefile.am
++++ gdm-3.34.1/libgdm/Makefile.am
+@@ -66,7 +66,6 @@
+         $(END_OF_LIST)
+ 
+ libgdm_la_LIBADD =                                                     \
+-        $(top_builddir)/common/libgdmcommon.la                         \
+         $(LIBGDM_LIBS)                                                 \
+         $(SYSTEMD_LIBS)                                                \
+         $(END_OF_LIST)
+--- gdm-3.34.1-orig/libgdm/gdm-user-switching.c
++++ gdm-3.34.1/libgdm/gdm-user-switching.c
 @@ -31,12 +31,25 @@
  #include <glib-object.h>
  #include <gio/gio.h>
@@ -870,20 +1024,25 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
  static gboolean
  create_transient_display (GDBusConnection *connection,
                            GCancellable    *cancellable,
-@@ -67,12 +80,305 @@
+@@ -67,16 +80,308 @@
          return TRUE;
  }
  
 +#ifdef WITH_CONSOLE_KIT
 +
-+static gboolean
+ static gboolean
+-activate_session_id (GDBusConnection  *connection,
+-                     GCancellable     *cancellable,
+-                     const char       *seat_id,
+-                     const char       *session_id,
+-                     GError          **error)
 +get_current_session_id (GDBusConnection  *connection,
 +                        char            **session_id)
-+{
+ {
 +        GError *local_error = NULL;
-+        GVariant *reply;
-+
-+        reply = g_dbus_connection_call_sync (connection,
+         GVariant *reply;
+ 
+         reply = g_dbus_connection_call_sync (connection,
 +                                             CK_NAME,
 +                                             CK_MANAGER_PATH,
 +                                             CK_MANAGER_INTERFACE,
@@ -905,12 +1064,7 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
 +        return TRUE;
 +}
 +
- static gboolean
--activate_session_id (GDBusConnection  *connection,
--                     GCancellable     *cancellable,
--                     const char       *seat_id,
--                     const char       *session_id,
--                     GError          **error)
++static gboolean
 +get_seat_id_for_session (GDBusConnection  *connection,
 +                         const char       *session_id,
 +                         char            **seat_id)
@@ -958,7 +1112,7 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
 +
 +        return seat_id;
 +}
-+/*
++
 +gboolean
 +activate_session_id_for_ck (GDBusConnection *connection,
 +                            GCancellable    *cancellable,
@@ -987,7 +1141,6 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
 +
 +        return TRUE;
 +}
-+*/
 +
 +static gboolean
 +session_is_login_window (GDBusConnection *connection,
@@ -1178,10 +1331,14 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
 +                                 const char       *seat_id,
 +                                 const char       *session_id,
 +                                 GError          **error)
- {
-         GVariant *reply;
- 
-@@ -97,8 +403,8 @@
++{
++        GVariant *reply;
++
++        reply = g_dbus_connection_call_sync (connection,
+                                              "org.freedesktop.login1",
+                                              "/org/freedesktop/login1",
+                                              "org.freedesktop.login1.Manager",
+@@ -97,8 +402,8 @@
  }
  
  static gboolean
@@ -1192,7 +1349,7 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
  {
          gboolean   ret;
          int        res, i;
-@@ -182,9 +488,9 @@
+@@ -182,16 +487,15 @@
  }
  
  static gboolean
@@ -1205,7 +1362,29 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
  {
          gboolean        ret;
          int             res;
-@@ -236,9 +542,9 @@
+         char           *our_session;
+         char           *session_id;
+         char           *seat_id;
+-        GError         *local_error = NULL;
+ 
+         ret = FALSE;
+         session_id = NULL;
+@@ -203,9 +507,12 @@
+         /* Note that we mostly use free () here, instead of g_free ()
+          * since the data allocated is from libsystemd-logind, which
+          * does not use GLib's g_malloc (). */
+-        if (!gdm_find_display_session_for_uid (getuid (), &our_session, &local_error)) {
+-                g_propagate_prefixed_error (error, local_error, _("Could not identify the current session: "));
+ 
++        res = sd_pid_get_session (0, &our_session);
++        if (res < 0) {
++                g_debug ("failed to determine own session: %s", strerror (-res));
++                g_set_error (error, GDM_CLIENT_ERROR, 0, _("Could not identify the current session."));
++
+                 return FALSE;
+         }
+ 
+@@ -236,9 +543,9 @@
                  return FALSE;
          }
  
@@ -1217,7 +1396,7 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
  
                  if (res) {
                          ret = TRUE;
-@@ -257,10 +563,11 @@
+@@ -257,10 +564,11 @@
  
          return ret;
  }
@@ -1230,7 +1409,7 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
  {
          GDBusConnection *connection;
          gboolean retval;
-@@ -269,8 +576,23 @@
+@@ -269,8 +577,23 @@
          if (!connection)
                  return FALSE;
  
@@ -1240,7 +1419,7 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
 +                retval = goto_login_session_for_systemd (connection,
 +                                                         cancellable,
 +                                                         error);
-+
+ 
 +                g_object_unref (connection);
 +                return retval;
 +        }
@@ -1248,27 +1427,15 @@ diff -ruN gdm-3.34.1-orig/libgdm/gdm-user-switching.c gdm-3.34.1/libgdm/gdm-user
 +
 +#ifdef WITH_CONSOLE_KIT
 +        retval = goto_login_session_for_ck (connection, cancellable, error);
- 
++
          g_object_unref (connection);
          return retval;
 +#else
 +        return FALSE;
 +#endif
  }
-diff -ruN gdm-3.34.1-orig/Makefile.am gdm-3.34.1/Makefile.am
---- gdm-3.34.1-orig/Makefile.am	2018-10-24 20:56:07.000000000 +0900
-+++ gdm-3.34.1/Makefile.am	2019-10-10 03:48:54.482667801 +0900
-@@ -7,7 +7,6 @@
- 	daemon 			\
- 	libgdm 			\
- 	utils 			\
--	pam_gdm			\
- 	po 			\
- 	tests 			\
- 	$(NULL)
-diff -ruN gdm-3.34.1-orig/pam-extensions/Makefile.am gdm-3.34.1/pam-extensions/Makefile.am
---- gdm-3.34.1-orig/pam-extensions/Makefile.am	2019-08-15 19:11:19.000000000 +0900
-+++ gdm-3.34.1/pam-extensions/Makefile.am	2019-10-10 03:48:54.486001091 +0900
+--- gdm-3.34.1-orig/pam-extensions/Makefile.am
++++ gdm-3.34.1/pam-extensions/Makefile.am
 @@ -10,14 +10,6 @@
          -DDATADIR=\""$(datadir)"\"                                      \
          $(NULL)
