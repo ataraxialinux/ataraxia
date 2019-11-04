@@ -1,0 +1,24 @@
+diff --git a/meson.build b/meson.build
+index 10c4fbe..4461cc7 100644
+--- a/meson.build
++++ b/meson.build
+@@ -80,6 +80,9 @@ subdir('gsettings')
+ subdir('client')
+ subdir('bin')
+ subdir('docs')
+-subdir('tests')
++
++if get_option('tests')
++  subdir('tests')
++endif
+ 
+ meson.add_install_script('meson_post_install.py', gio_module_dir)
+diff --git a/meson_options.txt b/meson_options.txt
+index a2794ce..cf9a798 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -2,3 +2,4 @@ option('bash_completion', type: 'boolean', value: true, description: 'install ba
+ option('man', type: 'boolean', value: true, description: 'generate man pages')
+ option('gtk_doc', type: 'boolean', value: false, description: 'use gtk-doc to build documentation')
+ option('vapi', type: 'boolean', value: true, description: 'install dconf client vapi')
++option('tests', type: 'boolean', value :false, description: 'enable tests')

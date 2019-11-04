@@ -6,12 +6,14 @@
 
 name=dconf
 version=0.34.0
-release=3
+release=4
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz"
 	"$name.trigger")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/dconf/fbb4345914d1ddb882db65d4ffed37308d0359aa.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
