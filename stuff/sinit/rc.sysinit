@@ -158,70 +158,7 @@ chmod 600 /var/log/dmesg.log
 if [ "$single" = "1" ]; then
 	echo "Going single-user..."
 	sulogin
-
-	trap "" HUP INT QUIT ABRT TERM
-	echo; stty onlcr
-	clear
-
-	echo "Shutting down..."
-
-	echo "Shutting down loopback..."
-	ip link set lo down
-
-	echo "Saving the system time to hardware clock..."
-	if [ -n "$timezone" ] ;then
-		hwclock="--localtime"
-	else
-		hwclock="--utc"
-	fi
-
-	hwclock --systohc $hwclock
-
-	echo "Saving random seed to a temporary file..."
-	dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
-
-	echo "Stopping udev..."
-	udevadm control --exit
-
-	echo "Sending all processes the TERM signal..."
-	killall5 -s TERM
-	sleep 1
-
-	echo "Sending all processes the KILL signal..."
-	killall5 -s KILL
-
-	if [ "$live" != "1" ]; then
-		echo "Deactivating swap partition..."
-		swapoff -a
-
-		echo "Unmounting other local filesystems..."
-		umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
-
-		echo "Mounting root device read-only..."
-		mount -o remount,ro /
-	fi
-
-	echo "Flushing filesystem buffers..."
-	sync
-
-	if [ "$live" != "1" ]; then
-		if [ -f /etc/crypttab -a -x /usr/bin/cryptsetup ]; then
-			echo "Deactivating encrypted devices..."
-			awk '/^#/ || /^$/ { next }
-				NF>2 { print "ignite unsupported crypttab: " $0 >"/dev/stderr"; next }
-				{ system("cryptsetup luksClose " $1) }' </etc/crypttab
-		fi
-
-		if [ -x /usr/bin/vgchange ]; then
-			echo "Deactivating volume groups..."
-			vgchange -an
-		fi
-	fi
-
-	echo "Bye"
-	wait
-
-	halt -p
+	poweroff
 else
 	echo "Going multi-user..."
 
