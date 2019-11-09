@@ -26,6 +26,8 @@ build_busybox_standard() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
 
+	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
+
 	mkdir -p "$PKG"/etc/service "$PKG"/var/service
 
 	for svc in acpid crond inted ntpd watchdog; do
