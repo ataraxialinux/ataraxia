@@ -6,11 +6,12 @@
 
 name=grub
 version=2.04
-release=5
+release=6
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 options=('locales')
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
+	"$name.trigger")
 
 build_flavor() {
 	local flavor="$1"
@@ -26,6 +27,7 @@ build_flavor() {
 		--infodir=/usr/share/info \
 		--datarootdir=/usr/share \
 		--sysconfdir=/etc \
+		--disable-grub-mkfont \
 		--disable-nls \
 		--disable-werror
 	make
@@ -73,4 +75,6 @@ build() {
 
 	install -D -m0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
 	rm -rf "$PKG"/usr/share/locale/*
+
+	install -Dm0644 "$SRC"/$name.trigger "$PKG"/var/lib/neko-triggers/$name
 }
