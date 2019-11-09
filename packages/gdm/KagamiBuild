@@ -6,7 +6,7 @@
 
 name=gdm
 version=3.34.1
-release=5
+release=6
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -20,16 +20,14 @@ build() {
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		with_dbus_sys=/usr/share/dbus-1/system.d \
+		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--with-run-dir=/run \
 		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
 		--with-systemdsystemunitdir=no \
 		--without-plymouth \
 		--without-systemd \
 		--with-console-kit \
-		--enable-authentication-scheme=shadow \
-		--enable-gdm-xsession \
-		--enable-ipv6 \
+		--disable-user-display-server \
 		--disable-schemas-compile \
 		--disable-systemd-journal
 	make -C libgdm
@@ -37,5 +35,5 @@ build() {
 	make DESTDIR="$PKG" -C libgdm install
 	make DESTDIR="$PKG" -C data install
 
-	rm -rf "$PKG"/etc/pam.d
+	rm -rf "$PKG"/etc/pam.d "$PKG"/run
 }
