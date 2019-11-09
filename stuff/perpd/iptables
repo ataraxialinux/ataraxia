@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-iptables}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	iptables-restore /etc/iptables/iptables.rules
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			/usr/lib/iptables-flush
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"

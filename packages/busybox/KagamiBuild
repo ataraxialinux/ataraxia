@@ -31,12 +31,12 @@ build_busybox_standard() {
 	mkdir -p "$PKG"/etc/service "$PKG"/var/service
 
 	for svc in acpid crond inted ntpd watchdog; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+		install -Dm775 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm775 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
 	done
 
 	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
-		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
+		chmod -t "$PKG"/etc/perp/$rc
 	done
 
 	cd "$STUFF"/busybox

@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-ip6tables}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	ip6tables-restore /etc/iptables/ip6tables.rules
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			/usr/lib/iptables-flush -6
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"

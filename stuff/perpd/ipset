@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-ipset}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	ipset -f /etc/ipset.conf restore
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			ipset destroy
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"
