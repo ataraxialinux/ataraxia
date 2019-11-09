@@ -80,15 +80,7 @@ build() {
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
-	if [ "$EMBEDDED" != "1" ]; then
-		for rc in boot down network; do
-			install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
-		done
-
-		install -D -m755 "$STUFF"/rc.d/rc.local "$PKG"/etc/rc.local
-
-		install -m644 "$STUFF"/base-files/inittab "$PKG"/etc/inittab
-	else
+	if [ "$EMBEDDED" = "1" ]; then
 		cat << EOF > "$PKG"/etc/bootscript.sh
 #!/bin/sh
 mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
@@ -149,7 +141,6 @@ EOF
 	fi
 
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -D -m755 "$STUFF"/base-files/runsvdir-start "$PKG"/usr/bin/runsvdir-start
 	install -D -m755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
 	install -D -m755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
 }
