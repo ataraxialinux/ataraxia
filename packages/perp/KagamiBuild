@@ -1,0 +1,32 @@
+# Description: A persistent process supervisor and service managment framework
+# URL:         http://b0llix.net/perp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     admin
+
+name=perp
+version=2.07
+release=1
+options=('bootstrap')
+source=("http://b0llix.net/perp/distfiles/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/perp/0001-tain_now-Use-clock_gettime.patch
+	patch -Np1 -i "$STUFF"/perp/0002-perpd-Restore-umask-after-perpd_control_init.patch
+	patch -Np1 -i "$STUFF"/perp/0003-Remove-pointer-arithmetic-on-void.patch
+	patch -Np1 -i "$STUFF"/perp/0004-Remove-obsolete-files.patch
+	patch -Np1 -i "$STUFF"/perp/0005-Remove-unused-variable.patch
+
+	make
+	make SBINDIR=/usr/bin DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		DESTDIR="$PKG" ./perp/perp-setup /etc/perp
+	else
+		DESTDIR="$PKG" ./perp/perp-setup /etc/perp
+	fi
+
+	install -Dm755 "$STUFF"/perpd/boot "$PKG"/etc/perp/.boot/rc.perp
+	install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/.boot/rc.log
+}
