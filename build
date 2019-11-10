@@ -206,7 +206,7 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
-			linux-headers binutils gcc-static musl gcc slibtool perp; do
+			linux-headers binutils gcc-static musl gcc slibtool; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
@@ -282,11 +282,11 @@ build_target() {
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox mksh"
 	else
-		packages="tzdata man-pages musl-tools gettext-tiny zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-			ccache bzip2 pkgconf attr acl libcap pcre grep mksh bash slibtool gdbm db expat perl nettle libressl ca-certificates \
-			autoconf automake xz lzip lz4 zstd libarchive kmod libuargp libelf busybox ifupdown perp mandoc dialog pigz libmnl libnftnl \
-			libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch vim libcap-ng util-linux ubase sinit e2fsprogs dosfstools \
-			hwids gperf eudev popt rsync wireless_tools wpa_supplicant gptfdisk wget keyring lynx libssh2 c-ares libev nghttp2 curl oniguruma jq neko $LINUX"
+		packages="tzdata man-pages musl-tools gettext-tiny zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache \
+			bzip2 pkgconf attr acl libcap pcre grep mksh bash slibtool gdbm db expat perl nettle libressl ca-certificates autoconf automake \
+			xz lzip lz4 zstd libarchive kmod libuargp libelf busybox mandoc dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack \
+			libnl libpcap iptables iproute2 kbd make patch vim libcap-ng util-linux ubase sinit e2fsprogs dosfstools hwids gperf eudev popt \
+			rsync wireless_tools wpa_supplicant gptfdisk wget keyring lynx libssh2 c-ares libev nghttp2 curl oniguruma jq neko $LINUX"
 	fi
 
 	neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn $packages
