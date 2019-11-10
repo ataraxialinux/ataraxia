@@ -34,7 +34,12 @@ build_busybox_standard() {
 	done
 
 	for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
-		perpd -b "$ROOTFS"/etc/perp A $rc
+		install -Dm644 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+	done
+
+	for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+		chmod +t "$PKG"/etc/perp/$rc
+		chmod 755 "$PKG"/etc/perp/$rc/rc.main
 	done
 
 	cd "$STUFF"/busybox

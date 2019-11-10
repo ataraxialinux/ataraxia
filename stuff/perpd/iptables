@@ -8,7 +8,8 @@ SVNAME="${2:-iptables}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	iptables-restore /etc/iptables/iptables.rules
+	[ ! -e /etc/iptables/iptables.rules ] && exit 0
+	iptables-restore /etc/iptables/iptables.rules || exit 1
 	exec yes
 }
 
