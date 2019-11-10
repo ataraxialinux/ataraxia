@@ -18,6 +18,10 @@ main() {
 	neko install -c "$BUILD"/target.config -r "$STAGE" $packages
 
 	pushd "$STAGE"
+		for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+			chmod -t etc/perp/$rc/
+		done
+
 		bsdtar -c --zstd -f "$BUILD"/ataraxialinux-$BARCH.tar.zst .
 	popd
 }
