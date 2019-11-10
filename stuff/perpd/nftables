@@ -8,9 +8,9 @@ SVNAME="${2:-nftables}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	[ ! -r /etc/nftables.conf ] && exit 1
-	nft -f /etc/nftables.conf || exit 1
-	exec yes
+	[ ! -r /etc/nftables.conf ] && perpctl d ${SVNAME}
+	nft -f /etc/nftables.conf || perpctl d ${SVNAME}
+	perpctl p ${SVNAME}
 }
 
 reset() {

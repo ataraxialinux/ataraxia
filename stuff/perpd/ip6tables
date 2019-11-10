@@ -8,9 +8,9 @@ SVNAME="${2:-ip6tables}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	[ ! -e /etc/iptables/ip6tables.rules ] && exit 0
-	ip6tables-restore /etc/iptables/ip6tables.rules || exit 1
-	exec yes
+	[ ! -e /etc/iptables/ip6tables.rules ] && perpctl d ${SVNAME}
+	ip6tables-restore /etc/iptables/ip6tables.rules || perpctl d ${SVNAME}
+	perpctl p ${SVNAME}
 }
 
 reset() {
