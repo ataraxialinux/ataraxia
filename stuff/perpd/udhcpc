@@ -4,23 +4,27 @@
 exec 2>&1
 
 TARGET="$1"
-IFUP="$(echo $0 | cut -d @ -f 2 | sed -e 's/\/rc.main//g')"
-SVNAME="${2:-udhcpc-$IFUP}"
+INTERFACE="$(echo $PWD | cut -d - -f 2)"
+SVNAME="${2:-udhcpc-$INTERFACE}"
 
 start() {
-	echo "Starting ${SVNAME} on ${IFUP}..."
-	ip link set ${IFUP} up
+	echo "Starting ${SVNAME}..."
+	if [ -z "$INTERFACE" ]; then
+		perpctl d ${SVNAME}
+	fi
 
-	exec udhcpc -b -i ${IFUP}
+	ip link set ${INTERFACE} up
+
+	exec udhcpc -f -i ${INTERFACE} -p "/run/$SVNAME.pid"
 }
 
 reset() {
 	case $3 in
 		exit)
 			echo "Stopping ${SVNAME}..."
-			killall udhcpc
+			kill -9 "$(cat /run/$SVNAME.pid)"
 
-			ip link set ${IFUP} down
+			ip link set ${INTERFACE} down
 			;;
 		signal)
 			echo "Killing ${SVNAME}..."

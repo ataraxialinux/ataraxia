@@ -4,25 +4,40 @@
 exec 2>&1
 
 TARGET="$1"
-IFUP="$(echo $0 | cut -d @ -f 2 | sed -e 's/\/rc.main//g')"
-SVNAME="${2:-wpa_supplicant-$IFUP}"
+INTERFACE="$(echo $PWD | cut -d - -f 2)"
+SVNAME="${2:-wpa_supplicant-$INTERFACE}"
 
 start() {
-	echo "Starting ${SVNAME} on ${IFUP}..."
-	ip link set ${IFUP} up
+	CONFIG="/etc/wpa_supplicant/wpa_supplicant.conf"
 
-	exec wpa_supplicant -B -i ${IFUP} -c /etc/wpa_supplicant/wpa_supplicant.conf &
-	exec udhcpc -b -i ${IFUP}
+	echo "Starting ${SVNAME}..."
+	if [ -z "$INTERFACE" ]; then
+		perpctl d ${SVNAME}
+	fi
+
+	if [ ! -f "$CONFIG" ]; then
+		perpctl d ${SVNAME}
+	fi
+
+	ip link set ${INTERFACE} up
+
+	if [ -e /etc/conf.d/wpa_supplicant ]; then
+		. /etc/conf.d/wpa_supplicant
+	fi
+
+	exec \
+		wpa_supplicant $WPA_OPTS -B -i${IFUP} -c$CONFIG -P/run/wpa-$INTERFACE.pid -d \
+		udhcpc -f -i ${INTERFACE} -p "/run/udhcpc-$INTERFACE.pid"
 }
 
 reset() {
 	case $3 in
 		exit)
 			echo "Stopping ${SVNAME}..."
-			killall udhcpc
-			killall wpa_supplicant
+			kill -9 "$(cat /run/udhcpc-$INTERFACE.pid)"
+			kill -9 "$(cat /run/wpa-$INTERFACE.pid)"
 
-			ip link set ${IFUP} down
+			ip link set ${INTERFACE} down
 			;;
 		signal)
 			echo "Killing ${SVNAME}..."
