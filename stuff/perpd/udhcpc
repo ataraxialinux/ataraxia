@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-udhcpc}"
+IFUP="$(echo $0 | cut -d @ -f 2 | sed -e 's/\/rc.main//g')"
+
+start() {
+	echo "Starting ${SVNAME} on ${IFUP}..."
+	ip link set ${IFUP} up
+
+	exec udhcpc -b -i ${IFUP}
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			ip link set ${IFUP} down
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"
