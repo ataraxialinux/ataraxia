@@ -19,7 +19,17 @@ start() {
 
 	ip link set ${INTERFACE} up
 
-	exec udhcpc -f -i ${INTERFACE} -p "/run/$SVNAME.pid"
+	if [ -e "/etc/conf.d/network.${INTERFACE}" ]; then
+		. /etc/conf.d/network.${INTERFACE}
+	fi
+
+	if [ "$IPV6" = "true" ]; then
+		UDHCPC="udhcpc6"
+	else
+		UDHCPC="udhcpc"
+	fi
+
+	exec $UDHCPC $DHCPC_OPTS -f -i ${INTERFACE} -p "/run/$SVNAME.pid"
 }
 
 reset() {

@@ -25,13 +25,19 @@ start() {
 
 	ip link set ${INTERFACE} up
 
-	if [ -e /etc/conf.d/wpa_supplicant ]; then
-		. /etc/conf.d/wpa_supplicant
+	if [ -e "/etc/conf.d/network.${INTERFACE}" ]; then
+		. /etc/conf.d/network.${INTERFACE}
+	fi
+
+	if [ "$IPV6" = "true" ]; then
+		UDHCPC="udhcpc6"
+	else
+		UDHCPC="udhcpc"
 	fi
 
 	exec \
 		wpa_supplicant $WPA_OPTS -B -i${IFUP} -c$CONFIG -P/run/wpa-$INTERFACE.pid -d \
-		udhcpc -f -i ${INTERFACE} -p "/run/udhcpc-$INTERFACE.pid"
+		$UDHCPC $DHCPC_OPTS -f -i ${INTERFACE} -p "/run/udhcpc-$INTERFACE.pid"
 }
 
 reset() {
