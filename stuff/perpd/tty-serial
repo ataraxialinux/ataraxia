@@ -4,8 +4,8 @@
 exec 2>&1
 
 TARGET="$1"
+SVNAME="${2:-udhcpc}"
 IFUP="$(echo $0 | cut -d @ -f 2 | sed -e 's/\/rc.main//g')"
-SVNAME="${2:-udhcpc-$IFUP}"
 
 start() {
 	echo "Starting ${SVNAME} on ${IFUP}..."
@@ -18,8 +18,6 @@ reset() {
 	case $3 in
 		exit)
 			echo "Stopping ${SVNAME}..."
-			killall udhcpc
-
 			ip link set ${IFUP} down
 			;;
 		signal)

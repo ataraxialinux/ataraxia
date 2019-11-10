@@ -4,8 +4,8 @@
 exec 2>&1
 
 TARGET="$1"
-SVNAME="${2:-wpa_supplicant}"
 IFUP="$(echo $0 | cut -d @ -f 2 | sed -e 's/\/rc.main//g')"
+SVNAME="${2:-wpa_supplicant-$IFUP}"
 
 start() {
 	echo "Starting ${SVNAME} on ${IFUP}..."
@@ -19,6 +19,9 @@ reset() {
 	case $3 in
 		exit)
 			echo "Stopping ${SVNAME}..."
+			killall udhcpc
+			killall wpa_supplicant
+
 			ip link set ${IFUP} down
 			;;
 		signal)
