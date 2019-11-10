@@ -11,18 +11,19 @@ options=('bootstrap')
 source=("http://b0llix.net/perp/distfiles/$name-$version.tar.gz")
 
 build() {
-	export CFLAGS="$CFLAGS -static"
+	export CFLAGS="-Wall -Wextra -Wshadow $CFLAGS -static"
 	export CC=${CC:-cc}
 
 	cd "$SRC"/$name-$version
-	sed -i "s/CC = gcc/CC = $CC/g" conf.mk
-
 	patch -Np1 -i "$STUFF"/perp/0001-tain_now-Use-clock_gettime.patch
 	patch -Np1 -i "$STUFF"/perp/0002-perpd-Restore-umask-after-perpd_control_init.patch
 	patch -Np1 -i "$STUFF"/perp/0003-Remove-pointer-arithmetic-on-void.patch
 	patch -Np1 -i "$STUFF"/perp/0004-Remove-obsolete-files.patch
 	patch -Np1 -i "$STUFF"/perp/0005-Remove-unused-variable.patch
 	patch -Np1 -i "$STUFF"/perp/cross.patch
+
+	sed -i "s/CC = gcc/CC = $CC/g" conf.mk
+	sed -i "s/-O2/$CFLAGS/g" conf.mk
 
 	make
 	make SBINDIR=/usr/bin DESTDIR="$PKG" install
