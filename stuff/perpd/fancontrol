@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-fancontrol}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	[ -r "/etc/conf.d/fancontrol" ] && . /etc/conf.d/fancontrol
+	[ ! -r ${CONF_FILE:-/etc/fancontrol} ] && perpctl d ${SVNAME}
+
+	exec /usr/bin/fancontrol ${CONF_FILE:-/etc/fancontrol}
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"
