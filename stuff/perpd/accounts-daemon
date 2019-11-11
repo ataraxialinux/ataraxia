@@ -4,20 +4,15 @@
 exec 2>&1
 
 TARGET="$1"
-SVNAME="${2:-rpc.blkmapd}"
+SVNAME="${2:-accounts-daemon}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpcbind; then
+	if ! perpok -u3 dbus; then
 		exit 1
 	fi
 
-	if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
-		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl d ${SVNAME}
-	fi
-
-	modprobe blocklayoutdriver || exit 1
-	exec blkmapd -f
+	exec /usr/lib/accounts-daemon
 }
 
 reset() {

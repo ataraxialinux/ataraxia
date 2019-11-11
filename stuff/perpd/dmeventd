@@ -4,16 +4,11 @@
 exec 2>&1
 
 TARGET="$1"
-SVNAME="${2:-rpc.statd}"
+SVNAME="${2:-dmeventd}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpcbind; then
-		exit 1
-	fi
-
-	modprobe nfs || perpctl d ${SVNAME}
-	exec rpc.statd -F -d -L
+	exec /usr/bin/dmeventd -f
 }
 
 reset() {

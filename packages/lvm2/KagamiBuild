@@ -53,7 +53,8 @@ build() {
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
 
-	for svc in dmeventd lvmetad; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	for rc in dmeventd lvmetad; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
 	done
 }

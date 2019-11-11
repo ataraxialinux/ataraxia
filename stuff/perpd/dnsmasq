@@ -4,16 +4,13 @@
 exec 2>&1
 
 TARGET="$1"
-SVNAME="${2:-rpc.statd}"
+SVNAME="${2:-dnsmasq}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpcbind; then
-		exit 1
-	fi
+	mkdir -p /var/lib/misc
 
-	modprobe nfs || perpctl d ${SVNAME}
-	exec rpc.statd -F -d -L
+	exec /usr/bin/dnsmasq -k -u dnsmasq -g dnsmasq
 }
 
 reset() {
