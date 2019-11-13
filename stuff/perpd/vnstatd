@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-vnstatd}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	exec /usr/bin/vnstatd -n
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"
