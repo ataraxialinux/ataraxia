@@ -11,7 +11,10 @@ options=('bootstrap')
 source=("http://deb.debian.org/debian/pool/main/h/$name/${name}_${version}.tar.gz")
 
 build() {
+	CC=${CC:-cc}
+	CFLAGS="$CFLAGS -static"
+
 	cd "$SRC"/$name
-	make
+	make CC="$CC" CFLAGS="$CFLAGS"
 	make BINDIR=/usr/bin DESTDIR="$PKG" install
 }
