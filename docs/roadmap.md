@@ -16,18 +16,18 @@ Stage 1 is complete!
  - [x] ~~Add extra packages for networking (eg. nftables, openresolv, whois, wget, mail clients, tcpdump, wpa_supplicant, dhcpcd, openssh, ntp)~~
  - [x] ~~Add basic system administartion packages and daemons (eg. sudo, dcron, logrotate)~~
  - [x] ~~Add user packages (eg. vim, nano, groff, texinfo, lynx)~~
- - [x] ~~Add some packages: anthy, ibus-anthy, thunderbird, fail2ban, spamassasin, a2ps, stunnel, ddrescue, hexedit, audit, procmail, fetchmail, mutt, neomutt, alpine, libical, bluez, lxc, distcc, firewalld~~
+ - [x] ~~Add some packages: anthy, ibus-anthy, thunderbird, fail2ban, spamassasin, a2ps, stunnel, ddrescue, hexedit, audit, procmail, fetchmail, mutt, neomutt, alpine, libical, bluez, lxc, distcc~~
 
 Stage 2 is complete!
 
 ## Stage 3
- - [ ] Move to sinit and perp
+ - [x] Move to sinit and perp
  - [ ] Add more version control software (svn, mercurial, fossil)
- - [ ] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, vsftpd, s6-dns, cyrus-sasl, openldap, cifs-utils)
- - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa)
+ - [ ] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, vsftpd, s6-dns, cyrus-sasl, openldap, cifs-utils, kubectl, kubeadm, kubelet)
+ - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa, wireguard, retroshare, gnunet)
  - [ ] Add container management software (lxc, docker)
  - [ ] Add virtualization management software (libvirt, qemu, virt-manager)
  - [ ] Add GNOME apps
- - [ ] Add support for LXDE, Cinnamon, MATE and Enlightment
- - [ ] Add misc software (snownews, aisterisk)
+ - [ ] Add support for LXDE, Cinnamon, MATE and Enlightement
+ - [ ] Add misc software (snownews, aisterisk, bitcoin, httpup, zeromq, etherwall, firewalld)
  - [ ] Add misc GUI software
