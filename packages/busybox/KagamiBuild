@@ -26,15 +26,20 @@ build_busybox_standard() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -s busybox "$PKG"/usr/bin/$applet || true; done
 
-	mkdir -p "$PKG"/etc/service "$PKG"/var/service
+	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 
-	for svc in acpid crond inted ntpd watchdog; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	for rc in acpid crond inted ntpd udhcpc watchdog; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
 	done
 
-	for svc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
-		ln -sf /etc/service/$svc "$PKG"/var/service/$svc
+	for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+		install -Dm644 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+	done
+
+	for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
+		chmod +t "$PKG"/etc/perp/$rc
+		chmod 755 "$PKG"/etc/perp/$rc/rc.main
 	done
 
 	cd "$STUFF"/busybox
@@ -57,8 +62,6 @@ build_busybox_standard() {
 	install -Dm0644 "$STUFF"/busybox/doas.conf.5 "$PKG"/usr/share/man/man5/doas.conf.5
 
 	chmod 4755 "$PKG"/usr/bin/doas
-
-	install -Dm755 "$STUFF"/busybox/shutdown "$PKG"/usr/bin/shutdown
 }
 
 build_busybox_embedded() {

@@ -1,0 +1,179 @@
+#!/bin/sh
+#
+# System startup script
+#
+
+export PATH="/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"
+
+ . /etc/rc.conf
+
+ctrlaltdel -s
+dmesg -n 1
+
+echo
+echo "Welcome to Ataraxia Linux!"
+echo
+
+echo "Mounting pseudo-filesystems..."
+mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys                 || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run                 || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev                 || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p -m0755 /run/perp /run/lvm /run/user /run/lock /run/log /dev/pts /dev/shm
+mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+mountpoint -q /sys/kernel/security || mount -n -t securityfs securityfs /sys/kernel/security
+mountpoint -q /sys/fs/cgroup       || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
+
+live="0"
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)        live="${arg#*=}" ;;
+		single=*)      single="${arg#*=}" ;;
+		timezone=*)    timezone="${arg#*=}" ;;
+		hostname=*)    hostname="${arg#*=}" ;;
+		keymap=*)      keymap="${arg#*=}" ;;
+		fontname=*)    fontname="${arg#*=}" ;;
+	esac
+done
+
+if [ -x /usr/bin/udevd ]; then
+	echo "Starting udev..."
+	udevd --daemon
+	udevadm trigger --action=add --type=subsystems
+	udevadm trigger --action=add --type=devices
+	udevadm trigger --action=change --type=devices
+	udevadm settle
+fi
+
+echo "Mounting root device read-only..."
+mount -o remount,ro /
+
+if [ "$live" != "1" ]; then
+	if [ -x /usr/bin/mdadm -o -f /etc/mdadm/mdadm.conf ]; then
+		echo "Activating RAID devices..."
+		mdadm -As
+	fi
+
+	if [ -x /usr/bin/vgchange ]; then
+		echo "Scanning for volume groups..."
+		vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1
+		vgchange --sysinit --activate y >/dev/null 2>&1
+	fi
+
+	if [ -f /etc/crypttab -a -x /usr/bin/cryptsetup ]; then
+		echo "Activating encrypted devices..."
+		awk '/^#/ || /^$/ { next }
+			NF>2 { print "ignite unsupported crypttab: " $0 >"/dev/stderr"; next }
+			{ system("cryptsetup luksOpen " $2 " " $1) }' /etc/crypttab
+	fi
+
+	if [ -f /forcefsck ]; then
+		FORCEFSCK="-f"
+	fi
+
+	fsck $FORCEFSCK -ATCa
+	if [ $? -gt 1 ]; then
+		echo
+		echo "***************  FILESYSTEM CHECK FAILED  ******************"
+		echo "*                                                          *"
+		echo "*  Please repair manually and reboot. Note that the root   *"
+		echo "*  file system is currently mounted read-only. To remount  *"
+		echo "*  it read-write type: mount -n -o remount,rw /            *"
+		echo "*  When you exit the maintainance shell the system will    *"
+		echo "*  reboot automatically.                                   *"
+		echo "*                                                          *"
+		echo "************************************************************"
+		echo
+		sulogin
+		umount -a -r
+		halt -r
+	fi
+fi
+
+echo "Remounting root device read-write..."
+mount -o remount,rw /
+
+if [ "$live" != "1" ]; then
+	echo "Mounting other local filesystems..."
+	mount -a -t nonfs,nosmbfs,nocifs,noproc,nosysfs
+
+	echo "Activating swap partition..."
+	swapon -a
+fi
+
+if [ -n "$hostname" ] ;then
+	echo "Setting up hostname..."
+	hostname $hostname
+	domainname $hostname
+fi
+
+echo "Bringing loopback interface..."
+ip link set lo up
+
+echo "Initializing random number generator..."
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+echo "Setting system time from hardware clock..."
+if [ -n "$timezone" ] ;then
+	hwclock="--localtime"
+	ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
+	export TZ=/etc/localtime
+else
+	hwclock="--utc"
+	export TZ=UTC
+fi
+
+hwclock --hctosys $hwclock
+
+echo "Setting kernel parameters..."
+sysctl -qp /etc/sysctl.d/*.conf
+
+if [ -n "$keymap" ] ;then
+	echo "Loading keymap..."
+	loadkeys $keymap
+fi
+
+if [ -n "$fontname" ] ;then
+	echo "Loading font..."
+	setfont $fontname
+fi
+
+echo "Cleaning up misc files..."
+rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+(cd /run && /usr/bin/find . -name "*.pid" -delete)
+(cd /run/lock && /usr/bin/find . ! -type d -delete)
+(cd /tmp && /usr/bin/find . ! -name . -delete)
+
+echo "Creating hierarchy for temporary files..."
+mkdir -p -m 1777 -- /tmp /tmp/.font-unix /tmp/.ICE-unix /tmp/.X11-unix
+chmod 1777 -- /tmp /tmp/.font-unix /tmp/.ICE-unix /tmp/.X11-unix
+
+echo "Saving boot log..."
+dmesg > /var/log/dmesg.log
+chmod 600 /var/log/dmesg.log
+
+if [ "$single" = "1" ]; then
+	echo "Going single-user..."
+	sulogin
+	poweroff
+else
+	echo "Going multi-user..."
+
+	if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
+		if [ -x /usr/bin/quotaon ]; then
+			echo "Turning on quota file system..."
+			quotaon -aug
+		fi
+	fi
+
+	if [ -x /etc/rc.d/rc.local ]; then
+		echo "Running user's commands"
+		/etc/rc.d/rc.local
+	fi
+
+	echo "Starting perp..."
+	PERP_BASE=/etc/perp perpboot -d
+fi

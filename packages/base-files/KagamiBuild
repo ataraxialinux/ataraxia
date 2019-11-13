@@ -5,7 +5,7 @@
 # Section:     admin
 
 name=base-files
-version=0.3
+version=0.4
 release=1
 options=('bootstrap')
 backup=('etc/doas.conf'
@@ -24,12 +24,13 @@ backup=('etc/doas.conf'
 	'etc/resolv.conf'
 	'etc/securetty'
 	'etc/shadow'
-	'etc/shells')
+	'etc/shells'
+	'etc/tinylog.conf')
 
 build() {
 	cd "$PKG"
 
-	for d in boot dev etc/{skel,profile.d,modprobe.d,service,rc.d,sysctl.d} home media/{cdrom,flash,usbdisk,floppy,zip} mnt usr var opt srv/http run; do
+	for d in boot dev etc/{skel,profile.d,modprobe.d,rc.d,sysctl.d,conf.d} home media/{cdrom,flash,usbdisk,floppy,zip} mnt usr var opt srv/http run; do
 		install -d -m755 $d
 	done
 
@@ -45,7 +46,7 @@ build() {
 
 	touch etc/ataraxialinux-release
 
-	for f in doas.conf fstab group host.conf hosts issue issue.net motd os-release passwd profile protocols resolv.conf rc.conf securetty services shells; do
+	for f in doas.conf fstab group host.conf hosts issue issue.net motd os-release passwd profile resolv.conf rc.conf securetty shells tinylog.conf; do
 		install -m644 "$STUFF"/base-files/$f etc/
 	done
 
@@ -53,7 +54,7 @@ build() {
 		install -m600 "$STUFF"/base-files/$f etc/
 	done
 
-	for d in cache local opt log/old lib/misc empty service spool/cron/crontabs; do
+	for d in cache local opt log/old lib/misc empty spool/cron/crontabs; do
 		install -d -m755 var/$d
 	done
 
@@ -80,15 +81,7 @@ build() {
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
-	if [ "$EMBEDDED" != "1" ]; then
-		for rc in boot down network; do
-			install -Dm775 "$STUFF"/rc.d/rc.${rc} "$PKG"/etc/rc.d/rc.${rc}
-		done
-
-		install -D -m755 "$STUFF"/rc.d/rc.local "$PKG"/etc/rc.local
-
-		install -m644 "$STUFF"/base-files/inittab "$PKG"/etc/inittab
-	else
+	if [ "$EMBEDDED" = "1" ]; then
 		cat << EOF > "$PKG"/etc/bootscript.sh
 #!/bin/sh
 mountpoint -q /proc    || mount -t proc proc /proc -o nosuid,noexec,nodev
@@ -149,7 +142,6 @@ EOF
 	fi
 
 	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -D -m755 "$STUFF"/base-files/runsvdir-start "$PKG"/usr/bin/runsvdir-start
 	install -D -m755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
 	install -D -m755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
 }

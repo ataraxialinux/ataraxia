@@ -40,8 +40,9 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	for svc in slim; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	for rc in slim; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
 	done
 
 	install -Dm644 "$STUFF"/slim/logrotate "$PKG"/etc/logrotate.d/slim

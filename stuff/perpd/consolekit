@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-consolekit}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	if ! perpok -u3 polkitd; then
+		exit 1
+	fi
+
+	[ ! -d /run/ConsoleKit ] && mkdir -p /run/ConsoleKit
+	exec /usr/bin/console-kit-daemon
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"

@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-rpc.blkmapd}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	if ! perpok -u3 rpcbind; then
+		exit 1
+	fi
+
+	if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
+		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl d ${SVNAME}
+	fi
+
+	modprobe blocklayoutdriver || exit 1
+	exec blkmapd -f
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"

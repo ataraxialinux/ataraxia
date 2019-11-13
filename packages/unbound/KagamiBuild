@@ -34,8 +34,9 @@ build() {
 
 	install -Dm644 "$STUFF"/unbound/config "$PKG"/etc/unbound/unbound.conf
 
-	for svc in unbound; do
-		install -Dm0755 "$STUFF"/svc/$svc-run "$PKG"/etc/service/$svc/run
+	for rc in unbound; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
 	done
 
 	export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PKG/usr/lib"

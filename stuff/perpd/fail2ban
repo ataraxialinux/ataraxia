@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+
+exec 2>&1
+
+TARGET="$1"
+SVNAME="${2:-fail2ban}"
+
+start() {
+	echo "Starting ${SVNAME}..."
+	[ ! -d /run/fail2ban ] && mkdir -p /run/fail2ban
+	exec /usr/bin/fail2ban-server -f
+}
+
+reset() {
+	case $3 in
+		exit)
+			echo "Stopping ${SVNAME}..."
+			;;
+		signal)
+			echo "Killing ${SVNAME}..."
+			;;
+		*)
+			echo "Stopping ${SVNAME}..."
+			;;
+	esac
+}
+
+eval ${TARGET} "$@"
