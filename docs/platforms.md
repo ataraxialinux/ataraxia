@@ -1,5 +1,5 @@
 ## Supported platforms
-Ataraxia Linux has been ported to 15 different CPU architectures:
+Ataraxia GNU/Linux-Libre has been ported to 15 different CPU architectures:
 ```
  * amd64        - for 64-bit x86 CPUs
  * i386         - for 32-bit x86 CPUs beginning with classic Intel Pentium

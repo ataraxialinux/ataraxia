@@ -1,5 +1,5 @@
 ## Introduction to the build system
-[Ataraxia Linux](https://github.com/ataraxialinux/ataraxia) is made from scratch. Every package build and configuration file was writen by and is controlled by the Ataraxia Linux team and it's contributors. To build the Linux distro, we have made a build system called "Ataraxia", which literally means "unperturbedness", "equanimity", and "tranquility". It's the main purpose to build and port packages easily.
+[Ataraxia GNU/Linux-Libre](https://github.com/ataraxialinux/ataraxia) is made from scratch. Every package build and configuration file was writen by and is controlled by the Ataraxia GNU/Linux-Libre team and it's contributors. To build the Linux distro, we have made a build system called "Ataraxia", which literally means "unperturbedness", "equanimity", and "tranquility". It's the main purpose to build and port packages easily.
 
 ### Getting source code
 We're using git as control system. You need git to download source code:
@@ -8,7 +8,7 @@ git clone https://github.com/ataraxialinux/ataraxia
 ```
 If you want to switch to specific version:
 ```
-git checkout [Ataraxia Linux version]
+git checkout [Ataraxia GNU/Linux-Libre version]
 ```
 
 ## Index of source packages

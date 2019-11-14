@@ -1,5 +1,5 @@
 # Roadmap
-This document describes roadmap of Ataraxia Linux (codename "AVP")
+This document describes roadmap of Ataraxia GNU/Linux-Libre (codename "AVP")
 
 ## ~~Stage 1~~
  - [x] ~~Do the cross-toolchain~~
