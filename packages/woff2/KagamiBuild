@@ -1,0 +1,27 @@
+# Description: Web Open Font Format 2 reference implementation
+# URL:         https://github.com/google/woff2
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja brotli
+# Section:     libs
+
+name=woff2
+version=1.0.2
+release=1
+source=("https://github.com/google/woff2/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/woff2/dont-set-rpath.patch
+	patch -Np1 -i "$STUFF"/woff2/install-executables.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_BUILD_RPATH=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
