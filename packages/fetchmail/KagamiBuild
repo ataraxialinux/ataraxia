@@ -1,7 +1,7 @@
 # Description: A remote-mail retrieval utility
 # URL:         http://www.fetchmail.info
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl
+# Depends on:  python libressl
 # Section:     mail
 
 name=fetchmail
@@ -11,10 +11,6 @@ source=("http://downloads.sourceforge.net/project/$name/branch_6.4/$name-$versio
 
 build() {
 	cd "$SRC"/$name-$version
-	sed -i 's|/usr/bin/env python|/usr/bin/env python2|' fetchmailconf.py
-	sed -i '19,21s/^/#/' Makefile.am
-	autoreconf -vi
-
 	for a in $(find . -name config.sub); do
 		cp "$STUFF"/config.sub $a
 	done
@@ -23,6 +19,7 @@ build() {
 		cp "$STUFF"/config.guess $a
 	done
 
+	PYTHON=python3 \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-ssl=/usr \
