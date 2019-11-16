@@ -1,0 +1,30 @@
+# Description: A lightweight C library which eases the writing of UNIX daemons
+# URL:         http://0pointer.de/lennart/projects/libdaemon/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libdaemon
+version=0.14
+release=1
+source=("https://github.com/protonesso/libdaemon/archive/v${version}.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libdaemon/fix-includes.patch
+
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./bootstrap.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--localstatedir=/var \
+		--disable-lynx
+	make
+	make DESTDIR="$PKG" install
+}
