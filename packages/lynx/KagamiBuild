@@ -12,11 +12,15 @@ backup=('etc/lynx.cfg')
 source=("http://invisible-mirror.net/archives/lynx/tarballs/${name}${version}.tar.gz")
 
 build() {
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		export LDFLAGS="-static"
-	fi
+	HOSTCC=${HOSTCC:-cc}
 
 	cd "$SRC"/${name}${version}
+	sed -i configure \
+		-e '/LDFLAGS="-L$cf_add_libdir $LDFLAGS"/d' \
+		-e 's;,$BUILD_CC;,$HOSTCC;' \
+		-e 's;,$BUILD_CFLAGS;,$CFLAGS_FOR_BUILD;' \
+		-e 's;,$BUILD_LDFLAGS;,$LDFLAGS_FOR_BUILD;'
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
