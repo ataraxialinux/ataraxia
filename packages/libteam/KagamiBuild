@@ -1,0 +1,35 @@
+# Description: Library for controlling team network device
+# URL:         http://libteam.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python swig dbus jansson libdaemon libnl zeromq
+# Section:     libs
+
+name=libteam
+version=1.29
+release=1
+source=("http://libteam.org/files/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="-I$STUFF/include $CFLAGS"
+	export CXXFLAGS="$CFLAGS"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libteam/fix-fd_set.patch
+	patch -Np1 -i "$STUFF"/libteam/memcpy-memset-implicit-declaration.patch
+	patch -Np1 -i "$STUFF"/libteam/fix-redefinition-struct-ethhdr.patch
+	autoreconf -vfi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 teamd/dbus/teamd.conf "$PKG"/usr/share/dbus-1/system.d/teamd.conf
+
+	cd binding/python
+	python3 setup.py build
+	python3 setup.py install --skip-build -O1 --root="$PKG"
+}
