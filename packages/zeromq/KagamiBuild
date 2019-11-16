@@ -1,0 +1,22 @@
+# Description: Fast messaging system built on sockets. C and C++ bindings. aka 0MQ, ZMQ.
+# URL:         http://www.zeromq.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  util-linux libsodium
+# Section:     utils
+
+name=zeromq
+version=4.3.2
+release=1
+source=("https://github.com/zeromq/libzmq/releases/download/v${version}/zeromq-${version}.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/libzmq_werror="yes"/libzmq_werror="no"/' configure
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-libsodium \
+		--without-documentation
+	make
+	make DESTDIR="$PKG" install
+}
