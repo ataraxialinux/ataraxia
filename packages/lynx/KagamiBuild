@@ -12,6 +12,10 @@ backup=('etc/lynx.cfg')
 source=("http://invisible-mirror.net/archives/lynx/tarballs/${name}${version}.tar.gz")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		export LDFLAGS="-static"
+	fi
+
 	cd "$SRC"/${name}${version}
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
