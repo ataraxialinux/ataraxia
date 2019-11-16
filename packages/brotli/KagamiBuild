@@ -1,0 +1,26 @@
+# Description: Generic lossless compressor
+# URL:         https://github.com/google/brotli
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python cmake ninja
+# Section:     libs
+
+name=brotli
+version=1.0.7
+release=1
+source=("https://github.com/google/brotli/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	python3 setup.py build
+	python3 setup.py install --skip-build -O1 --root="$PKG"
+}
