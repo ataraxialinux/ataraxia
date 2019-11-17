@@ -3,4 +3,9 @@
 if [ "$1" = "pre-install" ]; then
 	getent group polkitd || addgroup -S polkitd 2>/dev/null
 	getent passwd polkitd || adduser -S -D -H -h /var/empty -s /usr/bin/nologin -G polkitd -g polkitd polkitd 2>/dev/null
+elif [ "$1" = "post-install" ]; then
+	for dirs in /etc/polkit-1/rules.d /usr/share/polkit-1/rules.d; do
+		chmod 700 $dirs
+		chown polkitd $dirs
+	done
 fi
