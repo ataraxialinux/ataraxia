@@ -270,8 +270,17 @@ _libtoolize_install()
 libtoolize_installLtMain()
 {
 	local a
-	for a in . config script
-		_libtoolize_install AC_CONFIG_AUX_DIR $a
+	for a in . config script; do
+		case $a in
+			config|script)
+				if [ -d "$PWD/$a" ]; then
+					_libtoolize_install AC_CONFIG_AUX_DIR $a
+				fi
+				;;
+			*)
+				_libtoolize_install AC_CONFIG_AUX_DIR $a
+				;;
+		esac
 	done
 }
 
