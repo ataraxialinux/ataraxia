@@ -8,7 +8,7 @@ SVNAME="${2:-nfs}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpc.statd; then
+	if ! perpok -b /etc/perp -u3 rpc.statd; then
 		exit 1
 	fi
 
@@ -17,14 +17,14 @@ start() {
 	fi
 
 	if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
-		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl d ${SVNAME}
+		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl -b /etc/perp d ${SVNAME}
 	fi
 	if ! mountpoint -q /proc/fs/nfsd; then
-		mount -t nfsd nfsd /proc/fs/nfsd || perpctl d ${SVNAME}
+		mount -t nfsd nfsd /proc/fs/nfsd || perpctl -b /etc/perp d ${SVNAME}
 	fi
 
-	exportfs -ra > /dev/null || perpctl d ${SVNAME}
-	rpc.nfsd -- ${PROCESSES:=4} || perpctl d ${SVNAME}
+	exportfs -ra > /dev/null || perpctl -b /etc/perp d ${SVNAME}
+	rpc.nfsd -- ${PROCESSES:=4} || perpctl -b /etc/perp d ${SVNAME}
 	sm-notify
 
 	exec rpc.mountd --foreground

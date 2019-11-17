@@ -16,15 +16,15 @@ start() {
 
 	echo "Starting ${SVNAME}..."
 	if [ -z "$INTERFACE" ]; then
-		perpctl d ${SVNAME}
+		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
 	if [ ! -f "$CONFIG" ]; then
-		perpctl d ${SVNAME}
+		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
-	if perpok -u3 networkmanager; then
-		perpctl d ${SVNAME}
+	if perpok -b /etc/perp -u3 networkmanager; then
+		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
 	ip link set ${INTERFACE} up

@@ -8,12 +8,12 @@ SVNAME="${2:-rpc.blkmapd}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpcbind; then
+	if ! perpok -b /etc/perp -u3 rpcbind; then
 		exit 1
 	fi
 
 	if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
-		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl d ${SVNAME}
+		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl -b /etc/perp d ${SVNAME}
 	fi
 
 	modprobe blocklayoutdriver || exit 1

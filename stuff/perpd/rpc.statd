@@ -8,11 +8,11 @@ SVNAME="${2:-rpc.statd}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpcbind; then
+	if ! perpok -b /etc/perp -u3 rpcbind; then
 		exit 1
 	fi
 
-	modprobe nfs || perpctl d ${SVNAME}
+	modprobe nfs || perpctl -b /etc/perp d ${SVNAME}
 	exec rpc.statd -F -d -L
 }
 

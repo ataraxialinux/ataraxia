@@ -8,15 +8,15 @@ SVNAME="${2:-rpc.idmapd}"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if ! perpok -u3 rpcbind; then
+	if ! perpok -b /etc/perp -u3 rpcbind; then
 		exit 1
 	fi
 
 	if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
-		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl d ${SVNAME}
+		mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || perpctl -b /etc/perp d ${SVNAME}
 	fi
 	if ! mountpoint -q /proc/fs/nfsd; then
-		mount -t nfsd nfsd /proc/fs/nfsd || perpctl d ${SVNAME}
+		mount -t nfsd nfsd /proc/fs/nfsd || perpctl -b /etc/perp d ${SVNAME}
 	fi
 
 	exec rpc.idmapd -f
