@@ -3,7 +3,7 @@
 # Copyright © 2016 The developers of libertine. See the COPYRIGHT file in the top-level directory of this distribution and at https://raw.githubusercontent.com/libertine-linux-packages/libertine/master/COPYRIGHT.
 
 
-# Note: AC_CONFIG_AUX_DIR and AC_CONFIG_MACRO_DIRS are ignored; we do not try to find them, it's very hard
+# Note: AC_CONFIG_AUX_DIR and AC_wCONFIG_MACRO_DIRS are ignored; we do not try to find them, it's very hard
 # Note: recursion isn't supported
 # Note: installing ltdl or ltdl.tar.gz isn't supported
 set -e
@@ -269,7 +269,10 @@ _libtoolize_install()
 
 libtoolize_installLtMain()
 {
-	_libtoolize_install AC_CONFIG_AUX_DIR .
+	local a
+	for a in . config script
+		_libtoolize_install AC_CONFIG_AUX_DIR $a
+	done
 }
 
 libtoolize_installMacros()
