@@ -1,7 +1,7 @@
 # Description: Alliance for Open Media video codec
 # URL:         https://aomedia.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja
+# Depends on:  cmake
 # Section:     video
 
 name=aom
@@ -19,9 +19,9 @@ build() {
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DBUILD_SHARED_LIBS=1 \
 		-DENABLE_TESTS=0 \
-		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+		-Wno-dev -G "Unix Makefiles"
+	make
+	make DESTDIR="$PKG" install
 
 	# hack
 	sed -i "s,0.1.0,$version,g" "$PKG"/usr/lib/pkgconfig/aom.pc
