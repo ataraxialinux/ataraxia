@@ -1,0 +1,33 @@
+# Description: Highly configurable and lightweight X11 window manager
+# URL:         http://openbox.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxml2 libxinerama libxrandr libxcursor libsm startup-notification imlib2 pango librsvg
+# Section:     x11
+
+name=openbox
+version=3.6.1
+release=1
+backup=('etc/xdg/openbox/menu.xml'
+	'etc/xdg/openbox/rc.xml'
+	'etc/xdg/openbox/autostart'
+	'etc/xdg/openbox/environment')
+source=("http://openbox.org/dist/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/openbox \
+		--sysconfdir=/etc \
+		--enable-startup-notification
+	make
+	make DESTDIR="$PKG" install
+}
