@@ -1,0 +1,20 @@
+# Description: EFL based terminal emulator
+# URL:         https://www.enlightenment.org/about-terminology
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson efl hicolor-icon-theme
+# Section:     x11
+
+name=terminology
+version=1.6.0
+release=1
+source=("https://download.enlightenment.org/rel/apps/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dnls=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
