@@ -1,0 +1,38 @@
+# Description: An image viewing/manipulation program
+# URL:         https://www.imagemagick.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl libltdl fontconfig libxext libxml2 lcms2 ghostscript libraw librsvg tiff openjpeg pango libwebp
+# Section:     graphics
+
+name=imagemagick
+version=7.0.9-2
+release=1
+source=("https://www.imagemagick.org/download/releases/ImageMagick-$version.tar.xz")
+
+build() {
+	cd "$SRC"/ImageMagick-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-gs-font-dir=/usr/share/fonts/gsfonts \
+		--with-gslib \
+		--with-jpeg \
+		--with-lcms \
+		--with-modules \
+		--with-pango \
+		--with-perl \
+		--with-perl-options=INSTALLDIRS=vendor \
+		--with-png \
+		--with-rsvg \
+		--with-tiff \
+		--with-webp \
+		--enable-hdri \
+		--enable-shared
+	make
+	make DESTDIR="$PKG" install
+
+	cd PerlMagick
+	find . -name '*.so' -delete
+	sed -i 's,LD_RUN_PATH="$(LD_RUN_PATH)" ,,' quantum/Makefile
+	make DESTDIR="$PKG" install
+}
