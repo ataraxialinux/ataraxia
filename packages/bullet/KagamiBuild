@@ -1,0 +1,28 @@
+# Description: A 3D Collision Detection and Rigid Body Dynamics Library for games and animation
+# URL:         http://www.bulletphysics.com/Bullet/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python cmake ninja freeglut
+# Section:     graphics
+
+name=bullet
+version=2.88
+release=1
+source=("https://github.com/bulletphysics/bullet3/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/${name}3-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/${name}3-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=1 \
+		-DBUILD_PYBULLET=ON \
+		-DBUILD_PYBULLET_NUMPY=OFF \
+		-DBUILD_OPENGL3_DEMOS=OFF \
+		-DINSTALL_LIBS=1 \
+		-DINSTALL_EXTRA_LIBS=1 \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
