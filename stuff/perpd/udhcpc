@@ -4,16 +4,13 @@
 exec 2>&1
 
 TARGET="$1"
-INTERFACE="$(echo $PWD | cut -d - -f 2)"
-if [ ! -z "$INTERFACE" ]; then
-	SVNAME="${2:-udhcpc-$INTERFACE}"
-else
-	SVNAME="${2:-udhcpc}"
-fi
+BASENAME="$(basename $0)"
+SVNAME="$BASENAME"
+INTERFACE="$(echo $BASENAME | cut -d - -f 2)"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if [ -z "$INTERFACE" ]; then
+	if [ "$INTERFACE" != "$BASENAME" ]; then
 		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
