@@ -4,13 +4,13 @@
 exec 2>&1
 
 TARGET="$1"
-BASENAME="$(basename $0)"
+BASENAME="$(basename $PWD)"
 SVNAME="$BASENAME"
 INTERFACE="$(echo $BASENAME | cut -d - -f 2)"
 
 start() {
 	echo "Starting ${SVNAME}..."
-	if [ "$INTERFACE" != "$BASENAME" ]; then
+	if [ "$INTERFACE" != "${SVNAME//udhcpc-/}" ]; then
 		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
@@ -30,14 +30,14 @@ start() {
 		UDHCPC="udhcpc"
 	fi
 
-	exec $UDHCPC $DHCPC_OPTS -f -i ${INTERFACE} -p "/run/$SVNAME.pid"
+	exec $UDHCPC $DHCPC_OPTS -f -i ${INTERFACE} -p "/run/udhcpc-$INTERFACE.pid"
 }
 
 reset() {
 	case $3 in
 		exit)
 			echo "Stopping ${SVNAME}..."
-			kill -9 "$(cat /run/$SVNAME.pid)"
+			kill -9 "$(cat /run/udhcpc-$INTERFACE.pid)"
 
 			ip link set ${INTERFACE} down
 			;;
