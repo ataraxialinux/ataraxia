@@ -1,0 +1,49 @@
+# Description: An interpreter for the PostScript language
+# URL:         https://www.ghostscript.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  dbus cups fontconfig libxt libxext libjpeg-turbo libpng tiff lcms2 openjpeg
+# Section:     text
+
+name=ghostscript
+version=9.50
+release=1
+source=("https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs${version/./}/$name-${version}.tar.xz"
+	"https://downloads.sourceforge.net/gs-fonts/ghostscript-fonts-std-8.11.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	rm -rf freetype lcms2mt jpeg libpng openjpeg zlib
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-drivers=ALL \
+		--with-fontpath=/usr/share/ghostscript/fonts:/usr/share/fonts \
+		--with-ijs \
+		--with-system-libtiff \
+		--with-x \
+		--enable-cups \
+		--enable-dynamic \
+		--enable-fontconfig \
+		--enable-freetype \
+		--enable-openjpeg \
+		--disable-compile-inits \
+		--disable-gtk
+	make so all
+	make DESTDIR="$PKG" install-so install
+
+	cd ijs
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-shared
+	make
+	make DESTDIR=$PKG install
+
+	cp -a $SRC/fonts "$PKG"/usr/share/ghostscript
+
+	ln -sf gsc "$PKG"/usr/bin/gs
+
+	rm -rf "$PKG"/usr/share/{doc,man/de}
+	rm -rf "$PKG"/usr/share/ghostscript/fonts/[CRT]*
+	rm -rf "$PKG"/usr/bin/ijs_{client,server}_example
+}
