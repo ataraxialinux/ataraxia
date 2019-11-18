@@ -1,19 +1,19 @@
 # Description: A low-latency audio server
 # URL:         http://jackaudio.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python2 libsamplerate dbus
+# Depends on:  python alsa-lib libsamplerate dbus
 # Section:     audio
 
 name=jack
 version=1.9.13
-release=1
+release=2
 source=("https://github.com/jackaudio/jack2/releases/download/v$version/jack2-$version.tar.gz")
 
 build() {
 	cd "$SRC"/jack2-$version
 	patch -Np1 -i "$STUFF"/jack/fix-execinfo.patch
 
-	python2 waf configure \
+	python3 waf configure \
 		-j1 \
 		--prefix=/usr \
 		--mandir=/usr/share/man/man1 \
@@ -21,6 +21,6 @@ build() {
 		--dbus \
 		--alsa \
 		--classic
-	python2 waf build -j$(nproc)
-	python2 waf --destdir="$PKG" install
+	python3 waf build -j$(nproc)
+	python3 waf --destdir="$PKG" install
 }
