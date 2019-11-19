@@ -1,0 +1,178 @@
+--- perp-2.07-orig/examples/mathopd/mathopd.conf.bak
++++ perp-2.07/examples/mathopd/mathopd.conf.bak
+@@ -101,6 +101,6 @@
+ 
+ 
+ ## pid file unnecessary with perp:
+-#PIDFile /var/run/mathopd.pid
++#PIDFile /run/mathopd.pid
+ 
+ ###
+--- perp-2.07-orig/perp/MULTIPLE.txt
++++ perp-2.07/perp/MULTIPLE.txt
+@@ -5,7 +5,7 @@
+ 
+ In normal configurations of perp, there will be a single instance
+ of perpd running per machine, monitoring the service directory
+-/etc/perp with its .control directory "shadowed" to /var/run/perp.
++/etc/perp with its .control directory "shadowed" to /run/perp.
+ 
+ Some users may instead wish to configure multiple instances of
+ perpd running concurrently.  This may be desired, for example, to
+@@ -19,7 +19,7 @@
+ are service definitions for each of the other instances of perpd:
+ 
+ /etc/perp
+-  .control --> /var/run/perp
++  .control --> /run/perp
+   perp0/
+   perp1/
+   perp2/
+@@ -30,17 +30,17 @@
+ 
+ /etc/perp.d
+   perp0/
+-    .control --> /var/run/perp0
++    .control --> /run/perp0
+     sv1/
+     sv2/
+     ...
+   perp1/
+-    .control --> /var/run/perp1
++    .control --> /run/perp1
+     svA/
+     svB/
+     ...
+   perp2/
+-    .control --> /var/run/perp2
++    .control --> /run/perp2
+     svX/
+     svY/
+     ...
+@@ -79,24 +79,24 @@
+ "X-session" runlevels.
+ 
+ /etc/perp
+-  .control --> /var/run/perp
++  .control --> /run/perp
+   perp.S/
+   perp.M/
+   perp.X/
+ 
+ /etc/perp.d/
+   perp.S/
+-    .control --> /var/run/perp.S
++    .control --> /run/perp.S
+     sv1/
+     sv2/
+     ...
+   perp.M/
+-    .control --> /var/run/perp.M
++    .control --> /run/perp.M
+     svA/
+     svB/
+     ...
+   perp.X/
+-    .control --> /var/run/perp.X
++    .control --> /run/perp.X
+     svX/
+     svY/
+     ...
+--- perp-2.07-orig/perp/boot/rc.log
++++ perp-2.07/perp/boot/rc.log
+@@ -8,8 +8,7 @@
+ LOGDIR=/var/log/perpd
+ LOGOPTS="-k 8 -s 100000 -t -z"
+ ## suggested:
+-LOGUSER=tinylog
+-
++LOGUSER=log
+ 
+ ### --- script ---
+ 
+--- perp-2.07-orig/perp/boot/rc.perp
++++ perp-2.07/perp/boot/rc.perp
+@@ -3,7 +3,7 @@
+ # ===
+ 
+ ### --- configure ---
+-PERP_VAR=/var/run/perp
++PERP_VAR=/run/perp
+ PERPD_OPTS="-a6"
+ 
+ 
+--- perp-2.07-orig/perp/man/perp-setup.8
++++ perp-2.07/perp/man/perp-setup.8
+@@ -80,7 +80,7 @@
+ will use a default value for
+ .IR ctrldir ,
+ normally
+-.IR /var/run/perp .
++.IR /run/perp .
+ Note that the
+ .B perp-setup
+ utility does not itself create the
+@@ -212,7 +212,7 @@
+ .BR perpd (8).
+ .RE
+ .PP
+-.IR /etc/perp/.control " [\-\-> " /var/run/perp ]
++.IR /etc/perp/.control " [\-\-> " /run/perp ]
+ .RS
+ Directory (normally a symlink) for runtime control files.
+ .RE
+@@ -286,7 +286,7 @@
+ If this is not defined or empty,
+ .B perp-setup
+ uses a built-in default, normall
+-.IR /var/run/perp .
++.IR /run/perp .
+ .SH AUTHOR
+ Wayne Marshall, http://b0llix.net/perp/
+ .SH SEE ALSO
+--- perp-2.07-orig/perp/man/perp_intro.8
++++ perp-2.07/perp/man/perp_intro.8
+@@ -122,12 +122,12 @@
+ to start
+ .BR perpd (8)
+ .TP
+-.IR /etc/perp/.control " [--> " /var/run/perp " ]"
++.IR /etc/perp/.control " [--> " /run/perp " ]"
+ runtime control directory for the
+ .I /etc/perp
+ installation directory;
+ normally a symlink to
+-.I /var/run/perp
++.I /run/perp
+ .TP
+ .I /etc/perp/foo
+ .BR perpetrate (5)
+--- perp-2.07-orig/perp/man/perpd.8
++++ perp-2.07/perp/man/perpd.8
+@@ -478,13 +478,13 @@
+ .RS
+ .I .control
+ ->
+-.I /var/run/perp
++.I /run/perp
+ .RE
+ .PP
+ will cause
+ .B perpd
+ to maintain its runtime files under
+-.IR /var/run/perp .
++.IR /run/perp .
+ If
+ .B perpd
+ finds that
+--- perp-2.07-orig/perp/perp-setup.in
++++ perp-2.07/perp/perp-setup.in
+@@ -8,7 +8,7 @@
+ _PID=$$
+ 
+ _BASE_DEFAULT=/etc/perp
+-_CTL_DEFAULT=/var/run/perp
++_CTL_DEFAULT=/run/perp
+ 
+ _BASE=${PERP_BASE:-${_BASE_DEFAULT}}
+ _CTL=${PERP_CTL:-${_CTL_DEFAULT}}

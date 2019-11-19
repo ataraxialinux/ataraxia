@@ -6,7 +6,7 @@
 
 name=perp
 version=2.07
-release=4
+release=5
 options=('bootstrap')
 source=("http://b0llix.net/perp/distfiles/$name-$version.tar.gz")
 
@@ -21,6 +21,7 @@ build() {
 	patch -Np1 -i "$STUFF"/perp/0004-Remove-obsolete-files.patch
 	patch -Np1 -i "$STUFF"/perp/0005-Remove-unused-variable.patch
 	patch -Np1 -i "$STUFF"/perp/cross.patch
+	patch -Np1 -i "$STUFF"/perp/run.patch
 
 	sed -i "s/CC = gcc/CC = $CC/g" conf.mk
 	sed -i "s/-O2/$CFLAGS/g" conf.mk
@@ -34,6 +35,6 @@ build() {
 		DESTDIR="$PKG" ./perp/perp-setup /etc/perp
 	fi
 
-	install -Dm755 "$STUFF"/perp/rc.main "$PKG"/etc/perp/.boot/rc.perp
-	install -Dm755 "$STUFF"/perp/rc.log "$PKG"/etc/perp/.boot/rc.log
+	install -Dm755 "$SRC"/$name-$version/perp/boot/rc.perp "$PKG"/etc/perp/.boot/rc.perp
+	install -Dm755 "$SRC"/$name-$version/perp/boot/rc.log "$PKG"/etc/perp/.boot/rc.log
 }
