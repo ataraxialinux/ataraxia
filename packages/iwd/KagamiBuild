@@ -6,11 +6,13 @@
 
 name=iwd
 version=1.1
-release=1
+release=2
 source=("https://www.kernel.org/pub/linux/network/wireless/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/iwd/fix-rawmemchr.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib/iwd \
