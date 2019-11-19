@@ -6,13 +6,13 @@
 
 name=polkit
 version=0.116
-release=4
+release=5
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/polkit/make-innetgr-optional.patch
-	autoreconf -vif
+	autoreconf -fi
 
 	sed -e 's,/sys/fs/cgroup/systemd/,/sys/fs/cgroup,g' -i configure
 
@@ -22,7 +22,7 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-authfw=shadow \
-		--with-os-type=Ataraxia \
+		--with-os-type=ataraxia \
 		--disable-libelogind \
 		--disable-libsystemd-login \
 		--disable-man-pages \
@@ -31,8 +31,10 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	chmod 4755 "$PKG"/usr/lib/polkit-1/polkit-agent-helper-1 "$PKG"/usr/bin/pkexec
+
 	for rc in polkitd; do
 		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+		install -Dm755 "$STUFF"/peprd/log "$PKG"/etc/perp/$rc/rc.log
 	done
 }
