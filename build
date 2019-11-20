@@ -423,7 +423,11 @@ case $1 in
 		for packages in $(ls "$REPO/"); do
 			pushd "$REPO"
 				(
-					"$UTILS/check-updates" $cuopt $packages
+					if [ "$packages" = "libsass" ]; then
+						true
+					else
+						"$UTILS/check-updates" $cuopt $packages
+					fi
 				)
 			popd
 		done
