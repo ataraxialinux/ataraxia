@@ -4,7 +4,7 @@
 exec 2>&1
 
 TARGET="$1"
-BASENAME="$(basename $0)"
+BASENAME="$(basename $PWD)"
 SVNAME="$BASENAME"
 INTERFACE="$(echo $BASENAME | cut -d - -f 2)"
 
@@ -12,15 +12,11 @@ start() {
 	CONFIG="/etc/wpa_supplicant/wpa_supplicant.conf"
 
 	echo "Starting ${SVNAME}..."
-	if [ "$INTERFACE" != "$BASENAME" ]; then
+	if [ "$INTERFACE" != "${SVNAME//udhcpc-/}" ]; then
 		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
 	if [ ! -f "$CONFIG" ]; then
-		perpctl -b /etc/perp d ${SVNAME}
-	fi
-
-	if perpok -b /etc/perp -u3 networkmanager; then
 		perpctl -b /etc/perp d ${SVNAME}
 	fi
 
@@ -45,9 +41,6 @@ reset() {
 	case $3 in
 		exit)
 			echo "Stopping ${SVNAME}..."
-			kill -9 "$(cat /run/udhcpc-$INTERFACE.pid)"
-			kill -9 "$(cat /run/wpa-$INTERFACE.pid)"
-
 			ip link set ${INTERFACE} down
 			;;
 		signal)
