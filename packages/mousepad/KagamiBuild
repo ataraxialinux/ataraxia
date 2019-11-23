@@ -1,0 +1,18 @@
+# Description: Simple text editor for Xfce
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool xfconf gtksourceview3 desktop-file-utils
+# Section:     xfce
+
+name=mousepad
+version=0.4.2
+release=1
+source=("https://archive.xfce.org/src/apps/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
