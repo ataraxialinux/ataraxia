@@ -15,13 +15,16 @@ build() {
 	cd build
 	cmake "$SRC"/${name}3-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_BULLET2_DEMOS=0 \
+		-DBUILD_CPU_DEMOS=0 \
 		-DBUILD_SHARED_LIBS=1 \
 		-DBUILD_PYBULLET=ON \
 		-DBUILD_PYBULLET_NUMPY=OFF \
 		-DBUILD_OPENGL3_DEMOS=OFF \
 		-DINSTALL_LIBS=1 \
 		-DINSTALL_EXTRA_LIBS=1 \
+		-DBUILD_UNIT_TESTS=0 \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
