@@ -1,0 +1,18 @@
+# Description: A text widget adding syntax highlighting and more to GNOME
+# URL:         https://wiki.gnome.org/Projects/GtkSourceView
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection vala gtk3
+# Section:     gnome
+
+name=gtksourceview3
+version=3.24.11
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/gtksourceview/${version%.*}/gtksourceview-$version.tar.xz")
+
+build() {
+	cd "$SRC"/gtksourceview-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
