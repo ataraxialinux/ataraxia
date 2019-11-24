@@ -19,6 +19,14 @@ build() {
 	export CFLAGS="$CFLAGS -ftree-vectorize -ftree-vectorizer-verbose=1"
 	autoconf
 
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
