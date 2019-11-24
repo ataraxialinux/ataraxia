@@ -11,6 +11,10 @@ source=("http://prdownloads.sourceforge.net/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i 's/mkdir/mkdir -p/g' src/Makefile*
+	sed -i 's/mkdir -p -p/mkdir -p/g' src/Makefile*
+	autoreconf -vif
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc
