@@ -6,7 +6,7 @@
 
 name=dbus
 version=1.12.16
-release=7
+release=8
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -28,6 +28,8 @@ build() {
 		--disable-systemd
 	make
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/var/run
 
 	for rc in dbus; do
 		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
