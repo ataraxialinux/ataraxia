@@ -7,9 +7,14 @@
 name=ocaml
 version=4.09.0
 release=1
+options=('~bootstrap')
 source=("https://github.com/ocaml/ocaml/archive/$version.tar.gz")
 
 build() {
+	if [ -z "$XTARGET" ]; then
+		export XTARGET="$(cc -dumpmachine)"
+	fi
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/ocaml/compile-without-debug-info.patch
 	patch -Np1 -i "$STUFF"/ocaml/fix-mcontext-fields.patch
@@ -17,7 +22,8 @@ build() {
 	patch -Np1 -i "$STUFF"/ocaml/pie.patch
 	patch -Np1 -i "$STUFF"/ocaml/fix-check-parser-uptodate-or-warn.sh.patch
 
-	./configure $BUILDFLAGS \
+	./configure \
+		--build=$XTARGET \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
 		--with-pic
