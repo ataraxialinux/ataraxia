@@ -11,11 +11,11 @@ backup=('etc/whois.conf')
 source=("http://ftp.debian.org/debian/pool/main/w/$name/${name}_${version}.tar.xz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/$name
 	make \
 		CONFIG_FILE=/etc/whois.conf \
 		CFLAGS="$CFLAGS" \
-		HAVE_ICONV=1
+		HAVE_ICONV=1 Makefile.depend whois
 	make prefix=/usr BASEDIR="$PKG" install-whois
 	install -D -m644 whois.conf "$PKG"/etc/whois.conf
 }
