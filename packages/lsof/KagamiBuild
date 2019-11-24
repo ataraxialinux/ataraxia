@@ -6,18 +6,14 @@
 name=lsof
 version=4.93.2
 release=1
-source=("https://fossies.org/linux/misc/$name/${name}-${version}.tar.bz2")
+source=("https://github.com/lsof-org/lsof/archive/$version/$name-$version.tar.gz")
 
 build() {
-	cd "$SRC"/${name}_${version}
-
-	tar xf ${name}_${version}_src.tar
-	cd ${name}_${version}_src
+	cd "$SRC"/$name-$version
 	sed -i 's|/\* #define\tHASSECURITY\t1 \*/|#define\tHASSECURITY\t1|' dialects/linux/machine.h
 
 	./Configure -n linux
-	make
+	make CC="${CC:-cc} ${CFLAGS}"
 
-	install -Dm0755 lsof "$PKG"/usr/bin/lsof 
-	install -Dm0644 lsof.8 "$PKG"/usr/share/man/man8/lsof.8 
+	install -Dm0755 lsof "$PKG"/usr/bin/lsof
 }
