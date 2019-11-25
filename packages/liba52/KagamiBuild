@@ -14,6 +14,14 @@ build() {
 	sed -i 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/' configure.in
 	mv configure.in configure.ac
 
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./bootstrap
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
