@@ -13,10 +13,10 @@ build() {
 	cd "$SRC"/$name-$version
 	sed /subdir\(\'man/d -i meson.build
 
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--disable-profiler
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dpackagekit=false
+	ninja
+	DESTDIR="$PKG" ninja install
 }
