@@ -13,10 +13,13 @@ source=("https://download.enlightenment.org/rel/apps/$name/$name-$version.tar.xz
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/enlightenment/0001-remove-dependency-on-libexecinfo_h.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dnls=false \
+		-Dpam=false \
 		-Dsystemd=false \
 		-Dwl=true
 	ninja
