@@ -11,6 +11,9 @@ source=("http://www.claws-mail.org/download.php?file=releases/$name-$version.tar
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/claws-mail/libetpan-1.9.4.patch
+	autoreconf -vif
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-manual

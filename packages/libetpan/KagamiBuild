@@ -13,11 +13,8 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/libetpan/fix-build.patch
 
-	libtoolize --force --copy
-	aclocal -I m4
-	autoheader
-	autoconf
-	automake --add-missing --foreign --force --copy
+	touch README
+	autoreconf -fi
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

@@ -35,5 +35,9 @@ build() {
 	make installer
 	make -j1 INSTALLROOT="$PKG" MANDIR=/usr/share/man bios install
 
+	mkdir -p "$PKG"/usr/bin/
+	mv "$PKG"/sbin/* "$PKG"/usr/bin/
+	rm -rf "$PKG"/sbin
+
 	install -D -m0644 "$STUFF"/syslinux/syslinux.cfg "$PKG"/boot/syslinux/syslinux.cfg
 }
