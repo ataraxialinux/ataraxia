@@ -7,10 +7,12 @@
 name=spectrwm
 version=3.2.0
 release=1
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://github.com/conformal/spectrwm/archive/SPECTRWM_${version//./_}.tar.gz")
 
 build() {
-	cd "$SRC"/$pkgname-SPECTRWM_${version/./_}/linux
+	export CFLAGS="-I$STUFF/include $CFLAGS"
+
+	cd "$SRC"/$name-SPECTRWM_${version//./_}/linux
 	make PREFIX="/usr"
 	make PREFIX="/usr" DESTDIR="$PKG" install
 

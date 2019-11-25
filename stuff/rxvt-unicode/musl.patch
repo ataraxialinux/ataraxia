@@ -1,0 +1,55 @@
+diff -ruN rxvt-unicode-9.22-orig/libptytty/src/logging.C rxvt-unicode-9.22/libptytty/src/logging.C
+--- rxvt-unicode-9.22-orig/libptytty/src/logging.C	2014-11-16 21:22:34.000000000 +0900
++++ rxvt-unicode-9.22/libptytty/src/logging.C	2019-11-26 00:18:06.238010272 +0900
+@@ -43,12 +43,8 @@
+ #ifdef HAVE_UTMPX_H
+ # include <utmpx.h>
+ #endif
+-#ifdef HAVE_UTMP_H
+-# include <utmp.h>
+-#endif
+-#ifdef HAVE_LASTLOG_H
+-# include <lastlog.h>
+-#endif
++#include <utmp.h>
++#include <lastlog.h>
+ 
+ #if !defined(UTMP_FILE)
+ # if defined(_PATH_UTMP)
+@@ -71,13 +67,6 @@
+ #  define WTMPX_FILE PT_WTMPX_FILE
+ # endif
+ #endif
+-#if !defined(LASTLOG_FILE)
+-# if defined(_PATH_LASTLOG)
+-#  define LASTLOG_FILE _PATH_LASTLOG
+-# elif defined(PT_LASTLOG_FILE)
+-#  define LASTLOG_FILE PT_LASTLOG_FILE
+-# endif
+-#endif
+ #if !defined(LASTLOGX_FILE)
+ # if defined(_PATH_LASTLOGX)
+ #  define LASTLOGX_FILE _PATH_LASTLOGX
+@@ -86,6 +75,22 @@
+ # endif
+ #endif
+ 
++#ifndef _PATH_WTMPX
++# define _PATH_WTMPX	"/var/log/wtmp"
++#endif
++#ifndef _PATH_UTMPX
++# define _PATH_UTMPX	"/var/log/utmp"
++#endif
++
++#ifndef __GLIBC__
++# define UTMPX_FILE     _PATH_UTMPX
++# define UTMPX_FILENAME _PATH_UTMPX
++# define WTMPX_FILE     _PATH_WTMPX
++# define WTMPX_FILENAME _PATH_WTMPX
++#endif
++
++#define LASTLOG_FILE "/var/log/lastlog"
++
+ #include <pwd.h>
+ 
+ #include <stdio.h>
