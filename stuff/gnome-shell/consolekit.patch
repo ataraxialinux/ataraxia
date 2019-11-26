@@ -1,51 +1,83 @@
-From dc60d4f94bc4455e1fc2fd3e8a646ddbe1a4b09f Mon Sep 17 00:00:00 2001
+From 734f3269936e584e86cda8eb19dba8737a680ddd Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sat, 23 Nov 2019 17:48:30 +0900
-Subject: [PATCH] consolekit
+Date: Wed, 27 Nov 2019 02:25:41 +0900
+Subject: [PATCH] consolekit2 support
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- js/misc/loginManager.js | 56 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 52 insertions(+), 4 deletions(-)
+ .../org.freedesktop.ConsoleKit.Manager.xml    | 25 ++++++
+ .../org.freedesktop.ConsoleKit.Session.xml    | 11 +++
+ js/misc/loginManager.js                       | 86 ++++++++++++++++++-
+ 3 files changed, 120 insertions(+), 2 deletions(-)
+ create mode 100644 data/dbus-interfaces/org.freedesktop.ConsoleKit.Manager.xml
+ create mode 100644 data/dbus-interfaces/org.freedesktop.ConsoleKit.Session.xml
 
+diff --git a/data/dbus-interfaces/org.freedesktop.ConsoleKit.Manager.xml b/data/dbus-interfaces/org.freedesktop.ConsoleKit.Manager.xml
+new file mode 100644
+index 0000000..bf6a73c
+--- /dev/null
++++ b/data/dbus-interfaces/org.freedesktop.ConsoleKit.Manager.xml
+@@ -0,0 +1,25 @@
++<!-- $OpenBSD: org.freedesktop.ConsoleKit.Manager.xml,v 1.1 2019/01/17 19:00:46 ajacoutot Exp $ -->
++
++<node>
++  <interface name="org.freedesktop.ConsoleKit.Manager">
++    <method name="Suspend">                                                     
++      <arg type="b" direction="in"/>                                            
++    </method>                                                                   
++    <method name="CanSuspend">                                                  
++      <arg type="s" direction="out"/>                                           
++    </method>                                                                   
++    <method name="Inhibit">                                                     
++      <arg type="s" direction="in"/>                                            
++      <arg type="s" direction="in"/>                                            
++      <arg type="s" direction="in"/>                                            
++      <arg type="s" direction="in"/>                                            
++      <arg type="h" direction="out"/>                                           
++    </method>                                                                   
++    <signal name="PrepareForSleep">                                             
++      <arg type="b" direction="out"/>                                           
++    </signal>                                                                   
++    <method name="GetCurrentSession">
++      <arg type="o" direction="out"/>
++    </method>
++  </interface>                                                                  
++</node>
+diff --git a/data/dbus-interfaces/org.freedesktop.ConsoleKit.Session.xml b/data/dbus-interfaces/org.freedesktop.ConsoleKit.Session.xml
+new file mode 100644
+index 0000000..ffa38fa
+--- /dev/null
++++ b/data/dbus-interfaces/org.freedesktop.ConsoleKit.Session.xml
+@@ -0,0 +1,11 @@
++<!-- $OpenBSD: org.freedesktop.ConsoleKit.Session.xml,v 1.1 2019/01/17 19:00:46 ajacoutot Exp $ -->
++
++<node>
++  <interface name="org.freedesktop.ConsoleKit.Session">
++    <signal name="Lock" />
++    <signal name="Unlock" />
++      <method name="SetLockedHint">                                               
++        <arg type="b" direction="in"/>                                            
++      </method>
++    </interface>
++</node>
 diff --git a/js/misc/loginManager.js b/js/misc/loginManager.js
-index f1ab257..4824ed1 100644
+index f1ab257..7e8c54f 100644
 --- a/js/misc/loginManager.js
 +++ b/js/misc/loginManager.js
-@@ -14,6 +14,32 @@ const SystemdLoginManager = Gio.DBusProxy.makeProxyWrapper(SystemdLoginManagerIf
+@@ -14,6 +14,12 @@ const SystemdLoginManager = Gio.DBusProxy.makeProxyWrapper(SystemdLoginManagerIf
  const SystemdLoginSession = Gio.DBusProxy.makeProxyWrapper(SystemdLoginSessionIface);
  const SystemdLoginUser = Gio.DBusProxy.makeProxyWrapper(SystemdLoginUserIface);
  
-+const ConsoleKitManagerIface = '<node> \
-+<interface name="org.freedesktop.ConsoleKit.Manager"> \
-+<method name="CanRestart"> \
-+    <arg type="b" direction="out"/> \
-+</method> \
-+<method name="CanStop"> \
-+    <arg type="b" direction="out"/> \
-+</method> \
-+<method name="Restart" /> \
-+<method name="Stop" /> \
-+<method name="GetCurrentSession"> \
-+    <arg type="o" direction="out" /> \
-+</method> \
-+</interface> \
-+</node>';
++const ConsoleKitManagerIface = loadInterfaceXML('org.freedesktop.ConsoleKit.Manager');
++const ConsoleKitSessionIface = loadInterfaceXML('org.freedesktop.ConsoleKit.Session');
 +
-+const ConsoleKitSessionIface = '<node> \
-+<interface name="org.freedesktop.ConsoleKit.Session"> \
-+<signal name="Lock" /> \
-+<signal name="Unlock" /> \
-+</interface> \
-+</node>';
-+
-+const ConsoleKitSession = Gio.DBusProxy.makeProxyWrapper(ConsoleKitSessionIface);
 +const ConsoleKitManager = Gio.DBusProxy.makeProxyWrapper(ConsoleKitManagerIface);
++const ConsoleKitSession = Gio.DBusProxy.makeProxyWrapper(ConsoleKitSessionIface);
 +
  function haveSystemd() {
      return GLib.access("/run/systemd/seats", 0) >= 0;
  }
-@@ -43,7 +69,7 @@ function canLock() {
+@@ -43,7 +49,7 @@ function canLock() {
                                                 -1, null);
  
          let version = result.deep_unpack()[0].deep_unpack();
@@ -54,42 +86,98 @@ index f1ab257..4824ed1 100644
      } catch (e) {
          return false;
      }
-@@ -200,10 +226,32 @@ var LoginManagerSystemd = class {
+@@ -83,7 +89,7 @@ function getLoginManager() {
+         if (haveSystemd())
+             _loginManager = new LoginManagerSystemd();
+         else
+-            _loginManager = new LoginManagerDummy();
++            _loginManager = new LoginManagerConsoleKit();
+     }
+ 
+     return _loginManager;
+@@ -199,6 +205,82 @@ var LoginManagerSystemd = class {
+ };
  Signals.addSignalMethods(LoginManagerSystemd.prototype);
  
- var LoginManagerDummy = class {
-+    _init: function() {
++var LoginManagerConsoleKit = class {
++    constructor () {
 +        this._proxy = new ConsoleKitManager(Gio.DBus.system,
 +                                            'org.freedesktop.ConsoleKit',
 +                                            '/org/freedesktop/ConsoleKit/Manager');
-+    },
++        this._proxy.connectSignal('PrepareForSleep',
++                                  this._prepareForSleep.bind(this));
++    }
 +
 +    // Having this function is a bit of a hack since the Systemd and ConsoleKit
 +    // session objects have different interfaces - but in both cases there are
 +    // Lock/Unlock signals, and that's all we count upon at the moment.
-     getCurrentSessionProxy(_callback) {
--        // we could return a DummySession object that fakes whatever callers
--        // expect (at the time of writing: connect() and connectSignal()
--        // methods), but just never calling the callback should be safer
++
++
++    getCurrentSessionProxy(callback) {
 +        if (this._currentSession) {
 +            callback (this._currentSession);
 +            return;
 +        }
 +
-+        this._proxy.GetCurrentSessionRemote(Lang.bind(this,
-+            function(result, error) {
-+                if (error) {
-+                    logError(error, 'Could not get a proxy for the current session');
-+                } else {
-+                    this._currentSession = new ConsoleKitSession(Gio.DBus.system,
-+                                                                 'org.freedesktop.ConsoleKit',
-+                                                                 result[0]);
-+                    callback(this._currentSession);
++        this._proxy.GetCurrentSessionRemote((result, error) => {
++            if (error) {
++                logError(error, 'Could not get a proxy for the current session');
++            } else {
++                this._currentSession = new ConsoleKitSession(Gio.DBus.system,
++                                                             'org.freedesktop.ConsoleKit',
++                                                             result[0]);
++                callback(this._currentSession);
++            }
++        });
++    }
++
++    canSuspend(asyncCallback) {
++        this._proxy.CanSuspendRemote((result, error) => {
++            if (error) {
++                asyncCallback(false, false);
++            } else {
++                asyncCallback(result[0], false);
++            }
++        });
++    }
++
++    listSessions(asyncCallback) {
++        asyncCallback([]);
++    }
++
++    suspend() {
++        this._proxy.SuspendRemote(true);
++    }
++
++    inhibit(reason, callback) {
++        let inVariant = GLib.Variant.new('(ssss)',
++                                         ['sleep',
++                                          'GNOME Shell',
++                                          reason,
++                                          'delay']);
++        this._proxy.call_with_unix_fd_list('Inhibit', inVariant, 0, -1, null, null,
++            (proxy, result) => {
++                let fd = -1;
++                try {
++                    let [outVariant, fdList] = proxy.call_with_unix_fd_list_finish(result);
++                    fd = fdList.steal_fds()[0];
++                    callback(new Gio.UnixInputStream({ fd: fd }));
++                } catch(e) {
++                    logError(e, "Error getting ConsoleKit inhibitor");
++                    callback(null);
 +                }
-+            }));
-     }
- 
-     canSuspend(asyncCallback) {
++            });
++    }
++
++    _prepareForSleep(proxy, sender, [aboutToSuspend]) {
++        this.emit('prepare-for-sleep', aboutToSuspend);
++    }
++}
++Signals.addSignalMethods(LoginManagerConsoleKit.prototype);
++
+ var LoginManagerDummy = class {
+     getCurrentSessionProxy(_callback) {
+         // we could return a DummySession object that fakes whatever callers
 -- 
 2.24.0
 
