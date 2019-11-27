@@ -6,16 +6,19 @@
 
 name=xkeyboard-config
 version=2.28
-release=1
+release=2
 source=("https://xorg.freedesktop.org/archive/individual/data/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--with-xkb-base=/usr/share/X11/xkb \
+		--with-xkb-base=/etc/X11/xkb \
 		--with-xkb-rules-symlink=xorg \
-		--enable-compat-rules=yes
+		--enable-compat-rules \
+		--enable-xkbcomp-symlink
 	make
 	make DESTDIR="$PKG" install
+
+	install -m755 -d "$PKG"/var/lib/xkb
 }
