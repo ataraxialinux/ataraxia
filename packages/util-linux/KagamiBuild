@@ -1,7 +1,7 @@
 # Description: Miscellaneous system utilities for Linux 
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib readline libcap-ng
+# Depends on:  zlib readline pam libcap-ng
 # Priority:    required
 # Section:     base
 
@@ -12,6 +12,13 @@ case $version in
 	*.*) _v=$version;;
 esac
 release=3
+backup=('etc/pam.d/chfn'
+	'etc/pam.d/chsh'
+	'etc/pam.d/login'
+	'etc/pam.d/runuser'
+	'etc/pam.d/runuser-l'
+	'etc/pam.d/su'
+	'etc/pam.d/su-l')
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
@@ -30,6 +37,7 @@ build() {
 		--without-systemd \
 		--without-systemdsystemunitdir \
 		--enable-all-programs \
+		--enable-chfn-chsh \
 		--enable-fs-paths-default=/usr/bin \
 		--enable-fdisks \
 		--enable-fsck \
@@ -43,17 +51,20 @@ build() {
 		--enable-mesg \
 		--enable-mount \
 		--enable-mountpoint \
+		--enable-newgrp \
 		--enable-partx \
+		--enable-pg \
 		--enable-raw \
 		--enable-rfkill \
 		--enable-tunelp \
+		--enable-unshare \
+		--enable-vipw \
 		--enable-wall \
 		--enable-write \
 		--enable-zramctl \
 		--disable-agetty \
 		--disable-bfs \
 		--disable-cal \
-		--disable-chfn-chsh \
 		--disable-chmem \
 		--disable-cramfs \
 		--disable-eject \
@@ -65,34 +76,33 @@ build() {
 		--disable-kill \
 		--disable-last \
 		--disable-line \
-		--disable-login \
-		--disable-lslogins \
 		--disable-lsmem \
 		--disable-makeinstall-chown \
 		--disable-minix \
 		--disable-more \
-		--disable-newgrp \
 		--disable-nls \
-		--disable-nologin \
 		--disable-nsenter \
-		--disable-pg \
 		--disable-pivot_root \
 		--disable-rename \
 		--disable-rpath \
-		--disable-runuser \
 		--disable-schedutils \
-		--disable-setpriv \
 		--disable-setterm \
-		--disable-su \
-		--disable-sulogin \
 		--disable-switch_root \
 		--disable-ul \
-		--disable-unshare \
 		--disable-utmpdump \
-		--disable-vipw \
 		--disable-wdctl
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/pam.d/util-linux "$PKG"/etc/pam.d/chfn
+	install -Dm644 "$STUFF"/pam.d/util-linux "$PKG"/etc/pam.d/chsh
+	install -Dm644 "$STUFF"/pam.d/login "$PKG"/etc/pam.d/login
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
+
+	chmod 4755 "$PKG"/usr/bin/{newgrp,ch{sh,fn}}
 
 	cd "$PKG"
 	mkdir -p var/lib/hwclock

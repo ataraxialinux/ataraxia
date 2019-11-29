@@ -1,7 +1,7 @@
 # Description: Reference implementation of a Wayland compositor
 # URL:         https://wayland.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson libdrm libx11 libxcb libxcursor cairo libinput libpng libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu pango libwebp colord libva dbus
+# Depends on:  meson pam libdrm libx11 libxcb libxcursor cairo libinput libpng libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu pango libwebp colord libva dbus
 # Section:     x11
 
 name=weston
@@ -11,15 +11,12 @@ source=("https://wayland.freedesktop.org/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/weston/no-pam.patch
-
 	mkdir -p build
 	cd build
 
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dbackend-rdp=false \
 		-Dlauncher-logind=false \
-		-Dpam=false \
 		-Dpipewire=false \
 		-Dremoting=false \
 		-Dsimple-dmabuf-drm=auto \

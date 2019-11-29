@@ -1,7 +1,7 @@
 # Description: The CUPS Printing System
 # URL:         https://www.cups.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gnutls colord dbus libusb
+# Depends on:  pam gnutls colord dbus libusb
 # Section:     admin
 
 name=cups
@@ -13,7 +13,8 @@ backup=('etc/cups/cupsd.conf'
 	'etc/cups/classes.conf'
 	'etc/cups/cups-files.conf'
 	'etc/cups/subscriptions.conf'
-	'etc/logrotate.d/cups')
+	'etc/logrotate.d/cups'
+	'etc/pam.d/cups')
 source=("https://github.com/apple/cups/releases/download/v$version/$name-$version-source.tar.gz")
 
 build() {
@@ -36,9 +37,9 @@ build() {
 		--with-system-groups=lpadmin \
 		--with-optim="$CFLAGS" \
 		--enable-gnutls \
+		--enable-pam=yes \
 		--enable-ssl=yes \
 		--enable-threads \
-		--disable-pam \
 		--disable-systemd
 	make
 	make BUILDROOT="$PKG" install
@@ -49,6 +50,7 @@ build() {
 	done
 
 	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
+	install -Dm644 "$STUFF"/pam.d/cups "$PKG"/etc/pam.d/cups
 
 	install -dm755 "$PKG"/usr/share/dbus-1/system.d
 	mv "$PKG"/etc/dbus-1/system.d/cups.conf "$PKG"/usr/share/dbus-1/system.d

@@ -1,7 +1,7 @@
 # Description: Premier connectivity tool for remote login with the SSH protocol
 # URL:         https://www.openssh.com/portable.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libressl libedit
+# Depends on:  zlib pam libressl libedit
 # Section:     net
 
 name=openssh
@@ -25,13 +25,15 @@ build() {
 		--with-privsep-user=nobody \
 		--with-libedit \
 		--with-md5-passwords \
+		--with-pam \
 		--with-ssl-engine \
 		--without-kerberos5 \
 		--without-ldns \
-		--without-pam \
 		--disable-strip
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/pam.d/sshd "$PKG"/etc/pam.d/sshd
 
 	for rc in sshd; do
 		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main

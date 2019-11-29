@@ -1,7 +1,7 @@
 # Description: Desktop-independent graphical login manager for X11
 # URL:         http://sourceforge.net/projects/slim.berlios/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja libpng libjpeg-turbo libxmu libxft libxrandr xorg-fonts
+# Depends on:  cmake ninja pam libpng libjpeg-turbo libxmu libxft libxrandr xorg-fonts
 # Section:     utils
 
 name=slim
@@ -9,7 +9,8 @@ version=1.3.6
 release=2
 backup=('etc/slim.conf'
 	'etc/slimlock.conf'
-	'etc/logrotate.d/slim')
+	'etc/logrotate.d/slim'
+	'etc/pam.d/slim')
 source=("https://downloads.sourceforge.net/project/slim.berlios/$name-$version.tar.gz")
 
 build() {
@@ -35,7 +36,7 @@ build() {
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_SKIP_RPATH=ON \
 		-DUSE_CONSOLEKIT=no \
-		-DUSE_PAM=no \
+		-DUSE_PAM=ON \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
@@ -46,6 +47,7 @@ build() {
 	done
 
 	install -Dm644 "$STUFF"/slim/logrotate "$PKG"/etc/logrotate.d/slim
+	install -Dm644 "$STUFF"/pam.d/slim "$PKG"/etc/pam.d/slim
 
 	rm -rf "$PKG"/lib
 }
