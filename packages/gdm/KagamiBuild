@@ -1,7 +1,7 @@
-# Description: Display manager and login screen (libraries only)
+# Description: Display manager and login screen
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  accountsservice gtk3 iso-codes itstool libcanberra consolekit2
+# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra consolekit2
 # Section:     gnome
 
 name=gdm
@@ -22,19 +22,25 @@ build() {
 		--localstatedir=/var \
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--with-run-dir=/run \
+		--with-default-pam-config=arch \
 		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
-		--with-systemdsystemunitdir=no \
+		--with-console-kit \
+		--with-initial-vt=7 \
 		--without-plymouth \
 		--without-systemd \
-		--with-console-kit \
+		--with-systemdsystemunitdir=no \
 		--enable-ipv6 \
+		--enable-gdm-xsession \
 		--disable-user-display-server \
 		--disable-schemas-compile \
 		--disable-systemd-journal
-	make -C libgdm
-	make -C data
-	make DESTDIR="$PKG" -C libgdm install
-	make DESTDIR="$PKG" -C data install
+	make
+	make DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/etc/pam.d "$PKG"/run
+	for rc in gdm; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	done
+
+	rm -rf "$PKG"/run
 }
