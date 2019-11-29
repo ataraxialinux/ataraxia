@@ -46,18 +46,24 @@ build_busybox_standard() {
 	rm -rf y.tab.c
 	bison -y parse.y
 
-	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static pr.c egetopt.c strtonum.c -o "$PKG"/usr/bin/pr
+	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static pr.c egetopt.c strtonum.c -o "$PKG"/usr/bin/openbsd-pr
 	${CROSS_COMPILE}cc $CFLAGS -static apply.c -o "$PKG"/usr/bin/what
-	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static reallocarray.c fmt.c -o "$PKG"/usr/bin/fmt
+	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static reallocarray.c fmt.c -o "$PKG"/usr/bin/openbsd-fmt
 	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/apply
-	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/who
-	${CROSS_COMPILE}cc $CFLAGS -static nologin.c -o "$PKG"/usr/bin/nologin
+	${CROSS_COMPILE}cc $CFLAGS -static who.c -o "$PKG"/usr/bin/openbsd-who
 	${CROSS_COMPILE}cc -I. -Wall $CFLAGS -static doas.c env.c y.tab.c persist.c reallocarray.c setprogname.c strtonum.c -o "$PKG"/usr/bin/doas
 
 	rm -rf y.tab.c
 
 	for a in apply.1 pr.1 what.1 who.1 doas.1 fmt.1; do
-		install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
+		case $a in
+			pr.1|fmt.1|who.1)
+				install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/openbsd-$a
+				;;
+			*)
+				install -Dm0644 "$STUFF"/busybox/$a "$PKG"/usr/share/man/man1/$a
+				;;
+		esac
 	done
 	install -Dm0644 "$STUFF"/busybox/doas.conf.5 "$PKG"/usr/share/man/man5/doas.conf.5
 
@@ -88,31 +94,31 @@ build() {
 	case $BARCH in
 		amd64)
 			export XKARCH="x86_64"
-			export TTYS="tty{1,2,3,4,5,6}"
+			export TTYS=tty{1,2,3,4,5,6}
 			;;
 		i386)
 			export XKARCH="i386"
-			export TTYS="tty{1,2,3,4,5,6}"
+			export TTYS=tty{1,2,3,4,5,6}
 			;;
 		arm64)
 			export XKARCH="arm64"
-			export TTYS="tty{1,S0,AMA0,USB0}"
+			export TTYS=tty{1,S0,AMA0,USB0}
 			;;
 		armhf|armel)
 			export XKARCH="arm"
-			export TTYS="tty{1,S0,AMA0,USB0}"
+			export TTYS=tty{1,S0,AMA0,USB0}
 			;;
 		mips64|mips64el|mips|mipsel)
 			export XKARCH="mips"
-			export TTYS="tty{1,S0,AMA0,USB0}"
+			export TTYS=tty{1,S0,AMA0,USB0}
 			;;
 		ppc64le|ppc64)
 			export XKARCH="powerpc"
-			export TTYS="tty{1,2,3,4,5,6}"
+			export TTYS=tty{1,2,3,4,5,6}
 			;;
 		riscv64|riscv32)
 			export XKARCH="riscv"
-			export TTYS="tty{1,S0,AMA0,USB0}"
+			export TTYS=tty{1,S0,AMA0,USB0}
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux-Libre"
