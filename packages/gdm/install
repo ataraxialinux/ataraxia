@@ -1,6 +1,7 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group gdm || addgroup -S gdm 2>/dev/null
-	getent passwd gdm || adduser -S -D -H -h /var/lib/gdm -s /usr/bin/nologin -G gdm -g gdm gdm 2>/dev/null
+	getent group gdm || groupadd -r gdm 2>/dev/null
+	getent passwd gdm || useradd -c "Gnome Display Manager" -g gdm -r -d /var/lib/gdm -s /usr/bin/nologin gdm 2>/dev/null
+	passwd -l gdm 2>/dev/null
 fi

@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group pulse-access || addgroup -S pulse-access 2>/dev/null
-	getent group pulse || addgroup -S pulse 2>/dev/null
-	getent passwd pulse || adduser -S -D -H -h /var/run/pulse -g "PulseAudio daemon" -G pulse pulse 2>/dev/null
+	getent group pulse-access || groupadd -r pulse-access 2>/dev/null
+	getent group pulse || groupadd -r pulse 2>/dev/null
+	getent passwd colord || useradd -c "Pulseaudio System User" -g pulse -r -d /var/run/pulse -s /usr/bin/nologin pulse 2>/dev/null
+	passwd -l pulse 2>/dev/null
 fi

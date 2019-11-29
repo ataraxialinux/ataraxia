@@ -1,6 +1,7 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group unbound || addgroup -S unbound 2>/dev/null
-	getent passwd unbound || adduser -S -D -H -h /etc/unbound -s /usr/bin/nologin -G unbound -g unbound unbound 2>/dev/null
+	getent group unbound || groupadd -r unbound 2>/dev/null
+	getent passwd unbound || useradd -c "unbound" -g unbound -r -d /etc/unbound -s /usr/bin/nologin unbound 2>/dev/null
+	passwd -l unbound 2>/dev/null
 fi

@@ -1,8 +1,13 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group lpadmin || addgroup -S lpadmin 2>/dev/null
-	getent group lp || addgroup -S lp 2>/dev/null
-	getent passwd lp || adduser -S -G lp -g lp lp 2>/dev/null
-	addgroup lp lp 2>/dev/null || true
+	getent group lpadmin || groupadd -r lpadmin 2>/dev/null
+	getent group lp || groupadd -r lp 2>/dev/null
+	getent passwd lp || useradd -c "Print Service User" -r -G lp -g lp -s /usr/bin/nologin lp 2>/dev/null
+
+	if [ -z "$(id -nG lp | grep -o lp)" ]; then
+		usermod -a -G lp lp
+	fi
+
+	passwd -l lp 2>/dev/null
 fi

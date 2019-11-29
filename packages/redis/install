@@ -1,8 +1,10 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group redis || addgroup -S redis 2>/dev/null
-	getent passwd redis || adduser -S -D -H -h /var/lib/redis -s /usr/bin/nologin -G redis -g redis redis 2>/dev/null
+	getent group redis || groupadd -r redis 2>/dev/null
+	getent passwd redis || useradd -m -g redis -d /var/lib/redis -s /usr/bin/nologin redis 2>/dev/null
+
+	passwd -l redis
 elif [ "$1" = "post-install" ]; then
 	chown redis:redis /etc/sentinel.conf
 	for perms in /var/lib/redis /var/log/redis; do

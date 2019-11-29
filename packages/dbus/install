@@ -1,8 +1,10 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group messagebus || addgroup -S messagebus 2>/dev/null
-	getent passwd messagebus || adduser -S -D -H -h /var/empty -s /usr/bin/nologin -G messagebus -g messagebus messagebus 2>/dev/null
+	getent group messagebus || groupadd -r messagebus 2>/dev/null
+	getent passwd messagebus || useradd -c "D-Bus Message Daemon User" -g messagebus -r -d /var/empty -s /usr/bin/nologin messagebus 2>/dev/null
+
+	passwd -l messagebus 2>/dev/null
 elif [ "$1" = "post-install" ]; then
 	chown root:messagebus /usr/lib/dbus-1.0/dbus-daemon-launch-helper
 	chmod 4750 /usr/lib/dbus-1.0/dbus-daemon-launch-helper

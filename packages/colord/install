@@ -1,6 +1,7 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group colord || addgroup -S colord 2>/dev/null
-	getent passwd colord || adduser -S -D -h /var/lib/colord -s /usr/bin/nologin -G colord -g colord colord 2>/dev/null
+	getent group colord || groupadd -r colord 2>/dev/null
+	getent passwd colord || useradd -c "Color Daemon Owner" -g colord -r -d /var/lib/colord -s /usr/bin/nologin colord 2>/dev/null
+	passwd -l colord 2>/dev/null
 fi

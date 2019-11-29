@@ -1,6 +1,13 @@
 #!/bin/sh
 
 if [ "$1" = "pre-install" ]; then
-	getent group polkitd || addgroup -S polkitd 2>/dev/null
-	getent passwd polkitd || adduser -S -D -H -h /var/empty -s /usr/bin/nologin -G polkitd -g polkitd polkitd 2>/dev/null
+	getent group polkitd || groupadd -r polkitd 2>/dev/null
+	getent passwd polkitd || useradd -c "PolicyKit Daemon Owner" -g polkitd -r -d /var/empty -s /usr/bin/nologin polkitd 2>/dev/null
+
+	passwd -l polkitd 2>/dev/null
+elif [ "$1" = "post-install" ]; then
+	chown -R polkitd:polkitd /etc/polkit-1/rules.d /usr/share/polkit-1/rules.d
+	chmod -R 700 /etc/polkit-1/rules.d /usr/share/polkit-1/rules.d
+
+	chmod 4755 /usr/lib/polkit-1/polkit-agent-helper-1 /usr/bin/pkexec
 fi
