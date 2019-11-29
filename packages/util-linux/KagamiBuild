@@ -58,6 +58,7 @@ build() {
 		--enable-rfkill \
 		--enable-tunelp \
 		--enable-unshare \
+		--enable-usrdir-path \
 		--enable-vipw \
 		--enable-wall \
 		--enable-write \
@@ -70,11 +71,9 @@ build() {
 		--disable-eject \
 		--disable-fallocate \
 		--disable-fdformat \
-		--disable-hardlink \
 		--disable-ipcrm \
 		--disable-ipcs \
 		--disable-kill \
-		--disable-last \
 		--disable-line \
 		--disable-lsmem \
 		--disable-makeinstall-chown \
@@ -89,7 +88,6 @@ build() {
 		--disable-setterm \
 		--disable-switch_root \
 		--disable-ul \
-		--disable-utmpdump \
 		--disable-wdctl
 	make
 	make DESTDIR="$PKG" install
@@ -108,7 +106,7 @@ build() {
 	mkdir -p var/lib/hwclock
 
 	mv usr/sbin/* usr/bin
-	rm -rf bin sbin usr/sbin
+	rmdir usr/sbin
 
 	rm -rf "$PKG"/usr/bin/ctrlaltdel
 
