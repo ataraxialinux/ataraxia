@@ -7,6 +7,7 @@
 name=cracklib
 version=2.9.7
 release=1
+options=('bootstrap')
 source=("https://github.com/cracklib/cracklib/releases/download/v$version/$name-$version.tar.gz")
 
 build() {
@@ -19,8 +20,13 @@ build() {
 	make DESTDIR="$PKG" install
 
 	mkdir -p "$PKG"/usr/share/dict
-	ln -sf /usr/share/cracklib/cracklib-small "$PKG"/usr/share/dict/cracklib-small
+	ln -sf ../cracklib/cracklib-small "$PKG"/usr/share/dict/cracklib-small
 
-	sh ./util/cracklib-format dicts/cracklib-small \
-		| sh ./util/cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		cracklib-format dicts/cracklib-small \
+			| cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
+	else
+		sh ./util/cracklib-format dicts/cracklib-small \
+			| sh ./util/cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
+	fi
 }
