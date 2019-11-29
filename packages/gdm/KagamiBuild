@@ -7,6 +7,15 @@
 name=gdm
 version=3.34.1
 release=9
+backup=('etc/gdm/custom.conf'
+	'etc/gdm/PostSession/Default'
+	'etc/gdm/PreSession/Default'
+	'etc/gdm/Xsession'
+	'etc/pam.d/gdm-autologin'
+	'etc/pam.d/gdm-fingerprint'
+	'etc/pam.d/gdm-launch-environment'
+	'etc/pam.d/gdm-password'
+	'etc/pam.d/gdm-smartcard')
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -22,7 +31,8 @@ build() {
 		--localstatedir=/var \
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--with-run-dir=/run \
-		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
+		--with-default-pam-config=none \
+		--with-default-path=/usr/local/games:/usr/local/bin:/usr/local/sbin:/usr/games:/usr/bin \
 		--with-console-kit \
 		--with-consolekit-directory=/usr/lib/consolekit \
 		--with-initial-vt=7 \
@@ -37,10 +47,11 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	rm -rf "$PKG"/var/{cache,log,run}
+	rm -rf "$PKG"/run
+
 	for rc in gdm; do
 		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
 		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
 	done
-
-	rm -rf "$PKG"/run
 }
