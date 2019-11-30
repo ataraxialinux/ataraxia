@@ -1,15 +1,15 @@
-auth        required    pam_env.so 
-auth        required    pam_unix.so try_first_pass likeauth
-auth        optional    pam_permit.so
+auth      required  pam_unix.so      try_first_pass nullok
+auth      optional  pam_permit.so
+auth      required  pam_env.so
 
-account     required    pam_unix.so
-account     optional    pam_permit.so
+account   required  pam_unix.so
+account   optional  pam_permit.so
+account   required  pam_time.so
 
-password    required    pam_cracklib.so difok=2 minlen=8 dcredit=2 ocredit=2 try_first_pass retry=3
-password    required    pam_unix.so try_first_pass use_authtok nullok sha512 shadow
-password    optional    pam_permit.so
+password  required  pam_cracklib.so  difok=2 minlen=8 dcredit=2 ocredit=2 retry=3
+password  required  pam_unix.so      try_first_pass nullok sha512 shadow
+password  optional  pam_permit.so
 
-session     required    pam_limits.so
-session     required    pam_env.so 
-session     required    pam_unix.so
-session     optional    pam_permit.so
+session   required  pam_limits.so
+session   required  pam_unix.so
+session   optional  pam_permit.so

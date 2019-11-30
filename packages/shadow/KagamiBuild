@@ -53,11 +53,13 @@ build() {
 
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
-	for pam in passwd chgpasswd chpasswd; do
-		install -Dm644 "$STUFF"/pam.d/passwd "$PKG"/etc/pam.d/$pam
+	rm "$PKG"/etc/pam.d/*
+
+	for pam in passwd chgpasswd chpasswd newusers; do
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
 	done
 
-	for pam in shadow newusers chage groupadd groupdel groupmod useradd usermod userdel; do
+	for pam in chage groupadd groupdel groupmod shadow useradd usermod userdel; do
 		install -Dm644 "$STUFF"/pam.d/shadow "$PKG"/etc/pam.d/$pam
 	done
 
