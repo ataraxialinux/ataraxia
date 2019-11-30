@@ -38,4 +38,8 @@ build() {
 	make DESTDIR="$PKG" install
 
 	chmod 4755 "$PKG"/usr/bin/unix_chkpwd
+
+	for pam in system-auth system-local-login system-login system-remote-login system-services other; do
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
+	done
 }
