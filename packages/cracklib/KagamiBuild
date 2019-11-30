@@ -8,10 +8,14 @@ name=cracklib
 version=2.9.7
 release=1
 options=('bootstrap')
-source=("https://github.com/cracklib/cracklib/releases/download/v$version/$name-$version.tar.gz")
+source=("https://github.com/cracklib/cracklib/releases/download/v$version/$name-$version.tar.gz"
+	"https://github.com/cracklib/cracklib/releases/download/v$version/cracklib-words-$version.bz2")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"
+	bunzip2 cracklib-words-$version.bz2
+
+	cd $name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
@@ -19,14 +23,15 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	cd "$SRC"/$name-$version
 	mkdir -p "$PKG"/usr/share/dict
 	ln -sf ../cracklib/cracklib-small "$PKG"/usr/share/dict/cracklib-small
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		cracklib-format dicts/cracklib-small \
+		cracklib-format "$SRC"/cracklib-words-$version \
 			| cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
 	else
-		sh ./util/cracklib-format dicts/cracklib-small \
+		sh ./util/cracklib-format "$SRC"/cracklib-words-$version \
 			| sh ./util/cracklib-packer "$PKG"/usr/share/cracklib/pw_dict
 	fi
 }
