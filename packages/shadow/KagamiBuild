@@ -53,6 +53,16 @@ build() {
 
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
+	for pam in passwd chgpasswd chpasswd; do
+		install -Dm644 "$STUFF"/pam.d/passwd "$PKG"/etc/pam.d/$pam
+	done
+
+	for pam in shadow newusers chage groupadd groupdel groupmod useradd usermod userdel; do
+		install -Dm644 "$STUFF"/pam.d/shadow "$PKG"/etc/pam.d/$pam
+	done
+
+	install -Dm644 etc/pam.d/groupmems "$PKG"/etc/pam.d/groupmems
+
 	# conflicts with util-linux
 	rm -rf \
 		"$PKG"/usr/bin/{login,su,chsh,chfn,sg,nologin,logoutd} \
