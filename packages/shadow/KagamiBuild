@@ -51,14 +51,6 @@ build() {
 	install -Dm644 "$STUFF"/shadow/useradd "$PKG"/etc/default/useradd
 	install -Dm644 "$STUFF"/shadow/login.defs "$PKG"/etc/login.defs
 
-	install -dm755 "$PKG"/etc/pam.d
-	install -t "$PKG"/etc/pam.d -m644 "$STUFF"/pam.d/{passwd,chgpasswd,chpasswd,newusers}
-	install -Dm644 etc/pam.d/groupmems "$PKG"/etc/pam.d/groupmems
-
-	for file in chage groupadd groupdel groupmod shadow useradd usermod userdel; do
-		install -Dm644 "$STUFF"/pam.d/shadow "$PKG"/etc/pam.d/$file
-	done
-
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
 	# conflicts with util-linux
