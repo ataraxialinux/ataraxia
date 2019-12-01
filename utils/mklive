@@ -1,10 +1,10 @@
 #!/bin/bash
 
 generate_initramfs() {
-	packages="base-files netbase musl gettext-tiny zlib file ncurses readline bzip2 cracklib pam attr acl libcap shadow pcre grep \
-		mksh bash expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive kmod perp busybox coreutils mawk hostname dialog pigz libmnl \
-		libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd nano libcap-ng util-linux ubase sinit \
-		e2fsprogs dosfstools hwids eudev wireless_tools wpa_supplicant popt gptfdisk wget oniguruma jq neko lynx linux"
+	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam attr acl libcap shadow pcre grep mksh bash \
+			expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive kmod perp busybox coreutils mawk hostname dialog \
+			pigz iproute2 kbd nano libcap-ng util-linux ubase sinit e2fsprogs dosfstools hwids eudev wireless_tools wpa_supplicant \
+			popt gptfdisk wget oniguruma jq neko lynx linux"
 
 	neko install -c "$BUILD"/target.config -r "$INITRAMFS" -d $packages
 
@@ -20,6 +20,9 @@ generate_initramfs() {
 		rm -rf usr/share/bash-completion
 		rm -rf usr/share/applications
 		rm -rf usr/share/aclocal
+		rm -rf usr/share/cracklib
+		rm -rf usr/share/dict
+		rm -rf usr/share/nano
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 		find . -name "*.h" -print0 | xargs -0 rm -rf
@@ -30,6 +33,10 @@ generate_initramfs() {
 		rm -rf boot/vmlinuz
 
 		cp "$TOOLS"/$XTARGET/lib/*.so* usr/lib/
+
+		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null
+		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null
+		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
