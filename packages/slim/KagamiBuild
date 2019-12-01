@@ -21,12 +21,10 @@ build() {
 	patch -Np1 -i "$STUFF"/slim/snprintf.patch
 	patch -Np1 -i "$STUFF"/slim/musl-includes.patch
 
-	sed -i -e 's|#xserver_arguments.*|xserver_arguments   -nolisten tcp vt07|'\
-		-e 's|/var/run/slim.lock|/run/lock/slim.lock|' \
+	sed -i -e 's|#xserver_arguments.*|xserver_arguments -nolisten tcp vt07|' \
+		-e 's|/var/run/slim.lock|/var/lock/slim.lock|' \
 		-e 's|halt_cmd.*|halt_cmd            /sbin/poweroff|'\
 		-e 's|reboot_cmd.*|reboot_cmd          /sbin/reboot|'\
-		-e 's|console_cmd.*|console_cmd         /usr/bin/terminal|'\
-		-e 's|login_cmd.*|login_cmd           exec /bin/sh -l /etc/X11/xinit/xinitrc|' \
 		slim.conf
 
 	mkdir -p build
@@ -48,6 +46,7 @@ build() {
 
 	install -Dm644 "$STUFF"/slim/logrotate "$PKG"/etc/logrotate.d/slim
 	install -Dm644 "$STUFF"/pam.d/slim "$PKG"/etc/pam.d/slim
+	install -Dm644 "$STUFF"/pam.d/slimlock "$PKG"/etc/pam.d/slimlock
 
 	rm -rf "$PKG"/lib
 }
