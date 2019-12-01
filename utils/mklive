@@ -6,10 +6,14 @@ generate_initramfs() {
 			pigz iproute2 kbd nano libcap-ng util-linux ubase sinit e2fsprogs dosfstools hwids eudev wireless_tools wpa_supplicant \
 			popt gptfdisk wget oniguruma jq neko lynx linux"
 
+	remove="m4 flex libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables libssh2 c-ares libev nghttp2 curl"
+
 	neko install -c "$BUILD"/target.config -r "$INITRAMFS" -d $packages
+	neko remove -c "$BUILD"/target.config -r "$INITRAMFS" $remove
 
 	pushd "$INITRAMFS"
 		ln -sf usr/bin/init init
+		cp "$TOOLS"/$XTARGET/lib/libstdc++.so* usr/lib/
 
 		rm -rf usr/include
 		rm -rf usr/share/man
@@ -24,6 +28,10 @@ generate_initramfs() {
 		rm -rf usr/share/dict
 		rm -rf usr/share/nano
 
+		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null
+		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null
+		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null
+
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 		find . -name "*.h" -print0 | xargs -0 rm -rf
 		find . -name "*.hpp" -print0 | xargs -0 rm -rf
@@ -31,12 +39,6 @@ generate_initramfs() {
 
 		mv $(realpath boot/vmlinuz) "$ISODIR"/seiba/seiba
 		rm -rf boot/vmlinuz
-
-		cp "$TOOLS"/$XTARGET/lib/*.so* usr/lib/
-
-		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null
-		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null
-		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
@@ -158,6 +160,7 @@ main() {
 	rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG"
 	mkdir -p "$ISODIR/seiba" "$INITRAMFS"
 
+	source "$BUILD/target.config"
 	generate_initramfs
 
 	case $BARCH in
