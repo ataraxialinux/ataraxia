@@ -147,3 +147,30 @@ index f1ab257..d733335 100644
 -- 
 2.24.0
 
+From 854ffb7222ed7f4cb41033d8720cec9a3a7b7f43 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 2 Dec 2019 05:39:57 +0900
+Subject: [PATCH] fixes
+
+---
+ js/misc/loginManager.js | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/js/misc/loginManager.js b/js/misc/loginManager.js
+index d733335baa..e9bd75bdc0 100644
+--- a/js/misc/loginManager.js
++++ b/js/misc/loginManager.js
+@@ -258,10 +258,10 @@ var LoginManagerConsoleKit = class {
+     }
+ 
+     canSuspend(asyncCallback) {
+-        this._proxy.CanSuspendRemote((result, error) => {
++        Mainloop.idle_add(Lang.bind(this, function() {
+             asyncCallback(this._upClient.get_can_suspend(), false);
+             return false;
+-        });
++        }));
+     }
+ 
+     listSessions(asyncCallback) {
+
