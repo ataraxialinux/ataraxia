@@ -1,19 +1,60 @@
 #!/bin/bash
 
+build_busybox() {
+	local busyboxver="1.31.1"
+
+	pushd "$SRCDEST"
+		rm -rf busybox-$busyboxver
+		tar -xf busybox-$busyboxver.tar.bz2
+
+		cd busybox-$busyboxver
+		make mrproper $MKOPTS
+
+		cp "$STUFF"/busybox/live-config .config
+
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" $MKOPTS
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links $MKOPTS
+
+		install -Dm4755 busybox "$INITRAMFS"/usr/bin/busybox
+
+		for applet in `cat busybox.links|sed 's|^.*/||'`; do
+			if [ ! -L "$INITRAMFS/usr/bin/$applet" ]; then
+				ln -sf busybox "$INITRAMFS"/usr/bin/$applet
+			fi
+		done
+
+		rm -rf busybox-$busyboxver
+	popd
+}
+
 generate_initramfs() {
 	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam attr acl libcap shadow pcre grep mksh bash \
-			expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive kmod perp busybox coreutils mawk hostname dialog \
-			pigz iproute2 kbd nano libcap-ng util-linux ubase sinit e2fsprogs dosfstools hwids eudev wireless_tools wpa_supplicant \
-			popt gptfdisk wget oniguruma jq neko lynx linux"
+			expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive kmod perp busybox mawk hostname dialog pigz iproute2 \
+			kbd nano libcap-ng util-linux ubase sinit e2fsprogs dosfstools hwids eudev wireless_tools wpa_supplicant popt gptfdisk \
+			wget oniguruma jq neko linux"
 
 	remove="m4 flex libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables libssh2 c-ares libev nghttp2 curl"
 
 	neko install -c "$BUILD"/target.config -r "$INITRAMFS" -d $packages
 	neko remove -c "$BUILD"/target.config -r "$INITRAMFS" $remove
 
+	build_busybox
+
 	pushd "$INITRAMFS"
 		ln -sf usr/bin/init init
-		cp "$TOOLS"/$XTARGET/lib/libstdc++.so* usr/lib/
+
+		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
+		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/
+
+		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
+				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff lzegrep \
+				lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma unxz xz xzcat xzcmp xzdec \
+				xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio; do
+			rm -rf usr/bin/$bins
+		done
+
+		ln -sf bsdtar usr/bin/tar
+		ln -sf bsdcpio usr/bin/cpio
 
 		rm -rf usr/include
 		rm -rf usr/share/man
@@ -27,6 +68,8 @@ generate_initramfs() {
 		rm -rf usr/share/cracklib
 		rm -rf usr/share/dict
 		rm -rf usr/share/nano
+		rm -rf usr/lib/modules/*/kernel/sound
+		rm -rf usr/lib/modules/*/kernel/drivers/gpu
 
 		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null
 		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null
