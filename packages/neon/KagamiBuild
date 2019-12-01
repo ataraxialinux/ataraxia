@@ -21,6 +21,8 @@ build() {
 		--enable-threadsafe-ssl=posix \
 		--enable-shared \
 		--disable-static
+
+	sed -i 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
 }

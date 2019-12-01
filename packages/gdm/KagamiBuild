@@ -44,6 +44,8 @@ build() {
 		--disable-user-display-server \
 		--disable-schemas-compile \
 		--disable-systemd-journal
+
+	sed -i 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
 

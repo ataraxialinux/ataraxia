@@ -16,6 +16,8 @@ build() {
 		--disable-gtk-doc \
 		--disable-nls \
 		--disable-umockdev
+
+	sed -i 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
 }

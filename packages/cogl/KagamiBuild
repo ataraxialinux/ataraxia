@@ -19,6 +19,8 @@ build() {
 		--enable-kms-egl-platform \
 		--enable-wayland-egl-platform \
 		--enable-wayland-egl-server
+
+	sed -i 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
 }

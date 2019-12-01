@@ -28,6 +28,8 @@ build() {
 		--disable-man-pages \
 		--disable-nls \
 		--disable-static
+
+	sed -i 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" dbusconfdir=/usr/share/dbus-1/system.d rulesdir=/usr/share/polkit-1/rules.d install
 
