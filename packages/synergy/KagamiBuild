@@ -19,9 +19,9 @@ build() {
 		-DSYNERGY_BUILD_LEGACY_GUI=OFF \
 		-Wno-dev -G Ninja
 	ninja
-	DESTDIR="$PKG" ninja install
 
-	for cmds in synergy synergyc synergyd synergys syntool; do
-		install -Dm755 bin/$cmds "$PKG"/usr/bin/$cmds
-	done
+	install -Dm755 build/bin/{synergyc,synergyd,synergys,syntool} -t "$PKG"/usr/bin
+	install -Dm644 doc/synergy.conf* -t "$PKG"/etc
+	install -Dm644 doc/synergyc.man "$PKG"/usr/share/man/man1/${pkgname}c.1
+	install -Dm644 doc/synerys.man "$PKG"/usr/share/man/man1/${pkgname}s.1
 }
