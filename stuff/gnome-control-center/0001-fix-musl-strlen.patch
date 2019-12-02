@@ -1,0 +1,43 @@
+From 869933acbf0354c89e2bb586b0c9023de3f44cdc Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 2 Dec 2019 22:41:27 +0900
+Subject: [PATCH] fix musl strlen
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ panels/user-accounts/cc-add-user-dialog.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/panels/user-accounts/cc-add-user-dialog.c b/panels/user-accounts/cc-add-user-dialog.c
+index 07c1edf..e86d0ea 100644
+--- a/panels/user-accounts/cc-add-user-dialog.c
++++ b/panels/user-accounts/cc-add-user-dialog.c
+@@ -407,6 +407,7 @@ local_name_entry_focus_out_event_cb (CcAddUserDialog *self)
+         return FALSE;
+ }
+ 
++#ifdef __GLIBC__
+ static void
+ generate_username_choices (const gchar  *name,
+                            GtkListStore *store)
+@@ -634,6 +635,7 @@ generate_username_choices (const gchar  *name,
+         g_string_free (item3, TRUE);
+         g_string_free (item4, TRUE);
+ }
++#endif
+ 
+ static void
+ local_name_entry_changed_cb (CcAddUserDialog *self)
+@@ -646,7 +648,9 @@ local_name_entry_changed_cb (CcAddUserDialog *self)
+         if ((name == NULL || strlen (name) == 0) && !self->has_custom_username) {
+                 gtk_entry_set_text (self->local_username_entry, "");
+         } else if (name != NULL && strlen (name) != 0) {
++#ifdef __GLIBC__
+                 generate_username_choices (name, self->local_username_model);
++#endif
+                 if (!self->has_custom_username)
+                         gtk_combo_box_set_active (GTK_COMBO_BOX (self->local_username_combo), 0);
+         }
+-- 
+2.24.0
+
