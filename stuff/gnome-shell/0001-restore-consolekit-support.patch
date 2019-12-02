@@ -1,15 +1,15 @@
-From 1b6cb991893b5bb5a006b58fc5aa0986d9b770b6 Mon Sep 17 00:00:00 2001
+From 56eac15d489b1e763c7b783fb10c33d2c166b7c5 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 2 Dec 2019 05:33:40 +0900
+Date: Mon, 2 Dec 2019 19:56:37 +0900
 Subject: [PATCH] restore consolekit support
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- js/misc/loginManager.js | 77 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 66 insertions(+), 11 deletions(-)
+ js/misc/loginManager.js | 74 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 63 insertions(+), 11 deletions(-)
 
 diff --git a/js/misc/loginManager.js b/js/misc/loginManager.js
-index f1ab257..d733335 100644
+index f1ab257..deb2d8d 100644
 --- a/js/misc/loginManager.js
 +++ b/js/misc/loginManager.js
 @@ -3,6 +3,9 @@
@@ -83,7 +83,7 @@ index f1ab257..d733335 100644
      getCurrentSessionProxy(callback) {
          if (this._currentSession) {
              callback (this._currentSession);
-@@ -199,15 +231,37 @@ var LoginManagerSystemd = class {
+@@ -199,15 +231,34 @@ var LoginManagerSystemd = class {
  };
  Signals.addSignalMethods(LoginManagerSystemd.prototype);
  
@@ -120,14 +120,11 @@ index f1ab257..d733335 100644
  
      canSuspend(asyncCallback) {
 -        asyncCallback(false, false);
-+        this._proxy.CanSuspendRemote((result, error) => {
-+            asyncCallback(this._upClient.get_can_suspend(), false);
-+            return false;
-+        });
++        asyncCallback(this._upClient.get_can_suspend(), false);
      }
  
      listSessions(asyncCallback) {
-@@ -215,12 +269,13 @@ var LoginManagerDummy = class {
+@@ -215,12 +266,13 @@ var LoginManagerDummy = class {
      }
  
      suspend() {
@@ -146,58 +143,4 @@ index f1ab257..d733335 100644
 +Signals.addSignalMethods(LoginManagerConsoleKit.prototype);
 -- 
 2.24.0
-
-From 854ffb7222ed7f4cb41033d8720cec9a3a7b7f43 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 2 Dec 2019 05:39:57 +0900
-Subject: [PATCH] fixes
-
----
- js/misc/loginManager.js | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/js/misc/loginManager.js b/js/misc/loginManager.js
-index d733335baa..e9bd75bdc0 100644
---- a/js/misc/loginManager.js
-+++ b/js/misc/loginManager.js
-@@ -258,10 +258,10 @@ var LoginManagerConsoleKit = class {
-     }
- 
-     canSuspend(asyncCallback) {
--        this._proxy.CanSuspendRemote((result, error) => {
-+        Mainloop.idle_add(Lang.bind(this, function() {
-             asyncCallback(this._upClient.get_can_suspend(), false);
-             return false;
--        });
-+        }));
-     }
- 
-     listSessions(asyncCallback) {
-
-From 8c736d1f09a67fd1ac210185b255e01d6498a553 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 2 Dec 2019 05:43:31 +0900
-Subject: [PATCH] Update loginManager.js
-
----
- js/misc/loginManager.js | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/js/misc/loginManager.js b/js/misc/loginManager.js
-index e9bd75bdc0..d6cb47303c 100644
---- a/js/misc/loginManager.js
-+++ b/js/misc/loginManager.js
-@@ -258,10 +258,9 @@ var LoginManagerConsoleKit = class {
-     }
- 
-     canSuspend(asyncCallback) {
--        Mainloop.idle_add(Lang.bind(this, function() {
-+        this._proxy.CanSuspendRemote((result, error) => {
-             asyncCallback(this._upClient.get_can_suspend(), false);
--            return false;
--        }));
-+        });
-     }
- 
-     listSessions(asyncCallback) {
 
