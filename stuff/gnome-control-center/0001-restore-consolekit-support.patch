@@ -1,0 +1,413 @@
+From f3b29da01aba6a524c185c3cfb5dfc3d188c4976 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 2 Dec 2019 21:55:17 +0900
+Subject: [PATCH] restore consolekit support
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ panels/common/cc-hostname-entry.c     | 101 ++------------------------
+ panels/datetime/cc-datetime-panel.c   |  95 +-----------------------
+ panels/datetime/cc-datetime-panel.ui  |  16 ++--
+ panels/info/cc-info-overview-panel.ui |   2 +
+ panels/power/cc-power-panel.c         |   6 +-
+ panels/sharing/cc-sharing-panel.ui    |   6 +-
+ 6 files changed, 25 insertions(+), 201 deletions(-)
+
+diff --git a/panels/common/cc-hostname-entry.c b/panels/common/cc-hostname-entry.c
+index dc2f3e7..9c5c445 100644
+--- a/panels/common/cc-hostname-entry.c
++++ b/panels/common/cc-hostname-entry.c
+@@ -29,48 +29,12 @@ struct _CcHostnameEntry
+   GtkEntry             parent;
+ 
+   GDBusProxy          *hostnamed_proxy;
+-  guint                set_hostname_timeout_source_id;
+ };
+ 
+-G_DEFINE_TYPE (CcHostnameEntry, cc_hostname_entry, GTK_TYPE_ENTRY)
++G_DEFINE_TYPE (CcHostnameEntry, cc_hostname_entry, GTK_TYPE_LABEL)
+ 
+ #define SET_HOSTNAME_TIMEOUT 1
+ 
+-static void
+-cc_hostname_entry_set_hostname (CcHostnameEntry *self)
+-{
+-  g_autofree gchar *hostname = NULL;
+-  g_autoptr(GVariant) pretty_result = NULL;
+-  g_autoptr(GVariant) static_result = NULL;
+-  g_autoptr(GError) pretty_error = NULL;
+-  g_autoptr(GError) static_error = NULL;
+-  const gchar *text;
+-
+-  text = gtk_entry_get_text (GTK_ENTRY (self));
+-
+-  g_debug ("Setting PrettyHostname to '%s'", text);
+-  pretty_result = g_dbus_proxy_call_sync (self->hostnamed_proxy,
+-                                          "SetPrettyHostname",
+-                                          g_variant_new ("(sb)", text, FALSE),
+-                                          G_DBUS_CALL_FLAGS_NONE,
+-                                          -1, NULL, &pretty_error);
+-  if (pretty_result == NULL)
+-    g_warning ("Could not set PrettyHostname: %s", pretty_error->message);
+-
+-  /* Set the static hostname */
+-  hostname = pretty_hostname_to_static (text, FALSE);
+-  g_assert (hostname);
+-
+-  g_debug ("Setting StaticHostname to '%s'", hostname);
+-  static_result = g_dbus_proxy_call_sync (self->hostnamed_proxy,
+-                                          "SetStaticHostname",
+-                                          g_variant_new ("(sb)", hostname, FALSE),
+-                                          G_DBUS_CALL_FLAGS_NONE,
+-                                          -1, NULL, &static_error);
+-  if (static_result == NULL)
+-    g_warning ("Could not set StaticHostname: %s", static_error->message);
+-}
+-
+ static char *
+ get_hostname_property (CcHostnameEntry *self,
+                        const char      *property)
+@@ -126,57 +90,6 @@ cc_hostname_entry_get_display_hostname (CcHostnameEntry  *self)
+   return g_steal_pointer (&str);
+ }
+ 
+-static gboolean
+-set_hostname_timeout (CcHostnameEntry *self)
+-{
+-  self->set_hostname_timeout_source_id = 0;
+-
+-  cc_hostname_entry_set_hostname (self);
+-
+-  return FALSE;
+-}
+-
+-static void
+-remove_hostname_timeout (CcHostnameEntry *self)
+-{
+-  if (self->set_hostname_timeout_source_id)
+-    g_source_remove (self->set_hostname_timeout_source_id);
+-
+-  self->set_hostname_timeout_source_id = 0;
+-}
+-
+-static void
+-reset_hostname_timeout (CcHostnameEntry *self)
+-{
+-  remove_hostname_timeout (self);
+-
+-  self->set_hostname_timeout_source_id = g_timeout_add_seconds (SET_HOSTNAME_TIMEOUT,
+-                                                                (GSourceFunc) set_hostname_timeout,
+-                                                                self);
+-}
+-
+-static void
+-text_changed_cb (CcHostnameEntry *entry)
+-{
+-  reset_hostname_timeout (entry);
+-}
+-
+-static void
+-cc_hostname_entry_dispose (GObject *object)
+-{
+-  CcHostnameEntry *self = CC_HOSTNAME_ENTRY (object);
+-
+-  if (self->set_hostname_timeout_source_id)
+-    {
+-      remove_hostname_timeout (self);
+-      set_hostname_timeout (self);
+-    }
+-
+-  g_clear_object (&self->hostnamed_proxy);
+-
+-  G_OBJECT_CLASS (cc_hostname_entry_parent_class)->dispose (object);
+-}
+-
+ static void
+ cc_hostname_entry_constructed (GObject *object)
+ {
+@@ -228,12 +141,11 @@ cc_hostname_entry_constructed (GObject *object)
+ 
+   str = cc_hostname_entry_get_display_hostname (CC_HOSTNAME_ENTRY (self));
+ 
+-  if (str != NULL)
+-    gtk_entry_set_text (GTK_ENTRY (self), str);
+-  else
+-    gtk_entry_set_text (GTK_ENTRY (self), "");
+-
+-  g_signal_connect (G_OBJECT (self), "changed", G_CALLBACK (text_changed_cb), self);
++   if (str != NULL)
++    gtk_label_set_text (GTK_LABEL (self), str);
++   else
++    gtk_label_set_text (GTK_LABEL (self), "");
++   g_free (str);
+ }
+ 
+ static void
+@@ -242,7 +154,6 @@ cc_hostname_entry_class_init (CcHostnameEntryClass *klass)
+   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+ 
+   object_class->constructed = cc_hostname_entry_constructed;
+-  object_class->dispose = cc_hostname_entry_dispose;
+ }
+ 
+ static void
+diff --git a/panels/datetime/cc-datetime-panel.c b/panels/datetime/cc-datetime-panel.c
+index 082328d..e5a46cd 100644
+--- a/panels/datetime/cc-datetime-panel.c
++++ b/panels/datetime/cc-datetime-panel.c
+@@ -380,23 +380,6 @@ set_timezone_cb (GObject      *source,
+     }
+ }
+ 
+-static void
+-set_using_ntp_cb (GObject      *source,
+-                  GAsyncResult *res,
+-                  gpointer      user_data)
+-{
+-  CcDateTimePanel *self = user_data;
+-  g_autoptr(GError) error = NULL;
+-
+-  if (!timedate1_call_set_ntp_finish (self->dtm,
+-                                      res,
+-                                      &error))
+-    {
+-      /* TODO: display any error in a user friendly way */
+-      g_warning ("Could not set system to use NTP: %s", error->message);
+-    }
+-}
+-
+ static void
+ queue_set_datetime (CcDateTimePanel *self)
+ {
+@@ -414,21 +397,6 @@ queue_set_datetime (CcDateTimePanel *self)
+                            self);
+ }
+ 
+-static void
+-queue_set_ntp (CcDateTimePanel *self)
+-{
+-  gboolean using_ntp;
+-  /* for now just do it */
+-  using_ntp = gtk_switch_get_active (GTK_SWITCH (self->network_time_switch));
+-
+-  timedate1_call_set_ntp (self->dtm,
+-                          using_ntp,
+-                          TRUE,
+-                          self->cancellable,
+-                          set_using_ntp_cb,
+-                          self);
+-}
+-
+ static void
+ queue_set_timezone (CcDateTimePanel *self)
+ {
+@@ -697,13 +665,6 @@ change_time (CcDateTimePanel *self)
+   queue_set_datetime (self);
+ }
+ 
+-static void
+-change_ntp (CcDateTimePanel *self,
+-            GParamSpec      *pspec)
+-{
+-  queue_set_ntp (self);
+-}
+-
+ static gboolean
+ is_ntp_available (CcDateTimePanel *self)
+ {
+@@ -731,12 +692,8 @@ on_permission_changed (CcDateTimePanel *self)
+   allowed = (self->permission != NULL && g_permission_get_allowed (self->permission));
+   location_allowed = g_settings_get_boolean (self->location_settings, LOCATION_ENABLED);
+   tz_allowed = (self->tz_permission != NULL && g_permission_get_allowed (self->tz_permission));
+-  using_ntp = gtk_switch_get_active (GTK_SWITCH (self->network_time_switch));
+-  auto_timezone = gtk_switch_get_active (GTK_SWITCH (self->auto_timezone_switch));
+ 
+   /* All the widgets but the lock button and the 24h setting */
+-  gtk_widget_set_sensitive (self->auto_datetime_row, allowed);
+-  gtk_widget_set_sensitive (self->auto_timezone_row, location_allowed && (allowed || tz_allowed));
+   gtk_widget_set_sensitive (self->datetime_button, allowed && !using_ntp);
+   gtk_widget_set_sensitive (self->timezone_button, (allowed || tz_allowed) && (!auto_timezone || !location_allowed));
+ 
+@@ -753,20 +710,6 @@ on_location_settings_changed (CcDateTimePanel *panel)
+   on_permission_changed (panel);
+ }
+ 
+-static void
+-on_can_ntp_changed (CcDateTimePanel *self)
+-{
+-  gtk_widget_set_visible (self->auto_datetime_row, is_ntp_available (self));
+-}
+-
+-static void
+-on_timezone_changed (CcDateTimePanel *self)
+-{
+-  g_signal_handlers_block_by_func (self->map, location_changed_cb, self);
+-  get_initial_timezone (self);
+-  g_signal_handlers_unblock_by_func (self->map, location_changed_cb, self);
+-}
+-
+ static void
+ on_timedated_properties_changed (CcDateTimePanel  *self,
+                                  GVariant         *changed_properties,
+@@ -900,15 +843,7 @@ list_box_row_activated (GtkListBox      *listbox,
+ {
+   gtk_list_box_select_row (listbox, NULL);
+ 
+-  if (row == GTK_LIST_BOX_ROW (self->auto_datetime_row))
+-    {
+-      toggle_switch (self->network_time_switch);
+-    }
+-  else if (row == GTK_LIST_BOX_ROW (self->auto_timezone_row))
+-    {
+-      toggle_switch (self->auto_timezone_switch);
+-    }
+-  else if (row == GTK_LIST_BOX_ROW (self->datetime_button))
++  if (row == GTK_LIST_BOX_ROW (self->datetime_button))
+     {
+       run_dialog (self, self->datetime_dialog);
+     }
+@@ -1237,30 +1172,6 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+   setup_listbox (self, self->listbox1);
+   setup_listbox (self, self->listbox2);
+ 
+-  /* set up network time switch */
+-  bind_switch_to_row (self,
+-                      self->network_time_switch,
+-                      self->datetime_button);
+-  g_object_bind_property (self->dtm, "ntp",
+-                          self->network_time_switch, "active",
+-                          G_BINDING_SYNC_CREATE);
+-  g_signal_connect_object (self->network_time_switch, "notify::active",
+-                           G_CALLBACK (change_ntp), self, G_CONNECT_SWAPPED);
+-
+-  gtk_widget_set_visible (self->auto_datetime_row, is_ntp_available (self));
+-
+-  /* Timezone settings */
+-  g_object_bind_property_full (self->auto_timezone_switch, "active",
+-                               self->timezone_button, "sensitive",
+-                               G_BINDING_SYNC_CREATE,
+-                               (GBindingTransformFunc) tz_switch_to_row_transform_func,
+-                               NULL, self, NULL);
+-
+-  self->datetime_settings = g_settings_new (DATETIME_SCHEMA);
+-  g_settings_bind (self->datetime_settings, AUTO_TIMEZONE_KEY,
+-                   self->auto_timezone_switch, "active",
+-                   G_SETTINGS_BIND_DEFAULT);
+-
+   /* Clock settings */
+   self->clock_settings = g_settings_new (CLOCK_SCHEMA);
+ 
+@@ -1292,10 +1203,6 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+   /* Watch changes of timedated remote service properties */
+   g_signal_connect_object (self->dtm, "g-properties-changed",
+                            G_CALLBACK (on_timedated_properties_changed), self, G_CONNECT_SWAPPED);
+-  g_signal_connect_object (self->dtm, "notify::can-ntp",
+-                           G_CALLBACK (on_can_ntp_changed), self, G_CONNECT_SWAPPED);
+-  g_signal_connect_object (self->dtm, "notify::timezone",
+-                           G_CALLBACK (on_timezone_changed), self, G_CONNECT_SWAPPED);
+   /* We ignore UTC <--> LocalRTC changes at the moment */
+ 
+   self->filechooser_settings = g_settings_new (FILECHOOSER_SCHEMA);
+diff --git a/panels/datetime/cc-datetime-panel.ui b/panels/datetime/cc-datetime-panel.ui
+index cb2cc57..4fe0290 100644
+--- a/panels/datetime/cc-datetime-panel.ui
++++ b/panels/datetime/cc-datetime-panel.ui
+@@ -98,7 +98,7 @@
+                 <child>
+                   <object class="GtkSpinButton" id="h_spinbutton">
+                     <property name="visible">True</property>
+-                    <property name="can_focus">True</property>
++                    <property name="sensitive">False</property>
+                     <property name="max_length">2</property>
+                     <property name="invisible_char">●</property>
+                     <property name="xalign">0.5</property>
+@@ -311,13 +311,14 @@
+                             <property name="visible">True</property>
+                             <property name="can_focus">True</property>
+                             <property name="title" translatable="yes">Automatic _Date &amp; Time</property>
+-                            <property name="subtitle" translatable="yes">Requires internet access</property>
++                            <property name="subtitle" translatable="yes">Conflicts with underlying ecosystem</property>
+                             <property name="use_underline">True</property>
+                             <child type="action">
+-                              <object class="GtkSwitch" id="network_time_switch">
++                              <object class="GtkLabel" id="network_time_switch">
+                                 <property name="visible">True</property>
+-                                <property name="can_focus">True</property>
++                                <property name="can_focus">False</property>
+                                 <property name="valign">center</property>
++                                <property name="subtitle" translatable="yes">Disabled</property>
+                               </object>
+                               <packing>
+                                 <property name="expand">False</property>
+@@ -330,15 +331,16 @@
+                         <child>
+                           <object class="HdyActionRow" id="auto_timezone_row">
+                             <property name="visible">True</property>
+-                            <property name="can_focus">True</property>
++                            <property name="sensitive">False</property>
+                             <property name="title" translatable="yes">Automatic Time _Zone</property>
+-                            <property name="subtitle" translatable="yes">Requires location services enabled and internet access</property>
++                            <property name="subtitle" translatable="yes">Conflicts with underlying ecosystem</property>
+                             <property name="use_underline">True</property>
+                             <child type="action">
+                               <object class="GtkSwitch" id="auto_timezone_switch">
+                                 <property name="visible">True</property>
+-                                <property name="can_focus">True</property>
++                                <property name="can_focus">False</property>
+                                 <property name="valign">center</property>
++                                <property name="subtitle" translatable="yes">Disabled</property>
+                               </object>
+                             </child>
+                           </object>
+diff --git a/panels/info/cc-info-overview-panel.ui b/panels/info/cc-info-overview-panel.ui
+index ce675d3..3365be8 100644
+--- a/panels/info/cc-info-overview-panel.ui
++++ b/panels/info/cc-info-overview-panel.ui
+@@ -192,7 +192,9 @@
+                     <child>
+                       <object class="CcHostnameEntry" id="name_entry">
+                         <property name="visible">True</property>
++                        <property name="can_focus">False</property>
+                         <property name="xalign">0</property>
++                        <property name="selectable">True</property>
+                       </object>
+                       <packing>
+                         <property name="top-attach">0</property>
+diff --git a/panels/power/cc-power-panel.c b/panels/power/cc-power-panel.c
+index c31249c..15448b7 100644
+--- a/panels/power/cc-power-panel.c
++++ b/panels/power/cc-power-panel.c
+@@ -2212,9 +2212,9 @@ can_suspend_or_hibernate (CcPowerPanel *self,
+     }
+ 
+   variant = g_dbus_connection_call_sync (connection,
+-                                         "org.freedesktop.login1",
+-                                         "/org/freedesktop/login1",
+-                                         "org.freedesktop.login1.Manager",
++                                         "org.freedesktop.ConsoleKit",
++                                         "/org/freedesktop/ConsoleKit/Manager",
++                                         "org.freedesktop.ConsoleKit.Manager",
+                                          method_name,
+                                          NULL,
+                                          NULL,
+diff --git a/panels/sharing/cc-sharing-panel.ui b/panels/sharing/cc-sharing-panel.ui
+index d9e0d08..d62a01c 100644
+--- a/panels/sharing/cc-sharing-panel.ui
++++ b/panels/sharing/cc-sharing-panel.ui
+@@ -50,9 +50,11 @@
+                 <child>
+                   <object class="CcHostnameEntry" id="hostname_entry">
+                     <property name="visible">True</property>
+-                    <property name="can_focus">True</property>
++                    <property name="can_focus">False</property>
++                    <property name="xalign">0</property>
++                    <property name="selectable">True</property>
+                     <property name="margin_bottom">32</property>
+-                    <property name="invisible_char">●</property>
++                    <property name="margin_left">16</property>
+                     <accessibility>
+                       <relation type="labelled-by" target="label6"/>
+                     </accessibility>
+-- 
+2.24.0
+

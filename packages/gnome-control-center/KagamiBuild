@@ -16,6 +16,7 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${_v}/$name-$version.tar.x
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gnome-control-center/0001-restore-consolekit-support.patch
 	sed -i '/ln -s/s/s /sf /' panels/user-accounts/meson.build
 
 	mkdir -p build
@@ -27,5 +28,5 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
+	install -d -o root -g polkit -m 750 "$PKG"/usr/share/polkit-1/rules.d
 }
