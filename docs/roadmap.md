@@ -1,5 +1,5 @@
 # Roadmap
-This document describes roadmap of Ataraxia GNU/Linux-Libre (codename "AVP")
+This document describes roadmap of Ataraxia GNU/Linux-Libre (codename "aru")
 
 ## ~~Stage 1~~
  - [x] ~~Do the cross-toolchain~~
@@ -29,5 +29,5 @@ Stage 2 is complete!
  - [ ] Add virtualization management software (libvirt, qemu, virt-manager)
  - [ ] Add GNOME apps
  - [ ] Add support for LXDE, Cinnamon, MATE and Enlightement
- - [ ] Add misc software (snownews, aisterisk, bitcoin, httpup, zeromq, etherwall, firewalld)
+ - [ ] Add misc software (snownews, aisterisk, bitcoin, httpup, zeromq, etherwall, firewalld, iptraf-ng)
  - [ ] Add misc GUI software
