@@ -124,27 +124,21 @@ echo "Initializing random number generator..."
 dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
 
 echo "Setting system time from hardware clock..."
-if [ -n "$timezone" ] ;then
-	hwclock="--localtime"
-
+if [ "$timezone" ]; then
 	ln -sf /usr/share/zoneinfo/$timezone /etc/localtime
-	export TZ=/etc/localtime
-else
-	hwclock="--utc"
-	export TZ=UTC
 fi
 
-hwclock --hctosys $hwclock
+hwclock --hctosys
 
 echo "Setting kernel parameters..."
 sysctl -qp /etc/sysctl.d/*.conf
 
-if [ -n "$keymap" ] ;then
+if [ "$keymap" ] ;then
 	echo "Loading keymap..."
 	loadkeys $keymap
 fi
 
-if [ -n "$fontname" ] ;then
+if [ "$fontname" ] ;then
 	echo "Loading font..."
 	setfont $fontname
 fi
