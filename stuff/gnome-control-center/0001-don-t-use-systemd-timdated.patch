@@ -1,0 +1,4401 @@
+From abff80efe58db4e16bc5dba75f087979cfbd08fa Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 5 Dec 2019 03:31:03 +0900
+Subject: [PATCH] don't use systemd-timdated
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ panels/datetime/cc-datetime-panel.c |  145 +-
+ panels/datetime/dtm.c               | 3066 +++++++++++++++++++++++++++
+ panels/datetime/dtm.h               |  475 +++++
+ panels/datetime/meson.build         |    4 +-
+ panels/datetime/set-timezone.c      |  479 +++++
+ panels/datetime/set-timezone.h      |   57 +
+ 6 files changed, 4150 insertions(+), 76 deletions(-)
+ create mode 100644 panels/datetime/dtm.c
+ create mode 100644 panels/datetime/dtm.h
+ create mode 100644 panels/datetime/set-timezone.c
+ create mode 100644 panels/datetime/set-timezone.h
+
+diff --git a/panels/datetime/cc-datetime-panel.c b/panels/datetime/cc-datetime-panel.c
+index 082328d..5f10635 100644
+--- a/panels/datetime/cc-datetime-panel.c
++++ b/panels/datetime/cc-datetime-panel.c
+@@ -27,7 +27,7 @@
+ #include <sys/time.h>
+ #include "list-box-helper.h"
+ #include "cc-timezone-map.h"
+-#include "timedated.h"
++#include "dtm.h"
+ #include "date-endian.h"
+ #define GNOME_DESKTOP_USE_UNSTABLE_API
+ 
+@@ -52,7 +52,7 @@ enum {
+ };
+ 
+ #define DATETIME_PERMISSION "org.gnome.controlcenter.datetime.configure"
+-#define DATETIME_TZ_PERMISSION "org.freedesktop.timedate1.set-timezone"
++#define DATETIME_TZ_PERMISSION "org.opensettings.datetimemechanism.configure"
+ #define LOCATION_SETTINGS "org.gnome.system.location"
+ #define LOCATION_ENABLED "enabled"
+ 
+@@ -119,7 +119,7 @@ struct _CcDateTimePanel
+ 
+   GnomeWallClock *clock_tracker;
+ 
+-  Timedate1 *dtm;
++  DateTimeMechanism *dtm;
+   GCancellable *cancellable;
+ 
+   GPermission *permission;
+@@ -350,9 +350,9 @@ set_time_cb (GObject      *source,
+   CcDateTimePanel *self = user_data;
+   g_autoptr(GError) error = NULL;
+ 
+-  if (!timedate1_call_set_time_finish (self->dtm,
+-                                       res,
+-                                       &error))
++  if (!date_time_mechanism_call_set_time_finish (self->dtm,
++                                                 res,
++                                                 &error))
+     {
+       /* TODO: display any error in a user friendly way */
+       g_warning ("Could not set system time: %s", error->message);
+@@ -371,9 +371,9 @@ set_timezone_cb (GObject      *source,
+   CcDateTimePanel *self = user_data;
+   g_autoptr(GError) error = NULL;
+ 
+-  if (!timedate1_call_set_timezone_finish (self->dtm,
+-                                           res,
+-                                           &error))
++  if (!date_time_mechanism_call_set_timezone_finish (self->dtm,
++                                                     res,
++                                                     &error))
+     {
+       /* TODO: display any error in a user friendly way */
+       g_warning ("Could not set system timezone: %s", error->message);
+@@ -388,9 +388,9 @@ set_using_ntp_cb (GObject      *source,
+   CcDateTimePanel *self = user_data;
+   g_autoptr(GError) error = NULL;
+ 
+-  if (!timedate1_call_set_ntp_finish (self->dtm,
+-                                      res,
+-                                      &error))
++  if (!date_time_mechanism_call_set_using_ntp_finish (self->dtm,
++                                                      res,
++                                                      &error))
+     {
+       /* TODO: display any error in a user friendly way */
+       g_warning ("Could not set system to use NTP: %s", error->message);
+@@ -402,16 +402,14 @@ queue_set_datetime (CcDateTimePanel *self)
+ {
+   gint64 unixtime;
+ 
+-  /* timedated expects number of microseconds since 1 Jan 1970 UTC */
++  /* for now just do it */
+   unixtime = g_date_time_to_unix (self->date);
+ 
+-  timedate1_call_set_time (self->dtm,
+-                           unixtime * 1000000,
+-                           FALSE,
+-                           TRUE,
+-                           self->cancellable,
+-                           set_time_cb,
+-                           self);
++  date_time_mechanism_call_set_time (self->dtm,
++                                     unixtime,
++                                     self->cancellable,
++                                     set_time_cb,
++                                     self);
+ }
+ 
+ static void
+@@ -421,12 +419,11 @@ queue_set_ntp (CcDateTimePanel *self)
+   /* for now just do it */
+   using_ntp = gtk_switch_get_active (GTK_SWITCH (self->network_time_switch));
+ 
+-  timedate1_call_set_ntp (self->dtm,
+-                          using_ntp,
+-                          TRUE,
+-                          self->cancellable,
+-                          set_using_ntp_cb,
+-                          self);
++  date_time_mechanism_call_set_using_ntp (self->dtm,
++                                          using_ntp,
++                                          self->cancellable,
++                                          set_using_ntp_cb,
++                                          self);
+ }
+ 
+ static void
+@@ -581,15 +578,16 @@ location_changed_cb (CcDateTimePanel *self,
+   queue_set_timezone (self);
+ }
+ 
++/*
+ static void
+-get_initial_timezone (CcDateTimePanel *self)
++get_initial_timezone (CcDateTimePanel *self, GAsyncResult *res)
+ {
+-  const gchar *timezone;
++  gchar *timezone;
++  GError *error;
+ 
+-  timezone = timedate1_get_timezone (self->dtm);
++  timezone = date_time_mechanism_call_get_timezone_finish (self->dtm, &timezone, res, &error);
+ 
+-  if (timezone == NULL ||
+-      !cc_timezone_map_set_timezone (CC_TIMEZONE_MAP (self->map), timezone))
++  if (!cc_timezone_map_set_timezone (CC_TIMEZONE_MAP (self->map), timezone))
+     {
+       g_warning ("Timezone '%s' is unhandled, setting %s as default", timezone ? timezone : "(null)", DEFAULT_TZ);
+       cc_timezone_map_set_timezone (CC_TIMEZONE_MAP (self->map), DEFAULT_TZ);
+@@ -597,6 +595,35 @@ get_initial_timezone (CcDateTimePanel *self)
+   self->current_location = cc_timezone_map_get_location (CC_TIMEZONE_MAP (self->map));
+   update_timezone (self);
+ }
++*/
++
++static void
++get_timezone_cb (GObject      *source,
++                 GAsyncResult *res,
++                 gpointer      user_data)
++{
++  CcDateTimePanel *self = user_data;
++  GtkWidget *widget;
++  gchar *timezone;
++  GError *error;
++
++  error = NULL;
++  if (!date_time_mechanism_call_get_timezone_finish (self->dtm, &timezone, res, &error))
++    {
++      g_warning ("Could not get current timezone: %s", error->message);
++      g_error_free (error);
++    }
++  else
++    {
++      if (!cc_timezone_map_set_timezone (CC_TIMEZONE_MAP (self->map), timezone))
++        {
++          g_warning ("Timezone '%s' is unhandled, setting %s as default", timezone, DEFAULT_TZ);
++          cc_timezone_map_set_timezone (CC_TIMEZONE_MAP (self->map), DEFAULT_TZ);
++        }
++    }
++   self->current_location = cc_timezone_map_get_location (CC_TIMEZONE_MAP (self->map));
++   update_timezone (self);
++}
+ 
+ static void
+ load_cities (TzLocation   *loc,
+@@ -763,41 +790,13 @@ static void
+ on_timezone_changed (CcDateTimePanel *self)
+ {
+   g_signal_handlers_block_by_func (self->map, location_changed_cb, self);
+-  get_initial_timezone (self);
++  date_time_mechanism_call_get_timezone (self->dtm,
++                                         self->cancellable,
++                                         get_timezone_cb,
++                                         self);
+   g_signal_handlers_unblock_by_func (self->map, location_changed_cb, self);
+ }
+ 
+-static void
+-on_timedated_properties_changed (CcDateTimePanel  *self,
+-                                 GVariant         *changed_properties,
+-                                 const gchar     **invalidated_properties)
+-{
+-  guint i;
+-
+-  if (invalidated_properties != NULL)
+-    for (i = 0; invalidated_properties[i] != NULL; i++) {
+-        g_autoptr(GVariant) variant = NULL;
+-        g_autoptr(GError) error = NULL;
+-
+-        /* See https://bugs.freedesktop.org/show_bug.cgi?id=37632 for the reason why we're doing this */
+-        variant = g_dbus_proxy_call_sync (G_DBUS_PROXY (self->dtm),
+-                                          "org.freedesktop.DBus.Properties.Get",
+-                                          g_variant_new ("(ss)", "org.freedesktop.timedate1", invalidated_properties[i]),
+-                                          G_DBUS_CALL_FLAGS_NONE,
+-                                          -1,
+-                                          NULL,
+-                                          &error);
+-        if (variant == NULL)
+-                g_warning ("Failed to get property '%s': %s", invalidated_properties[i], error->message);
+-        else {
+-                GVariant *v;
+-
+-                g_variant_get (variant, "(v)", &v);
+-                g_dbus_proxy_set_cached_property (G_DBUS_PROXY (self->dtm), invalidated_properties[i], v);
+-        }
+-    }
+-}
+-
+ static gboolean
+ keynav_failed (GtkWidget        *listbox,
+                GtkDirectionType  direction,
+@@ -1166,12 +1165,12 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+ 
+   self->cancellable = g_cancellable_new ();
+   error = NULL;
+-  self->dtm = timedate1_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
+-                                                G_DBUS_PROXY_FLAGS_NONE,
+-                                                "org.freedesktop.timedate1",
+-                                                "/org/freedesktop/timedate1",
+-                                                self->cancellable,
+-                                                &error);
++  self->dtm = date_time_mechanism_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
++                                                          G_DBUS_PROXY_FLAGS_NONE,
++                                                          "org.opensettings.DateTimeMechanism",
++                                                         		  "/",
++                                                          self->cancellable,
++                                                          &error);
+   if (self->dtm == NULL) {
+         g_warning ("could not get proxy for DateTimeMechanism: %s", error->message);
+         return;
+@@ -1206,7 +1205,7 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+   gtk_box_pack_end (GTK_BOX (self->time_box), self->date_grid, FALSE, TRUE, 0);
+ 
+   /* add the lock button */
+-  self->permission = polkit_permission_new_sync (DATETIME_PERMISSION, NULL, NULL, NULL);
++  self->permission = polkit_permission_new_sync (DATETIME_TZ_PERMISSION, NULL, NULL, NULL);
+   self->tz_permission = polkit_permission_new_sync (DATETIME_TZ_PERMISSION, NULL, NULL, NULL);
+   if (self->permission != NULL)
+     {
+@@ -1216,7 +1215,7 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+   else
+     {
+       g_warning ("Your system does not have the '%s' PolicyKit files installed. Please check your installation",
+-                 DATETIME_PERMISSION);
++                 DATETIME_TZ_PERMISSION);
+     }
+   gtk_lock_button_set_permission (GTK_LOCK_BUTTON (self->lock_button), self->permission);
+ 
+@@ -1288,10 +1287,6 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+ 
+   g_signal_connect_object (self->map, "location-changed",
+                            G_CALLBACK (location_changed_cb), self, G_CONNECT_SWAPPED);
+-
+-  /* Watch changes of timedated remote service properties */
+-  g_signal_connect_object (self->dtm, "g-properties-changed",
+-                           G_CALLBACK (on_timedated_properties_changed), self, G_CONNECT_SWAPPED);
+   g_signal_connect_object (self->dtm, "notify::can-ntp",
+                            G_CALLBACK (on_can_ntp_changed), self, G_CONNECT_SWAPPED);
+   g_signal_connect_object (self->dtm, "notify::timezone",
+diff --git a/panels/datetime/dtm.c b/panels/datetime/dtm.c
+new file mode 100644
+index 0000000..d714614
+--- /dev/null
++++ b/panels/datetime/dtm.c
+@@ -0,0 +1,3066 @@
++/*
++ * Generated by gdbus-codegen 2.29.5. DO NOT EDIT.
++ *
++ * The license of this code is the same as for the source it was derived from.
++ */
++
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#include "dtm.h"
++
++typedef struct
++{
++  GDBusArgInfo parent_struct;
++  gboolean use_gvariant;
++} _ExtendedGDBusArgInfo;
++
++typedef struct
++{
++  GDBusMethodInfo parent_struct;
++  const gchar *signal_name;
++} _ExtendedGDBusMethodInfo;
++
++typedef struct
++{
++  GDBusSignalInfo parent_struct;
++  const gchar *signal_name;
++} _ExtendedGDBusSignalInfo;
++
++typedef struct
++{
++  GDBusPropertyInfo parent_struct;
++  const gchar *hyphen_name;
++  gboolean use_gvariant;
++} _ExtendedGDBusPropertyInfo;
++
++typedef struct
++{
++  GDBusInterfaceInfo parent_struct;
++  const gchar *hyphen_name;
++} _ExtendedGDBusInterfaceInfo;
++
++typedef struct
++{
++  const _ExtendedGDBusPropertyInfo *info;
++  guint prop_id;
++  GValue orig_value; /* the value before the change */
++} ChangedProperty;
++
++static void
++_changed_property_free (ChangedProperty *data)
++{
++  g_value_unset (&data->orig_value);
++  g_free (data);
++}
++
++static gboolean
++_g_strv_equal0 (gchar **a, gchar **b)
++{
++  gboolean ret = FALSE;
++  guint n;
++  if (a == NULL && b == NULL)
++    {
++      ret = TRUE;
++      goto out;
++    }
++  if (a == NULL || b == NULL)
++    goto out;
++  if (g_strv_length (a) != g_strv_length (b))
++    goto out;
++  for (n = 0; a[n] != NULL; n++)
++    if (g_strcmp0 (a[n], b[n]) != 0)
++      goto out;
++  ret = TRUE;
++out:
++  return ret;
++}
++
++static gboolean
++_g_variant_equal0 (GVariant *a, GVariant *b)
++{
++  gboolean ret = FALSE;
++  if (a == NULL && b == NULL)
++    {
++      ret = TRUE;
++      goto out;
++    }
++  if (a == NULL || b == NULL)
++    goto out;
++  ret = g_variant_equal (a, b);
++out:
++  return ret;
++}
++
++G_GNUC_UNUSED static gboolean
++_g_value_equal (const GValue *a, const GValue *b)
++{
++  gboolean ret = FALSE;
++  g_assert (G_VALUE_TYPE (a) == G_VALUE_TYPE (b));
++  switch (G_VALUE_TYPE (a))
++    {
++      case G_TYPE_BOOLEAN:
++        ret = (g_value_get_boolean (a) == g_value_get_boolean (b));
++        break;
++      case G_TYPE_UCHAR:
++        ret = (g_value_get_uchar (a) == g_value_get_uchar (b));
++        break;
++      case G_TYPE_INT:
++        ret = (g_value_get_int (a) == g_value_get_int (b));
++        break;
++      case G_TYPE_UINT:
++        ret = (g_value_get_uint (a) == g_value_get_uint (b));
++        break;
++      case G_TYPE_INT64:
++        ret = (g_value_get_int64 (a) == g_value_get_int64 (b));
++        break;
++      case G_TYPE_UINT64:
++        ret = (g_value_get_uint64 (a) == g_value_get_uint64 (b));
++        break;
++      case G_TYPE_DOUBLE:
++        ret = (g_value_get_double (a) == g_value_get_double (b));
++        break;
++      case G_TYPE_STRING:
++        ret = (g_strcmp0 (g_value_get_string (a), g_value_get_string (b)) == 0);
++        break;
++      case G_TYPE_VARIANT:
++        ret = _g_variant_equal0 (g_value_get_variant (a), g_value_get_variant (b));
++        break;
++      default:
++        if (G_VALUE_TYPE (a) == G_TYPE_STRV)
++          ret = _g_strv_equal0 (g_value_get_boxed (a), g_value_get_boxed (b));
++        else
++          g_critical ("_g_value_equal() does not handle type %s", g_type_name (G_VALUE_TYPE (a)));
++        break;
++    }
++  return ret;
++}
++
++/* ------------------------------------------------------------------------
++ * Code for interface org.opensettings.DateTimeMechanism
++ * ------------------------------------------------------------------------
++ */
++
++/**
++ * SECTION:DateTimeMechanism
++ * @title: DateTimeMechanism
++ * @short_description: Generated C code for the org.opensettings.DateTimeMechanism D-Bus interface
++ *
++ * This section contains code for working with the <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link> D-Bus interface in C.
++ */
++
++/* ---- Introspection data for org.opensettings.DateTimeMechanism ---- */
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_timezone_IN_ARG_tz =
++{
++  {
++    -1,
++    "tz",
++    "s",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_set_timezone_IN_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_set_timezone_IN_ARG_tz,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_set_timezone_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_set_timezone_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_set_timezone_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_set_timezone =
++{
++  {
++    -1,
++    "SetTimezone",
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_set_timezone_IN_ARG_pointers,
++    NULL,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_set_timezone_annotation_info_pointers
++  },
++  "handle-set-timezone"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_get_timezone_OUT_ARG_timezone =
++{
++  {
++    -1,
++    "timezone",
++    "s",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_get_timezone_OUT_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_get_timezone_OUT_ARG_timezone,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_get_timezone_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_get_timezone_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_get_timezone_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_get_timezone =
++{
++  {
++    -1,
++    "GetTimezone",
++    NULL,
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_get_timezone_OUT_ARG_pointers,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_get_timezone_annotation_info_pointers
++  },
++  "handle-get-timezone"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_can_set_timezone_OUT_ARG_value =
++{
++  {
++    -1,
++    "value",
++    "i",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_can_set_timezone_OUT_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_can_set_timezone_OUT_ARG_value,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_can_set_timezone_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_can_set_timezone_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_can_set_timezone_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_can_set_timezone =
++{
++  {
++    -1,
++    "CanSetTimezone",
++    NULL,
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_can_set_timezone_OUT_ARG_pointers,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_can_set_timezone_annotation_info_pointers
++  },
++  "handle-can-set-timezone"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_date_IN_ARG_day =
++{
++  {
++    -1,
++    "day",
++    "u",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_date_IN_ARG_month =
++{
++  {
++    -1,
++    "month",
++    "u",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_date_IN_ARG_year =
++{
++  {
++    -1,
++    "year",
++    "u",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_set_date_IN_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_set_date_IN_ARG_day,
++  &_date_time_mechanism_method_info_set_date_IN_ARG_month,
++  &_date_time_mechanism_method_info_set_date_IN_ARG_year,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_set_date_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_set_date_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_set_date_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_set_date =
++{
++  {
++    -1,
++    "SetDate",
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_set_date_IN_ARG_pointers,
++    NULL,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_set_date_annotation_info_pointers
++  },
++  "handle-set-date"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_time_IN_ARG_seconds_since_epoch =
++{
++  {
++    -1,
++    "seconds_since_epoch",
++    "x",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_set_time_IN_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_set_time_IN_ARG_seconds_since_epoch,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_set_time_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_set_time_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_set_time_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_set_time =
++{
++  {
++    -1,
++    "SetTime",
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_set_time_IN_ARG_pointers,
++    NULL,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_set_time_annotation_info_pointers
++  },
++  "handle-set-time"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_can_set_time_OUT_ARG_value =
++{
++  {
++    -1,
++    "value",
++    "i",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_can_set_time_OUT_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_can_set_time_OUT_ARG_value,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_can_set_time_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_can_set_time_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_can_set_time_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_can_set_time =
++{
++  {
++    -1,
++    "CanSetTime",
++    NULL,
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_can_set_time_OUT_ARG_pointers,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_can_set_time_annotation_info_pointers
++  },
++  "handle-can-set-time"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_adjust_time_IN_ARG_seconds_to_add =
++{
++  {
++    -1,
++    "seconds_to_add",
++    "x",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_adjust_time_IN_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_adjust_time_IN_ARG_seconds_to_add,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_adjust_time_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_adjust_time_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_adjust_time_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_adjust_time =
++{
++  {
++    -1,
++    "AdjustTime",
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_adjust_time_IN_ARG_pointers,
++    NULL,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_adjust_time_annotation_info_pointers
++  },
++  "handle-adjust-time"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_get_hardware_clock_using_utc_OUT_ARG_is_using_utc =
++{
++  {
++    -1,
++    "is_using_utc",
++    "b",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_get_hardware_clock_using_utc_OUT_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_get_hardware_clock_using_utc_OUT_ARG_is_using_utc,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_get_hardware_clock_using_utc_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_get_hardware_clock_using_utc_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_get_hardware_clock_using_utc_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_get_hardware_clock_using_utc =
++{
++  {
++    -1,
++    "GetHardwareClockUsingUtc",
++    NULL,
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_get_hardware_clock_using_utc_OUT_ARG_pointers,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_get_hardware_clock_using_utc_annotation_info_pointers
++  },
++  "handle-get-hardware-clock-using-utc"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_hardware_clock_using_utc_IN_ARG_is_using_utc =
++{
++  {
++    -1,
++    "is_using_utc",
++    "b",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_set_hardware_clock_using_utc_IN_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_set_hardware_clock_using_utc_IN_ARG_is_using_utc,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_set_hardware_clock_using_utc_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_set_hardware_clock_using_utc_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_set_hardware_clock_using_utc_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_set_hardware_clock_using_utc =
++{
++  {
++    -1,
++    "SetHardwareClockUsingUtc",
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_set_hardware_clock_using_utc_IN_ARG_pointers,
++    NULL,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_set_hardware_clock_using_utc_annotation_info_pointers
++  },
++  "handle-set-hardware-clock-using-utc"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_get_using_ntp_OUT_ARG_can_use_ntp =
++{
++  {
++    -1,
++    "can_use_ntp",
++    "b",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_get_using_ntp_OUT_ARG_is_using_ntp =
++{
++  {
++    -1,
++    "is_using_ntp",
++    "b",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_get_using_ntp_OUT_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_get_using_ntp_OUT_ARG_can_use_ntp,
++  &_date_time_mechanism_method_info_get_using_ntp_OUT_ARG_is_using_ntp,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_get_using_ntp_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_get_using_ntp_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_get_using_ntp_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_get_using_ntp =
++{
++  {
++    -1,
++    "GetUsingNtp",
++    NULL,
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_get_using_ntp_OUT_ARG_pointers,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_get_using_ntp_annotation_info_pointers
++  },
++  "handle-get-using-ntp"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_set_using_ntp_IN_ARG_is_using_ntp =
++{
++  {
++    -1,
++    "is_using_ntp",
++    "b",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_set_using_ntp_IN_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_set_using_ntp_IN_ARG_is_using_ntp,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_set_using_ntp_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_set_using_ntp_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_set_using_ntp_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_set_using_ntp =
++{
++  {
++    -1,
++    "SetUsingNtp",
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_set_using_ntp_IN_ARG_pointers,
++    NULL,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_set_using_ntp_annotation_info_pointers
++  },
++  "handle-set-using-ntp"
++};
++
++static const _ExtendedGDBusArgInfo _date_time_mechanism_method_info_can_set_using_ntp_OUT_ARG_value =
++{
++  {
++    -1,
++    "value",
++    "i",
++    NULL
++  },
++  FALSE
++};
++
++static const _ExtendedGDBusArgInfo * const _date_time_mechanism_method_info_can_set_using_ntp_OUT_ARG_pointers[] =
++{
++  &_date_time_mechanism_method_info_can_set_using_ntp_OUT_ARG_value,
++  NULL
++};
++
++static const GDBusAnnotationInfo _date_time_mechanism_method_can_set_using_ntp_annotation_info_0 =
++{
++  -1,
++  "org.freedesktop.DBus.GLib.Async",
++  "",
++  NULL
++};
++
++static const GDBusAnnotationInfo * const _date_time_mechanism_method_can_set_using_ntp_annotation_info_pointers[] =
++{
++  &_date_time_mechanism_method_can_set_using_ntp_annotation_info_0,
++  NULL
++};
++
++static const _ExtendedGDBusMethodInfo _date_time_mechanism_method_info_can_set_using_ntp =
++{
++  {
++    -1,
++    "CanSetUsingNtp",
++    NULL,
++    (GDBusArgInfo **) &_date_time_mechanism_method_info_can_set_using_ntp_OUT_ARG_pointers,
++    (GDBusAnnotationInfo **) &_date_time_mechanism_method_can_set_using_ntp_annotation_info_pointers
++  },
++  "handle-can-set-using-ntp"
++};
++
++static const _ExtendedGDBusMethodInfo * const _date_time_mechanism_method_info_pointers[] =
++{
++  &_date_time_mechanism_method_info_set_timezone,
++  &_date_time_mechanism_method_info_get_timezone,
++  &_date_time_mechanism_method_info_can_set_timezone,
++  &_date_time_mechanism_method_info_set_date,
++  &_date_time_mechanism_method_info_set_time,
++  &_date_time_mechanism_method_info_can_set_time,
++  &_date_time_mechanism_method_info_adjust_time,
++  &_date_time_mechanism_method_info_get_hardware_clock_using_utc,
++  &_date_time_mechanism_method_info_set_hardware_clock_using_utc,
++  &_date_time_mechanism_method_info_get_using_ntp,
++  &_date_time_mechanism_method_info_set_using_ntp,
++  &_date_time_mechanism_method_info_can_set_using_ntp,
++  NULL
++};
++
++static const _ExtendedGDBusInterfaceInfo _date_time_mechanism_interface_info =
++{
++  {
++    -1,
++    "org.opensettings.DateTimeMechanism",
++    (GDBusMethodInfo **) &_date_time_mechanism_method_info_pointers,
++    NULL,
++    NULL,
++    NULL
++  },
++  "date-time-mechanism",
++};
++
++
++/**
++ * date_time_mechanism_interface_info:
++ *
++ * Gets a machine-readable description of the <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link> D-Bus interface.
++ *
++ * Returns: (transfer none): A #GDBusInterfaceInfo. Do not free.
++ */
++GDBusInterfaceInfo *
++date_time_mechanism_interface_info (void)
++{
++  return (GDBusInterfaceInfo *) &_date_time_mechanism_interface_info;
++}
++
++
++
++/**
++ * DateTimeMechanism:
++ *
++ * Abstract interface type for the D-Bus interface <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link>.
++ */
++
++/**
++ * DateTimeMechanismIface:
++ * @parent_iface: The parent interface.
++ * @handle_adjust_time: Handler for the #DateTimeMechanism::handle-adjust-time signal.
++ * @handle_can_set_time: Handler for the #DateTimeMechanism::handle-can-set-time signal.
++ * @handle_can_set_timezone: Handler for the #DateTimeMechanism::handle-can-set-timezone signal.
++ * @handle_can_set_using_ntp: Handler for the #DateTimeMechanism::handle-can-set-using-ntp signal.
++ * @handle_get_hardware_clock_using_utc: Handler for the #DateTimeMechanism::handle-get-hardware-clock-using-utc signal.
++ * @handle_get_timezone: Handler for the #DateTimeMechanism::handle-get-timezone signal.
++ * @handle_get_using_ntp: Handler for the #DateTimeMechanism::handle-get-using-ntp signal.
++ * @handle_set_date: Handler for the #DateTimeMechanism::handle-set-date signal.
++ * @handle_set_hardware_clock_using_utc: Handler for the #DateTimeMechanism::handle-set-hardware-clock-using-utc signal.
++ * @handle_set_time: Handler for the #DateTimeMechanism::handle-set-time signal.
++ * @handle_set_timezone: Handler for the #DateTimeMechanism::handle-set-timezone signal.
++ * @handle_set_using_ntp: Handler for the #DateTimeMechanism::handle-set-using-ntp signal.
++ *
++ * Virtual table for the D-Bus interface <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link>.
++ */
++
++static void
++date_time_mechanism_default_init (DateTimeMechanismIface *iface)
++{
++  /* GObject signals for incoming D-Bus method calls: */
++  /**
++   * DateTimeMechanism::handle-set-timezone:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   * @tz: Argument passed by remote caller.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTimezone">SetTimezone()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_set_timezone() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-set-timezone",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_set_timezone),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    2,
++    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_STRING);
++
++  /**
++   * DateTimeMechanism::handle-get-timezone:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetTimezone">GetTimezone()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_get_timezone() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-get-timezone",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_get_timezone),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    1,
++    G_TYPE_DBUS_METHOD_INVOCATION);
++
++  /**
++   * DateTimeMechanism::handle-can-set-timezone:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTimezone">CanSetTimezone()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_can_set_timezone() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-can-set-timezone",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_can_set_timezone),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    1,
++    G_TYPE_DBUS_METHOD_INVOCATION);
++
++  /**
++   * DateTimeMechanism::handle-set-date:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   * @day: Argument passed by remote caller.
++   * @month: Argument passed by remote caller.
++   * @year: Argument passed by remote caller.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetDate">SetDate()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_set_date() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-set-date",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_set_date),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    4,
++    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_UINT);
++
++  /**
++   * DateTimeMechanism::handle-set-time:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   * @seconds_since_epoch: Argument passed by remote caller.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTime">SetTime()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_set_time() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-set-time",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_set_time),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    2,
++    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_INT64);
++
++  /**
++   * DateTimeMechanism::handle-can-set-time:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTime">CanSetTime()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_can_set_time() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-can-set-time",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_can_set_time),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    1,
++    G_TYPE_DBUS_METHOD_INVOCATION);
++
++  /**
++   * DateTimeMechanism::handle-adjust-time:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   * @seconds_to_add: Argument passed by remote caller.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.AdjustTime">AdjustTime()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_adjust_time() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-adjust-time",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_adjust_time),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    2,
++    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_INT64);
++
++  /**
++   * DateTimeMechanism::handle-get-hardware-clock-using-utc:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetHardwareClockUsingUtc">GetHardwareClockUsingUtc()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_get_hardware_clock_using_utc() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-get-hardware-clock-using-utc",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_get_hardware_clock_using_utc),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    1,
++    G_TYPE_DBUS_METHOD_INVOCATION);
++
++  /**
++   * DateTimeMechanism::handle-set-hardware-clock-using-utc:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   * @is_using_utc: Argument passed by remote caller.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetHardwareClockUsingUtc">SetHardwareClockUsingUtc()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_set_hardware_clock_using_utc() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-set-hardware-clock-using-utc",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_set_hardware_clock_using_utc),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    2,
++    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_BOOLEAN);
++
++  /**
++   * DateTimeMechanism::handle-get-using-ntp:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetUsingNtp">GetUsingNtp()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_get_using_ntp() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-get-using-ntp",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_get_using_ntp),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    1,
++    G_TYPE_DBUS_METHOD_INVOCATION);
++
++  /**
++   * DateTimeMechanism::handle-set-using-ntp:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   * @is_using_ntp: Argument passed by remote caller.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetUsingNtp">SetUsingNtp()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_set_using_ntp() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-set-using-ntp",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_set_using_ntp),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    2,
++    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_BOOLEAN);
++
++  /**
++   * DateTimeMechanism::handle-can-set-using-ntp:
++   * @object: A #DateTimeMechanism.
++   * @invocation: A #GDBusMethodInvocation.
++   *
++   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetUsingNtp">CanSetUsingNtp()</link> D-Bus method.
++   *
++   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call date_time_mechanism_complete_can_set_using_ntp() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
++   *
++   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
++   */
++  g_signal_new ("handle-can-set-using-ntp",
++    G_TYPE_FROM_INTERFACE (iface),
++    G_SIGNAL_RUN_LAST,
++    G_STRUCT_OFFSET (DateTimeMechanismIface, handle_can_set_using_ntp),
++    g_signal_accumulator_true_handled,
++    NULL,
++    g_cclosure_marshal_generic,
++    G_TYPE_BOOLEAN,
++    1,
++    G_TYPE_DBUS_METHOD_INVOCATION);
++
++}
++
++typedef DateTimeMechanismIface DateTimeMechanismInterface;
++G_DEFINE_INTERFACE (DateTimeMechanism, date_time_mechanism, G_TYPE_OBJECT);
++
++/**
++ * date_time_mechanism_call_set_timezone:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @tz: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTimezone">SetTimezone()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_set_timezone_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_set_timezone_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_set_timezone (
++    DateTimeMechanism *proxy,
++    const gchar *tz,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "SetTimezone",
++    g_variant_new ("(s)",
++                   tz),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_set_timezone_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_set_timezone().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_set_timezone().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_timezone_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_timezone_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @tz: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTimezone">SetTimezone()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_set_timezone() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_timezone_sync (
++    DateTimeMechanism *proxy,
++    const gchar *tz,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "SetTimezone",
++    g_variant_new ("(s)",
++                   tz),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_get_timezone:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetTimezone">GetTimezone()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_get_timezone_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_get_timezone_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_get_timezone (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "GetTimezone",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_get_timezone_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_timezone: (out): Return location for return parameter or %NULL to ignore.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_get_timezone().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_get_timezone().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_get_timezone_finish (
++    DateTimeMechanism *proxy,
++    gchar **out_timezone,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(s)",
++                 out_timezone);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_get_timezone_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_timezone: (out): Return location for return parameter or %NULL to ignore.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetTimezone">GetTimezone()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_get_timezone() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_get_timezone_sync (
++    DateTimeMechanism *proxy,
++    gchar **out_timezone,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "GetTimezone",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(s)",
++                 out_timezone);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_can_set_timezone:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTimezone">CanSetTimezone()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_can_set_timezone_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_can_set_timezone_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_can_set_timezone (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "CanSetTimezone",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_can_set_timezone_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_value: (out): Return location for return parameter or %NULL to ignore.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_can_set_timezone().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_can_set_timezone().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_can_set_timezone_finish (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(i)",
++                 out_value);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_can_set_timezone_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_value: (out): Return location for return parameter or %NULL to ignore.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTimezone">CanSetTimezone()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_can_set_timezone() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_can_set_timezone_sync (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "CanSetTimezone",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(i)",
++                 out_value);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_date:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @day: Argument to pass with the method invocation.
++ * @month: Argument to pass with the method invocation.
++ * @year: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetDate">SetDate()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_set_date_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_set_date_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_set_date (
++    DateTimeMechanism *proxy,
++    guint day,
++    guint month,
++    guint year,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "SetDate",
++    g_variant_new ("(uuu)",
++                   day,
++                   month,
++                   year),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_set_date_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_set_date().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_set_date().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_date_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_date_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @day: Argument to pass with the method invocation.
++ * @month: Argument to pass with the method invocation.
++ * @year: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetDate">SetDate()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_set_date() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_date_sync (
++    DateTimeMechanism *proxy,
++    guint day,
++    guint month,
++    guint year,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "SetDate",
++    g_variant_new ("(uuu)",
++                   day,
++                   month,
++                   year),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_time:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @seconds_since_epoch: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTime">SetTime()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_set_time_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_set_time_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_set_time (
++    DateTimeMechanism *proxy,
++    gint64 seconds_since_epoch,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "SetTime",
++    g_variant_new ("(x)",
++                   seconds_since_epoch),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_set_time_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_set_time().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_set_time().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_time_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_time_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @seconds_since_epoch: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTime">SetTime()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_set_time() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_time_sync (
++    DateTimeMechanism *proxy,
++    gint64 seconds_since_epoch,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "SetTime",
++    g_variant_new ("(x)",
++                   seconds_since_epoch),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_can_set_time:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTime">CanSetTime()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_can_set_time_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_can_set_time_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_can_set_time (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "CanSetTime",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_can_set_time_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_value: (out): Return location for return parameter or %NULL to ignore.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_can_set_time().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_can_set_time().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_can_set_time_finish (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(i)",
++                 out_value);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_can_set_time_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_value: (out): Return location for return parameter or %NULL to ignore.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTime">CanSetTime()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_can_set_time() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_can_set_time_sync (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "CanSetTime",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(i)",
++                 out_value);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_adjust_time:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @seconds_to_add: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.AdjustTime">AdjustTime()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_adjust_time_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_adjust_time_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_adjust_time (
++    DateTimeMechanism *proxy,
++    gint64 seconds_to_add,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "AdjustTime",
++    g_variant_new ("(x)",
++                   seconds_to_add),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_adjust_time_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_adjust_time().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_adjust_time().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_adjust_time_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_adjust_time_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @seconds_to_add: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.AdjustTime">AdjustTime()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_adjust_time() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_adjust_time_sync (
++    DateTimeMechanism *proxy,
++    gint64 seconds_to_add,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "AdjustTime",
++    g_variant_new ("(x)",
++                   seconds_to_add),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_get_hardware_clock_using_utc:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetHardwareClockUsingUtc">GetHardwareClockUsingUtc()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_get_hardware_clock_using_utc_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_get_hardware_clock_using_utc_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_get_hardware_clock_using_utc (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "GetHardwareClockUsingUtc",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_get_hardware_clock_using_utc_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_is_using_utc: (out): Return location for return parameter or %NULL to ignore.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_get_hardware_clock_using_utc().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_get_hardware_clock_using_utc().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_get_hardware_clock_using_utc_finish (
++    DateTimeMechanism *proxy,
++    gboolean *out_is_using_utc,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(b)",
++                 out_is_using_utc);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_get_hardware_clock_using_utc_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_is_using_utc: (out): Return location for return parameter or %NULL to ignore.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetHardwareClockUsingUtc">GetHardwareClockUsingUtc()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_get_hardware_clock_using_utc() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_get_hardware_clock_using_utc_sync (
++    DateTimeMechanism *proxy,
++    gboolean *out_is_using_utc,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "GetHardwareClockUsingUtc",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(b)",
++                 out_is_using_utc);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_hardware_clock_using_utc:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @is_using_utc: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetHardwareClockUsingUtc">SetHardwareClockUsingUtc()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_set_hardware_clock_using_utc_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_set_hardware_clock_using_utc_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_set_hardware_clock_using_utc (
++    DateTimeMechanism *proxy,
++    gboolean is_using_utc,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "SetHardwareClockUsingUtc",
++    g_variant_new ("(b)",
++                   is_using_utc),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_set_hardware_clock_using_utc_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_set_hardware_clock_using_utc().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_set_hardware_clock_using_utc().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_hardware_clock_using_utc_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_hardware_clock_using_utc_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @is_using_utc: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetHardwareClockUsingUtc">SetHardwareClockUsingUtc()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_set_hardware_clock_using_utc() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_hardware_clock_using_utc_sync (
++    DateTimeMechanism *proxy,
++    gboolean is_using_utc,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "SetHardwareClockUsingUtc",
++    g_variant_new ("(b)",
++                   is_using_utc),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_get_using_ntp:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetUsingNtp">GetUsingNtp()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_get_using_ntp_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_get_using_ntp_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_get_using_ntp (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "GetUsingNtp",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_get_using_ntp_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_can_use_ntp: (out): Return location for return parameter or %NULL to ignore.
++ * @out_is_using_ntp: (out): Return location for return parameter or %NULL to ignore.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_get_using_ntp().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_get_using_ntp().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_get_using_ntp_finish (
++    DateTimeMechanism *proxy,
++    gboolean *out_can_use_ntp,
++    gboolean *out_is_using_ntp,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(bb)",
++                 out_can_use_ntp,
++                 out_is_using_ntp);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_get_using_ntp_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_can_use_ntp: (out): Return location for return parameter or %NULL to ignore.
++ * @out_is_using_ntp: (out): Return location for return parameter or %NULL to ignore.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetUsingNtp">GetUsingNtp()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_get_using_ntp() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_get_using_ntp_sync (
++    DateTimeMechanism *proxy,
++    gboolean *out_can_use_ntp,
++    gboolean *out_is_using_ntp,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "GetUsingNtp",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(bb)",
++                 out_can_use_ntp,
++                 out_is_using_ntp);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_using_ntp:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @is_using_ntp: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetUsingNtp">SetUsingNtp()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_set_using_ntp_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_set_using_ntp_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_set_using_ntp (
++    DateTimeMechanism *proxy,
++    gboolean is_using_ntp,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "SetUsingNtp",
++    g_variant_new ("(b)",
++                   is_using_ntp),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_set_using_ntp_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_set_using_ntp().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_set_using_ntp().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_using_ntp_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_set_using_ntp_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @is_using_ntp: Argument to pass with the method invocation.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetUsingNtp">SetUsingNtp()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_set_using_ntp() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_set_using_ntp_sync (
++    DateTimeMechanism *proxy,
++    gboolean is_using_ntp,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "SetUsingNtp",
++    g_variant_new ("(b)",
++                   is_using_ntp),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "()");
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_can_set_using_ntp:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetUsingNtp">CanSetUsingNtp()</link> D-Bus method on @proxy.
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_call_can_set_using_ntp_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_call_can_set_using_ntp_sync() for the synchronous, blocking version of this method.
++ */
++void
++date_time_mechanism_call_can_set_using_ntp (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data)
++{
++  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
++    "CanSetUsingNtp",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    callback,
++    user_data);
++}
++
++/**
++ * date_time_mechanism_call_can_set_using_ntp_finish:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_value: (out): Return location for return parameter or %NULL to ignore.
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_call_can_set_using_ntp().
++ * @error: Return location for error or %NULL.
++ *
++ * Finishes an operation started with date_time_mechanism_call_can_set_using_ntp().
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_can_set_using_ntp_finish (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GAsyncResult *res,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(i)",
++                 out_value);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_call_can_set_using_ntp_sync:
++ * @proxy: A #DateTimeMechanismProxy.
++ * @out_value: (out): Return location for return parameter or %NULL to ignore.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL.
++ *
++ * Synchronously invokes the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetUsingNtp">CanSetUsingNtp()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_call_can_set_using_ntp() for the asynchronous version of this method.
++ *
++ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
++ */
++gboolean
++date_time_mechanism_call_can_set_using_ntp_sync (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GCancellable *cancellable,
++    GError **error)
++{
++  GVariant *_ret;
++  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
++    "CanSetUsingNtp",
++    g_variant_new ("()"),
++    G_DBUS_CALL_FLAGS_NONE,
++    -1,
++    cancellable,
++    error);
++  if (_ret == NULL)
++    goto _out;
++  g_variant_get (_ret,
++                 "(i)",
++                 out_value);
++  g_variant_unref (_ret);
++_out:
++  return _ret != NULL;
++}
++
++/**
++ * date_time_mechanism_complete_set_timezone:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTimezone">SetTimezone()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_set_timezone (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("()"));
++}
++
++/**
++ * date_time_mechanism_complete_get_timezone:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ * @timezone: Parameter to return.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetTimezone">GetTimezone()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_get_timezone (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    const gchar *timezone)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("(s)",
++                   timezone));
++}
++
++/**
++ * date_time_mechanism_complete_can_set_timezone:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ * @value: Parameter to return.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTimezone">CanSetTimezone()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_can_set_timezone (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint value)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("(i)",
++                   value));
++}
++
++/**
++ * date_time_mechanism_complete_set_date:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetDate">SetDate()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_set_date (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("()"));
++}
++
++/**
++ * date_time_mechanism_complete_set_time:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetTime">SetTime()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_set_time (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("()"));
++}
++
++/**
++ * date_time_mechanism_complete_can_set_time:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ * @value: Parameter to return.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetTime">CanSetTime()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_can_set_time (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint value)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("(i)",
++                   value));
++}
++
++/**
++ * date_time_mechanism_complete_adjust_time:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.AdjustTime">AdjustTime()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_adjust_time (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("()"));
++}
++
++/**
++ * date_time_mechanism_complete_get_hardware_clock_using_utc:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ * @is_using_utc: Parameter to return.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetHardwareClockUsingUtc">GetHardwareClockUsingUtc()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_get_hardware_clock_using_utc (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gboolean is_using_utc)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("(b)",
++                   is_using_utc));
++}
++
++/**
++ * date_time_mechanism_complete_set_hardware_clock_using_utc:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetHardwareClockUsingUtc">SetHardwareClockUsingUtc()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_set_hardware_clock_using_utc (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("()"));
++}
++
++/**
++ * date_time_mechanism_complete_get_using_ntp:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ * @can_use_ntp: Parameter to return.
++ * @is_using_ntp: Parameter to return.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.GetUsingNtp">GetUsingNtp()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_get_using_ntp (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gboolean can_use_ntp,
++    gboolean is_using_ntp)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("(bb)",
++                   can_use_ntp,
++                   is_using_ntp));
++}
++
++/**
++ * date_time_mechanism_complete_set_using_ntp:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.SetUsingNtp">SetUsingNtp()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_set_using_ntp (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("()"));
++}
++
++/**
++ * date_time_mechanism_complete_can_set_using_ntp:
++ * @object: A #DateTimeMechanism.
++ * @invocation: (transfer full): A #GDBusMethodInvocation.
++ * @value: Parameter to return.
++ *
++ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org.opensettings.DateTimeMechanism.CanSetUsingNtp">CanSetUsingNtp()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
++ *
++ * This method will free @invocation, you cannot use it afterwards.
++ */
++void
++date_time_mechanism_complete_can_set_using_ntp (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint value)
++{
++  g_dbus_method_invocation_return_value (invocation,
++    g_variant_new ("(i)",
++                   value));
++}
++
++/* ------------------------------------------------------------------------ */
++
++/**
++ * DateTimeMechanismProxy:
++ *
++ * The #DateTimeMechanismProxy structure contains only private data and should only be accessed using the provided API.
++ */
++
++/**
++ * DateTimeMechanismProxyClass:
++ * @parent_class: The parent class.
++ *
++ * Class structure for #DateTimeMechanismProxy.
++ */
++
++static void
++date_time_mechanism_proxy_iface_init (DateTimeMechanismIface *iface)
++{
++}
++
++#define date_time_mechanism_proxy_get_type date_time_mechanism_proxy_get_type
++G_DEFINE_TYPE_WITH_CODE (DateTimeMechanismProxy, date_time_mechanism_proxy, G_TYPE_DBUS_PROXY,
++                         G_IMPLEMENT_INTERFACE (TYPE_DATE_TIME_MECHANISM, date_time_mechanism_proxy_iface_init));
++#undef date_time_mechanism_proxy_get_type
++
++static void
++date_time_mechanism_proxy_get_property (GObject      *object,
++  guint         prop_id,
++  GValue       *value,
++  GParamSpec   *pspec)
++{
++}
++
++static void
++date_time_mechanism_proxy_set_property (GObject      *object,
++  guint         prop_id,
++  const GValue *value,
++  GParamSpec   *pspec)
++{
++}
++
++static void
++date_time_mechanism_proxy_g_signal (GDBusProxy *proxy,
++  const gchar *sender_name,
++  const gchar *signal_name,
++  GVariant *parameters)
++{
++  _ExtendedGDBusSignalInfo *info;
++  GVariantIter iter;
++  GVariant *child;
++  GValue *paramv;
++  guint num_params;
++  guint n;
++  guint signal_id;
++  info = (_ExtendedGDBusSignalInfo *) g_dbus_interface_info_lookup_signal ((GDBusInterfaceInfo *) &_date_time_mechanism_interface_info, signal_name);
++  if (info == NULL)
++    return;
++  num_params = g_variant_n_children (parameters);
++  paramv = g_new0 (GValue, num_params + 1);
++  g_value_init (&paramv[0], TYPE_DATE_TIME_MECHANISM);
++  g_value_set_object (&paramv[0], proxy);
++  g_variant_iter_init (&iter, parameters);
++  n = 1;
++  while ((child = g_variant_iter_next_value (&iter)) != NULL)
++    {
++      _ExtendedGDBusArgInfo *arg_info = (_ExtendedGDBusArgInfo *) info->parent_struct.args[n - 1];
++      if (arg_info->use_gvariant)
++        {
++          g_value_init (&paramv[n], G_TYPE_VARIANT);
++          g_value_set_variant (&paramv[n], child);
++          n++;
++        }
++      else
++        g_dbus_gvariant_to_gvalue (child, &paramv[n++]);
++      g_variant_unref (child);
++    }
++  signal_id = g_signal_lookup (info->signal_name, TYPE_DATE_TIME_MECHANISM);
++  g_signal_emitv (paramv, signal_id, 0, NULL);
++  for (n = 0; n < num_params + 1; n++)
++    g_value_unset (&paramv[n]);
++  g_free (paramv);
++}
++
++static void
++date_time_mechanism_proxy_g_properties_changed (GDBusProxy *proxy,
++  GVariant *changed_properties,
++  const gchar *const *invalidated_properties)
++{
++  guint n;
++  const gchar *key;
++  GVariantIter *iter;
++  _ExtendedGDBusPropertyInfo *info;
++  g_variant_get (changed_properties, "a{sv}", &iter);
++  while (g_variant_iter_next (iter, "{&sv}", &key, NULL))
++    {
++      info = (_ExtendedGDBusPropertyInfo *) g_dbus_interface_info_lookup_property ((GDBusInterfaceInfo *) &_date_time_mechanism_interface_info, key);
++      if (info != NULL)
++        g_object_notify (G_OBJECT (proxy), info->hyphen_name);
++    }
++  g_variant_iter_free (iter);
++  for (n = 0; invalidated_properties[n] != NULL; n++)
++    {
++      info = (_ExtendedGDBusPropertyInfo *) g_dbus_interface_info_lookup_property ((GDBusInterfaceInfo *) &_date_time_mechanism_interface_info, invalidated_properties[n]);
++      if (info != NULL)
++        g_object_notify (G_OBJECT (proxy), info->hyphen_name);
++    }
++}
++
++static void
++date_time_mechanism_proxy_init (DateTimeMechanismProxy *proxy)
++{
++  g_dbus_proxy_set_interface_info (G_DBUS_PROXY (proxy), date_time_mechanism_interface_info ());
++}
++
++static void
++date_time_mechanism_proxy_class_init (DateTimeMechanismProxyClass *klass)
++{
++  GObjectClass *gobject_class;
++  GDBusProxyClass *proxy_class;
++
++  gobject_class = G_OBJECT_CLASS (klass);
++  gobject_class->get_property = date_time_mechanism_proxy_get_property;
++  gobject_class->set_property = date_time_mechanism_proxy_set_property;
++
++  proxy_class = G_DBUS_PROXY_CLASS (klass);
++  proxy_class->g_signal = date_time_mechanism_proxy_g_signal;
++  proxy_class->g_properties_changed = date_time_mechanism_proxy_g_properties_changed;
++
++}
++
++/**
++ * date_time_mechanism_proxy_new:
++ * @connection: A #GDBusConnection.
++ * @flags: Flags from the #GDBusProxyFlags enumeration.
++ * @name: (allow-none): A bus name (well-known or unique) or %NULL if @connection is not a message bus connection.
++ * @object_path: An object path.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied.
++ * @user_data: User data to pass to @callback.
++ *
++ * Asynchronously creates a proxy for the D-Bus interface <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link>. See g_dbus_proxy_new() for more details.
++ *
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_proxy_new_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_proxy_new_sync() for the synchronous, blocking version of this constructor.
++ */
++void
++date_time_mechanism_proxy_new (
++    GDBusConnection     *connection,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GAsyncReadyCallback  callback,
++    gpointer             user_data)
++{
++  g_async_initable_new_async (TYPE_DATE_TIME_MECHANISM_PROXY, G_PRIORITY_DEFAULT, cancellable, callback, user_data, "g-flags", flags, "g-name", name, "g-connection", connection, "g-object-path", object_path, "g-interface-name", "org.opensettings.DateTimeMechanism", NULL);
++}
++
++/**
++ * date_time_mechanism_proxy_new_finish:
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_proxy_new().
++ * @error: Return location for error or %NULL
++ *
++ * Finishes an operation started with date_time_mechanism_proxy_new().
++ *
++ * Returns: (transfer full) (type DateTimeMechanismProxy): The constructed proxy object or %NULL if @error is set.
++ */
++DateTimeMechanism *
++date_time_mechanism_proxy_new_finish (
++    GAsyncResult        *res,
++    GError             **error)
++{
++  GObject *ret;
++  GObject *source_object;
++  source_object = g_async_result_get_source_object (res);
++  ret = g_async_initable_new_finish (G_ASYNC_INITABLE (source_object), res, error);
++  g_object_unref (source_object);
++  if (ret != NULL)
++    return DATE_TIME_MECHANISM (ret);
++  else
++    return NULL;
++}
++
++/**
++ * date_time_mechanism_proxy_new_sync:
++ * @connection: A #GDBusConnection.
++ * @flags: Flags from the #GDBusProxyFlags enumeration.
++ * @name: (allow-none): A bus name (well-known or unique) or %NULL if @connection is not a message bus connection.
++ * @object_path: An object path.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL
++ *
++ * Synchronously creates a proxy for the D-Bus interface <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link>. See g_dbus_proxy_new_sync() for more details.
++ *
++ * The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_proxy_new() for the asynchronous version of this constructor.
++ *
++ * Returns: (transfer full) (type DateTimeMechanismProxy): The constructed proxy object or %NULL if @error is set.
++ */
++DateTimeMechanism *
++date_time_mechanism_proxy_new_sync (
++    GDBusConnection     *connection,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GError             **error)
++{
++  GInitable *ret;
++  ret = g_initable_new (TYPE_DATE_TIME_MECHANISM_PROXY, cancellable, error, "g-flags", flags, "g-name", name, "g-connection", connection, "g-object-path", object_path, "g-interface-name", "org.opensettings.DateTimeMechanism", NULL);
++  if (ret != NULL)
++    return DATE_TIME_MECHANISM (ret);
++  else
++    return NULL;
++}
++
++
++/**
++ * date_time_mechanism_proxy_new_for_bus:
++ * @bus_type: A #GBusType.
++ * @flags: Flags from the #GDBusProxyFlags enumeration.
++ * @name: A bus name (well-known or unique).
++ * @object_path: An object path.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @callback: A #GAsyncReadyCallback to call when the request is satisfied.
++ * @user_data: User data to pass to @callback.
++ *
++ * Like date_time_mechanism_proxy_new() but takes a #GBusType instead of a #GDBusConnection.
++ *
++ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
++ * You can then call date_time_mechanism_proxy_new_for_bus_finish() to get the result of the operation.
++ *
++ * See date_time_mechanism_proxy_new_for_bus_sync() for the synchronous, blocking version of this constructor.
++ */
++void
++date_time_mechanism_proxy_new_for_bus (
++    GBusType             bus_type,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GAsyncReadyCallback  callback,
++    gpointer             user_data)
++{
++  g_async_initable_new_async (TYPE_DATE_TIME_MECHANISM_PROXY, G_PRIORITY_DEFAULT, cancellable, callback, user_data, "g-flags", flags, "g-name", name, "g-bus-type", bus_type, "g-object-path", object_path, "g-interface-name", "org.opensettings.DateTimeMechanism", NULL);
++}
++
++/**
++ * date_time_mechanism_proxy_new_for_bus_finish:
++ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to date_time_mechanism_proxy_new_for_bus().
++ * @error: Return location for error or %NULL
++ *
++ * Finishes an operation started with date_time_mechanism_proxy_new_for_bus().
++ *
++ * Returns: (transfer full) (type DateTimeMechanismProxy): The constructed proxy object or %NULL if @error is set.
++ */
++DateTimeMechanism *
++date_time_mechanism_proxy_new_for_bus_finish (
++    GAsyncResult        *res,
++    GError             **error)
++{
++  GObject *ret;
++  GObject *source_object;
++  source_object = g_async_result_get_source_object (res);
++  ret = g_async_initable_new_finish (G_ASYNC_INITABLE (source_object), res, error);
++  g_object_unref (source_object);
++  if (ret != NULL)
++    return DATE_TIME_MECHANISM (ret);
++  else
++    return NULL;
++}
++
++/**
++ * date_time_mechanism_proxy_new_for_bus_sync:
++ * @bus_type: A #GBusType.
++ * @flags: Flags from the #GDBusProxyFlags enumeration.
++ * @name: A bus name (well-known or unique).
++ * @object_path: An object path.
++ * @cancellable: (allow-none): A #GCancellable or %NULL.
++ * @error: Return location for error or %NULL
++ *
++ * Like date_time_mechanism_proxy_new_sync() but takes a #GBusType instead of a #GDBusConnection.
++ *
++ * The calling thread is blocked until a reply is received.
++ *
++ * See date_time_mechanism_proxy_new_for_bus() for the asynchronous version of this constructor.
++ *
++ * Returns: (transfer full) (type DateTimeMechanismProxy): The constructed proxy object or %NULL if @error is set.
++ */
++DateTimeMechanism *
++date_time_mechanism_proxy_new_for_bus_sync (
++    GBusType             bus_type,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GError             **error)
++{
++  GInitable *ret;
++  ret = g_initable_new (TYPE_DATE_TIME_MECHANISM_PROXY, cancellable, error, "g-flags", flags, "g-name", name, "g-bus-type", bus_type, "g-object-path", object_path, "g-interface-name", "org.opensettings.DateTimeMechanism", NULL);
++  if (ret != NULL)
++    return DATE_TIME_MECHANISM (ret);
++  else
++    return NULL;
++}
++
++
++/* ------------------------------------------------------------------------ */
++
++/**
++ * DateTimeMechanismSkeleton:
++ *
++ * The #DateTimeMechanismSkeleton structure contains only private data and should only be accessed using the provided API.
++ */
++
++/**
++ * DateTimeMechanismSkeletonClass:
++ * @parent_class: The parent class.
++ *
++ * Class structure for #DateTimeMechanismSkeleton.
++ */
++
++struct _DateTimeMechanismSkeletonPrivate
++{
++  GValueArray *properties;
++  GList *changed_properties;
++  GSource *changed_properties_idle_source;
++  GMainContext *context;
++  GMutex *lock;
++};
++
++static void
++_date_time_mechanism_skeleton_handle_method_call (
++  GDBusConnection *connection,
++  const gchar *sender,
++  const gchar *object_path,
++  const gchar *interface_name,
++  const gchar *method_name,
++  GVariant *parameters,
++  GDBusMethodInvocation *invocation,
++  gpointer user_data)
++{
++  DateTimeMechanismSkeleton *skeleton = DATE_TIME_MECHANISM_SKELETON (user_data);
++  _ExtendedGDBusMethodInfo *info;
++  GVariantIter iter;
++  GVariant *child;
++  GValue *paramv;
++  guint num_params;
++  guint n;
++  guint signal_id;
++  GValue return_value = {0};
++  info = (_ExtendedGDBusMethodInfo *) g_dbus_method_invocation_get_method_info (invocation);
++  g_assert (info != NULL);
++  num_params = g_variant_n_children (parameters);
++  paramv = g_new0 (GValue, num_params + 2);
++  g_value_init (&paramv[0], TYPE_DATE_TIME_MECHANISM);
++  g_value_set_object (&paramv[0], skeleton);
++  g_value_init (&paramv[1], G_TYPE_DBUS_METHOD_INVOCATION);
++  g_value_set_object (&paramv[1], invocation);
++  g_variant_iter_init (&iter, parameters);
++  n = 2;
++  while ((child = g_variant_iter_next_value (&iter)) != NULL)
++    {
++      _ExtendedGDBusArgInfo *arg_info = (_ExtendedGDBusArgInfo *) info->parent_struct.in_args[n - 2];
++      if (arg_info->use_gvariant)
++        {
++          g_value_init (&paramv[n], G_TYPE_VARIANT);
++          g_value_set_variant (&paramv[n], child);
++          n++;
++        }
++      else
++        g_dbus_gvariant_to_gvalue (child, &paramv[n++]);
++      g_variant_unref (child);
++    }
++  signal_id = g_signal_lookup (info->signal_name, TYPE_DATE_TIME_MECHANISM);
++  g_value_init (&return_value, G_TYPE_BOOLEAN);
++  g_signal_emitv (paramv, signal_id, 0, &return_value);
++  if (!g_value_get_boolean (&return_value))
++    g_dbus_method_invocation_return_error (invocation, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD, "Method %s is not implemented on interface %s", method_name, interface_name);
++  g_value_unset (&return_value);
++  for (n = 0; n < num_params + 2; n++)
++    g_value_unset (&paramv[n]);
++  g_free (paramv);
++}
++
++static GVariant *
++_date_time_mechanism_skeleton_handle_get_property (
++  GDBusConnection *connection,
++  const gchar *sender,
++  const gchar *object_path,
++  const gchar *interface_name,
++  const gchar *property_name,
++  GError **error,
++  gpointer user_data)
++{
++  DateTimeMechanismSkeleton *skeleton = DATE_TIME_MECHANISM_SKELETON (user_data);
++  GValue value = {0};
++  GParamSpec *pspec;
++  _ExtendedGDBusPropertyInfo *info;
++  GVariant *ret;
++  ret = NULL;
++  info = (_ExtendedGDBusPropertyInfo *) g_dbus_interface_info_lookup_property ((GDBusInterfaceInfo *) &_date_time_mechanism_interface_info, property_name);
++  g_assert (info != NULL);
++  pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (skeleton), info->hyphen_name);
++  if (pspec == NULL)
++    {
++      g_set_error (error, G_DBUS_ERROR, G_DBUS_ERROR_INVALID_ARGS, "No property with name %s", property_name);
++    }
++  else
++    {
++      g_value_init (&value, pspec->value_type);
++      g_object_get_property (G_OBJECT (skeleton), info->hyphen_name, &value);
++      ret = g_dbus_gvalue_to_gvariant (&value, G_VARIANT_TYPE (info->parent_struct.signature));
++      g_value_unset (&value);
++    }
++  return ret;
++}
++
++static gboolean
++_date_time_mechanism_skeleton_handle_set_property (
++  GDBusConnection *connection,
++  const gchar *sender,
++  const gchar *object_path,
++  const gchar *interface_name,
++  const gchar *property_name,
++  GVariant *variant,
++  GError **error,
++  gpointer user_data)
++{
++  DateTimeMechanismSkeleton *skeleton = DATE_TIME_MECHANISM_SKELETON (user_data);
++  GValue value = {0};
++  GParamSpec *pspec;
++  _ExtendedGDBusPropertyInfo *info;
++  gboolean ret;
++  ret = FALSE;
++  info = (_ExtendedGDBusPropertyInfo *) g_dbus_interface_info_lookup_property ((GDBusInterfaceInfo *) &_date_time_mechanism_interface_info, property_name);
++  g_assert (info != NULL);
++  pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (skeleton), info->hyphen_name);
++  if (pspec == NULL)
++    {
++      g_set_error (error, G_DBUS_ERROR, G_DBUS_ERROR_INVALID_ARGS, "No property with name %s", property_name);
++    }
++  else
++    {
++      if (info->use_gvariant)
++        g_value_set_variant (&value, variant);
++      else
++        g_dbus_gvariant_to_gvalue (variant, &value);
++      g_object_set_property (G_OBJECT (skeleton), info->hyphen_name, &value);
++      g_value_unset (&value);
++      ret = TRUE;
++    }
++  return ret;
++}
++
++static const GDBusInterfaceVTable _date_time_mechanism_skeleton_vtable =
++{
++  _date_time_mechanism_skeleton_handle_method_call,
++  _date_time_mechanism_skeleton_handle_get_property,
++  _date_time_mechanism_skeleton_handle_set_property
++};
++
++static GDBusInterfaceInfo *
++date_time_mechanism_skeleton_dbus_interface_get_info (GDBusInterfaceSkeleton *skeleton)
++{
++  return date_time_mechanism_interface_info ();
++}
++
++static GDBusInterfaceVTable *
++date_time_mechanism_skeleton_dbus_interface_get_vtable (GDBusInterfaceSkeleton *skeleton)
++{
++  return (GDBusInterfaceVTable *) &_date_time_mechanism_skeleton_vtable;
++}
++
++static GVariant *
++date_time_mechanism_skeleton_dbus_interface_get_properties (GDBusInterfaceSkeleton *_skeleton)
++{
++  DateTimeMechanismSkeleton *skeleton = DATE_TIME_MECHANISM_SKELETON (_skeleton);
++
++  GVariantBuilder builder;
++  guint n;
++  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
++  if (_date_time_mechanism_interface_info.parent_struct.properties == NULL)
++    goto out;
++  for (n = 0; _date_time_mechanism_interface_info.parent_struct.properties[n] != NULL; n++)
++    {
++      GDBusPropertyInfo *info = _date_time_mechanism_interface_info.parent_struct.properties[n];
++      if (info->flags & G_DBUS_PROPERTY_INFO_FLAGS_READABLE)
++        {
++          GVariant *value;
++          value = _date_time_mechanism_skeleton_handle_get_property (g_dbus_interface_skeleton_get_connection (G_DBUS_INTERFACE_SKELETON (skeleton)), NULL, g_dbus_interface_skeleton_get_object_path (G_DBUS_INTERFACE_SKELETON (skeleton)), "org.opensettings.DateTimeMechanism", info->name, NULL, skeleton);
++          if (value != NULL)
++            {
++              if (g_variant_is_floating (value))
++                g_variant_ref_sink (value);
++              g_variant_builder_add (&builder, "{sv}", info->name, value);
++              g_variant_unref (value);
++            }
++        }
++    }
++out:
++  return g_variant_builder_end (&builder);
++}
++
++static void
++date_time_mechanism_skeleton_dbus_interface_flush (GDBusInterfaceSkeleton *_skeleton)
++{
++}
++
++static void
++date_time_mechanism_skeleton_iface_init (DateTimeMechanismIface *iface)
++{
++}
++
++#define date_time_mechanism_skeleton_get_type date_time_mechanism_skeleton_get_type
++G_DEFINE_TYPE_WITH_CODE (DateTimeMechanismSkeleton, date_time_mechanism_skeleton, G_TYPE_DBUS_INTERFACE_SKELETON,
++                         G_IMPLEMENT_INTERFACE (TYPE_DATE_TIME_MECHANISM, date_time_mechanism_skeleton_iface_init));
++#undef date_time_mechanism_skeleton_get_type
++
++static void
++date_time_mechanism_skeleton_finalize (GObject *object)
++{
++  DateTimeMechanismSkeleton *skeleton = DATE_TIME_MECHANISM_SKELETON (object);
++  g_list_foreach (skeleton->priv->changed_properties, (GFunc) _changed_property_free, NULL);
++  g_list_free (skeleton->priv->changed_properties);
++  if (skeleton->priv->changed_properties_idle_source != NULL)
++    g_source_destroy (skeleton->priv->changed_properties_idle_source);
++  if (skeleton->priv->context != NULL)
++    g_main_context_unref (skeleton->priv->context);
++  g_mutex_free (skeleton->priv->lock);
++  G_OBJECT_CLASS (date_time_mechanism_skeleton_parent_class)->finalize (object);
++}
++
++static void
++date_time_mechanism_skeleton_init (DateTimeMechanismSkeleton *skeleton)
++{
++  skeleton->priv = G_TYPE_INSTANCE_GET_PRIVATE (skeleton, TYPE_DATE_TIME_MECHANISM_SKELETON, DateTimeMechanismSkeletonPrivate);
++  skeleton->priv->lock = g_mutex_new ();
++  skeleton->priv->context = g_main_context_get_thread_default ();
++  if (skeleton->priv->context != NULL)
++    g_main_context_ref (skeleton->priv->context);
++}
++
++static void
++date_time_mechanism_skeleton_class_init (DateTimeMechanismSkeletonClass *klass)
++{
++  GObjectClass *gobject_class;
++  GDBusInterfaceSkeletonClass *skeleton_class;
++
++  g_type_class_add_private (klass, sizeof (DateTimeMechanismSkeletonPrivate));
++
++  gobject_class = G_OBJECT_CLASS (klass);
++  gobject_class->finalize = date_time_mechanism_skeleton_finalize;
++
++  skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS (klass);
++  skeleton_class->get_info = date_time_mechanism_skeleton_dbus_interface_get_info;
++  skeleton_class->get_properties = date_time_mechanism_skeleton_dbus_interface_get_properties;
++  skeleton_class->flush = date_time_mechanism_skeleton_dbus_interface_flush;
++  skeleton_class->get_vtable = date_time_mechanism_skeleton_dbus_interface_get_vtable;
++}
++
++/**
++ * date_time_mechanism_skeleton_new:
++ *
++ * Creates a skeleton object for the D-Bus interface <link linkend="gdbus-interface-org.opensettings.DateTimeMechanism.top_of_page">org.opensettings.DateTimeMechanism</link>.
++ *
++ * Returns: (transfer full) (type DateTimeMechanismSkeleton): The skeleton object.
++ */
++DateTimeMechanism *
++date_time_mechanism_skeleton_new (void)
++{
++  return DATE_TIME_MECHANISM (g_object_new (TYPE_DATE_TIME_MECHANISM_SKELETON, NULL));
++}
++
+diff --git a/panels/datetime/dtm.h b/panels/datetime/dtm.h
+new file mode 100644
+index 0000000..516f80b
+--- /dev/null
++++ b/panels/datetime/dtm.h
+@@ -0,0 +1,475 @@
++/*
++ * Generated by gdbus-codegen 2.29.5. DO NOT EDIT.
++ *
++ * The license of this code is the same as for the source it was derived from.
++ */
++
++#ifndef __DTM_H__
++#define __DTM_H__
++
++#include <gio/gio.h>
++
++G_BEGIN_DECLS
++
++
++/* ------------------------------------------------------------------------ */
++/* Declarations for org.gnome.SettingsDaemon.DateTimeMechanism */
++
++#define TYPE_DATE_TIME_MECHANISM (date_time_mechanism_get_type ())
++#define DATE_TIME_MECHANISM(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), TYPE_DATE_TIME_MECHANISM, DateTimeMechanism))
++#define IS_DATE_TIME_MECHANISM(o) (G_TYPE_CHECK_INSTANCE_TYPE ((o), TYPE_DATE_TIME_MECHANISM))
++#define DATE_TIME_MECHANISM_GET_IFACE(o) (G_TYPE_INSTANCE_GET_INTERFACE ((o), TYPE_DATE_TIME_MECHANISM, DateTimeMechanism))
++
++struct _DateTimeMechanism;
++typedef struct _DateTimeMechanism DateTimeMechanism;
++typedef struct _DateTimeMechanismIface DateTimeMechanismIface;
++
++struct _DateTimeMechanismIface
++{
++  GTypeInterface parent_iface;
++
++  gboolean (*handle_adjust_time) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint64 seconds_to_add);
++
++  gboolean (*handle_can_set_time) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++  gboolean (*handle_can_set_timezone) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++  gboolean (*handle_can_set_using_ntp) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++  gboolean (*handle_get_hardware_clock_using_utc) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++  gboolean (*handle_get_timezone) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++  gboolean (*handle_get_using_ntp) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++  gboolean (*handle_set_date) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    guint day,
++    guint month,
++    guint year);
++
++  gboolean (*handle_set_hardware_clock_using_utc) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gboolean is_using_utc);
++
++  gboolean (*handle_set_time) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint64 seconds_since_epoch);
++
++  gboolean (*handle_set_timezone) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    const gchar *tz);
++
++  gboolean (*handle_set_using_ntp) (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gboolean is_using_ntp);
++
++};
++
++GType date_time_mechanism_get_type (void) G_GNUC_CONST;
++
++GDBusInterfaceInfo *date_time_mechanism_interface_info (void);
++
++
++/* D-Bus method call completion functions: */
++void date_time_mechanism_complete_set_timezone (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++void date_time_mechanism_complete_get_timezone (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    const gchar *timezone);
++
++void date_time_mechanism_complete_can_set_timezone (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint value);
++
++void date_time_mechanism_complete_set_date (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++void date_time_mechanism_complete_set_time (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++void date_time_mechanism_complete_can_set_time (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint value);
++
++void date_time_mechanism_complete_adjust_time (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++void date_time_mechanism_complete_get_hardware_clock_using_utc (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gboolean is_using_utc);
++
++void date_time_mechanism_complete_set_hardware_clock_using_utc (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++void date_time_mechanism_complete_get_using_ntp (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gboolean can_use_ntp,
++    gboolean is_using_ntp);
++
++void date_time_mechanism_complete_set_using_ntp (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation);
++
++void date_time_mechanism_complete_can_set_using_ntp (
++    DateTimeMechanism *object,
++    GDBusMethodInvocation *invocation,
++    gint value);
++
++
++
++/* D-Bus method calls: */
++void date_time_mechanism_call_set_timezone (
++    DateTimeMechanism *proxy,
++    const gchar *tz,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_set_timezone_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_set_timezone_sync (
++    DateTimeMechanism *proxy,
++    const gchar *tz,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_get_timezone (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_get_timezone_finish (
++    DateTimeMechanism *proxy,
++    gchar **out_timezone,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_get_timezone_sync (
++    DateTimeMechanism *proxy,
++    gchar **out_timezone,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_can_set_timezone (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_can_set_timezone_finish (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_can_set_timezone_sync (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_set_date (
++    DateTimeMechanism *proxy,
++    guint day,
++    guint month,
++    guint year,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_set_date_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_set_date_sync (
++    DateTimeMechanism *proxy,
++    guint day,
++    guint month,
++    guint year,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_set_time (
++    DateTimeMechanism *proxy,
++    gint64 seconds_since_epoch,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_set_time_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_set_time_sync (
++    DateTimeMechanism *proxy,
++    gint64 seconds_since_epoch,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_can_set_time (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_can_set_time_finish (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_can_set_time_sync (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_adjust_time (
++    DateTimeMechanism *proxy,
++    gint64 seconds_to_add,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_adjust_time_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_adjust_time_sync (
++    DateTimeMechanism *proxy,
++    gint64 seconds_to_add,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_get_hardware_clock_using_utc (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_get_hardware_clock_using_utc_finish (
++    DateTimeMechanism *proxy,
++    gboolean *out_is_using_utc,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_get_hardware_clock_using_utc_sync (
++    DateTimeMechanism *proxy,
++    gboolean *out_is_using_utc,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_set_hardware_clock_using_utc (
++    DateTimeMechanism *proxy,
++    gboolean is_using_utc,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_set_hardware_clock_using_utc_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_set_hardware_clock_using_utc_sync (
++    DateTimeMechanism *proxy,
++    gboolean is_using_utc,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_get_using_ntp (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_get_using_ntp_finish (
++    DateTimeMechanism *proxy,
++    gboolean *out_can_use_ntp,
++    gboolean *out_is_using_ntp,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_get_using_ntp_sync (
++    DateTimeMechanism *proxy,
++    gboolean *out_can_use_ntp,
++    gboolean *out_is_using_ntp,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_set_using_ntp (
++    DateTimeMechanism *proxy,
++    gboolean is_using_ntp,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_set_using_ntp_finish (
++    DateTimeMechanism *proxy,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_set_using_ntp_sync (
++    DateTimeMechanism *proxy,
++    gboolean is_using_ntp,
++    GCancellable *cancellable,
++    GError **error);
++
++void date_time_mechanism_call_can_set_using_ntp (
++    DateTimeMechanism *proxy,
++    GCancellable *cancellable,
++    GAsyncReadyCallback callback,
++    gpointer user_data);
++
++gboolean date_time_mechanism_call_can_set_using_ntp_finish (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GAsyncResult *res,
++    GError **error);
++
++gboolean date_time_mechanism_call_can_set_using_ntp_sync (
++    DateTimeMechanism *proxy,
++    gint *out_value,
++    GCancellable *cancellable,
++    GError **error);
++
++
++
++/* ---- */
++
++#define TYPE_DATE_TIME_MECHANISM_PROXY (date_time_mechanism_proxy_get_type ())
++#define DATE_TIME_MECHANISM_PROXY(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), TYPE_DATE_TIME_MECHANISM_PROXY, DateTimeMechanismProxy))
++#define DATE_TIME_MECHANISM_PROXY_CLASS(k) (G_TYPE_CHECK_CLASS_CAST ((k), TYPE_DATE_TIME_MECHANISM_PROXY, DateTimeMechanismProxyClass))
++#define DATE_TIME_MECHANISM_PROXY_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS ((o), TYPE_DATE_TIME_MECHANISM_PROXY, DateTimeMechanismProxyClass))
++#define IS_DATE_TIME_MECHANISM_PROXY(o) (G_TYPE_CHECK_INSTANCE_TYPE ((o), TYPE_DATE_TIME_MECHANISM_PROXY))
++#define IS_DATE_TIME_MECHANISM_PROXY_CLASS(k) (G_TYPE_CHECK_CLASS_TYPE ((k), TYPE_DATE_TIME_MECHANISM_PROXY))
++
++typedef struct _DateTimeMechanismProxy DateTimeMechanismProxy;
++typedef struct _DateTimeMechanismProxyClass DateTimeMechanismProxyClass;
++typedef struct _DateTimeMechanismProxyPrivate DateTimeMechanismProxyPrivate;
++
++struct _DateTimeMechanismProxy
++{
++  /*< private >*/
++  GDBusProxy parent_instance;
++  DateTimeMechanismProxyPrivate *priv;
++};
++
++struct _DateTimeMechanismProxyClass
++{
++  GDBusProxyClass parent_class;
++};
++
++GType date_time_mechanism_proxy_get_type (void) G_GNUC_CONST;
++
++void date_time_mechanism_proxy_new (
++    GDBusConnection     *connection,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GAsyncReadyCallback  callback,
++    gpointer             user_data);
++DateTimeMechanism *date_time_mechanism_proxy_new_finish (
++    GAsyncResult        *res,
++    GError             **error);
++DateTimeMechanism *date_time_mechanism_proxy_new_sync (
++    GDBusConnection     *connection,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GError             **error);
++
++void date_time_mechanism_proxy_new_for_bus (
++    GBusType             bus_type,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GAsyncReadyCallback  callback,
++    gpointer             user_data);
++DateTimeMechanism *date_time_mechanism_proxy_new_for_bus_finish (
++    GAsyncResult        *res,
++    GError             **error);
++DateTimeMechanism *date_time_mechanism_proxy_new_for_bus_sync (
++    GBusType             bus_type,
++    GDBusProxyFlags      flags,
++    const gchar         *name,
++    const gchar         *object_path,
++    GCancellable        *cancellable,
++    GError             **error);
++
++
++/* ---- */
++
++#define TYPE_DATE_TIME_MECHANISM_SKELETON (date_time_mechanism_skeleton_get_type ())
++#define DATE_TIME_MECHANISM_SKELETON(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), TYPE_DATE_TIME_MECHANISM_SKELETON, DateTimeMechanismSkeleton))
++#define DATE_TIME_MECHANISM_SKELETON_CLASS(k) (G_TYPE_CHECK_CLASS_CAST ((k), TYPE_DATE_TIME_MECHANISM_SKELETON, DateTimeMechanismSkeletonClass))
++#define DATE_TIME_MECHANISM_SKELETON_GET_CLASS(o) (G_TYPE_INSTANCE_GET_CLASS ((o), TYPE_DATE_TIME_MECHANISM_SKELETON, DateTimeMechanismSkeletonClass))
++#define IS_DATE_TIME_MECHANISM_SKELETON(o) (G_TYPE_CHECK_INSTANCE_TYPE ((o), TYPE_DATE_TIME_MECHANISM_SKELETON))
++#define IS_DATE_TIME_MECHANISM_SKELETON_CLASS(k) (G_TYPE_CHECK_CLASS_TYPE ((k), TYPE_DATE_TIME_MECHANISM_SKELETON))
++
++typedef struct _DateTimeMechanismSkeleton DateTimeMechanismSkeleton;
++typedef struct _DateTimeMechanismSkeletonClass DateTimeMechanismSkeletonClass;
++typedef struct _DateTimeMechanismSkeletonPrivate DateTimeMechanismSkeletonPrivate;
++
++struct _DateTimeMechanismSkeleton
++{
++  /*< private >*/
++  GDBusInterfaceSkeleton parent_instance;
++  DateTimeMechanismSkeletonPrivate *priv;
++};
++
++struct _DateTimeMechanismSkeletonClass
++{
++  GDBusInterfaceSkeletonClass parent_class;
++};
++
++GType date_time_mechanism_skeleton_get_type (void) G_GNUC_CONST;
++
++DateTimeMechanism *date_time_mechanism_skeleton_new (void);
++
++
++G_END_DECLS
++
++#endif /* __DTM_H__ */
+diff --git a/panels/datetime/meson.build b/panels/datetime/meson.build
+index 2ed0da7..e4c5e70 100644
+--- a/panels/datetime/meson.build
++++ b/panels/datetime/meson.build
+@@ -135,7 +135,9 @@ sources = files(
+   'cc-datetime-panel.c',
+   'cc-timezone-map.c',
+   'date-endian.c',
+-  'tz.c'
++  'tz.c',
++  'dtm.c',
++  'set-timezone.c'
+ )
+ 
+ gdbus = 'timedated'
+diff --git a/panels/datetime/set-timezone.c b/panels/datetime/set-timezone.c
+new file mode 100644
+index 0000000..9e8e258
+--- /dev/null
++++ b/panels/datetime/set-timezone.c
+@@ -0,0 +1,479 @@
++/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
++ *
++ * Copyright (C) 2007 David Zeuthen <david@fubar.dk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ */
++
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <fcntl.h>
++#include <unistd.h>
++#include <string.h>
++#include <sys/wait.h>
++
++#include <dbus/dbus-glib.h>
++#include <dbus/dbus-glib-lowlevel.h>
++
++#include "set-timezone.h"
++
++
++static DBusGConnection *
++get_system_bus (GError **err)
++{
++        GError          *error;
++        static DBusGConnection *bus = NULL;
++
++	if (bus == NULL) {
++        	error = NULL;
++        	bus = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
++        	if (bus == NULL) {
++			g_propagate_error (err, error);
++		}
++        }
++
++        return bus;
++}
++
++#define CACHE_VALIDITY_SEC 2
++
++typedef  void (*CanDoFunc) (gint value);
++
++static void
++notify_can_do (DBusGProxy     *proxy,
++	       DBusGProxyCall *call,
++	       void           *user_data)
++{
++	CanDoFunc callback = user_data;
++	GError *error = NULL;
++	gint value;
++
++	if (dbus_g_proxy_end_call (proxy, call,
++				   &error,
++				   G_TYPE_INT, &value,
++				   G_TYPE_INVALID)) {
++		callback (value);
++	}
++}
++
++static void
++refresh_can_do (const gchar *action, CanDoFunc callback)
++{
++        DBusGConnection *bus;
++        DBusGProxy      *proxy;
++
++        bus = get_system_bus (NULL);
++        if (bus == NULL)
++                return;
++
++	proxy = dbus_g_proxy_new_for_name (bus,
++					   "org.opensettings.DateTimeMechanism",
++					   "/",
++					   "org.opensettings.DateTimeMechanism");
++
++	dbus_g_proxy_begin_call_with_timeout (proxy,
++					      action,
++					      notify_can_do,
++					      callback, NULL,
++					      INT_MAX,
++					      G_TYPE_INVALID);
++}
++
++static gint   settimezone_cache = 0;
++static time_t settimezone_stamp = 0;
++
++static void
++update_can_settimezone (gint res)
++{
++	settimezone_cache = res;
++	time (&settimezone_stamp);
++}
++
++gint
++can_set_system_timezone (void)
++{
++	time_t          now;
++
++	time (&now);
++	if (ABS (now - settimezone_stamp) > CACHE_VALIDITY_SEC) {
++		refresh_can_do ("CanSetTimezone", update_can_settimezone);
++		settimezone_stamp = now;
++	}
++
++	return settimezone_cache;
++}
++
++static gint   settime_cache = 0;
++static time_t settime_stamp = 0;
++
++static void
++update_can_settime (gint res)
++{
++	settime_cache = res;
++	time (&settime_stamp);
++}
++
++gint
++can_set_system_time (void)
++{
++	time_t now;
++
++	time (&now);
++	if (ABS (now - settime_stamp) > CACHE_VALIDITY_SEC) {
++		refresh_can_do ("CanSetTime", update_can_settime);
++		settime_stamp = now;
++	}
++
++	return settime_cache;
++}
++
++static gint   usingntp_cache = 0;
++static time_t usingntp_stamp = 0;
++
++static void
++update_can_usingntp (gint res)
++{
++	usingntp_cache = res;
++	time (&usingntp_stamp);
++}
++
++gint
++can_set_using_ntp (void)
++{
++	time_t now;
++
++	time (&now);
++	if (ABS (now - usingntp_stamp) > CACHE_VALIDITY_SEC) {
++		refresh_can_do ("CanSetUsingNtp", update_can_usingntp);
++		settime_stamp = now;
++	}
++
++	return usingntp_cache;
++}
++
++typedef struct {
++	gint ref_count;
++        gchar *call;
++	gint64 time;
++	gchar *tz;
++	gboolean using_ntp;
++	GFunc callback;
++	gpointer data;
++	GDestroyNotify notify;
++} SetTimeCallbackData;
++
++static void
++free_data (gpointer d)
++{
++	SetTimeCallbackData *data = d;
++
++	data->ref_count--;
++	if (data->ref_count == 0) {
++		if (data->notify)
++			data->notify (data->data);
++		g_free (data->tz);
++		g_free (data);
++	}
++}
++
++static void
++set_time_notify (DBusGProxy     *proxy,
++		 DBusGProxyCall *call,
++		 void           *user_data)
++{
++	SetTimeCallbackData *data = user_data;
++	GError *error = NULL;
++
++	if (dbus_g_proxy_end_call (proxy, call, &error, G_TYPE_INVALID)) {
++		if (data->callback)
++			data->callback (data->data, NULL);
++	}
++	else {
++		if (error->domain == DBUS_GERROR &&
++		    error->code == DBUS_GERROR_NO_REPLY) {
++			/* these errors happen because dbus doesn't
++			 * use monotonic clocks
++			 */	
++			g_warning ("ignoring no-reply error when setting time");
++			g_error_free (error);
++			if (data->callback)
++				data->callback (data->data, NULL);
++		}
++		else {
++			if (data->callback)
++				data->callback (data->data, error);
++			else
++				g_error_free (error);
++		}		
++	}
++}
++
++static void
++set_time_async (SetTimeCallbackData *data)
++{
++        DBusGConnection *bus;
++        DBusGProxy      *proxy;
++	GError          *err = NULL;
++
++        bus = get_system_bus (&err);
++        if (bus == NULL) {
++		if (err) {
++			if (data->callback)
++				data->callback (data->data, err);
++			g_clear_error (&err);
++		}
++		return;
++	}
++
++	proxy = dbus_g_proxy_new_for_name (bus,
++					   "org.opensettings.DateTimeMechanism",
++					   "/",
++					   "org.opensettings.DateTimeMechanism");
++
++	data->ref_count++;
++	if (strcmp (data->call, "SetTime") == 0)
++		dbus_g_proxy_begin_call_with_timeout (proxy,
++						      "SetTime",
++						      set_time_notify,
++						      data, free_data,
++						      INT_MAX,
++						      /* parameters: */
++						      G_TYPE_INT64, data->time,
++						      G_TYPE_INVALID,
++						      /* return values: */
++						      G_TYPE_INVALID);
++	else if (strcmp (data->call, "SetTimezone") == 0)
++		dbus_g_proxy_begin_call_with_timeout (proxy,
++						      "SetTimezone",
++						      set_time_notify,
++						      data, free_data,
++						      INT_MAX,
++						      /* parameters: */
++						      G_TYPE_STRING, data->tz,
++						      G_TYPE_INVALID,
++						      /* return values: */
++						      G_TYPE_INVALID);
++	else if (strcmp (data->call, "SetUsingNtp") == 0)
++		dbus_g_proxy_begin_call_with_timeout (proxy,
++						      "SetUsingNtp",
++						      set_time_notify,
++						      data, free_data,
++						      INT_MAX,
++						      /* parameters: */
++						      G_TYPE_BOOLEAN, data->using_ntp,
++						      G_TYPE_INVALID,
++						      /* return values: */
++						      G_TYPE_INVALID);
++}
++
++void
++set_system_time_async (gint64         time,
++		       GFunc          callback,
++		       gpointer       d,
++		       GDestroyNotify notify)
++{
++	SetTimeCallbackData *data;
++
++	if (time == -1)
++		return;
++
++	data = g_new0 (SetTimeCallbackData, 1);
++	data->ref_count = 1;
++	data->call = "SetTime";
++	data->time = time;
++	data->tz = NULL;
++	data->callback = callback;
++	data->data = d;
++	data->notify = notify;
++
++	set_time_async (data);
++	free_data (data);
++}
++
++void
++set_system_timezone_async (const gchar    *tz,
++			   GFunc           callback,
++			   gpointer        d,
++			   GDestroyNotify  notify)
++{
++	SetTimeCallbackData *data;
++
++	g_return_if_fail (tz != NULL);
++
++	data = g_new0 (SetTimeCallbackData, 1);
++	data->ref_count = 1;
++	data->call = "SetTimezone";
++	data->time = -1;
++	data->tz = g_strdup (tz);
++	data->callback = callback;
++	data->data = d;
++	data->notify = notify;
++
++	set_time_async (data);
++	free_data (data);
++}
++
++/* get timezone */
++
++typedef struct
++{
++  GetTimezoneFunc callback;
++  GDestroyNotify notify;
++
++  gpointer data;
++
++} GetTimezoneData;
++
++static void
++get_timezone_destroy_notify (GetTimezoneData *data)
++{
++	if (data->notify && data->data)
++		data->notify (data);
++
++	g_free (data);
++}
++
++static void
++get_timezone_notify (DBusGProxy     *proxy,
++		     DBusGProxyCall *call,
++		     void           *user_data)
++{
++	GError *error = NULL;
++	gboolean retval;
++	gchar *string = NULL;
++	GetTimezoneData *data = user_data;
++
++	retval = dbus_g_proxy_end_call (proxy, call, &error,
++					G_TYPE_STRING, &string,
++					G_TYPE_INVALID);
++
++	if (data->callback) {
++		if (!retval) {
++			data->callback (data->data, NULL, error);
++			g_error_free (error);
++		}
++		else {
++			data->callback (data->data, string, NULL);
++			g_free (string);
++		}
++	}
++}
++
++void
++get_system_timezone_async (GetTimezoneFunc callback,
++			   gpointer        user_data,
++			   GDestroyNotify  notify)
++{
++	DBusGConnection *bus;
++	DBusGProxy      *proxy;
++	GetTimezoneData *data;
++	GError          *error = NULL;
++
++	bus = get_system_bus (&error);
++	if (bus == NULL) {
++		if (error) {
++			if (callback)
++				callback (user_data, NULL, error);
++			g_clear_error (&error);
++		}
++		return;
++
++        }
++
++	data = g_new0 (GetTimezoneData, 1);
++	data->data = user_data;
++	data->notify = notify;
++	data->callback = callback;
++
++	proxy = dbus_g_proxy_new_for_name (bus,
++					   "org.opensettings.DateTimeMechanism",
++					   "/",
++					   "org.opensettings.DateTimeMechanism");
++
++	dbus_g_proxy_begin_call (proxy,
++				 "GetTimezone",
++				 get_timezone_notify,
++				 data,
++				 (GDestroyNotify) get_timezone_destroy_notify,
++				 /* parameters: */
++				 G_TYPE_INVALID,
++				 /* return values: */
++				 G_TYPE_STRING,
++				 G_TYPE_INVALID);
++
++}
++
++gboolean
++get_using_ntp (void)
++{
++	static gboolean is_using_cache = FALSE;
++	static time_t   last_refreshed = 0;
++	time_t          now;
++        DBusGConnection *bus;
++        DBusGProxy      *proxy;
++
++	time (&now);
++	if (ABS (now - last_refreshed) > CACHE_VALIDITY_SEC) {
++		gboolean cu, iu;
++		bus = get_system_bus (NULL);
++		if (bus == NULL)
++			return FALSE;
++
++		proxy = dbus_g_proxy_new_for_name (bus,
++						   "org.opensettings.DateTimeMechanism",
++						   "/",
++						   "org.opensettings.DateTimeMechanism");
++
++
++		if (dbus_g_proxy_call (proxy,
++				       "GetUsingNtp",
++				       NULL,
++				       G_TYPE_INVALID,
++				       G_TYPE_BOOLEAN, &cu,
++				       G_TYPE_BOOLEAN, &iu,
++				       G_TYPE_INVALID)) {
++			is_using_cache = iu;
++			last_refreshed = now;
++		}
++	}
++
++	return is_using_cache;
++}
++
++void
++set_using_ntp_async (gboolean        using_ntp,
++	             GFunc           callback,
++	             gpointer        d,
++	             GDestroyNotify  notify)
++{
++	SetTimeCallbackData *data;
++
++	data = g_new0 (SetTimeCallbackData, 1);
++	data->ref_count = 1;
++	data->call = "SetUsingNtp";
++	data->time = -1;
++	data->using_ntp = using_ntp;
++	data->callback = callback;
++	data->data = d;
++	data->notify = notify;
++
++	set_time_async (data);
++	free_data (data);
++}
+diff --git a/panels/datetime/set-timezone.h b/panels/datetime/set-timezone.h
+new file mode 100644
+index 0000000..5e657e3
+--- /dev/null
++++ b/panels/datetime/set-timezone.h
+@@ -0,0 +1,57 @@
++/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
++ *
++ * Copyright (C) 2007 David Zeuthen <david@fubar.dk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ */
++
++#ifndef __SET_SYSTEM_TIMEZONE_H__
++
++#include <config.h>
++
++#include <glib.h>
++#include <time.h>
++
++typedef void (*GetTimezoneFunc) (gpointer     data,
++                                 const gchar *timezone,
++                                 GError      *error);
++void     get_system_timezone_async   (GetTimezoneFunc callback,
++                                      gpointer        data,
++                                      GDestroyNotify  notify);
++
++gint     can_set_system_timezone (void);
++
++gint     can_set_system_time     (void);
++
++gint     can_set_using_ntp       (void);
++
++void     set_system_time_async   (gint64         time,
++                                  GFunc          callback,
++                                  gpointer       data,
++                                  GDestroyNotify notify);
++
++void     set_system_timezone_async   (const gchar    *tz,
++                                      GFunc           callback,
++                                      gpointer        data,
++                                      GDestroyNotify  notify);
++
++gboolean get_using_ntp               (void);
++
++void     set_using_ntp_async         (gboolean        using_ntp,
++                                      GFunc           callback,
++                                      gpointer        data,
++                                      GDestroyNotify  notify);
++#endif
+-- 
+2.24.0
+
