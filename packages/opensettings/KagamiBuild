@@ -1,0 +1,19 @@
+# Description: Fork of few GSD components to make GNOME work without systemd
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson dbus-glib polkit
+# Section:     admin
+
+name=opensettings
+version=7632b6bf2e71542bc5607bff79122fbf31f7a3d8
+release=1
+source=("https://github.com/ataraxialinux/opensettings/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
