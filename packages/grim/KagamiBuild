@@ -1,0 +1,19 @@
+# Description: Screenshot utility for Wayland
+# URL:         https://github.com/emersion/grim
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson wayland-protocols libjpeg-turbo pango
+# Section:     x11
+
+name=grim
+version=1.2.0
+release=1
+source=("https://github.com/emersion/grim/releases/download/v${version}/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
