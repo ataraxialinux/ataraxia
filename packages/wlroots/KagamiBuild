@@ -1,0 +1,20 @@
+# Description: Modular Wayland compositor library
+# URL:         https://github.com/swaywm/wlroots
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson eudev wayland-protocols pixman mesa libinput libxkbcommon xcb-util-errors xcb-util-image xcb-util-wm
+# Section:     x11
+
+name=wlroots
+version=0.8.1
+release=1
+source=("https://github.com/swaywm/wlroots/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dlogind=disabled
+	ninja
+	DESTDIR="$PKG" ninja install
+}
