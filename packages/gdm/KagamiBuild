@@ -6,7 +6,7 @@
 
 name=gdm
 version=3.34.1
-release=10
+release=11
 backup=('etc/gdm/custom.conf'
 	'etc/gdm/PostSession/Default'
 	'etc/gdm/PreSession/Default'
@@ -20,8 +20,8 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gdm/0001-add-support-Ataraxia-Linux-PAM.patch
 	patch -Np1 -i "$STUFF"/gdm/0001-restore-consolekit-support.patch
-	patch -Np1 -i "$STUFF"/gdm/gdm.patch
 	autoreconf -vif
 
 	./configure $BUILDFLAGS \
