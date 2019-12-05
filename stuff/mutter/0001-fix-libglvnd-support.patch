@@ -1,0 +1,65 @@
+From 8e6bd33229eb70b5ec11e9bccac6a248287bff2b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 5 Dec 2019 19:50:29 +0900
+Subject: [PATCH] fix libglvnd support
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ cogl/cogl/meson.build       | 2 +-
+ src/backends/meta-egl-ext.h | 1 +
+ src/backends/meta-egl.c     | 1 +
+ src/backends/meta-egl.h     | 1 +
+ 4 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/cogl/cogl/meson.build b/cogl/cogl/meson.build
+index 1057ef9..9a64294 100644
+--- a/cogl/cogl/meson.build
++++ b/cogl/cogl/meson.build
+@@ -48,7 +48,7 @@ cogl_gl_header_h = configure_file(
+ built_headers += [cogl_gl_header_h]
+ 
+ if have_egl
+-  cogl_egl_includes_string = '#include <EGL/egl.h>\n#include <EGL/eglext.h>'
++  cogl_egl_includes_string = '#include <EGL/egl.h>\n#include <EGL/eglext.h>\n#include <EGL/eglmesaext.h>'
+ else
+   cogl_egl_includes_string = ''
+ endif
+diff --git a/src/backends/meta-egl-ext.h b/src/backends/meta-egl-ext.h
+index 8705e7d..db0b74f 100644
+--- a/src/backends/meta-egl-ext.h
++++ b/src/backends/meta-egl-ext.h
+@@ -29,6 +29,7 @@
+ 
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
++#include <EGL/eglmesaext.h>
+ 
+ /*
+  * This is a little different to the tests shipped with EGL implementations,
+diff --git a/src/backends/meta-egl.c b/src/backends/meta-egl.c
+index 6554be9..fdeff4f 100644
+--- a/src/backends/meta-egl.c
++++ b/src/backends/meta-egl.c
+@@ -27,6 +27,7 @@
+ 
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
++#include <EGL/eglmesaext.h>
+ #include <gio/gio.h>
+ #include <glib.h>
+ #include <glib-object.h>
+diff --git a/src/backends/meta-egl.h b/src/backends/meta-egl.h
+index f2a8164..4591e7d 100644
+--- a/src/backends/meta-egl.h
++++ b/src/backends/meta-egl.h
+@@ -28,6 +28,7 @@
+ 
+ #include <EGL/egl.h>
+ #include <EGL/eglext.h>
++#include <EGL/eglmesaext.h>
+ #include <glib-object.h>
+ 
+ #define META_EGL_ERROR meta_egl_error_quark ()
+-- 
+2.24.0
+
