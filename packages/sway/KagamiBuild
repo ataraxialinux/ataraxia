@@ -1,0 +1,21 @@
+# Description: i3-compatible Wayland compositor
+# URL:         https://swaywm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson pcre wlroots json-c pango gdk-pixbuf librsvg
+# Section:     x11
+
+name=sway
+version=1.2
+release=1
+backup=('etc/sway/config')
+source=("https://github.com/swaywm/sway/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dwerror=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
