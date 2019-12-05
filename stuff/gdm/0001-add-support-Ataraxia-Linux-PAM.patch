@@ -1,0 +1,210 @@
+From 0e7973641d059ca9158719a240db37c38ca4269a Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 5 Dec 2019 23:59:11 +0900
+Subject: [PATCH] add support for Ataraxia Linux PAM
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ configure.ac                                 |  7 ++++++-
+ data/Makefile.am                             | 12 ++++++++++++
+ data/pam-ataraxia/gdm-autologin.pam          | 15 +++++++++++++++
+ data/pam-ataraxia/gdm-fingerprint.pam        | 16 ++++++++++++++++
+ data/pam-ataraxia/gdm-launch-environment.pam | 12 ++++++++++++
+ data/pam-ataraxia/gdm-password.pam           | 13 +++++++++++++
+ data/pam-ataraxia/gdm-pin.pam                | 15 +++++++++++++++
+ data/pam-ataraxia/gdm-smartcard.pam          | 16 ++++++++++++++++
+ 8 files changed, 105 insertions(+), 1 deletion(-)
+ create mode 100644 data/pam-ataraxia/gdm-autologin.pam
+ create mode 100644 data/pam-ataraxia/gdm-fingerprint.pam
+ create mode 100644 data/pam-ataraxia/gdm-launch-environment.pam
+ create mode 100644 data/pam-ataraxia/gdm-password.pam
+ create mode 100644 data/pam-ataraxia/gdm-pin.pam
+ create mode 100644 data/pam-ataraxia/gdm-smartcard.pam
+
+diff --git a/configure.ac b/configure.ac
+index db85229..06a95be 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -206,13 +206,17 @@ if test x$with_default_pam_config = x; then
+ 	AC_CHECK_FILE(/etc/exherbo-release,with_default_pam_config="exherbo")
+ 	AC_CHECK_FILE(/etc/arch-release,with_default_pam_config="arch")
+ 	AC_CHECK_FILE(/etc/lfs-release,with_default_pam_config="lfs")
++	AC_CHECK_FILE(/etc/ataraxia-release,with_default_pam_config="ataraxia")
++	AC_CHECK_FILE(/etc/ataraxialinux-release,with_default_pam_config="ataraxia")
++	AC_CHECK_FILE(/etc/janus-release,with_default_pam_config="ataraxia")
++	AC_CHECK_FILE(/etc/januslinux-release,with_default_pam_config="ataraxia")
+ 	dnl If not autodetected, default to none
+ 	if test x$with_default_pam_config = x; then
+ 	  with_default_pam_config=none
+ 	fi
+ fi
+ case x$with_default_pam_config in
+-     xredhat|xopenembedded|xexherbo|xlfs|xarch|xnone) ;;
++     xredhat|xopenembedded|xexherbo|xlfs|xarch|xataraxia|xnone) ;;
+      *)
+        AC_MSG_ERROR([Invalid --with-default-pam-config ${with_default_pam_config}])
+        exit 1
+@@ -223,6 +227,7 @@ AM_CONDITIONAL(ENABLE_OPENEMBEDDED_PAM_CONFIG, test x$with_default_pam_config =
+ AM_CONDITIONAL(ENABLE_EXHERBO_PAM_CONFIG, test x$with_default_pam_config = xexherbo)
+ AM_CONDITIONAL(ENABLE_LFS_PAM_CONFIG, test x$with_default_pam_config = xlfs)
+ AM_CONDITIONAL(ENABLE_ARCH_PAM_CONFIG, test x$with_default_pam_config = xarch)
++AM_CONDITIONAL(ENABLE_ATARAXIA_PAM_CONFIG, test x$with_default_pam_config = xataraxia)
+ 
+ AC_CHECK_HEADERS([security/pam_modules.h security/pam_modutil.h security/pam_ext.h],
+                  [have_pam=yes],
+diff --git a/data/Makefile.am b/data/Makefile.am
+index bda9160..5dad142 100644
+--- a/data/Makefile.am
++++ b/data/Makefile.am
+@@ -136,6 +136,15 @@ pam_arch_files = pam-arch/gdm-autologin.pam	\
+ 	$(NULL)
+ EXTRA_DIST += $(pam_arch_files)
+ 
++pam_ataraxia_files = pam-arch/gdm-autologin.pam	\
++	pam-ataraxia/gdm-launch-environment.pam	\
++	pam-ataraxia/gdm-fingerprint.pam		\
++	pam-ataraxia/gdm-smartcard.pam		\
++	pam-ataraxia/gdm-password.pam		\
++	pam-ataraxia/gdm-pin.pam			\
++	$(NULL)
++EXTRA_DIST += $(pam_ataraxia_files)
++
+ if ENABLE_REDHAT_PAM_CONFIG
+ pam_files = $(pam_redhat_files)
+ endif
+@@ -151,6 +160,9 @@ endif
+ if ENABLE_ARCH_PAM_CONFIG
+ pam_files = $(pam_arch_files)
+ endif
++if ENABLE_ATARAXIA_PAM_CONFIG
++pam_files = $(pam_ataraxia_files)
++endif
+ 
+ if INSTALL_UDEV_RULES
+ udevrulesdir = $(UDEV_DIR)/rules.d
+diff --git a/data/pam-ataraxia/gdm-autologin.pam b/data/pam-ataraxia/gdm-autologin.pam
+new file mode 100644
+index 0000000..3239962
+--- /dev/null
++++ b/data/pam-ataraxia/gdm-autologin.pam
+@@ -0,0 +1,15 @@
++auth     requisite pam_nologin.so
++auth     required  pam_env.so
++auth     required  pam_succeed_if.so uid >= 1000 quiet
++auth     optional  pam_gdm.so
++auth     optional  pam_gnome_keyring.so
++auth     optional  pam_permit.so
++
++account  include   system-local-login
++
++password include   system-local-login
++
++session  optional  pam_keyinit.so force revoke
++session  required  pam_limits.so
++session  include   system-local-login
++session  optional  pam_gnome_keyring.so auto_start
+diff --git a/data/pam-ataraxia/gdm-fingerprint.pam b/data/pam-ataraxia/gdm-fingerprint.pam
+new file mode 100644
+index 0000000..2967bcb
+--- /dev/null
++++ b/data/pam-ataraxia/gdm-fingerprint.pam
+@@ -0,0 +1,16 @@
++auth     required  pam_tally.so onerr=succeed file=/var/log/faillog
++auth     required  pam_shells.so
++auth     requisite pam_nologin.so
++auth     required  pam_env.so
++auth     required  pam_succeed_if.so uid >= 1000 quiet
++auth     required  pam_fprintd.so
++auth     optional  pam_permit.so
++
++account  include   system-local-login
++
++password required  pam_fprintd.so
++password optional  pam_permit.so
++
++session  optional  pam_keyinit.so force revoke
++session  required  pam_limits.so
++session  include   system-local-login
+diff --git a/data/pam-ataraxia/gdm-launch-environment.pam b/data/pam-ataraxia/gdm-launch-environment.pam
+new file mode 100644
+index 0000000..d3db5b4
+--- /dev/null
++++ b/data/pam-ataraxia/gdm-launch-environment.pam
+@@ -0,0 +1,12 @@
++auth     required  pam_succeed_if.so audit quiet_success user = gdm
++auth     required  pam_env.so
++auth     optional  pam_permit.so
++
++account  required  pam_succeed_if.so audit quiet_success user = gdm
++account  include   system-local-login
++
++password required  pam_deny.so
++
++session  required  pam_succeed_if.so audit quiet_success user = gdm
++session  optional  pam_keyinit.so force revoke
++session  optional  pam_permit.so
+diff --git a/data/pam-ataraxia/gdm-password.pam b/data/pam-ataraxia/gdm-password.pam
+new file mode 100644
+index 0000000..6d92c45
+--- /dev/null
++++ b/data/pam-ataraxia/gdm-password.pam
+@@ -0,0 +1,13 @@
++auth     include   system-local-login
++auth     optional  pam_gnome_keyring.so
++
++auth     required  pam_succeed_if.so uid >= 1000 quiet
++account  include   system-local-login
++
++password include   system-local-login
++password optional  pam_gnome_keyring.so use_authtok
++
++session  optional  pam_keyinit.so force revoke
++session  required  pam_limits.so
++session  include   system-local-login
++session  optional  pam_gnome_keyring.so auto_start
+diff --git a/data/pam-ataraxia/gdm-pin.pam b/data/pam-ataraxia/gdm-pin.pam
+new file mode 100644
+index 0000000..eacba70
+--- /dev/null
++++ b/data/pam-ataraxia/gdm-pin.pam
+@@ -0,0 +1,15 @@
++auth     requisite pam_pin.so
++auth     include   system-local-login
++auth     required  pam_succeed_if.so uid >= 1000 quiet
++auth     optional  pam_gnome_keyring.so
++
++account  include   system-local-login
++
++password include   system-local-login
++password optional  pam_pin.so
++password optional  pam_gnome_keyring.so use_authtok
++
++session  optional  pam_keyinit.so force revoke
++session  required  pam_limits.so
++session  include   system-local-login
++session  optional  pam_gnome_keyring.so auto_start
+diff --git a/data/pam-ataraxia/gdm-smartcard.pam b/data/pam-ataraxia/gdm-smartcard.pam
+new file mode 100644
+index 0000000..7189ad8
+--- /dev/null
++++ b/data/pam-ataraxia/gdm-smartcard.pam
+@@ -0,0 +1,16 @@
++auth     required  pam_tally.so onerr=succeed file=/var/log/faillog
++auth     required  pam_shells.so
++auth     requisite pam_nologin.so
++auth     required  pam_env.so
++auth     required  pam_succeed_if.so uid >= 1000 quiet
++auth     required  pam_pkcs11.so wait_for_card card_only
++auth     optional  pam_permit.so
++
++account  include   system-local-login
++
++password required  pam_pkcs11.so
++password optional  pam_permit.so
++
++session  required  pam_limits.so
++session  optional  pam_keyinit.so force revoke
++session  include   system-local-login
+-- 
+2.24.0
+
