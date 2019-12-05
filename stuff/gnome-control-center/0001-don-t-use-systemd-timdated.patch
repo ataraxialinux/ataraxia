@@ -1,24 +1,26 @@
-From abff80efe58db4e16bc5dba75f087979cfbd08fa Mon Sep 17 00:00:00 2001
+From 13a3d6199324a9d58cdbce8bfa239bd8e0545938 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 5 Dec 2019 03:31:03 +0900
+Date: Thu, 5 Dec 2019 22:12:26 +0900
 Subject: [PATCH] don't use systemd-timdated
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- panels/datetime/cc-datetime-panel.c |  145 +-
+ panels/datetime/cc-datetime-panel.c |  147 +-
  panels/datetime/dtm.c               | 3066 +++++++++++++++++++++++++++
  panels/datetime/dtm.h               |  475 +++++
  panels/datetime/meson.build         |    4 +-
+ panels/datetime/meson.build.orig    |  199 ++
  panels/datetime/set-timezone.c      |  479 +++++
  panels/datetime/set-timezone.h      |   57 +
- 6 files changed, 4150 insertions(+), 76 deletions(-)
+ 7 files changed, 4352 insertions(+), 75 deletions(-)
  create mode 100644 panels/datetime/dtm.c
  create mode 100644 panels/datetime/dtm.h
+ create mode 100644 panels/datetime/meson.build.orig
  create mode 100644 panels/datetime/set-timezone.c
  create mode 100644 panels/datetime/set-timezone.h
 
 diff --git a/panels/datetime/cc-datetime-panel.c b/panels/datetime/cc-datetime-panel.c
-index 082328d..5f10635 100644
+index 082328d..1cd0849 100644
 --- a/panels/datetime/cc-datetime-panel.c
 +++ b/panels/datetime/cc-datetime-panel.c
 @@ -27,7 +27,7 @@
@@ -251,25 +253,19 @@ index 082328d..5f10635 100644
    if (self->dtm == NULL) {
          g_warning ("could not get proxy for DateTimeMechanism: %s", error->message);
          return;
-@@ -1206,7 +1205,7 @@ cc_date_time_panel_init (CcDateTimePanel *self)
-   gtk_box_pack_end (GTK_BOX (self->time_box), self->date_grid, FALSE, TRUE, 0);
+@@ -1281,17 +1280,17 @@ cc_date_time_panel_init (CcDateTimePanel *self)
  
-   /* add the lock button */
--  self->permission = polkit_permission_new_sync (DATETIME_PERMISSION, NULL, NULL, NULL);
-+  self->permission = polkit_permission_new_sync (DATETIME_TZ_PERMISSION, NULL, NULL, NULL);
-   self->tz_permission = polkit_permission_new_sync (DATETIME_TZ_PERMISSION, NULL, NULL, NULL);
-   if (self->permission != NULL)
-     {
-@@ -1216,7 +1215,7 @@ cc_date_time_panel_init (CcDateTimePanel *self)
-   else
-     {
-       g_warning ("Your system does not have the '%s' PolicyKit files installed. Please check your installation",
--                 DATETIME_PERMISSION);
-+                 DATETIME_TZ_PERMISSION);
-     }
-   gtk_lock_button_set_permission (GTK_LOCK_BUTTON (self->lock_button), self->permission);
+   /* After the initial setup, so we can be sure that
+    * the model is filled up */
+-  get_initial_timezone (self);
++  //get_initial_timezone (self);
++  date_time_mechanism_call_get_timezone (self->dtm,
++                                         self->cancellable,
++                                         get_timezone_cb,
++                                         self);
  
-@@ -1288,10 +1287,6 @@ cc_date_time_panel_init (CcDateTimePanel *self)
+   g_signal_connect_object (gtk_entry_get_completion (GTK_ENTRY (self->timezone_searchentry)),
+                            "match-selected", G_CALLBACK (city_changed_cb), self, G_CONNECT_SWAPPED);
  
    g_signal_connect_object (self->map, "location-changed",
                             G_CALLBACK (location_changed_cb), self, G_CONNECT_SWAPPED);
@@ -3834,10 +3830,10 @@ index 0000000..516f80b
 +
 +#endif /* __DTM_H__ */
 diff --git a/panels/datetime/meson.build b/panels/datetime/meson.build
-index 2ed0da7..e4c5e70 100644
+index df0cbfa..33827b7 100644
 --- a/panels/datetime/meson.build
 +++ b/panels/datetime/meson.build
-@@ -135,7 +135,9 @@ sources = files(
+@@ -133,7 +133,9 @@ sources = files(
    'cc-datetime-panel.c',
    'cc-timezone-map.c',
    'date-endian.c',
@@ -3848,6 +3844,211 @@ index 2ed0da7..e4c5e70 100644
  )
  
  gdbus = 'timedated'
+diff --git a/panels/datetime/meson.build.orig b/panels/datetime/meson.build.orig
+new file mode 100644
+index 0000000..df0cbfa
+--- /dev/null
++++ b/panels/datetime/meson.build.orig
+@@ -0,0 +1,199 @@
++panels_list += cappletname
++desktop = 'gnome-@0@-panel.desktop'.format(cappletname)
++
++desktop_in = configure_file(
++  input: desktop + '.in.in',
++  output: desktop + '.in',
++  configuration: desktop_conf
++)
++
++i18n.merge_file(
++  desktop,
++  type: 'desktop',
++  input: desktop_in,
++  output: desktop,
++  po_dir: po_dir,
++  install: true,
++  install_dir: control_center_desktopdir
++)
++
++polkit = 'org.gnome.controlcenter.@0@.policy'.format(cappletname)
++
++i18n.merge_file(
++  polkit,
++  input: polkit + '.in',
++  output: polkit,
++  po_dir: po_dir,
++  install: true,
++  install_dir: join_paths(control_center_datadir, 'polkit-1', 'actions')
++)
++
++resource_data = files(
++  'data/bg_dim.png',
++  'data/bg.png',
++  'data/cc.png',
++  'data/pin.png',
++  'data/timezone_0_dim.png',
++  'data/timezone_0.png',
++  'data/timezone_10.5_dim.png',
++  'data/timezone_10.5.png',
++  'data/timezone_-10_dim.png',
++  'data/timezone_10_dim.png',
++  'data/timezone_-10.png',
++  'data/timezone_10.png',
++  'data/timezone_11.5_dim.png',
++  'data/timezone_11.5.png',
++  'data/timezone_-11_dim.png',
++  'data/timezone_11_dim.png',
++  'data/timezone_-11.png',
++  'data/timezone_11.png',
++  'data/timezone_12.75_dim.png',
++  'data/timezone_12.75.png',
++  'data/timezone_12_dim.png',
++  'data/timezone_12.png',
++  'data/timezone_13_dim.png',
++  'data/timezone_13.png',
++  'data/timezone_14_dim.png',
++  'data/timezone_14.png',
++  'data/timezone_-1_dim.png',
++  'data/timezone_1_dim.png',
++  'data/timezone_-1.png',
++  'data/timezone_1.png',
++  'data/timezone_-2_dim.png',
++  'data/timezone_2_dim.png',
++  'data/timezone_-2.png',
++  'data/timezone_2.png',
++  'data/timezone_-3.5_dim.png',
++  'data/timezone_3.5_dim.png',
++  'data/timezone_-3.5.png',
++  'data/timezone_3.5.png',
++  'data/timezone_-3_dim.png',
++  'data/timezone_3_dim.png',
++  'data/timezone_-3.png',
++  'data/timezone_3.png',
++  'data/timezone_4.5_dim.png',
++  'data/timezone_4.5.png',
++  'data/timezone_-4_dim.png',
++  'data/timezone_4_dim.png',
++  'data/timezone_-4.png',
++  'data/timezone_4.png',
++  'data/timezone_-5.5_dim.png',
++  'data/timezone_5.5_dim.png',
++  'data/timezone_-5.5.png',
++  'data/timezone_5.5.png',
++  'data/timezone_5.75_dim.png',
++  'data/timezone_5.75.png',
++  'data/timezone_-5_dim.png',
++  'data/timezone_5_dim.png',
++  'data/timezone_-5.png',
++  'data/timezone_5.png',
++  'data/timezone_6.5_dim.png',
++  'data/timezone_6.5.png',
++  'data/timezone_-6_dim.png',
++  'data/timezone_6_dim.png',
++  'data/timezone_-6.png',
++  'data/timezone_6.png',
++  'data/timezone_-7_dim.png',
++  'data/timezone_7_dim.png',
++  'data/timezone_-7.png',
++  'data/timezone_7.png',
++  'data/timezone_8.5_dim.png',
++  'data/timezone_8.5.png',
++  'data/timezone_8.75_dim.png',
++  'data/timezone_8.75.png',
++  'data/timezone_-8_dim.png',
++  'data/timezone_8_dim.png',
++  'data/timezone_-8.png',
++  'data/timezone_8.png',
++  'data/timezone_-9.5_dim.png',
++  'data/timezone_9.5_dim.png',
++  'data/timezone_-9.5.png',
++  'data/timezone_9.5.png',
++  'data/timezone_-9_dim.png',
++  'data/timezone_9_dim.png',
++  'data/timezone_-9.png',
++  'data/timezone_9.png',
++  'backward',
++  'big.ui',
++  'cc-datetime-panel.ui',
++  'little.ui',
++  'middle.ui',
++  'ydm.ui'
++)
++
++resources = gnome.compile_resources(
++  'cc-' + cappletname + '-resources',
++  cappletname + '.gresource.xml',
++  c_name: 'cc_' + cappletname,
++  dependencies: resource_data,
++  export: true
++)
++
++sources = files(
++  'cc-datetime-panel.c',
++  'cc-timezone-map.c',
++  'date-endian.c',
++  'tz.c'
++)
++
++gdbus = 'timedated'
++gdbus_iface_xml = gdbus + '1-interface.xml'
++
++# This requires running d-bus session and accessible timedate1 daemon
++# FIXME: need to find a way how to filter out unnecessary d-bus stuff (introspectable, properties)
++#timedated1-interface.xml:
++# gdbus introspect          \
++#   --xml           \
++#   --system          \
++#   --dest org.freedesktop.timedate1    \
++#   --object-path /org/freedesktop/timedate1  \
++#    > timedated1-interface.xml
++'''
++gdbus_iface = custom_target(
++  gdbus_iface_xml,
++  output: gdbus_iface_xml,
++  capture: true,
++  command: [
++    find_program('gdbus'),
++    'introspect',
++    '--xml',
++    '--system',
++    '--dest', 'org.freedesktop.timedate1',
++    '--object-path', '/org/freedesktop/timedate1'
++  ],
++)
++'''
++
++sources += gnome.gdbus_codegen(
++  gdbus,
++  gdbus_iface_xml,
++  interface_prefix: 'org.freedesktop.'
++)
++
++deps = common_deps + [
++  gdk_pixbuf_dep,
++  gnome_desktop_dep,
++  polkit_gobject_dep
++]
++
++cflags += [
++  '-DGNOMECC_DATA_DIR="@0@"'.format(control_center_pkgdatadir)
++]
++
++datetime_panel_lib = static_library(
++  cappletname,
++  sources: sources + resources,
++  include_directories: [ top_inc, common_inc ],
++  dependencies: deps,
++  c_args: cflags
++)
++panels_libs += datetime_panel_lib
++
++datetime_panel_lib_dep = declare_dependency(
++              sources : resources,
++  include_directories : [top_inc, include_directories('.')],
++            link_with : datetime_panel_lib
++)
++
++subdir('po-timezones')
++subdir('icons')
 diff --git a/panels/datetime/set-timezone.c b/panels/datetime/set-timezone.c
 new file mode 100644
 index 0000000..9e8e258
