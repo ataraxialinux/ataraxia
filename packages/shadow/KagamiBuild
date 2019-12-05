@@ -31,7 +31,6 @@ build() {
 	patch -p0 -i "$STUFF"/shadow/xstrdup.patch
 
 	sed -i '/^SUBDIRS/s/pam\.d//' etc/Makefile.in
-	sed -i -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD SHA512@' etc/login.defs
 	sed -i 's/1000/100/' etc/useradd
 
 	./configure $BUILDFLAGS \
@@ -49,6 +48,8 @@ build() {
 		--disable-nls
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/shadow/login.defs "$PKG"/etc/login.defs
 
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
