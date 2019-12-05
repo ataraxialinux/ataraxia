@@ -10,7 +10,7 @@ case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-release=1
+release=2
 options=('~strip' 'bootstrap' '~ccache')
 source=("http://linux-libre.fsfla.org/pub/linux-libre/releases/${version}-gnu/linux-libre-${version}-gnu.tar.xz")
 
@@ -238,7 +238,7 @@ generate_config() {
 		POWER_SUPPLY PM_RUNTIME PANTHERLORD_FF PERF_EVENTS KSM KALLSYMS_ALL KEY_DH_OPERATIONS PREEMPTION \
 		MEMORY_HOTPLUG ZPOOL ZBUD ZSMALLOC TRANSPARENT_HUGEPAGE FW_LOADER_COMPRESS FW_LOADER_USER_HELPER INIT_ON_ALLOC_DEFAULT_ON GCC_PLUGIN_STRUCTLEAK_BYREF \
 		FS_VERITY CPU_IDLE_GOV_HALTPOLL SIGNED_PE_FILE_VERIFICATION UNUSED_SYMBOLS SECURITY_LOCKDOWN_LSM LOCK_DOWN_KERNEL_FORCE_NONE SECURITY_LOCKDOWN_LSM_EARLY \
-		RANDOMIZE_BASE RANDOMIZE_MEMORY ARCH_HAS_ELF_RANDOMIZE RELOCATABLE PROC_RESTRICT_ACCESS
+		RANDOMIZE_BASE RANDOMIZE_MEMORY ARCH_HAS_ELF_RANDOMIZE RELOCATABLE
 
 	# core (modules)
 	mconfig I2C_HID INPUT_GPIO_ROTARY_ENCODER INPUT_JOYDEV INPUT_POLLDEV INPUT_MATRIXKMAP VHOST_NET VHOST_VSOCK \
@@ -948,7 +948,6 @@ build() {
 	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
 	patch -Np1 -i "$STUFF"/linux/blk.patch
-	patch -Np1 -i "$STUFF"/linux/proc.patch
 
 	case $BARCH in
 		riscv64|riscv32)
