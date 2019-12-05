@@ -1,0 +1,28 @@
+# Description: Network traffic and protocol analyzer/sniffer
+# URL:         https://www.wireshark.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja pcre libpcap glib libgcrypt qt5
+# Section:     net
+
+name=wireshark
+version=3.0.6
+release=1
+options=('~emptydirs')
+source=("https://www.wireshark.org/download/src/all-versions/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/wireshark/fix-udpdump.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_INSTALL_RPATH= \
+		-DCMAKE_SKIP_RPATH=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
