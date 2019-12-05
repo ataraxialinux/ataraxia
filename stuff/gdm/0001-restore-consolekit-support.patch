@@ -1,89 +1,40 @@
-From 0d785b2ca39cae4b8bda6cd302f4ba916f23f0be Mon Sep 17 00:00:00 2001
+From 781f73e975ebb1f31d16cdc7c6031fe923da8e88 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sat, 30 Nov 2019 04:15:08 +0900
-Subject: [PATCH] consolekit
+Date: Fri, 6 Dec 2019 03:37:51 +0900
+Subject: [PATCH] restore consolekit support
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- Makefile.am                        |   1 -
- common/gdm-address.c               |   4 +-
- common/gdm-common.c                | 447 ++++++++++++++++------
- common/gdm-common.h                |  13 +-
- common/gdm-log.c                   |  25 ++
- configure.ac                       |  55 ++-
- daemon/Makefile.am                 |  10 +
- daemon/gdm-launch-environment.c    |   5 +
+ common/gdm-common.c                | 442 ++++++++++++++++-------
+ common/gdm-common.h                |   3 +
+ common/gdm-log.c                   |  28 ++
+ configure.ac                       |  91 ++++-
+ daemon/Makefile.am                 |   9 +
+ daemon/gdm-launch-environment.c    |   6 +
  daemon/gdm-local-display-factory.c |  42 ++-
- daemon/gdm-manager.c               | 586 ++++++++++++++++++++++++-----
- daemon/gdm-server.c                | 161 ++++----
- daemon/gdm-session-record.c        | 100 ++++-
+ daemon/gdm-manager.c               | 549 ++++++++++++++++++++++++++---
+ daemon/gdm-server.c                |  64 +++-
  daemon/gdm-session-worker-job.c    |   2 +
- daemon/gdm-session-worker.c        | 290 +++++++++++++-
+ daemon/gdm-session-worker.c        | 272 +++++++++++++-
  daemon/gdm-session-worker.xml      |   3 +
  daemon/gdm-session.c               |  25 ++
  daemon/gdm-session.h               |   2 +
- daemon/main.c                      |  15 -
- libgdm/Makefile.am                 |   1 -
- libgdm/gdm-user-switching.c        | 357 +++++++++++++++++-
- 20 files changed, 1794 insertions(+), 350 deletions(-)
+ data/Makefile.am                   |   4 +
+ libgdm/gdm-user-switching.c        | 334 +++++++++++++++++-
+ 16 files changed, 1679 insertions(+), 197 deletions(-)
 
-diff --git a/Makefile.am b/Makefile.am
-index 7896f59..5016fda 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -7,7 +7,6 @@ SUBDIRS = 			\
- 	daemon 			\
- 	libgdm 			\
- 	utils 			\
--	pam_gdm			\
- 	po 			\
- 	tests 			\
- 	$(NULL)
-diff --git a/common/gdm-address.c b/common/gdm-address.c
-index a8b73e2..e51cece 100644
---- a/common/gdm-address.c
-+++ b/common/gdm-address.c
-@@ -29,6 +29,8 @@
- #include <stropts.h>
- #endif
- #include <string.h>
-+#include <sys/types.h>
-+#include <sys/param.h>
- #ifdef HAVE_SYS_SOCKET_H
- #include <sys/socket.h>
- #endif
-@@ -37,7 +39,6 @@
- #endif
- #include <netdb.h>
- #include <sys/ioctl.h>
--#include <net/if.h>
- 
- #ifndef G_OS_WIN32
- #include <sys/select.h>
-@@ -47,6 +48,7 @@
- #include <winsock2.h>
- #include <ws2tcpip.h>
- #endif
-+#include <net/if.h>
- 
- #include <glib-object.h>
- 
 diff --git a/common/gdm-common.c b/common/gdm-common.c
-index 41bdb38..6e88c99 100644
+index 41bdb38..23645f8 100644
 --- a/common/gdm-common.c
 +++ b/common/gdm-common.c
-@@ -36,12 +36,25 @@
+@@ -36,7 +36,20 @@
  
  #include "gdm-common.h"
  
 +#ifdef WITH_SYSTEMD
  #include <systemd/sd-login.h>
 +#endif
- 
- #define GDM_DBUS_NAME                            "org.gnome.DisplayManager"
- #define GDM_DBUS_LOCAL_DISPLAY_FACTORY_PATH      "/org/gnome/DisplayManager/LocalDisplayFactory"
- #define GDM_DBUS_LOCAL_DISPLAY_FACTORY_INTERFACE "org.gnome.DisplayManager.LocalDisplayFactory"
- 
++
 +#ifdef WITH_CONSOLE_KIT
 +#define CK_NAME      "org.freedesktop.ConsoleKit"
 +#define CK_PATH      "/org/freedesktop/ConsoleKit"
@@ -94,17 +45,15 @@ index 41bdb38..6e88c99 100644
 +#define CK_SEAT_INTERFACE    "org.freedesktop.ConsoleKit.Seat"
 +#define CK_SESSION_INTERFACE "org.freedesktop.ConsoleKit.Session"
 +#endif
-+
- G_DEFINE_QUARK (gdm-common-error, gdm_common_error);
  
- gboolean
-@@ -352,14 +365,304 @@ create_transient_display (GDBusConnection *connection,
+ #define GDM_DBUS_NAME                            "org.gnome.DisplayManager"
+ #define GDM_DBUS_LOCAL_DISPLAY_FACTORY_PATH      "/org/gnome/DisplayManager/LocalDisplayFactory"
+@@ -352,8 +365,297 @@ create_transient_display (GDBusConnection *connection,
          return TRUE;
  }
  
 +#ifdef WITH_CONSOLE_KIT
- gboolean
--gdm_activate_session_by_id (GDBusConnection *connection,
++gboolean
 +get_current_session_id (GDBusConnection  *connection,
 +                        char            **session_id)
 +{
@@ -182,14 +131,14 @@ index 41bdb38..6e88c99 100644
 +        return seat_id;
 +}
 +
-+gboolean
++static gboolean
 +activate_session_id_for_ck (GDBusConnection *connection,
-                             const char      *seat_id,
-                             const char      *session_id)
- {
-         GError *local_error = NULL;
-         GVariant *reply;
- 
++                            const char      *seat_id,
++                            const char      *session_id)
++{
++        GError *local_error = NULL;
++        GVariant *reply;
++
 +        reply = g_dbus_connection_call_sync (connection,
 +                                             CK_NAME,
 +                                             seat_id,
@@ -314,7 +263,7 @@ index 41bdb38..6e88c99 100644
 +                                    const char       *seat_id,
 +                                    char            **session_id)
 +{
-+       gboolean     can_activate_sessions;
++        gboolean     can_activate_sessions;
 +        const char **sessions;
 +        int          i;
 +
@@ -392,40 +341,31 @@ index 41bdb38..6e88c99 100644
 +#endif
 +
 +#ifdef WITH_SYSTEMD
-+
-+gboolean
+ gboolean
+-gdm_activate_session_by_id (GDBusConnection *connection,
 +activate_session_id_for_systemd (GDBusConnection *connection,
-+                                 const char      *seat_id,
-+                                 const char      *session_id)
-+{
-+        GError *local_error = NULL;
-+        GVariant *reply;
-+
-         reply = g_dbus_connection_call_sync (connection,
-                                              "org.freedesktop.login1",
-                                              "/org/freedesktop/login1",
-@@ -382,8 +685,8 @@ gdm_activate_session_by_id (GDBusConnection *connection,
+                             const char      *seat_id,
+                             const char      *session_id)
+ {
+@@ -382,7 +684,7 @@ gdm_activate_session_by_id (GDBusConnection *connection,
  }
  
  gboolean
 -gdm_get_login_window_session_id (const char  *seat_id,
--                                 char       **session_id)
 +get_login_window_session_id_for_systemd (const char  *seat_id,
-+                                         char       **session_id)
+                                  char       **session_id)
  {
          gboolean   ret;
-         int        res, i;
-@@ -476,15 +779,14 @@ out:
+@@ -476,7 +778,7 @@ out:
  }
  
  static gboolean
 -goto_login_session (GDBusConnection  *connection,
--                    GError          **error)
 +goto_login_session_for_systemd (GDBusConnection  *connection,
-+                                GError          **error)
+                     GError          **error)
  {
          gboolean        ret;
-         int             res;
+@@ -484,7 +786,6 @@ goto_login_session (GDBusConnection  *connection,
          char           *our_session;
          char           *session_id;
          char           *seat_id;
@@ -433,7 +373,7 @@ index 41bdb38..6e88c99 100644
  
          ret = FALSE;
          session_id = NULL;
-@@ -497,8 +799,10 @@ goto_login_session (GDBusConnection  *connection,
+@@ -497,8 +798,10 @@ goto_login_session (GDBusConnection  *connection,
           * since the data allocated is from libsystemd-logind, which
           * does not use GLib's g_malloc (). */
  
@@ -446,7 +386,7 @@ index 41bdb38..6e88c99 100644
  
                  return FALSE;
          }
-@@ -530,9 +834,9 @@ goto_login_session (GDBusConnection  *connection,
+@@ -530,9 +833,9 @@ goto_login_session (GDBusConnection  *connection,
                  return FALSE;
          }
  
@@ -458,7 +398,7 @@ index 41bdb38..6e88c99 100644
  
                  if (res) {
                          ret = TRUE;
-@@ -551,6 +855,7 @@ goto_login_session (GDBusConnection  *connection,
+@@ -551,6 +854,7 @@ goto_login_session (GDBusConnection  *connection,
  
          return ret;
  }
@@ -466,7 +406,7 @@ index 41bdb38..6e88c99 100644
  
  gboolean
  gdm_goto_login_session (GError **error)
-@@ -566,7 +871,17 @@ gdm_goto_login_session (GError **error)
+@@ -566,7 +870,17 @@ gdm_goto_login_session (GError **error)
                  return FALSE;
          }
  
@@ -485,7 +425,7 @@ index 41bdb38..6e88c99 100644
  }
  
  static void
-@@ -842,113 +1157,3 @@ gdm_shell_expand (const char *str,
+@@ -842,113 +1156,3 @@ gdm_shell_expand (const char *str,
          }
          return g_string_free (s, FALSE);
  }
@@ -600,74 +540,53 @@ index 41bdb38..6e88c99 100644
 -        return TRUE;
 -}
 diff --git a/common/gdm-common.h b/common/gdm-common.h
-index 5c3fe13..8303c3a 100644
+index 5c3fe13..49bacca 100644
 --- a/common/gdm-common.h
 +++ b/common/gdm-common.h
-@@ -37,6 +37,11 @@
- 
- #define GDM_SYSTEMD_SESSION_REQUIRE_ONLINE 0
+@@ -35,6 +35,9 @@
+                 expr;                \
+         } while G_UNLIKELY (errno == EINTR);
  
 +/* check if logind is running */
 +#define LOGIND_RUNNING() (access("/run/systemd/seats/", F_OK) >= 0)
 +
-+#define GDM_SYSTEMD_SESSION_REQUIRE_ONLINE 0
-+
+ #define GDM_SYSTEMD_SESSION_REQUIRE_ONLINE 0
+ 
  GQuark gdm_common_error_quark (void);
- #define GDM_COMMON_ERROR gdm_common_error_quark()
- 
-@@ -51,10 +56,6 @@ int            gdm_wait_on_and_disown_pid (int pid,
- int            gdm_signal_pid            (int pid,
-                                           int signal);
- 
--gboolean       gdm_find_display_session_for_uid (const uid_t uid,
--                                                 char      **out_session_id,
--                                                 GError    **error);
--
- gboolean       gdm_get_pwent_for_name    (const char     *name,
-                                           struct passwd **pwentp);
- 
-@@ -82,10 +83,6 @@ char *        gdm_shell_expand            (const char *str,
-                                            GdmExpandVarFunc expand_func,
-                                            gpointer user_data);
- 
--gboolean      gdm_activate_session_by_id (GDBusConnection *connection,
--                                          const char      *seat_id,
--                                          const char      *session_id);
--
- G_END_DECLS
- 
- #endif /* _GDM_COMMON_H */
 diff --git a/common/gdm-log.c b/common/gdm-log.c
-index ddbf853..d468f15 100644
+index ddbf853..d4e0619 100644
 --- a/common/gdm-log.c
 +++ b/common/gdm-log.c
-@@ -30,7 +30,9 @@
+@@ -30,7 +30,10 @@
  #include <unistd.h>
  
  #include <syslog.h>
++
 +#ifdef WITH_SYSTEMD
  #include <systemd/sd-daemon.h>
 +#endif
  
  #include <glib.h>
  #include <glib/gstdio.h>
-@@ -125,12 +127,35 @@ gdm_log_set_debug (gboolean debug)
+@@ -125,12 +128,37 @@ gdm_log_set_debug (gboolean debug)
  void
  gdm_log_init (void)
  {
-+	const char *prg_name;
-+	int         options;
++	  const char *prg_name;
++	  int         options;
 +
          if (initialized)
                  return;
  
          initialized = TRUE;
  
+         g_log_set_default_handler (gdm_log_default_handler, NULL);
++
 +#ifdef WITH_SYSTEMD
 +        is_sd_booted = sd_booted () > 0;
 +#endif
 +
-         g_log_set_default_handler (gdm_log_default_handler, NULL);
++        g_log_set_default_handler (gdm_log_default_handler, NULL);
 +
 +        /* Only set up syslog if !systemd, otherwise with systemd
 +         * enabled, we keep the default GLib log handler which goes to
@@ -688,10 +607,10 @@ index ddbf853..d468f15 100644
  
  void
 diff --git a/configure.ac b/configure.ac
-index db85229..53b20a0 100644
+index db85229..fa402ab 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -259,6 +259,17 @@ AC_ARG_WITH([udevdir],
+@@ -259,6 +259,16 @@ AC_ARG_WITH([udevdir],
              AS_HELP_STRING([--with-udevdir=DIR],
                             [Directory for udev files]),
                  [with_udevdir=$withval], [with_udevdir=$($PKG_CONFIG --variable=udevdir udev)])
@@ -705,11 +624,19 @@ index db85229..53b20a0 100644
 +            AS_HELP_STRING([--with-systemd],
 +                           [Add systemd support @<:@default=auto@:>@]),
 +            [with_systemd=$withval], [with_systemd=auto])
-+
  AC_ARG_WITH([systemdsystemunitdir],
              AS_HELP_STRING([--with-systemdsystemunitdir=DIR],
                             [Directory for systemd service files]),
-@@ -828,13 +839,43 @@ fi
+@@ -271,7 +281,7 @@ AC_ARG_ENABLE(wayland-support,
+ 	      AS_HELP_STRING([--enable-wayland-support],
+                              [Enable support for wayland sessions  @<:@default=auto@:>@]),
+               [enable_wayland_support=$enableval],
+-              [enable_wayland_support=yes])
++              [enable_wayland_support=auto])
+ 
+ AC_ARG_WITH(plymouth,
+             AS_HELP_STRING([--with-plymouth],
+@@ -828,12 +838,43 @@ fi
  AC_SUBST(XINERAMA_LIBS)
  CPPFLAGS="$xinerama_save_cppflags"
  
@@ -733,7 +660,7 @@ index db85229..53b20a0 100644
 -                  [libsystemd])
 +                  [libsystemd-login >= 186 libsystemd-daemon],
 +                  [have_systemd=yes], [have_systemd=no])
- 
++ 
 +if test "x$with_systemd" = "xauto" ; then
 +        if test x$have_systemd = xno ; then
 +                use_systemd=no
@@ -751,10 +678,56 @@ index db85229..53b20a0 100644
 +
 +        AC_DEFINE(WITH_SYSTEMD, 1, [Define to enable systemd support])
 +fi
+ 
  AC_SUBST(SYSTEMD_CFLAGS)
  AC_SUBST(SYSTEMD_LIBS)
+@@ -843,10 +884,14 @@ PKG_CHECK_MODULES(JOURNALD,
+                   [have_journald=yes], [have_journald=no])
  
-@@ -1027,6 +1068,14 @@ fi
+ if test "x$enable_systemd_journal" = "xauto" ; then
+-        if test x$have_journald = xno ; then
+-                use_journald=no
++        if test x$use_systemd = xyes ; then
++                if test x$have_journald = xno ; then
++                        use_journald=no
++                else
++                        use_journald=yes
++                fi
+         else
+-                use_journald=yes
++                use_journald=no
+         fi
+ 
+ else
+@@ -863,7 +908,17 @@ fi
+ AC_SUBST(JOURNALD_CFLAGS)
+ AC_SUBST(JOURNALD_LIBS)
+ 
+-if test "x$enable_wayland_support" != "xno" ; then
++if test "x$enable_wayland_support" = "xauto" ; then
++        use_wayland="$use_systemd";
++else
++        use_wayland="$enable_wayland_support"
++fi
++
++if test "x$use_wayland" != "xno" ; then
++        if test "x$have_systemd" = "xno"; then
++                AC_MSG_ERROR([wayland support explicitly required, but logind not found])
++        fi
++
+         AC_DEFINE(ENABLE_WAYLAND_SUPPORT, 1, [Define to enable wayland support])
+ fi
+ 
+@@ -882,6 +937,8 @@ fi
+ 
+ AM_CONDITIONAL(INSTALL_SYSTEMD_UNITS, test x$with_systemdsystemunitdir != xno)
+ 
++AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno -a "x$use_systemd" = "xyes" ])
++
+ dnl ---------------------------------------------------------------------------
+ dnl - Check for plymouth support
+ dnl ---------------------------------------------------------------------------
+@@ -1027,6 +1084,14 @@ fi
  AC_SUBST(GDM_CUSTOM_CONF)
  AC_SUBST(GDM_OLD_CONF, '${gdmconfdir}/gdm.conf')
  
@@ -769,7 +742,7 @@ index db85229..53b20a0 100644
  AC_ARG_WITH(gnome-settings-daemon-directory,
                [AC_HELP_STRING([--with-gnome-settings-daemon-directory],
                                [Specify the directory of gnome-settings-daemon used by the chooser @<:@default=libexecdir@:>@])],,
-@@ -1490,6 +1539,7 @@ echo "
+@@ -1490,6 +1555,7 @@ echo "
          dmconfdir:                ${dmconfdir}
          localstatedir:            ${localstatedir}
          datadir:                  ${datadir}
@@ -777,7 +750,7 @@ index db85229..53b20a0 100644
  	gnome-settings-daemon location: ${with_gnome_settings_daemon_directory}
  	gnome-session-check-accel location: ${with_check_accelerated_directory}
  	source code location:	  ${srcdir}
-@@ -1520,6 +1570,8 @@ echo \
+@@ -1520,6 +1586,8 @@ echo \
  "        Xinerama support:         ${XINERAMA_SUPPORT}
          XDMCP support:            ${XDMCP_SUPPORT}
          SELinux support:          ${use_selinux}
@@ -786,13 +759,23 @@ index db85229..53b20a0 100644
          systemd unit dir:         ${with_systemdsystemunitdir}
          udev dir:                 ${with_udevdir}
          plymouth support:         ${use_plymouth}
-@@ -1529,3 +1581,4 @@ echo \
+@@ -1529,3 +1597,14 @@ echo \
          Enable documentation:     ${enable_documentation}
          Install GDM's Xsession:   ${enable_gdm_xsession}
  "
 +
++if test x"${use_console_kit}" = x"yes"; then
++        echo \
++"       WARNING:
++        ConsoleKit support is deprecated and is going to be removed before
++        the next major release.  More details, and patches to add back in
++        ConsoleKit support can be found here:
++
++                https://wiki.gnome.org/Projects/ConsoleKit
++"
++fi
 diff --git a/daemon/Makefile.am b/daemon/Makefile.am
-index d75d728..eaa1fc2 100644
+index d75d728..9ecb813 100644
 --- a/daemon/Makefile.am
 +++ b/daemon/Makefile.am
 @@ -21,6 +21,7 @@ AM_CPPFLAGS = \
@@ -803,19 +786,18 @@ index d75d728..eaa1fc2 100644
  	$(DISABLE_DEPRECATED_CFLAGS)			\
  	$(DAEMON_CFLAGS)				\
  	$(XLIB_CFLAGS)					\
-@@ -278,6 +279,11 @@ EXTRA_gdm_SOURCES = 	\
+@@ -278,6 +279,10 @@ EXTRA_gdm_SOURCES = 	\
  	$(XDMCP_SOURCES)	\
  	$(NULL)
  
-+CONSOLE_KIT_SOURCES = 		\
-+	$(NULL)
-+
-+EXTRA_gdm_SOURCES += $(CONSOLE_KIT_SOURCES)
++if WITH_CONSOLE_KIT
++gdm_SOURCES += $(CONSOLE_KIT_SOURCES)
++endif
 +
  gdm_LDADD = \
  	$(top_builddir)/common/libgdmcommon.la	\
  	$(XLIB_LIBS)				\
-@@ -289,6 +295,10 @@ gdm_LDADD = \
+@@ -289,6 +294,10 @@ gdm_LDADD = \
  	$(EXTRA_DAEMON_LIBS)			\
  	$(NULL)
  
@@ -827,20 +809,21 @@ index d75d728..eaa1fc2 100644
  	gdm-display-glue.c			\
  	gdm-local-display-factory-glue.c	\
 diff --git a/daemon/gdm-launch-environment.c b/daemon/gdm-launch-environment.c
-index feccf05..309c260 100644
+index feccf05..7eae95f 100644
 --- a/daemon/gdm-launch-environment.c
 +++ b/daemon/gdm-launch-environment.c
-@@ -212,6 +212,9 @@ build_launch_environment (GdmLaunchEnvironment *launch_environment,
-                 char *seat_id;
+@@ -213,6 +213,10 @@ build_launch_environment (GdmLaunchEnvironment *launch_environment,
  
                  seat_id = launch_environment->priv->x11_display_seat_id;
+ 
 +                if (g_str_has_prefix (seat_id, "/org/freedesktop/ConsoleKit/")) {
 +                        seat_id += strlen ("/org/freedesktop/ConsoleKit/");
 +                }
- 
++
                  g_hash_table_insert (hash, g_strdup ("GDM_SEAT_ID"), g_strdup (seat_id));
          }
-@@ -237,6 +240,8 @@ on_session_setup_complete (GdmSession        *session,
+ 
+@@ -237,6 +241,8 @@ on_session_setup_complete (GdmSession        *session,
                  gdm_session_set_environment_variable (launch_environment->priv->session, key, value);
          }
          g_hash_table_destroy (hash);
@@ -1022,7 +1005,7 @@ index da1093b..0e64f0f 100644
          G_OBJECT_CLASS (gdm_local_display_factory_parent_class)->finalize (object);
  }
 diff --git a/daemon/gdm-manager.c b/daemon/gdm-manager.c
-index 907eca3..78d69f2 100644
+index 907eca3..2b48dcb 100644
 --- a/daemon/gdm-manager.c
 +++ b/daemon/gdm-manager.c
 @@ -36,7 +36,9 @@
@@ -1035,9 +1018,9 @@ index 907eca3..78d69f2 100644
  
  #include "gdm-common.h"
  
-@@ -64,6 +66,15 @@
- #define INITIAL_SETUP_USERNAME "gnome-initial-setup"
- #define ALREADY_RAN_INITIAL_SETUP_ON_THIS_BOOT GDM_RUN_DIR "/gdm.ran-initial-setup"
+@@ -61,6 +63,15 @@
+ #define GDM_MANAGER_PATH          GDM_DBUS_PATH "/Manager"
+ #define GDM_MANAGER_DISPLAYS_PATH GDM_DBUS_PATH "/Displays"
  
 +#define CK_NAME      "org.freedesktop.ConsoleKit"
 +#define CK_PATH      "/org/freedesktop/ConsoleKit"
@@ -1048,9 +1031,9 @@ index 907eca3..78d69f2 100644
 +#define CK_SEAT_INTERFACE    "org.freedesktop.ConsoleKit.Seat"
 +#define CK_SESSION_INTERFACE "org.freedesktop.ConsoleKit.Session"
 +
- typedef struct
- {
-         GdmManager *manager;
+ #define INITIAL_SETUP_USERNAME "gnome-initial-setup"
+ #define ALREADY_RAN_INITIAL_SETUP_ON_THIS_BOOT GDM_RUN_DIR "/gdm.ran-initial-setup"
+ 
 @@ -205,9 +216,10 @@ plymouth_quit_without_transition (void)
  }
  #endif
@@ -1092,7 +1075,7 @@ index 907eca3..78d69f2 100644
 +        if (reply == NULL) {
 +                return NULL;
 +        }
-+
+ 
 +        g_variant_get (reply, "(o)", &retval);
 +        g_variant_unref (reply);
 +
@@ -1117,7 +1100,7 @@ index 907eca3..78d69f2 100644
 +
 +        return NULL;
 +}
- 
++
 +#ifdef WITH_SYSTEMD
  static gboolean
 -get_uid_for_session_id (const char  *session_id,
@@ -1195,10 +1178,7 @@ index 907eca3..78d69f2 100644
  }
  
 +#ifdef WITH_CONSOLE_KIT
- static gboolean
--is_login_session (GdmManager  *self,
--                  const char  *session_id,
--                  GError     **error)
++static gboolean
 +is_consolekit_login_session (GdmManager       *self,
 +                             GDBusConnection  *connection,
 +                             const char       *session_id,
@@ -1237,14 +1217,17 @@ index 907eca3..78d69f2 100644
 +#endif
 +
 +#ifdef WITH_SYSTEMD
-+static gboolean
+ static gboolean
+-is_login_session (GdmManager  *self,
+-                  const char  *session_id,
+-                  GError     **error)
 +is_systemd_login_session (GdmManager  *self,
 +                          const char  *session_id,
 +                          GError     **error)
  {
          char *session_class = NULL;
          int ret;
-@@ -294,29 +450,140 @@ is_login_session (GdmManager  *self,
+@@ -294,15 +450,93 @@ is_login_session (GdmManager  *self,
          g_free (session_class);
          return TRUE;
  }
@@ -1271,52 +1254,16 @@ index 907eca3..78d69f2 100644
 +        return FALSE;
 +}
 +
-+#ifdef WITH_SYSTEMD
-+static gboolean
-+activate_session_id_for_systemd (GdmManager   *manager,
-+                                 const char *seat_id,
-+                                 const char *session_id)
- {
-         GError *error = NULL;
-         GVariant *reply;
- 
--        g_debug ("Unlocking session %s", ssid);
--
-         reply = g_dbus_connection_call_sync (manager->priv->connection,
-                                              "org.freedesktop.login1",
-                                              "/org/freedesktop/login1",
-                                              "org.freedesktop.login1.Manager",
--                                             "UnlockSession",
--                                             g_variant_new ("(s)", ssid),
-+                                             "ActivateSessionOnSeat",
-+                                             g_variant_new ("(ss)", session_id, seat_id),
-+                                             NULL, /* expected reply */
-+                                             G_DBUS_CALL_FLAGS_NONE,
-+                                             -1,
-+                                             NULL,
-+                                             &error);
-+        if (reply == NULL) {
-+                g_debug ("GdmManager: logind 'ActivateSessionOnSeat' %s raised:\n %s\n\n",
-+                         g_dbus_error_get_remote_error (error), error->message);
-+                g_error_free (error);
-+                return FALSE;
-+        }
-+
-+        g_variant_unref (reply);
-+
-+        return TRUE;
-+}
-+#endif
-+
 +#ifdef WITH_CONSOLE_KIT
 +static gboolean
 +activate_session_id_for_ck (GdmManager *manager,
 +                            const char *seat_id,
 +                            const char *session_id)
-+{
-+        GError *error = NULL;
-+        GVariant *reply;
-+
+ {
+         GError *error = NULL;
+         GVariant *reply;
+ 
+-        g_debug ("Unlocking session %s", ssid);
 +        reply = g_dbus_connection_call_sync (manager->priv->connection,
 +                                             CK_NAME,
 +                                             seat_id,
@@ -1363,9 +1310,25 @@ index 907eca3..78d69f2 100644
 +#ifdef WITH_CONSOLE_KIT
 +        return activate_session_id_for_ck (manager, seat_id, session_id);
 +#else
-+       return FALSE;
++        return FALSE;
 +#endif
 +}
++
++#ifdef WITH_SYSTEMD
++static gboolean
++session_unlock_for_systemd (GdmManager *manager,
++                            const char *ssid)
++{
++        GError *error = NULL;
++        GVariant *reply;
+ 
+         reply = g_dbus_connection_call_sync (manager->priv->connection,
+                                              "org.freedesktop.login1",
+@@ -326,6 +560,59 @@ session_unlock (GdmManager *manager,
+ 
+         return TRUE;
+ }
++#endif
 +
 +#ifdef WITH_CONSOLE_KIT
 +static gboolean
@@ -1381,21 +1344,22 @@ index 907eca3..78d69f2 100644
 +                                             CK_SESSION_INTERFACE,
 +                                             "Unlock",
 +                                             NULL, /* parameters */
-                                              NULL, /* expected reply */
-                                              G_DBUS_CALL_FLAGS_NONE,
-                                              -1,
-                                              NULL,
-                                              &error);
-         if (reply == NULL) {
--                g_debug ("GdmManager: logind 'UnlockSession' %s raised:\n %s\n\n",
++                                             NULL, /* expected reply */
++                                             G_DBUS_CALL_FLAGS_NONE,
++                                             -1,
++                                             NULL,
++                                             &error);
++        if (reply == NULL) {
 +                g_debug ("GdmManager: ConsoleKit %s raised:\n %s\n\n",
-                          g_dbus_error_get_remote_error (error), error->message);
-                 g_error_free (error);
-                 return FALSE;
-@@ -326,6 +593,27 @@ session_unlock (GdmManager *manager,
- 
-         return TRUE;
- }
++                         g_dbus_error_get_remote_error (error), error->message);
++                g_error_free (error);
++                return FALSE;
++        }
++
++        g_variant_unref (reply);
++
++        return TRUE;
++}
 +#endif
 +
 +static gboolean
@@ -1420,15 +1384,12 @@ index 907eca3..78d69f2 100644
  
  static GdmSession *
  find_session_for_user_on_seat (GdmManager *manager,
-@@ -374,10 +662,43 @@ find_session_for_user_on_seat (GdmManager *manager,
+@@ -374,10 +661,43 @@ find_session_for_user_on_seat (GdmManager *manager,
          return NULL;
  }
  
 +#ifdef WITH_CONSOLE_KIT
- static gboolean
--is_remote_session (GdmManager  *self,
--                   const char  *session_id,
--                   GError     **error)
++static gboolean
 +is_consolekit_remote_session (GdmManager       *self,
 +                             GDBusConnection  *connection,
 +                             const char       *session_id,
@@ -1460,31 +1421,19 @@ index 907eca3..78d69f2 100644
 +#endif
 +
 +#ifdef WITH_SYSTEMD
-+static gboolean
+ static gboolean
+-is_remote_session (GdmManager  *self,
+-                   const char  *session_id,
+-                   GError     **error)
 +is_systemd_remote_session (GdmManager  *self,
 +                           const char  *session_id,
 +                           GError     **error)
  {
          char *seat;
          int ret;
-@@ -403,10 +724,12 @@ is_remote_session (GdmManager  *self,
+@@ -403,10 +723,31 @@ is_remote_session (GdmManager  *self,
  
          return is_remote;
- }
-+#endif
- 
-+#ifdef WITH_SYSTEMD
- static char *
--get_seat_id_for_session_id (const char  *session_id,
--                            GError     **error)
-+get_seat_id_for_systemd_session_id (const char  *session_id,
-+                                    GError     **error)
- {
-         int ret;
-         char *seat, *out_seat;
-@@ -431,11 +754,85 @@ get_seat_id_for_session_id (const char  *session_id,
- 
-         return out_seat;
  }
 +#endif
 +
@@ -1507,6 +1456,21 @@ index 907eca3..78d69f2 100644
 +        return FALSE;
 +}
 +
++#ifdef WITH_SYSTEMD
+ static char *
+-get_seat_id_for_session_id (const char  *session_id,
+-                            GError     **error)
++get_seat_id_for_systemd_session_id (const char  *session_id,
++                                    GError     **error)
+ {
+         int ret;
+         char *seat, *out_seat;
+@@ -431,10 +772,61 @@ get_seat_id_for_session_id (const char  *session_id,
+ 
+         return out_seat;
+ }
++#endif
+ 
 +#ifdef WITH_CONSOLE_KIT
  static char *
 -get_tty_for_session_id (const char  *session_id,
@@ -1514,7 +1478,7 @@ index 907eca3..78d69f2 100644
 +get_seat_id_for_consolekit_session_id (GDBusConnection  *connection,
 +                                       const char       *session_id,
 +                                       GError          **error)
- {
++{
 +        GVariant *reply;
 +        char *retval;
 +
@@ -1562,15 +1526,10 @@ index 907eca3..78d69f2 100644
 +static char *
 +get_tty_for_systemd_session_id (const char  *session_id,
 +                                GError     **error)
-+{
-+
-+
-+
-+
+ {
          int ret;
          char *tty, *out_tty;
- 
-@@ -458,6 +855,20 @@ get_tty_for_session_id (const char  *session_id,
+@@ -458,6 +850,20 @@ get_tty_for_session_id (const char  *session_id,
  
          return out_tty;
  }
@@ -1591,7 +1550,7 @@ index 907eca3..78d69f2 100644
  
  static void
  get_display_and_details_for_bus_sender (GdmManager       *self,
-@@ -501,11 +912,10 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
+@@ -501,12 +907,11 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
                  goto out;
          }
  
@@ -1601,12 +1560,14 @@ index 907eca3..78d69f2 100644
 -        if (!ret) {
 -                g_debug ("GdmManager: Unable to find display session for uid %d: %s",
 -                         (int) caller_uid,
+-                         error->message);
 +        if (session_id == NULL) {
 +                g_debug ("GdmManager: Error while retrieving session id for sender: %s",
-                          error->message);
++                          error->message);
                  g_error_free (error);
                  goto out;
-@@ -516,7 +926,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
+         }
+@@ -516,7 +921,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
          }
  
          if (out_is_login_screen != NULL) {
@@ -1615,7 +1576,7 @@ index 907eca3..78d69f2 100644
  
                  if (error != NULL) {
                          g_debug ("GdmManager: Error while checking if sender is login screen: %s",
-@@ -526,7 +936,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
+@@ -526,7 +931,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
                  }
          }
  
@@ -1624,7 +1585,7 @@ index 907eca3..78d69f2 100644
                  g_debug ("GdmManager: Error while retrieving uid for session: %s",
                           error->message);
                  g_error_free (error);
-@@ -543,7 +953,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
+@@ -543,7 +948,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
          }
  
          if (out_seat_id != NULL) {
@@ -1633,7 +1594,7 @@ index 907eca3..78d69f2 100644
  
                  if (error != NULL) {
                          g_debug ("GdmManager: Error while retrieving seat id for session: %s",
-@@ -553,7 +963,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
+@@ -553,7 +958,7 @@ get_display_and_details_for_bus_sender (GdmManager       *self,
          }
  
          if (out_is_remote != NULL) {
@@ -1642,7 +1603,7 @@ index 907eca3..78d69f2 100644
  
                  if (error != NULL) {
                          g_debug ("GdmManager: Error while retrieving remoteness for session: %s",
-@@ -609,7 +1019,7 @@ switch_to_compatible_user_session (GdmManager *manager,
+@@ -609,7 +1014,7 @@ switch_to_compatible_user_session (GdmManager *manager,
          if (existing_session != NULL) {
                  ssid_to_activate = gdm_session_get_session_id (existing_session);
                  if (seat_id != NULL) {
@@ -1651,46 +1612,7 @@ index 907eca3..78d69f2 100644
                          if (! res) {
                                  g_debug ("GdmManager: unable to activate session: %s", ssid_to_activate);
                                  goto out;
-@@ -711,29 +1121,6 @@ out:
-         return recorded;
- }
- 
--static GdmSession *
--find_user_session_for_display (GdmManager *self,
--                               GdmDisplay *display)
--{
--
--        GList *node = self->priv->user_sessions;
--
--        while (node != NULL) {
--                GdmSession *session = node->data;
--                GdmDisplay *candidate_display;
--                GList *next_node = node->next;
--
--                candidate_display = get_display_for_user_session (session);
--
--                if (candidate_display == display)
--                        return session;
--
--                node = next_node;
--        }
--
--        return NULL;
--}
--
- static gboolean
- gdm_manager_handle_register_display (GdmDBusManager        *manager,
-                                      GDBusMethodInvocation *invocation,
-@@ -773,7 +1160,7 @@ gdm_manager_handle_register_display (GdmDBusManager        *manager,
-                 }
-         }
- 
--        session = find_user_session_for_display (self, display);
-+        session = get_user_session_for_display (display);
- 
-         if (session != NULL) {
-                 GPid pid;
-@@ -980,7 +1367,8 @@ on_reauthentication_client_rejected (GdmSession              *session,
+@@ -980,7 +1385,8 @@ on_reauthentication_client_rejected (GdmSession              *session,
                   * same audit session, ignore it since it doesn't "own" the
                   * reauthentication session
                   */
@@ -1700,20 +1622,20 @@ index 907eca3..78d69f2 100644
                                                              NULL);
                  session_id = g_object_get_data (G_OBJECT (session), "caller-session-id");
  
-@@ -1199,16 +1587,19 @@ static gboolean
+@@ -1199,16 +1605,20 @@ static gboolean
  display_is_on_seat0 (GdmDisplay *display)
  {
          gboolean is_on_seat0 = TRUE;
 -        char *seat_id = NULL;
  
 -        g_object_get (G_OBJECT (display), "seat-id", &seat_id, NULL);
--
--        if (g_strcmp0 (seat_id, "seat0") != 0) {
--            is_on_seat0 = FALSE;
--        }
 +#ifdef WITH_SYSTEMD
 +        if (LOGIND_RUNNING()) {
 +                char *seat_id = NULL;
+ 
+-        if (g_strcmp0 (seat_id, "seat0") != 0) {
+-            is_on_seat0 = FALSE;
+-        }
 +                g_object_get (G_OBJECT (display), "seat-id", &seat_id, NULL);
  
 -        g_free (seat_id);
@@ -1727,7 +1649,7 @@ index 907eca3..78d69f2 100644
          return is_on_seat0;
  }
  
-@@ -2030,12 +2421,58 @@ on_user_session_died (GdmSession *session,
+@@ -2030,12 +2440,58 @@ on_user_session_died (GdmSession *session,
          remove_user_session (manager, session);
  }
  
@@ -1788,7 +1710,7 @@ index 907eca3..78d69f2 100644
  }
  
  static void
-@@ -2045,25 +2482,6 @@ on_session_reauthenticated (GdmSession *session,
+@@ -2045,25 +2501,6 @@ on_session_reauthenticated (GdmSession *session,
  {
          gboolean fail_if_already_switched = FALSE;
  
@@ -1815,7 +1737,7 @@ index 907eca3..78d69f2 100644
           * VT. In the event we're already on the right VT, (i.e. user
           * used an unlock screen instead of a user switched login screen),
 diff --git a/daemon/gdm-server.c b/daemon/gdm-server.c
-index 1ba00d4..0a47f36 100644
+index 1ba00d4..0cf93c7 100644
 --- a/daemon/gdm-server.c
 +++ b/daemon/gdm-server.c
 @@ -43,7 +43,9 @@
@@ -1828,31 +1750,13 @@ index 1ba00d4..0a47f36 100644
  
  #ifdef ENABLE_SYSTEMD_JOURNAL
  #include <systemd/sd-journal.h>
-@@ -84,6 +86,7 @@ struct _GdmServer
-         char    *auth_file;
- 
-         guint    child_watch_id;
-+        guint    sigusr1_id;
- 
-         gboolean is_initial;
- };
-@@ -114,90 +117,74 @@ static void     gdm_server_finalize     (GObject        *object);
+@@ -114,11 +116,59 @@ static void     gdm_server_finalize     (GObject        *object);
  
  G_DEFINE_TYPE (GdmServer, gdm_server, G_TYPE_OBJECT)
  
--char *
--gdm_server_get_display_device (GdmServer *server)
--{
--        /* systemd finds the display device out on its own based on the display */
--        return NULL;
--}
--
--static void
--gdm_server_ready (GdmServer *server)
 +static char *
 +_gdm_server_query_ck_for_display_device (GdmServer *server)
- {
--        g_debug ("GdmServer: Got USR1 from X server - emitting READY");
++{
 +        char    *out;
 +        char    *command;
 +        int      status;
@@ -1879,146 +1783,69 @@ index 1ba00d4..0a47f36 100644
 +                out = g_strstrip (out);
 +                g_debug ("GdmServer: Got tty: '%s'", out);
 +        }
- 
--        gdm_run_script (GDMCONFDIR "/Init", GDM_USERNAME,
--                        server->display_name,
--                        NULL, /* hostname */
--                        server->auth_file);
++
 +        g_free (command);
- 
--        g_signal_emit (server, signals[READY], 0);
++
 +        return out;
- }
- 
--static GSList *active_servers;
--static gboolean sigusr1_thread_running;
--static GCond sigusr1_thread_cond;
--static GMutex sigusr1_thread_mutex;
--
--static gboolean
--got_sigusr1 (gpointer user_data)
-+char *
-+gdm_server_get_display_device (GdmServer *server)
++}
++
+ char *
+ gdm_server_get_display_device (GdmServer *server)
  {
--        GPid pid = GPOINTER_TO_UINT (user_data);
--        GSList *l;
--
--        g_debug ("GdmServer: got SIGUSR1 from PID %d", pid);
--
--        for (l = active_servers; l; l = l->next) {
--                GdmServer *server = l->data;
--
--                if (server->pid == pid)
--                        gdm_server_ready (server);
+-        /* systemd finds the display device out on its own based on the display */
+-        return NULL;
 +#ifdef WITH_SYSTEMD
 +        if (LOGIND_RUNNING()) {
 +                /* systemd finds the display device out on its own based on the display */
 +                return NULL;
-         }
++        }
 +#endif
- 
--        return G_SOURCE_REMOVE;
--}
--
--static gpointer
--sigusr1_thread_main (gpointer user_data)
--{
--        sigset_t sigusr1_mask;
--
--        /* Handle only SIGUSR1 */
--        sigemptyset (&sigusr1_mask);
--        sigaddset (&sigusr1_mask, SIGUSR1);
--        sigprocmask (SIG_SETMASK, &sigusr1_mask, NULL);
--
--        g_mutex_lock (&sigusr1_thread_mutex);
--        sigusr1_thread_running = TRUE;
--        g_cond_signal (&sigusr1_thread_cond);
--        g_mutex_unlock (&sigusr1_thread_mutex);
--
--        /* Spin waiting for a SIGUSR1 */
--        while (TRUE) {
--                siginfo_t info;
--
--                if (sigwaitinfo (&sigusr1_mask, &info) == -1)
--                        continue;
--
--                g_idle_add (got_sigusr1, GUINT_TO_POINTER (info.si_pid));
++
 +        if (server->display_device == NULL) {
 +                server->display_device =
 +                    _gdm_server_query_ck_for_display_device (server);
++
 +                g_object_notify (G_OBJECT (server), "display-device");
-         }
- 
--        return NULL;
++        }
++
 +        return g_strdup (server->display_device);
  }
  
--static void
--gdm_server_launch_sigusr1_thread_if_needed (void)
-+static gboolean
-+on_sigusr1 (gpointer user_data)
- {
--        static GThread *sigusr1_thread;
-+        GdmServer *server = user_data;
- 
--        if (sigusr1_thread == NULL) {
--                sigusr1_thread = g_thread_new ("gdm SIGUSR1 catcher", sigusr1_thread_main, NULL);
-+        g_debug ("GdmServer: Got USR1 from X server - emitting READY");
- 
--                g_mutex_lock (&sigusr1_thread_mutex);
--                while (!sigusr1_thread_running)
--                        g_cond_wait (&sigusr1_thread_cond, &sigusr1_thread_mutex);
--                g_mutex_unlock (&sigusr1_thread_mutex);
--        }
-+        gdm_run_script (GDMCONFDIR "/Init", GDM_USERNAME,
-+                        server->display_name,
-+                        NULL, /* hostname */
-+                        server->auth_file);
-+
-+        g_signal_emit (server, signals[READY], 0);
-+        return FALSE;
- }
- 
  static void
-@@ -218,7 +205,9 @@ gdm_server_init_command (GdmServer *server)
-                 debug_options = "";
-         }
+@@ -220,6 +270,7 @@ gdm_server_init_command (GdmServer *server)
  
--#define X_SERVER_ARG_FORMAT " -background none -noreset -verbose %s%s"
-+        #define X_SERVER_ARG_FORMAT " -background none -noreset -verbose %s%s"
-+
+ #define X_SERVER_ARG_FORMAT " -background none -noreset -verbose %s%s"
+ 
 +#ifdef WITH_SYSTEMD
- 
          /* This is a temporary hack to work around the fact that XOrg
           * currently lacks support for multi-seat hotplugging for
-@@ -234,6 +223,10 @@ gdm_server_init_command (GdmServer *server)
+          * display devices. This bit should be removed as soon as XOrg
+@@ -234,6 +285,10 @@ gdm_server_init_command (GdmServer *server)
           * wasn't booted using systemd, or b) the wrapper tool is
           * missing, or c) we are running for the main seat 'seat0'. */
  
 +        if (!LOGIND_RUNNING()) {
 +                goto fallback;
-+        }
++          }
 +
  #ifdef ENABLE_SYSTEMD_JOURNAL
          /* For systemd, we don't have a log file but instead log to stdout,
             so set it to the xserver's built-in default verbosity */
-@@ -256,8 +249,8 @@ gdm_server_init_command (GdmServer *server)
+@@ -256,6 +311,7 @@ gdm_server_init_command (GdmServer *server)
          return;
  
  fallback:
 +#endif
          server->command = g_strdup_printf (X_SERVER X_SERVER_ARG_FORMAT, verbosity, debug_options);
--
- }
  
- static gboolean
-@@ -307,10 +300,12 @@ gdm_server_resolve_command_line (GdmServer  *server,
+ }
+@@ -307,10 +363,12 @@ gdm_server_resolve_command_line (GdmServer  *server,
                  argv[len++] = g_strdup (server->auth_file);
          }
  
 -        if (server->display_seat_id != NULL) {
 +#ifdef WITH_SYSTEMD
-+        if (LOGIND_RUNNING() && server->priv->display_seat_id != NULL) {
++        if (LOGIND_RUNNING() && server->display_seat_id != NULL) {
                  argv[len++] = g_strdup ("-seat");
                  argv[len++] = g_strdup (server->display_seat_id);
          }
@@ -2026,195 +1853,6 @@ index 1ba00d4..0a47f36 100644
  
          /* If we were compiled with Xserver >= 1.17 we need to specify
           * '-listen tcp' as the X server dosen't listen on tcp sockets
-@@ -655,12 +650,6 @@ server_child_watch (GPid       pid,
-         g_object_unref (server);
- }
- 
--static void
--prune_active_servers_list (GdmServer *server)
--{
--        active_servers = g_slist_remove (active_servers, server);
--}
--
- static gboolean
- gdm_server_spawn (GdmServer    *server,
-                   const char   *vtarg,
-@@ -698,15 +687,6 @@ gdm_server_spawn (GdmServer    *server,
-         g_debug ("GdmServer: Starting X server process: %s", freeme);
-         g_free (freeme);
- 
--        active_servers = g_slist_append (active_servers, server);
--
--        g_object_weak_ref (G_OBJECT (server),
--                           (GWeakNotify)
--                           prune_active_servers_list,
--                           server);
--
--        gdm_server_launch_sigusr1_thread_if_needed ();
--
-         if (!g_spawn_async_with_pipes (NULL,
-                                        argv,
-                                        (char **)env->pdata,
-@@ -1043,6 +1023,10 @@ gdm_server_init (GdmServer *server)
-         server->pid = -1;
- 
-         server->log_dir = g_strdup (LOGDIR);
-+
-+        server->sigusr1_id = g_unix_signal_add (SIGUSR1,
-+                                                      on_sigusr1,
-+                                                      server);
- }
- 
- static void
-@@ -1055,6 +1039,9 @@ gdm_server_finalize (GObject *object)
- 
-         server = GDM_SERVER (object);
- 
-+        if (server->sigusr1_id > 0)
-+                g_source_remove (server->sigusr1_id);
-+
-         gdm_server_stop (server);
- 
-         g_free (server->command);
-diff --git a/daemon/gdm-session-record.c b/daemon/gdm-session-record.c
-index 7719d0a..14bc2e9 100644
---- a/daemon/gdm-session-record.c
-+++ b/daemon/gdm-session-record.c
-@@ -33,6 +33,16 @@
- #include <utmp.h>
- #endif
- 
-+#if defined(HAVE_UTIL_H)
-+#include <util.h>
-+#endif
-+
-+#if defined(HAVE_GETTTYENT)
-+#include <fcntl.h> /* open(2) */
-+#include <ttyent.h>
-+static int fd = -1;
-+#endif
-+
- #include <glib.h>
- #include <glib/gi18n.h>
- #include <glib/gstdio.h>
-@@ -43,6 +53,9 @@
- #define GDM_BAD_SESSION_RECORDS_FILE "/var/log/btmp"
- #endif
- 
-+static void write_utmp_login_manually (struct utmp *ut);
-+static void write_utmp_logout_manually (char *);
-+
- #if !defined(GDM_NEW_SESSION_RECORDS_FILE)
- #    if defined(WTMPX_FILE)
- #        define GDM_NEW_SESSION_RECORDS_FILE WTMPX_FILE
-@@ -168,6 +181,84 @@ record_set_line (UTMP       *u,
-         g_debug ("using ut_line %.*s", (int) sizeof (u->ut_line), u->ut_line);
- }
- 
-+static void
-+write_utmp_login_manually (struct utmp *ut)
-+{
-+#if defined(HAVE_GETTTYENT) && defined(HAVE_UTMP_H)
-+        UTMP ubuf;
-+        int topslot = -1;
-+
-+        g_debug ("Adding new utmp record");
-+
-+        /*
-+         * First, loop through /etc/ttys, if needed, to initialize the
-+         * top of the tty slots, since gdm has no tty.
-+         */
-+        if (topslot < 0) {
-+                topslot = 0;
-+                while (getttyent () != (struct ttyent *) NULL)
-+                        topslot++;
-+        }
-+        if ((topslot < 0) || ((fd < 0) &&
-+            (fd = open (_PATH_UTMP, O_RDWR|O_CREAT, 0644)) < 0))
-+                return;
-+
-+        /*
-+         * Now find a slot that's not in use...
-+         */
-+        (void) lseek (fd, (off_t) (topslot * sizeof (struct utmp)), SEEK_SET);
-+
-+        while (1) {
-+                if (read (fd, &ubuf, sizeof (struct utmp)) ==
-+                    sizeof (struct utmp)) {
-+                        if (!ubuf.ut_name[0]) {
-+                                (void) lseek (fd, -(off_t) sizeof (struct utmp),
-+                                    SEEK_CUR);
-+                                break;
-+                        }
-+                        topslot++;
-+                } else {
-+                        (void) lseek (fd, (off_t) (topslot *
-+                            sizeof (struct utmp)), SEEK_SET);
-+                        break;
-+                }
-+        }
-+
-+        (void) write (fd, ut, sizeof (struct utmp));
-+#endif
-+}
-+
-+static void
-+write_utmp_logout_manually (char *line)
-+{
-+#if defined(HAVE_GETTTYENT) && defined(HAVE_UTMP_H)
-+        int rval = 1;
-+        struct timeval tv;
-+        UTMP ut;
-+
-+        g_debug ("Removing utmp record");
-+
-+        if (fd >= 0) {
-+            (void) lseek (fd, 0, SEEK_SET);
-+            while (read (fd, &ut, sizeof (struct utmp)) == sizeof (struct utmp)) {
-+                    if (!ut.ut_name[0] ||
-+                        strncmp (ut.ut_line, line, UT_LINESIZE))
-+                            continue;
-+                    bzero (ut.ut_name, UT_NAMESIZE);
-+                    bzero (ut.ut_host, UT_HOSTSIZE);
-+                    gettimeofday (&tv, NULL);
-+                    ut.ut_time = tv.tv_sec;
-+                    (void) lseek (fd, -(off_t) sizeof (struct utmp), SEEK_CUR);
-+                    (void) write (fd, &ut, sizeof (struct utmp));
-+                    rval = 0;
-+            }
-+        }
-+
-+        if (rval != 0)
-+            g_debug ("Failed to remove utmp record");
-+#endif
-+}
-+
- void
- gdm_session_record_login (GPid                  session_pid,
-                           const char           *user_name,
-@@ -214,8 +305,9 @@ gdm_session_record_login (GPid                  session_pid,
-         setutxent();
-         pututxline (&session_record);
-         endutxent();
--#elif defined(HAVE_LOGIN)
--	login (&session_record);
-+#else
-+        if (strcmp (session_record.ut_name, "(unknown)") != 0)
-+	    write_utmp_login_manually (&session_record);
- #endif
- }
- 
-@@ -259,8 +351,8 @@ gdm_session_record_logout (GPid                  session_pid,
-         setutxent();
-         pututxline (&session_record);
-         endutxent();
--#elif defined(HAVE_LOGOUT)
--        logout (session_record.ut_line);
-+#else
-+        write_utmp_logout_manually (session_record.ut_line);
- #endif
- }
- 
 diff --git a/daemon/gdm-session-worker-job.c b/daemon/gdm-session-worker-job.c
 index 3ac018f..491cb53 100644
 --- a/daemon/gdm-session-worker-job.c
@@ -2230,7 +1868,7 @@ index 3ac018f..491cb53 100644
  #ifdef ENABLE_SYSTEMD_JOURNAL
  #include <systemd/sd-journal.h>
 diff --git a/daemon/gdm-session-worker.c b/daemon/gdm-session-worker.c
-index 1319907..5172a01 100644
+index 1319907..3518d2f 100644
 --- a/daemon/gdm-session-worker.c
 +++ b/daemon/gdm-session-worker.c
 @@ -28,9 +28,11 @@
@@ -2255,15 +1893,6 @@ index 1319907..5172a01 100644
  
  #ifdef ENABLE_SYSTEMD_JOURNAL
  #include <systemd/sd-journal.h>
-@@ -93,7 +97,7 @@
- #endif
- 
- #ifndef GDM_SESSION_DEFAULT_PATH
--#define GDM_SESSION_DEFAULT_PATH "/usr/local/bin:/usr/bin:/bin"
-+#define GDM_SESSION_DEFAULT_PATH "${LOCALBASE}/bin:/usr/bin:/bin"
- #endif
- 
- #ifndef GDM_SESSION_ROOT_UID
 @@ -125,6 +129,10 @@ struct GdmSessionWorkerPrivate
  
          int               exit_code;
@@ -2488,17 +2117,7 @@ index 1319907..5172a01 100644
  /* adapted from glib script_execute */
  static void
  script_execute (const gchar *file,
-@@ -664,7 +871,9 @@ gdm_session_worker_process_pam_message (GdmSessionWorker          *worker,
-         char    *user_answer;
-         gboolean res;
-         char    *utf8_msg;
-+#ifdef PAM_RADIO_TYPE
-         char	*msg;
-+#endif
- 
-         if (response != NULL) {
-                 *response = NULL;
-@@ -868,6 +1077,7 @@ gdm_session_worker_stop_auditor (GdmSessionWorker *worker)
+@@ -868,6 +1075,7 @@ gdm_session_worker_stop_auditor (GdmSessionWorker *worker)
          worker->priv->auditor = NULL;
  }
  
@@ -2506,7 +2125,7 @@ index 1319907..5172a01 100644
  static void
  on_release_display (int signal)
  {
-@@ -1010,6 +1220,7 @@ jump_to_vt (GdmSessionWorker  *worker,
+@@ -1010,6 +1218,7 @@ jump_to_vt (GdmSessionWorker  *worker,
  
          close (active_vt_tty_fd);
  }
@@ -2514,21 +2133,25 @@ index 1319907..5172a01 100644
  
  static void
  gdm_session_worker_set_state (GdmSessionWorker      *worker,
-@@ -1126,7 +1337,6 @@ gdm_session_worker_initialize_pam (GdmSessionWorker   *worker,
- {
-         struct pam_conv        pam_conversation;
-         int                    error_code;
--        char tty_string[256];
- 
-         g_assert (worker->priv->pam_handle == NULL);
- 
-@@ -1193,10 +1403,12 @@ gdm_session_worker_initialize_pam (GdmSessionWorker   *worker,
+@@ -1056,10 +1265,12 @@ gdm_session_worker_uninitialize_pam (GdmSessionWorker *worker,
+          * do a VT switch. */
+ #ifdef ENABLE_USER_DISPLAY_SERVER
+         if (g_strcmp0 (worker->priv->display_seat_id, "seat0") == 0) {
++#ifdef WITH_SYSTEMD
+                 /* Switch to the login VT if we are not the login screen. */
+                 if (worker->priv->session_vt != GDM_INITIAL_VT) {
+                         jump_to_vt (worker, GDM_INITIAL_VT);
                  }
++#endif
+         }
+ #endif
+ 
+@@ -1194,9 +1405,11 @@ gdm_session_worker_initialize_pam (GdmSessionWorker   *worker,
          }
  
-+#ifdef WITH_SYSTEMD
          /* set seat ID */
 -        if (seat_id != NULL && seat_id[0] != '\0') {
++#ifdef WITH_SYSTEMD
 +        if (seat_id != NULL && seat_id[0] != '\0' && LOGIND_RUNNING()) {
                  gdm_session_worker_set_environment_variable (worker, "XDG_SEAT", seat_id);
          }
@@ -2536,31 +2159,7 @@ index 1319907..5172a01 100644
  
          if (strcmp (service, "gdm-launch-environment") == 0) {
                  gdm_session_worker_set_environment_variable (worker, "XDG_SESSION_CLASS", "greeter");
-@@ -1205,12 +1417,14 @@ gdm_session_worker_initialize_pam (GdmSessionWorker   *worker,
-         g_debug ("GdmSessionWorker: state SETUP_COMPLETE");
-         gdm_session_worker_set_state (worker, GDM_SESSION_WORKER_STATE_SETUP_COMPLETE);
- 
-+#ifdef WITH_SYSTEMD
-         /* Temporarily set PAM_TTY with the login VT,
-            PAM_TTY will be reset with the users VT right before the user session is opened */
-         g_snprintf (tty_string, 256, "/dev/tty%d", GDM_INITIAL_VT);
-         pam_set_item (worker->priv->pam_handle, PAM_TTY, tty_string);
-         if (!display_is_local)
-                 worker->priv->password_is_required = TRUE;
-+#endif
- 
-  out:
-         if (error_code != PAM_SUCCESS) {
-@@ -1506,7 +1720,7 @@ _lookup_passwd_info (const char *username,
-                 if (passwd_entry->pw_shell != NULL && passwd_entry->pw_shell[0] != '\0') {
-                         *shellp = g_strdup (passwd_entry->pw_shell);
-                 } else {
--                        *shellp = g_strdup ("/bin/bash");
-+                        *shellp = g_strdup ("/bin/ksh");
-                 }
-         }
-         ret = TRUE;
-@@ -1759,6 +1973,26 @@ gdm_session_worker_get_environment (GdmSessionWorker *worker)
+@@ -1759,6 +1972,26 @@ gdm_session_worker_get_environment (GdmSessionWorker *worker)
          return (const char * const *) pam_getenvlist (worker->priv->pam_handle);
  }
  
@@ -2587,7 +2186,7 @@ index 1319907..5172a01 100644
  static gboolean
  run_script (GdmSessionWorker *worker,
              const char       *dir)
-@@ -1789,6 +2023,9 @@ session_worker_child_watch (GPid              pid,
+@@ -1789,6 +2022,9 @@ session_worker_child_watch (GPid              pid,
                   : WIFSIGNALED (status) ? WTERMSIG (status)
                   : -1);
  
@@ -2597,7 +2196,7 @@ index 1319907..5172a01 100644
  
          gdm_session_worker_uninitialize_pam (worker, PAM_SUCCESS);
  
-@@ -1979,6 +2216,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
+@@ -1979,6 +2215,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
  
          error_code = PAM_SUCCESS;
  
@@ -2605,7 +2204,7 @@ index 1319907..5172a01 100644
          /* If we're in new vt mode, jump to the new vt now. There's no need to jump for
           * the other two modes: in the logind case, the session will activate itself when
           * ready, and in the reuse server case, we're already on the correct VT. */
-@@ -1987,6 +2225,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
+@@ -1987,6 +2224,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
                          jump_to_vt (worker, worker->priv->session_vt);
                  }
          }
@@ -2613,7 +2212,7 @@ index 1319907..5172a01 100644
  
          if (!worker->priv->is_program_session && !run_script (worker, GDMCONFDIR "/PostLogin")) {
                  g_set_error (error,
-@@ -2049,6 +2288,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
+@@ -2049,6 +2287,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
                          _exit (EXIT_FAILURE);
                  }
  
@@ -2621,7 +2220,7 @@ index 1319907..5172a01 100644
                  /* Take control of the tty
                   */
                  if (needs_controlling_terminal) {
-@@ -2056,6 +2296,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
+@@ -2056,6 +2295,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
                                  g_debug ("GdmSessionWorker: could not take control of tty: %m");
                          }
                  }
@@ -2629,7 +2228,7 @@ index 1319907..5172a01 100644
  
  #ifdef HAVE_LOGINCAP
                  if (setusercontext (NULL, passwd_entry, passwd_entry->pw_uid, LOGIN_SETALL) < 0) {
-@@ -2187,11 +2428,13 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
+@@ -2187,6 +2427,7 @@ gdm_session_worker_start_session (GdmSessionWorker  *worker,
          return TRUE;
  }
  
@@ -2637,33 +2236,7 @@ index 1319907..5172a01 100644
  static gboolean
  set_up_for_new_vt (GdmSessionWorker *worker)
  {
-         int fd;
-         char vt_string[256], tty_string[256];
-+        struct vt_stat vt_state = { 0 };
-         int session_vt = 0;
- 
-         fd = open ("/dev/tty0", O_RDWR | O_NOCTTY);
-@@ -2201,6 +2444,11 @@ set_up_for_new_vt (GdmSessionWorker *worker)
-                 return FALSE;
-         }
- 
-+        if (ioctl (fd, VT_GETSTATE, &vt_state) < 0) {
-+                g_debug ("GdmSessionWorker: couldn't get current VT: %m");
-+                goto fail;
-+        }
-+
-         if (worker->priv->display_is_initial) {
-                 session_vt = GDM_INITIAL_VT;
-         } else {
-@@ -2210,6 +2458,7 @@ set_up_for_new_vt (GdmSessionWorker *worker)
-                 }
-         }
- 
-+        worker->priv->login_vt = vt_state.v_active;
-         worker->priv->session_vt = session_vt;
- 
-         close (fd);
-@@ -2272,6 +2521,7 @@ fail:
+@@ -2272,6 +2513,7 @@ fail:
          close (fd);
          return FALSE;
  }
@@ -2671,7 +2244,7 @@ index 1319907..5172a01 100644
  
  static gboolean
  set_up_for_current_vt (GdmSessionWorker  *worker,
-@@ -2339,12 +2589,14 @@ set_up_for_current_vt (GdmSessionWorker  *worker,
+@@ -2339,12 +2581,14 @@ set_up_for_current_vt (GdmSessionWorker  *worker,
           }
  #endif
  
@@ -2686,23 +2259,23 @@ index 1319907..5172a01 100644
  
          return TRUE;
  out:
-@@ -2370,6 +2622,7 @@ gdm_session_worker_open_session (GdmSessionWorker  *worker,
-                 break;
-         case GDM_SESSION_DISPLAY_MODE_NEW_VT:
-         case GDM_SESSION_DISPLAY_MODE_LOGIND_MANAGED:
-+#ifdef WITH_SYSTEMD
-                 if (!set_up_for_new_vt (worker)) {
-                         g_set_error (error,
-                                      GDM_SESSION_WORKER_ERROR,
-@@ -2377,6 +2630,7 @@ gdm_session_worker_open_session (GdmSessionWorker  *worker,
-                                      "Unable to open VT");
+@@ -2368,6 +2612,7 @@ gdm_session_worker_open_session (GdmSessionWorker  *worker,
                          return FALSE;
                  }
-+#endif
                  break;
++#ifdef WITH_SYSTEMD
+         case GDM_SESSION_DISPLAY_MODE_NEW_VT:
+         case GDM_SESSION_DISPLAY_MODE_LOGIND_MANAGED:
+                 if (!set_up_for_new_vt (worker)) {
+@@ -2378,6 +2623,7 @@ gdm_session_worker_open_session (GdmSessionWorker  *worker,
+                         return FALSE;
+                 }
+                 break;
++#endif
          }
  
-@@ -2399,7 +2653,17 @@ gdm_session_worker_open_session (GdmSessionWorker  *worker,
+         flags = 0;
+@@ -2399,7 +2645,17 @@ gdm_session_worker_open_session (GdmSessionWorker  *worker,
          g_debug ("GdmSessionWorker: state SESSION_OPENED");
          gdm_session_worker_set_state (worker, GDM_SESSION_WORKER_STATE_SESSION_OPENED);
  
@@ -2720,7 +2293,7 @@ index 1319907..5172a01 100644
  
          if (session_id != NULL) {
                  g_free (worker->priv->session_id);
-@@ -2507,6 +2771,19 @@ gdm_session_worker_handle_set_session_name (GdmDBusWorker         *object,
+@@ -2507,6 +2763,19 @@ gdm_session_worker_handle_set_session_name (GdmDBusWorker         *object,
          return TRUE;
  }
  
@@ -2740,34 +2313,7 @@ index 1319907..5172a01 100644
  static gboolean
  gdm_session_worker_handle_set_session_display_mode (GdmDBusWorker         *object,
                                                      GDBusMethodInvocation *invocation,
-@@ -2934,6 +3211,7 @@ gdm_session_worker_handle_open (GdmDBusWorker         *object,
-         return TRUE;
- }
- 
-+#ifdef SUPPORTS_PAM_EXTENSIONS
- static char **
- filter_extensions (const char * const *extensions)
- {
-@@ -2959,6 +3237,7 @@ filter_extensions (const char * const *extensions)
- 
-         return filtered_extensions;
- }
-+#endif
- 
- static gboolean
- gdm_session_worker_handle_initialize (GdmDBusWorker         *object,
-@@ -2978,8 +3257,10 @@ gdm_session_worker_handle_initialize (GdmDBusWorker         *object,
-         while (g_variant_iter_loop (&iter, "{sv}", &key, &value)) {
-                 if (g_strcmp0 (key, "service") == 0) {
-                         worker->priv->service = g_variant_dup_string (value, NULL);
-+#ifdef SUPPORTS_PAM_EXTENSIONS
-                 } else if (g_strcmp0 (key, "extensions") == 0) {
-                         worker->priv->extensions = filter_extensions (g_variant_get_strv (value, NULL));
-+#endif
-                 } else if (g_strcmp0 (key, "username") == 0) {
-                         worker->priv->username = g_variant_dup_string (value, NULL);
-                 } else if (g_strcmp0 (key, "is-program-session") == 0) {
-@@ -3419,6 +3700,7 @@ worker_interface_init (GdmDBusWorkerIface *interface)
+@@ -3419,6 +3688,7 @@ worker_interface_init (GdmDBusWorkerIface *interface)
          interface->handle_open = gdm_session_worker_handle_open;
          interface->handle_set_language_name = gdm_session_worker_handle_set_language_name;
          interface->handle_set_session_name = gdm_session_worker_handle_set_session_name;
@@ -2845,53 +2391,30 @@ index 3b64ecd..19a9956 100644
  void              gdm_session_select_session              (GdmSession *session,
                                                             const char *session_name);
  void              gdm_session_select_user                 (GdmSession *session,
-diff --git a/daemon/main.c b/daemon/main.c
-index 1b893fe..b6721ca 100644
---- a/daemon/main.c
-+++ b/daemon/main.c
-@@ -289,19 +289,6 @@ is_debug_set (void)
-         return debug;
- }
+diff --git a/data/Makefile.am b/data/Makefile.am
+index bda9160..171e4be 100644
+--- a/data/Makefile.am
++++ b/data/Makefile.am
+@@ -198,6 +198,8 @@ MAINTAINERCLEANFILES =			\
  
--/* SIGUSR1 is used by the X server to tell us that we're ready, so
-- * block it. We'll unblock it in the worker thread in gdm-server.c
-- */
--static void
--block_sigusr1 (void)
--{
--        sigset_t mask;
--
--        sigemptyset (&mask);
--        sigaddset (&mask, SIGUSR1);
--        sigprocmask (SIG_BLOCK, &mask, NULL);
--}
--
- int
- main (int    argc,
-       char **argv)
-@@ -321,8 +308,6 @@ main (int    argc,
-                 { NULL }
-         };
+ systemdsystemunit =
  
--        block_sigusr1 ();
--
-         bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
-         textdomain (GETTEXT_PACKAGE);
-         setlocale (LC_ALL, "");
-diff --git a/libgdm/Makefile.am b/libgdm/Makefile.am
-index fadffbe..88534a5 100644
---- a/libgdm/Makefile.am
-+++ b/libgdm/Makefile.am
-@@ -66,7 +66,6 @@ libgdm_la_LDFLAGS =                                                    \
-         $(END_OF_LIST)
++if HAVE_SYSTEMD
++
+ gdm.service: $(srcdir)/gdm.service.in
+ 	$(AM_V_GEN)sed \
+ 		-e 's,[@]sbindir[@],$(sbindir),g' \
+@@ -209,6 +211,8 @@ gdm.service: $(srcdir)/gdm.service.in
+ systemdsystemunit += gdm.service
+ CLEANFILES += gdm.service
  
- libgdm_la_LIBADD =                                                     \
--        $(top_builddir)/common/libgdmcommon.la                         \
-         $(LIBGDM_LIBS)                                                 \
-         $(SYSTEMD_LIBS)                                                \
-         $(END_OF_LIST)
++endif
++
+ if INSTALL_SYSTEMD_UNITS
+ systemdsystemunit_DATA=$(systemdsystemunit)
+ systemdsystemunitdir=$(SYSTEMD_SYSTEM_UNIT_DIR)
 diff --git a/libgdm/gdm-user-switching.c b/libgdm/gdm-user-switching.c
-index 3a33fcb..ec4d0da 100644
+index 3a33fcb..87c9d9a 100644
 --- a/libgdm/gdm-user-switching.c
 +++ b/libgdm/gdm-user-switching.c
 @@ -31,12 +31,25 @@
@@ -2920,7 +2443,7 @@ index 3a33fcb..ec4d0da 100644
  static gboolean
  create_transient_display (GDBusConnection *connection,
                            GCancellable    *cancellable,
-@@ -67,12 +80,304 @@ create_transient_display (GDBusConnection *connection,
+@@ -67,8 +80,300 @@ create_transient_display (GDBusConnection *connection,
          return TRUE;
  }
  
@@ -3004,7 +2527,7 @@ index 3a33fcb..ec4d0da 100644
 +        return seat_id;
 +}
 +
-+gboolean
++static gboolean
 +activate_session_id_for_ck (GDBusConnection *connection,
 +                            GCancellable    *cancellable,
 +                            const char      *seat_id,
@@ -3033,7 +2556,6 @@ index 3a33fcb..ec4d0da 100644
 +        return TRUE;
 +}
 +
-+static gboolean
 +session_is_login_window (GDBusConnection *connection,
 +                         const char      *session_id)
 +{
@@ -3071,12 +2593,7 @@ index 3a33fcb..ec4d0da 100644
 +        return ret;
 +}
 +
- static gboolean
--activate_session_id (GDBusConnection  *connection,
--                     GCancellable     *cancellable,
--                     const char       *seat_id,
--                     const char       *session_id,
--                     GError          **error)
++static gboolean
 +seat_can_activate_sessions (GDBusConnection *connection,
 +                            const char      *seat_id)
 +{
@@ -3157,7 +2674,7 @@ index 3a33fcb..ec4d0da 100644
 +        }
 +
 +        sessions = seat_get_sessions (connection, seat_id);
-+        for (i = 0; sessions [i] != NULL; i++) {
++        for (i = 0; sessions [i] != NULL; i) {
 +                const char *ssid;
 +
 +                ssid = sessions [i];
@@ -3172,7 +2689,8 @@ index 3a33fcb..ec4d0da 100644
 +        return TRUE;
 +}
 +
-+static gboolean
+ static gboolean
+-activate_session_id (GDBusConnection  *connection,
 +goto_login_session_for_ck (GDBusConnection  *connection,
 +                           GCancellable     *cancellable,
 +                           GError          **error)
@@ -3217,65 +2735,35 @@ index 3a33fcb..ec4d0da 100644
 +
 +        return ret;
 +}
++
 +#endif
 +
 +#ifdef WITH_SYSTEMD
 +
-+gboolean
++static gboolean
 +activate_session_id_for_systemd (GDBusConnection  *connection,
-+                                 GCancellable     *cancellable,
-+                                 const char       *seat_id,
-+                                 const char       *session_id,
-+                                 GError          **error)
- {
-         GVariant *reply;
- 
-@@ -97,8 +402,8 @@ activate_session_id (GDBusConnection  *connection,
+                      GCancellable     *cancellable,
+                      const char       *seat_id,
+                      const char       *session_id,
+@@ -97,7 +402,7 @@ activate_session_id (GDBusConnection  *connection,
  }
  
  static gboolean
 -get_login_window_session_id (const char  *seat_id,
--                             char       **session_id)
 +get_login_window_session_id_for_systemd (const char  *seat_id,
-+                                         char       **session_id)
+                              char       **session_id)
  {
          gboolean   ret;
-         int        res, i;
-@@ -182,16 +487,15 @@ out:
+@@ -182,7 +487,7 @@ out:
  }
  
  static gboolean
 -goto_login_session (GDBusConnection  *connection,
--                    GCancellable     *cancellable,
--                    GError          **error)
 +goto_login_session_for_systemd (GDBusConnection  *connection,
-+                                GCancellable     *cancellable,
-+                                GError          **error)
+                     GCancellable     *cancellable,
+                     GError          **error)
  {
-         gboolean        ret;
-         int             res;
-         char           *our_session;
-         char           *session_id;
-         char           *seat_id;
--        GError         *local_error = NULL;
- 
-         ret = FALSE;
-         session_id = NULL;
-@@ -203,8 +507,11 @@ goto_login_session (GDBusConnection  *connection,
-         /* Note that we mostly use free () here, instead of g_free ()
-          * since the data allocated is from libsystemd-logind, which
-          * does not use GLib's g_malloc (). */
--        if (!gdm_find_display_session_for_uid (getuid (), &our_session, &local_error)) {
--                g_propagate_prefixed_error (error, local_error, _("Could not identify the current session: "));
-+
-+        res = sd_pid_get_session (0, &our_session);
-+        if (res < 0) {
-+                g_debug ("failed to determine own session: %s", strerror (-res));
-+                g_set_error (error, GDM_CLIENT_ERROR, 0, _("Could not identify the current session."));
- 
-                 return FALSE;
-         }
-@@ -236,9 +543,9 @@ goto_login_session (GDBusConnection  *connection,
+@@ -236,9 +541,9 @@ goto_login_session (GDBusConnection  *connection,
                  return FALSE;
          }
  
@@ -3287,7 +2775,7 @@ index 3a33fcb..ec4d0da 100644
  
                  if (res) {
                          ret = TRUE;
-@@ -257,10 +564,11 @@ goto_login_session (GDBusConnection  *connection,
+@@ -257,6 +562,7 @@ goto_login_session (GDBusConnection  *connection,
  
          return ret;
  }
@@ -3295,12 +2783,7 @@ index 3a33fcb..ec4d0da 100644
  
  gboolean
  gdm_goto_login_session_sync (GCancellable  *cancellable,
--                             GError       **error)
-+			     GError       **error)
- {
-         GDBusConnection *connection;
-         gboolean retval;
-@@ -269,8 +577,23 @@ gdm_goto_login_session_sync (GCancellable  *cancellable,
+@@ -269,8 +575,24 @@ gdm_goto_login_session_sync (GCancellable  *cancellable,
          if (!connection)
                  return FALSE;
  
@@ -3321,6 +2804,7 @@ index 3a33fcb..ec4d0da 100644
  
          g_object_unref (connection);
          return retval;
++
 +#else
 +        return FALSE;
 +#endif
