@@ -26,6 +26,11 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
+	for rc in accounts-daemon; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	done
+
 mkdir -p "$PKG"/etc/polkit-1/rules.d/
 cat > "$PKG"/etc/polkit-1/rules.d/40-adm.rules << "EOF"
 polkit.addAdminRule(function(action, subject) {

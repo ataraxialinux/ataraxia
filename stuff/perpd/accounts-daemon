@@ -4,7 +4,7 @@
 exec 2>&1
 
 TARGET="$1"
-SVNAME="${2:-gdm}"
+SVNAME="${2:-accounts-daemon}"
 
 start() {
 	echo "Starting ${SVNAME}..."
@@ -12,12 +12,7 @@ start() {
 		exit 1
 	fi
 
-	if ! perpok -b /etc/perp -u3 accounts-daemon; then
-		exit 1
-	fi
-
-	[ ! -d /run/gdm ] && mkdir -m0711 -p /run/gdm && chown root:gdm /run/gdm
-	exec gdm
+	exec /usr/lib/accounts-daemon
 }
 
 reset() {
