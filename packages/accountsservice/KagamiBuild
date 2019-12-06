@@ -25,4 +25,11 @@ build() {
 		-Dsystemdsystemunitdir=no
 	ninja
 	DESTDIR="$PKG" ninja install
+
+mkdir -p "$PKG"/etc/polkit-1/rules.d/
+cat > "$PKG"/etc/polkit-1/rules.d/40-adm.rules << "EOF"
+polkit.addAdminRule(function(action, subject) {
+   return ["unix-group:wheel"];
+   });
+EOF
 }
