@@ -5,15 +5,17 @@
 # Section:     admin
 
 name=opensettings
-version=23c7f99cf639112d402cb946deac0c2b59d63585
+version=1.2
 release=1
 source=("https://github.com/ataraxialinux/opensettings/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	mkdir -p build
-	cd build
-	ataraxia-meson "$SRC"/$name-$version
-	ninja
-	DESTDIR="$PKG" ninja install
+	autoreconf -vif
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
 }
