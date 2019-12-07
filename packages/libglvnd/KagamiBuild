@@ -1,25 +1,20 @@
 # Description: The GL Vendor-Neutral Dispatch library
 # URL:         https://github.com/NVIDIA/libglvnd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libx11 libxext
+# Depends on:  meson libx11 libxext
 # Section:     x11
 
 name=libglvnd
-version=1.2.0
-release=5
+version=1.3.0
+release=1
 source=("https://github.com/NVIDIA/libglvnd/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/libglvnd/0001-Add-a-configure-option-to-disable-glesv1-or-glesv2.patch
-	patch -Np1 -i "$STUFF"/libglvnd/update-gl-h-to-match-mesa.patch
-	patch -Np1 -i "$STUFF"/libglvnd/egl-sync-with-khronos.patch
-	patch -Np1 -i "$STUFF"/libglvnd/EGL-Set-EGL_NO_X11-macro.patch
-	./autogen.sh
-
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-tls
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dtls=false
+	ninja
+	DESTDIR="$PKG" ninja install
 }
