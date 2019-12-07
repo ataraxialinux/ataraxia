@@ -6,7 +6,7 @@
 
 name=shadow
 version=4.8
-release=3
+release=4
 backup=('etc/login.defs'
 	'etc/pam.d/chage'
 	'etc/pam.d/passwd'
@@ -29,9 +29,10 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -p0 -i "$STUFF"/shadow/shadow-strncpy-usage.patch
 	patch -p0 -i "$STUFF"/shadow/xstrdup.patch
-
 	sed -i '/^SUBDIRS/s/pam\.d//' etc/Makefile.in
-	sed -i 's/1000/100/' etc/useradd
+
+	install -Dm644 "$STUFF"/shadow/login.defs etc/login.defs
+	install -Dm644 "$STUFF"/shadow/useradd etc/useradd
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -48,9 +49,6 @@ build() {
 		--disable-nls
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm644 "$STUFF"/shadow/login.defs "$PKG"/etc/login.defs
-	install -Dm644 "$STUFF"/shadow/useradd "$PKG"/etc/default/useradd
 
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
