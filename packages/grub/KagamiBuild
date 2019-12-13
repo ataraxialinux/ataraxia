@@ -12,9 +12,9 @@ backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 options=('locales')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
-	"http://ftp.gnu.org/gnu/unifont/unifont-$version/unifont-$version.pcf.gz"
+	"http://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
 	"$name.trigger")
-noextract=("unifont-$version.pcf.gz")
+noextract=("unifont-$unifontver.pcf.gz")
 
 build_flavor() {
 	local flavor="$1"
@@ -59,7 +59,7 @@ build() {
 	esac
 
 	cd "$SRC"
-	gunzip -c unifont-$version.pcf.gz > unifont.pcf
+	gunzip -c unifont-$unifontver.pcf.gz > unifont.pcf
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
