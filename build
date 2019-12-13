@@ -79,7 +79,6 @@ if [ "$USE_TARGET" = "1" ]; then
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
 		export ORIGMAKE="$ORIGMAKE"
-		export ORIGPKGCONF="$ORIGPKGCONF"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 		export EMBEDDED="$EMBEDDED"
@@ -102,7 +101,6 @@ elif [ "$USE_HOST" = "1" ]; then
 		export HOSTCC="$HOSTCC"
 		export HOSTCXX="$HOSTCXX"
 		export ORIGMAKE="$ORIGMAKE"
-		export ORIGPKGCONF="$ORIGPKGCONF"
 		export PATH="$PATH"
 		export STUFF="$STUFF"
 		export EMBEDDED="$EMBEDDED"
@@ -188,7 +186,6 @@ setup_environment() {
 	export HOSTCC="gcc"
 	export HOSTCXX="g++"
 	export ORIGMAKE="$(which make)"
-	export ORIGPKGCONF="$(which pkg-config)"
 
 	if [ -z "$JOBS" ]; then
 		export JOBS="$(expr $(nproc) + 1)"
@@ -224,8 +221,8 @@ build_toolchain() {
 	touch "$TOOLS"/bin/ldconfig
 	chmod +x "$TOOLS"/bin/ldconfig
 
-	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf pkgconf \
-			linux-headers binutils gcc-static musl gcc perp cracklib; do
+	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf \
+			linux-headers binutils gcc-static musl gcc perp cracklib pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
