@@ -13,18 +13,14 @@ source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$v
 
 build() {
 	cd "$SRC"/$name-$version
-	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
-	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
-	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
-	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
-	sed -i '/test:/,/.sh/d' -e '/tests/d' -i Makefile
+	patch -Np1 -i "$STUFF"/libcap/fix.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes
-		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
+		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes GOLANG=no
+		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes GOLANG=no prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 	else
-		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes
-		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
+		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes GOLANG=no
+		make CFLAGS="$CFLAGS" KERNEL_HEADERS=/usr/include PAM_CAP=yes GOLANG=no prefix=/usr lib=/lib DESTDIR="$PKG" RAISE_SETFCAP=no install
 	fi
 
 	install -Dm644 pam_cap/capability.conf "$PKG"/etc/security/capability.conf
