@@ -2,19 +2,19 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 #### Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz pixz zstd rsync jq liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libcurl4-openssl-dev libarchive-dev libzstd-dev
+apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz pixz zstd rsync jq liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libcurl4-openssl-dev libarchive-dev libzstd-dev libfreetype6-dev
 ```
 #### Arch Linux (and derivatives):
 ```
-pacman -S base-devel xorriso mtools git pigz python pixz rsync jq
+pacman -S base-devel xorriso mtools git pigz python pixz rsync jq freetype2
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel
+xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
 ```
 #### Ataraxia GNU/Linux-Libre:
 ```
-ne -E libisoburn python mtools pixz
+ne -E libisoburn python mtools pixz freetype
 ```
 
 ### Compiling package manager

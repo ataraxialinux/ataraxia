@@ -1,31 +1,42 @@
-diff -ruN mesa-19.2.0-orig/meson.build mesa-19.2.0/meson.build
---- mesa-19.2.0-orig/meson.build	2019-09-26 01:59:31.000000000 +0900
-+++ mesa-19.2.0/meson.build	2019-10-03 20:00:26.800550472 +0900
-@@ -379,7 +379,10 @@
- 
- # Android uses emutls for versions <= P/28. For USE_ELF_TLS we need ELF TLS.
- if not with_platform_android or get_option('platform-sdk-version') >= 29
--  pre_args += '-DUSE_ELF_TLS'
-+  with_glx_use_tls = get_option('glx-use-tls')
-+  if with_glx_use_tls
-+    pre_args += '-DUSE_ELF_TLS'
-+  endif
+From 2bc0200b83f18f5a40d98695f7c0400c3b3c6a57 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 14 Dec 2019 00:18:28 +0900
+Subject: [PATCH] mesa: enable/disable ELF TLS usage
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build       | 3 ++-
+ meson_options.txt | 6 ++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 898d025..0da4fc5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -387,7 +387,8 @@ if with_egl and not (with_platform_drm or with_platform_surfaceless or with_plat
  endif
  
- if with_glx != 'disabled'
-diff -ruN mesa-19.2.0-orig/meson_options.txt mesa-19.2.0/meson_options.txt
---- mesa-19.2.0-orig/meson_options.txt	2019-09-26 01:59:31.000000000 +0900
-+++ mesa-19.2.0/meson_options.txt	2019-10-03 20:00:52.815353511 +0900
-@@ -215,6 +215,12 @@
-   description : 'Build support for GLX platform'
+ # Android uses emutls for versions <= P/28. For USE_ELF_TLS we need ELF TLS.
+-if host_machine.system() != 'windows' and (not with_platform_android or get_option('platform-sdk-version') >= 29)
++with_use_elf_tls = get_option('use-elf-tls')
++if with_use_elf_tls and host_machine.system() != 'windows' and (not with_platform_android or get_option('platform-sdk-version') >= 29)
+   pre_args += '-DUSE_ELF_TLS'
+ endif
+ 
+diff --git a/meson_options.txt b/meson_options.txt
+index 626baf3..14eea5a 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -366,3 +366,9 @@ option(
+   value : 25,
+   description : 'Android Platform SDK version. Default: Nougat version.'
  )
- option(
-+  'glx-use-tls',
++option(
++  'elf-use-tls',
 +  type : 'boolean',
 +  value : true,
 +  description : 'Build support for initial-exec TLS model on GLX platform'
 +)
-+option(
-   'egl',
-   type : 'combo',
-   value : 'auto',
+-- 
+2.24.0
+

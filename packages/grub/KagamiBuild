@@ -1,17 +1,20 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gettext-tiny xz zstd python
+# Depends on:  python gettext-tiny xz zstd freetype
 # Section:     utils
 
 name=grub
 version=2.04
-release=7
+unifontver=12.1.04
+release=8
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 options=('locales')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
+	"http://ftp.gnu.org/gnu/unifont/unifont-$version/unifont-$version.pcf.gz"
 	"$name.trigger")
+noextract=("unifont-$version.pcf.gz")
 
 build_flavor() {
 	local flavor="$1"
@@ -27,7 +30,7 @@ build_flavor() {
 		--infodir=/usr/share/info \
 		--datarootdir=/usr/share \
 		--sysconfdir=/etc \
-		--disable-grub-mkfont \
+		--enable-grub-mkfont \
 		--disable-nls \
 		--disable-werror
 	make
@@ -55,9 +58,13 @@ build() {
 			exit 1
 	esac
 
+	cd "$SRC"
+	gunzip -c unifont-$version.pcf.gz > unifont.pcf
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
 
+	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
 

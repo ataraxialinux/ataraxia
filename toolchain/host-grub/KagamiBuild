@@ -1,8 +1,11 @@
 name=host-grub
 version=2.04
+unifontver=12.1.04
 release=1
 options=('bootstrap')
-source=("http://ftp.gnu.org/gnu/grub/grub-$version.tar.xz")
+source=("http://ftp.gnu.org/gnu/grub/grub-$version.tar.xz"
+	"http://ftp.gnu.org/gnu/unifont/unifont-$version/unifont-$version.pcf.gz")
+noextract=("unifont-$version.pcf.gz")
 
 build_flavor() {
 	local flavor="$1"
@@ -17,7 +20,7 @@ build_flavor() {
 		--build=$XHOST \
 		--host=$XHOST \
 		--target=$XTARGET \
-		--disable-grub-mkfont \
+		--enable-grub-mkfont \
 		--disable-nls \
 		--disable-werror
 	make
@@ -44,6 +47,9 @@ build() {
 			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux-Libre"
 			exit 1
 	esac
+
+	cd "$SRC"
+	gunzip -c unifont-$version.pcf.gz > unifont.pcf
 
 	cd "$SRC"/grub-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
