@@ -17,6 +17,7 @@ build() {
 	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
 	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
 	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
+	sed -i '/test:/,/.sh/d' -e '/tests/d' -i Makefile
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes
