@@ -221,8 +221,14 @@ build_toolchain() {
 	touch "$TOOLS"/bin/ldconfig
 	chmod +x "$TOOLS"/bin/ldconfig
 
+	case $BARCH in
+		amd64|i386|ppc64le|ppc64)
+				EXTRAPKG="grub"
+				;;
+	esac
+
 	for toolchain in base-files file gettext-tiny m4 bison flex bc ncurses kmod gperf \
-			linux-headers binutils gcc-static musl gcc perp cracklib pkgconf; do
+			linux-headers binutils gcc-static musl gcc perp cracklib $EXTRAPKG pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
@@ -237,14 +243,6 @@ build_toolchain() {
 				;;
 		esac
 	done
-
-	case $BARCH in
-		amd64|i386|ppc64le|ppc64)
-				pushd "$TCREPO/host-grub"
-					neko build -c "$BUILD"/host.config -WP
-				popd
-				;;
-	esac
 
 	touch "$TOOLS"/.cross-linux
 
