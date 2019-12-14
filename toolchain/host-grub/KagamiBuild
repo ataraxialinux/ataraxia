@@ -4,7 +4,8 @@ unifontver=12.1.04
 release=1
 options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/grub/grub-$version.tar.xz"
-	"http://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
+	"http://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
+	"https://raw.githubusercontent.com/pkgconf/pkgconf/master/pkg.m4")
 noextract=("unifont-$unifontver.pcf.gz")
 
 build_flavor() {
@@ -50,6 +51,8 @@ build() {
 
 	cd "$SRC"
 	gunzip -c unifont-$unifontver.pcf.gz > unifont.pcf
+
+	cp pkg.m4 "$TOOLS"/share/aclocal
 
 	cd "$SRC"/grub-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
