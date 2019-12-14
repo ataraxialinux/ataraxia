@@ -59,7 +59,7 @@ auth-polkit=true
 dhcp=dhcpcd
 EOF
 
-mkdir -p "$PKG"/usr/share/polkit-1/rules.d/
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 cat > "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules << "EOF"
 polkit.addRule(function(action, subject) {
     if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.isInGroup("netdev")) {
