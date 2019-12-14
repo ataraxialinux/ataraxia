@@ -1,0 +1,21 @@
+name=host-autoconf
+version=2.69
+release=1
+options=('bootstrap')
+source=("http://ftp.gnu.org/gnu/autoconf/autoconf-$version.tar.xz")
+
+build() {
+	cd "$SRC"/autoconf-$version
+	patch -p1 -i "$STUFF"/autoconf/autoconf-2.69-perl-5.22-autoscan.patch
+	patch -p1 -i "$STUFF"/autoconf/autoconf-2.69-perl-5.28.patch
+	patch -p1 -i "$STUFF"/autoconf/autoconf-2.69-libtool-compatibility.patch
+
+	cp "$STUFF"/config.guess build-aux/config.guess
+	cp "$STUFF"/config.sub build-aux/config.sub
+
+	./configure \
+		--prefix="$TOOLS" \
+		--disable-nls
+	make
+	make install
+}
