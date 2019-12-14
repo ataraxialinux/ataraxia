@@ -29,14 +29,11 @@ build_busybox() {
 
 generate_initramfs() {
 	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam attr acl libcap shadow pcre grep mksh bash \
-			expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive kmod perp busybox mawk hostname dialog pigz iproute2 \
+			expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive kmod perp busybox mawk hostname dialog pigz libmnl iproute2 \
 			kbd nano libcap-ng util-linux ubase sinit e2fsprogs dosfstools hwids eudev wireless_tools wpa_supplicant popt gptfdisk \
 			wget oniguruma jq neko linux"
 
-	remove="m4 flex libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables libssh2 c-ares libev nghttp2 curl"
-
 	neko install -c "$BUILD"/target.config -r "$INITRAMFS" -d $packages
-	neko remove -c "$BUILD"/target.config -r "$INITRAMFS" -f $remove
 
 	build_busybox
 
