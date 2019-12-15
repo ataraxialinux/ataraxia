@@ -34,21 +34,7 @@ build_busybox_standard() {
 	done
 
 	for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
-		install -Dm644 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-	done
-
-	case $BARCH in
-		amd64|i386|ppc64le|ppc64)
-			TTYS="1 2 3 4 5 6"
-			;;
-		arm64|armhf|armel|mips64|mips64el|mips|mipsel|riscv64|riscv32)
-			TTYS="1 S0 AMA0 USB0"
-			;;
-	esac
-
-	for tty in $TTYS; do
-		chmod +t "$PKG"/etc/perp/tty${tty}
-		chmod 755 "$PKG"/etc/perp/tty${tty}/rc.main
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
 	done
 
 	cd "$STUFF"/busybox
