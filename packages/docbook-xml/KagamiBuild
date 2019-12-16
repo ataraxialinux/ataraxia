@@ -46,7 +46,8 @@ build() {
 	find "$PKG" -type f -exec chmod -c a-x {} +
 	chmod -Rc u=rwX,go=rX "$PKG"
 
-cat << EOF > "$TOPDIR"/install
+mkdir -p "$PKG"/data
+cat << EOF > "$PKG"/data/install
 #!/bin/sh
 
 if [ "$1" = "post-install" ]; then
@@ -148,8 +149,8 @@ elif [ "$1" = "pre-install" ]; then
 fi
 EOF
 
-	sed -i 's,#DTDVERSION,$DTDVERSION,g' "$TOPDIR"/install
-	sed -i "s,#version,$version,g" "$TOPDIR"/install
+	sed -i 's,#DTDVERSION,$DTDVERSION,g' "$PKG"/data/install
+	sed -i "s,#version,$version,g" "$PKG"/data/install
 
-	chmod +x "$TOPDIR"/install
+	chmod +x "$PKG"/data/install
 }
