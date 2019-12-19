@@ -70,9 +70,9 @@ generate_initramfs() {
 		rm -rf usr/lib/modules/*/kernel/sound
 		rm -rf usr/lib/modules/*/kernel/drivers/gpu
 
-		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null
-		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null
-		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null
+		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null || true
+		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
+		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null || true
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 		find . -name "*.h" -print0 | xargs -0 rm -rf
