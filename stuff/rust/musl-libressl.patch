@@ -1,8 +1,9 @@
---- rustc-1.39.0-src-orig/src/bootstrap/compile.rs
-+++ rustc-1.39.0-src/src/bootstrap/compile.rs
-@@ -116,28 +116,6 @@
- fn copy_third_party_objects(builder: &Builder<'_>, compiler: &Compiler, target: Interned<String>) {
-     let libdir = builder.sysroot_libdir(*compiler, target);
+diff -ruN rustc-1.40.0-src-orig/src/bootstrap/compile.rs rustc-1.40.0-src/src/bootstrap/compile.rs
+--- rustc-1.40.0-src-orig/src/bootstrap/compile.rs	2019-12-17 00:38:05.000000000 +0900
++++ rustc-1.40.0-src/src/bootstrap/compile.rs	2019-12-20 23:13:01.024623480 +0900
+@@ -130,22 +130,6 @@
+         target_deps.push(target);
+     };
  
 -    // Copies the crt(1,i,n).o startup objects
 -    //
@@ -11,26 +12,21 @@
 -    // files. As those shipped with glibc won't work, copy the ones provided by
 -    // musl so we have them on linux-gnu hosts.
 -    if target.contains("musl") {
+-        let srcdir = builder.musl_root(target).unwrap().join("lib");
 -        for &obj in &["crt1.o", "crti.o", "crtn.o"] {
--            builder.copy(
--                &builder.musl_root(target).unwrap().join("lib").join(obj),
--                &libdir.join(obj),
--            );
+-            copy_and_stamp(&srcdir, obj);
 -        }
 -    } else if target.ends_with("-wasi") {
--        for &obj in &["crt1.o"] {
--            builder.copy(
--                &builder.wasi_root(target).unwrap().join("lib/wasm32-wasi").join(obj),
--                &libdir.join(obj),
--            );
--        }
+-        let srcdir = builder.wasi_root(target).unwrap().join("lib/wasm32-wasi");
+-        copy_and_stamp(&srcdir, "crt1.o");
 -    }
 -
      // Copies libunwind.a compiled to be linked wit x86_64-fortanix-unknown-sgx.
      //
      // This target needs to be linked to Fortanix's port of llvm's libunwind.
---- rustc-1.39.0-src-orig/src/librustc_target/spec/linux_musl_base.rs
-+++ rustc-1.39.0-src/src/librustc_target/spec/linux_musl_base.rs
+diff -ruN rustc-1.40.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rustc-1.40.0-src/src/librustc_target/spec/linux_musl_base.rs
+--- rustc-1.40.0-src-orig/src/librustc_target/spec/linux_musl_base.rs	2019-12-17 00:38:05.000000000 +0900
++++ rustc-1.40.0-src/src/librustc_target/spec/linux_musl_base.rs	2019-12-20 23:11:49.950342451 +0900
 @@ -26,7 +26,7 @@
      base.post_link_objects_crt.push("crtn.o".to_string());
  
@@ -40,8 +36,9 @@
      // These targets allow the user to choose between static and dynamic linking.
      base.crt_static_respected = true;
  
---- rustc-1.39.0-src-orig/src/libunwind/build.rs
-+++ rustc-1.39.0-src/src/libunwind/build.rs
+diff -ruN rustc-1.40.0-src-orig/src/libunwind/build.rs rustc-1.40.0-src/src/libunwind/build.rs
+--- rustc-1.40.0-src-orig/src/libunwind/build.rs	2019-12-17 00:38:06.000000000 +0900
++++ rustc-1.40.0-src/src/libunwind/build.rs	2019-12-20 23:11:49.950342451 +0900
 @@ -10,10 +10,7 @@
          // Build the unwinding from libunwind C/C++ source code.
          llvm_libunwind::compile();
@@ -54,8 +51,9 @@
              println!("cargo:rustc-link-lib=gcc_s");
          }
      } else if target.contains("freebsd") {
---- rustc-1.39.0-src-orig/src/libunwind/lib.rs
-+++ rustc-1.39.0-src/src/libunwind/lib.rs
+diff -ruN rustc-1.40.0-src-orig/src/libunwind/lib.rs rustc-1.40.0-src/src/libunwind/lib.rs
+--- rustc-1.40.0-src-orig/src/libunwind/lib.rs	2019-12-17 00:38:06.000000000 +0900
++++ rustc-1.40.0-src/src/libunwind/lib.rs	2019-12-20 23:11:49.954342354 +0900
 @@ -20,11 +20,6 @@
      }
  }
@@ -68,9 +66,10 @@
  #[cfg(target_os = "redox")]
  #[link(name = "gcc_eh", kind = "static-nobundle", cfg(target_feature = "crt-static"))]
  #[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
---- rustc-1.39.0-src-orig/vendor/libc/src/unix/mod.rs
-+++ rustc-1.39.0-src/vendor/libc/src/unix/mod.rs
-@@ -296,13 +296,6 @@
+diff -ruN rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.40.0-src/vendor/libc/src/unix/mod.rs
+--- rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs	2019-12-17 02:26:11.000000000 +0900
++++ rustc-1.40.0-src/vendor/libc/src/unix/mod.rs	2019-12-20 23:11:49.954342354 +0900
+@@ -298,13 +298,6 @@
      } else if #[cfg(feature = "std")] {
          // cargo build, don't pull in anything extra as the libstd dep
          // already pulls in all libs.
@@ -84,8 +83,9 @@
      } else if #[cfg(target_os = "emscripten")] {
          #[link(name = "c")]
          extern {}
---- rustc-1.39.0-src-orig/vendor/openssl-sys/build/main.rs
-+++ rustc-1.39.0-src/vendor/openssl-sys/build/main.rs
+diff -ruN rustc-1.40.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.40.0-src/vendor/openssl-sys/build/main.rs
+--- rustc-1.40.0-src-orig/vendor/openssl-sys/build/main.rs	2019-12-17 02:26:11.000000000 +0900
++++ rustc-1.40.0-src/vendor/openssl-sys/build/main.rs	2019-12-20 23:11:49.954342354 +0900
 @@ -183,27 +183,31 @@
      if let Some(libressl_version) = libressl_version {
          println!("cargo:libressl_version_number={:x}", libressl_version);
