@@ -1,0 +1,20 @@
+# Description: A JSON-RPC library for GLib
+# URL:         https://gitlab.gnome.org/GNOME/jsonrpc-glib
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala json-glib
+# Section:     gnome
+
+name=jsonrpc-glib
+version=3.34.0
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Denable_gtk_doc=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
