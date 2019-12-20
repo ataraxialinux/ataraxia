@@ -1,0 +1,22 @@
+# Description: Generates an index file of language objects found in source files
+# URL:         https://ctags.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  jansson libseccomp libxml2 yaml
+# Section:     devel
+
+name=ctags
+version=e216bb44cb45c9ba4e741bf1d7a0e7241e4db3c9
+release=1
+source=("https://github.com/universal-ctags/ctags/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+	make
+	make DESTDIR="$PKG" install
+}
