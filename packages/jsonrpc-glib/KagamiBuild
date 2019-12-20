@@ -1,12 +1,12 @@
-# Description: GNOME Text Editor
-# URL:         https://wiki.gnome.org/Apps/Gedit
+# Description: A JSON-RPC library for GLib
+# URL:         https://gitlab.gnome.org/GNOME/jsonrpc-glib
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson vala yelp-xsl pygobject git gsettings-desktop-schemas gspell gtksourceview4 libpeas iso-codes libsoup
-# Section:     editors
+# Depends on:  meson gobject-introspection vala json-glib
+# Section:     gnome
 
-name=gedit
-version=3.34.1
-release=2
+name=jsonrpc-glib
+version=3.34.0
+release=1
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -14,7 +14,7 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Ddocumentation=false
+		-Denable_gtk_doc=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }

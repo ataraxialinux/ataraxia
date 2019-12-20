@@ -1,0 +1,25 @@
+# Description: GLib wrapper for libgit2
+# URL:         https://wiki.gnome.org/Projects/Libgit2-glib
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala pygobject libgit2
+# Section:     gnome
+
+name=libgit2-glib
+version=0.28.0.1
+case $version in
+	*.*.*.*) _v=${version%.*}
+		_v=${_v%.*};;
+	*.*.*) _v=${version%.*};;
+esac
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${_v}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Denable_gtk_doc=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}

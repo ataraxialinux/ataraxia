@@ -1,0 +1,24 @@
+# Description: A quick-n-dirty BSD licensed clone of the GNU libc backtrace facility
+# URL:         https://www.freshports.org/devel/libexecinfo
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libexecinfo
+version=1.1
+release=1
+source=("http://distcache.freebsd.org/local-distfiles/itetcu/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libexecinfo/misc.patch
+
+	export CFLAGS="${CFLAGS} -fno-omit-frame-pointer"
+	make
+
+	install -D -m755  execinfo.h  "$PKG"/usr/include/execinfo.h
+	install -D -m755  stacktraverse.h "$PKG"/usr/include/stacktraverse.h
+	install -D -m755  libexecinfo.a "$PKG"/usr/lib/libexecinfo.a
+	install -D -m755  libexecinfo.so.1 "$PKG"/usr/lib/libexecinfo.so.1
+
+	ln -sf libexecinfo.so.1  "$PKG"/usr/lib/libexecinfo.so
+}
