@@ -1,0 +1,22 @@
+# Description: Provides word-processor-style highlighting and replacement of misspelled words in a GtkTextView widget
+# URL:         http://gtkspell.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gobject-introspection vala intltool gtk3 enchant
+# Section:     libs
+
+name=gtkspell
+version=3.0.10
+release=1
+source=("https://downloads.sourceforge.net/gtkspell/$$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--disable-profiler
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
