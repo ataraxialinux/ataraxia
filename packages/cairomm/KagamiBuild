@@ -1,0 +1,20 @@
+# Description: C++ bindings for Cairo
+# URL:         https://www.cairographics.org/cairomm/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cairo libsigc++
+# Section:     gnome
+
+name=cairomm
+version=1.12.2
+release=1
+source=("https://www.cairographics.org/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
