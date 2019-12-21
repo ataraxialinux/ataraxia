@@ -1,5 +1,5 @@
 #!/bin/sh
-TAGDIR=/run/console
+TAGDIR=/var/run/console
 
 [ -n "$CK_SESSION_USER_UID" ] || exit 1
 [ "$CK_SESSION_IS_LOCAL" = "true" ] || exit 0
