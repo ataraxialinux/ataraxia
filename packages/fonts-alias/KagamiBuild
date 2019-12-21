@@ -1,0 +1,18 @@
+# Description: X.org font alias files
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     x11
+
+name=fonts-alias
+version=1.0.3
+release=1
+source=("https://xorg.freedesktop.org/releases/individual/font/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-fontrootdir=/usr/share/fonts
+	make
+	make DESTDIR="$PKG" install
+}
