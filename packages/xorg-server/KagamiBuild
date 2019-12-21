@@ -6,7 +6,7 @@
 
 name=xorg-server
 version=1.20.6
-release=2
+release=1
 source=("https://xorg.freedesktop.org/releases/individual/xserver/$name-$version.tar.bz2")
 
 build() {
@@ -14,11 +14,8 @@ build() {
 	export LDFLAGS="-Wl,-z,lazy"
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/xorg-server/rootless.patch
-
 	mkdir -p build
 	cd build
-
 	ataraxia-meson "$SRC"/$name-$version \
 		-Ddmx=true \
 		-Ddri2=true \
@@ -43,9 +40,6 @@ build() {
 		-Dxwayland_eglstream=true
 	ninja
 	DESTDIR="$PKG" ninja install
-
-	mkdir -p "$PKG"/etc/X11
-	echo 'needs_root_rights = yes' >> "$PKG"/etc/X11/Xwrapper.config
 
 	rm -f "$PKG"/usr/share/X11/xorg.conf.d/10-evdev.conf
 
