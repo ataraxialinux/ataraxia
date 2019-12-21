@@ -21,6 +21,7 @@ build() {
 	patch -Np1 -i "$STUFF"/lightdm/musl-language.patch
 	patch -Np1 -i "$STUFF"/lightdm/musl-is-linux.patch
 	patch -Np1 -i "$STUFF"/lightdm/musl-updwtmpx.patch
+	patch -Np1 -i "$STUFF"/lightdm/defaults.patch
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -36,7 +37,7 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm755 "$STUFF"/lightdm/Xsession "$PKG"/etc/lightdm/Xsession
-	cp tests/src/lightdm-session "$PKG"/usr/bin
+	ln -sf /etc/lightdm/Xsession "$PKG"/usr/bin/lightdm-session
 
 	rm -rf "$PKG"/etc/init
 	rm -rf "$PKG"/etc/apparmor.d
