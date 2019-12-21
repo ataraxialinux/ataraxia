@@ -1,0 +1,28 @@
+# Description: GTK+ greeter for LightDM
+# URL:         https://launchpad.net/lightdm-gtk-greeter
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection exo lightdm gtk3 libxklavier
+# Section:     x11
+
+name=lightdm-gtk-greeter
+version=2.0.7
+release=1
+backup=('etc/lightdm/lightdm-gtk-greeter.conf')
+source=("https://launchpad.net/lightdm-gtk-greeter/${version%.?}/$version/+download/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -Wno-declaration-after-statement"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lightdm \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-libxklavier \
+		--enable-kill-on-sigterm \
+		--disable-libido \
+		--disable-libindicator
+	make
+	make DESTDIR="$PKG" install
+}
