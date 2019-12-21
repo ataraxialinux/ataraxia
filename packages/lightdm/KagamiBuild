@@ -1,0 +1,59 @@
+# Description: A lightweight display manager
+# URL:         https://www.freedesktop.org/wiki/Software/LightDM/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool yelp-xsl gobject-introspection vala polkit libx11 libxcb libxdmcp libxklavier libgcrypt
+# Section:     x11
+
+name=lightdm
+version=1.30.0
+release=1
+backup=('etc/lightdm/keys.conf'
+	'etc/lightdm/lightdm.conf'
+	'etc/lightdm/users.conf'
+	'etc/lightdm/Xsession'
+	'etc/pam.d/lightdm'
+	'etc/pam.d/lightdm-autologin'
+	'etc/pam.d/lightdm-greeter')
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lightdm/musl-language.patch
+	patch -Np1 -i "$STUFF"/lightdm/musl-is-linux.patch
+	patch -Np1 -i "$STUFF"/lightdm/musl-updwtmpx.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lightdm \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-greeter-user=lightdm \
+		--with-greeter-session=lightdm-gtk-greeter \
+		--disable-gtk-doc \
+		--disable-static \
+		--disable-tests
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/lightdm/Xsession "$PKG"/etc/lightdm/Xsession
+	cp tests/src/lightdm-session "$PKG"/usr/bin
+
+	rm -rf "$PKG"/etc/init
+	rm -rf "$PKG"/etc/apparmor.d
+
+	mv "$PKG"/{etc,usr/share}/dbus-1/system.d
+	rmdir "$PKG"/etc/dbus-1
+
+	for pam in lightdm lightdm-autologin; do
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
+	done
+
+	install -dm 750 -g polkitd "$PKG"/usr/share/polkit-1/rules.d
+	install -m644 "$STUFF"/lightdm/lightdm.rules "$PKG"/usr/share/polkit-1/rules.d/lightdm.rules
+
+	for rc in lightdm; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	done
+}
