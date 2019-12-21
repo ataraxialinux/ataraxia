@@ -1,4 +1,4 @@
-# Description: Display manager and login screen
+# Description: Display manager and login screen (libraries only)
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra consolekit2
@@ -6,7 +6,7 @@
 
 name=gdm
 version=3.34.1
-release=12
+release=1
 backup=('etc/gdm/custom.conf'
 	'etc/gdm/PostSession/Default'
 	'etc/gdm/PreSession/Default'
@@ -41,18 +41,11 @@ build() {
 		--with-systemdsystemunitdir=no \
 		--enable-ipv6 \
 		--enable-gdm-xsession \
+		--disable-user-display-server \
 		--disable-schemas-compile \
 		--disable-systemd-journal
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
-	make DESTDIR="$PKG" install
-
-	rm -rf "$PKG"/var/{cache,log,run}
-	rm -rf "$PKG"/run
-
-	for rc in gdm; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
-	done
+	make -C libgdm DESTDIR="$PKG" install
 }
