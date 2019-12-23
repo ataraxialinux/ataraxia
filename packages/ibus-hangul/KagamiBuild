@@ -1,0 +1,21 @@
+# Description: Korean input engine for IBus
+# URL:         http://ibus.googlecode.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool pygobject ibus libhangul iso-codes
+# Section:     localization
+
+name=ibus-hangul
+version=1.5.3
+release=1
+source=("https://github.com/libhangul/ibus-hangul/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/ibus
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf ../lib/ibus/ibus-setup-hangul "$PKG"/usr/bin/ibus-setup-hangul
+}
