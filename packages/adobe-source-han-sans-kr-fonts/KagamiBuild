@@ -1,0 +1,23 @@
+# Description: Korean OpenType/CFF fonts
+# URL:         https://github.com/adobe-fonts/source-han-sans
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  fontconfig
+# Section:     fonts
+
+name=adobe-source-han-sans-kr-fonts
+version=2.001
+commit=a69eda09a2fb57836e055bddb0a9a61b162ad1e6
+release=1
+source=("https://github.com/adobe-fonts/source-han-sans/raw/$commit/OTF/SourceHanSansK.zip")
+
+build() {
+	mkdir -p "$PKG"/etc/fonts/conf.avail "$PKG"/etc/fonts/conf.d
+	install -Dm0644 "$STUFF"/adobe-source-han-sans-kr-fonts/44-source-han-sans-kr.conf "$PKG"/etc/fonts/conf.avail/44-source-han-sans-kr.conf
+
+	cd "$PKG"/etc/fonts/conf.d
+	ln -sf ../conf.avail/44-source-han-sans-kr.conf 44-source-han-sans-kr.conf
+
+	cd "$SRC"
+	mkdir -p "$PKG"/usr/share/fonts/adobe-source-han-sans
+	cp SourceHanSansK/*.otf "$PKG"/usr/share/fonts/adobe-source-han-sans/
+}
