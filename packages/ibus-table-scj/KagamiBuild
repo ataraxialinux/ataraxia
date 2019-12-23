@@ -1,0 +1,27 @@
+# Description: SmartCangjie input method based on table engine of ibus
+# URL:         http://www.scj2000.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ibus-table
+# Section:     localization
+
+name=ibus-table-scj
+version=6.2.2
+release=1
+source=("http://download.scj2000.net/Linux/ibus/source/${nane}_${version}-1.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-scj6
+	make
+	make DESTDIR="$PKG" install
+}
