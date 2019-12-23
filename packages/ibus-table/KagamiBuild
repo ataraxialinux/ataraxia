@@ -1,0 +1,19 @@
+# Description: IM Engine framework for table-based input methods, such as ZhengMa, WuBi, ErBi, CangJie and so on
+# URL:         https://github.com/kaio/ibus-table
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python aspell-en ibus
+# Section:     localization
+
+name=ibus-table
+version=1.9.22
+release=1
+source=("https://github.com/kaio/ibus-table/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/ibus
+	make
+	make DESTDIR="$PKG" install
+}
