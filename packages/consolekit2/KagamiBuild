@@ -6,7 +6,7 @@
 
 name=consolekit2
 version=1.2.1
-release=1
+release=2
 source=("https://github.com/Consolekit2/ConsoleKit2/releases/download/$version/ConsoleKit2-$version.tar.bz2")
 
 build() {
@@ -29,6 +29,11 @@ build() {
 		--disable-docbook-docs
 	make
 	make DESTDIR="$PKG" install
+
+	for rc in consolekit; do
+		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	done
 
 	rm -rf "$PKG"/run
 }
