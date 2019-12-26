@@ -5,9 +5,16 @@
 # Section:     devel
 
 name=llvm
-version=9.0.0
+version=9.0.1
 release=1
-source=("http://releases.llvm.org/$version/$name-$version.src.tar.xz")
+case $version in
+	*.*.1)
+		source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/$name-$version.src.tar.xz")
+		;;
+	*)
+		source=("http://releases.llvm.org/$version/$name-$version.src.tar.xz")
+		;;
+esac
 
 build() {
 	cd "$SRC"/$name-$version.src
