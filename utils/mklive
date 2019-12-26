@@ -38,6 +38,7 @@ generate_initramfs() {
 	build_busybox
 
 	pushd "$INITRAMFS"
+		chmod -t etc/perp/*
 		chmod +t etc/perp/tty1
 
 		ln -sf usr/bin/init init
@@ -69,6 +70,7 @@ generate_initramfs() {
 		rm -rf usr/share/nano
 		rm -rf usr/lib/modules/*/kernel/sound
 		rm -rf usr/lib/modules/*/kernel/drivers/gpu
+		rm -rf etc/nanorc
 
 		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null || true
 		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true

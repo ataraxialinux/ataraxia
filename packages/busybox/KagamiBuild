@@ -22,7 +22,7 @@ build_busybox_standard() {
 		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" busybox.links
 	fi
 
-	install -Dm0755 busybox "$PKG"/usr/bin/busybox
+	install -Dm755 busybox "$PKG"/usr/bin/busybox
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -sf busybox "$PKG"/usr/bin/$applet || true; done
 
@@ -35,6 +35,19 @@ build_busybox_standard() {
 
 	for rc in tty{1,2,3,4,5,6,S0,AMA0,USB0}; do
 		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
+	done
+
+	case $BARCH in
+		amd64|i386|ppc64le|ppc64)
+			TTYS="1 2 3 4 5 6"
+			;;
+		arm64|armhf|armel|mips64|mips64el|mips|mipsel|riscv64|riscv32)
+			TTYS="1 S0 AMA0 USB0"
+			;;
+	esac
+
+	for tty in $TTYS; do
+		chmod +t "$PKG"/etc/perp/tty${tty}
 	done
 
 	cd "$STUFF"/busybox
