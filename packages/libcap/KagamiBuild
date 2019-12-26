@@ -13,7 +13,10 @@ source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$v
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/libcap/fix.patch
+	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
+	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules
+	sed -i 's,BUILD_GPERF := ,BUILD_GPERF := no #,' Make.Rules
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make BUILD_CC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" KERNEL_HEADERS="$ROOTFS"/usr/include PAM_CAP=yes GOLANG=no
