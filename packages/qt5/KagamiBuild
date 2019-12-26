@@ -16,8 +16,16 @@ build() {
 	patch -Np1 -i "$STUFF"/qt5/main.patch
 	patch -Np0 -i "$STUFF"/qt5/0014-musl-set_thread_name_np.patch
 	sed -i 's/python /python3 /' qtdeclarative/qtdeclarative.pro qtdeclarative/src/3rdparty/masm/masm.pri
+	sed -i 's/SIOCGSTAMP/0x8906/' qtserialbus/src/plugins/canbus/socketcan/socketcanbackend.cpp
+	sed -i 's/SIOCGSTAMP/0x8906/' qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
 
-	./configure \
+	case $BARCH in
+		riscv64|riscv32)
+			QTWEBENGINE="-skip qtwebengine"
+			;;
+	esac
+
+	./configure $QTWEBENGINE \
 		-prefix /usr \
 		-docdir /usr/share/doc/qt \
 		-headerdir /usr/include/qt \
@@ -37,8 +45,7 @@ build() {
 		-openssl-linked \
 		-reduce-relocations \
 		-system-harfbuzz \
-		-system-sqlite \
-		-skip qtwebengine
+		-system-sqlite
 	make
 	make INSTALL_ROOT="$PKG" install
 

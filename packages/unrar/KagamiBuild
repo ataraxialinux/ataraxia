@@ -1,0 +1,16 @@
+# Description: RAR uncompression program
+# URL:         https://www.rarlab.com/rar_add.htm
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     utils
+
+name=unrar
+version=5.8.5
+release=1
+source=("https://www.rarlab.com/rar/unrarsrc-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name
+	patch -Np1 -i "$STUFF"/unrar/makefile.patch
+	make STRIP="true"
+	make DESTDIR="$PKG"/usr install
+}

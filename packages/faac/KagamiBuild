@@ -1,0 +1,18 @@
+# Description: FAAC is an AAC audio encoder
+# URL:         https://www.audiocoding.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     audio
+
+name=faac
+version=1.30
+release=1
+source=("https://github.com/knik0/faac/archive/${version/./_}.tar.gz")
+
+build() {
+	cd "$SRC"/$name-${version/./_}
+	./bootstrap
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

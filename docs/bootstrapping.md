@@ -12,13 +12,13 @@ pacman -S base-devel xorriso mtools git pigz python pixz rsync jq freetype2
 ```
 xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
 ```
-#### Ataraxia GNU/Linux-Libre:
+#### Ataraxia Linux:
 ```
 ne -E libisoburn python mtools pixz freetype
 ```
 
 ### Compiling package manager
-Ataraxia GNU/Linux-Libre uses `neko` as its package manager. You should do this commands to install pkgutils (**AS ROOT**):
+Ataraxia Linux uses `neko` as its package manager. You should do this commands to install pkgutils (**AS ROOT**):
 ```
 cd /tmp
 git clone https://github.com/ataraxialinux/neko.git --depth 1

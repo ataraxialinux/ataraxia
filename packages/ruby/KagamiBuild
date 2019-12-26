@@ -5,27 +5,14 @@
 # Section:     interpreters
 
 name=ruby
-version=2.6.5
-jsonver=2.1.0
+version=2.7.0
 release=1
 options=('~emptydirs')
-source=("https://cache.ruby-lang.org/pub/ruby/${version:0:3}/ruby-${version}.tar.xz"
-	"https://github.com/flori/json/archive/v${jsonver}.tar.gz")
+source=("https://cache.ruby-lang.org/pub/ruby/${version:0:3}/ruby-${version}.tar.xz")
 
 build() {
-	cd "$SRC"/json-${jsonver}
-	patch -Np1 -i "$STUFF"/ruby/json-libre.patch
-	rm -rf json.gemspec ext lib/json/ext*
-
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/ruby/remove-json-ext.patch
-	patch -Np1 -i "$STUFF"/ruby/add-json_pure.patch
 	patch -Np1 -i "$STUFF"/ruby/rubygems-avoid-platform-specific-gems.patch
-
-	rm -rf ext/json test/json
-	cp -a "$SRC"/json-${jsonver}/lib/* lib/
-	cp -a "$SRC"/json-${jsonver}/json_pure.gemspec lib/json/
-	cp -a "$SRC"/json-${jsonver}/tests test/json
 
 	export CFLAGS="${CFLAGS/-fomit-frame-pointer}"
 	export CXXFLAGS="${CXXFLAGS/-fomit-frame-pointer}"

@@ -1,5 +1,5 @@
 # Roadmap
-This document describes roadmap of Ataraxia GNU/Linux-Libre (codename "aru")
+This document describes roadmap of Ataraxia Linux (codename "aru")
 
 ## ~~Stage 1~~
  - [x] ~~Do the cross-toolchain~~

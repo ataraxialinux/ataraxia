@@ -1,39 +1,35 @@
-# Description: A libre standalone web browser based on Mozilla Firefox
-# URL:         http://www.gnu.org/software/gnuzilla/
+# Description: Standalone web browser from mozilla.org
+# URL:         https://www.mozilla.org/firefox/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python cbindgen clang nasm yasm dbus-glib ffmpeg gtk3 gtk2 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk3 gtk2 libnotify nodejs nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
 # Section:     net
 
-name=icecat
+name=firefox
 version=68.3.0
 release=1
 options=('~emptydirs' '~ccache')
-source=("https://sagitter.fedorapeople.org/icecat/v${version}/$name-${version}-gnu1.tar.bz2")
+source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
-	export LDFLAGS="-Wl,-rpath,/usr/lib/icecat"
+	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/icecat/fix-fortify-system-wrappers.patch
-	patch -Np1 -i "$STUFF"/icecat/fix-seccomp-bpf.patch
-	patch -Np1 -i "$STUFF"/icecat/fix-toolkit.patch
-	patch -Np1 -i "$STUFF"/icecat/fix-tools.patch
-	patch -Np1 -i "$STUFF"/icecat/mallinfo.patch
-	patch -Np1 -i "$STUFF"/icecat/disable-moz-stackwalk.patch
-	patch -Np1 -i "$STUFF"/icecat/fix-musl.patch
-	patch -Np1 -i "$STUFF"/icecat/fix-webrtc-glibcisms.patch
-	patch -Np1 -i "$STUFF"/icecat/fix-sandbox-membarrier.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-seccomp-bpf.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-toolkit.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-tools.patch
+	patch -Np1 -i "$STUFF"/firefox/mallinfo.patch
+	patch -Np1 -i "$STUFF"/firefox/disable-moz-stackwalk.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-musl.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-webrtc-glibcisms.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-sandbox-membarrier.patch
 
-	cp "$STUFF"/icecat/stab.h toolkit/crashreporter/google-breakpad/src/
+	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
 
 	cat > mozconfig <<-EOF
-		export BUILD_OFFICIAL=1	
-		export MOZILLA_OFFICIAL=1
-		mk_add_options BUILD_OFFICIAL=1
-		mk_add_options MOZILLA_OFFICIAL=1
 		ac_add_options --enable-dbus
 		ac_add_options --disable-necko-wifi
-		ac_add_options --enable-startup-notification
+		ac_add_options --disable-startup-notification
 		ac_add_options --disable-pulseaudio
 		ac_add_options --enable-alsa
 		ac_add_options --enable-av1
@@ -64,34 +60,35 @@ build() {
 		ac_add_options --with-system-png
 		ac_add_options --with-system-webp
 		ac_add_options --with-system-zlib
+		ac_add_options --disable-official-branding
+		ac_add_options --with-branding=browser/branding/unofficial
 		ac_add_options --enable-update-channel=release
-		ac_add_options --enable-official-branding
 		ac_add_options --disable-gconf
 		ac_add_options --host=$XTARGET
 		ac_add_options --target=$XTARGET
-		unset MOZ_TELEMETRY_REPORTING
 	EOF
-
-	find extensions/gnu -name "cose.manifest" -exec rm -rf {} +
 
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
-	for i in 16 22 24 32 48 64 128; do
-		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/icecat.png
+	for i in 16 32 48 64 128; do
+		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
+	mkdir -p "$PKG"/usr/bin/
+	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
+
 	mkdir -p "$PKG"/usr/share/applications/
-	cat > "$PKG"/usr/share/applications/icecat.desktop <<-EOF
+	cat > "$PKG"/usr/share/applications/firefox.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
-		Name=GNU IceCat
+		Name=Firefox Web Browser
 		Comment=Browse the World Wide Web
 		GenericName=Web Browser
-		Exec=icecat %u
+		Exec=firefox %u
 		Terminal=false
 		Type=Application
-		Icon=icecat
+		Icon=firefox
 		Categories=GNOME;GTK;Network;WebBrowser;
 		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
 		StartupNotify=true

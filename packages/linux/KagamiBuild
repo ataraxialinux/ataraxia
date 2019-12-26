@@ -12,7 +12,7 @@ case $version in
 esac
 release=1
 options=('~strip' 'bootstrap' '~ccache')
-source=("http://linux-libre.fsfla.org/pub/linux-libre/releases/${version}-gnu/linux-libre-${version}-gnu.tar.xz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -101,7 +101,7 @@ generate_config() {
 			export DEFCONFIG="rv32_defconfig"
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux-Libre"
+			echo "Architecture is not set or is not supported by Ataraxia Linux"
 			exit 1
 	esac
 
@@ -858,6 +858,8 @@ generate_config() {
 		DRM_I915_USERPTR DRM_I915_GVT DRM_GMA600 DRM_GMA3600 DRM_FBDEV_EMULATION DRM_BRIDGE DRM_PANEL_BRIDGE USB_VIDEO_CLASS_INPUT_EVDEV \
 		USB_PWC_INPUT_EVDEV CHARGER_MANAGER DRM_I915_ALPHA_SUPPORT
 
+	strconfig DEFAULT_HOSTNAME azusa
+	strconfig LOCALVERSION -ataraxia
 	strconfig UEVENT_HELPER_PATH ""
 	strconfig NLS_DEFAULT "utf8"
 	strconfig FAT_DEFAULT_IOCHARSET "ascii"
@@ -939,7 +941,7 @@ build() {
 			export IMAGELOC="vmlinux"
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux-Libre"
+			echo "Architecture is not set or is not supported by Ataraxia Linux"
 			exit 1
 	esac
 
@@ -981,7 +983,7 @@ build() {
 		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
-	depmod -a -v -b "$PKG"/usr ${kver}-gnu
+	depmod -a -v -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
 		arm64|armhf|armel)
@@ -994,13 +996,13 @@ build() {
 	esac
 
 	mkdir -p "$PKG"/boot
-	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-${version}-gnu
-	cp .config "$PKG"/boot/config-${version}-gnu
+	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-${version}-ataraxia
+	cp .config "$PKG"/boot/config-${version}-ataraxia
 
 	for a in vmlinuz config; do
-		ln -sf ${a}-${version}-gnu "$PKG"/boot/$a
+		ln -sf ${a}-${version}-ataraxia "$PKG"/boot/$a
 	done
 
-	rm -rf "$PKG"/usr/lib/modules/${kver}-gnu/build
-	rm -rf "$PKG"/usr/lib/modules/${kver}-gnu/source
+	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
+	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
 }
