@@ -161,4 +161,21 @@ if [ "$single" = "1" ]; then
 	echo "Going single-user..."
 	sulogin
 	poweroff
+else
+	echo "Going multi-user..."
+
+	if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
+		if [ -x /usr/bin/quotaon ]; then
+			echo "Turning on quota file system..."
+			quotaon -aug
+		fi
+	fi
+
+	if [ -x /etc/rc.d/rc.local ]; then
+		echo "Running user's commands"
+		/etc/rc.d/rc.local
+	fi
+
+	echo "Starting perp..."
+	perpboot -d /etc/perp
 fi
