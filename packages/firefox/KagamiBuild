@@ -60,8 +60,7 @@ build() {
 		ac_add_options --with-system-png
 		ac_add_options --with-system-webp
 		ac_add_options --with-system-zlib
-		ac_add_options --disable-official-branding
-		ac_add_options --with-branding=browser/branding/unofficial
+		ac_add_options --enable-official-branding
 		ac_add_options --enable-update-channel=release
 		ac_add_options --disable-gconf
 		ac_add_options --host=$XTARGET
@@ -71,8 +70,11 @@ build() {
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
+	mkdir -pv "$PKG"/usr/lib/mozilla/plugins
+	ln -sfv ../../mozilla/plugins "$PKG"/usr/lib/firefox/browser/
+
 	for i in 16 32 48 64 128; do
-		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
+		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
 	mkdir -p "$PKG"/usr/bin/
