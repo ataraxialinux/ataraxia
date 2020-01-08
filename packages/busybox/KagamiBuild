@@ -26,15 +26,31 @@ build_busybox_standard() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -sf busybox "$PKG"/usr/bin/$applet || true; done
 
-	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
+	mkdir -p "$PKG"/usr/share/udhcpc
+	
+	cat > "$PKG"/usr/share/udhcpc/default.script <<-EOF
+		#!/bin/sh
+		ip addr add $ip/$mask dev $interface
+		if [ "$router" ]; then
+			ip route add default via $router dev $interface
+		fi
+		if [ "$ip" ]; then
+			echo "DHCP Configuration for Device $interface"
+			echo "IP:			$ip"
+			echo "Mask:			$mask"
+			echo "Router:		$router"
+		fi
+	EOF
+
+	chmod +x "$PKG"/usr/share/udhcpc/default.script
 
 	for initd in crond klogd rdate syslog watchdog ntpd; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 
-	for initd in acpid inetd udhcpc udhcpd; do
-		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+	for initd in acpid inetd udhcpd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 	done
 }
 
@@ -51,9 +67,7 @@ build_busybox_embedded() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -sf busybox "$PKG"/usr/bin/$applet || true; done
 
-	mkdir -p "$PKG"/usr/share/udhcpc
-	cp "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
-	chmod +x "$PKG"/usr/share/udhcpc/default.script
+	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 
 	rm -rf "$PKG"/usr/bin/{bc,dc,sh,nc}
 }
