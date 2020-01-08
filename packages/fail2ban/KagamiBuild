@@ -25,9 +25,9 @@ build() {
 	install -Dm644 files/fail2ban-logrotate "$PKG"/etc/logrotate.d/fail2ban
 	install -Dm644 files/bash-completion "$PKG"/usr/share/bash-completion/completions/fail2ban
 
-	for rc in fail2ban; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in fail2ban; do
+		install -Dm0755 files/gentoo-initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 files/gentoo-confd "$PKG"/etc/conf.d/$initd
 	done
 
 	rm -rf "$PKG"/run
