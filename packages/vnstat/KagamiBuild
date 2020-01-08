@@ -24,8 +24,10 @@ build() {
 	mkdir -p "$PKG"/usr/bin
 	make DESTDIR="$PKG" install
 
-	for rc in vnstatd; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in vnstatd; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
+
+	mkdir -p "$PKG"/var/lib/vnstat
 }

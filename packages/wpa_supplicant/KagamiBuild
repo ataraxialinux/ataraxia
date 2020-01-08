@@ -23,8 +23,8 @@ build() {
 	make PREFIX=/usr BINDIR=/usr/bin DESTDIR="$PKG" install
 	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
 
-	for rc in wpa_supplicant; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in wpa_supplicant; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

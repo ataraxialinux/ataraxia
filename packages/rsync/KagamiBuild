@@ -32,8 +32,8 @@ build() {
 
 	install -Dm644 "$STUFF"/rsync/rsyncd.conf "$PKG"/etc/rsyncd.conf
 
-	for rc in rsyncd; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in rsyncd; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

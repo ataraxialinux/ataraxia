@@ -24,8 +24,12 @@ build() {
 	mkdir -p "$PKG"/etc
 	touch "$PKG"/etc/nftables.conf
 
-	for rc in nftables; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	mkdir -p "$PKG"/var/lib/nftables
+
+	install -Dm0755 "$STUFF"/nftables/nftables.sh "$PKG"/usr/lib/nftables/nftables.sh
+
+	for initd in nftables; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

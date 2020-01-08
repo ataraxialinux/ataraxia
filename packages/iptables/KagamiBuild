@@ -37,10 +37,11 @@ build() {
 	mkdir -p "$PKG"/etc/iptables
 	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
 
-	install -Dm775 "$STUFF"/iptables/flush "$PKG"/usr/lib/iptables-flush
+	mkdir -p "$PKG"/var/lib/iptables "$PKG"/var/lib/ip6tables
 
-	for rc in iptables ip6tables; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in iptables; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
+	install -D -m755 "$STUFF"/svc/ip6tables.confd "$PKG"/etc/conf.d/ip6tables
 }

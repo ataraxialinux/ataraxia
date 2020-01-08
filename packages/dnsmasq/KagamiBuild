@@ -31,8 +31,8 @@ build() {
 	sed -i 's,%%PREFIX%%,/usr,' "$PKG"/etc/dnsmasq.conf
 	install -Dm644 "trust-anchors.conf" "$PKG"/usr/share/dnsmasq/trust-anchors.conf
 
-	for rc in dnsmasq; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in dnsmasq; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }
