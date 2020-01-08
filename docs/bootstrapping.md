@@ -10,11 +10,11 @@ pacman -S base-devel xorriso mtools git pigz python pixz rsync jq freetype2
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
+xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive bsdtar jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
 ```
 #### Ataraxia Linux:
 ```
-ne -E libisoburn python mtools pixz freetype
+neko install libisoburn python mtools pixz freetype
 ```
 
 ### Compiling package manager
