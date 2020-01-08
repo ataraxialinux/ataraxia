@@ -14,9 +14,9 @@ build() {
 	HOSTCC=${HOSTCC:-cc}
 
 	cd "$SRC"
-	$HOSTCC -I"$STUFF"/busybox -I"$STUFF"/tzdata -Wall -static "$STUFF"/busybox/reallocarray.c \
-		"$STUFF"/busybox/strlcpy.c "$STUFF"/busybox/strlcat.c \
-		"$STUFF"/tzdata/zic.c -o "$SRC"/zic
+	$HOSTCC -Werror -I"$STUFF"/busybox "$STUFF"/busybox/zic.c \
+		"$STUFF"/busybox/strlcat.c "$STUFF"/busybox/strlcpy.c "$STUFF"/busybox/reallocarray.c \
+		-o "$SRC"/zic
 
 	ZONEINFO="$PKG"/usr/share/zoneinfo
 	mkdir -pv $ZONEINFO/{posix,right}
@@ -32,5 +32,7 @@ build() {
 	./zic -d $ZONEINFO -p America/New_York
 
 	mkdir -p "$PKG"/usr/bin
-	${CROSS_COMPILE}cc -I"$STUFF"/busybox -I"$STUFF"/tzdata -Wall -static "$STUFF"/busybox/reallocarray.c "$STUFF"/tzdata/zic.c -o "$PKG"/usr/bin/zic
+	${CROSS_COMPILE}cc -Werror -static -I"$STUFF"/busybox \
+		"$STUFF"/busybox/zic.c "$STUFF"/busybox/reallocarray.c \
+		-o "$PKG"/usr/bin/zic
 }

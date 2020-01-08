@@ -18,6 +18,7 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <bsd.h>
 
 /*
  * Appends src to string dst of size dsize (unlike strncat, dsize is the

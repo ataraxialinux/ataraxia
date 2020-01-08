@@ -1,7 +1,7 @@
 # Description: Display manager and login screen
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra consolekit2
+# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra consolekit2 dconf
 # Section:     gnome
 
 name=gdm
@@ -52,8 +52,5 @@ build() {
 	rm -rf "$PKG"/var/{cache,log,run}
 	rm -rf "$PKG"/run
 
-	for rc in gdm; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
-	done
+	install -Dm0755 "$STUFF"/svc/gdm.initd "$PKG"/etc/init.d/gdm
 }

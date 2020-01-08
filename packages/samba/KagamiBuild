@@ -53,8 +53,8 @@ build() {
 	install -Dm644 "$STUFF"/samba/logrotate "$PKG"/etc/logrotate.d/samba
 	install -Dm644 "$STUFF"/pam.d/samba "$PKG"/etc/pam.d/samba
 
-	for rc in smbd nmbd; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in samba; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

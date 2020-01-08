@@ -20,4 +20,9 @@ build() {
 		--sbindir=/usr/bin
 	make
 	make DESTDIR="$PKG" install
+
+	for initd in kexec; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }

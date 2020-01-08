@@ -26,8 +26,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for rc in iwd ead; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in iwd ead; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 	done
+
+	mkdir -p "$PKG"/var/lib/iwd "$PKG"/var/lib/ead
 }

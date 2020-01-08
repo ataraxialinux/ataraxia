@@ -50,8 +50,7 @@ build() {
 		--enable-vipw \
 		--enable-wall \
 		--enable-write \
-		--enable-zramctl \
-		--disable-agetty
+		--enable-zramctl
 	make
 	make DESTDIR="$PKG" install
 
@@ -70,13 +69,6 @@ build() {
 
 	mv usr/sbin/* usr/bin
 	rmdir usr/sbin
-
-	rm -rf "$PKG"/usr/bin/ctrlaltdel
-
-	for rc in uuid; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
-	done
 
 	if [ "$EMBEDDED" = "1" ]; then
 		rm -rf "$PKG"/usr/bin

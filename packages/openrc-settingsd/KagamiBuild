@@ -1,0 +1,24 @@
+# Description: System settings D-Bus service for OpenRC 
+# URL:         https://gitweb.gentoo.org/proj/openrc-settingsd.git
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  openrc libdaemon polkit
+# Section:     admin
+
+name=openrc-settingsd
+version=1.0.1
+release=1
+source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i -e 's:/sbin/runscript:/usr/bin/openrc-run:g' data/init.d/openrc-settingsd.in
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--with-pidfile=/run/openrc-settingsd.pid
+	make
+	make DESTDIR="$PKG" install
+}

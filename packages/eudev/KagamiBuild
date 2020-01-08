@@ -7,9 +7,11 @@
 
 name=eudev
 version=3.2.9
+scriptsver=32
 release=1
 options=('bootstrap')
-source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz")
+source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz"
+	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$scriptsver.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -48,4 +50,14 @@ cat > "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules << "EOF"
 # spoof mac address
 ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
 EOF
+
+	mkdir -p "$PKG"/etc/runlevels/sysinit
+
+	for MYUDEV in udev udev-settle udev-trigger; do
+		ln -sf ../../init.d/$MYUDEV "$PKG"/etc/runlevels/sysinit/$MYUDEV
+	done
+
+	cd "$SRC"/udev-init-scripts-$scriptsver
+	make PREFIX=/usr
+	make PREFIX=/usr DESTDIR="$PKG" install
 }

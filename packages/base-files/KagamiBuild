@@ -8,24 +8,21 @@ name=base-files
 version=0.4
 release=1
 options=('bootstrap')
-backup=('etc/doas.conf'
-	'etc/fstab'
+backup=('etc/fstab'
 	'etc/group'
 	'etc/gshadow'
 	'etc/host.conf'
 	'etc/hosts'
+	'etc/inittab'
 	'etc/issue'
 	'etc/issue.net'
 	'etc/motd'
 	'etc/passwd'
 	'etc/profile'
-	'etc/rc.conf'
-	'etc/rc.local'
 	'etc/resolv.conf'
 	'etc/securetty'
 	'etc/shadow'
-	'etc/shells'
-	'etc/tinylog.conf')
+	'etc/shells')
 
 build() {
 	cd "$PKG"
@@ -46,7 +43,7 @@ build() {
 
 	touch etc/ataraxia-release
 
-	for f in doas.conf fstab group host.conf hosts issue issue.net motd os-release passwd profile resolv.conf rc.conf securetty shells tinylog.conf; do
+	for f in fstab group host.conf hosts inittab issue issue.net motd os-release passwd profile resolv.conf securetty shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
 	done
 
@@ -141,7 +138,7 @@ EOF
 		chmod +x "$PKG"/etc/bootscript.sh "$PKG"/init
 	fi
 
-	install -D -m755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -D -m755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
-	install -D -m755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
+	install -Dm0755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
+	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
 }

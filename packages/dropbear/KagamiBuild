@@ -18,8 +18,10 @@ build() {
 	make PROGRAMS='dbclient dropbear dropbearconvert dropbearkey'
 	make DESTDIR="$PKG" install
 
-	for rc in dropbear; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	mkdir -p "$PKG"/var/log/dropbear
+
+	for initd in dropbear; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }

@@ -61,8 +61,12 @@ EOF
 	chmod u+w,go+r "$PKG"/usr/bin/mount.nfs
 	chown nobody "$PKG"/var/lib/nfs
 
-	for rc in nfs rpc.blkmapd rpc.gssd rpc.idmapd rpc.statd rpc.svcgssd; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in nfsclient nfs nfsmount ; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	for initd in rpc.gssd rpc.idmapd rpc.pipefs rpc.statd rpc.svcgssd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 	done
 }

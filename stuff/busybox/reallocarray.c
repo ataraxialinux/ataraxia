@@ -19,7 +19,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <compat.h>
+#include <bsd.h>
 
 /*
  * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX

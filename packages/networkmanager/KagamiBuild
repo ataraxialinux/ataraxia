@@ -47,9 +47,9 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	for rc in networkmanager; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in networkmanager; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 
 cat > "$PKG"/etc/NetworkManager/NetworkManager.conf << "EOF"

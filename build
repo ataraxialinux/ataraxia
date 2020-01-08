@@ -230,7 +230,7 @@ build_toolchain() {
 	for toolchain in base-files file gettext-tiny m4 bison \
 			flex bc ncurses kmod gperf libtool autoconf automake \
 			linux-headers binutils gcc-static musl gcc \
-			perp cracklib $EXTRAPKG pkgconf; do
+			cracklib $EXTRAPKG pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
@@ -293,11 +293,13 @@ build_target() {
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox mksh"
 	else
-		packages="netbase tzdata man-pages musl-tools gettext-tiny zlib file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-			ccache bzip2 pkgconf cracklib pam attr acl libcap shadow pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates \
-			autoconf automake xz lzip lz4 zstd libarchive kmod libuargp libelf perp busybox coreutils mawk hostname mandoc dialog pigz libmnl libnftnl libnfnetlink \
-			libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch nano libcap-ng util-linux ubase sinit e2fsprogs dosfstools \
-			hwids gperf eudev popt rsync wireless_tools wpa_supplicant gptfdisk wget keyring libssh2 c-ares libev nghttp2 curl oniguruma jq neko $LINUX"
+		packages="netbase tzdata man-pages musl-tools gettext-tiny zlib file ncurses readline \
+			m4 bison flex bc gmp mpfr mpc binutils gcc ccache bzip2 pkgconf cracklib pam attr acl libcap \
+			shadow pcre grep mksh bash libtool gdbm db expat perl nettle libressl ca-certificates autoconf automake \
+			xz lzip lz4 zstd libarchive kmod libuargp libelf busybox coreutils mawk hostname mandoc dialog pigz \
+			libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
+			nano libcap-ng util-linux e2fsprogs dosfstools hwids gperf eudev openrc netifrc popt rsync wireless_tools \
+			wpa_supplicant gptfdisk wget keyring libssh2 nghttp2 curl oniguruma jq neko $LINUX"
 	fi
 
 	neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn $packages

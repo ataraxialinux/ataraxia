@@ -30,10 +30,8 @@ build() {
 		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/$bin
 	done
 
-	install -Dm644 "$STUFF"/distcc/conf "$PKG"/etc/conf.d/distccd
-
-	for rc in distccd; do
-		install -Dm755 "$STUFF"/perpd/$rc "$PKG"/etc/perp/$rc/rc.main
-		install -Dm755 "$STUFF"/perpd/log "$PKG"/etc/perp/$rc/rc.log
+	for initd in distcc; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 }
