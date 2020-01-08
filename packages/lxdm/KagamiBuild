@@ -1,7 +1,7 @@
 # Description: Lightweight X11 Display Manager
 # URL:         https://lxde.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam intltool xorg-server gtk2 consolekit2
+# Depends on:  pam intltool libexecinfo xorg-server gtk3 consolekit2
 # Section:     x11
 
 name=lxdm
@@ -15,7 +15,7 @@ build() {
 	patch -Np1 -i "$STUFF"/lxdm/fix-msghdr-usage.patch
 
 	install -Dm644 "$STUFF"/pam.d/lxdm pam/lxdm
-	install -Dm644 "$STUFF"/lxdm/Xsession data/Xsession
+	sed -i 's:/etc/xprofile:/etc/profile:g' data/Xsession
 
 	libtoolize --force && aclocal && autoheader && autoconf \
 		&& automake --add-missing
@@ -27,7 +27,7 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-pam \
-		--disable-gtk3
+		--enable-gtk3
 	make
 	make DESTDIR="$PKG" install
 
