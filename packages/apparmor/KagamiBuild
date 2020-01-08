@@ -1,0 +1,50 @@
+# Description: Mandatory Access Control (MAC) using Linux Security Module (LSM)
+# URL:         https://gitlab.com/apparmor/apparmor
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam perl audit
+# Section:     admin
+
+name=apparmor
+version=2.13.3
+release=1
+source=("https://launchpad.net/${name}/${version%.[0-9]}/${version}/+download/${name}-${version}.tar.gz")
+
+build() {
+	mkdir -p "$PKG"/usr/lib/apparmor
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/apparmor/0001-Fix-linking-against-gettext-on-musl-libc.patch
+
+	sed -e 's/sbin/usr\/bin/g' \
+		-e 's/\}\/lib\/apparmor/\}\/usr\/lib\/apparmor/' \
+		-e 's/644 apparmor.systemd/755 apparmor.systemd/' \
+		-i parser/Makefile
+
+	cd libraries/libapparmor
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--with-perl \
+		--without-python
+	make
+	make DESTDIR="$PKG" install
+
+	cd ..
+
+	make -C libraries/libapparmor DESTDIR="$PKG" install
+	make -C changehat/pam_apparmor DESTDIR="$PKG"/usr install
+	make -C binutils DESTDIR="$PKG" install
+	make -C parser DESTDIR="$PKG" install
+	make -C parser DESTDIR="$PKG" install-systemd
+	make -C profiles DESTDIR="$PKG" install
+	make -C utils DESTDIR="$PKG" BINDIR="$PKG"/usr/bin install
+
+	find "$PKG"/usr/lib/perl5/ \
+		-type f -iname "*.so" \
+		-exec strip --strip-unneeded {} \; \
+		-exec chrpath -d {} \;
+
+	cd "$PKG"
+	[[ /usr/bin/true ]] && backup=( ${backup[@]} $(find "etc/${pkgname}.d/" -type f) )
+}
