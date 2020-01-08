@@ -8,6 +8,21 @@
 name=openrc
 version=0.42.1
 release=1
+backup=('etc/rc.conf'
+	'etc/conf.d/bootmisc'
+	'etc/conf.d/consolefont'
+	'etc/conf.d/devfs'
+	'etc/conf.d/dmesg'
+	'etc/conf.d/fsck'
+	'etc/conf.d/hostname'
+	'etc/conf.d/hwclock'
+	'etc/conf.d/keymaps'
+	'etc/conf.d/killprocs'
+	'etc/conf.d/localmount'
+	'etc/conf.d/modules'
+	'etc/conf.d/netmount'
+	'etc/conf.d/network'
+	'etc/conf.d/staticroute')
 options=('bootstrap')
 source=("https://github.com/OpenRC/openrc/archive/$version.tar.gz")
 
@@ -29,7 +44,13 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/openrc/0003-sysctl-add-compatibility-for-busybox-sysctl.patch
+	patch -Np1 -i "$STUFF"/openrc/0001-adjust-for-Ataraxia-Linux.patch
 
 	make "${makeargs[@]}"
 	make "${makeargs[@]}" DESTDIR="$PKG" install
+
+	for initd in hostname; do
+		install -D -m755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -D -m755 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }
