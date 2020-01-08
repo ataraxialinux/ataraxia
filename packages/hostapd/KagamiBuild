@@ -6,7 +6,7 @@
 
 name=hostapd
 version=2.9
-release=1
+release=2
 source=("https://w1.fi/releases/$name-$version.tar.gz")
 
 build() {
@@ -15,10 +15,57 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/wpa_supplicant/eloop.patch
 
-	cp "$STUFF"/hostapd/config $name/.config
-	sed -i 's#/etc/hostapd#/etc/hostapd/hostapd#' $name/hostapd.conf
-
 	cd $name
+	cp defconfig .config
+	echo "CONFIG_EAP=y" >> .config
+	echo "CONFIG_ERP=y" >> .config
+	echo "CONFIG_EAP_MD5=y" >> .config
+	echo "CONFIG_EAP_FAST=y" >> .config
+	echo "CONFIG_EAP_TLS=y" >> .config
+	echo "CONFIG_EAP_TTLS=y" >> .config
+	echo "CONFIG_EAP_MSCHAPV2=y" >> .config
+	echo "CONFIG_EAP_PEAP=y" >> .config
+	echo "CONFIG_TLSV11=y" >> .config
+	echo "CONFIG_TLSV12=y" >> .config
+	echo "CONFIG_EAP_PWD=y" >> .config
+	echo "CONFIG_EAP_IKEV2=y" >> .config
+	echo "CONFIG_EAP_TNC=y" >> .config
+	echo "CONFIG_EAP_GTC=y" >> .config
+	echo "CONFIG_EAP_SIM=y" >> .config
+	echo "CONFIG_EAP_AKA=y" >> .config
+	echo "CONFIG_EAP_AKA_PRIME=y" >> .config
+	echo "CONFIG_EAP_EKE=y" >> .config
+	echo "CONFIG_EAP_PAX=y" >> .config
+	echo "CONFIG_EAP_PSK=y" >> .config
+	echo "CONFIG_EAP_SAKE=y" >> .config
+	echo "CONFIG_EAP_GPSK=y" >> .config
+	echo "CONFIG_EAP_GPSK_SHA256=y" >> .config
+	echo "CONFIG_DRIVER_HOSTAP=y" >> .config
+	echo "CONFIG_DRIVER_WIRED=y" >> .config
+	echo "CONFIG_DRIVER_NONE=y" >> .config
+	echo "CONFIG_DRIVER_NL80211=y" >> .config
+	echo "CONFIG_ELOOP_EPOLL=y" >> .config
+	echo "CONFIG_DEBUG_FILE=y" >> .config
+	echo "CONFIG_PKCS12=y" >> .config
+	echo "CONFIG_RADIUS_SERVER=y" >> .config
+	echo "CONFIG_IAPP=y" >> .config
+	echo "CONFIG_IEEE80211R=y" >> .config
+	echo "CONFIG_IEEE80211W=y" >> .config
+	echo "CONFIG_IEEE80211N=y" >> .config
+	echo "CONFIG_IEEE80211AC=y" >> .config
+	echo "CONFIG_PEERKEY=y" >> .config
+	echo "CONFIG_RSN_PREAUTH=y" >> .config
+	echo "CONFIG_INTERWORKING=y" >> .config
+	echo "CONFIG_FULL_DYNAMIC_VLAN=y" >> .config
+	echo "CONFIG_HS20=y" >> .config
+	echo "CONFIG_WNM=y" >> .config
+	echo "CONFIG_FST=y" >> .config
+	echo "CONFIG_FST_TEST=y" >> .config
+	echo "CONFIG_ACS=y" >> .config
+	echo "CONFIG_IPV6=y" >> .config
+
+	sed -i 's#/etc/hostapd#/etc/hostapd/hostapd#' hostapd.conf
+
 	make
 
 	install -d "$PKG"/usr/bin
