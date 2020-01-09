@@ -11,6 +11,8 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	printf "all:\n\ttrue\n\ninstall:\n\ttrue\n\n" > help/Makefile.in
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
@@ -19,17 +21,6 @@ build() {
 		--enable-gladeui \
 		--disable-gtk-doc \
 		--disable-man-pages
-
-	# stupid hack, but works(tm)
-	rm -rf help/Makefile
-	cat << EOF > help/Makefile
-all:
-	true
-
-install:
-	true
-EOF
-
 	sed -i 's/ -shared / -Wl,-Os,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
