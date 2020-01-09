@@ -21,36 +21,16 @@ main_standard() {
 			parted -a optimal -s $lodev mkpart primary 0% 100%
 			parted -s $lodev set 1 boot on
 			;;
-		arm64|armhf|armel)
-			parted -s $lodev mklabel msdos
-			parted -a optimal -s $lodev mkpart primary 0mb 256mb
-			parted -a optimal -s $lodev mkpart primary 256mb 100%
-			;;
 		*)
 			parted -s $lodev mklabel msdos
 			parted -a optimal -s $lodev mkpart primary 0% 100%
 			;;
 	esac
 
-	case $BARCH in
-		arm64|armhf|armel)
-			bootpart="${lodev}p1"
-			lopart="${lodev}p2"
+	lopart="${lodev}p1"
+	yes | mkfs.ext4 $lopart
 
-			yes | mkfs.ext4 $lopart
-			yes | mkfs.ext2 $bootpart
-
-			mount -o loop $lopart "$IMAGEFS"
-			mkdir -p "$IMAGEFS/boot"
-			mount -o loop $bootpart "$IMAGEFS/boot"
-			;;
-		*)
-			lopart="${lodev}p1"
-			yes | mkfs.ext4 $lopart
-
-			mount -o loop $lopart "$IMAGEFS"
-			;;
-	esac
+	mount -o loop $lopart "$IMAGEFS"
 
 	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny zlib file \
 		ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache bzip2 pkgconf cracklib pam \
@@ -62,16 +42,7 @@ main_standard() {
 
 	neko install -c "$BUILD"/target.config -r "$IMAGEFS" $packages
 
-	case $BARCH in
-		arm64|armhf|armel)
-			umount -l "$IMAGEFS/boot"
-			umount -l "$IMAGEFS"
-			;;
-		*)
-			umount -l "$IMAGEFS"
-			;;
-	esac
-
+	umount -l "$IMAGEFS"
 	losetup -d $lodev
 }
 

@@ -32,3 +32,11 @@ size_t	 strlcpy(char *, const char *, size_t)
 		__attribute__ ((__bounded__(__string__,1,3)));
 #endif
 void	*reallocarray(void *, size_t, size_t);
+void		vwarnc(int, const char *, va_list)
+			__attribute__((__format__ (printf, 2, 0)));
+void		warnc(int, const char *, ...)
+			__attribute__((__format__ (printf, 2, 3)));
+__dead void		errc(int, int, const char *, ...)
+			__attribute__((__format__ (printf, 3, 4)));
+__dead void		verrc(int, int, const char *, va_list)
+			__attribute__((__format__ (printf, 3, 0)));
