@@ -11,6 +11,8 @@ source=("https://github.com/flatpak/flatpak/releases/download/$version/$name-$ve
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/flatpak/musl-fixes.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
@@ -18,11 +20,13 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-dbus-config-dir=/usr/share/dbus-1/system.d \
+		--with-priv-mode=setuid \
 		--with-profile-dir=/etc/profile.d \
 		--with-system-bubblewrap \
 		--with-system-dbus-proxy \
 		--with-system-helper-user=flatpak \
-		--disable-gtk-doc \
+		--disable-documentation \
+		--disable-gtk-doc
 
 	sed -i 's/ -shared / -Wl,-Os,--as-needed\0/g' libtool
 	make
