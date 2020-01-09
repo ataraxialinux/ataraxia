@@ -1,0 +1,30 @@
+# Description: Operating system and container binary deployment and upgrades
+# URL:         https://ostree.readthedocs.org/en/latest/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gobject-introspection libxslt e2fsprogs fuse2 gpgme libarchive libsoup
+# Section:     admin
+
+name=ostree
+version=2019.6
+release=1
+source=("https://github.com/ostreedev/ostree/releases/download/v$version/libostree-$version.tar.xz")
+
+build() {
+	cd "$SRC"/libostree-$version
+	patch -Np1 -i "$STUFF"/ostree/musl-fixes.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-builtin-grub2-mkconfig \
+		--with-openssl \
+		--disable-glibtest \
+		--disable-gtk-doc
+
+	sed -i 's/ -shared / -Wl,-Os,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
