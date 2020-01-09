@@ -1,14 +1,15 @@
 #!/usr/bin/openrc-run
-# Copyright 1999-2013 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
+supervisor=supervise-daemon
 
-pidfile=/run/${SVCNAME}.pid
+name="RNG Daemon"
+description="haveged Random Number Generator"
 
-command="/usr/bin/${SVCNAME}"
-command_args="-r 0 ${HAVEGED_OPTS} -p ${pidfile}"
+command=/usr/bin/haveged
+command_args="$HAVEGED_OPTS"
+command_args_foreground="--Foreground"
 
 depend() {
 	need localmount
-	use logger
+	after urandom
 	provide entropy
 }
