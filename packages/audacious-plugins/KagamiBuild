@@ -1,0 +1,24 @@
+# Description: Lightweight, advanced audio player focused on audio quality
+# URL:         https://audacious-media-player.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  audacious ffmpeg flac
+# Section:     audio
+
+name=audacious-plugins
+version=3.10.1
+release=1
+source=("https://distfiles.audacious-media-player.org/$name-$version.tar.bz2")
+
+build() {
+	export CFLAGS="$CFLAGS -fno-stack-protector"
+	export CXXFLAGS="$CFLAGS"
+
+	cd "$SRC"/$name-$version
+	aclocal -I m4 && autoheader && autoconf
+	sed -e "/touch/s/0001010000/200001010000/g" -i configure
+
+	TPUT=/bin/true ./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
