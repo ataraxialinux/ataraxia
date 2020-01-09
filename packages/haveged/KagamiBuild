@@ -1,0 +1,29 @@
+# Description: Entropy harvesting daemon using CPU timings
+# URL:         https://github.com/jirka-h/haveged/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     admin
+
+name=haveged
+version=1.9.8
+release=1
+options=('bootstrap')
+source=("https://github.com/jirka-h/haveged/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+
+	for initd in haveged; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	mkdir -p "$PKG"/etc/runlevels/default
+	ln -sf ../../init.d/default "$PKG"/etc/runlevels/default/haveged
+}

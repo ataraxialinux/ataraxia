@@ -1,0 +1,14 @@
+#!/usr/bin/openrc-run
+# Copyright 1999-2013 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+pidfile=/run/${SVCNAME}.pid
+
+command="/usr/bin/${SVCNAME}"
+command_args="-r 0 ${HAVEGED_OPTS} -p ${pidfile}"
+
+depend() {
+	need localmount
+	use logger
+	provide entropy
+}
