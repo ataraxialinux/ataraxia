@@ -39,6 +39,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define pledge(request, paths) 0 /* linux doesn't have pledge */
+
 static void search(char *);
 static void usage(void);
 

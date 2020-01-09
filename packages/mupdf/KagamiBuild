@@ -1,0 +1,20 @@
+# Description: A lightweight PDF and XPS viewer
+# URL:         https://www.mupdf.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl libxext glu freeglut harfbuzz libjpeg-turbo openjpeg
+# Section:     text
+
+name=mupdf
+version=1.16.1
+release=1
+source=("http://www.mupdf.com/downloads/archive/mupdf-$version-source.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version-source
+	rm -rf thirdparty/{freeglut,freetype,harfbuzz,curl,libjpeg,openjpeg,zlib}
+
+	make build=release
+	make build=release prefix=$PKG/usr install
+
+	ln -sf $name-x11 "$PKG"/usr/bin/$name
+}

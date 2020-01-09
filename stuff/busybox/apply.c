@@ -43,9 +43,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <bsd.h>
 
 #define ISMAGICNO(p) \
 	    (p)[0] == magic && isdigit((unsigned char)(p)[1]) && (p)[1] != '0'
+
+#define pledge(request, paths) 0 /* linux doesn't have pledge */
 
 __dead	void	usage(void);
 static	int	mysystem(const char *);
