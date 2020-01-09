@@ -1,0 +1,19 @@
+# Description: Lightweight, advanced audio player focused on audio quality
+# URL:         https://audacious-media-player.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libxml2 alsa-lib dbus mpg123 neon gtk2 adwaita-icon-theme
+# Section:     audio
+
+name=audacious
+version=3.10.1
+release=1
+source=("https://distfiles.audacious-media-player.org/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-buildstamp="januslinux"
+	make
+	make DESTDIR="$PKG" install
+}
