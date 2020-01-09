@@ -1,0 +1,23 @@
+# Description: Objects and methods for reading and writing AppStream metadata
+# URL:         https://people.freedesktop.org/~hughsient/appstream-glib/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gperf gobject-introspection gtk3 libyaml gcab libsoup
+# Section:     gnome
+
+name=appstream-glib
+version=0.7.16
+release=1
+source=("https://people.freedesktop.org/~hughsient/appstream-glib/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgtk-doc=false \
+		-Dman=false \
+		-Drpm=false \
+		-Dstemmer=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
