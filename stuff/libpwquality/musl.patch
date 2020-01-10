@@ -1,0 +1,77 @@
+From a7aebc6719c12e6ece9584820d7ce07c551d33ed Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 11 Jan 2020 02:21:55 +0900
+Subject: [PATCH] fix pam_pwquality on musl systems
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/pam_pwquality.c | 53 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/src/pam_pwquality.c b/src/pam_pwquality.c
+index 6399099..a5dd2ba 100644
+--- a/src/pam_pwquality.c
++++ b/src/pam_pwquality.c
+@@ -21,6 +21,59 @@
+ #include <errno.h>
+ #include "pwquality.h"
+ 
++#if defined(BSD) || (defined(__linux__) && !defined(__GLIBC__))
++
++int fgetpwent_r(FILE *f, struct passwd *pw, char *line, size_t size, struct passwd **res);
++
++static unsigned atou(char **s)
++{
++	unsigned x;
++	for (x=0; **s-'0'<10U; ++*s) x=10*x+(**s-'0');
++	return x;
++}
++
++int fgetpwent_r(FILE *f, struct passwd *pw, char *line, size_t size, struct passwd **res)
++{
++	char *s;
++	int rv = 0;
++	for (;;) {
++		line[size-1] = '\xff';
++		if ( (fgets(line, size, f) == NULL) || ferror(f) || line[size-1] != '\xff' ) {
++			rv = (line[size-1] != '\xff') ? ERANGE : ENOENT;
++			line = 0;
++			pw = 0;
++			break;
++		}
++		line[strcspn(line, "\n")] = 0;
++
++		s = line;
++		pw->pw_name = s++;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_passwd = s;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_uid = atou(&s);
++		if (*s != ':') continue;
++
++		*s++ = 0; pw->pw_gid = atou(&s);
++		if (*s != ':') continue;
++
++		*s++ = 0; pw->pw_gecos = s;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_dir = s;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_shell = s;
++		break;
++	}
++	*res = pw;
++	if (rv) errno = rv;
++	return rv;
++}
++#endif
++
+ /*
+  * here, we make a definition for the externally accessible function
+  * in this file (this definition is required for static a module
+-- 
+2.24.0
+

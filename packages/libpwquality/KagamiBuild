@@ -1,21 +1,26 @@
 # Description: Library for password quality checking and generating random passwords
 # URL:         https://github.com/libpwquality/libpwquality
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python pam
+# Depends on:  pam
+# Priority:    required
 # Section:     libs
 
 name=libpwquality
 version=1.4.2
 release=1
+options=('bootstrap')
 source=("https://github.com/libpwquality/libpwquality/releases/download/$name-$version/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libpwquality/musl.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--with-python-binary=python3 \
+		--with-securedir=/usr/lib/security \
+		--disable-python-bindings \
 		--disable-static
 
 	sed -i 's/ -shared / -Wl,-Os,--as-needed\0/g' libtool
