@@ -7,7 +7,8 @@ apt-get install build-essential m4 bison flex texinfo python3 python perl libtoo
 #### Fedora/RHEL/CentOS
 ```
 dnf groupinstall "Development Tools"
-dnf install mtools libisoburn python3 python2 pigz libarchive curl jq rsync bsdtar freetype-devel zlib-devel xz-devel elfutils-libelf-devel openssl-devel
+dnf install mtools libisoburn python3 pigz libarchive curl jq rsync bsdtar freetype-devel zlib-devel xz-devel elfutils-libelf-devel openssl-devel
+ln -sf python3 /usr/bin/python
 ```
 #### Arch Linux (and derivatives):
 ```
