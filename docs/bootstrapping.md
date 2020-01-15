@@ -16,7 +16,7 @@ pacman -S base-devel xorriso mtools git pigz python pixz rsync jq freetype2
 ```
 #### Void Linux
 ```
-xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive bsdtar jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
+xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive bsdtar zstd jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
 ```
 #### Ataraxia Linux:
 ```
