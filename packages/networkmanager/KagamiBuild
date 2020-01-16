@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.22.4
-release=1
+release=2
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -47,10 +47,7 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	for initd in networkmanager; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm0755 "$STUFF"/svc/networkmanager.initd "$PKG"/etc/init.d/networkmanager
 
 cat > "$PKG"/etc/NetworkManager/NetworkManager.conf << "EOF"
 [main]
