@@ -5,4 +5,7 @@ if [ "$1" = "pre-install" ]; then
 	getent passwd polkitd || useradd -c "PolicyKit Daemon Owner" -g polkitd -r -d /var/empty -s /usr/bin/nologin polkitd 2>/dev/null
 
 	passwd -l polkitd 2>/dev/null
+elif [ "$1" = "post-install" ]; then
+	chmod 0700 /{etc,usr/share}/polkit-1/rules.d
+	chown polkitd /{etc,usr/share}/polkit-1/rules.d
 fi
