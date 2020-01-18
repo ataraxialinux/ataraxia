@@ -6,11 +6,10 @@
 
 name=gtk3
 version=3.24.13
-release=3
+release=4
 source=("http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz"
 	"gtk3.trigger"
-	"icon-cache.trigger"
-	"update-icon-cache")
+	"icon-cache.trigger")
 
 build() {
 	cd "$SRC"/gtk+-$version
@@ -24,8 +23,6 @@ build() {
 		-Dman=false
 	ninja
 	DESTDIR="$PKG" ninja install
-
-	install -Dm0755 "$SRC"/update-icon-cache "$PKG"/usr/bin/update-icon-cache
 
 	for a in gtk3 icon-cache; do
 		install -Dm0644 "$SRC"/$a.trigger "$PKG"/var/lib/neko-triggers/$a

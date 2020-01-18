@@ -2,8 +2,8 @@
 	"trigger": {
 		"name": "icon-cache",
 		"directory": [
-			"usr/share/icons/"
+			"usr/share/icons/hicolor/"
 		],
-		"command": "/usr/bin/update-icon-cache"
+		"command": "gtk-update-icon-cache --force --quiet /usr/share/icons/hicolor"
 	}
 }
