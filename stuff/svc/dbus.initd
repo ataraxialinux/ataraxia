@@ -17,6 +17,7 @@ depend() {
 }
 
 start_pre() {
+	rm -rf /var/lib/dbus/machine-id /etc/machine-id
 	/usr/bin/dbus-uuidgen --ensure
 
 	# We need to test if /run/dbus exists, since script will fail if it does not
@@ -25,6 +26,7 @@ start_pre() {
 
 stop_post() {
 	[ ! -S "${dbus_socket}" ] || rm -f "${dbus_socket}"
+	rm -rf /var/lib/dbus/machine-id /etc/machine-id
 }
 
 reload() {
