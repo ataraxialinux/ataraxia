@@ -10,7 +10,7 @@ case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-release=1
+release=2
 options=('~strip' 'bootstrap' '~ccache')
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
 
@@ -952,6 +952,8 @@ build() {
 	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
 	patch -Np1 -i "$STUFF"/linux/blk.patch
+	patch -Np1 -i "$STUFF"/linux/scsi.patch
+	patch -Np1 -i "$STUFF"/linux/muqss.patch
 
 	case $BARCH in
 		riscv64|riscv32)
