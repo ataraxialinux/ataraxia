@@ -955,6 +955,8 @@ build() {
 	patch -Np1 -i "$STUFF"/linux/scsi.patch
 	patch -Np1 -i "$STUFF"/linux/muqss.patch
 
+	sed -i 's|return elevator_get(q, "mq-deadline", false);|return elevator_get(q, "bfq", false);|' block/elevator.c
+
 	case $BARCH in
 		riscv64|riscv32)
 			patch -Np1 -i "$STUFF"/linux/riscv.patch
