@@ -1,7 +1,6 @@
 export CHARSET=UTF-8
 export PATH="/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"
 export MANPATH="/usr/local/share/man:/usr/share/man"
-export PERP_BASE="/etc/perp"
 export PAGER=less
 export EDITOR=nano
 
@@ -11,8 +10,9 @@ else
 	export INPUTRC="$HOME/.inputrc"
 fi
 
-for script in /etc/profile.d/*.sh ; do
-        if [ -r $script ] ; then
-                . $script
-        fi
-done
+if test -d /etc/profile.d/; then
+	for profile in /etc/profile.d/*.sh; do
+		test -r "$profile" && . "$profile"
+	done
+	unset profile
+fi
