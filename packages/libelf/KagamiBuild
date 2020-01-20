@@ -7,7 +7,7 @@
 
 name=libelf
 version=0.178
-release=1
+release=2
 options=('bootstrap')
 source=("https://sourceware.org/elfutils/ftp/$version/elfutils-$version.tar.bz2")
 
@@ -17,6 +17,7 @@ build() {
 	patch -Np1 -i "$STUFF"/libelf/musl-libs.patch
 	patch -Np1 -i "$STUFF"/libelf/musl-tests.patch
 	patch -Np1 -i "$STUFF"/libelf/musl-utils.patch
+	patch -Np1 -i "$STUFF"/libelf/fts.patch
 	patch -Np1 -i "$STUFF"/libelf/no-werror.patch
 
 	autoreconf -fiv
@@ -27,10 +28,15 @@ build() {
 		--disable-debuginfod \
 		--disable-nls \
 		--disable-werror
-	make -C lib
-	make -C libelf
+
+	for lib in lib libelf libdwfl libdwelf libebl libcpu backends libdw; do
+		make -C $lib
+	done
+
 	make -C libelf DESTDIR="$PKG" install
+	make -C libdw DESTDIR="$PKG" install
 
 	mkdir -p "$PKG"/usr/lib/pkgconfig
 	cp config/libelf.pc "$PKG"/usr/lib/pkgconfig
+	cp config/libdw.pc "$PKG"/usr/lib/pkgconfig
 }
