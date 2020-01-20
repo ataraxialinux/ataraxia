@@ -83,14 +83,15 @@ diff -ruN rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.40.0-src/ven
      } else if #[cfg(target_os = "emscripten")] {
          #[link(name = "c")]
          extern {}
-diff -ruN rustc-1.40.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.40.0-src/vendor/openssl-sys/build/main.rs
---- rustc-1.40.0-src-orig/vendor/openssl-sys/build/main.rs	2019-12-17 02:26:11.000000000 +0900
-+++ rustc-1.40.0-src/vendor/openssl-sys/build/main.rs	2019-12-20 23:11:49.954342354 +0900
-@@ -183,27 +183,31 @@
+diff --git a/vendor/openssl-sys/build/main.rs b/vendor/openssl-sys/build/main.rs
+index 02b93b90a..f0cf4b4ff 100644
+--- a/vendor/openssl-sys/build/main.rs
++++ b/vendor/openssl-sys/build/main.rs
+@@ -183,27 +183,31 @@ See rust-openssl README for more information:
      if let Some(libressl_version) = libressl_version {
          println!("cargo:libressl_version_number={:x}", libressl_version);
  
-+	let major = (libressl_version >> 28) as u8;
++        let major = (libressl_version >> 28) as u8;
          let minor = (libressl_version >> 20) as u8;
          let fix = (libressl_version >> 12) as u8;
 -        let (minor, fix) = match (minor, fix) {
@@ -129,7 +130,17 @@ diff -ruN rustc-1.40.0-src-orig/vendor/openssl-sys/build/main.rs rustc-1.40.0-sr
  
          println!("cargo:libressl=true");
 -        println!("cargo:libressl_version=2{}{}", minor, fix);
-+        println!("cargo:libressl_version=2{}{}", major, minor, fix);
++        println!("cargo:libressl_version={}{}{}", major, minor, fix);
          println!("cargo:version=101");
          Version::Libressl
      } else {
+@@ -239,7 +243,7 @@ fn version_error() -> ! {
+         "
+ 
+ This crate is only compatible with OpenSSL 1.0.1 through 1.1.1, or LibreSSL 2.5
+-through 2.9.0, but a different version of OpenSSL was found. The build is now aborting
++through 3.0.x, but a different version of OpenSSL was found. The build is now aborting
+ due to this version mismatch.
+ 
+ "
+
