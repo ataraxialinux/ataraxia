@@ -1,0 +1,27 @@
+# Description: GNOME Software Center
+# URL:         https://wiki.gnome.org/Apps/Software
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson appstream-glib gnome-desktop gnome-online-accounts gspell libxmlb ostree flatpak
+# Section:     gnome
+
+name=gnome-software
+version=3.34.2
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i "s|subdir('po')|# subdir('po')|" meson.build
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dexternal_appstream=true \
+		-Dfwupd=false \
+		-Dgtk_doc=false \
+		-Dman=false \
+		-Dpackagekit=false \
+		-Dvalgrind=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
