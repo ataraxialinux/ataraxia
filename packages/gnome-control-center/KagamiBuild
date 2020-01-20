@@ -11,7 +11,7 @@ case $version in
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
-release=5
+release=6
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
@@ -28,4 +28,6 @@ build() {
 		-Dgnome_session_libexecdir=/usr/lib
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 }

@@ -6,7 +6,7 @@
 
 name=lightdm
 version=1.30.0
-release=3
+release=4
 backup=('etc/lightdm/keys.conf'
 	'etc/lightdm/lightdm.conf'
 	'etc/lightdm/users.conf'
@@ -51,7 +51,7 @@ build() {
 		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
 	done
 
-	mkdir -p "$PKG"/usr/share/polkit-1/rules.d
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 	install -m644 "$STUFF"/lightdm/lightdm.rules "$PKG"/usr/share/polkit-1/rules.d/lightdm.rules
 
 	install -Dm0755 "$STUFF"/svc/lightdm.initd "$PKG"/etc/init.d/lightdm
