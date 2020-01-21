@@ -4,6 +4,6 @@
 		"directory": [
 			"usr/share/fonts/"
 		],
-		"command": "/usr/bin/fc-cache -- -f"
+		"command": "/usr/bin/fc-cache -- -s"
 	}
 }
