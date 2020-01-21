@@ -4,6 +4,6 @@
 		"directory": [
 			"boot/"
 		],
-		"command": "/usr/bin/grub-mkconfig -- -o /boot/grub/grub.cfg"
+		"command": "/usr/bin/grub-mkconfig -o /boot/grub/grub.cfg"
 	}
 }

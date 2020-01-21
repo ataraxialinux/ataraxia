@@ -4,6 +4,6 @@
 		"directory": [
 			"usr/share/applications/"
 		],
-		"command": "/usr/bin/update-desktop-database -- --quiet"
+		"command": "/usr/bin/update-desktop-database --quiet"
 	}
 }
