@@ -1,13 +1,13 @@
 # Description: Framing layer of HTTP/2 is implemented as a reusable C library
 # URL:         https://nghttp2.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libressl
+# Depends on:  zlib libressl c-ares libev
 # Priority:    required
 # Section:     libs
 
 name=nghttp2
 version=1.40.0
-release=1
+release=2
 backup=('etc/nghttpx/nghttpx.conf'
 	'etc/logrotate.d/nghttpx')
 options=('~emptydirs' 'bootstrap')
@@ -20,10 +20,13 @@ build() {
 		--without-jemalloc \
 		--without-libxml2 \
 		--without-neverbleed \
-		--enable-lib-only \
+		--enable-app \
 		--disable-examples \
 		--disable-python-bindings \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 contrib/nghttpx-logrotate "$PKG"/etc/logrotate.d/nghttpx
+ 	install -Dm644 nghttpx.conf.sample "$PKG"/etc/nghttpx/nghttpx.conf
 }
