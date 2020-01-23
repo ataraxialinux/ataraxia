@@ -4,14 +4,10 @@
 # Priority:    required
 # Section:     kernel
 
-name=linux
+name=linux-rpi
 version=5.4
 hardenedver=5.4.13.a
-case $version in
-	*.*.*) kver=$version;;
-	*.*) kver=$version.0;;
-esac
-release=3
+release=1
 options=('~strip' 'bootstrap' '~ccache')
 source=("https://github.com/raspberrypi/linux/archive/rpi-${version}.y.tar.gz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
@@ -911,6 +907,9 @@ build() {
 		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
+	kver="${version}.$(grep "SUBLEVEL =" Makefile | awk '{print $3}')"
+	depmod -a -v -b "$PKG"/usr ${kver}-ataraxia
+
 	case $BARCH in
 		arm64|armhf|armel)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
@@ -922,12 +921,11 @@ build() {
 	esac
 
 	mkdir -p "$PKG"/boot
-	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-${version}-ataraxia
-	cp .config "$PKG"/boot/config-${version}-ataraxia
+	cp "$IMAGELOC" "$PKG"/boot/kernel.img
+	cp .config "$PKG"/boot/config
 
-	for a in vmlinuz config; do
-		ln -sf ${a}-${version}-ataraxia "$PKG"/boot/$a
-	done
+	echo 'console=serial,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4' >> "$PKG"/boot/cmdline.txt
+	echo 'gpu_mem=64' >> "$PKG"/boot/config.txt
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
