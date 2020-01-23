@@ -6,13 +6,15 @@
 
 name=linux
 version=5.4.13
+hardenedver=5.4.13.a
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
 release=3
 options=('~strip' 'bootstrap' '~ccache')
-source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
+	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -984,13 +986,12 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/1-2-lib-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch
 	patch -Np1 -i "$STUFF"/linux/blk.patch
 	patch -Np1 -i "$STUFF"/linux/scsi.patch
-	patch -Np1 -i "$STUFF"/linux/muqss.patch
-	patch -Np1 -i "$STUFF"/linux/1-2-security-perf-allow-further-restriction-of-perf_event_open.diff
 
 	sed -i 's|return elevator_get(q, "mq-deadline", false);|return elevator_get(q, "bfq", false);|' block/elevator.c
 
