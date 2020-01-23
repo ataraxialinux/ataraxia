@@ -924,8 +924,16 @@ build() {
 	cp "$IMAGELOC" "$PKG"/boot/kernel.img
 	cp .config "$PKG"/boot/config
 
+	for a in kernel7.img kernel7l.img kernel8.img; do
+		ln -sf kernel.img "$PKG"/boot/$a
+	done
+
 	echo 'console=serial,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4' >> "$PKG"/boot/cmdline.txt
 	echo 'gpu_mem=64' >> "$PKG"/boot/config.txt
+
+	for a in $(ls "$PKG/boot/dtbs"); do
+		ln -sf dtbs/$a "$PKG"/boot/$a
+	done
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
