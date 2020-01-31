@@ -1,0 +1,27 @@
+# Description: Open-source tools to disasm, debug, analyze and manipulate binary files
+# URL:         https://radare.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson zlib file libressl lz4 libuv capstone
+# Section:     devel
+
+name=radare2
+version=4.2.1
+release=1
+options=('~emptydirs')
+source=("https://github.com/radare/radare2/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Duse_sys_capstone=true \
+		-Duse_sys_magic=true \
+		-Duse_sys_zlib=true \
+		-Duse_sys_lz4=true \
+		-Duse_sys_openssl=true \
+		-Duse_libuv=true
+	ninja
+	DESTDIR="$PKG" ninja install
+
+}
