@@ -1,0 +1,18 @@
+# Description: Lightweight multi-platform, multi-architecture disassembly framework
+# URL:         https://www.capstone-engine.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python
+# Section:     devel
+
+name=capstone
+version=4.0.1
+release=1
+source=("https://github.com/aquynh/capstone/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make
+	make PREFIX=/usr DESTDIR="$PKG" install
+
+	python3 setup.py install --root="$PKG" --prefix=/usr
+}
