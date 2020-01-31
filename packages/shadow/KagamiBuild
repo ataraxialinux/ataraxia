@@ -51,6 +51,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin
+	rmdir "$PKG"/usr/sbin
+
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
 	for pam in passwd chgpasswd chpasswd newusers; do
@@ -64,8 +67,10 @@ build() {
 	install -Dm644 etc/pam.d/groupmems "$PKG"/etc/pam.d/groupmems
 
 	# conflicts with util-linux
-	rm -rf \
-		"$PKG"/usr/bin/{login,su,chsh,chfn,sg,nologin,logoutd,vipw,vigr}
+	for i in login su chsh chfn sg nologin vipw vigr; do
+		rm -rf "$PKG"/usr/bin/$i
+	done
+
 	find "$PKG"/usr/share/man \
 	'(' -name 'chsh.1'    -o \
 		-name 'chfn.1'    -o \
