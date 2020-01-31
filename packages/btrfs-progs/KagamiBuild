@@ -1,0 +1,25 @@
+# Description: Btrfs filesystem utilities
+# URL:         https://btrfs.wiki.kernel.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib lzo zstd e2fsprogs
+# Priority:    required
+# Section:     base
+
+name=btrfs-progs
+version=5.4.1
+release=1
+options=('bootstrap')
+source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$name/$name-v$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-v$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-backtrace \
+		--disable-documentation \
+		--disable-python
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 btrfs-completion "$PKG"/usr/share/bash-completion/completions/btrfs
+}
