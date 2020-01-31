@@ -5,10 +5,12 @@
 # Section:     kernel
 
 name=linux-rpi
-version=5.5
+version=5.4
+hardenedver=5.4.15.a
 release=1
 options=('~strip' 'bootstrap' '~ccache')
-source=("https://github.com/raspberrypi/linux/archive/rpi-${version}.y.tar.gz")
+source=("https://github.com/raspberrypi/linux/archive/rpi-${version}.y.tar.gz"
+	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -920,6 +922,7 @@ build() {
 	esac
 
 	cd "$SRC"/$name-rpi-${version}.y
+	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/1-2-lib-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/wireguard.patch

@@ -5,14 +5,16 @@
 # Section:     kernel
 
 name=linux
-version=5.5
+version=5.4.16
+hardenedver=5.4.15.a
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
 release=1
 options=('~strip' 'bootstrap' '~ccache')
-source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz")
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
+	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 yconfig() {
 	while [ $# -ne 0 ]; do
@@ -984,6 +986,7 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/1-2-lib-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
 	patch -Np1 -i "$STUFF"/linux/0001-NOWRITEEXEC-and-PAX-features-MPROTECT-EMUTRAMP.patch
