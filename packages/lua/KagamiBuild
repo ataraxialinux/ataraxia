@@ -2,21 +2,22 @@
 # URL:         http://www.lua.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  readline
+# Priority:    required
 # Section:     interpreters
 
 name=lua
 version=5.3.5
 majorver=${version%.*}
 release=1
-options=('~emptydirs')
+options=('~emptydirs' 'bootstrap')
 source=("http://www.lua.org/ftp/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -p1 -i "$STUFF"/lua/shared.patch
-	sed "s/%VER%/$majorver/g;s/%REL%/$pkgver/g" "$STUFF"/lua/lua.pc > lua.pc
+	sed "s/%VER%/$majorver/g;s/%REL%/$version/g" "$STUFF"/lua/lua.pc > lua.pc
 	sed "s/^R= \$V.4/R= \$V.5/" -i Makefile
-	make MYCFLAGS="$CFLAGS -fPIC -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" linux
+	make MYCFLAGS="$CFLAGS -fPIC -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" CC=${CC:-cc} linux
 	make \
 		TO_LIB="liblua.a liblua.so liblua.so.$majorver liblua.so.$version" \
 		INSTALL_DATA='cp -d' \
