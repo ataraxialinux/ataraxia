@@ -110,23 +110,23 @@ fi
 
 setup_architecture() {
 	case "$BARCH" in
-		amd64)
+		x86_64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
-		i386)
+		i586)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="i586-linux-musl"
 			;;
-		arm64)
+		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
-		armhf)
+		armv7hnl|armv7hl)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
-		armel)
+		armv5tel)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabi"
 			;;
@@ -222,7 +222,7 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	case $BARCH in
-		amd64|i386|ppc64le|ppc64)
+		x86_64|i586|ppc64le|ppc64)
 				EXTRAPKG="grub"
 				;;
 	esac

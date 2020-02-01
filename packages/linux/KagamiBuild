@@ -53,7 +53,7 @@ strconfig() {
 
 generate_config() {
 	case $BARCH in
-		amd64|i386)
+		x86_64|i586)
 			SUBKARCH="x86"
 			;;
 		*)
@@ -62,19 +62,19 @@ generate_config() {
 	esac
 
 	case $BARCH in
-		amd64)
+		x86_64)
 			export DEFCONFIG="x86_64_defconfig"
 			;;
-		i386)
+		i586)
 			export DEFCONFIG="i386_defconfig"
 			;;
-		arm64)
+		aarch64)
 			export DEFCONFIG="defconfig"
 			;;
-		armhf)
+		armv7hnl|armv7hl)
 			export DEFCONFIG="vexpress_defconfig"
 			;;
-		armel)
+		armv5tel)
 			export DEFCONFIG="multi_v5_defconfig"
 			;;
 		mips64|mips64el|mips|mipsel)
@@ -114,7 +114,7 @@ generate_config() {
 	fi
 
 	case $BARCH in
-		amd64)
+		x86_64)
 			yconfig 64BIT PCI E1000 SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS IA32_EMULATION \
 				EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS \
 				NUMA AMD_NUMA NODES_SPAN_OTHER_NODES NEED_MULTIPLE_NODES USE_PERCPU_NUMA_NODE_ID ACPI_NUMA \
@@ -125,7 +125,7 @@ generate_config() {
 			varconfig XEN_BALLOON_MEMORY_HOTPLUG_LIMIT 512
 			varconfig NODES_SHIFT 6
 			;;
-		i386)
+		i586)
 			yconfig M586 PCI E1000 SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
 				EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS \
 				MICROCODE MICROCODE_EARLY MICROCODE_INTEL MICROCODE_AMD X86_PM_TIMER KVM_AMD_SEV
@@ -162,7 +162,7 @@ generate_config() {
 
 	# x86 stuff
 	case $BARCH in
-		amd64|i386)
+		x86_64|i586)
 			yconfig X86_PLATFORM_DEVICES INTEL_TURBO_MAX_3 INTEL_PMC_CORE THINKPAD_ACPI_ALSA_SUPPORT THINKPAD_ACPI_VIDEO THINKPAD_ACPI_HOTKEY_POLL \
 				SONYPI_COMPAT DELL_SMBIOS_WMI DELL_SMBIOS_SMM MICROCODE MTRR X86_PAT X86_SMAP X86_INTEL_UMIP
 			mconfig ACER_WMI ACER_WIRELESS ACERHDF ALIENWARE_WMI ASUS_LAPTOP DCDBAS DELL_SMBIOS DELL_LAPTOP DELL_WMI DELL_WMI_DESCRIPTOR DELL_WMI_AIO \
@@ -179,7 +179,7 @@ generate_config() {
 	esac
 
 	case $BARCH in
-		arm64|armhf|armel)
+		aarch64|armv7hnl|armv7hl|armv5tel)
 			yconfig STRICT_MEMORY_RWX ARM64_SW_TTBR0_PAN UNMAP_KERNEL_AT_EL0 VMSPLIT_3G STRICT_MEMORY_RWX CPU_SW_DOMAIN_PAN
 			nconfig OABI_COMPAT
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
@@ -952,19 +952,19 @@ generate_config() {
 
 build() {
 	case $BARCH in
-		amd64)
+		x86_64)
 			export XKARCH="x86_64"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		i386)
+		i586)
 			export XKARCH="i386"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		arm64)
+		aarch64)
 			export XKARCH="arm64"
 			export IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armhf|armel)
+		armv7hnl|armv7hl|armv5tel)
 			export XKARCH="arm"
 			export IMAGELOC="arch/arm/boot/zImage"
 			;;
@@ -1032,7 +1032,7 @@ build() {
 	depmod -a -v -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
-		arm64|armhf|armel)
+		arm64|armv7hnl|armv7hl|armv5tel)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
 				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
