@@ -1,0 +1,30 @@
+name=host-rpm
+version=4.15.1
+_pkgver_major="${version%%.*}"
+_pkgver_major_rem="${version#*.}"
+_pkgver_minor="${_pkgver_major_rem%%.*}"
+_base_pkgver=$_pkgver_major.$_pkgver_minor.x
+release=1
+options=('bootstrap')
+source=("http://ftp.rpm.org/releases/rpm-$_base_pkgver/rpm-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/rpm-$version
+	patch -Np1 -i "$STUFF"/rpm/0001-Fix-build-with-musl-C-library.patch
+
+	autoreconf -fi
+	./configure \
+		--prefix="$TOOLS" \
+		--localstatedir=/var \
+		--with-acl \
+		--with-cap \
+		--with-crypto=openssl \
+		--with-external-db \
+		--without-lua \
+		--enable-zstd \
+		--disable-inhibit-plugin \
+		--disable-nls \
+		PYTHON=python3
+	make
+	make install
+}

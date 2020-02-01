@@ -18,18 +18,8 @@
 
 set -e
 
-msg() {
-	if [ "$SILENT" != "1" ]; then
-		printf "\033[1;32m ->\033[0m %s\n" "$@"
-	fi
-}
-
-die() {
-	if [ "$SILENT" != "1" ]; then
-		printf "\033[1;31m ->\033[0m %s\n" "$@"
-	fi
-	exit 1
-}
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 pushd () { command pushd "$@" > /dev/null; }
 popd () { command popd "$@" > /dev/null; }
@@ -231,20 +221,20 @@ build_toolchain() {
 				;;
 	esac
 
-	for toolchain in base-files file gettext-tiny m4 bison \
+	for toolchain in rpm base-files file gettext-tiny m4 bison \
 			flex bc ncurses kmod gperf libtool autoconf automake \
 			linux-headers binutils gcc-static musl gcc \
 			cracklib $EXTRAPKG pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
-				neko install -c "$BUILD"/host.config -r "$ROOTFS" -Wn ${toolchain}
+				neko em -c "$BUILD"/host.config -r "$ROOTFS" -wnd ${toolchain}
 				;;
 			musl)
-				neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn ${toolchain}
+				neko em -c "$BUILD"/target.config -r "$ROOTFS" -wnd ${toolchain}
 				;;
 			*)
 				pushd "$TCREPO/host-$toolchain"
-					neko build -c "$BUILD"/host.config -WP
+					neko build -c "$BUILD"/host.config -wP
 				popd
 				;;
 		esac
@@ -306,7 +296,7 @@ build_target() {
 			wireless_tools wpa_supplicant gptfdisk wget keyring libssh2 c-ares libev nghttp2 curl haveged oniguruma jq neko $LINUX"
 	fi
 
-	neko install -c "$BUILD"/target.config -r "$ROOTFS" -Wn $packages
+	neko em -c "$BUILD"/target.config -r "$ROOTFS" -wnd $packages
 }
 
 case $1 in
