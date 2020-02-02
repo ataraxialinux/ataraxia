@@ -1,0 +1,22 @@
+# Description: Plugin that makes screenshots for the Xfce panel
+# URL:         https://www.xfce.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool python libxfce4ui libsoup
+# Section:     xfce
+
+name=xfce4-screenshooter
+version=1.9.7
+release=1
+source=("https://archive.xfce.org/src/apps/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-debug
+	make
+	make DESTDIR="$PKG" install
+}
