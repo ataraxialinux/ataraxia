@@ -10,10 +10,8 @@ unifontver=12.1.04
 release=9
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
-options=('locales')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
-	"http://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
-	"$name.trigger")
+	"http://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
 noextract=("unifont-$unifontver.pcf.gz")
 
 build_flavor() {
@@ -82,7 +80,4 @@ build() {
 	rm -rf "$PKG"/usr/lib/grub/*/{kernel.exec,gdb_grub,gmodule.pl}
 
 	install -D -m0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
-	rm -rf "$PKG"/usr/share/locale/*
-
-	install -Dm0644 "$SRC"/$name.trigger "$PKG"/var/lib/neko-triggers/$name
 }
