@@ -19,14 +19,18 @@ source=("https://github.com/rpm-software-management/dnf/archive/$version.tar.gz"
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i 's|ADD_SUBDIRECTORY (doc)|# ADD_SUBDIRECTORY (doc)|' CMakeLists.txt
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DPYTHON_DESIRED=3 \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	ln -sf dnf-3 "$PKG"/usr/bin/dnf
+	ln -sf dnf-3 "$PKG"/usr/bin/yum
 }
