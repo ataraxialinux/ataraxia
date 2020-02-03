@@ -46,7 +46,7 @@ build() {
 	find "$PKG" -type f -exec chmod -c a-x {} +
 	chmod -Rc u=rwX,go=rX "$PKG"
 
-cat << EOF > "$TOPDIR"/post-install
+cat << EOF > "$topdir"/post-install
 if [ ! -e /etc/xml/docbook ]; then
     xmlcatalog --noout --create /etc/xml/docbook
 fi
@@ -141,11 +141,11 @@ for DTDVERSION in 4.1.2 4.2 4.3 4.4; do
 done
 EOF
 
-cat > "$TOPDIR"/pre-remove <<-EOF
+cat > "$topdir"/pre-remove <<-EOF
 xmlcatalog --noout --del file:///etc/xml/docbook-xml /etc/xml/catalog
 rm -rf /etc/xml/catalog /etc/xml/docbook-xml
 EOF
 
-	sed -i 's,#DTDVERSION,$DTDVERSION,g' "$TOPDIR"/post-install
-	sed -i "s,#version,$version,g" "$TOPDIR"/post-install
+	sed -i 's,#DTDVERSION,$DTDVERSION,g' "$topdir"/post-install
+	sed -i "s,#version,$version,g" "$topdir"/post-install
 }
