@@ -1,7 +1,7 @@
 # Description: Library providing simplified C and Python API to libsolv
 # URL:         https://github.com/rpm-software-management/libdnf
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja python swig gpgme json-c libmodulemd librepo libsolv util-linux rpm
+# Depends on:  cmake ninja python swig gpgme json-c libmodulemd librepo libsolv util-linux rpm check
 # Provides:    hawkey
 # Section:     libs
 
@@ -12,6 +12,13 @@ source=("https://github.com/rpm-software-management/libdnf/archive/$version.tar.
 
 build() {
 	cd "$SRC"/$name-$version
+	cp -a "$ROOTFS"/usr/share/cmake/Modules/FindLibSolv.cmake cmake/modules/
+
+	sed -i 's|add_subdirectory(docs/libdnf)|# add_subdirectory(docs/libdnf)|' CMakeLists.txt
+	sed -i 's|add_subdirectory(docs/hawkey)|# add_subdirectory(docs/hawkey)|' CMakeLists.txt
+	sed -i 's|enable_testing()|# enable_testing()|' CMakeLists.txt
+	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' CMakeLists.txt
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
@@ -19,6 +26,8 @@ build() {
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DPYTHON_DESIRED=3 \
+		-DWITH_GTKDOC=OFF \
+		-DWITH_HTML=OFF \
 		-DWITH_ZCHUNK=OFF \
 		-Wno-dev -G Ninja
 	ninja
