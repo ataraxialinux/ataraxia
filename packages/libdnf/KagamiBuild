@@ -1,0 +1,26 @@
+# Description: Library providing simplified C and Python API to libsolv
+# URL:         https://github.com/rpm-software-management/libdnf
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja python swig zchunk gpgme json-c libmodulemd librepo libsolv util-linux rpm
+# Provides:    hawkey
+# Section:     libs
+
+name=libdnf
+version=0.43.1
+release=1
+source=("https://github.com/rpm-software-management/libdnf/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_DESIRED=3 \
+		-DWITH_ZCHUNK=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
