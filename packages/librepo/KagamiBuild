@@ -1,0 +1,27 @@
+# Description: Repodata downloading library
+# URL:         https://github.com/rpm-software-management/librepo
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja gpgme libxml2 zchunk
+# Section:     libs
+
+name=librepo
+version=1.11.2
+release=1
+source=("https://github.com/rpm-software-management/librepo/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_DESIRED=3 \
+		-DWITH_ZCHUNK=ON \
+		-DENABLE_DOCS=OFF \
+		-DENABLE_PYTHON_TESTS=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
