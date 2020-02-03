@@ -46,111 +46,106 @@ build() {
 	find "$PKG" -type f -exec chmod -c a-x {} +
 	chmod -Rc u=rwX,go=rX "$PKG"
 
-mkdir -p "$PKG"/data
-cat << EOF > "$PKG"/data/install
-#!/bin/sh
-
-if [ "$1" = "post-install" ]; then
-	if [ ! -e /etc/xml/docbook ]; then
-    		xmlcatalog --noout --create /etc/xml/docbook
-	fi
-
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//DTD DocBook XML V#version//EN" \
-	    "http://www.oasis-open.org/docbook/xml/#version/docbookx.dtd" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//DTD DocBook XML CALS Table Model V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/calstblx.dtd" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//DTD XML Exchange Table Model 19990315//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/soextblx.dtd" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//ELEMENTS DocBook XML Information Pool V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/dbpoolx.mod" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//ELEMENTS DocBook XML Document Hierarchy V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/dbhierx.mod" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//ELEMENTS DocBook XML HTML Tables V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/htmltblx.mod" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//ENTITIES DocBook XML Notations V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/dbnotnx.mod" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//ENTITIES DocBook XML Character Entities V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/dbcentx.mod" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "public" \
-	    "-//OASIS//ENTITIES DocBook XML Additional General Entities V#version//EN" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version/dbgenent.mod" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "rewriteSystem" \
-	    "http://www.oasis-open.org/docbook/xml/#version" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version" \
-	    /etc/xml/docbook
-	xmlcatalog --noout --add "rewriteURI" \
-	    "http://www.oasis-open.org/docbook/xml/#version" \
-	    "file:///usr/share/xml/docbook/xml-dtd-#version" \
-	    /etc/xml/docbook
-
-	if [ ! -e /etc/xml/catalog ]; then
-	    xmlcatalog --noout --create /etc/xml/catalog
-	fi
-
-	xmlcatalog --noout --add "delegatePublic" \
-	    "-//OASIS//ENTITIES DocBook XML" \
-	    "file:///etc/xml/docbook" \
-	    /etc/xml/catalog
-	xmlcatalog --noout --add "delegatePublic" \
-	    "-//OASIS//DTD DocBook XML" \
-	    "file:///etc/xml/docbook" \
-	    /etc/xml/catalog
-	xmlcatalog --noout --add "delegateSystem" \
-	    "http://www.oasis-open.org/docbook/" \
-	    "file:///etc/xml/docbook" \
-	    /etc/xml/catalog
-	xmlcatalog --noout --add "delegateURI" \
-	    "http://www.oasis-open.org/docbook/" \
-	    "file:///etc/xml/docbook" \
-	    /etc/xml/catalog
-
-	for DTDVERSION in 4.1.2 4.2 4.3 4.4; do
-	    xmlcatalog --noout --add "public" \
-	        "-//OASIS//DTD DocBook XML V#DTDVERSION//EN" \
-	        "http://www.oasis-open.org/docbook/xml/#DTDVERSION/docbookx.dtd" \
-	        /etc/xml/docbook
-	    xmlcatalog --noout --add "rewriteSystem" \
-	        "http://www.oasis-open.org/docbook/xml/#DTDVERSION" \
-	        "file:///usr/share/xml/docbook/xml-dtd-#version" \
-	        /etc/xml/docbook
-	    xmlcatalog --noout --add "rewriteURI" \
-	        "http://www.oasis-open.org/docbook/xml/#DTDVERSION" \
-	        "file:///usr/share/xml/docbook/xml-dtd-#version" \
-	        /etc/xml/docbook
-	    xmlcatalog --noout --add "delegateSystem" \
-	        "http://www.oasis-open.org/docbook/xml/#DTDVERSION/" \
-	        "file:///etc/xml/docbook" \
-	        /etc/xml/catalog
-	    xmlcatalog --noout --add "delegateURI" \
-	        "http://www.oasis-open.org/docbook/xml/#DTDVERSION/" \
-	        "file:///etc/xml/docbook" \
-	        /etc/xml/catalog
-	done
-elif [ "$1" = "pre-install" ]; then
-	xmlcatalog --noout --del file:///etc/xml/docbook-xml /etc/xml/catalog
-	rm -rf /etc/xml/catalog /etc/xml/docbook-xml
+cat << EOF > "$TOPDIR"/post-install
+if [ ! -e /etc/xml/docbook ]; then
+    xmlcatalog --noout --create /etc/xml/docbook
 fi
+
+xmlcatalog --noout --add "public" \
+    "-//OASIS//DTD DocBook XML V#version//EN" \
+    "http://www.oasis-open.org/docbook/xml/#version/docbookx.dtd" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//DTD DocBook XML CALS Table Model V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/calstblx.dtd" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//DTD XML Exchange Table Model 19990315//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/soextblx.dtd" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//ELEMENTS DocBook XML Information Pool V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/dbpoolx.mod" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//ELEMENTS DocBook XML Document Hierarchy V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/dbhierx.mod" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//ELEMENTS DocBook XML HTML Tables V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/htmltblx.mod" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//ENTITIES DocBook XML Notations V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/dbnotnx.mod" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//ENTITIES DocBook XML Character Entities V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/dbcentx.mod" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "public" \
+    "-//OASIS//ENTITIES DocBook XML Additional General Entities V#version//EN" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version/dbgenent.mod" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "rewriteSystem" \
+    "http://www.oasis-open.org/docbook/xml/#version" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version" \
+    /etc/xml/docbook
+xmlcatalog --noout --add "rewriteURI" \
+    "http://www.oasis-open.org/docbook/xml/#version" \
+    "file:///usr/share/xml/docbook/xml-dtd-#version" \
+    /etc/xml/docbook
+
+if [ ! -e /etc/xml/catalog ]; then
+    xmlcatalog --noout --create /etc/xml/catalog
+fi
+
+xmlcatalog --noout --add "delegatePublic" \
+    "-//OASIS//ENTITIES DocBook XML" \
+    "file:///etc/xml/docbook" \
+    /etc/xml/catalog
+xmlcatalog --noout --add "delegatePublic" \
+    "-//OASIS//DTD DocBook XML" \
+    "file:///etc/xml/docbook" \
+    /etc/xml/catalog
+xmlcatalog --noout --add "delegateSystem" \
+    "http://www.oasis-open.org/docbook/" \
+    "file:///etc/xml/docbook" \
+    /etc/xml/catalog
+xmlcatalog --noout --add "delegateURI" \
+    "http://www.oasis-open.org/docbook/" \
+    "file:///etc/xml/docbook" \
+    /etc/xml/catalog
+
+for DTDVERSION in 4.1.2 4.2 4.3 4.4; do
+    xmlcatalog --noout --add "public" \
+        "-//OASIS//DTD DocBook XML V#DTDVERSION//EN" \
+        "http://www.oasis-open.org/docbook/xml/#DTDVERSION/docbookx.dtd" \
+        /etc/xml/docbook
+    xmlcatalog --noout --add "rewriteSystem" \
+        "http://www.oasis-open.org/docbook/xml/#DTDVERSION" \
+        "file:///usr/share/xml/docbook/xml-dtd-#version" \
+        /etc/xml/docbook
+    xmlcatalog --noout --add "rewriteURI" \
+        "http://www.oasis-open.org/docbook/xml/#DTDVERSION" \
+        "file:///usr/share/xml/docbook/xml-dtd-#version" \
+        /etc/xml/docbook
+    xmlcatalog --noout --add "delegateSystem" \
+        "http://www.oasis-open.org/docbook/xml/#DTDVERSION/" \
+        "file:///etc/xml/docbook" \
+        /etc/xml/catalog
+    xmlcatalog --noout --add "delegateURI" \
+        "http://www.oasis-open.org/docbook/xml/#DTDVERSION/" \
+        "file:///etc/xml/docbook" \
+        /etc/xml/catalog
+done
 EOF
 
-	sed -i 's,#DTDVERSION,$DTDVERSION,g' "$PKG"/data/install
-	sed -i "s,#version,$version,g" "$PKG"/data/install
+cat > "$TOPDIR"/pre-remove <<-EOF
+xmlcatalog --noout --del file:///etc/xml/docbook-xml /etc/xml/catalog
+rm -rf /etc/xml/catalog /etc/xml/docbook-xml
+EOF
 
-	chmod +x "$PKG"/data/install
+	sed -i 's,#DTDVERSION,$DTDVERSION,g' "$TOPDIR"/post-install
+	sed -i "s,#version,$version,g" "$TOPDIR"/post-install
 }
