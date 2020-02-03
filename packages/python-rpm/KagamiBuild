@@ -1,0 +1,44 @@
+# Description: Python bindings for RPM
+# URL:         http://www.rpm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python rpm
+# Section:     python
+
+name=python-rpm
+version=4.15.1
+_pkgver_major="${version%%.*}"
+_pkgver_major_rem="${version#*.}"
+_pkgver_minor="${_pkgver_major_rem%%.*}"
+_base_pkgver=$_pkgver_major.$_pkgver_minor.x
+release=1
+source=("http://ftp.rpm.org/releases/rpm-$_base_pkgver/rpm-$version.tar.bz2")
+
+build() {
+	export ac_cv_prog_cc_c99='-std=gnu99'
+
+	cd "$SRC"/rpm-$version
+	patch -Np1 -i "$STUFF"/rpm/0001-Fix-build-with-musl-C-library.patch
+
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr  \
+		--sysconfdir=/etc  \
+		--localstatedir=/var \
+		--with-acl \
+		--with-cap \
+		--with-crypto=openssl \
+		--with-external-db \
+		--with-lua \
+		--without-hackingdocs \
+		--without-selinux \
+		--enable-python \
+		--enable-zstd \
+		--disable-inhibit-plugin \
+		--disable-nls \
+		--disable-rpath
+	make
+
+	cd python
+	python3 setup.py build
+	python3 setup.py install --root="$PKG" --optimize=1
+}
