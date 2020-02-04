@@ -33,10 +33,7 @@ build() {
 	install -v -m 0755 RELEASE-NOTES* NEWS* \
 		"$PKG"/usr/share/doc/docbook-xsl-$version
 
-mkdir -p "$PKG"/data
-cat << EOF > "$PKG"/data/install
-#!/bin/sh
-
+cat << EOF > "$topdir"/post-install
 if [ "$1" = "post-install" ]; then
 	if [ ! -f /etc/xml/catalog ]; then
 	    mkdir -p /etc/xml
@@ -74,6 +71,4 @@ if [ "$1" = "post-install" ]; then
 	    /etc/xml/catalog
 fi
 EOF
-
-	chmod +x "$PKG"/data/install
 }
