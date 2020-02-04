@@ -1,0 +1,35 @@
+# Description: A system designed to make installation and updates of packages easier
+# URL:         https://www.freedesktop.org/software/PackageKit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection vala bash-completion polkit sqlite libdnf
+# Section:     admin
+
+name=packagekit
+version=1.1.13
+release=1
+backup=('var/lib/PackageKit/transactions.db'
+	'etc/PackageKit/alpm.d/pacman.conf'
+	'etc/PackageKit/alpm.d/repos.list')
+options=('~emptydirs')
+source=("https://www.freedesktop.org/software/PackageKit/releases/PackageKit-$version.tar.xz")
+
+build() {
+	cd "$SRC"/PackageKit-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/PackageKit \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-dbus-sys=/usr/share/dbus-1/system.d \
+		--enable-dnf \
+		--disable-dummy \
+		--disable-gtk-doc \
+		--disable-local \
+		--disable-systemd
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+}
