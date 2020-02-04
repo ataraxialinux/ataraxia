@@ -11,6 +11,9 @@ source=("https://github.com/rpm-software-management/createrepo_c/archive/$versio
 
 build() {
 	cd "$SRC"/createrepo_c-$version
+	sed -i 's|ADD_SUBDIRECTORY (tests EXCLUDE_FROM_ALL)|# ADD_SUBDIRECTORY (tests EXCLUDE_FROM_ALL)|' CMakeLists.txt
+	sed -i 's|ENABLE_TESTING()|# ENABLE_TESTING()|' CMakeLists.txt
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/createrepo_c-$version \
