@@ -1,0 +1,27 @@
+# Description: A C implementation of createrepo, a tool to create yum repositories
+# URL:         https://github.com/rpm-software-management/createrepo_c
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja bash-completion rpm glib libmodulemd libxml2
+# Section:     devel
+
+name=createrepo
+version=0.15.16
+release=1
+source=("https://github.com/rpm-software-management/createrepo_c/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/createrepo_c-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/createrepo_c-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_DESIRED=3 \
+		-DENABLE_DRPM=OFF \
+		-DWITH_LIBMODULEMD=ON \
+		-DWITH_ZCHUNK=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
