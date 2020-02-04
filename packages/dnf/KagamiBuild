@@ -1,0 +1,36 @@
+# Description: Package manager forked from Yum, using libsolv as a dependency resolver
+# URL:         https://github.com/rpm-software-management/dnf
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja bash-completion python-rpm libdnf libcomps gpgme
+# Section:     admin
+
+name=dnf
+version=4.2.18
+release=1
+backup=("etc/dnf/automatic.conf"
+	"etc/dnf/dnf.conf"
+	"etc/dnf/aliases.d/zypper.conf"
+	"etc/dnf/protected.d/dnf.conf"
+	"etc/dnf/protected.d/yum.conf"
+	"etc/libreport/events.d/collect_dnf.conf"
+	"etc/logrotate.d/dnf")
+options=('~emptydirs')
+source=("https://github.com/rpm-software-management/dnf/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|ADD_SUBDIRECTORY (doc)|# ADD_SUBDIRECTORY (doc)|' CMakeLists.txt
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_DESIRED=3 \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	ln -sf dnf-3 "$PKG"/usr/bin/dnf
+	ln -sf dnf-3 "$PKG"/usr/bin/yum
+}

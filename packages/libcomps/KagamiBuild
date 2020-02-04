@@ -1,0 +1,27 @@
+# Description: Comps XML file manipulation library
+# URL:         https://github.com/rpm-software-management/libcomps
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
+# Section:     libs
+
+name=libcomps
+version=0.1.14
+release=1
+source=("https://github.com/rpm-software-management/libcomps/archive/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$name-$version
+	patch -Np1 -i "$STUFF"/libcomps/0001-Add-crc32.c-to-sources-list.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$name-$version/$name \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DPYTHON_DESIRED=3 \
+		-DENABLE_TESTS=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
