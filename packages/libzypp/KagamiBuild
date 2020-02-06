@@ -19,13 +19,13 @@ build() {
 	patch -Np1 -i "$STUFF"/libzypp/ea7c28d5a5db84a77c501cb33dab5f69c729a330.patch
 	patch -Np1 -i "$STUFF"/libzypp/2d1971b91cc8d7996f8140a657233a45e07aee22.patch
 	patch -Np1 -i "$STUFF"/libzypp/fb2f4add8f6d0ddf635b988322ab62aa2d701012.patch
+	patch -Np1 -i "$STUFF"/libzypp/dd44aee0e0b1699899a04809fc342f9757f8c35f.patch
 	sed -i 's|ADD_SUBDIRECTORY( doc )|# ADD_SUBDIRECTORY( doc )|' CMakeLists.txt
 
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_SKIP_RPATH=ON \
 		-DENABLE_BUILD_DOCS=OFF \
@@ -41,4 +41,9 @@ build() {
 	mkdir -p "$PKG"/usr/lib/cmake/LibSolv/
 	mv "$PKG"/usr/share/cmake/Modules/FindZypp.cmake "$PKG"/usr/lib/cmake/Zypp/ZyppConfig.cmake
 	mv "$PKG"/usr/share/cmake/Modules/ZyppCommon.cmake "$PKG"/usr/lib/cmake/Zypp/ZyppCommon.cmake
+
+	if [ -d "$PKG/usr/lib64" ]; then
+		mv "$PKG"/usr/lib64/* "$PKG"/usr/lib/
+		rmdir "$PKG"/usr/lib64
+	fi
 }

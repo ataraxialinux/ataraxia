@@ -1,0 +1,31 @@
+From dd44aee0e0b1699899a04809fc342f9757f8c35f Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 6 Feb 2020 11:13:18 -0600
+Subject: [PATCH] Update ZConfig.cc
+
+---
+ zypp/ZConfig.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/zypp/ZConfig.cc b/zypp/ZConfig.cc
+index ba5c6fd40..5e5961059 100644
+--- a/zypp/ZConfig.cc
++++ b/zypp/ZConfig.cc
+@@ -13,7 +13,7 @@ extern "C"
+ {
+ #include <features.h>
+ #include <sys/utsname.h>
+-#if __GLIBC_PREREQ (2,16)
++#ifdef __GLIBC__
+ #include <sys/auxv.h>	// getauxval for PPC64P7 detection
+ #endif
+ #include <unistd.h>
+@@ -155,7 +155,7 @@ namespace zypp
+ 	  }
+ 	}
+       }
+-#if __GLIBC_PREREQ (2,16)
++#ifdef __GLIBC__
+       else if ( architecture == Arch_ppc64 )
+       {
+ 	const char * platform = (const char *)getauxval( AT_PLATFORM );

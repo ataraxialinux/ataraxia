@@ -17,11 +17,15 @@ build() {
 	cd build
 	cmake "$SRC"/$name-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DLIB=/lib \
+		-DZYPP_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DENABLE_BUILD_TESTS=OFF \
 		-DENABLE_BUILD_TRANS=OFF \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin/
+	rmdir "$PKG/usr/sbin
 }
