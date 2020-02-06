@@ -1,0 +1,31 @@
+From 2d1971b91cc8d7996f8140a657233a45e07aee22 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 6 Feb 2020 10:54:23 -0600
+Subject: [PATCH] OpenBSD
+
+---
+ zypp/Date.cc | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/zypp/Date.cc b/zypp/Date.cc
+index a35cb09bb..b6015fdb3 100644
+--- a/zypp/Date.cc
++++ b/zypp/Date.cc
+@@ -18,6 +18,17 @@
+ 
+ #include "zypp/Date.h"
+ 
++// OpenBSD
++static struct tm	tm;
++
++time_t
++timelocal(struct tm *tmp)
++{
++	if (tmp != NULL)
++		tmp->tm_isdst = -1;	/* in case it wasn't initialized */
++	return mktime(tmp);
++}
++
+ using std::endl;
+ 
+ ///////////////////////////////////////////////////////////////////
