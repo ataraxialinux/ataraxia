@@ -1,0 +1,27 @@
+# Description: Command line software manager using libzypp
+# URL:         https://github.com/openSUSE/zypper/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja readline libzypp augeas
+# Section:     admin
+
+name=zypper
+version=1.14.26
+release=1
+source=("https://github.com/openSUSE/zypper/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|ADD_SUBDIRECTORY( doc )|# ADD_SUBDIRECTORY( doc )|' CMakeLists.txt
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DENABLE_BUILD_TESTS=OFF \
+		-DENABLE_BUILD_TRANS=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
