@@ -6,7 +6,7 @@
 
 name=libsolv
 version=0.7.11
-release=1
+release=2
 source=("https://github.com/openSUSE/libsolv/archive/$version.tar.gz")
 
 build() {
@@ -52,4 +52,7 @@ build() {
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	mkdir -p "$PKG"/usr/lib/cmake/LibSolv/
+	mv "$PKG"/usr/share/cmake/Modules/FindLibSolv.cmake "$PKG"/usr/lib/cmake/LibSolv/LibSolvConfig.cmake
 }
