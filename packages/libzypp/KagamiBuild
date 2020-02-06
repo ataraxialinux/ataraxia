@@ -1,0 +1,30 @@
+# Description: Package, Patch, Pattern, and Product Management
+# URL:         https://github.com/openSUSE/libzypp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja boost rpm libxml2 gnupg libproxy libsolv
+# Section:     utils
+
+name=libzypp
+version=17.11.1
+release=1
+source=("https://github.com/openSUSE/libzypp/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_RPATH=ON \
+		-DENABLE_BUILD_DOCS=OFF \
+		-DENABLE_BUILD_TESTS=OFF \
+		-DENABLE_BUILD_TRANS=OFF \
+		-DENABLE_ZCHUNK_COMPRESSION=OFF \
+		-DDISABLE_AUTODOCS=ON \
+		-DDISABLE_LIBPROXY=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
