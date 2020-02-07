@@ -1,18 +1,18 @@
-From d373f929db3466d87f77297531d5c031f85fb199 Mon Sep 17 00:00:00 2001
+From bd0b71af05119f0ed0d4d0181c0f5f14aa793cbb Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 7 Feb 2020 02:10:28 -0600
+Date: Fri, 7 Feb 2020 03:00:08 -0600
 Subject: [PATCH] debian/ataraxia groups
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- backends/zypp/pk-backend-zypp.cpp | 164 ++++++++++++++++++++++--------
- 1 file changed, 122 insertions(+), 42 deletions(-)
+ backends/zypp/pk-backend-zypp.cpp | 165 ++++++++++++++++++++++--------
+ 1 file changed, 125 insertions(+), 40 deletions(-)
 
 diff --git a/backends/zypp/pk-backend-zypp.cpp b/backends/zypp/pk-backend-zypp.cpp
-index e8d2348..4427070 100644
+index cdcfc18..9e4abaf 100644
 --- a/backends/zypp/pk-backend-zypp.cpp
 +++ b/backends/zypp/pk-backend-zypp.cpp
-@@ -779,51 +779,127 @@ get_enum_group (const string &group_)
+@@ -778,51 +778,131 @@ get_enum_group (const string &group_)
  {
  	string group(str::toLower(group_));
  
@@ -164,11 +164,14 @@ index e8d2348..4427070 100644
 +	} else if (group.compare ("translations") == 0) {
  		return PK_GROUP_ENUM_LOCALIZATION;
 -	} else if (group.find ("system") != string::npos) {
--		return PK_GROUP_ENUM_SYSTEM;
--	} else if (group.find ("scientific") != string::npos) {
--		return PK_GROUP_ENUM_EDUCATION;
 +	} else if (group.compare ("metapackages") == 0) {
 +		return PK_GROUP_ENUM_COLLECTIONS;
++	} else if (group.compare ("hardware") == 0) {
+ 		return PK_GROUP_ENUM_SYSTEM;
+-	} else if (group.find ("scientific") != string::npos) {
+-		return PK_GROUP_ENUM_EDUCATION;
++	} else if (group.compare ("security") == 0) {
++		return PK_GROUP_ENUM_SECURITY;
 +	} else {
 +		return PK_GROUP_ENUM_UNKNOWN;
  	}
@@ -177,7 +180,7 @@ index e8d2348..4427070 100644
  }
  
  /**
-@@ -1943,23 +2019,27 @@ pk_backend_required_by(PkBackend *backend, PkBackendJob *job, PkBitfield filters
+@@ -1942,22 +2022,27 @@ pk_backend_required_by(PkBackend *backend, PkBackendJob *job, PkBitfield filters
  PkBitfield
  pk_backend_get_groups (PkBackend *backend)
  {
@@ -205,11 +208,10 @@ index e8d2348..4427070 100644
 +		PK_GROUP_ENUM_OTHER,
  		PK_GROUP_ENUM_PROGRAMMING,
  		PK_GROUP_ENUM_PUBLISHING,
--		PK_GROUP_ENUM_SECURITY,
 +		PK_GROUP_ENUM_SCIENCE,
+ 		PK_GROUP_ENUM_SECURITY,
  		PK_GROUP_ENUM_SYSTEM,
  		-1);
- }
 -- 
 2.18.2
 
