@@ -14,11 +14,11 @@ source=("https://github.com/ataraxialinux/neko/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/neko/0001-fix.patch
 	autoreconf -vif
 
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-libprotonesso
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 
