@@ -2,7 +2,7 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 #### Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz pixz zstd rsync jq liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libcurl4-openssl-dev libarchive-dev libzstd-dev libfreetype6-dev libssl-dev libpopt-dev libzstd-dev libacl1-dev libcap-dev
+apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz pixz zstd rsync pkg-config liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libcurl4-openssl-dev libarchive-dev libzstd-dev libfreetype6-dev libssl-dev libpopt-dev libzstd-dev libacl1-dev libcap-dev libmagic-dev libdb-devel
 ```
 #### Fedora/RHEL/CentOS
 ```
