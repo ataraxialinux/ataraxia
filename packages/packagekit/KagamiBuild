@@ -1,25 +1,29 @@
 # Description: A system designed to make installation and updates of packages easier
 # URL:         https://www.freedesktop.org/software/PackageKit/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  intltool gobject-introspection vala bash-completion polkit sqlite libzypp
+# Depends on:  intltool gobject-introspection vala bash-completion autoconf-archive polkit sqlite libzypp
 # Section:     admin
 
 name=packagekit
 version=1.1.13
-release=3
+release=4
 options=('~emptydirs')
 source=("https://www.freedesktop.org/software/PackageKit/releases/PackageKit-$version.tar.xz")
 
 build() {
 	cd "$SRC"/PackageKit-$version
 	patch -Np1 -i "$STUFF"/packagekit/0001-debian-ataraxia-groups.patch
+	patch -Np1 -i "$STUFF"/packagekit/0001-no-some-stuff.patch
+	patch -Np1 -i "$STUFF"/packagekit/0001-pk-offline-update-get-rid-of-systemd.patch
 
+	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib/PackageKit \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
+		--enable-offline-update \
 		--enable-zypp \
 		--disable-dummy \
 		--disable-gtk-doc \
@@ -34,4 +38,10 @@ build() {
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
 	rm -rvf "$PKG"/etc/sysconfig
+
+
+	install -Dm755 "$STUFF"/svc/packagekit.initd "$PKG"/etc/init.d/packagekit
+
+	mkdir -p "$PKG"/etc/runlevels/sysinit
+	ln -sf ../../init.d/packagekit "$PKG"/etc/runlevels/sysinit/packagekit
 }
