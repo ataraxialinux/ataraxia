@@ -1,0 +1,52 @@
+# Description: Package, Patch, Pattern, and Product Management
+# URL:         https://github.com/openSUSE/libzypp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja boost rpm libxml2 gnupg libproxy libsolv
+# Section:     libs
+
+name=libzypp
+version=17.22.0
+release=1
+source=("https://github.com/openSUSE/libzypp/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libzypp/5ba212eab7ef72232df201e8387b81d1302ef774.patch
+	patch -Np1 -i "$STUFF"/libzypp/53a9a4d65e804a2640e7bef10368155f27352162.patch
+	patch -Np1 -i "$STUFF"/libzypp/28619b8820632a3af8b9e63fddb7e5ac5d6fb75a.patch
+	patch -Np1 -i "$STUFF"/libzypp/82ec8fbe049c689e2f3466bdfc95953dc3e30f97.patch
+	patch -Np1 -i "$STUFF"/libzypp/9b62d4eada8a269df712bdb71dc586739437be25.patch
+	patch -Np1 -i "$STUFF"/libzypp/ea7c28d5a5db84a77c501cb33dab5f69c729a330.patch
+	patch -Np1 -i "$STUFF"/libzypp/2d1971b91cc8d7996f8140a657233a45e07aee22.patch
+	patch -Np1 -i "$STUFF"/libzypp/fb2f4add8f6d0ddf635b988322ab62aa2d701012.patch
+	patch -Np1 -i "$STUFF"/libzypp/dd44aee0e0b1699899a04809fc342f9757f8c35f.patch
+	patch -Np1 -i "$STUFF"/libzypp/2b9dd785d57b6be4ac8523ac12feba68c83ae8b7.patch
+	patch -Np1 -i "$STUFF"/libzypp/0001-no-execinfo.patch
+	patch -Np1 -i "$STUFF"/libzypp/0001-aaa.patch
+	sed -i 's|ADD_SUBDIRECTORY( doc )|# ADD_SUBDIRECTORY( doc )|' CMakeLists.txt
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_RPATH=ON \
+		-DENABLE_BUILD_DOCS=OFF \
+		-DENABLE_BUILD_TESTS=OFF \
+		-DENABLE_BUILD_TRANS=OFF \
+		-DENABLE_ZCHUNK_COMPRESSION=OFF \
+		-DDISABLE_AUTODOCS=ON \
+		-DDISABLE_LIBPROXY=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	mkdir -p "$PKG"/usr/lib/cmake/Zypp/
+	mv "$PKG"/usr/share/cmake/Modules/FindZypp.cmake "$PKG"/usr/lib/cmake/Zypp/ZyppConfig.cmake
+	mv "$PKG"/usr/share/cmake/Modules/ZyppCommon.cmake "$PKG"/usr/lib/cmake/Zypp/ZyppCommon.cmake
+
+	if [ -d "$PKG/usr/lib64" ]; then
+		mv "$PKG"/usr/lib64/* "$PKG"/usr/lib/
+		rmdir "$PKG"/usr/lib64
+	fi
+}

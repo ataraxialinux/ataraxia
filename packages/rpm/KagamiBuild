@@ -1,0 +1,45 @@
+# Description: RPM Package Manager
+# URL:         http://www.rpm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib file acl libcap db libelf popt libarchive lua
+# Priority:    required
+# Section:     admin
+
+name=rpm
+version=4.15.1
+_pkgver_major="${version%%.*}"
+_pkgver_major_rem="${version#*.}"
+_pkgver_minor="${_pkgver_major_rem%%.*}"
+_base_pkgver=$_pkgver_major.$_pkgver_minor.x
+release=1
+options=('bootstrap')
+source=("http://ftp.rpm.org/releases/rpm-$_base_pkgver/$name-$version.tar.bz2")
+
+build() {
+	export ac_cv_prog_cc_c99='-std=gnu99'
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/rpm/0001-Fix-build-with-musl-C-library.patch
+
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr  \
+		--sysconfdir=/etc  \
+		--localstatedir=/var \
+		--with-acl \
+		--with-cap \
+		--with-crypto=openssl \
+		--with-external-db \
+		--with-lua \
+		--without-hackingdocs \
+		--without-selinux \
+		--enable-zstd \
+		--disable-inhibit-plugin \
+		--disable-nls \
+		--disable-python \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rvf "$PKG"/var
+}

@@ -31,9 +31,9 @@ generate_initramfs() {
 	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam libpwquality attr acl libcap \
 		shadow pcre grep mksh bash expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive lzo kmod busybox \
 		mawk hostname dialog pigz libmnl libnl iproute2 kbd nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools \
-		hwids eudev openrc netifrc wireless_tools wpa_supplicant popt gptfdisk wget haveged oniguruma jq neko linux"
+		hwids eudev openrc netifrc wireless_tools wpa_supplicant popt gptfdisk wget linux"
 
-	neko install -c "$BUILD"/target.config -r "$INITRAMFS" -d $packages
+	neko em -c "$BUILD"/target.config -r "$INITRAMFS" -wd $packages
 
 	build_busybox
 
@@ -92,12 +92,12 @@ make_iso_x86() {
 	grub_mod="all_video disk part_gpt part_msdos linux normal configfile search search_label efi_gop fat iso9660 cat echo ls test true help gzio multiboot2 efi_uga"
 
 	case $BARCH in
-		amd64)
+		x86_64)
 			format="x86_64-efi"
 			efi="bootx64.efi"
 			;;
-		i386)
-			format="i386-efi"
+		i586)
+			format="i586-efi"
 			efi="bootia32.efi"
 			;;
 	esac
@@ -203,10 +203,10 @@ main() {
 	generate_initramfs
 
 	case $BARCH in
-		amd64|i386)
+		x86_64|i586)
 			make_iso_x86
 			;;
-		ppc64le|ppc64)
+		ppc64le|ppc64|ppc)
 			make_iso_ppc
 			;;
 	esac

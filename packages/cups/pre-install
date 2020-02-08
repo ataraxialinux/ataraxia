@@ -1,0 +1,9 @@
+getent group lpadmin || groupadd -r lpadmin 2>/dev/null
+getent group lp || groupadd -r lp 2>/dev/null
+getent passwd lp || useradd -c "Print Service User" -r -G lp -g lp -s /usr/bin/nologin lp 2>/dev/null
+
+if [ -z "$(id -nG lp | grep -o lp)" ]; then
+	usermod -a -G lp lp
+fi
+
+passwd -l lp 2>/dev/null

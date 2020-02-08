@@ -1,0 +1,77 @@
+From 896c2590adda669b4f5effad9ea4e518f6d15875 Mon Sep 17 00:00:00 2001
+From: root <root@localhost.localdomain>
+Date: Thu, 6 Feb 2020 18:19:18 +0000
+Subject: [PATCH] add rpmatch
+
+Signed-off-by: root <root@localhost.localdomain>
+---
+ src/utils/prompt.cc | 53 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/src/utils/prompt.cc b/src/utils/prompt.cc
+index 2b35cc1..32ae01d 100644
+--- a/src/utils/prompt.cc
++++ b/src/utils/prompt.cc
+@@ -21,6 +21,59 @@
+ 
+ #include "prompt.h"
+ 
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <regex.h>
++#include <libintl.h>
++#include <locale.h>
++
++typedef struct {
++	int value;
++        const char* string;
++	const char* pattern;
++	regex_t re;
++}	compare_t;
++
++static compare_t list[] = {
++	{ 0, "no",    NULL, },
++	{ 1, "yes",   NULL, },
++	{ 0, "^[nN]", NULL, },
++	{ 1, "^[yY]", NULL, },
++	{ 0, NULL,    NULL, }
++};
++
++static int re_compare(const char* response, compare_t* compare)
++{
++        const char* pattern = gettext(compare->string);
++
++	if (compare->pattern != pattern) {
++		if (compare->pattern)
++			regfree(&compare->re);
++		compare->pattern = NULL;
++		if (regcomp(&compare->re, pattern, REG_EXTENDED))
++			return -1;
++		compare->pattern = pattern;
++	}
++	return regexec(&compare->re, response, 0, NULL, 0) ? -1 : compare->value;
++}
++
++int rpmatch(const char* response)
++{
++	int result = -1;
++	compare_t *compare = list;
++
++	if (!response)
++		return -1;
++        while (compare->string) {
++		result = re_compare(response, compare);
++		if (result >= 0)
++			return result;
++		compare++;
++	}
++	return result;
++}
++
+ // ----------------------------------------------------------------------------
+ 
+ PromptOptions::PromptOptions( StrVector options_r, unsigned defaultOpt_r )
+-- 
+2.25.0
+

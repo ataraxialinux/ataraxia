@@ -16,7 +16,7 @@ main_standard() {
 	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 
 	case $BARCH in
-		amd64|i386)
+		x86_64|i586)
 			parted -s $lodev mklabel msdos
 			parted -a optimal -s $lodev mkpart primary 0% 100%
 			parted -s $lodev set 1 boot on
@@ -38,9 +38,9 @@ main_standard() {
 		autoconf automake xz lzip lz4 zstd libarchive lzo kmod libuargp libelf busybox coreutils mawk hostname \
 		mandoc dialog pigz libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 \
 		kbd make patch nano libcap-ng util-linux e2fsprogs btrfs-progs hwids gperf eudev openrc netifrc popt rsync \
-		libssh2 c-ares libev nghttp2 curl haveged oniguruma jq neko $LINUX"
+		libssh2 c-ares libev nghttp2 curl lua rpm neko $LINUX"
 
-	neko install -c "$BUILD"/target.config -r "$IMAGEFS" $packages
+	neko em -c "$BUILD"/target.config -r "$IMAGEFS" -wd $packages
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev
@@ -64,7 +64,7 @@ main_embedded() {
 	yes | mkfs.ext2 $lopart
 	mount -o loop $lopart "$IMAGEFS"
 
-	neko install -c "$BUILD"/target.config -r "$IMAGEFS" base-files mksh busybox
+	neko em -c "$BUILD"/target.config -r "$IMAGEFS" -wd base-files mksh busybox
 
 	pushd "$IMAGEFS"
 		rm -rf usr/include

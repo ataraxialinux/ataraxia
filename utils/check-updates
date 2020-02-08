@@ -5,11 +5,8 @@
 # Also thanks Void linux!
 #
 
-msg() {
-	if [ "$SILENT" != "1" ]; then
-		printf "\033[1;32m *\033[0m %s\n" "$@"
-	fi
-}
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 check_updates() {
 	if [ "$TORSOCKS" = "true" ]; then
@@ -171,8 +168,9 @@ check_updates() {
 			vercmp "$original_pkgname-${version}_1" "$original_pkgname-$(printf %s "$found_version" | tr - .)_1"
 			if [ $? = 255 ]; then
 				if [ "$AUTOBUMB" = "yes" ]; then
-					msg "Auto-updating ${original_pkgname} to ${found_version}"
+					msg "Auto-updating ${original_pkgname} to $found_version"
 					local oldver oldrel
+					found_version="$(printf %s "$found_version" | tr - +)"
 					oldver="$(grep ^version $mypkg/KagamiBuild | sed -e 's,version=,,g' )"
 					oldrel="$(grep ^release $mypkg/KagamiBuild | sed -e 's,release=,,g' )"
 					sed -i "s,version=${oldver},version=${found_version},g" "$mypkg/KagamiBuild"

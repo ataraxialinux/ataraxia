@@ -1,24 +1,24 @@
 # Description: Next-generation package and configuration manager
 # URL:         https://github.com/ataraxialinux/neko
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  bash jq libarchive curl
+# Depends on:  bash libarchive curl rpm
 # Priority:    required
 # Section:     base
 
 name=neko
-version=0.98
+version=0.99
 release=1
 options=('bootstrap')
-backup=('etc/neko.config')
+backup=('etc/neko/make.conf')
 source=("https://github.com/ataraxialinux/neko/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/neko/0001-fix.patch
 	autoreconf -vif
 
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-libprotonesso
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 
@@ -26,13 +26,17 @@ build() {
 
 	mkdir -p "$PKG"/etc "$PKG"/var/cache/{packages,sources}
 
-	cat > "$PKG"/etc/neko.config <<-EOF
+	mkdir -p "$PKG"/etc/neko
+	cat > "$PKG"/etc/neko/make.conf <<-EOF
 		# Uncomment if you want parallel build or add certain options for 'make' or 'ninja'
 		#
 		# MKOPTS=""
 		
 		# Specify options for `curl` downloader
 		# CURLOPTS=""
+
+		# Specify options for git
+		# GITOPTS=""
 		
 		# Options for build:
 		#

@@ -5,7 +5,7 @@
 # Section:     base
 
 name=base-files
-version=0.4
+version=0.5
 release=1
 options=('bootstrap')
 backup=('etc/fstab'
@@ -23,6 +23,7 @@ backup=('etc/fstab'
 	'etc/securetty'
 	'etc/shadow'
 	'etc/shells')
+OSRELEASE="1"
 
 build() {
 	cd "$PKG"
@@ -41,9 +42,10 @@ build() {
 
 	ln -sf ../proc/mounts etc/mtab
 
-	touch etc/ataraxia-release
+	echo "Ataraxia Linux $OSRELEASE" >> etc/ataraxia-release
+	ln -sf ataraxia-release etc/system-release
 
-	for f in fstab group host.conf hosts inittab issue issue.net motd os-release passwd profile resolv.conf securetty shells; do
+	for f in fstab group host.conf hosts inittab issue issue.net motd passwd profile resolv.conf securetty shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
 	done
 
@@ -77,6 +79,17 @@ build() {
 
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
+
+	cat > "$PKG"/etc/os-release <<- EOF
+		NAME="Ataraxia Linux"
+		VERSION="$OSRELEASE"
+		ID="ataraxialinux ataraxia januslinux janus"
+		ID_LIKE="ataraxia"
+		VERSION_ID="$OSRELEASE"
+		PRETTY_NAME="Ataraxia Linux $OSRELEASE"
+		HOME_URL="https://ataraxialinux.github.io/"
+		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
+	EOF
 
 	if [ "$EMBEDDED" = "1" ]; then
 		cat << EOF > "$PKG"/etc/bootscript.sh

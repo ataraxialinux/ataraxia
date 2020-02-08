@@ -1,0 +1,21 @@
+#!/usr/bin/openrc-run
+# Copyright (c) 2008 Saleem Abdulrasool <compnerd@compnerd.org>
+# Distributed under the terms of the GNU General Purpose License v2
+# $Header: $
+
+description="PackageKit upgrade"
+
+start() {
+	if [ -f "/system-update" ]; then
+		mkdir -p /run/dbus
+		dbus-daemon --system
+		/usr/lib/PackageKit/pk-offline-update
+		if [ $? -eq 0 ]; then
+			reboot -f
+		else
+			echo "Failed to upgrade system!"
+			mksh
+			reboot -f
+		fi
+	fi
+}
