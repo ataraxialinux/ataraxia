@@ -12,17 +12,31 @@ source=("https://github.com/stepmania/stepmania/archive/v$version.tar.gz")
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/stepmania/186b3471f4b25092aaf650d8904fb1ceb820fedd.patch
+	patch -Np1 -i "$STUFF"/stepmania/0002-MessagemanCrashPatch.patch
 
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
-		-DCMAKE_INSTALL_BINDIR=/usr/games \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DWITH_MINIMAID=OFF \
 		-DWITH_SYSTEM_FFMPEG=OFF \
 		-Wno-dev -G "Unix Makefiles"
 	make
-	make DESTDIR="$PKG" install
+
+	cd ..
+
+	install -d "$PKG/opt/stepmania/"{RandomMovies,Packages}
+	install -t "$PKG/opt/stepmania/" stepmania-min-size GtkModule.so
+
+	cp -r -t "$PKG/opt/stepmania/" Announcers BGAnimations BackgroundEffects \
+		BackgroundTransitions Characters Courses Data Docs NoteSkins Scripts \
+		Songs Themes
+
+	mkdir -p "$PKG"/usr/share "$PKG"/usr/games
+	cp -ar icons "$PKG/usr/share/"
+
+	ln -sf /opt/stepmania/stepmania-min-size "$PKG"/usr/games/stepmania-min-size
+	ln -sf /opt/stepmania/stepmania-min-size "$PKG"/usr/games/stepmania
+
+	install -D stepmania.desktop "$PKG"/usr/share/applications/stepmania.desktop
 }
