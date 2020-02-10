@@ -1,0 +1,28 @@
+# Description: A free dance and rhythm game
+# URL:         https://google.github.io/snappy/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  git cmake yasm glew gtk2 libmad libvorbis freetype
+# Section:     games
+
+name=stepmania
+version=5.0.12
+release=1
+source=("https://github.com/stepmania/stepmania/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/stepmania/186b3471f4b25092aaf650d8904fb1ceb820fedd.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_INSTALL_BINDIR=/usr/games \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_MINIMAID=OFF \
+		-DWITH_SYSTEM_FFMPEG=OFF \
+		-Wno-dev -G "Unix Makefiles"
+	make
+	make DESTDIR="$PKG" install
+}

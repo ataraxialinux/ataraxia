@@ -1,0 +1,29 @@
+From 186b3471f4b25092aaf650d8904fb1ceb820fedd Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 11 Feb 2020 01:59:36 +0900
+Subject: [PATCH] musl fix
+
+---
+ src/archutils/Unix/AssertionHandler.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/archutils/Unix/AssertionHandler.cpp b/src/archutils/Unix/AssertionHandler.cpp
+index 92a34c0bcc..954fb1bb01 100644
+--- a/src/archutils/Unix/AssertionHandler.cpp
++++ b/src/archutils/Unix/AssertionHandler.cpp
+@@ -11,6 +11,7 @@
+  * for library code that uses assert(); internally we always use ASSERT, which
+  * does this for all platforms, not just glibc. */
+ 
++#ifdef __GLIBC__
+ extern "C" void __assert_fail( const char *assertion, const char *file, unsigned int line, const char *function ) throw()
+ {
+ 	const RString error = ssprintf( "Assertion failure: %s: %s", function, assertion );
+@@ -27,6 +28,7 @@ extern "C" void __assert_fail( const char *assertion, const char *file, unsigned
+ 	_exit(0);
+ #endif
+ }
++#endif
+ 
+ 
+ extern "C" void __assert_perror_fail( int errnum, const char *file, unsigned int line, const char *function ) throw()
