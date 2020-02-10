@@ -26,6 +26,9 @@ build() {
 	sed -i 's|ADD_SUBDIRECTORY( doc )|# ADD_SUBDIRECTORY( doc )|' CMakeLists.txt
 	sed -i 's|ADD_SUBDIRECTORY( tests EXCLUDE_FROM_ALL )|# ADD_SUBDIRECTORY( tests EXCLUDE_FROM_ALL )|' CMakeLists.txt
 
+	export CFLAGS="-include sys/types.h $CFLAGS"
+	export CXXFLAGS="$CFLAGS"
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
