@@ -1,32 +1,34 @@
-# Description: Standalone web browser from mozilla.org
-# URL:         https://www.mozilla.org/firefox/
+# Description: Anonymous Web Browser
+# URL:         https://www.torproject.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk3 gtk2 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
 # Section:     web
 
-name=firefox
-version=68.4.2
+name=tor-browser
+version=9.0.4
+gitver=68.4.1esr-9.0-1-build1
 release=1
 options=('~emptydirs' '~ccache')
-source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
+source=("https://dist.torproject.org/torbrowser/$version/src-firefox-tor-browser-$gitver.tar.xz")
 
 build() {
-	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
+	export LDFLAGS="-Wl,-rpath,/usr/lib/tor-browser"
 
-	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-seccomp-bpf.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-toolkit.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-tools.patch
-	patch -Np1 -i "$STUFF"/firefox/mallinfo.patch
-	patch -Np1 -i "$STUFF"/firefox/disable-moz-stackwalk.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-musl.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-webrtc-glibcisms.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-sandbox-membarrier.patch
+	cd "$SRC"/firefox-tor-browser-$gitver
+	patch -Np1 -i "$STUFF"/tor-browser/fix-fortify-system-wrappers.patch
+	patch -Np1 -i "$STUFF"/tor-browser/fix-seccomp-bpf.patch
+	patch -Np1 -i "$STUFF"/tor-browser/fix-toolkit.patch
+	patch -Np1 -i "$STUFF"/tor-browser/fix-tools.patch
+	patch -Np1 -i "$STUFF"/tor-browser/mallinfo.patch
+	patch -Np1 -i "$STUFF"/tor-browser/disable-moz-stackwalk.patch
+	patch -Np1 -i "$STUFF"/tor-browser/fix-musl.patch
+	patch -Np1 -i "$STUFF"/tor-browser/fix-webrtc-glibcisms.patch
+	patch -Np1 -i "$STUFF"/tor-browser/fix-sandbox-membarrier.patch
 
-	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
+	cp "$STUFF"/tor-browser/stab.h toolkit/crashreporter/google-breakpad/src/
 
-	cat > mozconfig <<-EOF
+	sed -i 's|--enable-tor-browser-update|--disable-tor-browser-update|' .mozconfig
+	cat > .mozconfig <<-EOF
 		ac_add_options --enable-dbus
 		ac_add_options --disable-necko-wifi
 		ac_add_options --disable-startup-notification
@@ -36,7 +38,6 @@ build() {
 		ac_add_options --enable-ffmpeg
 		ac_add_options --disable-debug-symbols
 		ac_add_options --prefix=/usr
-		ac_add_options --enable-application=browser
 		ac_add_options --disable-elf-hack
 		ac_add_options --disable-gold
 		ac_add_options --disable-jemalloc
@@ -44,9 +45,7 @@ build() {
 		ac_add_options --enable-release
 		ac_add_options --enable-rust-simd
 		ac_add_options --enable-hardening
-		ac_add_options --disable-crashreporter
 		ac_add_options --disable-updater
-		ac_add_options --disable-tests
 		ac_add_options --enable-system-ffi
 		ac_add_options --enable-system-pixman
 		ac_add_options --enable-system-sqlite
@@ -60,37 +59,36 @@ build() {
 		ac_add_options --with-system-png
 		ac_add_options --with-system-webp
 		ac_add_options --with-system-zlib
-		ac_add_options --disable-official-branding
-		ac_add_options --with-branding=browser/branding/unofficial
-		ac_add_options --enable-update-channel=release
 		ac_add_options --disable-gconf
 		ac_add_options --host=$XTARGET
 		ac_add_options --target=$XTARGET
 	EOF
 
+	cp .mozconfig mozconfig
+
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
-	for i in 16 32 48 64 128; do
-		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
+	for i in 128 16 256 32 48 512 64; do
+		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/tor-browser.png
 	done
 
 	mkdir -p "$PKG"/usr/bin/
-	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
+	ln -sf /usr/lib/tor-browser/tor-browser "$PKG"/usr/bin/tor-browser
 
 	mkdir -p "$PKG"/usr/share/applications/
-	cat > "$PKG"/usr/share/applications/firefox.desktop <<-EOF
+	cat > "$PKG"/usr/share/applications/tor-browser.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
-		Name=Firefox Web Browser
-		Comment=Browse the World Wide Web
-		GenericName=Web Browser
-		Exec=firefox %u
+		Name=Tor Browser
+		Comment=Anonymous Web Browser
+		GenericName=Anonymous Web Browser
+		Exec=tor-browser %u
 		Terminal=false
 		Type=Application
-		Icon=firefox
+		Icon=tor-browser
 		Categories=GNOME;GTK;Network;WebBrowser;
-		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
 		StartupNotify=true
+		StartupWMClass=Tor Browser
 	EOF
 }
