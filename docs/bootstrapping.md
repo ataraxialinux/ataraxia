@@ -2,25 +2,21 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 #### Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz pixz zstd rsync pkg-config liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libcurl4-openssl-dev libarchive-dev libzstd-dev libfreetype6-dev libssl-dev libpopt-dev libzstd-dev libacl1-dev libcap-dev libmagic-dev libdb-devel
+apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz zstd rsync pkg-config liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libarchive-dev libzstd-dev libfreetype6-dev libpopt-dev libacl1-dev libcap-dev libmagic-dev libdb-dev
 ```
 #### Fedora/RHEL/CentOS
 ```
 dnf groupinstall "Development Tools"
-dnf install mtools libisoburn python3 pigz libarchive curl jq rsync bsdtar glibc-static xorriso freetype-devel zlib-devel xz-devel elfutils-libelf-devel openssl-devel
+dnf install mtools libisoburn python3 pigz libarchive curl rsync bsdtar glibc-static xorriso freetype-devel zlib-devel xz-devel zstd-devel libarchive-devel elfutils-libelf-devel openssl-devel libdb-devel popt-devel file-devel libacl-devel libcap-devel
 ln -sf python3 /usr/bin/python
 ```
 #### Arch Linux (and derivatives):
 ```
-pacman -S base-devel xorriso mtools git pigz python pixz rsync jq freetype2
-```
-#### Void Linux
-```
-xbps-install -S base-devel xorriso mtools git patch pigz pixz python3 python zstd rsync curl libarchive bsdtar zstd jq zlib-debel libzstd-devel libarchive-devel libcurl-devel elfutils-devel freetype-devel
+pacman -S base-devel xorriso mtools git pigz python rsync freetype2
 ```
 #### Ataraxia Linux:
 ```
-neko install libisoburn python mtools pixz freetype
+neko install libisoburn python mtools freetype
 ```
 
 ### Compiling package manager
