@@ -1,0 +1,22 @@
+# Description: X compositor that may fix tearing issues
+# URL:         https://github.com/yshui/picom
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson uthash mesa libconfig dbus libev libxdg-basedir pcre pixman xcb-util-image xcb-util-renderutil
+# Section:     x11
+
+name=picom
+version=7.5
+release=1
+backup=('etc/xdg/picom.conf')
+source=("https://github.com/yshui/picom/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dbuild_docs=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
