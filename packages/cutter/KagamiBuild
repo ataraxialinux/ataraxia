@@ -1,0 +1,25 @@
+# Description: Free and Open Source Reverse Engineering Platform powered by radare2
+# URL:         https://cutter.re/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake radare2 qt5
+# Section:     devel
+
+name=cutter
+version=1.10.1
+release=1
+source=("https://github.com/radareorg/cutter/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	qmake "$SRC"/$name-$version/src/Cutter.pro \
+		CUTTER_ENABLE_PYTHON=false \
+		CUTTER_ENABLE_PYTHON_BINDINGS=false \
+		CUTTER_USE_BUNDLED_RADARE2=false
+	make
+
+	install -Dm755 "$SRC"/$name-$version/build/Cutter "$PKG"/usr/bin
+	install -Dm644 "$SRC"/$name-$version/src/org.radare.Cutter.desktop "$PKG"/usr/share/applications
+	install -Dm644 "$SRC"/$name-$version/src/img/cutter.svg "$PKG"/usr/share/icons/hicolor/scalable/apps
+}
