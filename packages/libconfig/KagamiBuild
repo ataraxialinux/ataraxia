@@ -1,0 +1,19 @@
+# Description: C/C++ Configuration File Library
+# URL:         https://github.com/hyperrealm/libconfig
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libconfig
+version=1.7.2
+release=1
+source=("https://github.com/hyperrealm/libconfig/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-doc
+	make
+	make DESTDIR="$PKG" install
+}
