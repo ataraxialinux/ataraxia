@@ -7,9 +7,11 @@
 name=tor-browser
 version=9.0.4
 gitver=68.4.1esr-9.0-1-build1
+torlauncherver=0.2.20.5
 release=1
 options=('~emptydirs' '~ccache')
-source=("https://dist.torproject.org/torbrowser/$version/src-firefox-tor-browser-$gitver.tar.xz")
+source=("https://dist.torproject.org/torbrowser/$version/src-firefox-tor-browser-$gitver.tar.xz"
+	"https://dist.torproject.org/torbrowser/9.0.4/src-tor-launcher-$torlauncherver.tar.xz")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/tor-browser"
@@ -24,6 +26,9 @@ build() {
 	patch -Np1 -i "$STUFF"/tor-browser/fix-musl.patch
 	patch -Np1 -i "$STUFF"/tor-browser/fix-webrtc-glibcisms.patch
 	patch -Np1 -i "$STUFF"/tor-browser/fix-sandbox-membarrier.patch
+
+	mkdir -p browser/extensions/tor-launcher
+	cp -av "$SRC"/tor-launcher-$torlauncherver/* browser/extensions/tor-launcher/
 
 	cp "$STUFF"/tor-browser/stab.h toolkit/crashreporter/google-breakpad/src/
 
@@ -80,13 +85,13 @@ build() {
 	ln -sf /usr/lib/tor-browser/tor-browser "$PKG"/usr/bin/tor-browser
 
 	mkdir -p "$PKG"/usr/share/applications/
-	cat > "$PKG"/usr/share/applications/tor-browser.desktop <<-EOF
+	cat > "$PKG"/usr/share/applications/start-tor-browser.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
 		Name=Tor Browser
 		Comment=Anonymous Web Browser
 		GenericName=Anonymous Web Browser
-		Exec=tor-browser %u
+		Exec=start-tor-browser %u
 		Terminal=false
 		Type=Application
 		Icon=tor-browser
