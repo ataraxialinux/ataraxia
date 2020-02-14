@@ -1,17 +1,19 @@
 # Description: Anonymous Web Browser
 # URL:         https://www.torproject.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk3 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification dbus-glib
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm git ffmpeg gtk3 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification dbus-glib tor
 # Section:     web
 
 name=tor-browser
 version=9.0.4
 gitver=68.4.1esr-9.0-1-build1
 torlauncherver=0.2.20.5
+commitver=23a9f741090af7a72f080566664ffe8e824764b7
 release=1
 options=('~emptydirs' '~ccache')
 source=("https://dist.torproject.org/torbrowser/$version/src-firefox-tor-browser-$gitver.tar.xz"
-	"https://dist.torproject.org/torbrowser/9.0.4/src-tor-launcher-$torlauncherver.tar.xz")
+	"https://dist.torproject.org/torbrowser/9.0.4/src-tor-launcher-$torlauncherver.tar.xz"
+	"https://git.torproject.org/builders/tor-browser-build.git")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
@@ -99,4 +101,15 @@ build() {
 		StartupNotify=true
 		StartupWMClass=Tor Browser
 	EOF
+
+	mkdir -p "$PKG"/usr/lib/firefox/TorBrowser/Tor
+
+	cd "$SRC"/tor-browser-build.git
+	git checkout $commitver
+	cp -av projects/tor-browser/Bundle-Data/linux/* "$PKG"/usr/lib/firefox/TorBrowser/
+
+	ln -sf /usr/bin/tor "$PKG"/usr/lib/firefox/TorBrowser/Tor/tor
+
+	chmod 700 "$PKG"/usr/lib/firefox/TorBrowser/Data/Browser
+	chmod 700 "$PKG"/usr/lib/firefox/TorBrowser/Data/Tor
 }
