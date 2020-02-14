@@ -1,7 +1,7 @@
 # Description: Anonymous Web Browser
 # URL:         https://www.torproject.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk3 gtk2 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk3 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification dbus-glib
 # Section:     web
 
 name=tor-browser
@@ -28,7 +28,11 @@ build() {
 	cp "$STUFF"/tor-browser/stab.h toolkit/crashreporter/google-breakpad/src/
 
 	sed -i 's|--enable-tor-browser-update|--disable-tor-browser-update|' .mozconfig
-	cat > .mozconfig <<-EOF
+	cat > mozconfig-ataraxia <<-EOF
+		ac_add_options --with-tor-browser-version=$version
+		ac_add_options --with-distribution-id=org.torproject
+		ac_add_options --enable-update-channel=release
+		ac_add_options --enable-bundled-fonts
 		ac_add_options --enable-dbus
 		ac_add_options --disable-necko-wifi
 		ac_add_options --disable-startup-notification
@@ -42,7 +46,6 @@ build() {
 		ac_add_options --disable-gold
 		ac_add_options --disable-jemalloc
 		ac_add_options --disable-profiling
-		ac_add_options --enable-release
 		ac_add_options --enable-rust-simd
 		ac_add_options --enable-hardening
 		ac_add_options --disable-updater
@@ -63,6 +66,8 @@ build() {
 		ac_add_options --host=$XTARGET
 		ac_add_options --target=$XTARGET
 	EOF
+	echo "" >> .mozconfig
+	cat mozconfig-ataraxia >> .mozconfig
 
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
