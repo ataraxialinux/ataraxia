@@ -14,7 +14,7 @@ source=("https://dist.torproject.org/torbrowser/$version/src-firefox-tor-browser
 	"https://dist.torproject.org/torbrowser/9.0.4/src-tor-launcher-$torlauncherver.tar.xz")
 
 build() {
-	export LDFLAGS="-Wl,-rpath,/usr/lib/tor-browser"
+	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
 
 	cd "$SRC"/firefox-tor-browser-$gitver
 	patch -Np1 -i "$STUFF"/tor-browser/fix-fortify-system-wrappers.patch
@@ -82,16 +82,16 @@ build() {
 	done
 
 	mkdir -p "$PKG"/usr/bin/
-	ln -sf /usr/lib/tor-browser/tor-browser "$PKG"/usr/bin/tor-browser
+	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
 
 	mkdir -p "$PKG"/usr/share/applications/
-	cat > "$PKG"/usr/share/applications/start-tor-browser.desktop <<-EOF
+	cat > "$PKG"/usr/share/applications/tor-browser.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
 		Name=Tor Browser
 		Comment=Anonymous Web Browser
 		GenericName=Anonymous Web Browser
-		Exec=start-tor-browser %u
+		Exec=firefox %u
 		Terminal=false
 		Type=Application
 		Icon=tor-browser
