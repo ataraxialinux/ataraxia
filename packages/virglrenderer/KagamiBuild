@@ -1,0 +1,19 @@
+# Description: A virtual 3D GPU library, that allows the guest operating system to use the host GPU to accelerate 3D rendering
+# URL:         https://gitlab.freedesktop.org/virgl/virglrenderer
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libepoxy
+# Section:     virt
+
+name=virglrenderer
+version=0.8.2
+release=1
+source=("https://gitlab.freedesktop.org/virgl/virglrenderer/-/archive/virglrenderer-$version/virglrenderer-virglrenderer-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
