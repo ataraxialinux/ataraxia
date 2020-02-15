@@ -1,0 +1,26 @@
+# Description: Tool to build flatpaks from source
+# URL:         https://flatpak.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection binutils libelf flatpak busybox unzip git patch appstream-glib
+# Section:     devel
+
+name=flatpak-builder
+version=1.0.9
+release=1
+source=("https://github.com/flatpak/flatpak-builder/releases/download/$version/flatpak-builder-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/flatpak-builder/musl-fixes.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
