@@ -1,0 +1,49 @@
+# Description: A generic and open source machine emulator and virtualizer
+# URL:         http://wiki.qemu.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python pixman gtk3 vte virglrenderer sdl2 alsa-lib libseccomp libusb libaio lzo snappy libcap-ng
+# Section:     virt
+
+name=qemu
+version=4.2.0
+release=1
+source=("http://download.qemu-project.org/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/qemu/0001-elfload-load-PIE-executables-to-right-address.patch
+	patch -Np1 -i "$STUFF"/qemu/0006-linux-user-signal.c-define-__SIGRTMIN-MAX-for-non-GN.patch
+	patch -Np1 -i "$STUFF"/qemu/0001-linux-user-fix-build-with-musl-on-aarch64.patch
+	patch -Np1 -i "$STUFF"/qemu/musl-F_SHLCK-and-F_EXLCK.patch
+	patch -Np1 -i "$STUFF"/qemu/fix-sigevent-and-sigval_t.patch
+	patch -Np1 -i "$STUFF"/qemu/xattr_size_max.patch
+	patch -Np1 -i "$STUFF"/qemu/ncurses.patch
+	patch -Np1 -i "$STUFF"/qemu/ignore-signals-33-and-64-to-allow-golang-emulation.patch
+	patch -Np1 -i "$STUFF"/qemu/0001-linux-user-fix-build-with-musl-on-ppc64le.patch
+	patch -Np1 -i "$STUFF"/qemu/MAP_SYNC-fix.patch
+	patch -Np1 -i "$STUFF"/qemu/fix-sockios-header.patch
+	patch -Np1 -i "$STUFF"/qemu/test-crypto-ivgen-skip-essiv.patch
+	patch -Np1 -i "$STUFF"/qemu/guest-agent-shutdown.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/qemu \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--python=/usr/bin/python3 \
+		--smbd=/usr/bin/smbd \
+		--audio-drv-list=alsa \
+		--enable-kvm \
+		--enable-modules \
+		--enable-pie \
+		--enable-seccomp \
+		--disable-docs \
+		--disable-werror
+	make
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/udev/rules.d
+cat > "$PKG"/usr/lib/udev/rules.d/65-kvm.rules << "EOF"
+KERNEL=="kvm", GROUP="kvm", MODE="0660"
+EOF
+}
