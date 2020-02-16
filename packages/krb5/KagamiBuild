@@ -8,14 +8,16 @@ name=krb5
 version=1.18
 case $version in
 	*.*.*) _v=${version%.*};;
+	*)     _v=${version};;
 esac
 release=1
 options=('~emptydirs')
-source=("https://kerberos.org/dist/krb5/${_v}/krb5-$version.tar.gz")
+source=("https://web.mit.edu/kerberos/dist/krb5/${_v}/krb5-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np0 -i "$STUFF"/krb5/libressl.patch
+	patch -Np1 -i "$STUFF"/krb5/libressl.patch
+	patch -Np1 -i "$STUFF"/krb5/glibc.patch
 
 	cd src
 	./configure $BUILDFLAGS \
