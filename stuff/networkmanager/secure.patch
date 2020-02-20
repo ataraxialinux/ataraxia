@@ -1,34 +1,46 @@
-92c92,94
-< 	const char *iface, *dhcpcd_path, *hostname;
+From 6147d7403dee80d4bdc5476b140ced5fbe648b53 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 20 Feb 2020 23:29:29 +0900
+Subject: [PATCH] disable hostname sending
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
-> 
-> 	const char *iface, *dhcpcd_path;
-> 	/*const char *iface, *dhcpcd_path, *hostname;*/
-139c141
-< 	hostname = nm_dhcp_client_get_hostname (client);
----
-> 	/*hostname = nm_dhcp_client_get_hostname (client);*/
-141,151c143,153
-< 	if (hostname) {
-< 		if (nm_dhcp_client_get_use_fqdn (client)) {
-< 			g_ptr_array_add (argv, (gpointer) "-h");
-< 			g_ptr_array_add (argv, (gpointer) hostname);
-< 			g_ptr_array_add (argv, (gpointer) "-F");
-< 			g_ptr_array_add (argv, (gpointer) "both");
-< 		} else {
-< 			g_ptr_array_add (argv, (gpointer) "-h");
-< 			g_ptr_array_add (argv, (gpointer) hostname);
-< 		}
-< 	}
----
-> 	/*if (hostname) {*/
-> 		/*if (nm_dhcp_client_get_use_fqdn (client)) {*/
-> 			/*g_ptr_array_add (argv, (gpointer) "-h");*/
-> 			/*g_ptr_array_add (argv, (gpointer) hostname);*/
-> 			/*g_ptr_array_add (argv, (gpointer) "-F");*/
-> 			/*g_ptr_array_add (argv, (gpointer) "both");*/
-> 		/*} else {*/
-> 			/*g_ptr_array_add (argv, (gpointer) "-h");*/
-> 			/*g_ptr_array_add (argv, (gpointer) hostname);*/
-> 		/*}*/
-> 	/*}*/
+ src/dhcp/nm-dhcp-dhcpcd.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/src/dhcp/nm-dhcp-dhcpcd.c b/src/dhcp/nm-dhcp-dhcpcd.c
+index 1690bce..a7f391f 100644
+--- a/src/dhcp/nm-dhcp-dhcpcd.c
++++ b/src/dhcp/nm-dhcp-dhcpcd.c
+@@ -77,7 +77,6 @@ ip4_start (NMDhcpClient *client,
+ 	gs_free char *binary_name = NULL;
+ 	const char *iface;
+ 	const char *dhcpcd_path;
+-	const char *hostname;
+ 
+ 	g_return_val_if_fail (priv->pid_file == NULL, FALSE);
+ 
+@@ -121,20 +120,6 @@ ip4_start (NMDhcpClient *client,
+ 	 */
+ 	g_ptr_array_add (argv, (gpointer) "-4");
+ 
+-	hostname = nm_dhcp_client_get_hostname (client);
+-
+-	if (hostname) {
+-		if (nm_dhcp_client_get_use_fqdn (client)) {
+-			g_ptr_array_add (argv, (gpointer) "-h");
+-			g_ptr_array_add (argv, (gpointer) hostname);
+-			g_ptr_array_add (argv, (gpointer) "-F");
+-			g_ptr_array_add (argv, (gpointer) "both");
+-		} else {
+-			g_ptr_array_add (argv, (gpointer) "-h");
+-			g_ptr_array_add (argv, (gpointer) hostname);
+-		}
+-	}
+-
+ 	g_ptr_array_add (argv, (gpointer) iface);
+ 	g_ptr_array_add (argv, NULL);
+ 
+-- 
+2.25.1
+
