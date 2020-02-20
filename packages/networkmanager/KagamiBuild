@@ -13,7 +13,7 @@ source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/Net
 build() {
 	cd "$SRC"/NetworkManager-$version
 	patch -Np1 -i "$STUFF"/networkmanager/musl.patch
-	patch ./NetworkManager/src/dhcp/nm-dhcp-dhcpcd.c "$STUFF"/networkmanager/disable_hostname.diff
+	patch ./src/dhcp/nm-dhcp-dhcpcd.c "$STUFF"/networkmanager/secure.patch
 
 	sed '/initrd/d' -i src/meson.build
 	grep -rl '^#!.*python$' | xargs sed -i '1s/python/&3/'
