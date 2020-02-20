@@ -1,41 +1,37 @@
-# Description: Standalone mail and news reader from mozilla.org
-# URL:         https://www.mozilla.org/thunderbird/
+# Description: Standalone web browser from mozilla.org
+# URL:         https://www.mozilla.org/firefox/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 gtk3 gtk2 rust zip unzip nasm yasm icu libevent nss sqlite startup-notification ffmpeg dbus-glib
+# Depends on:  autoconf2.13 python cbindgen clang nasm yasm ffmpeg gtk3 gtk2 libnotify node nss alsa-lib zip unzip icu libevent libwebp sqlite startup-notification dbus-glib
 # Section:     web
 
-name=thunderbird
+name=firefox
 version=68.5.0
 release=1
 options=('~emptydirs' '~ccache')
-source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
+source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
-	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
+	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/thunderbird/fix-fortify-system-wrappers.patch
-	patch -Np1 -i "$STUFF"/thunderbird/fix-seccomp-bpf.patch
-	patch -Np1 -i "$STUFF"/thunderbird/fix-toolkit.patch
-	patch -Np1 -i "$STUFF"/thunderbird/fix-tools.patch
-	patch -Np1 -i "$STUFF"/thunderbird/mallinfo.patch
-	patch -Np1 -i "$STUFF"/thunderbird/disable-moz-stackwalk.patch
-	patch -Np1 -i "$STUFF"/thunderbird/fix-musl.patch
-	patch -Np1 -i "$STUFF"/thunderbird/fix-webrtc-glibcisms.patch
-	patch -Np1 -i "$STUFF"/thunderbird/fix-sandbox-membarrier.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-seccomp-bpf.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-toolkit.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-tools.patch
+	patch -Np1 -i "$STUFF"/firefox/mallinfo.patch
+	patch -Np1 -i "$STUFF"/firefox/disable-moz-stackwalk.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-musl.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-webrtc-glibcisms.patch
+	patch -Np1 -i "$STUFF"/firefox/fix-sandbox-membarrier.patch
 
-	sed -i -e '/#!\[deny(missing_docs)\]/d' servo/components/style/lib.rs
-	sed -i -e 's/#!\[deny(unsafe_code, missing_docs)\]/#!\[deny(unsafe_code)\]/g' servo/components/style_traits/lib.rs
-	sed -i -e '/pid_t gettid/s@^@//@' tools/profiler/core/platform.h	
-
-	cp "$STUFF"/thunderbird/stab.h toolkit/crashreporter/google-breakpad/src/
+	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
+	rm -rvf browser/extensions/pocket
 
 	cat > mozconfig <<-EOF
 		ac_add_options --prefix=/usr
 		ac_add_options --enable-alsa
-		ac_add_options --enable-application=comm/mail
+		ac_add_options --enable-application=browser
 		ac_add_options --enable-av1
-		ac_add_options --enable-calendar
 		ac_add_options --enable-dbus
 		ac_add_options --enable-default-toolkit=cairo-gtk3
 		ac_add_options --enable-ffmpeg
@@ -82,33 +78,35 @@ build() {
 		ac_add_options MOZ_DEVICES=
 		ac_add_options MOZ_REQUIRE_SIGNING=
 		ac_add_options MOZ_TELEMETRY_REPORTING=
+		export MOZILLA_OFFICIAL=1
 	EOF
 
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
 	for i in 16 22 24 32 48 64 128 256; do
-		install -Dm644 comm/mail/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/thunderbird.png
+		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
-	install -Dm644 "$STUFF"/thunderbird/vendor.js "$PKG"/usr/lib/thunderbird/browser/defaults/preferences/vendor.js
-	install -Dm644 "$STUFF"/thunderbird/policies.json "$PKG"/usr/lib/thunderbird/distribution/policies.json
+	install -Dm644 "$STUFF"/firefox/vendor.js "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js
+	install -Dm644 "$STUFF"/firefox/policies.json "$PKG"/usr/lib/firefox/distribution/policies.json
 
 	mkdir -p "$PKG"/usr/bin/
-	ln -sf /usr/lib/thunderbird/thunderbird "$PKG"/usr/bin/thunderbird
+	ln -sf /usr/lib/firefox/firefox "$PKG"/usr/bin/firefox
 
 	mkdir -p "$PKG"/usr/share/applications/
-	cat > "$PKG"/usr/share/applications/thunderbird.desktop <<-EOF
-[Desktop Entry]
-		Name=Thunderbird Mail
-		Comment=Send and receive mail with Thunderbird
-		GenericName=Mail Client
-		Exec=thunderbird %u
+	cat > "$PKG"/usr/share/applications/firefox.desktop <<-EOF
+		[Desktop Entry]
+		Encoding=UTF-8
+		Name=Firefox Web Browser
+		Comment=Browse the World Wide Web
+		GenericName=Web Browser
+		Exec=firefox %u
 		Terminal=false
 		Type=Application
-		Icon=thunderbird
-		Categories=Network;Email;
-		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/xml;application/rss+xml;x-scheme-handler/mailto;
+		Icon=firefox
+		Categories=GNOME;GTK;Network;WebBrowser;
+		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
 		StartupNotify=true
 	EOF
 }
