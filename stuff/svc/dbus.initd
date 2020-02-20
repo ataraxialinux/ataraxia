@@ -18,10 +18,11 @@ depend() {
 
 start_pre() {
 	rm -rf /var/lib/dbus/machine-id /etc/machine-id
-	/usr/bin/dbus-uuidgen --ensure
+	touch /var/lib/dbus/machine-id /etc/machine-id
+	chmod 0600 /var/lib/dbus/machine-id /etc/machine-id
 
 	# We need to test if /run/dbus exists, since script will fail if it does not
-	checkpath -q -d /run/dbus 
+	checkpath -q -d /run/dbus
 }
 
 stop_post() {
