@@ -19,13 +19,13 @@ checkconfd() {
 	PIDFILE="${PIDFILE:-/run/httpd/httpd.pid}"
 	TIMEOUT=${TIMEOUT:-10}
 
-	SERVERROOT="${SERVERROOT:-/var/www}"
+	SERVERROOT="${SERVERROOT:-/srv/http}"
 	if [ ! -d ${SERVERROOT} ]; then
 		eerror "SERVERROOT does not exist: ${SERVERROOT}"
 		return 1
 	fi
 
-	CONFIGFILE="${CONFIGFILE:-/etc/httpd/httpd.conf}"
+	CONFIGFILE="${CONFIGFILE:-/etc/httpd/conf/httpd.conf}"
 	[ "${CONFIGFILE#/}" = "${CONFIGFILE}" ] && CONFIGFILE="${SERVERROOT}/${CONFIGFILE}"
 	if [ ! -r "${CONFIGFILE}" ]; then
 		eerror "Unable to read configuration file: ${CONFIGFILE}"
