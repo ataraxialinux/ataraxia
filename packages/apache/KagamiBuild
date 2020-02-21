@@ -1,0 +1,67 @@
+# Description: A high performance Unix-based HTTP server
+# URL:         http://www.apache.org/dist/httpd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pcre apr-util
+# Section:     httpd
+
+name=apache
+version=2.4.41
+release=1
+backup=(etc/httpd/conf/httpd.conf
+	etc/httpd/conf/extra/httpd-{autoindex,dav,default,info,languages}.conf
+	etc/httpd/conf/extra/httpd-{manual,mpm,multilang-errordoc}.conf
+	etc/httpd/conf/extra/httpd-{ssl,userdir,vhosts}.conf
+	etc/httpd/conf/extra/proxy-html.conf
+	etc/httpd/conf/{mime.types,magic}
+	etc/logrotate.d/httpd)
+source=("https://archive.apache.org/dist/httpd/httpd-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/httpd-$version
+	cat "$STUFF"/apache/layout >> config.layout
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--with-apr=/usr/bin/apr-1-config \
+		--with-apr-util=/usr/bin/apu-1-config \
+		--with-pcre=/usr \
+		--with-suexec-bin=/usr/bin/suexec \
+		--with-suexec-caller=http \
+		--with-suexec-docroot=/srv/http \
+		--with-suexec-gidmin=99 \
+		--with-suexec-logfile=/var/log/httpd/suexec.log \
+		--with-suexec-uidmin=99 \
+		--enable-layout=Ataraxia \
+		--enable-mods-shared=all \
+		--enable-modules=all \
+		--enable-mpms-shared=all \
+		--enable-so \
+		--enable-suexec
+	make
+	make DESTDIR="$PKG" install
+
+	for initd in httpd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	install -D -m644 "$STUFF"/apache/logrotate "$PKG"/etc/logrotate.d/httpd
+
+	ln -sf /usr/lib/httpd/modules "$PKG"/etc/httpd/modules
+
+	sed -e 's#/usr/lib/httpd/modules/#modules/#' \
+		-e 's|#\(LoadModule negotiation_module \)|\1|' \
+		-e 's|#\(LoadModule include_module \)|\1|' \
+		-e 's|#\(LoadModule userdir_module \)|\1|' \
+		-e 's|#\(LoadModule slotmem_shm_module \)|\1|' \
+		-e 's|#\(Include conf/extra/httpd-multilang-errordoc.conf\)|\1|' \
+		-e 's|#\(Include conf/extra/httpd-autoindex.conf\)|\1|' \
+		-e 's|#\(Include conf/extra/httpd-languages.conf\)|\1|' \
+		-e 's|#\(Include conf/extra/httpd-userdir.conf\)|\1|' \
+		-e 's|#\(Include conf/extra/httpd-default.conf\)|\1|' \
+		-e 's|#\(Include conf/extra/httpd-mpm.conf\)|\1|' \
+		-i "$PKG"/etc/httpd/conf/httpd.conf
+
+	rm -r "$PKG"/usr/share/httpd/manual "$PKG"/etc/httpd/conf/original "$PKG"/srv "$PKG"/run
+}
