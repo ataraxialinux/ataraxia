@@ -1,0 +1,24 @@
+# Description: The Apache Portable Runtime
+# URL:         http://apr.apache.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  apr gdbm db
+# Section:     utils
+
+name=apr-util
+version=1.6.1
+release=1
+source=("https://archive.apache.org/dist/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-apr=/usr \
+		--with-berkeley-db=/usr \
+		--with-gdbm=/usr \
+		--with-openssl=/usr \
+		--with-sqlite3=/usr \
+		--with-crypto
+	make
+	make DESTDIR="$PKG" install
+}
