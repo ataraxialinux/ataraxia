@@ -1,0 +1,62 @@
+# Description: Lightweight HTTP server and IMAP/POP3 proxy server
+# URL:         https://nginx.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl pcre
+# Section:     httpd
+
+name=nginx
+version=1.17.8
+release=1
+backup=('etc/nginx/fastcgi.conf'
+	'etc/nginx/fastcgi_params'
+	'etc/nginx/koi-win'
+	'etc/nginx/koi-utf'
+	'etc/nginx/nginx.conf'
+	'etc/nginx/scgi_params'
+	'etc/nginx/uwsgi_params'
+	'etc/nginx/win-utf'
+	'etc/logrotate.d/nginx')
+source=("https://nginx.org/download/$name-$version.tar.gz")
+
+build() {
+	cd $name-$version
+	./configure \
+		--prefix=/usr \
+		--sbin-path=/usr/bin/nginx \
+		--conf-path=/etc/nginx/nginx.conf \
+		--error-log-path=/var/log/nginx/error.log \
+		--http-client-body-temp-path=/var/spool/nginx/body \
+		--http-fastcgi-temp-path=/var/spool/nginx/fastcgi \
+		--http-log-path=/var/log/nginx/access.log \
+		--http-proxy-temp-path=/var/spool/nginx/proxy \
+		--http-scgi-temp-path=/var/spool/nginx/scgi \
+		--http-uwsgi-temp-path=/var/spool/nginx/uwsgi \
+		--lock-path=/var/lock/nginx.lock \
+		--pid-path=/var/run/nginx.pid \
+		--with-threads
+	make
+	make DESTDIR="$PKG" install
+
+	for initd in nginx; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	install -d "$PKG"/usr/share/nginx
+	mv "$PKG"/usr/html "$PKG"/usr/share/nginx/
+
+	install -d "$PKG"/etc/nginx/conf.d
+	install -d "$PKG"/etc/nginx/sites-available
+	install -d "$PKG"/etc/nginx/sites-enabled
+	install -m 0644 "$STUFF"/nginx/99-default "$PKG"/etc/nginx/sites-available/
+	install -m 0644 "$STUFF"/nginx/nginx.conf "$PKG"/etc/nginx/
+
+	find "$PKG"/etc -name "*.default" -delete
+	rm -rf "$PKG"/var "$PKG"/proc
+
+	mkdir -p "$PKG"/var/log/nginx
+	
+	install -d "$PKG"/var/spool/nginx/body
+
+	install -Dm644 "$STUFF"/nginx/logrotate "$PKG"/etc/logrotate.d/nginx
+}
