@@ -1,0 +1,23 @@
+# Description: The Apache Portable Runtime
+# URL:         http://apr.apache.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python util-linux
+# Section:     libs
+
+name=apr
+version=1.7.0
+release=1
+source=("https://archive.apache.org/dist/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--includedir=/usr/include/apr-1 \
+		--with-installbuilddir=/usr/share/apr-1/build \
+		--with-devrandom=/dev/urandom
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
