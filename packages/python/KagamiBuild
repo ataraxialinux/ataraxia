@@ -12,8 +12,6 @@ source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.
 
 build() {
 	cd "$SRC"/Python-${version}
-	sed -i -e "s|-flto |-flto=4 |g" configure configure.ac
-
 	rm -r Modules/expat \
 		Modules/_ctypes/darwin* \
 		Modules/_ctypes/libffi*
@@ -22,11 +20,9 @@ build() {
 		--prefix=/usr \
 		--with-computed-gotos \
 		--with-dbmliborder=gdbm:ndbm \
-		--with-ensurepip=yes \
-		--with-lto \
 		--with-system-expat \
 		--with-system-ffi \
-		--with-threads \
+		--without-ensurepip \
 		--enable-ipv6 \
 		--enable-loadable-sqlite-extensions \
 		--enable-shared \
@@ -40,6 +36,4 @@ build() {
 	ln -sf python3-config "$PKG"/usr/bin/python-config
 	ln -sf idle3 "$PKG"/usr/bin/idle
 	ln -sf pydoc3 "$PKG"/usr/bin/pydoc
-	ln -sf pip${pybasever} "$PKG"/usr/bin/pip3
-	ln -sf pip${pybasever} "$PKG"/usr/bin/pip
 }
