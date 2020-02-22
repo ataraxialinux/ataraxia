@@ -1,16 +1,6 @@
---- elfutils-0.178-orig/libdwfl/Makefile.am
-+++ elfutils-0.178/libdwfl/Makefile.am
-@@ -70,7 +70,7 @@
- 		    link_map.c core-file.c open.c image-header.c \
- 		    dwfl_frame.c frame_unwind.c dwfl_frame_pc.c \
- 		    linux-pid-attach.c linux-core-attach.c dwfl_frame_regs.c \
--		    gzip.c debuginfod-client.c
-+		    gzip.c debuginfod-client.c fts.c reallocarray.c recallocarray.c
- 
- if BZLIB
- libdwfl_a_SOURCES += bzip2.c
---- /dev/null
-+++ elfutils-0.178/libdwfl/bsd.h
+diff -ruN elfutils-0.178-orig/libdwfl/bsd.h elfutils-0.178/libdwfl/bsd.h
+--- elfutils-0.178-orig/libdwfl/bsd.h	1969-12-31 18:00:00.000000000 -0600
++++ elfutils-0.178/libdwfl/bsd.h	2020-02-22 04:44:07.343177804 -0600
 @@ -0,0 +1,54 @@
 +#include <sys/types.h>
 +#include <sys/sysmacros.h>
@@ -66,9 +56,10 @@
 +int		 setgroupent(int);
 +void	*reallocarray(void *, size_t, size_t);
 +void	*recallocarray(void *, size_t, size_t, size_t);
---- /dev/null
-+++ elfutils-0.178/libdwfl/fts.c
-@@ -0,0 +1,1077 @@
+diff -ruN elfutils-0.178-orig/libdwfl/fts.c elfutils-0.178/libdwfl/fts.c
+--- elfutils-0.178-orig/libdwfl/fts.c	1969-12-31 18:00:00.000000000 -0600
++++ elfutils-0.178/libdwfl/fts.c	2020-02-22 04:47:01.849115261 -0600
+@@ -0,0 +1,1078 @@
 +/*	$OpenBSD: fts.c,v 1.59 2019/06/28 13:32:41 deraadt Exp $	*/
 +
 +/*-
@@ -110,6 +101,7 @@
 +#include <limits.h>
 +#include <stdlib.h>
 +#include <string.h>
++#include <stdint.h>
 +#include <unistd.h>
 +
 +#include "bsd.h"
@@ -1146,8 +1138,9 @@
 +	errno = oerrno;
 +	return (ret);
 +}
---- /dev/null
-+++ elfutils-0.178/libdwfl/fts.h
+diff -ruN elfutils-0.178-orig/libdwfl/fts.h elfutils-0.178/libdwfl/fts.h
+--- elfutils-0.178-orig/libdwfl/fts.h	1969-12-31 18:00:00.000000000 -0600
++++ elfutils-0.178/libdwfl/fts.h	2020-02-22 04:44:07.344177780 -0600
 @@ -0,0 +1,125 @@
 +/*	$OpenBSD: fts.h,v 1.14 2012/12/05 23:19:57 deraadt Exp $	*/
 +/*	$NetBSD: fts.h,v 1.5 1994/12/28 01:41:50 mycroft Exp $	*/
@@ -1274,8 +1267,9 @@
 +//__END_DECLS
 +
 +#endif /* !_FTS_H_ */
---- elfutils-0.178-orig/libdwfl/linux-kernel-modules.c
-+++ elfutils-0.178/libdwfl/linux-kernel-modules.c
+diff -ruN elfutils-0.178-orig/libdwfl/linux-kernel-modules.c elfutils-0.178/libdwfl/linux-kernel-modules.c
+--- elfutils-0.178-orig/libdwfl/linux-kernel-modules.c	2019-11-26 16:48:42.000000000 -0600
++++ elfutils-0.178/libdwfl/linux-kernel-modules.c	2020-02-22 04:44:07.344177780 -0600
 @@ -60,7 +60,7 @@
    #endif
  #else
@@ -1285,8 +1279,21 @@
  #endif
  
  
---- /dev/null
-+++ elfutils-0.178/libdwfl/reallocarray.c
+diff -ruN elfutils-0.178-orig/libdwfl/Makefile.am elfutils-0.178/libdwfl/Makefile.am
+--- elfutils-0.178-orig/libdwfl/Makefile.am	2019-11-26 16:48:42.000000000 -0600
++++ elfutils-0.178/libdwfl/Makefile.am	2020-02-22 04:44:07.343177804 -0600
+@@ -70,7 +70,7 @@
+ 		    link_map.c core-file.c open.c image-header.c \
+ 		    dwfl_frame.c frame_unwind.c dwfl_frame_pc.c \
+ 		    linux-pid-attach.c linux-core-attach.c dwfl_frame_regs.c \
+-		    gzip.c debuginfod-client.c
++		    gzip.c debuginfod-client.c fts.c reallocarray.c recallocarray.c
+ 
+ if BZLIB
+ libdwfl_a_SOURCES += bzip2.c
+diff -ruN elfutils-0.178-orig/libdwfl/reallocarray.c elfutils-0.178/libdwfl/reallocarray.c
+--- elfutils-0.178-orig/libdwfl/reallocarray.c	1969-12-31 18:00:00.000000000 -0600
++++ elfutils-0.178/libdwfl/reallocarray.c	2020-02-22 04:44:07.344177780 -0600
 @@ -0,0 +1,40 @@
 +/*	$OpenBSD: reallocarray.c,v 1.3 2015/09/13 08:31:47 guenther Exp $	*/
 +/*
@@ -1328,8 +1335,9 @@
 +	return realloc(optr, size * nmemb);
 +}
 +DEF_WEAK(reallocarray);
---- /dev/null
-+++ elfutils-0.178/libdwfl/recallocarray.c
+diff -ruN elfutils-0.178-orig/libdwfl/recallocarray.c elfutils-0.178/libdwfl/recallocarray.c
+--- elfutils-0.178-orig/libdwfl/recallocarray.c	1969-12-31 18:00:00.000000000 -0600
++++ elfutils-0.178/libdwfl/recallocarray.c	2020-02-22 04:44:07.344177780 -0600
 @@ -0,0 +1,82 @@
 +/*	$OpenBSD: recallocarray.c,v 1.1 2017/03/06 18:44:21 otto Exp $	*/
 +/*
