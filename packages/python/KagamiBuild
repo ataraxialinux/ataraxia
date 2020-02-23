@@ -2,14 +2,12 @@
 # URL:         http://www.python.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  zlib readline sqlite bzip2 expat gdbm libressl libffi
-# Priority:    required
 # Section:     interpreters
 
 name=python
 version=3.8.1
 pybasever=${version%.*}
 release=1
-options=('bootstrap')
 source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.xz")
 
 build() {
@@ -17,12 +15,6 @@ build() {
 	rm -r Modules/expat \
 		Modules/_ctypes/darwin* \
 		Modules/_ctypes/libffi*
-
-	export ac_cv_have_long_long_format=yes
-	export ac_cv_file__dev_ptmx=yes
-	export ac_cv_file__dev_ptc=yes
-	export ac_cv_working_tzset=yes
-	export ac_cv_prog_HAS_HG=/bin/false
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

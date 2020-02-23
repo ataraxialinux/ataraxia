@@ -1,0 +1,101 @@
+#!/bin/sh
+#
+# System shutdown script
+#
+
+export PATH="/usr/local/games:/usr/local/sbin:/usr/local/bin:/usr/games:/usr/bin"
+
+ . /etc/rc.conf
+
+live="0"
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)        live="${arg#*=}" ;;
+		single=*)      single="${arg#*=}" ;;
+		timezone=*)    timezone="${arg#*=}" ;;
+		hostname=*)    hostname="${arg#*=}" ;;
+		keymap=*)      keymap="${arg#*=}" ;;
+		fontname=*)    fontname="${arg#*=}" ;;
+	esac
+done
+
+trap "" HUP INT QUIT ABRT TERM
+echo; stty onlcr
+clear
+
+echo "Shutting down..."
+
+echo "Shutting down loopback..."
+ip link set lo down
+
+echo "Saving the system time to hardware clock..."
+hwclock --systohc
+
+if [ "$single" != "1" ]; then
+	if egrep -q -m 1 '(usr|grp)quota' /etc/fstab; then
+		if [ -x /usr/bin/quotaoff ]; then
+			echo "Turning off quota file system..."
+			quotaoff -a
+		fi
+	fi
+fi
+
+echo "Saving random seed to a temporary file..."
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+echo "Stopping udev..."
+udevadm control --exit
+
+echo "Sending all processes the TERM signal..."
+killall5 -s TERM
+sleep 1
+
+echo "Sending all processes the KILL signal..."
+killall5 -s KILL
+
+if [ "$live" != "1" ]; then
+	echo "Deactivating swap partition..."
+	swapoff -a
+
+	echo "Unmounting other local filesystems..."
+	umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+
+	echo "Mounting root device read-only..."
+	mount -o remount,ro /
+fi
+
+echo "Flushing filesystem buffers..."
+sync
+
+if [ "$live" != "1" ]; then
+	if [ -f /etc/crypttab -a -x /usr/bin/cryptsetup ]; then
+		echo "Deactivating encrypted devices..."
+		awk '/^#/ || /^$/ { next }
+			NF>2 { print "ignite unsupported crypttab: " $0 >"/dev/stderr"; next }
+			{ system("cryptsetup luksClose " $1) }' </etc/crypttab
+	fi
+fi
+
+if [ -x /usr/bin/vgchange ]; then
+	echo "Deactivating volume groups..."
+	vgchange -an
+fi
+
+echo "Bye"
+wait
+
+if [ "$1" = "reboot" ]; then
+	if command -v kexec >/dev/null; then
+		kexec -e 2>/dev/null
+	fi
+fi
+
+case "$1" in
+	reboot)
+		halt -r
+		;;
+	poweroff)
+		halt -p
+		;;
+esac

@@ -27,10 +27,13 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
+	for initd in lighttpd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
 	install -d -m700 -o http -g http "$PKG"/var/{log,cache}/lighttpd
 
 	install -D -m644 "$STUFF"/lighttpd/logrotate "$PKG"/etc/logrotate.d/lighttpd
 	install -D -m644 "$STUFF"/lighttpd/conf "$PKG"/etc/lighttpd/lighttpd.conf
-	install -Dm644 "$STUFF"/tmpfiles/lighttpd "$PKG"/usr/lib/tmpfiles.d/lighttpd.conf
-	install -Dm644 "$STUFF"/svc/lighttpd.service "$PKG"/usr/lib/systemd/system/lighttpd.service
 }

@@ -1,7 +1,7 @@
 # Description: The GNOME Session Handler
 # URL:         https://gitlab.gnome.org/GNOME/gnome-session
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson json-glib systemd gnome-desktop mesa upower dconf
+# Depends on:  meson json-glib consolekit2 gnome-desktop mesa upower dconf
 # Section:     gnome
 
 name=gnome-session
@@ -14,8 +14,12 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
+		-Dconsolekit=true \
 		-Ddocbook=false \
-		-Dman=false
+		-Dman=false \
+		-Dsystemd=false \
+		-Dsystemd_session=disable \
+		-Dsystemd_journal=false
 	ninja
 	DESTDIR="$PKG" ninja install
 

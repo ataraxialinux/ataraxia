@@ -21,7 +21,14 @@ build() {
 		--enable-sim-hardcoded \
 		--enable-tools \
 		--enable-wired \
-		--disable-docs
+		--disable-docs \
+		--disable-systemd-service
 	make
 	make DESTDIR="$PKG" install
+
+	for initd in iwd ead; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+	done
+
+	mkdir -p "$PKG"/var/lib/iwd "$PKG"/var/lib/ead
 }

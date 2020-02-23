@@ -17,12 +17,17 @@ build() {
 	mkdir -p "$PKG"/usr/bin
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system all
-		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system DESTDIR="$PKG" install
+		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev all
+		make HOSTCC="$HOSTCC" CC="$CC" CXFLAGS="$CFLAGS" STRIP='' CHECK_RUN_DIR=0 PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev DESTDIR="$PKG" install
 	else
-		make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system all
-		make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system DESTDIR="$PKG" install
+		make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev all
+		make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev DESTDIR="$PKG" install
 	fi
 
 	install -D -m644 "$STUFF"/mdadm/mdadm.conf "$PKG"/etc/mdadm/mdadm.conf
+
+	for initd in mdadm mdraid; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }

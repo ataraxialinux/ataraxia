@@ -15,7 +15,10 @@ build() {
 
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dsystemdunitdir=no
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	rm -rf "$PKG"/usr/no
 }

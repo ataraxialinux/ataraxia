@@ -21,15 +21,14 @@ build() {
 		--localstatedir=/var \
 		--mandir=/usr/share/man \
 		--with-dbusconfdir=/usr/share \
-		--with-systemdsystemunitdir=/usr/lib/systemd/system \
-		--with-systemduserunitdir=/usr/lib/systemd/user \
 		--enable-experimental \
 		--enable-deprecated \
 		--enable-library \
-		--enable-nfc \
-		--enable-mesh
+		--enable-mesh \
+		--disable-systemd
 	make
 	make DESTDIR="$PKG" install
 
 	install -Dm644 src/main.conf "$PKG"/etc/bluetooth/main.conf
+	install -Dm0755 "$STUFF"/svc/bluetooth.initd "$PKG"/etc/init.d/bluetooth
 }

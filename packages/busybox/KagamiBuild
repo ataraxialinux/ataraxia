@@ -26,8 +26,17 @@ build_busybox_standard() {
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -sf busybox "$PKG"/usr/bin/$applet || true; done
 
-	for i in crond rdate watchdog ntpd acpid inetd; do
-		install -Dm644 "$STUFF"/svc/${i}.service "$PKG"/usr/lib/systemd/system/${i}.service
+	install -Dm0755 "$STUFF"/busybox/shutdown "$PKG"/usr/bin/shutdown
+
+	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
+
+	for initd in crond klogd rdate syslog watchdog ntpd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	for initd in acpid inetd udhcpd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 	done
 
 	cd "$STUFF"/busybox

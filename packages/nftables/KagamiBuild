@@ -24,5 +24,12 @@ build() {
 	mkdir -p "$PKG"/etc
 	touch "$PKG"/etc/nftables.conf
 
-	install -Dm644 "$STUFF"/svc/nftables.service "$PKG"/usr/lib/systemd/system/nftables.service
+	mkdir -p "$PKG"/var/lib/nftables
+
+	install -Dm0755 "$STUFF"/nftables/nftables.sh "$PKG"/usr/lib/nftables/nftables.sh
+
+	for initd in nftables; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }

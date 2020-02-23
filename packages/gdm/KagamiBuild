@@ -1,7 +1,7 @@
 # Description: Display manager and login screen
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra systemd dconf
+# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra consolekit2 dconf
 # Section:     gnome
 
 name=gdm
@@ -20,6 +20,10 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gdm/0001-restore-consolekit-support.patch
+	patch -Np1 -i "$STUFF"/gdm/0001-add-support-Ataraxia-Linux-PAM.patch
+	autoreconf -vif
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
@@ -28,12 +32,18 @@ build() {
 		--localstatedir=/var \
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--with-run-dir=/run \
-		--with-default-pam-config=exherbo \
+		--with-default-pam-config=ataraxia \
 		--with-default-path=/usr/local/games:/usr/local/bin:/usr/local/sbin:/usr/games:/usr/bin \
+		--with-console-kit \
+		--with-consolekit-directory=/usr/lib/ConsoleKit \
 		--without-plymouth \
+		--without-systemd \
+		--with-systemdsystemunitdir=no \
 		--enable-ipv6 \
 		--enable-gdm-xsession \
-		--disable-schemas-compile
+		--disable-user-display-server \
+		--disable-schemas-compile \
+		--disable-systemd-journal
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
@@ -41,4 +51,6 @@ build() {
 
 	rm -rf "$PKG"/var/{cache,log,run}
 	rm -rf "$PKG"/run
+
+	install -Dm0755 "$STUFF"/svc/gdm.initd "$PKG"/etc/init.d/gdm
 }

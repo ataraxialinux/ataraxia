@@ -1,7 +1,7 @@
 # Description: GNOME's main interface to configure various aspects of the desktop
 # URL:         https://gitlab.gnome.org/GNOME/gnome-control-center
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson accountsservice clutter-gtk gnome-color-manager gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality krb5 shared-mime-info udisks cups-pk-helper samba gnome-bluetooth ibus libgnomekbd libhandy network-manager-applet sound-theme-freedesktop
+# Depends on:  meson accountsservice clutter-gtk gnome-color-manager gnome-online-accounts gnome-settings-daemon openrc-settingsd grilo gsound libgtop libpwquality krb5 shared-mime-info udisks cups-pk-helper samba gnome-bluetooth ibus libgnomekbd libhandy network-manager-applet sound-theme-freedesktop
 # Section:     gnome
 
 name=gnome-control-center
@@ -16,6 +16,7 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${_v}/$name-$version.tar.x
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gnome-control-center/0001-restore-consolekit-support.patch
 	patch -Np1 -i "$STUFF"/gnome-control-center/0001-fix-musl-strlen.patch
 	sed -i '/ln -s/s/s /sf /' panels/user-accounts/meson.build
 

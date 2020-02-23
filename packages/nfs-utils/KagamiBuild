@@ -61,7 +61,12 @@ EOF
 	chmod u+w,go+r "$PKG"/usr/bin/mount.nfs
 	chown nobody "$PKG"/var/lib/nfs
 
-	for i in systemd/{*.service,*.mount,*.target}; do
-		install -D -m 644 $i "$PKG"/usr/lib/systemd/system/$(basename $i)
+	for initd in nfsclient nfs nfsmount ; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	for initd in rpc.gssd rpc.idmapd rpc.pipefs rpc.statd rpc.svcgssd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 	done
 }

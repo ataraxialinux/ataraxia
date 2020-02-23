@@ -1,7 +1,7 @@
 # Description: Thunderbolt 3 device manager
 # URL:         https://gitlab.freedesktop.org/bolt/bolt
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson python-setuptools pygobject polkit
+# Depends on:  meson python-setuptools pygobject eudev polkit
 # Section:     admin
 
 name=bolt
@@ -14,7 +14,10 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Dman=false
+		-Dman=false \
+		-Dsystemd=false
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	install -Dm0755 "$STUFF"/svc/boltd.initd "$PKG"/etc/init.d/boltd
 }

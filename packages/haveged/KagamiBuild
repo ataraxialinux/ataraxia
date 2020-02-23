@@ -17,5 +17,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -D -m0644 init.d/service.fedora "$PKG"/usr/lib/systemd/system/haveged.service
+	for initd in haveged; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }

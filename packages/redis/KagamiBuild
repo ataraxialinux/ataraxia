@@ -30,7 +30,8 @@ build() {
 		"$PKG"/var/lib/redis \
 		"$PKG"/var/log/redis
 
-	install -Dm644 "$STUFF"/svc/redis.service "$PKG"/usr/lib/systemd/system/redis.service
-	install -Dm644 "$STUFF"/svc/redis-sentinel.service "$PKG"/usr/lib/systemd/system/redis-sentinel.service
-	install -Dm644 "$STUFF"/tmpfiles/redis "$PKG"/usr/lib/tmpfiles.d/redis.conf
+	for initd in redis; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }

@@ -24,5 +24,10 @@ build() {
 	mkdir -p "$PKG"/usr/bin
 	make DESTDIR="$PKG" install
 
-	install -Dm644 examples/systemd/vnstat.service "$PKG"/usr/lib/systemd/system/vnstat.service
+	for initd in vnstatd; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	mkdir -p "$PKG"/var/lib/vnstat
 }

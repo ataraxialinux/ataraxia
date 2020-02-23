@@ -30,6 +30,8 @@ build() {
 		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/$bin
 	done
 
-	install -Dm644 "$STUFF"/svc/distcc.service "$PKG"/usr/lib/systemd/system/distcc.service
-	install -Dm644 "$STUFF"/svc/distcc.confd "$PKG"/etc/conf.d/distcc
+	for initd in distcc; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
 }

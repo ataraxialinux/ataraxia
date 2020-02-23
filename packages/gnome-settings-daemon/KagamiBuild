@@ -1,7 +1,7 @@
 # Description: GNOME Settings Daemon
 # URL:         https://gitlab.gnome.org/GNOME/gnome-settings-daemon
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson systemd colord fontconfig geoclue geocode-glib gnome-desktop lcms2 libcanberra libgweather libnotify pulseaudio upower xf86-input-wacom networkmanager cups nss wayland
+# Depends on:  meson colord fontconfig geoclue geocode-glib gnome-desktop lcms2 libcanberra libgweather libnotify pulseaudio upower xf86-input-wacom networkmanager cups nss wayland
 # Section:     gnome
 
 name=gnome-settings-daemon
@@ -11,11 +11,14 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gnome-settings-daemon/0001-restore-consolekit-support.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dalsa=true \
 		-Dgudev=true \
+		-Dsystemd=false \
 		-Dudev_dir=/usr/lib/udev \
 		-Dwayland=true
 	ninja
