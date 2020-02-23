@@ -7,10 +7,14 @@ source=("https://github.com/midipix-project/slibtool/archive/$version.tar.gz"
 
 build() {
 	cd "$SRC"/slibtool-$version
+	NATIVE_CC="$XTARGET-gcc" \
+	NATIVE_CPP="$XTARGET-cpp" \
+	NATIVE_CXX="$XTARGET-g++" \
+	NATIVE_HOST="$XTARGET" \
+	NATIVE_CFGHOST="$XTARGET" \
 	./configure \
 		--prefix="$TOOLS" \
-		--sbindir="$TOOLS"/bin \
-		--compiler="$XTARGET-gcc"
+		--sbindir="$TOOLS"/bin
 	make
 	make install
 
