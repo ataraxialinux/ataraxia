@@ -17,4 +17,34 @@ build() {
 	python setup.py install --prefix=/usr --root="$PKG" --optimize=1
 
 	cp "$STUFF"/meson/script "$PKG"/usr/bin/ataraxia-meson
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		cat > "$TOOLS"/profile.txt <<-EOF
+			[binaries]
+			c = "$(realpath $CC)"
+			cpp = "$(realpath $CXX)"
+			ld = "$(realpath $LD)"
+			ar = "$(realpath $AR)"
+			strip = "$(realpath $STRIP)"
+			pkgconfig = "$TOOLS/bin/pkg-config"
+		EOF
+
+		cat > "$TOOLS"/bin/ataraxia-meson <<-EOF
+			#!/bin/sh -e
+
+			exec meson setup \
+				--cross-file "$TOOLS"/profile.txt \
+				--prefix        /usr \
+				--libdir        lib \
+				--libexecdir    lib \
+				--sbindir       bin \
+				--wrap-mode     nodownload \
+				-Dbuildtype=plain \
+				-Db_lto=true \
+				-Db_pie=true \
+				"$@"
+		EOF
+
+		chmod +x "$TOOLS"/bin/ataraxia-meson
+	fi
 }

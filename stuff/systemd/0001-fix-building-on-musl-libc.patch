@@ -1,0 +1,2458 @@
+From b7204fe103d02d84c606ff84b6732409be7c1451 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 22 Feb 2020 03:22:58 +0900
+Subject: [PATCH] fix building on musl libc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build                                |   2 +
+ src/backlight/backlight.c                  |   1 +
+ src/basic/cgroup-util.c                    |  11 +-
+ src/basic/copy.c                           |   1 +
+ src/basic/env-util.c                       |   1 +
+ src/basic/format-util.h                    |   8 +-
+ src/basic/fs-util.h                        |  22 +-
+ src/basic/glob-util.c                      |  12 +
+ src/basic/log.c                            |   1 +
+ src/basic/meson.build                      |   5 +
+ src/basic/missing_prctl.h                  |   2 +
+ src/basic/missing_stdlib.h                 |  12 +
+ src/basic/missing_type.h                   |  30 +++
+ src/basic/mkdir.c                          |   1 +
+ src/basic/parse-printf-format.c            | 273 +++++++++++++++++++++
+ src/basic/parse-printf-format.h            |  57 +++++
+ src/basic/parse-util.c                     |   1 +
+ src/basic/proc-cmdline.c                   |   1 +
+ src/basic/process-util.c                   |   9 +-
+ src/basic/procfs-util.c                    |   5 +-
+ src/basic/rlimit-util.c                    |  10 +-
+ src/basic/selinux-util.c                   |   1 +
+ src/basic/smack-util.c                     |   2 +-
+ src/basic/socket-util.c                    |   6 +-
+ src/basic/sort-util.h                      |  15 +-
+ src/basic/stdio-util.h                     |   2 +-
+ src/basic/time-util.c                      |   3 +-
+ src/basic/util.c                           |   2 +-
+ src/binfmt/binfmt.c                        |   6 +-
+ src/boot/bless-boot.c                      |   1 +
+ src/core/dbus-cgroup.c                     |   1 +
+ src/core/dbus-execute.c                    |   1 +
+ src/core/dbus-util.c                       |   1 +
+ src/core/execute.c                         |   5 +-
+ src/core/kmod-setup.c                      |   2 +
+ src/core/main.c                            |   4 +-
+ src/core/mount-setup.c                     |   4 +
+ src/core/service.c                         |   1 +
+ src/core/smack-setup.c                     |   8 +-
+ src/coredump/coredump-vacuum.c             |   1 +
+ src/hibernate-resume/hibernate-resume.c    |   2 +-
+ src/import/curl-util.c                     |   3 +
+ src/import/import-fs.c                     |   1 +
+ src/journal-remote/journal-remote-main.c   |   1 +
+ src/journal/catalog.c                      |   1 +
+ src/journal/journal-send.c                 |   7 +-
+ src/journal/journalctl.c                   |   1 +
+ src/libsystemd-network/sd-dhcp6-client.c   |   1 -
+ src/libsystemd/sd-bus/bus-error.c          |   9 +-
+ src/libsystemd/sd-bus/bus-message.c        |   1 +
+ src/libsystemd/sd-bus/bus-objects.c        |   1 +
+ src/libsystemd/sd-bus/bus-socket.c         |   1 +
+ src/libsystemd/sd-bus/sd-bus.c             |   1 +
+ src/libsystemd/sd-bus/test-bus-benchmark.c |   1 +
+ src/libsystemd/sd-device/sd-device.c       |   2 +-
+ src/libsystemd/sd-hwdb/hwdb-util.c         |  19 +-
+ src/libsystemd/sd-netlink/netlink-types.c  |   1 +
+ src/locale/keymap-util.c                   |   1 +
+ src/locale/localed.c                       |   2 +-
+ src/login/logind-brightness.c              |   1 +
+ src/login/logind-dbus.c                    |   2 +-
+ src/login/pam_systemd.c                    |   1 +
+ src/machine/machine-dbus.c                 |   6 +
+ src/network/generator/network-generator.c  |   1 +
+ src/network/netdev/bond.c                  |   1 +
+ src/network/netdev/bridge.c                |   1 +
+ src/network/netdev/macsec.c                |   1 +
+ src/network/netdev/netdev-gperf.gperf      |   1 +
+ src/network/netdev/netdev.c                |   1 +
+ src/network/networkd-brvlan.c              |   1 +
+ src/network/networkd-dhcp-common.c         |   1 +
+ src/network/networkd-dhcp4.c               |   2 +-
+ src/network/networkd-dhcp6.c               |   2 +-
+ src/network/networkd-link.c                |   2 +-
+ src/network/networkd-network.c             |   1 +
+ src/network/test-network-tables.c          |   1 +
+ src/nspawn/nspawn-cgroup.c                 |   2 +-
+ src/nspawn/nspawn-settings.c               |   1 +
+ src/nspawn/nspawn.c                        |   6 +-
+ src/nss-mymachines/nss-mymachines.c        |   1 +
+ src/portable/portable.c                    |   1 +
+ src/portable/portabled-operation.c         |   1 +
+ src/resolve/resolvectl.c                   |   1 +
+ src/shared/base-filesystem.c               |   6 +-
+ src/shared/bus-unit-procs.c                |   1 +
+ src/shared/bus-unit-util.c                 |   1 +
+ src/shared/bus-util.c                      |   1 +
+ src/shared/cgroup-setup.c                  |   4 +-
+ src/shared/cpu-set-util.h                  |   2 +
+ src/shared/dns-domain.c                    |   1 +
+ src/shared/ethtool-util.c                  |   1 +
+ src/shared/ethtool-util.h                  |   1 +
+ src/shared/format-table.c                  |  36 ++-
+ src/shared/journal-importer.c              |   1 +
+ src/shared/logs-show.c                     |   1 +
+ src/shared/pager.c                         |   1 +
+ src/shared/path-lookup.c                   |   1 +
+ src/shared/sysctl-util.c                   |   2 +-
+ src/shared/uid-range.c                     |   1 +
+ src/sleep/sleep.c                          |   8 +-
+ src/socket-proxy/socket-proxyd.c           |   1 +
+ src/test/test-glob-util.c                  |  16 ++
+ src/test/test-hexdecoct.c                  |   1 +
+ src/test/test-json.c                       |   4 +
+ src/test/test-sizeof.c                     |   6 +-
+ src/tmpfiles/tmpfiles.c                    |  10 +
+ src/udev/net/link-config.c                 |   1 +
+ src/udev/udev-builtin-net_setup_link.c     |   1 +
+ src/udev/udev-builtin-path_id.c            |   1 +
+ src/udev/udev-event.c                      |   1 +
+ src/udev/udev-rules.c                      |   1 +
+ src/udev/udevadm-trigger.c                 |   2 +-
+ src/udev/udevd.c                           |   2 +-
+ src/vconsole/vconsole-setup.c              |   2 +-
+ 114 files changed, 643 insertions(+), 101 deletions(-)
+ create mode 100644 src/basic/parse-printf-format.c
+ create mode 100644 src/basic/parse-printf-format.h
+
+diff --git a/meson.build b/meson.build
+index 21d6968..f4e1736 100644
+--- a/meson.build
++++ b/meson.build
+@@ -517,6 +517,7 @@ foreach ident : [
+                                  #include <unistd.h>'''],
+         ['get_mempolicy',     '''#include <stdlib.h>
+                                  #include <unistd.h>'''],
++        ['strndupa' ,         '''#include <string.h>'''],
+ ]
+ 
+         have = cc.has_function(ident[0], prefix : ident[1], args : '-D_GNU_SOURCE')
+@@ -628,6 +629,7 @@ endif
+ foreach header : ['crypt.h',
+                   'linux/memfd.h',
+                   'linux/vm_sockets.h',
++                  'printf.h',
+                   'sys/auxv.h',
+                   'valgrind/memcheck.h',
+                   'valgrind/valgrind.h',
+diff --git a/src/backlight/backlight.c b/src/backlight/backlight.c
+index 0484414..01d74ea 100644
+--- a/src/backlight/backlight.c
++++ b/src/backlight/backlight.c
+@@ -17,6 +17,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ static int find_pci_or_platform_parent(sd_device *device, sd_device **ret) {
+         const char *subsystem, *sysname, *value;
+diff --git a/src/basic/cgroup-util.c b/src/basic/cgroup-util.c
+index 54fc6ec..04c06e7 100644
+--- a/src/basic/cgroup-util.c
++++ b/src/basic/cgroup-util.c
+@@ -37,6 +37,7 @@
+ #include "strv.h"
+ #include "unit-name.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ static int cg_enumerate_items(const char *controller, const char *path, FILE **_f, const char *item) {
+         _cleanup_free_ char *fs = NULL;
+@@ -738,7 +739,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
+ 
+         sc = strstrip(contents);
+         if (isempty(sc)) {
+-                r = write_string_file(fs, agent, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file(fs, agent, 0);
+                 if (r < 0)
+                         return r;
+         } else if (!path_equal(sc, agent))
+@@ -756,7 +757,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
+ 
+         sc = strstrip(contents);
+         if (streq(sc, "0")) {
+-                r = write_string_file(fs, "1", WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file(fs, "1", 0);
+                 if (r < 0)
+                         return r;
+ 
+@@ -783,7 +784,7 @@ int cg_uninstall_release_agent(const char *controller) {
+         if (r < 0)
+                 return r;
+ 
+-        r = write_string_file(fs, "0", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(fs, "0", 0);
+         if (r < 0)
+                 return r;
+ 
+@@ -793,7 +794,7 @@ int cg_uninstall_release_agent(const char *controller) {
+         if (r < 0)
+                 return r;
+ 
+-        r = write_string_file(fs, "", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(fs, "", 0);
+         if (r < 0)
+                 return r;
+ 
+@@ -1649,7 +1650,7 @@ int cg_set_attribute(const char *controller, const char *path, const char *attri
+         if (r < 0)
+                 return r;
+ 
+-        return write_string_file(p, value, WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file(p, value, 0);
+ }
+ 
+ int cg_get_attribute(const char *controller, const char *path, const char *attribute, char **ret) {
+diff --git a/src/basic/copy.c b/src/basic/copy.c
+index 9028868..5168586 100644
+--- a/src/basic/copy.c
++++ b/src/basic/copy.c
+@@ -8,6 +8,7 @@
+ #include <sys/sendfile.h>
+ #include <sys/xattr.h>
+ #include <unistd.h>
++#include <signal.h>
+ 
+ #include "alloc-util.h"
+ #include "btrfs-util.h"
+diff --git a/src/basic/env-util.c b/src/basic/env-util.c
+index b8dc989..5049b37 100644
+--- a/src/basic/env-util.c
++++ b/src/basic/env-util.c
+@@ -15,6 +15,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ #define VALID_CHARS_ENV_NAME                    \
+         DIGITS LETTERS                          \
+diff --git a/src/basic/format-util.h b/src/basic/format-util.h
+index 5962250..779b682 100644
+--- a/src/basic/format-util.h
++++ b/src/basic/format-util.h
+@@ -44,13 +44,7 @@
+ #  define PRI_TIMEX "li"
+ #endif
+ 
+-#if SIZEOF_RLIM_T == 8
+-#  define RLIM_FMT "%" PRIu64
+-#elif SIZEOF_RLIM_T == 4
+-#  define RLIM_FMT "%" PRIu32
+-#else
+-#  error Unknown rlim_t size
+-#endif
++#define RLIM_FMT "%ju"
+ 
+ #if SIZEOF_DEV_T == 8
+ #  define DEV_FMT "%" PRIu64
+diff --git a/src/basic/fs-util.h b/src/basic/fs-util.h
+index 78d68be..c5dc84d 100644
+--- a/src/basic/fs-util.h
++++ b/src/basic/fs-util.h
+@@ -40,7 +40,27 @@ int fchmod_opath(int fd, mode_t m);
+ 
+ int fd_warn_permissions(const char *path, int fd);
+ 
+-#define laccess(path, mode) faccessat(AT_FDCWD, (path), (mode), AT_SYMLINK_NOFOLLOW)
++/*
++   Avoid using AT_SYMLINK_NOFOLLOW flag. It doesn't seem like the right thing to
++   do and it's not portable (not supported by musl). See:
++
++     http://lists.landley.net/pipermail/toybox-landley.net/2014-September/003610.html
++     http://www.openwall.com/lists/musl/2015/02/05/2
++
++   Note that laccess() is never passing AT_EACCESS so a lot of the discussion in
++   the links above doesn't apply. Note also that (currently) all systemd callers
++   of laccess() pass mode as F_OK, so only check for existence of a file, not
++   access permissions. Therefore, in this case, the only distiction between
++   faccessat() with (flag == 0) and (flag == AT_SYMLINK_NOFOLLOW) is the
++   behaviour for broken symlinks; laccess() on a broken symlink will succeed
++   with (flag == AT_SYMLINK_NOFOLLOW) and fail (flag == 0).
++
++   The laccess() macros was added to systemd some time ago and it's not clear if
++   or why it needs to return success for broken symlinks. Maybe just historical
++   and not actually necessary or desired behaviour?
++*/
++
++#define laccess(path, mode) faccessat(AT_FDCWD, (path), (mode), 0)
+ 
+ int touch_file(const char *path, bool parents, usec_t stamp, uid_t uid, gid_t gid, mode_t mode);
+ int touch(const char *path);
+diff --git a/src/basic/glob-util.c b/src/basic/glob-util.c
+index e3aa6c2..38070b7 100644
+--- a/src/basic/glob-util.c
++++ b/src/basic/glob-util.c
+@@ -12,6 +12,12 @@
+ #include "path-util.h"
+ #include "strv.h"
+ 
++/* Don't fail if the standard library
++ * doesn't provide brace expansion */
++#ifndef GLOB_BRACE
++#define GLOB_BRACE 0
++#endif
++
+ static void closedir_wrapper(void* v) {
+         (void) closedir(v);
+ }
+@@ -19,6 +25,7 @@ static void closedir_wrapper(void* v) {
+ int safe_glob(const char *path, int flags, glob_t *pglob) {
+         int k;
+ 
++#ifdef GLOB_ALTDIRFUNC
+         /* We want to set GLOB_ALTDIRFUNC ourselves, don't allow it to be set. */
+         assert(!(flags & GLOB_ALTDIRFUNC));
+ 
+@@ -32,9 +39,14 @@ int safe_glob(const char *path, int flags, glob_t *pglob) {
+                 pglob->gl_lstat = lstat;
+         if (!pglob->gl_stat)
+                 pglob->gl_stat = stat;
++#endif
+ 
+         errno = 0;
++#ifdef GLOB_ALTDIRFUNC
+         k = glob(path, flags | GLOB_ALTDIRFUNC, NULL, pglob);
++#else
++        k = glob(path, flags, NULL, pglob);
++#endif
+         if (k == GLOB_NOMATCH)
+                 return -ENOENT;
+         if (k == GLOB_NOSPACE)
+diff --git a/src/basic/log.c b/src/basic/log.c
+index 17557e1..6cec4d3 100644
+--- a/src/basic/log.c
++++ b/src/basic/log.c
+@@ -34,6 +34,7 @@
+ #include "terminal-util.h"
+ #include "time-util.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ #define SNDBUF_SIZE (8*1024*1024)
+ 
+diff --git a/src/basic/meson.build b/src/basic/meson.build
+index f70d1b8..4cd5737 100644
+--- a/src/basic/meson.build
++++ b/src/basic/meson.build
+@@ -311,6 +311,11 @@ foreach item : [['af',     af_list_txt,     'af',         ''],
+ endforeach
+ 
+ basic_sources += generated_gperf_headers
++
++if conf.get('HAVE_PRINTF_H') != 1
++        basic_sources += [files('parse-printf-format.c')]
++endif
++
+ basic_gcrypt_sources = files(
+         'gcrypt-util.c',
+         'gcrypt-util.h')
+diff --git a/src/basic/missing_prctl.h b/src/basic/missing_prctl.h
+index f80cd17..47e4893 100644
+--- a/src/basic/missing_prctl.h
++++ b/src/basic/missing_prctl.h
+@@ -1,7 +1,9 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ #pragma once
+ 
++#ifdef __GLIBC__
+ #include <linux/prctl.h>
++#endif
+ 
+ /* 58319057b7847667f0c9585b9de0e8932b0fdb08 (4.3) */
+ #ifndef PR_CAP_AMBIENT
+diff --git a/src/basic/missing_stdlib.h b/src/basic/missing_stdlib.h
+index 188a8d4..1e16ec2 100644
+--- a/src/basic/missing_stdlib.h
++++ b/src/basic/missing_stdlib.h
+@@ -11,3 +11,15 @@
+ #    error "neither secure_getenv nor __secure_getenv are available"
+ #  endif
+ #endif
++
++/* string.h */
++#if ! HAVE_STRNDUPA
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
+diff --git a/src/basic/missing_type.h b/src/basic/missing_type.h
+index bf8a6ca..917d314 100644
+--- a/src/basic/missing_type.h
++++ b/src/basic/missing_type.h
+@@ -10,3 +10,33 @@
+ #if !HAVE_CHAR16_T
+ #define char16_t uint16_t
+ #endif
++
++#ifndef __GLIBC__
++typedef int (*comparison_fn_t)(const void *, const void *);
++typedef int (*__compar_d_fn_t) (const void *, const void *, void *);
++#endif
++
++#ifndef __COMPAR_FN_T
++#define __COMPAR_FN_T
++typedef int (*__compar_fn_t)(const void *, const void *);
++#endif
++
++#ifndef FTW_ACTIONRETVAL
++#define FTW_ACTIONRETVAL 16
++#endif
++
++#ifndef FTW_CONTINUE
++#define FTW_CONTINUE 0
++#endif
++
++#ifndef FTW_STOP
++#define FTW_STOP 1
++#endif
++
++#ifndef FTW_SKIP_SUBTREE
++#define FTW_SKIP_SUBTREE 2
++#endif
++
++#ifndef FTW_SKIP_SIBLINGS
++#define FTW_SKIP_SIBLINGS 3
++#endif
+diff --git a/src/basic/mkdir.c b/src/basic/mkdir.c
+index fa682d4..3790255 100644
+--- a/src/basic/mkdir.c
++++ b/src/basic/mkdir.c
+@@ -13,6 +13,7 @@
+ #include "stat-util.h"
+ #include "stdio-util.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ int mkdir_safe_internal(const char *path, mode_t mode, uid_t uid, gid_t gid, MkdirFlags flags, mkdir_func_t _mkdir) {
+         struct stat st;
+diff --git a/src/basic/parse-printf-format.c b/src/basic/parse-printf-format.c
+new file mode 100644
+index 0000000..49437e5
+--- /dev/null
++++ b/src/basic/parse-printf-format.c
+@@ -0,0 +1,273 @@
++/*-*- Mode: C; c-basic-offset: 8; indent-tabs-mode: nil -*-*/
++
++/***
++  This file is part of systemd.
++
++  Copyright 2014 Emil Renner Berthing <systemd@esmil.dk>
++
++  With parts from the musl C library
++  Copyright 2005-2014 Rich Felker, et al.
++
++  systemd is free software; you can redistribute it and/or modify it
++  under the terms of the GNU Lesser General Public License as published by
++  the Free Software Foundation; either version 2.1 of the License, or
++  (at your option) any later version.
++
++  systemd is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with systemd; If not, see <http://www.gnu.org/licenses/>.
++***/
++
++#include <stddef.h>
++#include <string.h>
++
++#include "parse-printf-format.h"
++
++static const char *consume_nonarg(const char *fmt)
++{
++        do {
++                if (*fmt == '\0')
++                        return fmt;
++        } while (*fmt++ != '%');
++        return fmt;
++}
++
++static const char *consume_num(const char *fmt)
++{
++        for (;*fmt >= '0' && *fmt <= '9'; fmt++)
++                /* do nothing */;
++        return fmt;
++}
++
++static const char *consume_argn(const char *fmt, size_t *arg)
++{
++        const char *p = fmt;
++        size_t val = 0;
++
++        if (*p < '1' || *p > '9')
++                return fmt;
++        do {
++                val = 10*val + (*p++ - '0');
++        } while (*p >= '0' && *p <= '9');
++
++        if (*p != '$')
++                return fmt;
++        *arg = val;
++        return p+1;
++}
++
++static const char *consume_flags(const char *fmt)
++{
++        while (1) {
++                switch (*fmt) {
++                case '#':
++                case '0':
++                case '-':
++                case ' ':
++                case '+':
++                case '\'':
++                case 'I':
++                        fmt++;
++                        continue;
++                }
++                return fmt;
++        }
++}
++
++enum state {
++        BARE,
++        LPRE,
++        LLPRE,
++        HPRE,
++        HHPRE,
++        BIGLPRE,
++        ZTPRE,
++        JPRE,
++        STOP
++};
++
++enum type {
++        NONE,
++        PTR,
++        INT,
++        UINT,
++        ULLONG,
++        LONG,
++        ULONG,
++        SHORT,
++        USHORT,
++        CHAR,
++        UCHAR,
++        LLONG,
++        SIZET,
++        IMAX,
++        UMAX,
++        PDIFF,
++        UIPTR,
++        DBL,
++        LDBL,
++        MAXTYPE
++};
++
++static const short pa_types[MAXTYPE] = {
++        [NONE]   = PA_INT,
++        [PTR]    = PA_POINTER,
++        [INT]    = PA_INT,
++        [UINT]   = PA_INT,
++        [ULLONG] = PA_INT | PA_FLAG_LONG_LONG,
++        [LONG]   = PA_INT | PA_FLAG_LONG,
++        [ULONG]  = PA_INT | PA_FLAG_LONG,
++        [SHORT]  = PA_INT | PA_FLAG_SHORT,
++        [USHORT] = PA_INT | PA_FLAG_SHORT,
++        [CHAR]   = PA_CHAR,
++        [UCHAR]  = PA_CHAR,
++        [LLONG]  = PA_INT | PA_FLAG_LONG_LONG,
++        [SIZET]  = PA_INT | PA_FLAG_LONG,
++        [IMAX]   = PA_INT | PA_FLAG_LONG_LONG,
++        [UMAX]   = PA_INT | PA_FLAG_LONG_LONG,
++        [PDIFF]  = PA_INT | PA_FLAG_LONG_LONG,
++        [UIPTR]  = PA_INT | PA_FLAG_LONG,
++        [DBL]    = PA_DOUBLE,
++        [LDBL]   = PA_DOUBLE | PA_FLAG_LONG_DOUBLE
++};
++
++#define S(x) [(x)-'A']
++#define E(x) (STOP + (x))
++
++static const unsigned char states[]['z'-'A'+1] = {
++        { /* 0: bare types */
++                S('d') = E(INT), S('i') = E(INT),
++                S('o') = E(UINT),S('u') = E(UINT),S('x') = E(UINT), S('X') = E(UINT),
++                S('e') = E(DBL), S('f') = E(DBL), S('g') = E(DBL),  S('a') = E(DBL),
++                S('E') = E(DBL), S('F') = E(DBL), S('G') = E(DBL),  S('A') = E(DBL),
++                S('c') = E(CHAR),S('C') = E(INT),
++                S('s') = E(PTR), S('S') = E(PTR), S('p') = E(UIPTR),S('n') = E(PTR),
++                S('m') = E(NONE),
++                S('l') = LPRE,   S('h') = HPRE, S('L') = BIGLPRE,
++                S('z') = ZTPRE,  S('j') = JPRE, S('t') = ZTPRE
++        }, { /* 1: l-prefixed */
++                S('d') = E(LONG), S('i') = E(LONG),
++                S('o') = E(ULONG),S('u') = E(ULONG),S('x') = E(ULONG),S('X') = E(ULONG),
++                S('e') = E(DBL),  S('f') = E(DBL),  S('g') = E(DBL),  S('a') = E(DBL),
++                S('E') = E(DBL),  S('F') = E(DBL),  S('G') = E(DBL),  S('A') = E(DBL),
++                S('c') = E(INT),  S('s') = E(PTR),  S('n') = E(PTR),
++                S('l') = LLPRE
++        }, { /* 2: ll-prefixed */
++                S('d') = E(LLONG), S('i') = E(LLONG),
++                S('o') = E(ULLONG),S('u') = E(ULLONG),
++                S('x') = E(ULLONG),S('X') = E(ULLONG),
++                S('n') = E(PTR)
++        }, { /* 3: h-prefixed */
++                S('d') = E(SHORT), S('i') = E(SHORT),
++                S('o') = E(USHORT),S('u') = E(USHORT),
++                S('x') = E(USHORT),S('X') = E(USHORT),
++                S('n') = E(PTR),
++                S('h') = HHPRE
++        }, { /* 4: hh-prefixed */
++                S('d') = E(CHAR), S('i') = E(CHAR),
++                S('o') = E(UCHAR),S('u') = E(UCHAR),
++                S('x') = E(UCHAR),S('X') = E(UCHAR),
++                S('n') = E(PTR)
++        }, { /* 5: L-prefixed */
++                S('e') = E(LDBL),S('f') = E(LDBL),S('g') = E(LDBL), S('a') = E(LDBL),
++                S('E') = E(LDBL),S('F') = E(LDBL),S('G') = E(LDBL), S('A') = E(LDBL),
++                S('n') = E(PTR)
++        }, { /* 6: z- or t-prefixed (assumed to be same size) */
++                S('d') = E(PDIFF),S('i') = E(PDIFF),
++                S('o') = E(SIZET),S('u') = E(SIZET),
++                S('x') = E(SIZET),S('X') = E(SIZET),
++                S('n') = E(PTR)
++        }, { /* 7: j-prefixed */
++                S('d') = E(IMAX), S('i') = E(IMAX),
++                S('o') = E(UMAX), S('u') = E(UMAX),
++                S('x') = E(UMAX), S('X') = E(UMAX),
++                S('n') = E(PTR)
++        }
++};
++
++size_t parse_printf_format(const char *fmt, size_t n, int *types)
++{
++        size_t i = 0;
++        size_t last = 0;
++
++        memset(types, 0, n);
++
++        while (1) {
++                size_t arg;
++                unsigned int state;
++
++                fmt = consume_nonarg(fmt);
++                if (*fmt == '\0')
++                        break;
++                if (*fmt == '%') {
++                        fmt++;
++                        continue;
++                }
++                arg = 0;
++                fmt = consume_argn(fmt, &arg);
++                /* flags */
++                fmt = consume_flags(fmt);
++                /* width */
++                if (*fmt == '*') {
++                        size_t warg = 0;
++                        fmt = consume_argn(fmt+1, &warg);
++                        if (warg == 0)
++                                warg = ++i;
++                        if (warg > last)
++                                last = warg;
++                        if (warg <= n && types[warg-1] == NONE)
++                                types[warg-1] = INT;
++                } else
++                        fmt = consume_num(fmt);
++                /* precision */
++                if (*fmt == '.') {
++                        fmt++;
++                        if (*fmt == '*') {
++                                size_t parg = 0;
++                                fmt = consume_argn(fmt+1, &parg);
++                                if (parg == 0)
++                                        parg = ++i;
++                                if (parg > last)
++                                        last = parg;
++                                if (parg <= n && types[parg-1] == NONE)
++                                        types[parg-1] = INT;
++                        } else {
++                                if (*fmt == '-')
++                                        fmt++;
++                                fmt = consume_num(fmt);
++                        }
++                }
++                /* length modifier and conversion specifier */
++                state = BARE;
++                do {
++                        unsigned char c = *fmt++;
++
++                        if (c < 'A' || c > 'z')
++                                continue;
++                        state = states[state]S(c);
++                        if (state == 0)
++                                continue;
++                } while (state < STOP);
++
++                if (state == E(NONE))
++                        continue;
++
++                if (arg == 0)
++                        arg = ++i;
++                if (arg > last)
++                        last = arg;
++                if (arg <= n)
++                        types[arg-1] = state - STOP;
++        }
++
++        if (last > n)
++                last = n;
++        for (i = 0; i < last; i++)
++                types[i] = pa_types[types[i]];
++
++        return last;
++}
+diff --git a/src/basic/parse-printf-format.h b/src/basic/parse-printf-format.h
+new file mode 100644
+index 0000000..47be752
+--- /dev/null
++++ b/src/basic/parse-printf-format.h
+@@ -0,0 +1,57 @@
++/*-*- Mode: C; c-basic-offset: 8; indent-tabs-mode: nil -*-*/
++
++/***
++  This file is part of systemd.
++
++  Copyright 2014 Emil Renner Berthing <systemd@esmil.dk>
++
++  With parts from the GNU C Library
++  Copyright 1991-2014 Free Software Foundation, Inc.
++
++  systemd is free software; you can redistribute it and/or modify it
++  under the terms of the GNU Lesser General Public License as published by
++  the Free Software Foundation; either version 2.1 of the License, or
++  (at your option) any later version.
++
++  systemd is distributed in the hope that it will be useful, but
++  WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++  Lesser General Public License for more details.
++
++  You should have received a copy of the GNU Lesser General Public License
++  along with systemd; If not, see <http://www.gnu.org/licenses/>.
++***/
++
++#pragma once
++
++#include "config.h"
++
++#if HAVE_PRINTF_H
++#include <printf.h>
++#else
++
++#include <stddef.h>
++
++enum {				/* C type: */
++  PA_INT,			/* int */
++  PA_CHAR,			/* int, cast to char */
++  PA_WCHAR,			/* wide char */
++  PA_STRING,			/* const char *, a '\0'-terminated string */
++  PA_WSTRING,			/* const wchar_t *, wide character string */
++  PA_POINTER,			/* void * */
++  PA_FLOAT,			/* float */
++  PA_DOUBLE,			/* double */
++  PA_LAST
++};
++
++/* Flag bits that can be set in a type returned by `parse_printf_format'.  */
++#define	PA_FLAG_MASK		0xff00
++#define	PA_FLAG_LONG_LONG	(1 << 8)
++#define	PA_FLAG_LONG_DOUBLE	PA_FLAG_LONG_LONG
++#define	PA_FLAG_LONG		(1 << 9)
++#define	PA_FLAG_SHORT		(1 << 10)
++#define	PA_FLAG_PTR		(1 << 11)
++
++size_t parse_printf_format(const char *fmt, size_t n, int *types);
++
++#endif /* HAVE_PRINTF_H */
+diff --git a/src/basic/parse-util.c b/src/basic/parse-util.c
+index aec6099..744b9b1 100644
+--- a/src/basic/parse-util.c
++++ b/src/basic/parse-util.c
+@@ -18,6 +18,7 @@
+ #include "process-util.h"
+ #include "stat-util.h"
+ #include "string-util.h"
++#include "missing_stdlib.h"
+ 
+ int parse_boolean(const char *v) {
+         if (!v)
+diff --git a/src/basic/proc-cmdline.c b/src/basic/proc-cmdline.c
+index d3d99d9..e0b9efa 100644
+--- a/src/basic/proc-cmdline.c
++++ b/src/basic/proc-cmdline.c
+@@ -15,6 +15,7 @@
+ #include "string-util.h"
+ #include "util.h"
+ #include "virt.h"
++#include "missing_stdlib.h"
+ 
+ int proc_cmdline(char **ret) {
+         const char *e;
+diff --git a/src/basic/process-util.c b/src/basic/process-util.c
+index 9b6c4c3..642b024 100644
+--- a/src/basic/process-util.c
++++ b/src/basic/process-util.c
+@@ -18,6 +18,9 @@
+ #if HAVE_VALGRIND_VALGRIND_H
+ #include <valgrind/valgrind.h>
+ #endif
++#ifndef __GLIBC__
++#include <pthread.h>
++#endif
+ 
+ #include "alloc-util.h"
+ #include "architecture.h"
+@@ -1114,11 +1117,15 @@ void reset_cached_pid(void) {
+         cached_pid = CACHED_PID_UNSET;
+ }
+ 
++#ifdef __GLIBC__
+ /* We use glibc __register_atfork() + __dso_handle directly here, as they are not included in the glibc
+  * headers. __register_atfork() is mostly equivalent to pthread_atfork(), but doesn't require us to link against
+  * libpthread, as it is part of glibc anyway. */
+ extern int __register_atfork(void (*prepare) (void), void (*parent) (void), void (*child) (void), void *dso_handle);
+ extern void* __dso_handle _weak_;
++#else
++#define __register_atfork(prepare,parent,child,dso) pthread_atfork(prepare,parent,child)
++#endif
+ 
+ pid_t getpid_cached(void) {
+         static bool installed = false;
+@@ -1485,7 +1492,7 @@ int set_oom_score_adjust(int value) {
+         sprintf(t, "%i", value);
+ 
+         return write_string_file("/proc/self/oom_score_adj", t,
+-                                 WRITE_STRING_FILE_VERIFY_ON_FAILURE|WRITE_STRING_FILE_DISABLE_BUFFER);
++                                 WRITE_STRING_FILE_VERIFY_ON_FAILURE);
+ }
+ 
+ static const char *const ioprio_class_table[] = {
+diff --git a/src/basic/procfs-util.c b/src/basic/procfs-util.c
+index 7aaf95b..2138f20 100644
+--- a/src/basic/procfs-util.c
++++ b/src/basic/procfs-util.c
+@@ -11,6 +11,7 @@
+ #include "procfs-util.h"
+ #include "stdio-util.h"
+ #include "string-util.h"
++#include "missing_stdlib.h"
+ 
+ int procfs_tasks_get_limit(uint64_t *ret) {
+         _cleanup_free_ char *value = NULL;
+@@ -85,13 +86,13 @@ int procfs_tasks_set_limit(uint64_t limit) {
+          * decrease it, as threads-max is the much more relevant sysctl. */
+         if (limit > pid_max-1) {
+                 sprintf(buffer, "%" PRIu64, limit+1); /* Add one, since PID 0 is not a valid PID */
+-                r = write_string_file("/proc/sys/kernel/pid_max", buffer, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file("/proc/sys/kernel/pid_max", buffer, 0);
+                 if (r < 0)
+                         return r;
+         }
+ 
+         sprintf(buffer, "%" PRIu64, limit);
+-        r = write_string_file("/proc/sys/kernel/threads-max", buffer, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/kernel/threads-max", buffer, 0);
+         if (r < 0) {
+                 uint64_t threads_max;
+ 
+diff --git a/src/basic/rlimit-util.c b/src/basic/rlimit-util.c
+index 2dc13ea..0633cc6 100644
+--- a/src/basic/rlimit-util.c
++++ b/src/basic/rlimit-util.c
+@@ -306,13 +306,13 @@ int rlimit_format(const struct rlimit *rl, char **ret) {
+         if (rl->rlim_cur >= RLIM_INFINITY && rl->rlim_max >= RLIM_INFINITY)
+                 s = strdup("infinity");
+         else if (rl->rlim_cur >= RLIM_INFINITY)
+-                (void) asprintf(&s, "infinity:" RLIM_FMT, rl->rlim_max);
++                (void) asprintf(&s, "infinity:" RLIM_FMT, (uintmax_t)rl->rlim_max);
+         else if (rl->rlim_max >= RLIM_INFINITY)
+-                (void) asprintf(&s, RLIM_FMT ":infinity", rl->rlim_cur);
++                (void) asprintf(&s, RLIM_FMT ":infinity", (uintmax_t)rl->rlim_cur);
+         else if (rl->rlim_cur == rl->rlim_max)
+-                (void) asprintf(&s, RLIM_FMT, rl->rlim_cur);
++                (void) asprintf(&s, RLIM_FMT, (uintmax_t)rl->rlim_cur);
+         else
+-                (void) asprintf(&s, RLIM_FMT ":" RLIM_FMT, rl->rlim_cur, rl->rlim_max);
++                (void) asprintf(&s, RLIM_FMT ":" RLIM_FMT, (uintmax_t)rl->rlim_cur, (uintmax_t)rl->rlim_max);
+ 
+         if (!s)
+                 return -ENOMEM;
+@@ -403,7 +403,7 @@ int rlimit_nofile_safe(void) {
+ 
+         rl.rlim_cur = FD_SETSIZE;
+         if (setrlimit(RLIMIT_NOFILE, &rl) < 0)
+-                return log_debug_errno(errno, "Failed to lower RLIMIT_NOFILE's soft limit to " RLIM_FMT ": %m", rl.rlim_cur);
++                return log_debug_errno(errno, "Failed to lower RLIMIT_NOFILE's soft limit to " RLIM_FMT ": %m", (uintmax_t)rl.rlim_cur);
+ 
+         return 1;
+ }
+diff --git a/src/basic/selinux-util.c b/src/basic/selinux-util.c
+index f35e760..e4b0a8a 100644
+--- a/src/basic/selinux-util.c
++++ b/src/basic/selinux-util.c
+@@ -26,6 +26,7 @@
+ #include "selinux-util.h"
+ #include "stdio-util.h"
+ #include "time-util.h"
++#include "missing_stdlib.h"
+ 
+ #if HAVE_SELINUX
+ DEFINE_TRIVIAL_CLEANUP_FUNC(char*, freecon);
+diff --git a/src/basic/smack-util.c b/src/basic/smack-util.c
+index da9a213..5e91f5b 100644
+--- a/src/basic/smack-util.c
++++ b/src/basic/smack-util.c
+@@ -114,7 +114,7 @@ int mac_smack_apply_pid(pid_t pid, const char *label) {
+                 return 0;
+ 
+         p = procfs_file_alloca(pid, "attr/current");
+-        r = write_string_file(p, label, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(p, label, 0);
+         if (r < 0)
+                 return r;
+ 
+diff --git a/src/basic/socket-util.c b/src/basic/socket-util.c
+index 19dd053..31f1a95 100644
+--- a/src/basic/socket-util.c
++++ b/src/basic/socket-util.c
+@@ -34,11 +34,7 @@
+ #include "user-util.h"
+ #include "utf8.h"
+ 
+-#if ENABLE_IDN
+-#  define IDN_FLAGS NI_IDN
+-#else
+-#  define IDN_FLAGS 0
+-#endif
++#define IDN_FLAGS 0
+ 
+ static const char* const socket_address_type_table[] = {
+         [SOCK_STREAM] = "Stream",
+diff --git a/src/basic/sort-util.h b/src/basic/sort-util.h
+index e029f86..307ea4a 100644
+--- a/src/basic/sort-util.h
++++ b/src/basic/sort-util.h
+@@ -4,6 +4,7 @@
+ #include <stdlib.h>
+ 
+ #include "macro.h"
++#include "missing_type.h"
+ 
+ void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
+                  __compar_d_fn_t compar, void *arg);
+@@ -54,17 +55,3 @@ static inline void qsort_safe(void *base, size_t nmemb, size_t size, __compar_fn
+                 int (*_func_)(const typeof(p[0])*, const typeof(p[0])*) = func; \
+                 qsort_safe((p), (n), sizeof((p)[0]), (__compar_fn_t) _func_); \
+         })
+-
+-static inline void qsort_r_safe(void *base, size_t nmemb, size_t size, __compar_d_fn_t compar, void *userdata) {
+-        if (nmemb <= 1)
+-                return;
+-
+-        assert(base);
+-        qsort_r(base, nmemb, size, compar, userdata);
+-}
+-
+-#define typesafe_qsort_r(p, n, func, userdata)                          \
+-        ({                                                              \
+-                int (*_func_)(const typeof(p[0])*, const typeof(p[0])*, typeof(userdata)) = func; \
+-                qsort_r_safe((p), (n), sizeof((p)[0]), (__compar_d_fn_t) _func_, userdata); \
+-        })
+diff --git a/src/basic/stdio-util.h b/src/basic/stdio-util.h
+index c3b9448..2937aa1 100644
+--- a/src/basic/stdio-util.h
++++ b/src/basic/stdio-util.h
+@@ -1,13 +1,13 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ #pragma once
+ 
+-#include <printf.h>
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <sys/types.h>
+ 
+ #include "macro.h"
+ #include "memory-util.h"
++#include "parse-printf-format.h"
+ 
+ #define snprintf_ok(buf, len, fmt, ...) \
+         ((size_t) snprintf(buf, len, fmt, __VA_ARGS__) < (len))
+diff --git a/src/basic/time-util.c b/src/basic/time-util.c
+index bfe2c60..4d3219f 100644
+--- a/src/basic/time-util.c
++++ b/src/basic/time-util.c
+@@ -26,6 +26,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "time-util.h"
++#include "missing_stdlib.h"
+ 
+ static clockid_t map_clock_id(clockid_t c) {
+ 
+@@ -1486,7 +1487,7 @@ int time_change_fd(void) {
+ 
+         /* We only care for the cancellation event, hence we set the timeout to the latest possible value. */
+         static const struct itimerspec its = {
+-                .it_value.tv_sec = TIME_T_MAX,
++                .it_value.tv_sec = INT_MAX,
+         };
+ 
+         _cleanup_close_ int fd;
+diff --git a/src/basic/util.c b/src/basic/util.c
+index 2b3b391..aff8d0f 100644
+--- a/src/basic/util.c
++++ b/src/basic/util.c
+@@ -267,7 +267,7 @@ void disable_coredumps(void) {
+         if (detect_container() > 0)
+                 return;
+ 
+-        r = write_string_file("/proc/sys/kernel/core_pattern", "|/bin/false", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/kernel/core_pattern", "|/bin/false", 0);
+         if (r < 0)
+                 log_debug_errno(r, "Failed to turn off coredumps, ignoring: %m");
+ }
+diff --git a/src/binfmt/binfmt.c b/src/binfmt/binfmt.c
+index 7ff844c..5c5721d 100644
+--- a/src/binfmt/binfmt.c
++++ b/src/binfmt/binfmt.c
+@@ -47,7 +47,7 @@ static int delete_rule(const char *rule) {
+         if (!fn)
+                 return log_oom();
+ 
+-        return write_string_file(fn, "-1", WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file(fn, "-1", 0);
+ }
+ 
+ static int apply_rule(const char *rule) {
+@@ -55,7 +55,7 @@ static int apply_rule(const char *rule) {
+ 
+         (void) delete_rule(rule);
+ 
+-        r = write_string_file("/proc/sys/fs/binfmt_misc/register", rule, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/fs/binfmt_misc/register", rule, 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to add binary format: %m");
+ 
+@@ -212,7 +212,7 @@ static int run(int argc, char *argv[]) {
+                 }
+ 
+                 /* Flush out all rules */
+-                (void) write_string_file("/proc/sys/fs/binfmt_misc/status", "-1", WRITE_STRING_FILE_DISABLE_BUFFER);
++                (void) write_string_file("/proc/sys/fs/binfmt_misc/status", "-1", 0);
+ 
+                 STRV_FOREACH(f, files) {
+                         k = apply_file(*f, true);
+diff --git a/src/boot/bless-boot.c b/src/boot/bless-boot.c
+index b96e1f9..cba979b 100644
+--- a/src/boot/bless-boot.c
++++ b/src/boot/bless-boot.c
+@@ -18,6 +18,7 @@
+ #include "util.h"
+ #include "verbs.h"
+ #include "virt.h"
++#include "missing_stdlib.h"
+ 
+ static char **arg_path = NULL;
+ 
+diff --git a/src/core/dbus-cgroup.c b/src/core/dbus-cgroup.c
+index 27dc9e4..b1a8302 100644
+--- a/src/core/dbus-cgroup.c
++++ b/src/core/dbus-cgroup.c
+@@ -15,6 +15,7 @@
+ #include "fileio.h"
+ #include "limits-util.h"
+ #include "path-util.h"
++#include "missing_stdlib.h"
+ 
+ BUS_DEFINE_PROPERTY_GET(bus_property_get_tasks_max, "t", TasksMax, tasks_max_resolve);
+ 
+diff --git a/src/core/dbus-execute.c b/src/core/dbus-execute.c
+index 1d0bc1e..3136549 100644
+--- a/src/core/dbus-execute.c
++++ b/src/core/dbus-execute.c
+@@ -41,6 +41,7 @@
+ #include "unit-printf.h"
+ #include "user-util.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ BUS_DEFINE_PROPERTY_GET_ENUM(bus_property_get_exec_output, exec_output, ExecOutput);
+ static BUS_DEFINE_PROPERTY_GET_ENUM(property_get_exec_input, exec_input, ExecInput);
+diff --git a/src/core/dbus-util.c b/src/core/dbus-util.c
+index 7862bea..3b1ea53 100644
+--- a/src/core/dbus-util.c
++++ b/src/core/dbus-util.c
+@@ -7,6 +7,7 @@
+ #include "unit-printf.h"
+ #include "user-util.h"
+ #include "unit.h"
++#include "missing_stdlib.h"
+ 
+ int bus_property_get_triggered_unit(
+                 sd_bus *bus,
+diff --git a/src/core/execute.c b/src/core/execute.c
+index abc164f..084cf14 100644
+--- a/src/core/execute.c
++++ b/src/core/execute.c
+@@ -88,6 +88,7 @@
+ #include "unit.h"
+ #include "user-util.h"
+ #include "utmp-wtmp.h"
++#include "missing_stdlib.h"
+ 
+ #define IDLE_TIMEOUT_USEC (5*USEC_PER_SEC)
+ #define IDLE_TIMEOUT2_USEC (1*USEC_PER_SEC)
+@@ -4454,9 +4455,9 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
+         for (i = 0; i < RLIM_NLIMITS; i++)
+                 if (c->rlimit[i]) {
+                         fprintf(f, "%sLimit%s: " RLIM_FMT "\n",
+-                                prefix, rlimit_to_string(i), c->rlimit[i]->rlim_max);
++                                prefix, rlimit_to_string(i), (uintmax_t)c->rlimit[i]->rlim_max);
+                         fprintf(f, "%sLimit%sSoft: " RLIM_FMT "\n",
+-                                prefix, rlimit_to_string(i), c->rlimit[i]->rlim_cur);
++                                prefix, rlimit_to_string(i), (uintmax_t)c->rlimit[i]->rlim_cur);
+                 }
+ 
+         if (c->ioprio_set) {
+diff --git a/src/core/kmod-setup.c b/src/core/kmod-setup.c
+index 1286743..f4e64fa 100644
+--- a/src/core/kmod-setup.c
++++ b/src/core/kmod-setup.c
+@@ -10,6 +10,8 @@
+ #include "kmod-setup.h"
+ #include "macro.h"
+ #include "string-util.h"
++#include "missing_type.h"
++#include "missing_stdlib.h"
+ 
+ #if HAVE_KMOD
+ #include "module-util.h"
+diff --git a/src/core/main.c b/src/core/main.c
+index c24b696..195be7d 100644
+--- a/src/core/main.c
++++ b/src/core/main.c
+@@ -1303,7 +1303,7 @@ static int bump_unix_max_dgram_qlen(void) {
+         if (v >= DEFAULT_UNIX_MAX_DGRAM_QLEN)
+                 return 0;
+ 
+-        r = write_string_filef("/proc/sys/net/unix/max_dgram_qlen", WRITE_STRING_FILE_DISABLE_BUFFER, "%lu", DEFAULT_UNIX_MAX_DGRAM_QLEN);
++        r = write_string_filef("/proc/sys/net/unix/max_dgram_qlen", 0, "%lu", DEFAULT_UNIX_MAX_DGRAM_QLEN);
+         if (r < 0)
+                 return log_full_errno(IN_SET(r, -EROFS, -EPERM, -EACCES) ? LOG_DEBUG : LOG_WARNING, r,
+                                       "Failed to bump AF_UNIX datagram queue length, ignoring: %m");
+@@ -1527,7 +1527,7 @@ static void initialize_core_pattern(bool skip_setup) {
+         if (getpid_cached() != 1)
+                 return;
+ 
+-        r = write_string_file("/proc/sys/kernel/core_pattern", arg_early_core_pattern, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/kernel/core_pattern", arg_early_core_pattern, 0);
+         if (r < 0)
+                 log_warning_errno(r, "Failed to write '%s' to /proc/sys/kernel/core_pattern, ignoring: %m", arg_early_core_pattern);
+ }
+diff --git a/src/core/mount-setup.c b/src/core/mount-setup.c
+index 7ef5b12..2462b2d 100644
+--- a/src/core/mount-setup.c
++++ b/src/core/mount-setup.c
+@@ -59,6 +59,10 @@ typedef struct MountPoint {
+ #define N_EARLY_MOUNT 4
+ #endif
+ 
++#define FTW_CONTINUE 0
++#define FTW_SKIP_SUBTREE 2
++#define FTW_ACTIONRETVAL 16
++
+ static const MountPoint mount_table[] = {
+         { "sysfs",       "/sys",                      "sysfs",      NULL,                      MS_NOSUID|MS_NOEXEC|MS_NODEV,
+           NULL,          MNT_FATAL|MNT_IN_CONTAINER },
+diff --git a/src/core/service.c b/src/core/service.c
+index 49ad166..c3b1406 100644
+--- a/src/core/service.c
++++ b/src/core/service.c
+@@ -41,6 +41,7 @@
+ #include "unit.h"
+ #include "utf8.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ static const UnitActiveState state_translation_table[_SERVICE_STATE_MAX] = {
+         [SERVICE_DEAD] = UNIT_INACTIVE,
+diff --git a/src/core/smack-setup.c b/src/core/smack-setup.c
+index 4427397..8aeb5c8 100644
+--- a/src/core/smack-setup.c
++++ b/src/core/smack-setup.c
+@@ -325,17 +325,17 @@ int mac_smack_setup(bool *loaded_policy) {
+         }
+ 
+ #ifdef SMACK_RUN_LABEL
+-        r = write_string_file("/proc/self/attr/current", SMACK_RUN_LABEL, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/self/attr/current", SMACK_RUN_LABEL, 0);
+         if (r < 0)
+                 log_warning_errno(r, "Failed to set SMACK label \"" SMACK_RUN_LABEL "\" on self: %m");
+-        r = write_string_file("/sys/fs/smackfs/ambient", SMACK_RUN_LABEL, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/fs/smackfs/ambient", SMACK_RUN_LABEL, 0);
+         if (r < 0)
+                 log_warning_errno(r, "Failed to set SMACK ambient label \"" SMACK_RUN_LABEL "\": %m");
+         r = write_string_file("/sys/fs/smackfs/netlabel",
+-                              "0.0.0.0/0 " SMACK_RUN_LABEL, WRITE_STRING_FILE_DISABLE_BUFFER);
++                              "0.0.0.0/0 " SMACK_RUN_LABEL, 0);
+         if (r < 0)
+                 log_warning_errno(r, "Failed to set SMACK netlabel rule \"0.0.0.0/0 " SMACK_RUN_LABEL "\": %m");
+-        r = write_string_file("/sys/fs/smackfs/netlabel", "127.0.0.1 -CIPSO", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/fs/smackfs/netlabel", "127.0.0.1 -CIPSO", 0);
+         if (r < 0)
+                 log_warning_errno(r, "Failed to set SMACK netlabel rule \"127.0.0.1 -CIPSO\": %m");
+ #endif
+diff --git a/src/coredump/coredump-vacuum.c b/src/coredump/coredump-vacuum.c
+index 35885df..bb9f066 100644
+--- a/src/coredump/coredump-vacuum.c
++++ b/src/coredump/coredump-vacuum.c
+@@ -16,6 +16,7 @@
+ #include "string-util.h"
+ #include "time-util.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ #define DEFAULT_MAX_USE_LOWER (uint64_t) (1ULL*1024ULL*1024ULL)           /* 1 MiB */
+ #define DEFAULT_MAX_USE_UPPER (uint64_t) (4ULL*1024ULL*1024ULL*1024ULL)   /* 4 GiB */
+diff --git a/src/hibernate-resume/hibernate-resume.c b/src/hibernate-resume/hibernate-resume.c
+index 17e7cd1..87a7667 100644
+--- a/src/hibernate-resume/hibernate-resume.c
++++ b/src/hibernate-resume/hibernate-resume.c
+@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
+                 return EXIT_FAILURE;
+         }
+ 
+-        r = write_string_file("/sys/power/resume", major_minor, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/power/resume", major_minor, 0);
+         if (r < 0) {
+                 log_error_errno(r, "Failed to write '%s' to /sys/power/resume: %m", major_minor);
+                 return EXIT_FAILURE;
+diff --git a/src/import/curl-util.c b/src/import/curl-util.c
+index 96cf696..4258c14 100644
+--- a/src/import/curl-util.c
++++ b/src/import/curl-util.c
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
+ #include <fcntl.h>
++#include <time.h>
+ 
+ #include "alloc-util.h"
+ #include "build.h"
+@@ -353,6 +354,7 @@ int curl_parse_http_time(const char *t, usec_t *ret) {
+                 return -errno;
+ 
+         /* RFC822 */
++#ifdef __GLIBC__
+         e = strptime_l(t, "%a, %d %b %Y %H:%M:%S %Z", &tm, loc);
+         if (!e || *e != 0)
+                 /* RFC 850 */
+@@ -362,6 +364,7 @@ int curl_parse_http_time(const char *t, usec_t *ret) {
+                 e = strptime_l(t, "%a %b %d %H:%M:%S %Y", &tm, loc);
+         if (!e || *e != 0)
+                 return -EINVAL;
++#endif
+ 
+         v = timegm(&tm);
+         if (v == (time_t) -1)
+diff --git a/src/import/import-fs.c b/src/import/import-fs.c
+index 468303a..b60f060 100644
+--- a/src/import/import-fs.c
++++ b/src/import/import-fs.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <signal.h>
+ #include <getopt.h>
+ #include <locale.h>
+ 
+diff --git a/src/journal-remote/journal-remote-main.c b/src/journal-remote/journal-remote-main.c
+index ac2bf64..06c86f0 100644
+--- a/src/journal-remote/journal-remote-main.c
++++ b/src/journal-remote/journal-remote-main.c
+@@ -21,6 +21,7 @@
+ #include "stat-util.h"
+ #include "string-table.h"
+ #include "strv.h"
++#include "missing_stdlib.h"
+ 
+ #define PRIV_KEY_FILE CERTIFICATE_ROOT "/private/journal-remote.pem"
+ #define CERT_FILE     CERTIFICATE_ROOT "/certs/journal-remote.pem"
+diff --git a/src/journal/catalog.c b/src/journal/catalog.c
+index 70b2c8b..d574a64 100644
+--- a/src/journal/catalog.c
++++ b/src/journal/catalog.c
+@@ -28,6 +28,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "tmpfile-util.h"
++#include "missing_type.h"
+ 
+ const char * const catalog_file_dirs[] = {
+         "/usr/local/lib/systemd/catalog/",
+diff --git a/src/journal/journal-send.c b/src/journal/journal-send.c
+index 912ecef..227ea64 100644
+--- a/src/journal/journal-send.c
++++ b/src/journal/journal-send.c
+@@ -2,7 +2,6 @@
+ 
+ #include <errno.h>
+ #include <fcntl.h>
+-#include <printf.h>
+ #include <stddef.h>
+ #include <sys/un.h>
+ #include <unistd.h>
+@@ -20,6 +19,7 @@
+ #include "stdio-util.h"
+ #include "string-util.h"
+ #include "tmpfile-util.h"
++#include "parse-printf-format.h"
+ 
+ #define SNDBUF_SIZE (8*1024*1024)
+ 
+@@ -336,7 +336,12 @@ static int fill_iovec_perror_and_send(const char *message, int skip, struct iove
+                 char* j;
+ 
+                 errno = 0;
++#ifndef __GLIBC__
++                strerror_r(_saved_errno_, buffer + 8 + k, n - 8 - k);
++                j = buffer + 8 + k;
++#else
+                 j = strerror_r(_saved_errno_, buffer + 8 + k, n - 8 - k);
++#endif
+                 if (errno == 0) {
+                         char error[STRLEN("ERRNO=") + DECIMAL_STR_MAX(int) + 1];
+ 
+diff --git a/src/journal/journalctl.c b/src/journal/journalctl.c
+index 95b6bfe..e0bcfb9 100644
+--- a/src/journal/journalctl.c
++++ b/src/journal/journalctl.c
+@@ -68,6 +68,7 @@
+ #include "unit-name.h"
+ #include "user-util.h"
+ #include "varlink.h"
++#include "missing_stdlib.h"
+ 
+ #define DEFAULT_FSS_INTERVAL_USEC (15*USEC_PER_MINUTE)
+ 
+diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
+index 5417ba8..d3aba92 100644
+--- a/src/libsystemd-network/sd-dhcp6-client.c
++++ b/src/libsystemd-network/sd-dhcp6-client.c
+@@ -5,7 +5,6 @@
+ 
+ #include <errno.h>
+ #include <sys/ioctl.h>
+-#include <linux/if_arp.h>
+ #include <linux/if_infiniband.h>
+ 
+ #include "sd-dhcp6-client.h"
+diff --git a/src/libsystemd/sd-bus/bus-error.c b/src/libsystemd/sd-bus/bus-error.c
+index f760f0f..962a4de 100644
+--- a/src/libsystemd/sd-bus/bus-error.c
++++ b/src/libsystemd/sd-bus/bus-error.c
+@@ -54,8 +54,8 @@ BUS_ERROR_MAP_ELF_REGISTER const sd_bus_error_map bus_standard_errors[] = {
+ };
+ 
+ /* GCC maps this magically to the beginning and end of the BUS_ERROR_MAP section */
+-extern const sd_bus_error_map __start_SYSTEMD_BUS_ERROR_MAP[];
+-extern const sd_bus_error_map __stop_SYSTEMD_BUS_ERROR_MAP[];
++extern const sd_bus_error_map __start_SYSTEMD_BUS_ERROR_MAP[] _hidden_;
++extern const sd_bus_error_map __stop_SYSTEMD_BUS_ERROR_MAP[] _hidden_;
+ 
+ /* Additional maps registered with sd_bus_error_add_map() are in this
+  * NULL terminated array */
+@@ -379,7 +379,12 @@ static void bus_error_strerror(sd_bus_error *e, int error) {
+                         return;
+ 
+                 errno = 0;
++#ifndef __GLIBC__
++                strerror_r(error, m, k);
++                x = m;
++#else
+                 x = strerror_r(error, m, k);
++#endif
+                 if (errno == ERANGE || strlen(x) >= k - 1) {
+                         free(m);
+                         k *= 2;
+diff --git a/src/libsystemd/sd-bus/bus-message.c b/src/libsystemd/sd-bus/bus-message.c
+index eb029e4..8da2c5d 100644
+--- a/src/libsystemd/sd-bus/bus-message.c
++++ b/src/libsystemd/sd-bus/bus-message.c
+@@ -21,6 +21,7 @@
+ #include "strv.h"
+ #include "time-util.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ static int message_append_basic(sd_bus_message *m, char type, const void *p, const void **stored);
+ 
+diff --git a/src/libsystemd/sd-bus/bus-objects.c b/src/libsystemd/sd-bus/bus-objects.c
+index ae643ca..f766e23 100644
+--- a/src/libsystemd/sd-bus/bus-objects.c
++++ b/src/libsystemd/sd-bus/bus-objects.c
+@@ -13,6 +13,7 @@
+ #include "set.h"
+ #include "string-util.h"
+ #include "strv.h"
++#include "missing_stdlib.h"
+ 
+ static int node_vtable_get_userdata(
+                 sd_bus *bus,
+diff --git a/src/libsystemd/sd-bus/bus-socket.c b/src/libsystemd/sd-bus/bus-socket.c
+index 18d30d0..be2ab70 100644
+--- a/src/libsystemd/sd-bus/bus-socket.c
++++ b/src/libsystemd/sd-bus/bus-socket.c
+@@ -28,6 +28,7 @@
+ #include "string-util.h"
+ #include "user-util.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ #define SNDBUF_SIZE (8*1024*1024)
+ 
+diff --git a/src/libsystemd/sd-bus/sd-bus.c b/src/libsystemd/sd-bus/sd-bus.c
+index 058492a..54c896f 100644
+--- a/src/libsystemd/sd-bus/sd-bus.c
++++ b/src/libsystemd/sd-bus/sd-bus.c
+@@ -41,6 +41,7 @@
+ #include "process-util.h"
+ #include "string-util.h"
+ #include "strv.h"
++#include "missing_stdlib.h"
+ 
+ #define log_debug_bus_message(m)                                         \
+         do {                                                             \
+diff --git a/src/libsystemd/sd-bus/test-bus-benchmark.c b/src/libsystemd/sd-bus/test-bus-benchmark.c
+index 8de0a85..58044b6 100644
+--- a/src/libsystemd/sd-bus/test-bus-benchmark.c
++++ b/src/libsystemd/sd-bus/test-bus-benchmark.c
+@@ -14,6 +14,7 @@
+ #include "missing_resource.h"
+ #include "time-util.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ #define MAX_SIZE (2*1024*1024)
+ 
+diff --git a/src/libsystemd/sd-device/sd-device.c b/src/libsystemd/sd-device/sd-device.c
+index f35612f..20351bf 100644
+--- a/src/libsystemd/sd-device/sd-device.c
++++ b/src/libsystemd/sd-device/sd-device.c
+@@ -1849,7 +1849,7 @@ _public_ int sd_device_set_sysattr_value(sd_device *device, const char *sysattr,
+         if (!value)
+                 return -ENOMEM;
+ 
+-        r = write_string_file(path, value, WRITE_STRING_FILE_DISABLE_BUFFER | WRITE_STRING_FILE_NOFOLLOW);
++        r = write_string_file(path, value, 0 | WRITE_STRING_FILE_NOFOLLOW);
+         if (r < 0) {
+                 if (r == -ELOOP)
+                         return -EINVAL;
+diff --git a/src/libsystemd/sd-hwdb/hwdb-util.c b/src/libsystemd/sd-hwdb/hwdb-util.c
+index c83575c..72f8f3a 100644
+--- a/src/libsystemd/sd-hwdb/hwdb-util.c
++++ b/src/libsystemd/sd-hwdb/hwdb-util.c
+@@ -128,9 +128,13 @@ static void trie_free(struct trie *trie) {
+ 
+ DEFINE_TRIVIAL_CLEANUP_FUNC(struct trie*, trie_free);
+ 
+-static int trie_values_cmp(const struct trie_value_entry *a, const struct trie_value_entry *b, struct trie *trie) {
+-        return strcmp(trie->strings->buf + a->key_off,
+-                      trie->strings->buf + b->key_off);
++static struct trie *trie_node_add_value_trie;
++static int trie_values_cmp(const void *v1, const void *v2) {
++        const struct trie_value_entry *a = v1;
++        const struct trie_value_entry *b = v2;
++
++        return strcmp(trie_node_add_value_trie->strings->buf + a->key_off,
++                      trie_node_add_value_trie->strings->buf + b->key_off);
+ }
+ 
+ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
+@@ -158,7 +162,10 @@ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
+                         .value_off = v,
+                 };
+ 
+-                val = typesafe_bsearch_r(&search, node->values, node->values_count, trie_values_cmp, trie);
++                trie_node_add_value_trie = trie;
++                val = bsearch(&search, node->values, node->values_count, sizeof(struct trie_value_entry), trie_values_cmp);
++                trie_node_add_value_trie = NULL;
++
+                 if (val) {
+                         /* At this point we have 2 identical properties on the same match-string.
+                          * Since we process files in order, we just replace the previous value. */
+@@ -184,7 +191,9 @@ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
+                 .line_number = line_number,
+         };
+         node->values_count++;
+-        typesafe_qsort_r(node->values, node->values_count, trie_values_cmp, trie);
++        trie_node_add_value_trie = trie;
++        qsort(node->values, node->values_count, sizeof(struct trie_value_entry), trie_values_cmp);
++        trie_node_add_value_trie = NULL;
+         return 0;
+ }
+ 
+diff --git a/src/libsystemd/sd-netlink/netlink-types.c b/src/libsystemd/sd-netlink/netlink-types.c
+index a55460f..6f9cd52 100644
+--- a/src/libsystemd/sd-netlink/netlink-types.c
++++ b/src/libsystemd/sd-netlink/netlink-types.c
+@@ -3,6 +3,7 @@
+ #include <netinet/in.h>
+ #include <stdint.h>
+ #include <sys/socket.h>
++#include <netinet/if_ether.h>
+ #include <linux/can/vxcan.h>
+ #include <linux/netlink.h>
+ #include <linux/rtnetlink.h>
+diff --git a/src/locale/keymap-util.c b/src/locale/keymap-util.c
+index 519dd0d..a8f5369 100644
+--- a/src/locale/keymap-util.c
++++ b/src/locale/keymap-util.c
+@@ -21,6 +21,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "tmpfile-util.h"
++#include "missing_stdlib.h"
+ 
+ static bool startswith_comma(const char *s, const char *prefix) {
+         s = startswith(s, prefix);
+diff --git a/src/locale/localed.c b/src/locale/localed.c
+index baf0bd1..7bf16c6 100644
+--- a/src/locale/localed.c
++++ b/src/locale/localed.c
+@@ -486,7 +486,7 @@ static void log_xkb(struct xkb_context *ctx, enum xkb_log_level lvl, const char
+ 
+ #define LOAD_SYMBOL(symbol, dl, name)                                   \
+         ({                                                              \
+-                (symbol) = (typeof(symbol)) dlvsym((dl), (name), "V_0.5.0"); \
++                (symbol) = (typeof(symbol)) dlsym((dl), (name)); \
+                 (symbol) ? 0 : -EOPNOTSUPP;                             \
+         })
+ 
+diff --git a/src/login/logind-brightness.c b/src/login/logind-brightness.c
+index 3f4b65e..5af7e3d 100644
+--- a/src/login/logind-brightness.c
++++ b/src/login/logind-brightness.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <sys/wait.h>
+ #include "bus-util.h"
+ #include "device-util.h"
+ #include "hash-funcs.h"
+diff --git a/src/login/logind-dbus.c b/src/login/logind-dbus.c
+index 69b5994..b4973c5 100644
+--- a/src/login/logind-dbus.c
++++ b/src/login/logind-dbus.c
+@@ -1322,7 +1322,7 @@ static int trigger_device(Manager *m, sd_device *d) {
+                 if (!t)
+                         return -ENOMEM;
+ 
+-                (void) write_string_file(t, "change", WRITE_STRING_FILE_DISABLE_BUFFER);
++                (void) write_string_file(t, "change", 0);
+         }
+ 
+         return 0;
+diff --git a/src/login/pam_systemd.c b/src/login/pam_systemd.c
+index aa6e5ea..c439c21 100644
+--- a/src/login/pam_systemd.c
++++ b/src/login/pam_systemd.c
+@@ -28,6 +28,7 @@
+ #include "hostname-util.h"
+ #include "login-util.h"
+ #include "macro.h"
++#include "missing_stdlib.h"
+ #include "parse-util.h"
+ #include "path-util.h"
+ #include "process-util.h"
+diff --git a/src/machine/machine-dbus.c b/src/machine/machine-dbus.c
+index 3b2ac38..0df20f3 100644
+--- a/src/machine/machine-dbus.c
++++ b/src/machine/machine-dbus.c
+@@ -3,6 +3,7 @@
+ #include <errno.h>
+ #include <sys/mount.h>
+ #include <sys/wait.h>
++#include <netinet/if_ether.h>
+ 
+ /* When we include libgen.h because we need dirname() we immediately
+  * undefine basename() since libgen.h defines it as a macro to the POSIX
+@@ -10,6 +11,11 @@
+ #include <libgen.h>
+ #undef basename
+ 
++#if !defined(__GLIBC__)
++#include <string.h>
++#define basename(src) (strrchr(src,'/') ? strrchr(src,'/')+1 : src)
++#endif
++
+ #include "alloc-util.h"
+ #include "bus-common-errors.h"
+ #include "bus-internal.h"
+diff --git a/src/network/generator/network-generator.c b/src/network/generator/network-generator.c
+index 81afa95..2c5328f 100644
+--- a/src/network/generator/network-generator.c
++++ b/src/network/generator/network-generator.c
+@@ -13,6 +13,7 @@
+ #include "string-table.h"
+ #include "string-util.h"
+ #include "strv.h"
++#include "missing_stdlib.h"
+ 
+ /*
+   # .network
+diff --git a/src/network/netdev/bond.c b/src/network/netdev/bond.c
+index 185b155..dc1cd23 100644
+--- a/src/network/netdev/bond.c
++++ b/src/network/netdev/bond.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include "alloc-util.h"
+ #include "bond.h"
+ #include "conf-parser.h"
+diff --git a/src/network/netdev/bridge.c b/src/network/netdev/bridge.c
+index 59a40fa..8e821a3 100644
+--- a/src/network/netdev/bridge.c
++++ b/src/network/netdev/bridge.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <net/if.h>
+ 
+ #include "bridge.h"
+diff --git a/src/network/netdev/macsec.c b/src/network/netdev/macsec.c
+index 25dc23f..f20d11f 100644
+--- a/src/network/netdev/macsec.c
++++ b/src/network/netdev/macsec.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <netinet/in.h>
+ #include <linux/if_ether.h>
+ #include <linux/if_macsec.h>
+diff --git a/src/network/netdev/netdev-gperf.gperf b/src/network/netdev/netdev-gperf.gperf
+index 09a5f48..873299b 100644
+--- a/src/network/netdev/netdev-gperf.gperf
++++ b/src/network/netdev/netdev-gperf.gperf
+@@ -2,6 +2,7 @@
+ #if __GNUC__ >= 7
+ _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+ #endif
++#include <netinet/if_ether.h>
+ #include <stddef.h>
+ #include "bond.h"
+ #include "bridge.h"
+diff --git a/src/network/netdev/netdev.c b/src/network/netdev/netdev.c
+index 6908c4e..e0d8c45 100644
+--- a/src/network/netdev/netdev.c
++++ b/src/network/netdev/netdev.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <net/if.h>
+ #include <netinet/in.h>
+ 
+diff --git a/src/network/networkd-brvlan.c b/src/network/networkd-brvlan.c
+index c3c5d53..ebea408 100644
+--- a/src/network/networkd-brvlan.c
++++ b/src/network/networkd-brvlan.c
+@@ -4,6 +4,7 @@
+ ***/
+ 
+ #include <netinet/in.h>
++#include <netinet/if_ether.h>
+ #include <linux/if_bridge.h>
+ #include <stdbool.h>
+ 
+diff --git a/src/network/networkd-dhcp-common.c b/src/network/networkd-dhcp-common.c
+index ea5974c..6a3f9f0 100644
+--- a/src/network/networkd-dhcp-common.c
++++ b/src/network/networkd-dhcp-common.c
+@@ -4,6 +4,7 @@
+ #include "escape.h"
+ #include "in-addr-util.h"
+ #include "networkd-dhcp-common.h"
++#include <netinet/if_ether.h>
+ #include "networkd-network.h"
+ #include "parse-util.h"
+ #include "string-table.h"
+diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
+index 8ca87d9..a662848 100644
+--- a/src/network/networkd-dhcp4.c
++++ b/src/network/networkd-dhcp4.c
+@@ -1,8 +1,8 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <netinet/in.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ 
+ #include "alloc-util.h"
+ #include "dhcp-client-internal.h"
+diff --git a/src/network/networkd-dhcp6.c b/src/network/networkd-dhcp6.c
+index 647623a..325c641 100644
+--- a/src/network/networkd-dhcp6.c
++++ b/src/network/networkd-dhcp6.c
+@@ -3,9 +3,9 @@
+   Copyright © 2014 Intel Corporation. All rights reserved.
+ ***/
+ 
++#include <netinet/if_ether.h>
+ #include <netinet/in.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ #include "sd-radv.h"
+ 
+ #include "sd-dhcp6-client.h"
+diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
+index 279f902..50593b8 100644
+--- a/src/network/networkd-link.c
++++ b/src/network/networkd-link.c
+@@ -1,8 +1,8 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <netinet/in.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ #include <unistd.h>
+ 
+ #include "alloc-util.h"
+diff --git a/src/network/networkd-network.c b/src/network/networkd-network.c
+index 6e44397..d1aab0c 100644
+--- a/src/network/networkd-network.c
++++ b/src/network/networkd-network.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <net/if.h>
+ #include <netinet/in.h>
+ #include <linux/netdevice.h>
+diff --git a/src/network/test-network-tables.c b/src/network/test-network-tables.c
+index 25b9396..530e492 100644
+--- a/src/network/test-network-tables.c
++++ b/src/network/test-network-tables.c
+@@ -1,3 +1,4 @@
++#include <netinet/if_ether.h>
+ #include "bond.h"
+ #include "dhcp6-internal.h"
+ #include "dhcp6-protocol.h"
+diff --git a/src/nspawn/nspawn-cgroup.c b/src/nspawn/nspawn-cgroup.c
+index f5048d9..b6383ab 100644
+--- a/src/nspawn/nspawn-cgroup.c
++++ b/src/nspawn/nspawn-cgroup.c
+@@ -124,7 +124,7 @@ int sync_cgroup(pid_t pid, CGroupUnified unified_requested, uid_t uid_shift) {
+         fn = strjoina(tree, cgroup, "/cgroup.procs");
+ 
+         sprintf(pid_string, PID_FMT, pid);
+-        r = write_string_file(fn, pid_string, WRITE_STRING_FILE_DISABLE_BUFFER|WRITE_STRING_FILE_MKDIR_0755);
++        r = write_string_file(fn, pid_string, WRITE_STRING_FILE_MKDIR_0755);
+         if (r < 0) {
+                 log_error_errno(r, "Failed to move process: %m");
+                 goto finish;
+diff --git a/src/nspawn/nspawn-settings.c b/src/nspawn/nspawn-settings.c
+index 5fb5b49..785ccc2 100644
+--- a/src/nspawn/nspawn-settings.c
++++ b/src/nspawn/nspawn-settings.c
+@@ -16,6 +16,7 @@
+ #include "strv.h"
+ #include "user-util.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ Settings *settings_new(void) {
+         Settings *s;
+diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
+index 873a765..4e49654 100644
+--- a/src/nspawn/nspawn.c
++++ b/src/nspawn/nspawn.c
+@@ -2425,7 +2425,7 @@ static int reset_audit_loginuid(void) {
+         if (streq(p, "4294967295"))
+                 return 0;
+ 
+-        r = write_string_file("/proc/self/loginuid", "4294967295", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/self/loginuid", "4294967295", 0);
+         if (r < 0) {
+                 log_error_errno(r,
+                                 "Failed to reset audit login UID. This probably means that your kernel is too\n"
+@@ -3633,13 +3633,13 @@ static int setup_uid_map(pid_t pid) {
+ 
+         xsprintf(uid_map, "/proc/" PID_FMT "/uid_map", pid);
+         xsprintf(line, UID_FMT " " UID_FMT " " UID_FMT "\n", 0, arg_uid_shift, arg_uid_range);
+-        r = write_string_file(uid_map, line, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(uid_map, line, 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to write UID map: %m");
+ 
+         /* We always assign the same UID and GID ranges */
+         xsprintf(uid_map, "/proc/" PID_FMT "/gid_map", pid);
+-        r = write_string_file(uid_map, line, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(uid_map, line, 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to write GID map: %m");
+ 
+diff --git a/src/nss-mymachines/nss-mymachines.c b/src/nss-mymachines/nss-mymachines.c
+index 364356d..47d4ea4 100644
+--- a/src/nss-mymachines/nss-mymachines.c
++++ b/src/nss-mymachines/nss-mymachines.c
+@@ -19,6 +19,7 @@
+ #include "signal-util.h"
+ #include "string-util.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ NSS_GETHOSTBYNAME_PROTOTYPES(mymachines);
+ NSS_GETPW_PROTOTYPES(mymachines);
+diff --git a/src/portable/portable.c b/src/portable/portable.c
+index 34b123e..5a48504 100644
+--- a/src/portable/portable.c
++++ b/src/portable/portable.c
+@@ -29,6 +29,7 @@
+ #include "strv.h"
+ #include "tmpfile-util.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ static const char profile_dirs[] = CONF_PATHS_NULSTR("systemd/portable/profile");
+ 
+diff --git a/src/portable/portabled-operation.c b/src/portable/portabled-operation.c
+index 305c96c..39195e0 100644
+--- a/src/portable/portabled-operation.c
++++ b/src/portable/portabled-operation.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <sys/wait.h>
+ #include "alloc-util.h"
+ #include "fd-util.h"
+ #include "portabled-operation.h"
+diff --git a/src/resolve/resolvectl.c b/src/resolve/resolvectl.c
+index 0a96a18..432d6eb 100644
+--- a/src/resolve/resolvectl.c
++++ b/src/resolve/resolvectl.c
+@@ -31,6 +31,7 @@
+ #include "strv.h"
+ #include "terminal-util.h"
+ #include "verbs.h"
++#include "missing_stdlib.h"
+ 
+ static int arg_family = AF_UNSPEC;
+ static int arg_ifindex = 0;
+diff --git a/src/shared/base-filesystem.c b/src/shared/base-filesystem.c
+index 657407d..fbd5782 100644
+--- a/src/shared/base-filesystem.c
++++ b/src/shared/base-filesystem.c
+@@ -54,7 +54,7 @@ int base_filesystem_create(const char *root, uid_t uid, gid_t gid) {
+                 return log_error_errno(errno, "Failed to open root file system: %m");
+ 
+         for (i = 0; i < ELEMENTSOF(table); i ++) {
+-                if (faccessat(fd, table[i].dir, F_OK, AT_SYMLINK_NOFOLLOW) >= 0)
++                if (faccessat(fd, table[i].dir, F_OK, 0) >= 0)
+                         continue;
+ 
+                 if (table[i].target) {
+@@ -62,7 +62,7 @@ int base_filesystem_create(const char *root, uid_t uid, gid_t gid) {
+ 
+                         /* check if one of the targets exists */
+                         NULSTR_FOREACH(s, table[i].target) {
+-                                if (faccessat(fd, s, F_OK, AT_SYMLINK_NOFOLLOW) < 0)
++                                if (faccessat(fd, s, F_OK, 0) < 0)
+                                         continue;
+ 
+                                 /* check if a specific file exists at the target path */
+@@ -73,7 +73,7 @@ int base_filesystem_create(const char *root, uid_t uid, gid_t gid) {
+                                         if (!p)
+                                                 return log_oom();
+ 
+-                                        if (faccessat(fd, p, F_OK, AT_SYMLINK_NOFOLLOW) < 0)
++                                        if (faccessat(fd, p, F_OK, 0) < 0)
+                                                 continue;
+                                 }
+ 
+diff --git a/src/shared/bus-unit-procs.c b/src/shared/bus-unit-procs.c
+index b21fe39..af26400 100644
+--- a/src/shared/bus-unit-procs.c
++++ b/src/shared/bus-unit-procs.c
+@@ -10,6 +10,7 @@
+ #include "sort-util.h"
+ #include "string-util.h"
+ #include "terminal-util.h"
++#include "missing_stdlib.h"
+ 
+ struct CGroupInfo {
+         char *cgroup_path;
+diff --git a/src/shared/bus-unit-util.c b/src/shared/bus-unit-util.c
+index 22a1549..3f4c519 100644
+--- a/src/shared/bus-unit-util.c
++++ b/src/shared/bus-unit-util.c
+@@ -34,6 +34,7 @@
+ #include "unit-def.h"
+ #include "user-util.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ int bus_parse_unit_info(sd_bus_message *message, UnitInfo *u) {
+         assert(message);
+diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
+index aea46d3..2234262 100644
+--- a/src/shared/bus-util.c
++++ b/src/shared/bus-util.c
+@@ -34,6 +34,7 @@
+ #include "stdio-util.h"
+ #include "strv.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ static int name_owner_change_callback(sd_bus_message *m, void *userdata, sd_bus_error *ret_error) {
+         sd_event *e = userdata;
+diff --git a/src/shared/cgroup-setup.c b/src/shared/cgroup-setup.c
+index e8398cb..ba682ec 100644
+--- a/src/shared/cgroup-setup.c
++++ b/src/shared/cgroup-setup.c
+@@ -267,7 +267,7 @@ int cg_attach(const char *controller, const char *path, pid_t pid) {
+ 
+         xsprintf(c, PID_FMT "\n", pid);
+ 
+-        r = write_string_file(fs, c, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(fs, c, 0);
+         if (r < 0)
+                 return r;
+ 
+@@ -817,7 +817,7 @@ int cg_enable_everywhere(
+                                         return log_debug_errno(errno, "Failed to open cgroup.subtree_control file of %s: %m", p);
+                         }
+ 
+-                        r = write_string_stream(f, s, WRITE_STRING_FILE_DISABLE_BUFFER);
++                        r = write_string_stream(f, s, 0);
+                         if (r < 0) {
+                                 log_debug_errno(r, "Failed to %s controller %s for %s (%s): %m",
+                                                 FLAGS_SET(mask, bit) ? "enable" : "disable", n, p, fs);
+diff --git a/src/shared/cpu-set-util.h b/src/shared/cpu-set-util.h
+index 27812df..0ab4073 100644
+--- a/src/shared/cpu-set-util.h
++++ b/src/shared/cpu-set-util.h
+@@ -6,6 +6,8 @@
+ #include "macro.h"
+ #include "missing_syscall.h"
+ 
++typedef unsigned long __cpu_mask;
++
+ /* This wraps the libc interface with a variable to keep the allocated size. */
+ typedef struct CPUSet {
+         cpu_set_t *set;
+diff --git a/src/shared/dns-domain.c b/src/shared/dns-domain.c
+index b812665..8e68f7f 100644
+--- a/src/shared/dns-domain.c
++++ b/src/shared/dns-domain.c
+@@ -23,6 +23,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "utf8.h"
++#include "missing_stdlib.h"
+ 
+ int dns_label_unescape(const char **name, char *dest, size_t sz, DNSLabelFlags flags) {
+         const char *n;
+diff --git a/src/shared/ethtool-util.c b/src/shared/ethtool-util.c
+index 3119b2b..927ddd0 100644
+--- a/src/shared/ethtool-util.c
++++ b/src/shared/ethtool-util.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <net/if.h>
+ #include <sys/ioctl.h>
+ #include <linux/ethtool.h>
+diff --git a/src/shared/ethtool-util.h b/src/shared/ethtool-util.h
+index d408bcd..7a1e399 100644
+--- a/src/shared/ethtool-util.h
++++ b/src/shared/ethtool-util.h
+@@ -2,6 +2,7 @@
+ #pragma once
+ 
+ #include <macro.h>
++#include <netinet/if_ether.h>
+ #include <linux/ethtool.h>
+ 
+ #include "conf-parser.h"
+diff --git a/src/shared/format-table.c b/src/shared/format-table.c
+index 4617ae8..17d6b96 100644
+--- a/src/shared/format-table.c
++++ b/src/shared/format-table.c
+@@ -1109,31 +1109,33 @@ static int cell_data_compare(TableData *a, size_t index_a, TableData *b, size_t
+         return CMP(index_a, index_b);
+ }
+ 
+-static int table_data_compare(const size_t *a, const size_t *b, Table *t) {
++static Table *user_table;
++static int table_data_compare(const void *x, const void *y) {
++        const size_t *a = x, *b=y;
+         size_t i;
+         int r;
+ 
+-        assert(t);
+-        assert(t->sort_map);
++        assert(user_table);
++        assert(user_table->sort_map);
+ 
+         /* Make sure the header stays at the beginning */
+-        if (*a < t->n_columns && *b < t->n_columns)
++        if (*a < user_table->n_columns && *b < user_table->n_columns)
+                 return 0;
+-        if (*a < t->n_columns)
++        if (*a < user_table->n_columns)
+                 return -1;
+-        if (*b < t->n_columns)
++        if (*b < user_table->n_columns)
+                 return 1;
+ 
+         /* Order other lines by the sorting map */
+-        for (i = 0; i < t->n_sort_map; i++) {
++        for (i = 0; i < user_table->n_sort_map; i++) {
+                 TableData *d, *dd;
+ 
+-                d = t->data[*a + t->sort_map[i]];
+-                dd = t->data[*b + t->sort_map[i]];
++                d = user_table->data[*a + user_table->sort_map[i]];
++                dd = user_table->data[*b + user_table->sort_map[i]];
+ 
+                 r = cell_data_compare(d, *a, dd, *b);
+                 if (r != 0)
+-                        return t->reverse_map && t->reverse_map[t->sort_map[i]] ? -r : r;
++                        return user_table->reverse_map && user_table->reverse_map[user_table->sort_map[i]] ? -r : r;
+         }
+ 
+         /* Order identical lines by the order there were originally added in */
+@@ -1533,7 +1535,12 @@ int table_print(Table *t, FILE *f) {
+                 for (i = 0; i < n_rows; i++)
+                         sorted[i] = i * t->n_columns;
+ 
+-                typesafe_qsort_r(sorted, n_rows, table_data_compare, t);
++                if (n_rows <= 1)
++                        return 0;
++                assert(sorted);
++                user_table = t;
++                qsort(sorted, n_rows, sizeof(size_t), table_data_compare);
++                user_table = NULL;
+         }
+ 
+         if (t->display_map)
+@@ -1997,7 +2004,12 @@ int table_to_json(Table *t, JsonVariant **ret) {
+                 for (i = 0; i < n_rows; i++)
+                         sorted[i] = i * t->n_columns;
+ 
+-                typesafe_qsort_r(sorted, n_rows, table_data_compare, t);
++                if (n_rows <= 1)
++                        return 0;
++                assert(sorted);
++                user_table = t;
++                qsort(sorted, n_rows, sizeof(size_t), table_data_compare);
++                user_table = NULL;
+         }
+ 
+         if (t->display_map)
+diff --git a/src/shared/journal-importer.c b/src/shared/journal-importer.c
+index 7c4fc70..3fbaf5a 100644
+--- a/src/shared/journal-importer.c
++++ b/src/shared/journal-importer.c
+@@ -14,6 +14,7 @@
+ #include "parse-util.h"
+ #include "string-util.h"
+ #include "unaligned.h"
++#include "missing_stdlib.h"
+ 
+ enum {
+         IMPORTER_STATE_LINE = 0,    /* waiting to read, or reading line */
+diff --git a/src/shared/logs-show.c b/src/shared/logs-show.c
+index 95b2e33..facc23a 100644
+--- a/src/shared/logs-show.c
++++ b/src/shared/logs-show.c
+@@ -37,6 +37,7 @@
+ #include "time-util.h"
+ #include "utf8.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ /* up to three lines (each up to 100 characters) or 300 characters, whichever is less */
+ #define PRINT_LINE_THRESHOLD 3
+diff --git a/src/shared/pager.c b/src/shared/pager.c
+index 1fe9db1..67954b5 100644
+--- a/src/shared/pager.c
++++ b/src/shared/pager.c
+@@ -23,6 +23,7 @@
+ #include "strv.h"
+ #include "terminal-util.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ static pid_t pager_pid = 0;
+ 
+diff --git a/src/shared/path-lookup.c b/src/shared/path-lookup.c
+index 5b16209..0e7cd1c 100644
+--- a/src/shared/path-lookup.c
++++ b/src/shared/path-lookup.c
+@@ -19,6 +19,7 @@
+ #include "tmpfile-util.h"
+ #include "user-util.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ int xdg_user_runtime_dir(char **ret, const char *suffix) {
+         const char *e;
+diff --git a/src/shared/sysctl-util.c b/src/shared/sysctl-util.c
+index 12fb3ef..132ac84 100644
+--- a/src/shared/sysctl-util.c
++++ b/src/shared/sysctl-util.c
+@@ -87,7 +87,7 @@ int sysctl_write_ip_property(int af, const char *ifname, const char *property, c
+ 
+         log_debug("Setting '%s' to '%s'", p, value);
+ 
+-        return write_string_file(p, value, WRITE_STRING_FILE_VERIFY_ON_FAILURE | WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file(p, value, WRITE_STRING_FILE_VERIFY_ON_FAILURE | 0);
+ }
+ 
+ int sysctl_read(const char *property, char **content) {
+diff --git a/src/shared/uid-range.c b/src/shared/uid-range.c
+index 7cb7d8a..8e7d7f9 100644
+--- a/src/shared/uid-range.c
++++ b/src/shared/uid-range.c
+@@ -9,6 +9,7 @@
+ #include "sort-util.h"
+ #include "uid-range.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ static bool uid_range_intersect(UidRange *range, uid_t start, uid_t nr) {
+         assert(range);
+diff --git a/src/sleep/sleep.c b/src/sleep/sleep.c
+index 89b8036..33dbb21 100644
+--- a/src/sleep/sleep.c
++++ b/src/sleep/sleep.c
+@@ -45,7 +45,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
+         assert(hibernate_location->swap);
+         assert(hibernate_location->resume);
+ 
+-        r = write_string_file("/sys/power/resume", hibernate_location->resume, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/power/resume", hibernate_location->resume, 0);
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to write partition device to /sys/power/resume for '%s': '%s': %m",
+                                        hibernate_location->swap->device, hibernate_location->resume);
+@@ -72,7 +72,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
+         }
+ 
+         xsprintf(offset_str, "%" PRIu64, hibernate_location->resume_offset);
+-        r = write_string_file("/sys/power/resume_offset", offset_str, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/power/resume_offset", offset_str, 0);
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to write swap file offset to /sys/power/resume_offset for '%s': '%s': %m",
+                                        hibernate_location->swap->device, offset_str);
+@@ -89,7 +89,7 @@ static int write_mode(char **modes) {
+         STRV_FOREACH(mode, modes) {
+                 int k;
+ 
+-                k = write_string_file("/sys/power/disk", *mode, WRITE_STRING_FILE_DISABLE_BUFFER);
++                k = write_string_file("/sys/power/disk", *mode, 0);
+                 if (k >= 0)
+                         return 0;
+ 
+@@ -108,7 +108,7 @@ static int write_state(FILE **f, char **states) {
+         STRV_FOREACH(state, states) {
+                 int k;
+ 
+-                k = write_string_stream(*f, *state, WRITE_STRING_FILE_DISABLE_BUFFER);
++                k = write_string_stream(*f, *state, 0);
+                 if (k >= 0)
+                         return 0;
+                 log_debug_errno(k, "Failed to write '%s' to /sys/power/state: %m", *state);
+diff --git a/src/socket-proxy/socket-proxyd.c b/src/socket-proxy/socket-proxyd.c
+index 2fb9c85..58cef31 100644
+--- a/src/socket-proxy/socket-proxyd.c
++++ b/src/socket-proxy/socket-proxyd.c
+@@ -26,6 +26,7 @@
+ #include "socket-util.h"
+ #include "string-util.h"
+ #include "util.h"
++#include "missing_stdlib.h"
+ 
+ #define BUFFER_SIZE (256 * 1024)
+ 
+diff --git a/src/test/test-glob-util.c b/src/test/test-glob-util.c
+index 667d153..76a8444 100644
+--- a/src/test/test-glob-util.c
++++ b/src/test/test-glob-util.c
+@@ -12,6 +12,12 @@
+ #include "rm-rf.h"
+ #include "tmpfile-util.h"
+ 
++/* Don't fail if the standard library
++ * doesn't provide brace expansion */
++#ifndef GLOB_BRACE
++#define GLOB_BRACE 0
++#endif
++
+ static void test_glob_exists(void) {
+         char name[] = "/tmp/test-glob_exists.XXXXXX";
+         int fd = -1;
+@@ -39,11 +45,13 @@ static void test_glob_no_dot(void) {
+         const char *fn;
+ 
+         _cleanup_globfree_ glob_t g = {
++#ifdef GLOB_ALTDIRFUNC
+                 .gl_closedir = closedir_wrapper,
+                 .gl_readdir = (struct dirent *(*)(void *)) readdir_no_dot,
+                 .gl_opendir = (void *(*)(const char *)) opendir,
+                 .gl_lstat = lstat,
+                 .gl_stat = stat,
++#endif
+         };
+ 
+         int r;
+@@ -51,11 +59,19 @@ static void test_glob_no_dot(void) {
+         assert_se(mkdtemp(template));
+ 
+         fn = strjoina(template, "/*");
++#ifdef GLOB_ALTDIRFUNC
+         r = glob(fn, GLOB_NOSORT|GLOB_BRACE|GLOB_ALTDIRFUNC, NULL, &g);
++#else
++        r = glob(fn, GLOB_NOSORT|GLOB_BRACE, NULL, &g);
++#endif
+         assert_se(r == GLOB_NOMATCH);
+ 
+         fn = strjoina(template, "/.*");
++#ifdef GLOB_ALTDIRFUNC
+         r = glob(fn, GLOB_NOSORT|GLOB_BRACE|GLOB_ALTDIRFUNC, NULL, &g);
++#else
++        r = glob(fn, GLOB_NOSORT|GLOB_BRACE, NULL, &g);
++#endif
+         assert_se(r == GLOB_NOMATCH);
+ 
+         (void) rm_rf(template, REMOVE_ROOT|REMOVE_PHYSICAL);
+diff --git a/src/test/test-hexdecoct.c b/src/test/test-hexdecoct.c
+index 5221742..70708de 100644
+--- a/src/test/test-hexdecoct.c
++++ b/src/test/test-hexdecoct.c
+@@ -6,6 +6,7 @@
+ #include "hexdecoct.h"
+ #include "macro.h"
+ #include "string-util.h"
++#include "missing_stdlib.h"
+ 
+ static void test_hexchar(void) {
+         assert_se(hexchar(0xa) == 'a');
+diff --git a/src/test/test-json.c b/src/test/test-json.c
+index a661304..ca823ea 100644
+--- a/src/test/test-json.c
++++ b/src/test/test-json.c
+@@ -12,6 +12,10 @@
+ #include "tests.h"
+ #include "util.h"
+ 
++#ifndef M_PIl
++#define M_PIl 3.141592653589793238462643383279502884L
++#endif
++
+ static void test_tokenizer(const char *data, ...) {
+         unsigned line = 0, column = 0;
+         void *state = NULL;
+diff --git a/src/test/test-sizeof.c b/src/test/test-sizeof.c
+index 7fc16a6..d1601ad 100644
+--- a/src/test/test-sizeof.c
++++ b/src/test/test-sizeof.c
+@@ -1,6 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
+-#include <sched.h>
+ #include <stdio.h>
+ #include <string.h>
+ 
+@@ -8,6 +7,7 @@
+ #include <float.h>
+ 
+ #include "time-util.h"
++#include "cpu-set-util.h"
+ 
+ /* Print information about various types. Useful when diagnosing
+  * gcc diagnostics on an unfamiliar architecture. */
+@@ -42,8 +42,10 @@ int main(void) {
+         info(unsigned);
+         info(long unsigned);
+         info(long long unsigned);
++#ifdef __GLIBC__
+         info(__syscall_ulong_t);
+         info(__syscall_slong_t);
++#endif
+ 
+         info(float);
+         info(double);
+@@ -61,7 +63,9 @@ int main(void) {
+         info(ssize_t);
+         info(time_t);
+         info(usec_t);
++#ifdef __GLIBC__
+         info(__time_t);
++#endif
+         info(pid_t);
+         info(uid_t);
+         info(gid_t);
+diff --git a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
+index 193ed0b..2f94fd2 100644
+--- a/src/tmpfiles/tmpfiles.c
++++ b/src/tmpfiles/tmpfiles.c
+@@ -58,6 +58,12 @@
+ #include "umask-util.h"
+ #include "user-util.h"
+ 
++/* Don't fail if the standard library
++ * doesn't provide brace expansion */
++#ifndef GLOB_BRACE
++#define GLOB_BRACE 0
++#endif
++
+ /* This reads all files listed in /etc/tmpfiles.d/?*.conf and creates
+  * them in the file system. This is intended to be used to create
+  * properly owned directories beneath /tmp, /var/tmp, /run, which are
+@@ -1850,7 +1856,9 @@ finish:
+ 
+ static int glob_item(Item *i, action_t action) {
+         _cleanup_globfree_ glob_t g = {
++#ifdef GLOB_ALTDIRFUNC
+                 .gl_opendir = (void *(*)(const char *)) opendir_nomod,
++#endif
+         };
+         int r = 0, k;
+         char **fn;
+@@ -1870,7 +1878,9 @@ static int glob_item(Item *i, action_t action) {
+ 
+ static int glob_item_recursively(Item *i, fdaction_t action) {
+         _cleanup_globfree_ glob_t g = {
++#ifdef GLOB_ALTDIRFUNC
+                 .gl_opendir = (void *(*)(const char *)) opendir_nomod,
++#endif
+         };
+         int r = 0, k;
+         char **fn;
+diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
+index 7b07e2f..18680a8 100644
+--- a/src/udev/net/link-config.c
++++ b/src/udev/net/link-config.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include <linux/netdevice.h>
+ #include <netinet/ether.h>
+ 
+diff --git a/src/udev/udev-builtin-net_setup_link.c b/src/udev/udev-builtin-net_setup_link.c
+index ee3ca9f..9aa4e82 100644
+--- a/src/udev/udev-builtin-net_setup_link.c
++++ b/src/udev/udev-builtin-net_setup_link.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <netinet/if_ether.h>
+ #include "device-util.h"
+ #include "alloc-util.h"
+ #include "link-config.h"
+diff --git a/src/udev/udev-builtin-path_id.c b/src/udev/udev-builtin-path_id.c
+index ca38f56..9d8cf4d 100644
+--- a/src/udev/udev-builtin-path_id.c
++++ b/src/udev/udev-builtin-path_id.c
+@@ -22,6 +22,7 @@
+ #include "strv.h"
+ #include "sysexits.h"
+ #include "udev-builtin.h"
++#include "missing_stdlib.h"
+ 
+ _printf_(2,3)
+ static void path_prepend(char **path, const char *fmt, ...) {
+diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
+index 58d4842..90eab68 100644
+--- a/src/udev/udev-event.c
++++ b/src/udev/udev-event.c
+@@ -34,6 +34,7 @@
+ #include "udev-util.h"
+ #include "udev-watch.h"
+ #include "user-util.h"
++#include "missing_stdlib.h"
+ 
+ typedef struct Spawn {
+         sd_device *device;
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index 6168b33..245fe0a 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -30,6 +30,7 @@
+ #include "udev-rules.h"
+ #include "user-util.h"
+ #include "virt.h"
++#include "missing_stdlib.h"
+ 
+ #define RULES_DIRS (const char* const*) CONF_PATHS_STRV("udev/rules.d")
+ 
+diff --git a/src/udev/udevadm-trigger.c b/src/udev/udevadm-trigger.c
+index 60c68b5..fdca03d 100644
+--- a/src/udev/udevadm-trigger.c
++++ b/src/udev/udevadm-trigger.c
+@@ -43,7 +43,7 @@ static int exec_list(sd_device_enumerator *e, const char *action, Set *settle_se
+                 if (!filename)
+                         return log_oom();
+ 
+-                r = write_string_file(filename, action, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file(filename, action, 0);
+                 if (r < 0) {
+                         bool ignore = IN_SET(r, -ENOENT, -EACCES, -ENODEV, -EROFS);
+ 
+diff --git a/src/udev/udevd.c b/src/udev/udevd.c
+index 7678331..6871cde 100644
+--- a/src/udev/udevd.c
++++ b/src/udev/udevd.c
+@@ -1089,7 +1089,7 @@ static int synthesize_change_one(sd_device *dev, const char *syspath) {
+ 
+         filename = strjoina(syspath, "/uevent");
+         log_device_debug(dev, "device is closed, synthesising 'change' on %s", syspath);
+-        r = write_string_file(filename, "change", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(filename, "change", 0);
+         if (r < 0)
+                 return log_device_debug_errno(dev, r, "Failed to write 'change' to %s: %m", filename);
+         return 0;
+diff --git a/src/vconsole/vconsole-setup.c b/src/vconsole/vconsole-setup.c
+index 9d70608..30dcfa8 100644
+--- a/src/vconsole/vconsole-setup.c
++++ b/src/vconsole/vconsole-setup.c
+@@ -116,7 +116,7 @@ static int toggle_utf8_vc(const char *name, int fd, bool utf8) {
+ static int toggle_utf8_sysfs(bool utf8) {
+         int r;
+ 
+-        r = write_string_file("/sys/module/vt/parameters/default_utf8", one_zero(utf8), WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/module/vt/parameters/default_utf8", one_zero(utf8), 0);
+         if (r < 0)
+                 return log_warning_errno(r, "Failed to %s sysfs UTF-8 flag: %m", enable_disable(utf8));
+ 
+-- 
+2.25.1
+
