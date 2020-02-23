@@ -13,11 +13,14 @@ source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-
-	lt_cv_sys_lib_dlsearch_path_spec="/usr/lib" \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-static
-	make
-	make DESTDIR="$PKG" install
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
 }

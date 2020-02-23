@@ -222,7 +222,7 @@ build_toolchain() {
 	esac
 
 	for toolchain in rpm base-files file gettext-tiny m4 bison \
-			flex bc ncurses kmod gperf libtool autoconf automake \
+			flex bc ncurses kmod gperf slibtool autoconf automake \
 			linux-headers binutils gcc-static musl gcc \
 			cracklib $EXTRAPKG pkgconf; do
 		case $toolchain in
@@ -275,6 +275,11 @@ build_toolchain() {
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+	cp "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
+	chmod +x "$TOOLS"/bin/make
 }
 
 build_target() {
