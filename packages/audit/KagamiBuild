@@ -29,6 +29,7 @@ build() {
 		--without-python \
 		--without-python3 \
 		--enable-shared=audit \
+		--enable-systemd \
 		--disable-zos-remote
 	make
 	make DESTDIR="$PKG" INSTALL='install -p' install
@@ -41,9 +42,4 @@ build() {
 
 	rm -rf "$PKG"/etc/rc.d
 	rm -rf "$PKG"/etc/sysconfig
-
-	for initd in auditd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
 }

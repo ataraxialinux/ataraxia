@@ -25,10 +25,8 @@ build() {
 	install -Dm644 files/fail2ban-logrotate "$PKG"/etc/logrotate.d/fail2ban
 	install -Dm644 files/bash-completion "$PKG"/usr/share/bash-completion/completions/fail2ban
 
-	for initd in fail2ban; do
-		install -Dm0755 files/gentoo-initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 files/gentoo-confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 build/fail2ban.service "$PKG"/usr/lib/systemd/system/fail2ban.service
+	install -Dm644 files/fail2ban-tmpfiles.conf "$PKG"/usr/lib/tmpfiles.d/fail2ban.conf
 
 	rm -rf "$PKG"/run
 }

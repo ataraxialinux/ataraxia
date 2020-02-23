@@ -2,16 +2,23 @@
 # URL:         https://ninja-build.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  python re2c
+# Priority:    required
 # Section:     devel
 
 name=ninja
 version=1.10.0
 release=1
+options=('bootstrap')
 source=("https://github.com/martine/ninja/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	python3 configure.py --bootstrap
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		python3 configure.py --platform=linux
+	else
+		python3 configure.py --bootstrap
+	fi
+
 	install -m755 -D ninja "$PKG"/usr/bin/ninja
 	install -m644 -D misc/ninja.vim "$PKG"/usr/share/vim/vimfiles/syntax/ninja.vim
 	install -m644 -D misc/bash-completion "$PKG"/usr/share/bash-completion/completions/ninja

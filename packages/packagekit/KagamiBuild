@@ -13,10 +13,7 @@ source=("https://www.freedesktop.org/software/PackageKit/releases/PackageKit-$ve
 build() {
 	cd "$SRC"/PackageKit-$version
 	patch -Np1 -i "$STUFF"/packagekit/0001-debian-ataraxia-groups.patch
-	patch -Np1 -i "$STUFF"/packagekit/0001-no-some-stuff.patch
-	patch -Np1 -i "$STUFF"/packagekit/0001-pk-offline-update-get-rid-of-systemd.patch
 
-	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib/PackageKit \
@@ -24,12 +21,12 @@ build() {
 		--localstatedir=/var \
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--enable-offline-update \
+		--enable-systemd \
 		--enable-zypp \
 		--disable-dummy \
 		--disable-gtk-doc \
 		--disable-local \
-		--disable-man-pages \
-		--disable-systemd
+		--disable-man-pages
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
@@ -38,10 +35,4 @@ build() {
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
 	rm -rvf "$PKG"/etc/sysconfig
-
-
-	install -Dm755 "$STUFF"/svc/packagekit.initd "$PKG"/etc/init.d/packagekit
-
-	mkdir -p "$PKG"/etc/runlevels/sysinit
-	ln -sf ../../init.d/packagekit "$PKG"/etc/runlevels/sysinit/packagekit
 }

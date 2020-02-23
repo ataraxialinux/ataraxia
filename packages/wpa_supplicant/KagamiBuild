@@ -1,7 +1,7 @@
 # Description: A utility providing key negotiation for WPA wireless networks
 # URL:         http://hostap.epitest.fi/wpa_supplicant
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  readline libressl libnl
+# Depends on:  readline libressl libnl dbus
 # Section:     net
 
 name=wpa_supplicant
@@ -23,8 +23,9 @@ build() {
 	make PREFIX=/usr BINDIR=/usr/bin DESTDIR="$PKG" install
 	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
 
-	for initd in wpa_supplicant; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 dbus/fi.w1.wpa_supplicant1.service "$PKG"/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
+	install -Dm644 dbus/dbus-wpa_supplicant.conf "$PKG"/usr/share/dbus-1/system.d/wpa_supplicant.conf
+
+	install -d -m755 "$PKG"/usr/lib/systemd/system
+	install -m644 systemd/*.service "$PKG"/usr/lib/systemd/system/
 }

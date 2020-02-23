@@ -1,7 +1,7 @@
 # Description: Lightweight, easy to configure DNS forwarder and DHCP server
 # URL:         http://www.thekelleys.org.uk/dnsmasq/doc.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  nettle
+# Depends on:  nettle dbus
 # Section:     net
 
 name=dnsmasq
@@ -16,11 +16,11 @@ build() {
 
 	make \
 		CFLAGS="$CFLAGS" \
-		COPTS="-DHAVE_DNSSEC" \
+		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS" \
 		PREFIX=/usr \
 		BINDIR=/usr/bin
 	make \
-		COPTS="-DHAVE_DNSSEC" \
+		COPTS="-DHAVE_DNSSEC -DHAVE_DBUS" \
 		PREFIX=/usr \
 		BINDIR=/usr/bin \
 		DESTDIR="$PKG" \
@@ -30,9 +30,7 @@ build() {
 
 	sed -i 's,%%PREFIX%%,/usr,' "$PKG"/etc/dnsmasq.conf
 	install -Dm644 "trust-anchors.conf" "$PKG"/usr/share/dnsmasq/trust-anchors.conf
+	install -Dm644 dbus/dnsmasq.conf "$PKG"/usr/share/dbus-1/system.d/dnsmasq.conf
 
-	for initd in dnsmasq; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 "$STUFF"/svc/dnsmasq.service "$PKG"/usr/lib/systemd/system/dnsmasq.service
 }

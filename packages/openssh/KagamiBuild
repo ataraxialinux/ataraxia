@@ -35,8 +35,8 @@ build() {
 
 	install -Dm644 "$STUFF"/pam.d/sshd "$PKG"/etc/pam.d/sshd
 
-	for initd in sshd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 "$STUFF"/svc/sshd.service "$PKG"/usr/lib/systemd/system/sshd.service
+	install -Dm644 "$STUFF"/svc/sshd_at.service "$PKG"/usr/lib/systemd/system/sshd@.service
+	install -Dm644 "$STUFF"/svc/sshd.socket "$PKG"/usr/lib/systemd/system/sshd.socket
+	install -Dm644 "$STUFF"/tmpfiles/openssh "$PKG"/usr/lib/tmpfiles.d/openssh.conf
 }

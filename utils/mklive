@@ -30,16 +30,21 @@ build_busybox() {
 generate_initramfs() {
 	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam libpwquality attr acl libcap \
 		shadow pcre grep mksh bash expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive lzo kmod busybox \
-		mawk hostname dialog pigz libmnl libnl iproute2 kbd nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools \
-		hwids eudev openrc netifrc wireless_tools wpa_supplicant popt gptfdisk wget linux"
+		mawk hostname dialog pigz libmnl libnl iproute2 kbd nano hwids systemd dbus libcap-ng util-linux e2fsprogs btrfs-progs \
+		dosfstools wireless_tools wpa_supplicant popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -r "$INITRAMFS" -wd $packages
 
 	build_busybox
 
 	pushd "$INITRAMFS"
-		sed -i 's/agetty --noclear 38400 tty1 linux/agetty --autologin root --noclear 38400 tty1 linux/g' etc/inittab
-		ln -sf usr/bin/init init
+		mkdir -p etc/systemd/system/getty@tty1.service.d/
+cat > etc/systemd/system/getty@tty1.service.d/override.conf << "EOF"
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --autologin root %I $TERM
+EOF
+		ln -sf usr/lib/systemd/systemd init
 
 		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
 		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/

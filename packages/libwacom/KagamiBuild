@@ -1,7 +1,7 @@
 # Description: Library to identify Wacom tablets and their features
 # URL:         https://github.com/linuxwacom/libwacom/wiki
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libxml2 libgudev
+# Depends on:  meson libxml2 libgudev
 # Section:     x11
 
 name=libwacom
@@ -11,8 +11,10 @@ source=("https://github.com/linuxwacom/libwacom/releases/download/$name-$version
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddocumentation=disabled
+	ninja
+	DESTDIR="$PKG" ninja install
 }

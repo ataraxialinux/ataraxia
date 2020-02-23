@@ -18,13 +18,9 @@ build() {
 		--sysconfdir=/etc \
 		--with-drivedbdir \
 		--with-libcap-ng \
-		--without-initscriptdir \
-		--without-libsystemd
+		--with-libsystemd \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--without-initscriptdir
 	make
 	make DESTDIR="$PKG" install
-
-	for initd in smartd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
 }

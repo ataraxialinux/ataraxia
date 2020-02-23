@@ -16,8 +16,5 @@ build() {
 	make PREFIX=/usr SBINDIR=/usr/bin MANDIR=/usr/share/man
 	make PREFIX=/usr SBINDIR=/usr/bin MANDIR=/usr/share/man DESTDIR="$PKG" install
 
-	for initd in lm_sensors fancontrol sensord; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 prog/init/*.service "$PKG"/usr/lib/systemd/system/
 }

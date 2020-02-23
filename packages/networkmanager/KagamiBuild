@@ -1,7 +1,7 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala lpppd iwd mobile-broadband-provider-info
+# Depends on:  meson systemd dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala lpppd iwd mobile-broadband-provider-info
 # Section:     net
 
 name=networkmanager
@@ -13,7 +13,6 @@ source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/Net
 build() {
 	cd "$SRC"/NetworkManager-$version
 	patch -Np1 -i "$STUFF"/networkmanager/musl.patch
-	patch ./src/dhcp/nm-dhcp-dhcpcd.c "$STUFF"/networkmanager/secure.patch
 
 	sed '/initrd/d' -i src/meson.build
 	grep -rl '^#!.*python$' | xargs sed -i '1s/python/&3/'
@@ -24,7 +23,6 @@ build() {
 		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
-		-Difupdown=true \
 		-Diptables=/usr/bin/iptables \
 		-Diwd=true \
 		-Djson_validation=false \
@@ -37,11 +35,9 @@ build() {
 		-Dpppd=/usr/bin/pppd \
 		-Dqt=false \
 		-Dselinux=false \
-		-Dsession_tracking=no \
-		-Dsession_tracking_consolekit=true \
-		-Dsystemd_journal=false \
-		-Dsystemdsystemunitdir=no \
-		-Dsuspend_resume=consolekit \
+		-Dsession_tracking=systemd \
+		-Dsystemdsystemunitdir=/usr/lib/systemd/system \
+		-Dsuspend_resume=systemd \
 		-Dteamdctl=true \
 		-Dtests=no \
 		-Dudev_dir=/usr/lib/udev \
@@ -49,13 +45,10 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	install -Dm0755 "$STUFF"/svc/networkmanager.initd "$PKG"/etc/init.d/networkmanager
-
 cat > "$PKG"/etc/NetworkManager/NetworkManager.conf << "EOF"
 [main]
 plugins=keyfile
 auth-polkit=true
-dhcp=dhcpcd
 EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d

@@ -1,7 +1,7 @@
 # Description: Btrfs filesystem utilities
 # URL:         https://btrfs.wiki.kernel.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib lzo zstd e2fsprogs
+# Depends on:  systemd zlib lzo zstd e2fsprogs
 # Priority:    required
 # Section:     base
 
@@ -22,4 +22,7 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 btrfs-completion "$PKG"/usr/share/bash-completion/completions/btrfs
+
+	install -Dm644 "$STUFF"/svc/btrfs-scrub.service "$PKG"/usr/lib/systemd/system/btrfs-scrub@.service
+	install -Dm644 "$STUFF"/svc/btrfs-scrub.timer "$PKG"/usr/lib/systemd/system/btrfs-scrub@.timer
 }

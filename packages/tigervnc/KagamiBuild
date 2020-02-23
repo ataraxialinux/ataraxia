@@ -38,4 +38,8 @@ build() {
 
 	cd hw/vnc
 	make DESTDIR="$PKG" install
+
+	for i in vncserver-system.service vncserver-user.service xvnc.service xvnc.socket; do
+		install -Dm644 "$STUFF"/svc/$i "$PKG"/usr/lib/systemd/system/$i
+	done
 }

@@ -26,4 +26,9 @@ build() {
 	install -dm755 "$PKG"/etc/logrotate.d
 	install -Dm644 "$STUFF"/logrotate/logrotate.conf "$PKG"/etc/logrotate.conf
 	install -Dm755 "$STUFF"/logrotate/cron "$PKG"/etc/periodic/daily/logrotate
+
+	install -D -m644 examples/logrotate.timer "$PKG"/usr/lib/systemd/system/logrotate.timer
+	install -D -m644 examples/logrotate.service "$PKG"/usr/lib/systemd/system/logrotate.service
+	install -d -m755 "$PKG"/usr/lib/systemd/system/timers.target.wants
+	ln -sf ../logrotate.timer "$PKG"/usr/lib/systemd/system/timers.target.wants/logrotate.timer
 }
