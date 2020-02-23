@@ -34,6 +34,7 @@ build() {
 		--with-default-locking-dir=/run/lock/lvm \
 		--with-default-pid-dir=/run \
 		--with-default-run-dir=/run/lvm \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--with-cache=internal \
 		--with-thin=internal \
 		--enable-applib \
@@ -43,8 +44,8 @@ build() {
 		--enable-pkgconfig \
 		--enable-udev_rules \
 		--enable-udev_sync \
-		--disable-readline \
-		--disable-udev-systemd-background-jobs
+		--enable-udev-systemd-background-jobs \
+		--disable-readline
 	make SHELL=/bin/bash
 	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install
 
@@ -52,12 +53,4 @@ build() {
 
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
-
-	for initd in device-mapper dmeventd lvmetad lvm lvm-monitoring lvmpolld; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-	done
-
-	for confd in device-mapper lvm; do
-		install -D -m644 "$STUFF"/svc/${confd}.confd "$PKG"/etc/conf.d/$confd
-	done
 }

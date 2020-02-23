@@ -37,10 +37,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in nginx; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 "$STUFF"/svc/nginx.service "$PKG"/usr/lib/systemd/system/nginx.service
 
 	install -d "$PKG"/usr/share/nginx
 	mv "$PKG"/usr/html "$PKG"/usr/share/nginx/

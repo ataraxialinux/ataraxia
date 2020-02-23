@@ -23,9 +23,6 @@ build() {
 
 	mv "$PKG"/etc/tor/torrc.sample "$PKG"/etc/tor/torrc
 	install -Dm644 "$STUFF"/tmpfiles/tor "$PKG"/usr/lib/tmpfiles.d/tor.conf
-
-	for initd in tor; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm644 "$STUFF"/svc/tor.service "$PKG"/usr/lib/systemd/system/tor.service
+	install -Dm644 "$STUFF"/svc/tor_at.service "$PKG"/usr/lib/systemd/system/tor@.service
 }

@@ -37,11 +37,7 @@ build() {
 	mkdir -p "$PKG"/etc/iptables
 	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
 
-	mkdir -p "$PKG"/var/lib/iptables "$PKG"/var/lib/ip6tables
-
-	for initd in iptables; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
-	install -Dm0644 "$STUFF"/svc/ip6tables.confd "$PKG"/etc/conf.d/ip6tables
+	install -Dm755 "$STUFF"/iptables/flush "$PKG"/usr/lib/systemd/scripts/iptables-flush
+	install -Dm644 "$STUFF"/svc/iptables.service "$PKG"/usr/lib/systemd/system/iptables.service
+	install -Dm644 "$STUFF"/svc/ip6tables.service "$PKG"/usr/lib/systemd/system/ip6tables.service
 }

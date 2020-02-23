@@ -34,8 +34,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in mit-krb5kadmind mit-krb5kdc mit-krb5kpropd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	for i in kprop.service kadmin.service krb5kdc.service; do
+		install -Dm644 "$STUFF"/svc/$i "$PKG"/usr/lib/systemd/system/$i
 	done
 }

@@ -40,14 +40,10 @@ build() {
 		--enable-suexec
 	make
 	make DESTDIR="$PKG" install
-
-	for initd in httpd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
-
+	
 	install -Dm644 "$STUFF"/apache/logrotate "$PKG"/etc/logrotate.d/httpd
 	install -Dm644 "$STUFF"/tmpfiles/httpd "$PKG"/usr/lib/tmpfiles.d/httpd.conf
+	install -Dm644 "$STUFF"/svc/httpd.service "$PKG"/usr/lib/systemd/system/httpd.service
 
 	ln -sf /usr/lib/httpd/modules "$PKG"/etc/httpd/modules
 

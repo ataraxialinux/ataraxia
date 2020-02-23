@@ -1,7 +1,7 @@
 # Description: Freedesktop.org message bus system
 # URL:         https://freedesktop.org/wiki/Software/dbus
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  expat libx11
+# Depends on:  expat systemd
 # Section:     admin
 
 name=dbus
@@ -19,18 +19,16 @@ build() {
 		--with-console-auth-dir=/run/console \
 		--with-system-pid-file=/run/dbus/pid \
 		--with-system-socket=/run/dbus/system_bus_socket \
-		--with-x \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--with-xml=expat \
-		--without-systemdsystemunitdir \
+		--without-x \
+		--enable-systemd \
 		--enable-user-session \
 		--disable-doxygen-docs \
 		--disable-xml-docs \
-		--disable-static \
-		--disable-systemd
+		--disable-static
 	make
 	make DESTDIR="$PKG" install
 
 	rm -rf "$PKG"/var/run
-
-	install -Dm0755 "$STUFF"/svc/dbus.initd "$PKG"/etc/init.d/dbus
 }

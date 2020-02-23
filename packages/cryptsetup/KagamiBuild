@@ -1,7 +1,7 @@
 # Description: Userspace setup tool for transparent encryption of block devices using dm-crypt
 # URL:         https://gitlab.com/cryptsetup/cryptsetup/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl util-linux lvm2 popt json-c argon2
+# Depends on:  libressl util-linux lvm2 popt json-c argon2 libpwquality
 # Section:     security
 
 name=cryptsetup
@@ -17,14 +17,9 @@ build() {
 		--sbindir=/usr/bin \
 		--with-crypto_backend=openssl \
 		--enable-libargon2 \
+		--enable-pwquality \
 		--disable-nls \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install
-
-
-	for initd in dmcrypt; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
 }
