@@ -6,13 +6,14 @@
 # Section:     security
 
 name=libcap
-version=2.32
+version=2.33
 release=1
 options=('bootstrap')
 source=("https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libcap/musl.patch
 	sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
 	sed -i 's/CFLAGS :=/CFLAGS +=/g' Make.Rules
 	sed -i 's/LDFLAGS :=/LDFLAGS +=/g' Make.Rules

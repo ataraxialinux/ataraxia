@@ -5,18 +5,13 @@
 # Section:     base
 
 name=coreutils
-version=8.31
+version=8.32
 release=1
 options=('bootstrap')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/coreutils/musl-cross-fix.patch
-	patch -Np1 -i "$STUFF"/coreutils/remove-usr-local-lib-from-m4.patch
-
-	autoreconf -fiv
-
 	export FORCE_UNSAFE_CONFIGURE=1
 
 	PERL=missing \
