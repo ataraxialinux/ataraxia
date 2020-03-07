@@ -1,7 +1,7 @@
 # Description: Linux kernel module management tools and library
 # URL:         http://git.kernel.org/?p=utils/kernel/kmod/kmod.git;a=summary
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib xz
+# Depends on:  zlib xz zstd libressl
 # Priority:    required
 # Section:     hardware
 
@@ -13,11 +13,16 @@ source=("https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/kmod/0002-add-zstd-compressed-module-support.patch
+	autoreconf -fisv
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
+		--with-openssl \
 		--with-xz \
 		--with-zlib \
+		--with-zstd \
 		--disable-manpages
 	make
 	make DESTDIR="$PKG" install

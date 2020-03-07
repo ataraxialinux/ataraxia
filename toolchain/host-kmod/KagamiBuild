@@ -1,15 +1,20 @@
 name=host-kmod
-version=26
+version=27
 release=1
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-$version.tar.xz")
 
 build() {
 	cd "$SRC"/kmod-$version
+	patch -Np1 -i "$STUFF"/kmod/0002-add-zstd-compressed-module-support.patch
+	autoreconf -fisv
+
 	./configure \
 		--prefix="$TOOLS" \
+		--with-openssl \
 		--with-xz \
 		--with-zlib \
+		--with-zstd \
 		--disable-manpages
 	make
 	make install
