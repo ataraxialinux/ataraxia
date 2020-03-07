@@ -831,17 +831,17 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
-	patch -Np1 -i "$STUFF"/linux/1-2-lib-Add-support-for-ZSTD-compressed-kernel.diff
-	patch -Np1 -i "$STUFF"/linux/2-2-x86-Add-support-for-ZSTD-compressed-kernel.diff
-	patch -Np1 -i "$STUFF"/linux/wireguard.patch
-	patch -Np1 -i "$STUFF"/linux/blk.patch
-	patch -Np1 -i "$STUFF"/linux/scsi.patch
+	patch -Np1 -i "$STUFF"/linux/0001-WireGuard-support.patch
+	patch -Np1 -i "$STUFF"/linux/0002-blk.patch
+	patch -Np1 -i "$STUFF"/linux/0003-scsi.patch
+	patch -Np1 -i "$STUFF"/linux/0008-add-zstd-kernel-compression.patch
+	patch -Np1 -i "$STUFF"/linux/0009-add-zstd-compressed-modules.patch
 
 	sed -i 's|return elevator_get(q, "mq-deadline", false);|return elevator_get(q, "bfq", false);|' block/elevator.c
 
 	case $BARCH in
 		riscv64|riscv32)
-			patch -Np1 -i "$STUFF"/linux/riscv.patch
+			patch -Np1 -i "$STUFF"/linux/9999-RISC-V-fixes.patch
 			;;
 	esac
 
