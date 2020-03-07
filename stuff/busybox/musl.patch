@@ -1,11 +1,12 @@
---- busybox-1.31.1-orig/libbb/time.c
-+++ busybox-1.31.1/libbb/time.c
+diff -ruN busybox-1.31.1-orig/libbb/time.c busybox-1.31.1/libbb/time.c
+--- busybox-1.31.1-orig/libbb/time.c	2019-06-10 19:50:53.000000000 +0900
++++ busybox-1.31.1/libbb/time.c	2020-03-07 22:38:05.106676967 +0900
 @@ -257,7 +257,7 @@
   * typically requiring -lrt. We just skip all this mess */
  static void get_mono(struct timespec *ts)
  {
 -	if (syscall(__NR_clock_gettime, CLOCK_MONOTONIC, ts))
-+	if (syscall(clock_gettime, CLOCK_MONOTONIC, ts))
++	if (clock_gettime(CLOCK_MONOTONIC, ts))
  		bb_error_msg_and_die("clock_gettime(MONOTONIC) failed");
  }
  unsigned long long FAST_FUNC monotonic_ns(void)
