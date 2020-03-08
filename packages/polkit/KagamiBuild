@@ -1,12 +1,12 @@
 # Description: Application development toolkit for controlling system-wide privileges
 # URL:         https://www.freedesktop.org/wiki/Software/polkit/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam intltool gobject-introspection spidermonkey
+# Depends on:  pam intltool gobject-introspection spidermonkey60 dbus
 # Section:     utils
 
 name=polkit
 version=0.116
-release=4
+release=5
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
 
 build() {
@@ -14,7 +14,7 @@ build() {
 	patch -Np1 -i "$STUFF"/polkit/make-innetgr-optional.patch
 	autoreconf -fi
 
-	sed -e 's,/sys/fs/cgroup/systemd/,/sys/fs/cgroup,g' -i configure
+	sed -e 's,/sys/fs/cgroup/systemd/,/sys,g' -i configure
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

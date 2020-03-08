@@ -1,0 +1,24 @@
+diff -ruN mozjs-68.4.2-orig/js/moz.configure mozjs-68.4.2/js/moz.configure
+--- mozjs-68.4.2-orig/js/moz.configure	2020-01-18 00:45:58.000000000 +0900
++++ mozjs-68.4.2/js/moz.configure	2020-03-09 00:29:21.972275828 +0900
+@@ -18,11 +18,6 @@
+ option(env='JS_STANDALONE', default=building_js,
+        help='Reserved for internal use')
+ 
+-include('../build/moz.configure/rust.configure',
+-        when='--enable-compile-environment')
+-include('../build/moz.configure/bindgen.configure',
+-        when='--enable-compile-environment')
+-
+ @depends('JS_STANDALONE')
+ def js_standalone(value):
+     if value:
+@@ -443,7 +438,7 @@
+     return is_nightly
+ 
+ js_option('--enable-binast',
+-          default=default_binast,
++          default=False,
+           help="{Enable|Disable} BinAST support")
+ 
+ set_config('JS_BUILD_BINAST', depends_if('--enable-binast')(lambda x: True))

@@ -1,21 +1,17 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python2 yasm llvm zlib readline libffi nspr icu
+# Depends on:  autoconf2.13 python2 yasm zlib readline libffi nspr icu
 # Section:     interpreters
 
-name=spidermonkey
-version=68.4.2
+name=spidermonkey60
+version=60.8.0
 release=1
 source=("https://download.gnome.org/teams/releng/tarballs-needing-help/mozjs/mozjs-$version.tar.bz2")
 
 build() {
 	export SHELL=/bin/bash
 	export PYTHON=/usr/bin/python2
-
-	pushd "$SRC"/mozjs-$version
-		patch -Np1 -i "$STUFF"/spidermonkey/no-rust.patch
-	popd
 
 	cd "$SRC"
 	mkdir build
@@ -28,19 +24,20 @@ build() {
 		--with-system-nspr \
 		--with-system-zlib \
 		--enable-ctypes \
-		--enable-hardening \
-		--enable-optimize \
+		--enable-pie \
 		--enable-readline \
-		--enable-release \
 		--enable-shared-js \
 		--enable-system-ffi \
 		--disable-debug \
 		--disable-debug-symbols \
 		--disable-jemalloc \
+		--disable-optimize \
 		--disable-strip \
 		--disable-tests \
 		--host=$XTARGET \
 		--target=$XTARGET
 	make
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/lib/libjs_static.ajs
 }
