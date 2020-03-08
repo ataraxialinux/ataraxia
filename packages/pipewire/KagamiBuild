@@ -1,7 +1,7 @@
 # Description: Server and user space API to deal with multimedia pipelines
 # URL:         https://pipewire.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ffmpeg gst-plugins-base libva sbc sdl2
+# Depends on:  ffmpeg gst-plugins-base libva sbc bluez sdl2
 # Section:     libs
 
 name=pipewire
@@ -13,7 +13,8 @@ build() {
 	cd "$SRC"/$name-$version
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dvulkan=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }
