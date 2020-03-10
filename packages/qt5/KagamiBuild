@@ -11,12 +11,9 @@ source=("https://download.qt.io/official_releases/qt/${version::4}/$version/sing
 
 build() {
 	cd "$SRC"/qt-everywhere-src-$version
-	patch -Np1 -i "$STUFF"/qt5/qtwebengine-musl.patch
 	patch -Np1 -i "$STUFF"/qt5/main.patch
-	patch -Np0 -i "$STUFF"/qt5/0014-musl-set_thread_name_np.patch
+	patch -Np1 -i "$STUFF"/qt5/webengine.patch
 	sed -i 's/python /python3 /' qtdeclarative/qtdeclarative.pro qtdeclarative/src/3rdparty/masm/masm.pri
-	sed -i 's/SIOCGSTAMP/0x8906/' qtserialbus/src/plugins/canbus/socketcan/socketcanbackend.cpp
-	sed -i 's/SIOCGSTAMP/0x8906/' qtwebengine/src/3rdparty/chromium/third_party/webrtc/rtc_base/physical_socket_server.cc
 
 	case $BARCH in
 		riscv64|riscv32)
