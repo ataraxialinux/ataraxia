@@ -6,7 +6,8 @@
 
 name=imagemagick
 version=7.0.10+0
-release=1
+release=2
+options=('libtool')
 source=("https://www.imagemagick.org/download/releases/ImageMagick-${version/+/-}.tar.xz")
 
 build() {
@@ -37,4 +38,6 @@ build() {
 	find . -name '*.so' -delete
 	sed -i 's,LD_RUN_PATH="$(LD_RUN_PATH)" ,,' quantum/Makefile
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/lib/*.la
 }
