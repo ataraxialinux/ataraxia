@@ -2,20 +2,20 @@
 # URL:         http://www.gnu.org/software/libtool
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  gcc
-# Priority:    required
 # Section:     devel
 
-name=libtool
+name=libltdl
 version=2.4.6
-release=2
+release=1
 options=('bootstrap')
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://ftp.gnu.org/gnu/libtool/libtool-$version.tar.xz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/libtool-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-static
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		$ORIGMAKE
 		$ORIGMAKE DESTDIR="$PKG" install
@@ -23,4 +23,6 @@ build() {
 		make
 		make DESTDIR="$PKG" install
 	fi
+
+	rm -rf "$PKG"/usr/share/aclocal "$PKG"/usr/bin
 }

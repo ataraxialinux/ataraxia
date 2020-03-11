@@ -1,13 +1,13 @@
 # Description: An image viewing/manipulation program
 # URL:         https://www.imagemagick.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  perl libtool fontconfig libxext libxml2 lcms2 ghostscript libraw librsvg tiff openjpeg pango libwebp
+# Depends on:  perl libltdl fontconfig libxext libxml2 lcms2 ghostscript libraw librsvg tiff openjpeg pango libwebp
 # Section:     graphics
 
 name=imagemagick
 version=7.0.10+0
 release=2
-options=('libtool')
+options=('libltdl')
 source=("https://www.imagemagick.org/download/releases/ImageMagick-${version/+/-}.tar.xz")
 
 build() {
@@ -30,7 +30,7 @@ build() {
 		--enable-hdri \
 		--enable-shared
 
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libltdl
 	make
 	make DESTDIR="$PKG" install
 

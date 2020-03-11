@@ -1,0 +1,44 @@
+# Description: Skinny libtool implementation, written in C
+# URL:         http://git.midipix.org/cgit.cgi/slibtool
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     devel
+
+name=slibtool
+version=2191ff0d40a2bd3db55873b38fd961f888c3cd5f
+release=1
+options=('bootstrap' '~ccache')
+source=("https://github.com/midipix-project/slibtool/archive/$version.tar.gz"
+	"https://raw.githubusercontent.com/ataraxialinux/storage/master/ltmain.sh")
+#source=("http://midipix.org/dl/$name/$name-$version.tar.xz"
+#	"https://raw.githubusercontent.com/ataraxialinux/storage/master/ltmain.sh")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $TOOLFLAGS \
+		--prefix=/usr \
+		--shell=sh
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf slibtool "$PKG"/usr/bin/libtool
+	mkdir -p "$PKG"/usr/share/libtoolize/AC_CONFIG_AUX_DIR \
+		"$PKG"/usr/share/libtoolize/AC_CONFIG_MACRO_DIRS \
+		"$PKG"/usr/share/aclocal/
+
+	for macros in ltversion.m4 libtool.m4 ltargz.m4 ltdl.m4 ltoptions.m4 ltsugar.m4 lt~obsolete.m4; do
+		install -Dm0644 "$STUFF"/slibtool/$macros "$PKG"/usr/share/aclocal/$macros
+		install -Dm0644 "$STUFF"/slibtool/$macros "$PKG"/usr/share/libtoolize/AC_CONFIG_MACRO_DIRS/$macros
+	done
+
+	for aux in compile depcomp install-sh missing; do
+		install -Dm0755 "$STUFF"/slibtool/$aux "$PKG"/usr/share/libtoolize/AC_CONFIG_AUX_DIR/$aux
+	done
+	install -Dm0755 "$SRC"/ltmain.sh "$PKG"/usr/share/libtoolize/AC_CONFIG_AUX_DIR/ltmain.sh
+
+	install -Dm0755 "$STUFF"/config.sub "$PKG"/usr/share/libtoolize/AC_CONFIG_AUX_DIR/config.sub
+	install -Dm0755 "$STUFF"/config.guess "$PKG"/usr/share/libtoolize/AC_CONFIG_AUX_DIR/config.guess
+
+	install -Dm0755 "$STUFF"/slibtool/libtoolize "$PKG"/usr/bin/libtoolize
+	sed -i "s,uncom_sysroot,/usr,g" "$PKG"/usr/bin/libtoolize
+}
