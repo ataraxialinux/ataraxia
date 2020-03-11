@@ -1,26 +1,67 @@
-From 67f196c1896e3792935d91f85ec287e02773ce7b Mon Sep 17 00:00:00 2001
+From 879e9f20ead61fc74431ff7168c073d17abb6ca3 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 20 Feb 2020 23:12:37 +0900
+Date: Thu, 12 Mar 2020 02:20:26 +0900
 Subject: [PATCH] musl
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
+ src/gallium/drivers/panfrost/pan_bo.h        | 1 +
  src/gallium/state_trackers/nine/nine_debug.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ src/gallium/winsys/svga/drm/vmw_screen.h     | 2 +-
+ src/util/rand_xor.c                          | 2 ++
+ 4 files changed, 5 insertions(+), 2 deletions(-)
 
+diff --git a/src/gallium/drivers/panfrost/pan_bo.h b/src/gallium/drivers/panfrost/pan_bo.h
+index 414c356..128f733 100644
+--- a/src/gallium/drivers/panfrost/pan_bo.h
++++ b/src/gallium/drivers/panfrost/pan_bo.h
+@@ -26,6 +26,7 @@
+ #ifndef __PAN_BO_H__
+ #define __PAN_BO_H__
+ 
++#include <time.h>
+ #include <panfrost-misc.h>
+ #include "pipe/p_state.h"
+ #include "util/list.h"
 diff --git a/src/gallium/state_trackers/nine/nine_debug.c b/src/gallium/state_trackers/nine/nine_debug.c
-index 784d535..79317d4 100644
+index 784d535..88978d2 100644
 --- a/src/gallium/state_trackers/nine/nine_debug.c
 +++ b/src/gallium/state_trackers/nine/nine_debug.c
-@@ -72,7 +72,7 @@ _nine_debug_printf( unsigned long flag,
-         dbg_flags |= debug_get_flags_option("NINE_DEBUG", nine_debug_flags, 0);
-     }
+@@ -65,7 +65,7 @@ _nine_debug_printf( unsigned long flag,
+ {
+     static boolean first = TRUE;
+     static unsigned long dbg_flags = DBG_ERROR | DBG_WARN;
+-    unsigned long tid = 0;
++    pthread_t tid tid = 0;
  
--#if defined(HAVE_PTHREAD)
-+#if defined(HAVE_PTHREAD) && defined(__GLIBC__)
-     if (dbg_flags & DBG_TID)
-         tid = pthread_self();
- #endif
+     if (first) {
+         first = FALSE;
+diff --git a/src/gallium/winsys/svga/drm/vmw_screen.h b/src/gallium/winsys/svga/drm/vmw_screen.h
+index c55de4a..c2ac659 100644
+--- a/src/gallium/winsys/svga/drm/vmw_screen.h
++++ b/src/gallium/winsys/svga/drm/vmw_screen.h
+@@ -34,7 +34,7 @@
+ #ifndef VMW_SCREEN_H_
+ #define VMW_SCREEN_H_
+ 
+-
++#include <sys/stat.h>
+ #include "pipe/p_compiler.h"
+ #include "pipe/p_state.h"
+ 
+diff --git a/src/util/rand_xor.c b/src/util/rand_xor.c
+index de04bbc..08d507f 100644
+--- a/src/util/rand_xor.c
++++ b/src/util/rand_xor.c
+@@ -24,6 +24,8 @@
+ 
+ #if defined(__linux__)
+ #include <sys/file.h>
++#include <sys/types.h>
++#include <sys/stat.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+ #else
 -- 
-2.25.1
+2.24.1
 
