@@ -1,15 +1,19 @@
 # Description: A Linux port of OpenBSD's ksh
 # URL:         https://github.com/dimkr/loksh/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson
 # Section:     shells
 
 name=loksh
 version=6.6
-release=1
+release=2
 source=("https://github.com/dimkr/loksh/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	make
-	make BIN_DIR=/usr/bin MAN_DIR=/usr/share/man DOC_DIR=/usr/share/doc/loksh DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
 }
