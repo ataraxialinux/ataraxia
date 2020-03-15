@@ -7,13 +7,17 @@
 
 name=perl
 version=5.30.2
-crossver=55ebdbcae0552c919c8a9d24a618c498281fcb2d
+crossver=1106975d099317163dccb701a2ad89beb52bb96a
 release=1
 options=('bootstrap')
 source=("https://www.cpan.org/src/5.0/$name-$version.tar.xz"
 	"https://github.com/arsv/perl-cross/archive/$crossver.tar.gz")
 
 build() {
+	unset CFLAGS CXXFLAGS
+	export CFLAGS="-g0 -Os -s -pipe"
+	export CXXFLAGS="$CFLAGS"
+
 	cd "$SRC"
 	cp -f -r perl-cross-$crossver/* $name-$version/
 
