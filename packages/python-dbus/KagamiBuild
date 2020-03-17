@@ -1,0 +1,19 @@
+# Description: Python bindings for DBUS
+# URL:         https://www.freedesktop.org/wiki/Software/DBusBindings
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python-setuptools glib dbus
+# Section:     python
+
+name=python-dbus
+version=1.2.16
+release=1
+source=("https://dbus.freedesktop.org/releases/dbus-python/dbus-python-$version.tar.gz")
+
+build() {
+	cd "$SRC"/dbus-python-$version
+	PYTHON=/usr/bin/python3 \
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
