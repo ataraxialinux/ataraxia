@@ -1,0 +1,25 @@
+# Description: Cross-platform C libraries that allow you to easily implement VNC server or client functionality
+# URL:         https://libvnc.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja sdl2 libpng libjpeg-tubro gnutls libgcrypt libressl libnsl
+# Section:     utils
+
+name=libvncserver
+version=0.9.12
+release=1
+source=("https://github.com/LibVNC/libvncserver/archive/LibVNCServer-$version.tar.gz")
+
+build() {
+	cd "$SRC"/libvncserver-LibVNCServer-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/libvncserver-LibVNCServer-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-DWITH_SYSTEMD=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

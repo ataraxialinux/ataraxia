@@ -1,0 +1,28 @@
+# Description: Remote desktop client written in GTK+
+# URL:         https://www.remmina.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja freerdp libvncserver telepathy-glib libgcrypt libsodium
+# Section:     admin
+
+name=remmina
+version=1.4.1
+release=1
+source=("https://gitlab.com/Remmina/Remmina/-/archive/v${version/rc/-rc}/Remmina-v${version/rc/-rc}.tar.bz2")
+
+build() {
+	cd "$SRC"/Remmina-v${version/rc/-rc}
+	mkdir -p build
+	cd build
+	cmake "$SRC"/Remmina-v${version/rc/-rc} \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_APPINDICATOR=OFF \
+		-DWITH_AVAHI=OFF \
+		-DWITH_LIBSSH=OFF \
+		-DWITH_SPICE=OFF \
+		-DWITH_VTE=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
