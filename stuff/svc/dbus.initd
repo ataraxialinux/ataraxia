@@ -17,9 +17,8 @@ depend() {
 }
 
 start_pre() {
-	rm -rf /var/lib/dbus/machine-id /etc/machine-id
-	touch /var/lib/dbus/machine-id /etc/machine-id
-	chmod 0600 /var/lib/dbus/machine-id /etc/machine-id
+	rm -rf /var/lib/dbus/machine-id
+	dbus-uuidgen --ensure
 
 	# We need to test if /run/dbus exists, since script will fail if it does not
 	checkpath -q -d /run/dbus
@@ -27,7 +26,7 @@ start_pre() {
 
 stop_post() {
 	[ ! -S "${dbus_socket}" ] || rm -f "${dbus_socket}"
-	rm -rf /var/lib/dbus/machine-id /etc/machine-id
+	rm -rf /var/lib/dbus/machine-id
 }
 
 reload() {
