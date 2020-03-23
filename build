@@ -49,6 +49,7 @@ if [ "$USE_TARGET" = "1" ]; then
 		export TOOLS="$TOOLS"
 		export PKGDEST="$PACKAGES"
 		export SRCDEST="$SOURCES"
+		export CPPFLAGS="$CPPFLAGS"
 		export CFLAGS="$CFLAGS"
 		export CXXFLAGS="$CXXFLAGS"
 		export XHOST="$XHOST"
@@ -84,6 +85,7 @@ elif [ "$USE_HOST" = "1" ]; then
 		export TOOLS="$TOOLS"
 		export PKGDEST="$PACKAGES"
 		export SRCDEST="$SOURCES"
+		export CPPFLAGS="$CPPFLAGS"
 		export CFLAGS="$CFLAGS"
 		export CXXFLAGS="$CXXFLAGS"
 		export XHOST="$XHOST"
@@ -187,8 +189,11 @@ setup_environment() {
 
 	export MKOPTS="-j$JOBS"
 
+	if [ -z "$CPPFLAGS" ]; then
+		export CPPFLAGS="-D_FORTIFY_SOURCE=2"
+	fi
 	if [ -z "$CFLAGS" ]; then
-		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fdata-sections -ffunction-sections -fstack-clash-protection -fstack-protector-strong -Wl,-z,relro,-z,now -Wl,--as-needed -pipe"
+		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fdata-sections -ffunction-sections -fstack-clash-protection -fstack-protector-strong -fcf-protection -Wl,-z,relro,-z,now -Wl,--as-needed -pipe"
 	fi
 	if [ -z "$CXXFLAGS" ]; then
 		export CXXFLAGS="$CFLAGS"
@@ -222,10 +227,10 @@ build_toolchain() {
 	esac
 
 	for toolchain in rpm base-files file gettext-tiny m4 bison \
-			flex bc ncurses kmod gperf linux-headers binutils gcc-static musl gcc \
+			flex bc ncurses kmod gperf fortify-headers linux-headers binutils gcc-static musl gcc \
 			$EXTRAPKG slibtool autoconf automake cracklib pkgconf; do
 		case $toolchain in
-			base-files|linux-headers)
+			base-files|fortify-headers|linux-headers)
 				neko em -c "$BUILD"/host.config -r "$ROOTFS" -wnd ${toolchain}
 				;;
 			musl)

@@ -11,6 +11,8 @@ source=("https://github.com/strace/strace/releases/download/v$version/$name-$ver
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/strace/disable-fortify.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-mpers
