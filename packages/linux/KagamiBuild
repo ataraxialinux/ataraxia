@@ -788,7 +788,7 @@ generate_config() {
 	nconfig SENSORS_I5K_AMBDS1682
 
 	# Security
-	yconfig SECURITY SECURITYFS SECURITY_PATH SECURITY_NETWORK SECURITY_TOMOYO SECURITY_YAMA GCC_PLUGINS \
+	yconfig SECURITY SECURITYFS SECURITY_PATH SECURITY_NETWORK SECURITY_TOMOYO SECURITY_YAMA SECURITY_TPE GCC_PLUGINS \
 		SCHED_STACK_END_CHECK SLAB_FREELIST_HARDENED GCC_PLUGIN_RANDSTRUCT GCC_PLUGIN_LATENT_ENTROPY \
 		DEBUG_SG DEBUG_CREDENTIALS DEBUG_NOTIFIERS MODULE_SIG_SHA512 MODULE_SIG_FORCE INIT_STACK_ALL \
 		INIT_ON_ALLOC_DEFAULT_ON INIT_ON_FREE_DEFAULT_ON GCC_PLUGIN_STACKLEAK DEBUG_VIRTUAL STATIC_USERMODEHELPER \
@@ -868,6 +868,7 @@ build() {
 	patch -Np1 -i "$STUFF"/linux/0003-scsi.patch
 	patch -Np1 -i "$STUFF"/linux/0008-add-zstd-kernel-compression.patch
 	patch -Np1 -i "$STUFF"/linux/0009-add-zstd-compressed-modules.patch
+	patch -Np1 -i "$STUFF"/linux/0010-Add-Trusted-Path-Execution.patch
 
 	sed -i 's|return elevator_get(q, "mq-deadline", false);|return elevator_get(q, "bfq", false);|' block/elevator.c
 

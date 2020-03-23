@@ -1,0 +1,1378 @@
+From c146b1643a41b399497ec594ed62cb0121685ab4 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 23 Mar 2020 23:22:59 +0900
+Subject: [PATCH] Add Trusted Path Execution (TPE) Linux Kernel Module, Version
+ 2
+
+version 2.0.4
+
+ADOPTED FROM THIS: https://github.com/cormander/tpe-lkm
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ security/Kconfig          |   1 +
+ security/Makefile         |   1 +
+ security/tpe/Kconfig      |  11 ++
+ security/tpe/Makefile     |   7 +
+ security/tpe/fopskit.c    | 338 ++++++++++++++++++++++++++++++++++++++
+ security/tpe/fopskit.h    | 103 ++++++++++++
+ security/tpe/tpe.h        |  82 +++++++++
+ security/tpe/tpe_config.c | 267 ++++++++++++++++++++++++++++++
+ security/tpe/tpe_core.c   | 216 ++++++++++++++++++++++++
+ security/tpe/tpe_module.c | 250 ++++++++++++++++++++++++++++
+ 10 files changed, 1276 insertions(+)
+ create mode 100644 security/tpe/Kconfig
+ create mode 100644 security/tpe/Makefile
+ create mode 100644 security/tpe/fopskit.c
+ create mode 100644 security/tpe/fopskit.h
+ create mode 100644 security/tpe/tpe.h
+ create mode 100644 security/tpe/tpe_config.c
+ create mode 100644 security/tpe/tpe_core.c
+ create mode 100644 security/tpe/tpe_module.c
+
+diff --git a/security/Kconfig b/security/Kconfig
+index 2a1a2d3962281..41928bcecc95d 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -236,6 +236,7 @@ source "security/tomoyo/Kconfig"
+ source "security/apparmor/Kconfig"
+ source "security/loadpin/Kconfig"
+ source "security/yama/Kconfig"
++source "security/tpe/Kconfig"
+ source "security/safesetid/Kconfig"
+ source "security/lockdown/Kconfig"
+ 
+diff --git a/security/Makefile b/security/Makefile
+index be1dd9d2cb2fb..936d181b0cbc3 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_AUDIT)			+= lsm_audit.o
+ obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
+ obj-$(CONFIG_SECURITY_YAMA)		+= yama/
++obj-$(CONFIG_SECURITY_TPE)		+= tpe/
+ obj-$(CONFIG_SECURITY_LOADPIN)		+= loadpin/
+ obj-$(CONFIG_SECURITY_SAFESETID)       += safesetid/
+ obj-$(CONFIG_SECURITY_LOCKDOWN_LSM)	+= lockdown/
+diff --git a/security/tpe/Kconfig b/security/tpe/Kconfig
+new file mode 100644
+index 0000000000000..321f6df5df947
+--- /dev/null
++++ b/security/tpe/Kconfig
+@@ -0,0 +1,11 @@
++# SPDX-License-Identifier: GPL-2.0-only
++config SECURITY_TPE
++	bool "Trusted Path Execution"
++	depends on SECURITY
++	select FUNCTION_TRACER
++	default y
++	help
++	  Trusted Path Execution is a security feature that denies users from executing
++	  programs that are not owned by root, or are writable. This closes the door on a
++	  whole category of exploits where a malicious user tries to execute his or her
++	  own code to attack the system.
+diff --git a/security/tpe/Makefile b/security/tpe/Makefile
+new file mode 100644
+index 0000000000000..cd9ab5c985997
+--- /dev/null
++++ b/security/tpe/Makefile
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: GPL-2.0-only
++obj-$(CONFIG_SECURITY_TPE) += tpe.o
++
++tpe-y := fopskit.o \
++	tpe_core.o \
++	tpe_module.o \
++	tpe_config.o
+diff --git a/security/tpe/fopskit.c b/security/tpe/fopskit.c
+new file mode 100644
+index 0000000000000..5d61c8870bccf
+--- /dev/null
++++ b/security/tpe/fopskit.c
+@@ -0,0 +1,338 @@
++
++#include "fopskit.h"
++
++/* give each task a larger cred->security. must be called from stop_machine() */
++
++#define fopskit_remap_cred_security(cred, free) \
++	c = cred; \
++	old = c->security; \
++	if (old) { \
++		new = kmemdup(old, FOPSKIT_CRED_SIZE, GFP_KERNEL); \
++	} else { \
++		new = kzalloc(FOPSKIT_CRED_SIZE, GFP_KERNEL); \
++	} \
++	if (!new) return -ENOMEM; \
++	/* verify the kernel gave us a bigger memory area */ \
++	if (ksize(new) <= cred_sec_size) return -EFAULT; \
++	fopskit_cred_security_ptr(f, new); \
++	f->fopskit_flags = 0; \
++	c->security = new; \
++	if (free && old) kfree(old);
++
++/* use fopskit_init_cred_security() for stop_machine() and hooking of needed symbols */
++
++int __init fopskit_remap_all_cred_security(void *data) {
++	struct task_struct *g, *t, *init = &init_task;
++	struct cred *c;
++	struct fopskit_cred_security *f;
++	void *old, *new = 0;
++
++	/* remap init->cred->security, but don't free the old area */
++	fopskit_remap_cred_security((struct cred *)init->real_cred, 0);
++
++	do_each_thread(g, t) {
++
++		if (t->cred != t->real_cred) {
++			fopskit_remap_cred_security((struct cred *)t->real_cred, 1);
++		}
++
++		if (!new || new != t->cred->security) {
++			fopskit_remap_cred_security((struct cred *)t->cred, 1);
++		}
++
++	} while_each_thread(g, t);
++
++	fopskit_cred_remapped = true;
++
++	return 0;
++}
++
++/* return hooks */
++
++int fopskit_ok(void) { return 0; }
++int fopskit_eperm(void) { return -EPERM; }
++int fopskit_eacces(void) { return -EACCES; }
++int fopskit_enomem(void) { return -ENOMEM; }
++
++/* user defined way to add code to functions fopskit needs to hook */
++
++struct fops_cred_handler *cred_hook_code;
++
++/* give more memory to the cred->security */
++
++fopskit_hook_handler(security_prepare_creds) {
++	struct cred *new = (struct cred *) REGS_ARG1;
++	const struct cred *old = (const struct cred *) REGS_ARG2;
++	gfp_t gfp = (gfp_t) REGS_ARG3;
++
++	const void *old_sec;
++	void *sec;
++
++	if (!fopskit_cred_remapped) return;
++
++	old_sec = old->security;
++
++	sec = kmemdup(old_sec, FOPSKIT_CRED_SIZE, gfp);
++
++	if (!sec) {
++		fopskit_return(fopskit_enomem);
++	}
++
++	new->security = sec;
++
++	if (cred_hook_code->security_prepare_creds)
++		if (IN_ERR(cred_hook_code->security_prepare_creds(new, old, gfp)))
++			fopskit_return(fopskit_eperm);
++
++	fopskit_return(fopskit_ok);
++}
++
++fopskit_hook_handler(security_cred_alloc_blank) {
++	struct cred *cred = (struct cred *) REGS_ARG1;
++	gfp_t gfp = REGS_ARG2;
++	void *sec;
++
++	if (!fopskit_cred_remapped) return;
++
++	sec = kzalloc(FOPSKIT_CRED_SIZE, gfp);
++
++	if (!sec) {
++		fopskit_return(fopskit_enomem);
++	}
++
++	cred->security = sec;
++
++	if (cred_hook_code->security_cred_alloc_blank)
++		if (IN_ERR(cred_hook_code->security_cred_alloc_blank(cred, gfp)))
++			fopskit_return(fopskit_eperm);
++
++	fopskit_return(fopskit_ok);
++}
++
++/* prevent faults by locking ftrace_enabled */
++
++fopskit_hook_handler(proc_sys_write) {
++	char filename[255], *f;
++	struct file *file = (struct file *)REGS_ARG1;
++
++	f = d_path(&file->f_path, filename, 255);
++
++	if (!IS_ERR(f) && !strcmp("/proc/sys/kernel/ftrace_enabled", f))
++		fopskit_return(fopskit_eperm);
++
++	if (cred_hook_code->proc_sys_write)
++		if (IN_ERR(cred_hook_code->proc_sys_write(file)))
++			fopskit_return(fopskit_eperm);
++}
++
++/* our use of cred->security requires hooking these functions */
++
++static struct fops_hook fopskit_cred_hooks[] = {
++	fops_hook_val(security_prepare_creds),
++	fops_hook_val(security_cred_alloc_blank),
++	fops_hook_val(proc_sys_write),
++};
++
++/* init fopskit use of cred->security */
++
++static void *init_sec;
++size_t cred_sec_size = 0;
++bool fopskit_cred_remapped = false;
++
++int __init fopskit_init_cred_security(struct fops_cred_handler *h) {
++	struct task_struct *init = &init_task;
++	int i, ret;
++
++	cred_hook_code = h;
++
++	fopskit_hook_list(fopskit_cred_hooks, 1);
++
++	/* remapping cred->security has only been tested by the author when SELinux is the chosen lsm
++	 * it's up to the caller of fopskit to decide how to handle this, based on fopskit_cred_remapped */
++	if (fopskit_sym_int("selinux_enabled") == 1 || fopskit_sym_int("selinux_disabled") == 1) {
++
++		/* remapping cred->security is only safe if ftrace is enabled */
++		if (fopskit_sym_int("ftrace_enabled") != 1) {
++			printk("fopskit: unable to insert module, ftrace is not enabled.\n");
++			return -ENOSYS;
++		}
++
++		/* save off init->cred->security */
++		init_sec = init->cred->security;
++
++		/* store the size of the memory area of cred->security */
++		if (init->cred->security)
++			cred_sec_size = ksize(init->cred->security);
++
++		ret = stop_machine(fopskit_remap_all_cred_security, (void *) NULL, NULL);
++
++		if (IN_ERR(ret)) {
++			printk("fopskit: stop_machine() failed with return code %d at %s() line %d\n", 
++				ret, __FUNCTION__, __LINE__);
++			goto out_err;
++		}
++	}
++
++	out_err:
++
++	return ret;
++}
++
++/* goodbye! */
++
++void fopskit_exit(int ret) {
++	struct task_struct *init = &init_task;
++	struct cred *ic = (struct cred *) init->real_cred;
++	int i;
++
++	fopskit_unhook_list(fopskit_cred_hooks);
++
++	if (!fopskit_cred_remapped) return;
++
++	/* only free init's cred->security if we aren't bailing out with an error */
++	if (!IN_ERR(ret) && ic->security) kfree(ic->security);
++
++	/* restore original init->cred->security so we can load this module again later */
++	ic->security = init_sec;
++}
++
++/* callback for fopskit_find_sym_addr */
++
++static int __init fopskit_find_sym_callback(struct fops_hook *hook, const char *name, struct module *mod,
++	unsigned long addr) {
++
++	if (hook->found)
++		return 1;
++
++	/* this symbol was found. the next callback will be the address of the next symbol */
++	if (name && hook->name && !strcmp(name, hook->name)) {
++		hook->addr = (unsigned long *)addr;
++		hook->found = true;
++	}
++
++	return 0;
++}
++
++/* find this symbol */
++
++static int __init fopskit_find_sym_addr(struct fops_hook *hook) {
++
++	hook->found = false;
++
++	if (!kallsyms_on_each_symbol((void *)fopskit_find_sym_callback, hook)) {
++		fops_hook_error("fopskit_find_sym_addr", -EFAULT, hook);
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++/* hook this symbol */
++
++int __init fopskit_sym_hook(struct fops_hook *hook) {
++	int ret;
++
++	ret = fopskit_find_sym_addr(hook);
++
++	if (IN_ERR(ret))
++		return ret;
++
++	preempt_disable_notrace();
++
++	ret = ftrace_set_filter_ip(hook->fops, (unsigned long) hook->addr, 0, 0);
++
++	if (IN_ERR(ret)) {
++		fops_hook_error("ftrace_set_filter_ip", ret, hook);
++		return ret;
++	}
++
++	ret = register_ftrace_function(hook->fops);
++
++	if (IN_ERR(ret)) {
++		fops_hook_error("register_ftrace_function", ret, hook);
++		return ret;
++	}
++
++	hook->hooked = true;
++
++	preempt_enable_notrace();
++
++	return 0;
++}
++
++/* unhook this symbol */
++
++int fopskit_sym_unhook(struct fops_hook *hook) {
++	int ret;
++
++	if (hook->hooked) {
++
++		preempt_disable_notrace();
++
++		ret = unregister_ftrace_function(hook->fops);
++
++		if (IN_ERR(ret)) {
++			fops_hook_error("unregister_ftrace_function", ret, hook);
++			return ret;
++		}
++
++		ret = ftrace_set_filter_ip(hook->fops, (unsigned long) hook->addr, 1, 0);
++
++		if (IN_ERR(ret)) {
++			fops_hook_error("ftrace_set_filter_ip", ret, hook);
++			return ret;
++		}
++
++		hook->hooked = false;
++
++		preempt_enable_notrace();
++	}
++
++	return 0;
++}
++
++/* find int value of this symbol */
++
++int __init fopskit_sym_int(char *name) {
++	static struct ftrace_ops fops_int;
++	struct fops_hook hook_int = {name, NULL, false, false, &fops_int};
++	int ret;
++
++	ret = fopskit_find_sym_addr(&hook_int);
++
++	if (IN_ERR(ret))
++		return -EFAULT;
++
++	return *((int *)hook_int.addr);
++}
++
++/* find string value of this symbol */
++
++char __init *fopskit_sym_str(char *name) {
++	static struct ftrace_ops fops_str;
++	struct fops_hook hook_str = {name, NULL, false, false, &fops_str};
++	int ret;
++
++	ret = fopskit_find_sym_addr(&hook_str);
++
++	if (IN_ERR(ret))
++		return '\0';
++
++	return (char *)hook_str.addr;
++}
++
++/* find the address of this symbol */
++
++void __init *fopskit_sym_ptr(char *name) {
++	static struct ftrace_ops fops_ptr;
++	struct fops_hook hook_ptr = {name, NULL, false, false, &fops_ptr};
++	int ret;
++
++	ret = fopskit_find_sym_addr(&hook_ptr);
++
++	if (IN_ERR(ret))
++		return NULL;
++
++	return hook_ptr.addr;
++}
++
+diff --git a/security/tpe/fopskit.h b/security/tpe/fopskit.h
+new file mode 100644
+index 0000000000000..05f43a64ff05d
+--- /dev/null
++++ b/security/tpe/fopskit.h
+@@ -0,0 +1,103 @@
++#ifndef FOPSKIT_H_INCLUDED
++#define FOPSKIT_H_INCLUDED
++
++#include <linux/ftrace.h>
++#include <linux/stop_machine.h>
++#include <linux/slab.h>
++
++#ifdef CONFIG_X86_64
++#define REGS_ARG1 regs->di
++#define REGS_ARG2 regs->si
++#define REGS_ARG3 regs->dx
++#else
++#error "Arch not currently supported."
++#endif
++
++#ifndef CONFIG_SECURITY
++#error "This module requires CONFIG_SECURITY to be enabled"
++#endif
++
++#ifndef CONFIG_FUNCTION_TRACER
++#error "This module requires CONFIG_FUNCTION_TRACER to be enabled"
++#endif
++
++struct fops_hook {
++	char *name;
++	void *addr;
++	bool found;
++	bool hooked;
++	struct ftrace_ops *fops;
++};
++
++struct fops_cred_handler {
++	int (*proc_sys_write)(struct file *);
++	int (*security_prepare_creds)(struct cred *, const struct cred *, gfp_t);
++	int (*security_cred_alloc_blank)(struct cred *, gfp_t);
++};
++
++#define fopskit_return(func) {regs->ip = (unsigned long)func; return;}
++
++#define fops_hook_val(val) \
++	{#val, NULL, false, false, &fops_##val}
++
++#define fopskit_hook_handler(val) \
++	static void notrace fopskit_##val(unsigned long, unsigned long, \
++		struct ftrace_ops *, struct pt_regs *); \
++	static struct ftrace_ops fops_##val __read_mostly = { \
++		.func = fopskit_##val, \
++		.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY, \
++	}; \
++	static void notrace fopskit_##val(unsigned long ip, unsigned long parent_ip, \
++		struct ftrace_ops *fops, struct pt_regs *regs)
++
++#define IN_ERR(x) (x < 0)
++
++int fopskit_ok(void);
++int fopskit_eperm(void);
++int fopskit_eacces(void);
++int fopskit_enomem(void);
++int fopskit_sym_hook(struct fops_hook *);
++int fopskit_sym_unhook(struct fops_hook *);
++int fopskit_sym_int(char *);
++char *fopskit_sym_str(char *);
++void *fopskit_sym_ptr(char *);
++
++#define fops_hook_error(func, ret, fops) printk("fopskit: %s() failed with return code %d for fops_hook { name => %s, addr => %lx, found => %d, hooked => %d } at %s() line %d\n", \
++	func, ret, fops->name, (unsigned long)fops->addr, fops->found, fops->hooked, __FUNCTION__, __LINE__)
++
++#define fopskit_hook_list(hooks, val) \
++	for (i = 0; i < ARRAY_SIZE(hooks); i++) { \
++		ret = fopskit_sym_hook(&hooks[i]); \
++		if (IN_ERR(ret)) { \
++			if (val) { \
++				printk("fopskit: returning error %d to module_init because symbol \"%s\" is marked as required\n", ret, hooks[i].name); \
++				goto out_err; \
++			} \
++		} \
++	}
++
++#define fopskit_unhook_list(hooks) \
++	for (i = 0; i < ARRAY_SIZE(hooks); i++) { \
++		fopskit_sym_unhook(&hooks[i]); \
++	}
++
++extern bool fopskit_cred_remapped;
++extern size_t cred_sec_size;
++
++int fopskit_init_cred_security(struct fops_cred_handler *);
++void fopskit_exit(int);
++
++/* this struct occupies the appended memory area of a task's cred->security
++ * change this to your heart's desire; just use the fopskit_cred_security_ptr() macro to access it */
++
++struct fopskit_cred_security {
++	unsigned long fopskit_flags;
++};
++
++/* roll a pointer forward to the fopskit_cred_security struct area of the given cred->security pointer */
++#define fopskit_cred_security_ptr(ptr, tsec) ptr = (struct fopskit_cred_security *) tsec+(cred_sec_size/sizeof(void *))
++
++#define FOPSKIT_CRED_SIZE (cred_sec_size+sizeof(struct fopskit_cred_security))
++
++#endif
++
+diff --git a/security/tpe/tpe.h b/security/tpe/tpe.h
+new file mode 100644
+index 0000000000000..2205389c0e526
+--- /dev/null
++++ b/security/tpe/tpe.h
+@@ -0,0 +1,82 @@
++#ifndef TPE_H_INCLUDED
++#define TPE_H_INCLUDED
++
++#include <linux/module.h>
++#include <linux/file.h>
++#include <linux/mman.h>
++#include <linux/binfmts.h>
++#include <linux/cred.h>
++#include <linux/xattr.h>
++#include <linux/fs.h>
++#include <linux/jiffies.h>
++#include <linux/sysctl.h>
++#include <linux/version.h>
++
++#define PKPRE "tpe: "
++#define MAX_FILE_LEN 255
++#define TPE_PATH_LEN 1024
++
++#define TPE_LOG_FLOODTIME 5
++#define TPE_LOG_FLOODBURST 5
++
++#define IN_ERR(x) (x < 0)
++
++#define get_task_uid(task) __kuid_val(task->cred->uid)
++#define get_task_parent(task) task->real_parent
++
++#define tpe_d_path(file, buf, len) d_path(&file->f_path, buf, len);
++
++#define get_dentry(file) file->f_path.dentry
++#define get_inode(file) get_dentry(file)->d_inode
++#define get_parent_inode(file) file->f_path.dentry->d_parent->d_inode;
++#define exe_from_mm(mm, buf, len) tpe_d_path(mm->exe_file, buf, len)
++
++#define UID_IS_TRUSTED(uid) \
++	((uid == 0 && !tpe_paranoid) || \
++	(!tpe_trusted_invert && tpe_trusted_gid && in_group_p(KGIDT_INIT(tpe_trusted_gid)) && !tpe_strict) || \
++	(tpe_trusted_invert && !in_group_p(KGIDT_INIT(tpe_trusted_gid))))
++
++#define INODE_IS_WRITABLE(inode) ((inode->i_mode & S_IWOTH) || (tpe_group_writable && inode->i_mode & S_IWGRP))
++#define INODE_IS_TRUSTED(inode) \
++	(__kuid_val(inode->i_uid) == 0 || \
++	(tpe_admin_gid && __kgid_val(inode->i_gid) == tpe_admin_gid) || \
++	(__kuid_val(inode->i_uid) == get_task_uid(current) && !tpe_trusted_invert && tpe_trusted_gid && in_group_p(KGIDT_INIT(tpe_trusted_gid))))
++
++/* tpe prototypes */
++int tpe_allow_file(const struct file *, const char *);
++int tpe_file_getfattr(const struct file *, const char *);
++int tpe_log_denied_action(const struct file *, const char *, const char *, int, int);
++int tpe_config_init(void);
++void tpe_config_exit(void);
++
++/* sysctl entries for configuration */
++extern int tpe_softmode;
++extern int tpe_xattr_soften;
++extern int tpe_trusted_gid;
++extern int tpe_trusted_invert;
++extern int tpe_admin_gid;
++extern int tpe_dmz_gid;
++extern int tpe_strict;
++extern int tpe_check_file;
++extern int tpe_group_writable;
++extern int tpe_paranoid;
++extern char tpe_trusted_apps[];
++extern char tpe_hardcoded_path[];
++extern int tpe_kill;
++extern int tpe_log;
++extern int tpe_log_verbose;
++extern int tpe_log_max;
++extern int tpe_log_floodtime;
++extern int tpe_log_floodburst;
++extern int tpe_lock;
++extern int tpe_lsmod;
++extern int tpe_proc_kallsyms;
++extern int tpe_harden_ptrace;
++extern int tpe_hide_uname;
++extern int tpe_extras_ignore_softmode;
++extern int tpe_extras_log;
++extern int tpe_ps;
++extern int tpe_ps_gid;
++extern int tpe_restrict_setuid;
++
++#endif
+diff --git a/security/tpe/tpe_config.c b/security/tpe/tpe_config.c
+new file mode 100644
+index 0000000000000..5285d961711b4
+--- /dev/null
++++ b/security/tpe/tpe_config.c
+@@ -0,0 +1,267 @@
++
++#include "tpe.h"
++
++int tpe_softmode = 0;
++int tpe_xattr_soften = 1;
++int tpe_trusted_gid = 0;
++int tpe_trusted_invert = 0;
++int tpe_admin_gid = 0;
++int tpe_dmz_gid = 0;
++int tpe_strict = 1;
++int tpe_check_file = 1;
++int tpe_group_writable = 1;
++int tpe_paranoid = 0;
++char tpe_trusted_apps[TPE_PATH_LEN] = "";
++char tpe_hardcoded_path[TPE_PATH_LEN] = "";
++int tpe_kill = 0;
++int tpe_log = 1;
++int tpe_log_verbose = 1;
++int tpe_log_max = 50;
++int tpe_log_floodtime = TPE_LOG_FLOODTIME;
++int tpe_log_floodburst = TPE_LOG_FLOODBURST;
++int tpe_lock = 0;
++
++int tpe_extras_ignore_softmode = 0;
++int tpe_extras_log = 1;
++int tpe_ps = 0;
++int tpe_ps_gid = 0;
++int tpe_restrict_setuid = 0;
++int tpe_lsmod = 1;
++int tpe_proc_kallsyms = 1;
++int tpe_harden_ptrace = 1;
++int tpe_hide_uname = 0;
++
++static struct ctl_table tpe_extras_table[] = {
++	{
++		.procname	= "ignore_softmode",
++		.data		= &tpe_extras_ignore_softmode,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "log",
++		.data		= &tpe_extras_log,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "ps",
++		.data		= &tpe_ps,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "ps_gid",
++		.data		= &tpe_ps_gid,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "restrict_setuid",
++		.data		= &tpe_restrict_setuid,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "lsmod",
++		.data		= &tpe_lsmod,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "proc_kallsyms",
++		.data		= &tpe_proc_kallsyms,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "harden_ptrace",
++		.data		= &tpe_harden_ptrace,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "hide_uname",
++		.data		= &tpe_hide_uname,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{}
++};
++
++static struct ctl_table tpe_table[] = {
++	{
++		.procname	= "softmode",
++		.data		= &tpe_softmode,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "xattr_soften",
++		.data		= &tpe_xattr_soften,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "trusted_gid",
++		.data		= &tpe_trusted_gid,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "trusted_invert",
++		.data		= &tpe_trusted_invert,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "admin_gid",
++		.data		= &tpe_admin_gid,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "dmz_gid",
++		.data		= &tpe_dmz_gid,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "strict",
++		.data		= &tpe_strict,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "check_file",
++		.data		= &tpe_check_file,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "group_writable",
++		.data		= &tpe_group_writable,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "paranoid",
++		.data		= &tpe_paranoid,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "trusted_apps",
++		.data	 	= &tpe_trusted_apps,
++		.maxlen		= TPE_PATH_LEN,
++		.mode		= 0644,
++		.proc_handler	= &proc_dostring,
++	},
++	{
++		.procname	= "hardcoded_path",
++		.data		= &tpe_hardcoded_path,
++		.maxlen	 	= TPE_PATH_LEN,
++		.mode	 	= 0644,
++		.proc_handler	= &proc_dostring,
++	},
++	{
++		.procname	= "kill",
++		.data		= &tpe_kill,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "log",
++		.data		= &tpe_log,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "log_verbose",
++		.data		= &tpe_log_verbose,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "log_max",
++		.data		= &tpe_log_max,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "log_floodtime",
++		.data		= &tpe_log_floodtime,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "log_floodburst",
++		.data		= &tpe_log_floodburst,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "lock",
++		.data		= &tpe_lock,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= &proc_dointvec,
++	},
++	{
++		.procname	= "extras",
++		.mode		= 0500,
++		.child		= tpe_extras_table,
++	},
++	{}
++};
++
++static struct ctl_table tpe_root_table[] = {
++	{
++		.procname	= "tpe",
++		.mode		= 0500,
++		.child		= tpe_table,
++	},
++	{}
++};
++
++static struct ctl_table_header *tpe_table_header;
++
++int __init tpe_config_init(void) {
++	if (!(tpe_table_header = register_sysctl_table(tpe_root_table))) {
++		printk(PKPRE "Unable to register sysctl table with the kernel\n");
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++void __exit tpe_config_exit(void) {
++	if (tpe_table_header)
++		unregister_sysctl_table(tpe_table_header);
++}
++
+diff --git a/security/tpe/tpe_core.c b/security/tpe/tpe_core.c
+new file mode 100644
+index 0000000000000..142628450f191
+--- /dev/null
++++ b/security/tpe/tpe_core.c
+@@ -0,0 +1,216 @@
++
++#include "tpe.h"
++
++unsigned long tpe_alert_wtime = 0;
++unsigned long tpe_alert_fyet = 0;
++
++/* check if there's a security.tpe extended file attribute */
++
++int tpe_file_getfattr(const struct file *file, const char *method) {
++	char context[MAX_FILE_LEN], buffer[MAX_FILE_LEN], *b, *c;
++	char attr[MAX_FILE_LEN] = "soften_";
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
++	struct inode *inode = get_inode(file);
++#endif
++	int ret;
++
++	if (!tpe_xattr_soften) return 0;
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
++	ret = __vfs_getxattr(get_dentry(file), get_inode(file), "security.tpe", context, MAX_FILE_LEN);
++#else
++	/* verify getxattr is supported */
++	if (!inode->i_op->getxattr) return 0;
++
++	ret = inode->i_op->getxattr(get_dentry(file),
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0)
++		inode,
++#endif
++		"security.tpe", context, MAX_FILE_LEN);
++#endif
++
++	if (IN_ERR(ret))
++		return 0;
++
++	context[ret] = '\0';
++	strcat(attr, method);
++
++	b = buffer;
++	strncpy(b, context, MAX_FILE_LEN);
++
++	while ((c = strsep(&b, ":"))) {
++		if (!strncmp(c, attr, (int)strlen(c)))
++			return 1;
++	}
++
++	return 0;
++}
++
++/* check this task for the extended file attribute */
++
++static int tpe_getfattr_task(struct task_struct *task, const char *method) {
++
++	if (task && task->mm && task->mm->exe_file)
++		return tpe_file_getfattr(task->mm->exe_file, method);
++
++	return 0;
++}
++
++/* lookup pathnames and log that an exec was denied */
++
++int tpe_log_denied_action(const struct file *file, const char *method, const char *reason, int log, int softmode) {
++	char filename[MAX_FILE_LEN], buffer[MAX_FILE_LEN], *f, *b;
++	struct task_struct *parent, *task = get_task_parent(current);
++	int c = 0;
++
++	if (!log)
++		goto nolog;
++
++	/* rate-limit the tpe logging */
++	if (!tpe_alert_wtime || jiffies - tpe_alert_wtime > tpe_log_floodtime * HZ) {
++		tpe_alert_wtime = jiffies;
++		tpe_alert_fyet = 0;
++	} else if ((jiffies - tpe_alert_wtime < tpe_log_floodtime * HZ) && (tpe_alert_fyet < tpe_log_floodburst)) {
++		tpe_alert_fyet++;
++	} else if (tpe_alert_fyet == tpe_log_floodburst) {
++		tpe_alert_wtime = jiffies;
++		tpe_alert_fyet++;
++		printk(PKPRE "more alerts, logging disabled for %d seconds\n", tpe_log_floodtime);
++		goto nolog;
++	} else goto nolog;
++
++	f = tpe_d_path(file, filename, MAX_FILE_LEN);
++	b = exe_from_mm(current->mm, buffer, MAX_FILE_LEN);
++
++	printk(PKPRE "%s untrusted %s of %s (uid:%d) by %s (uid:%d), parents: ",
++		( softmode ? "Would deny" : "Denied" ),
++		method,
++		(!IS_ERR(f) ? f : "<d_path failed>"),
++		get_task_uid(current),
++		(!IS_ERR(b) ? b : "<d_path failed>"),
++		get_task_uid(current)
++	);
++
++	/* recursively walk the task's parent until we reach init */
++	walk:
++
++	if (task && task->mm) {
++		c++;
++
++		if (tpe_log_max && c > tpe_log_max) {
++			printk(KERN_CONT "tpe log_max %d reached", tpe_log_max);
++			goto walk_out;
++		}
++
++		parent = get_task_parent(task);
++
++		f = exe_from_mm(task->mm, filename, MAX_FILE_LEN);
++
++		printk(KERN_CONT "%s (uid:%d)", (!IS_ERR(f) ? f : "<d_path failed>"), get_task_uid(task));
++
++		if (parent && task->pid != 1) {
++			printk(KERN_CONT ", ");
++			task = parent;
++			goto walk;
++		}
++	}
++
++	/* if we get here on the first pass, there are no additional parents */
++	if (c == 0) {
++		printk(KERN_CONT "(none)");
++	}
++
++	walk_out:
++	printk(KERN_CONT ". Deny reason: %s\n", reason);
++
++	if (tpe_log_verbose) {
++		strcpy(buffer, "soften_");
++		strcat(buffer, method);
++
++		/* for exec calls, they also need mmap, and report the actual file itself */
++		if (!strcmp(method, "exec")) {
++			strcat(buffer, ":soften_mmap");
++			f = tpe_d_path(file, filename, MAX_FILE_LEN);
++		} else {
++			f = exe_from_mm(current->mm, filename, MAX_FILE_LEN);
++		}
++
++		printk(PKPRE "If this %s was legitimate and you cannot correct the behavior, an exception can be made to allow this by running; setfattr -n security.tpe -v \"%s\" %s. To silence this message, run; sysctl tpe.log_verbose = 0\n",
++			method, buffer, (!IS_ERR(f) ? f : "<d_path failed>"));
++	}
++
++	nolog:
++
++	return 1;
++}
++
++/* get down to business and check that this file is allowed to be executed */
++
++int tpe_allow_file(const struct file *file, const char *method) {
++	char filename[MAX_FILE_LEN], path[TPE_PATH_LEN], *f, *p, *c;
++	struct inode *inode;
++	int i;
++
++	if (tpe_dmz_gid && in_group_p(KGIDT_INIT(tpe_dmz_gid)))
++		return tpe_log_denied_action(file, method, "uid in dmz_gid", tpe_log, tpe_softmode);
++
++	if (tpe_file_getfattr(file, method) || tpe_getfattr_task(current, method))
++		return 0;
++
++	/* if user is not trusted, enforce the trusted path */
++	if (!UID_IS_TRUSTED(get_task_uid(current))) {
++
++		/* if trusted_apps is non-empty, allow exec if the task matches the full path */
++		if (strlen(tpe_trusted_apps)) {
++			p = path;
++			strncpy(p, tpe_trusted_apps, TPE_PATH_LEN);
++
++			f = tpe_d_path(file, filename, MAX_FILE_LEN);
++
++			while ((c = strsep(&p, ",")))
++				if (!IN_ERR(f) && !strcmp(c, f))
++					return 0;
++		}
++
++		/* if hardcoded_path is non-empty, deny exec if the file is outside of any of those directories */
++		if (strlen(tpe_hardcoded_path)) {
++			p = path;
++			strncpy(p, tpe_hardcoded_path, TPE_PATH_LEN);
++
++			f = tpe_d_path(file, filename, MAX_FILE_LEN);
++
++			while ((c = strsep(&p, ":"))) {
++				i = (int)strlen(c);
++				if (!IS_ERR(f) && !strncmp(c, f, i) && !strstr(&f[i+1], "/"))
++					return 0;
++			}
++
++			return tpe_log_denied_action(file, method, "outside of hardcoded_path", tpe_log, tpe_softmode);
++
++		}
++
++		inode = get_parent_inode(file);
++
++		if (!INODE_IS_TRUSTED(inode))
++			return tpe_log_denied_action(file, method, "directory uid not trusted", tpe_log, tpe_softmode);
++
++		if (INODE_IS_WRITABLE(inode))
++			return tpe_log_denied_action(file, method, "directory is writable", tpe_log, tpe_softmode);
++
++		if (tpe_check_file) {
++
++			inode = get_inode(file);
++
++			if (!INODE_IS_TRUSTED(inode))
++				return tpe_log_denied_action(file, method, "file uid not trusted", tpe_log, tpe_softmode);
++
++			if (INODE_IS_WRITABLE(inode))
++				return tpe_log_denied_action(file, method, "file is writable", tpe_log, tpe_softmode);
++
++		}
++
++	}
++
++	return 0;
++}
++
+diff --git a/security/tpe/tpe_module.c b/security/tpe/tpe_module.c
+new file mode 100644
+index 0000000000000..fdfe4443582d6
+--- /dev/null
++++ b/security/tpe/tpe_module.c
+@@ -0,0 +1,250 @@
++
++#include "tpe.h"
++#include "fopskit.h"
++
++/* regs->ip gets set to here when we want to deny execution */
++
++static int tpe_donotexec(void) {
++
++	/* if not a root process and kill is enabled, kill it */
++	if (tpe_kill && get_task_uid(current)) {
++		(void)send_sig_info(SIGKILL, NULL, current);
++		/* only kill the parent if it isn't root */
++		if (get_task_uid(get_task_parent(current)))
++			(void)send_sig_info(SIGKILL, NULL, get_task_parent(current));
++	}
++
++	return -EACCES;
++}
++
++#define TPE_NOEXEC if (!tpe_softmode) fopskit_return(tpe_donotexec)
++#define TPE_EXTRAS_NOEXEC(val) { \
++	if (!tpe_file_getfattr(current->mm->exe_file, val)) { \
++		tpe_log_denied_action(current->mm->exe_file, val, "tpe_extras", \
++			tpe_extras_log, tpe_softmode-tpe_extras_ignore_softmode); \
++		if (!tpe_softmode || tpe_extras_ignore_softmode) \
++			fopskit_return(tpe_donotexec); \
++	} \
++}
++
++/* mmap */
++
++fopskit_hook_handler(security_mmap_file) {
++	struct file *file = (struct file *)REGS_ARG1;
++	struct fopskit_cred_security *sec;
++	fopskit_cred_security_ptr(sec, current->cred->security);
++
++	if (fopskit_cred_remapped && sec->fopskit_flags) return;
++
++	if (file && (REGS_ARG2 & PROT_EXEC))
++		if (tpe_allow_file(file, "mmap"))
++			TPE_NOEXEC;
++}
++
++/* mprotect */
++
++fopskit_hook_handler(security_file_mprotect) {
++	struct vm_area_struct *vma = (struct vm_area_struct *)REGS_ARG1;
++
++	if (vma->vm_file && (REGS_ARG2 & PROT_EXEC))
++		if (tpe_allow_file(vma->vm_file, "mprotect"))
++			TPE_NOEXEC;
++}
++
++/* execve */
++
++fopskit_hook_handler(security_bprm_check) {
++	struct linux_binprm *bprm = (struct linux_binprm *)REGS_ARG1;
++	struct fopskit_cred_security *sec;
++
++	if (bprm->file) {
++		/* load xattr flag for soften_mmap if it's there */
++		if (fopskit_cred_remapped && tpe_file_getfattr(bprm->file, "mmap")) {
++			fopskit_cred_security_ptr(sec, bprm->cred->security);
++			sec->fopskit_flags = 1;
++		}
++
++		if (tpe_allow_file(bprm->file, "exec"))
++			TPE_NOEXEC;
++	}
++}
++
++/* pid_revalidate */
++
++fopskit_hook_handler(pid_revalidate) {
++	struct dentry *dentry = (struct dentry *)REGS_ARG1;
++
++	if (!tpe_ps || (tpe_softmode && !tpe_extras_ignore_softmode)) return;
++
++	if (!capable(CAP_SYS_ADMIN) &&
++		dentry->d_inode && __kuid_val(dentry->d_inode->i_uid) != get_task_uid(current) &&
++		dentry->d_parent->d_inode && __kuid_val(dentry->d_parent->d_inode->i_uid) != get_task_uid(current) &&
++		(!tpe_ps_gid || (tpe_ps_gid && !in_group_p(KGIDT_INIT(tpe_ps_gid)))))
++		fopskit_return(fopskit_eperm);
++}
++
++/* security_task_fix_setuid */
++
++fopskit_hook_handler(security_task_fix_setuid) {
++	struct cred *new = (struct cred *)REGS_ARG1;
++	struct cred *old = (struct cred *)REGS_ARG2;
++
++	if (tpe_restrict_setuid && !__kuid_val(new->uid) && !UID_IS_TRUSTED(__kuid_val(old->uid)))
++		TPE_EXTRAS_NOEXEC("setuid");
++}
++
++/* lsmod */
++
++fopskit_hook_handler(m_show) {
++	if (tpe_lsmod && !capable(CAP_SYS_MODULE))
++		TPE_EXTRAS_NOEXEC("lsmod");
++}
++
++/* kallsyms_open */
++
++fopskit_hook_handler(kallsyms_open) {
++	if (tpe_proc_kallsyms && (tpe_paranoid || !capable(CAP_SYS_ADMIN)))
++		TPE_EXTRAS_NOEXEC("kallsyms");
++}
++
++/* security_ptrace_access_check */
++
++fopskit_hook_handler(security_ptrace_access_check) {
++	struct task_struct *t, *task = (struct task_struct *)REGS_ARG1;
++
++	if (tpe_harden_ptrace && (REGS_ARG2 & PTRACE_MODE_ATTACH)) {
++		t = task;
++
++		while (task_pid_nr(t) > 0) {
++			if (t == current)
++				break;
++			t = t->real_parent;
++		}
++
++		if (task_pid_nr(t) == 0 && !UID_IS_TRUSTED(get_task_uid(current)))
++			TPE_EXTRAS_NOEXEC("ptrace");
++	}
++}
++
++/* sys_newuname */
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
++fopskit_hook_handler(__x64_sys_newuname) {
++#else
++fopskit_hook_handler(sys_newuname) {
++#endif
++	if (tpe_hide_uname && !UID_IS_TRUSTED(get_task_uid(current)))
++		TPE_EXTRAS_NOEXEC("uname");
++}
++
++fopskit_hook_handler(proc_sys_read) {
++	char filename[MAX_FILE_LEN], *f;
++	struct file *file;
++
++	if (tpe_hide_uname) {
++		file = (struct file *)REGS_ARG1;
++		f = tpe_d_path(file, filename, MAX_FILE_LEN);
++
++		if (!IS_ERR(f) && !strcmp("/proc/sys/kernel/osrelease", f))
++			TPE_EXTRAS_NOEXEC("uname");
++	}
++}
++
++/* sysctl lock */
++
++int tpe_handler_proc_sys_write(struct file *file) {
++	char filename[MAX_FILE_LEN], *f;
++
++	f = tpe_d_path(file, filename, MAX_FILE_LEN);
++
++	if (tpe_lock && !IS_ERR(f) && !strncmp("/proc/sys/tpe", f, 13))
++		return -EPERM;
++
++	return 0;
++}
++
++/* each call to fopskit_hook_handler() needs a corresponding entry here */
++
++static struct fops_hook tpe_hooks[] = {
++	fops_hook_val(security_mmap_file),
++	fops_hook_val(security_file_mprotect),
++	fops_hook_val(security_bprm_check),
++};
++
++static struct fops_hook tpe_hooks_extras[] = {
++	fops_hook_val(security_task_fix_setuid),
++	fops_hook_val(security_ptrace_access_check),
++	fops_hook_val(pid_revalidate),
++	fops_hook_val(m_show),
++	fops_hook_val(kallsyms_open),
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
++	fops_hook_val(__x64_sys_newuname),
++#else
++	fops_hook_val(sys_newuname),
++#endif
++	fops_hook_val(proc_sys_read),
++};
++
++/* pass in our own code for proc_sys_write() */
++
++static struct fops_cred_handler tpe_cred_handler = {
++	.proc_sys_write = tpe_handler_proc_sys_write,
++	.security_prepare_creds = NULL,
++	.security_cred_alloc_blank = NULL,
++};
++
++static int __init tpe_init(void) {
++	int i, ret;
++
++	ret = fopskit_init_cred_security(&tpe_cred_handler);
++
++	if (IN_ERR(ret))
++		goto out_err;
++
++	if (!fopskit_cred_remapped)
++		printk(PKPRE "warning: cred->security was not remapped; the soften_mmap flag won't persist to child processes.\n");
++
++	fopskit_hook_list(tpe_hooks, 1);
++	fopskit_hook_list(tpe_hooks_extras, 0);
++
++	ret = tpe_config_init();
++
++	if (IN_ERR(ret))
++		goto out_err;
++
++	printk(PKPRE "added to kernel\n");
++
++	return 0;
++
++	out_err:
++	printk(PKPRE "Unable to insert module, return code %d\n", ret);
++
++	fopskit_unhook_list(tpe_hooks);
++	fopskit_unhook_list(tpe_hooks_extras);
++	fopskit_exit(ret);
++
++	return ret;
++}
++
++static void __exit tpe_exit(void) {
++	int i;
++
++	fopskit_unhook_list(tpe_hooks);
++	fopskit_unhook_list(tpe_hooks_extras);
++	fopskit_exit(0);
++
++	tpe_config_exit();
++
++	printk(PKPRE "removed from kernel\n");
++
++	return;
++}
++
++module_init(tpe_init);
++module_exit(tpe_exit);
++
++MODULE_AUTHOR("Corey Henderson");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Trusted Path Execution (TPE) Module");
++MODULE_VERSION("2.0.3");
++
