@@ -189,11 +189,17 @@ setup_environment() {
 
 	export MKOPTS="-j$JOBS"
 
+	case $BARCH in
+		x86_64|i586)
+			ARCHFLAGS="-fcf-protection"
+			;;
+	esac
+
 	if [ -z "$CPPFLAGS" ]; then
 		export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 	fi
 	if [ -z "$CFLAGS" ]; then
-		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fdata-sections -ffunction-sections -fstack-clash-protection -fstack-protector-strong -fcf-protection -Wl,-z,relro,-z,now -Wl,--as-needed -pipe"
+		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fdata-sections -ffunction-sections -fstack-clash-protection -fstack-protector-strong -Wl,-z,relro,-z,now -Wl,--as-needed -pipe $ARCHFLAGS"
 	fi
 	if [ -z "$CXXFLAGS" ]; then
 		export CXXFLAGS="$CFLAGS"
