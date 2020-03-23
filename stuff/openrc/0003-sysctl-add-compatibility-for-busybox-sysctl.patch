@@ -1,46 +1,26 @@
-From ed120780512b6dd0bfabba0ea59d06d1099924b0 Mon Sep 17 00:00:00 2001
-From: William Pitcock <nenolod@dereferenced.org>
-Date: Wed, 1 Feb 2017 04:08:33 +0000
-Subject: [PATCH 3/7] sysctl: add compatibility for busybox sysctl
+From d773988a962f4b84661729caaa225ea178e6a10b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 24 Mar 2020 02:13:34 +0900
+Subject: [PATCH] sysctl
 
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- init.d/sysctl.in | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+ init.d/sysctl.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/init.d/sysctl.in b/init.d/sysctl.in
-index cb756f3a..fc22364b 100644
+index e49f4db2..895cc1f2 100644
 --- a/init.d/sysctl.in
 +++ b/init.d/sysctl.in
-@@ -38,10 +38,27 @@ BSD_sysctl()
- 
- Linux_sysctl()
- {
--	local quiet
-+	local quiet retval=0
+@@ -42,7 +42,7 @@ Linux_sysctl()
+ 	local quiet
  	yesno $rc_verbose || quiet=-q
  
 -	sysctl ${quiet} --system
-+	set --
-+	eindent
-+	for i in /run/sysctl.d/*.conf \
-+			/etc/sysctl.d/*.conf \
-+			/usr/local/lib/sysctl.d/*.conf \
-+			/usr/lib/sysctl.d/*.conf \
-+			/lib/sysctl.d/*.conf \
-+			/etc/sysctl.conf; do
-+		if [ -e "$i" ]; then
-+			vebegin "applying $conf"
-+			sysctl ${quiet} -p "$i"
-+			retval=$(( $retval + $? ))
-+			veend $retval
-+		fi
-+	done
-+	eoutdent
-+
-+	return $retval
++	sysctl -p ${quiet} /etc/sysctl.d/*.conf
  }
  
  start()
 -- 
-2.11.0
+2.24.1
 
