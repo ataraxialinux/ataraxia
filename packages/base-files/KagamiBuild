@@ -23,7 +23,6 @@ backup=('etc/fstab'
 	'etc/securetty'
 	'etc/shadow'
 	'etc/shells')
-OSRELEASE="1"
 
 build() {
 	cd "$PKG"
@@ -42,8 +41,7 @@ build() {
 
 	ln -sf ../proc/mounts etc/mtab
 
-	echo "Ataraxia Linux $OSRELEASE" >> etc/ataraxia-release
-	ln -sf ataraxia-release etc/system-release
+	touch etc/ataraxia-release
 
 	for f in fstab group host.conf hosts inittab issue issue.net motd passwd profile resolv.conf securetty shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
@@ -82,11 +80,11 @@ build() {
 
 	cat > "$PKG"/etc/os-release <<- EOF
 		NAME="Ataraxia Linux"
-		VERSION="$OSRELEASE"
+		VERSION="current"
 		ID="ataraxialinux ataraxia januslinux janus"
 		ID_LIKE="ataraxia"
-		VERSION_ID="$OSRELEASE"
-		PRETTY_NAME="Ataraxia Linux $OSRELEASE"
+		VERSION_ID="current"
+		PRETTY_NAME="Ataraxia Linux"
 		HOME_URL="https://ataraxialinux.github.io/"
 		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
 	EOF
