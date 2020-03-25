@@ -1,14 +1,16 @@
 # Description: Systems programming language focused on safety, speed and concurrency
 # URL:         https://www.rust-lang.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libssh2 curl cmake llvm
 # Section:     devel
 
 name=rust
 version=1.42.0
 release=1
 options=('~emptydirs')
-source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz")
+source=("https://portage.smaeul.xyz/distfiles/rust-$version-aarch64-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$version-armv7a-unknown-linux-musleabihf.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$version-i686-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$version-x86_64-gentoo-linux-musl.tar.xz")
 
 clear_vendor_checksums() {
 	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
@@ -21,62 +23,27 @@ build() {
 
 	case $BARCH in
 		x86_64)
-			export RTARGET="x86_64-unknown-linux-musl"
+			export RTARGET="x86_64-gentoo-linux-musl"
+			;;
+		i586)
+			export RTARGET="i686-gentoo-linux-musl"
+			;;
+		aarch64)
+			export RTARGET="aarch64-gentoo-linux-musl"
+			;;
+		armv7hnl|armv7hl)
+			export RTARGET="armv7a-gentoo-linux-musleabihf"
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
+			die "Architecture is not set or is not supported by Rust Language"
 	esac
+	
+	cd "$SRC"/rust-$version-$RTARGET
+	bash install.sh \
+		--prefix=/usr \
+		--destdir="$PKG" \
+		--disable-ldconfig
 
-	cd "$SRC"/rustc-$version-src
-	patch -Np1 -i "$STUFF"/rust/musl-libressl.patch
-
-	clear_vendor_checksums openssl-sys
-	clear_vendor_checksums libc
-
-	cat > config.toml <<- EOF
-		[llvm]
-		link-shared = true
-
-		[build]
-		build = "$RTARGET"
-		host = [ "$RTARGET" ]
-		target = [ "$RTARGET" ]
-		docs = false
-		extended = true
-		submodules = false
-		python = "python3"
-		locked-deps = true
-		vendor = true
-
-		[install]
-		prefix = "/usr"
-
-		[rust]
-		channel = "stable"
-		rpath = false
-		codegen-units = 1
-		debuginfo-level = 2
-		backtrace = true
-		jemalloc = false
-		codegen-tests = false
-
-		[target.$RTARGET]
-		llvm-config = "/usr/bin/llvm-config"
-		crt-static = false
-		cc = "gcc"
-		cxx = "g++"
-		ar = "ar"
-		linker = "gcc"
-	EOF
-
-	python3 ./x.py build -j$(nproc)
-	DESTDIR="$PKG" python3 ./x.py install -j$(nproc)
-
-	cd "$PKG"/usr/lib
-
-	rm -rf rustlib/{components,manifest-rustc,rust-installer-version}
-	ln -sf rustlib/$RTARGET/lib/*.so .
-
-	rm -rf "$PKG"/etc
+	mv "$PKG"/usr/etc/bash_completion.d "$PKG"/usr/share
+	rm -rf "$PKG"/usr/etc
 }
