@@ -13,14 +13,13 @@ start() {
 	ebegin "Starting elogind"
 
 	for tmpfs in /run/systemd /run/user; do
-		mountpoint "$tmpfs" > /dev/null && continue
 		mkdir -p "$tmpfs"
 		mount -t tmpfs -o nosuid,nodev,noexec,mode=0755 none "$tmpfs" || exit 1
 	done
 
 	start-stop-daemon --start --quiet \
 		--pidfile /run/elogind.pid \
-		--exec /usr/lib/elogind/elogind
+		--exec /usr/lib/elogind/elogind -- --daemon
 	eend $?
 }
 
