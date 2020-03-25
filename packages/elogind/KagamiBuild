@@ -1,0 +1,39 @@
+# Description: The systemd project's logind, extracted to a standalone package
+# URL:         https://github.com/elogind/elogind
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gperf
+# Section:     admin
+
+name=elogind
+version=243.7
+release=1
+backup=('etc/elogind/logind.conf')
+source=("https://github.com/elogind/elogind/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dcgroup-controller=openrc \
+		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
+		-Ddefault-hierarchy=unified \
+		-Ddefault-kill-user-processes=false \
+		-Dhalt-path=/usr/bin/halt \
+		-Dhtml=false \
+		-Dkexec-path=/usr/bin/false \
+		-Dman=false \
+		-Dnologin-path=/usr/bin/nologin \
+		-Dpoweroff-path=/usr/bin/poweroff \
+		-Dreboot-path=/usr/bin/reboot \
+		-Drootlibdir=/usr/lib \
+		-Drootlibexecdir=/usr/lib/elogind \
+		-Dutmp=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	ln -sf libelogind.pc "$PKG"/usr/lib/pkgconfig/libsystemd.pc
+	ln -sf elogind "$PKG"/usr/include/systemd
+
+	install -Dm0755 "$STUFF"/svc/elogind.initd "$PKG"/etc/init.d/elogind
+}
