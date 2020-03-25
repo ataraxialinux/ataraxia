@@ -6,14 +6,13 @@
 
 name=accountsservice
 version=0.6.55
-release=1
+release=2
 source=("https://www.freedesktop.org/software/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/accountsservice/musl-fgetspent_r.patch
 	patch -Np1 -i "$STUFF"/accountsservice/musl-wtmp.patch
-	patch -Np1 -i "$STUFF"/accountsservice/0001-revert-lib-don-t-set-loaded-state-until-seat-is-fetc.patch
 
 	sed -i '/dbus_conf_dir/s/sysconfdir/datadir/g' meson.build
 
@@ -22,8 +21,7 @@ build() {
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dadmin_group=wheel \
 		-Ddocbook=false \
-		-Delogind=false \
-		-Dsystemd=false \
+		-Delogind=true \
 		-Dsystemdsystemunitdir=no
 	ninja
 	DESTDIR="$PKG" ninja install

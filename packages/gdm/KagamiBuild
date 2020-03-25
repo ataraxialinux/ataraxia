@@ -1,12 +1,12 @@
 # Description: Display manager and login screen
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra consolekit2 dconf
+# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra dconf
 # Section:     gnome
 
 name=gdm
 version=3.34.1
-release=4
+release=5
 backup=('etc/gdm/custom.conf'
 	'etc/gdm/PostSession/Default'
 	'etc/gdm/PreSession/Default'
@@ -20,7 +20,6 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/gdm/0001-restore-consolekit-support.patch
 	patch -Np1 -i "$STUFF"/gdm/0001-add-support-Ataraxia-Linux-PAM.patch
 	autoreconf -vif
 
@@ -31,14 +30,11 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
-		--with-run-dir=/run \
 		--with-default-pam-config=ataraxia \
-		--with-default-path=/usr/local/games:/usr/local/bin:/usr/local/sbin:/usr/games:/usr/bin \
-		--with-console-kit \
-		--with-consolekit-directory=/usr/lib/ConsoleKit \
+		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
+		--with-run-dir=/run \
 		--without-plymouth \
-		--without-systemd \
-		--with-systemdsystemunitdir=no \
+		--without-systemdsystemunitdir \
 		--enable-ipv6 \
 		--enable-gdm-xsession \
 		--disable-schemas-compile \
