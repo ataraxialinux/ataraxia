@@ -6,7 +6,7 @@
 
 name=lightdm
 version=1.30.0
-release=4
+release=5
 backup=('etc/lightdm/keys.conf'
 	'etc/lightdm/lightdm.conf'
 	'etc/lightdm/users.conf'
@@ -50,6 +50,7 @@ build() {
 	for pam in lightdm lightdm-autologin; do
 		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
 	done
+	sed -i 's|pam_systemd.so|pam_elogind.so|' "$PKG"/etc/pam.d/lightdm-greeter
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 	install -m644 "$STUFF"/lightdm/lightdm.rules "$PKG"/usr/share/polkit-1/rules.d/lightdm.rules
