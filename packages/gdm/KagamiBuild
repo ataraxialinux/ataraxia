@@ -32,11 +32,13 @@ build() {
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--with-default-pam-config=ataraxia \
 		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
+		--with-initial-vt=7 \
 		--with-run-dir=/run \
 		--without-plymouth \
 		--without-systemdsystemunitdir \
-		--enable-ipv6 \
 		--enable-gdm-xsession \
+		--enable-ipv6 \
+		--enable-wayland-support \
 		--disable-schemas-compile \
 		--disable-systemd-journal
 
@@ -44,8 +46,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/var/{cache,log,run}
 	rm -rf "$PKG"/run
+	chown -Rc 120:120 "$PKG"/var/lib/gdm
 
 	install -Dm0755 "$STUFF"/svc/gdm.initd "$PKG"/etc/init.d/gdm
 }
