@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.22.10
-release=1
+release=2
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -24,7 +24,8 @@ build() {
 		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
-		-Difupdown=true \
+		-Debpf=true \
+		-Dibft=true \
 		-Diptables=/usr/bin/iptables \
 		-Diwd=true \
 		-Djson_validation=false \
@@ -37,11 +38,11 @@ build() {
 		-Dpppd=/usr/bin/pppd \
 		-Dqt=false \
 		-Dselinux=false \
-		-Dsession_tracking=no \
-		-Dsession_tracking_consolekit=true \
+		-Dsession_tracking=elogind \
+		-Dsession_tracking_consolekit=false \
+		-Dsuspend_resume=elogind \
 		-Dsystemd_journal=false \
 		-Dsystemdsystemunitdir=no \
-		-Dsuspend_resume=consolekit \
 		-Dteamdctl=true \
 		-Dtests=no \
 		-Dudev_dir=/usr/lib/udev \
@@ -51,19 +52,18 @@ build() {
 
 	install -Dm0755 "$STUFF"/svc/networkmanager.initd "$PKG"/etc/init.d/networkmanager
 
-cat > "$PKG"/etc/NetworkManager/NetworkManager.conf << "EOF"
-[main]
-plugins=keyfile
-auth-polkit=true
-dhcp=dhcpcd
-EOF
+	cat > "$PKG"/etc/NetworkManager/NetworkManager.conf <<-EOF
+		[main]
+		auth-polkit=true
+		dhcp=dhcpcd
+	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
-cat > "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules << "EOF"
-polkit.addRule(function(action, subject) {
-    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.isInGroup("netdev")) {
-        return polkit.Result.YES;
-    }
-});
-EOF
+	cat > "$PKG"/usr/share/polkit-1/rules.d/org.freedesktop.NetworkManager.rules <<-EOF
+		polkit.addRule(function(action, subject) {
+			if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 && subject.isInGroup("netdev")) {
+				return polkit.Result.YES;
+			}
+		});
+	EOF
 }

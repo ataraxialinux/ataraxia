@@ -1,0 +1,30 @@
+#!/usr/bin/openrc-run
+# Copyright 1999-2017 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+depend() {
+	need dbus
+
+	# Make sure elogind is up before xdm starts any dm
+	before xdm
+}
+
+start() {
+	ebegin "Starting elogind"
+
+	for tmpfs in /run/systemd /run/user; do
+		mkdir -p "$tmpfs"
+		mount -t tmpfs -o nosuid,nodev,noexec,mode=0755 none "$tmpfs" || exit 1
+	done
+
+	start-stop-daemon --start --quiet \
+		--pidfile /run/elogind.pid \
+		--exec /usr/lib/elogind/elogind -- --daemon
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping elogind"
+	start-stop-daemon --stop --quiet --pidfile "${ELOGIND_PIDFILE}"
+	eend $?
+}

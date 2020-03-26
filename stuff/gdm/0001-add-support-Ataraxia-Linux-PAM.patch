@@ -1,6 +1,6 @@
-From 18e355ce8e208eb52e3dd065b7e7335b16c767f8 Mon Sep 17 00:00:00 2001
+From 68302eb3706f4d77729a6ec6714f2145440df4a9 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 16 Jan 2020 13:22:18 -0600
+Date: Wed, 25 Mar 2020 20:57:08 +0900
 Subject: [PATCH] add support for Ataraxia Linux PAM
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -9,11 +9,11 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  data/Makefile.am                             | 12 ++++++++++++
  data/pam-ataraxia/gdm-autologin.pam          | 13 +++++++++++++
  data/pam-ataraxia/gdm-fingerprint.pam        | 14 ++++++++++++++
- data/pam-ataraxia/gdm-launch-environment.pam | 12 ++++++++++++
+ data/pam-ataraxia/gdm-launch-environment.pam | 13 +++++++++++++
  data/pam-ataraxia/gdm-password.pam           | 11 +++++++++++
  data/pam-ataraxia/gdm-pin.pam                | 13 +++++++++++++
  data/pam-ataraxia/gdm-smartcard.pam          | 14 ++++++++++++++
- 8 files changed, 95 insertions(+), 1 deletion(-)
+ 8 files changed, 96 insertions(+), 1 deletion(-)
  create mode 100644 data/pam-ataraxia/gdm-autologin.pam
  create mode 100644 data/pam-ataraxia/gdm-fingerprint.pam
  create mode 100644 data/pam-ataraxia/gdm-launch-environment.pam
@@ -123,10 +123,10 @@ index 0000000..a480861
 +session  include   system-local-login
 diff --git a/data/pam-ataraxia/gdm-launch-environment.pam b/data/pam-ataraxia/gdm-launch-environment.pam
 new file mode 100644
-index 0000000..d3db5b4
+index 0000000..af54575
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-launch-environment.pam
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,13 @@
 +auth     required  pam_succeed_if.so audit quiet_success user = gdm
 +auth     required  pam_env.so
 +auth     optional  pam_permit.so
@@ -138,6 +138,7 @@ index 0000000..d3db5b4
 +
 +session  required  pam_succeed_if.so audit quiet_success user = gdm
 +session  optional  pam_keyinit.so force revoke
++-session optional  pam_elogind.so
 +session  optional  pam_permit.so
 diff --git a/data/pam-ataraxia/gdm-password.pam b/data/pam-ataraxia/gdm-password.pam
 new file mode 100644
@@ -196,5 +197,5 @@ index 0000000..ec6f75d
 +session  optional  pam_keyinit.so force revoke
 +session  include   system-local-login
 -- 
-2.18.2
+2.25.1
 

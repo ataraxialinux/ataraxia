@@ -1,12 +1,12 @@
 # Description: Freedesktop.org message bus system
 # URL:         https://freedesktop.org/wiki/Software/dbus
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  expat libx11
+# Depends on:  expat elogind libx11
 # Section:     admin
 
 name=dbus
 version=1.12.16
-release=12
+release=1
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -19,14 +19,15 @@ build() {
 		--with-console-auth-dir=/run/console \
 		--with-system-pid-file=/run/dbus/pid \
 		--with-system-socket=/run/dbus/system_bus_socket \
-		--with-x \
-		--with-xml=expat \
 		--without-systemdsystemunitdir \
+		--without-systemduserunitdir \
+		--enable-inotify \
+		--enable-systemd \
 		--enable-user-session \
+		--enable-x11-autolaunch \
 		--disable-doxygen-docs \
-		--disable-xml-docs \
 		--disable-static \
-		--disable-systemd
+		--disable-xml-docs
 	make
 	make DESTDIR="$PKG" install
 

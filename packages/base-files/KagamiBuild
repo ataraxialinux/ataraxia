@@ -5,7 +5,7 @@
 # Section:     base
 
 name=base-files
-version=0.6
+version=0.7
 release=1
 options=('bootstrap')
 backup=('etc/fstab'
@@ -51,14 +51,14 @@ build() {
 		install -m600 "$STUFF"/base-files/$f etc/
 	done
 
-	for d in cache local opt log/old lib/misc empty spool/mail spool/cron/crontabs; do
+	for d in cache local opt log/old lib/misc empty spool/cron/crontabs mail; do
 		install -d -m755 var/$d
 	done
 
 	install -d -m1777 var/{tmp,spool/mail}
 
 	install -d -m775 -g 50 var/games
-	ln -sf spool/mail var/mail
+	ln -sf ../mail var/spool/mail
 	ln -sf ../run var/run
 	ln -sf ../run/lock var/lock
 

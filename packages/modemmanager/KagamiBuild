@@ -6,7 +6,7 @@
 
 name=modemmanager
 version=1.12.8
-release=1
+release=2
 source=("https://www.freedesktop.org/software/ModemManager/ModemManager-$version.tar.xz")
 
 build() {
@@ -18,7 +18,9 @@ build() {
 		--localstatedir=/var \
 		--with-dbus-sys-dir=/usr/share/dbus-1/system.d \
 		--with-polkit=permissive \
+		--with-systemd-suspend-resume \
 		--with-udev-base-dir=/usr/lib/udev \
+		--without-systemd-journal \
 		--disable-static
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
