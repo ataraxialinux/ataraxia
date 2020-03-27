@@ -6,23 +6,10 @@
 
 name=librsvg
 version=2.40.21
-newversion=2.48.0
-release=2
-source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz"
-	"http://ftp.gnome.org/pub/gnome/sources/$name/${newversion%.*}/$name-$newversion.tar.xz")
+release=3
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
-	newtemp="$SRC/librsvg-rs"
-
-	case $BARCH in
-		x86_64|i586|aarch64|armv7hnl|armv7hl)
-			USE_RUST=1
-			;;
-		*)
-			USE_RUST=0
-			;;
-	esac
-
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -31,19 +18,4 @@ build() {
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
-
-	if [ "$USE_RUST" = "1" ]; then
-		neko em -n rust
-
-		cd "$SRC"/$name-$newversion
-		./configure $BUILDFLAGS \
-			--prefix=/usr \
-			--disable-shared
-
-		sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-		make
-		make DESTDIR="$newtemp" install
-
-		cp -a "$newtemp"/usr/bin/* "$PKG"/usr/bin/
-	fi
 }
