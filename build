@@ -421,10 +421,13 @@ case $1 in
 		;;
 	check-updates)
 		shift
-		while getopts a opts; do
+		while getopts ac opts; do
 			case $opts in
 				a)
 					AUTOBUMB="yes"
+					;;
+				c)
+					AUTOCOMMIT="yes"
 					;;
 				:)
 					die "Option '-${OPTARG}' needs an argument"
@@ -440,6 +443,10 @@ case $1 in
 			cuopt="-a"
 		fi
 
+		if [ "$AUTOCOMMIT" = "yes" ]; then
+			cuopttwo="-c"
+		fi
+
 		SILENT=1 setup_environment
 		msg "Checking packages for updates"
 		for packages in $(ls "$REPO/"); do
@@ -452,7 +459,7 @@ case $1 in
 					#elif [ "$packages" = "linux-headers" ]; then
 					#	"$UTILS/check-updates" linux-headers
 					else
-						"$UTILS/check-updates" $cuopt $packages
+						"$UTILS/check-updates" $cuopt $cuopttwo $packages
 					fi
 				)
 			popd
