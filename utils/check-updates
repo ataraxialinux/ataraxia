@@ -175,6 +175,10 @@ check_updates() {
 					oldrel="$(grep ^release $mypkg/KagamiBuild | sed -e 's,release=,,g' )"
 					sed -i "s,version=${oldver},version=${found_version},g" "$mypkg/KagamiBuild"
 					sed -i "s,release=${oldrel},release=1,g" "$mypkg/KagamiBuild"
+					if [ "$AUTOCOMMIT" = "yes" ]; then
+						git add $mypkg
+						git commit -m "bump ${original_pkgname} to ${found_version}"
+					fi
 				else
 					msg "Update ${original_pkgname} to ${found_version}"
 				fi
@@ -185,10 +189,13 @@ check_updates() {
 
 AUTOBUMB="no"
 
-while getopts a options; do
+while getopts ac options; do
 	case $options in
 		a)
 			AUTOBUMB="yes"
+			;;
+		c)
+			AUTOCOMMIT="yes"
 			;;
 	esac
 done
