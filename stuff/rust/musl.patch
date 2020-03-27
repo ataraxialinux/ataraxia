@@ -51,21 +51,6 @@ diff -ruN rustc-1.40.0-src-orig/src/libunwind/build.rs rustc-1.40.0-src/src/libu
              println!("cargo:rustc-link-lib=gcc_s");
          }
      } else if target.contains("freebsd") {
-diff -ruN rustc-1.40.0-src-orig/src/libunwind/lib.rs rustc-1.40.0-src/src/libunwind/lib.rs
---- rustc-1.40.0-src-orig/src/libunwind/lib.rs	2019-12-17 00:38:06.000000000 +0900
-+++ rustc-1.40.0-src/src/libunwind/lib.rs	2019-12-20 23:11:49.954342354 +0900
-@@ -20,11 +20,6 @@
-     }
- }
- 
--#[cfg(target_env = "musl")]
--#[link(name = "unwind", kind = "static", cfg(target_feature = "crt-static"))]
--#[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
--extern {}
--
- #[cfg(target_os = "redox")]
- #[link(name = "gcc_eh", kind = "static-nobundle", cfg(target_feature = "crt-static"))]
- #[link(name = "gcc_s", cfg(not(target_feature = "crt-static")))]
 diff -ruN rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.40.0-src/vendor/libc/src/unix/mod.rs
 --- rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs	2019-12-17 02:26:11.000000000 +0900
 +++ rustc-1.40.0-src/vendor/libc/src/unix/mod.rs	2019-12-20 23:11:49.954342354 +0900
@@ -83,4 +68,3 @@ diff -ruN rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.40.0-src/ven
      } else if #[cfg(target_os = "emscripten")] {
          #[link(name = "c")]
          extern {}
-
