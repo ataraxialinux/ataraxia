@@ -1,0 +1,19 @@
+# Description: Code shared between GNOME games
+# URL:         https://gitlab.gnome.org/GNOME/libgnome-games-support
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson vala gtk3 libgee
+# Section:     gnome
+
+name=libgnome-games-support
+version=1.6.1
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
