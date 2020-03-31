@@ -1,0 +1,19 @@
+# Description: Sudoku generating and solving software
+# URL:         https://qqwing.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     games
+
+name=qqwing
+version=1.3.4
+release=1
+source=("https://qqwing.com/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
