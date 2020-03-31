@@ -6,15 +6,13 @@
 
 name=mupdf
 version=1.16.1
-release=1
+release=2
 source=("http://www.mupdf.com/downloads/archive/mupdf-$version-source.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version-source
-	rm -rf thirdparty/{freeglut,freetype,harfbuzz,curl,libjpeg,openjpeg,zlib}
+	make USE_SYSTEM_LIBS=yes build=release
+	make USE_SYSTEM_LIBS=yes build=release prefix="$PKG"/usr install
 
-	make build=release
-	make build=release prefix=$PKG/usr install
-
-	ln -sf $name-x11 "$PKG"/usr/bin/$name
+	ln -sf mupdf-x11 "$PKG"/usr/bin/mupdf
 }
