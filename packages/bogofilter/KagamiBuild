@@ -1,0 +1,25 @@
+# Description: A fast Bayesian spam filtering tool
+# URL:         https://bogofilter.sourceforge.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl gsl
+# Section:     libs
+
+name=bogofilter
+version=1.2.5
+release=1
+backup=('etc/bogofilter/bogofilter.cf')
+source=("https://downloads.sourceforge.net/project/$name/$name-stable/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc/bogofilter  \
+		--localstatedir=/var \
+		--with-database=db \
+		--enable-transactions
+	make
+	make DESTDIR="$PKG" install
+
+	mv "$PKG"/etc/bogofilter/bogofilter.cf.example "$PKG"/etc/bogofilter/bogofilter.cf
+}
