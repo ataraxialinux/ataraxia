@@ -1,0 +1,19 @@
+# Description: A quick previewer for Nautilus
+# URL:         https://gitlab.gnome.org/GNOME/sushi
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection evince gjs gst-plugins-base gst-plugins-good gtksourceview4 webkitgtk
+# Section:     gnome
+
+name=sushi
+version=3.34.0
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
