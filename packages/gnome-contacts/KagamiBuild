@@ -1,0 +1,25 @@
+# Description: Contacts Manager for GNOME
+# URL:         https://wiki.gnome.org/Apps/Contacts
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala folks dconf gnome-desktop gnome-online-accounts libgee libhandy
+# Section:     gnome
+
+name=gnome-contacts
+version=3.36
+case $version in
+	*.*.*) _v=${version%.*};;
+	*.*) _v=${version};;
+esac
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${_v}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dcheese=false \
+		-Ddocs=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
