@@ -1,12 +1,12 @@
 # Description: A library that makes it possible to implement a filesystem in a userspace program
 # URL:         https://github.com/libfuse/libfuse
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  eudev meson
+# Depends on:  eudev meson fuse-common
 # Section:     otherosfs
 
 name=fuse
 version=3.9.1
-release=1
+release=2
 options=('~emptydirs')
 source=("https://github.com/libfuse/libfuse/releases/download/$name-$version/$name-$version.tar.xz")
 
@@ -21,9 +21,6 @@ build() {
 		-Dexamples=false
 	ninja
 	DESTDIR="$PKG" ninja install
-
-	install -Dm644 "$STUFF"/fuse/fuse.conf "$PKG"/etc/fuse.conf
-	install -Dm0755 "$STUFF"/svc/fuse.initd "$PKG"/etc/init.d/fuse
 
 	rm -r "$PKG"/etc/init.d
 	rm -r "$PKG"/dev
