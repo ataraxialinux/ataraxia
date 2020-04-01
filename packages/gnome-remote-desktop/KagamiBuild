@@ -1,0 +1,19 @@
+# Description: GNOME Remote Desktop server
+# URL:         https://wiki.gnome.org/Projects/Mutter/RemoteDesktop
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libsecret pipewire libvncserver libnotify dconf
+# Section:     gnome
+
+name=gnome-remote-desktop
+version=0.1.8
+release=1
+source=("https://gitlab.gnome.org/jadahl/gnome-remote-desktop/-/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
