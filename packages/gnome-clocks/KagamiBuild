@@ -1,0 +1,19 @@
+# Description: Clocks applications for GNOME
+# URL:         https://wiki.gnome.org/Apps/Clocks
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala yelp-tools geoclue geocode-glib gnome-desktop gsound libgweather libhandy
+# Section:     gnome
+
+name=gnome-clocks
+version=3.36.0
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
