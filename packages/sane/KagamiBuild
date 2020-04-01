@@ -1,0 +1,26 @@
+# Description: Scanner Access Now Easy
+# URL:         http://www.sane-project.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libjpeg-turbo tiff libusb
+# Section:     graphics
+
+name=sane
+version=1.0.29
+release=1
+source=("https://gitlab.com/sane-project/backends/-/archive/$version/backends-$version.tar.gz")
+
+build() {
+	cd "$SRC"/backends-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-avahi \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm0755 "$STUFF"/svc/saned.initd "$PKG"/etc/init.d/saned
+}
