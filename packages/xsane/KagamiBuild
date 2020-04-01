@@ -1,0 +1,25 @@
+# Description: A GTK-based X11 frontend for SANE
+# URL:         https://gitlab.com/sane-project/frontend/xsane
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  sane gtk2
+# Section:     graphics
+
+name=xsane
+version=0.999
+release=1
+source=("http://http.debian.net/debian/pool/main/x/$name/${name}_${version}.orig.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i -e 's/png_ptr->jmpbuf/png_jmpbuf(png_ptr)/' src/xsane-save.c
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--disable-gimp \
+		--disable-lcms
+	make
+	make DESTDIR="$PKG" install
+}
