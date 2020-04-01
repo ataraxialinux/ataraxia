@@ -1,0 +1,19 @@
+# Description: Write an ISO file to multiple USB devices at once
+# URL:         https://wiki.gnome.org/Apps/MultiWriter
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson intltool gobject-introspection appstream-glib gtk3 libcanberra libgusb udisks
+# Section:     gnome
+
+name=gnome-multi-writer
+version=3.32.1
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
