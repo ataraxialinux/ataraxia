@@ -1,0 +1,19 @@
+# Description: Enjoy Twitch on your GNU/Linux desktop
+# URL:         https://github.com/vinszent/gnome-twitch
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection libsoup json-glib webkitgtk libpeas gstreamer gst-libav gst-plugins-good gst-plugins-bad clutter-gst clutter-gtk mpv
+# Section:     gnome
+
+name=gnome-twitch
+version=0.4.2
+release=1
+source=("https://github.com/vinszent/gnome-twitch/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
