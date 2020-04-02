@@ -6,21 +6,27 @@
 
 name=sane
 version=1.0.29
-release=1
-source=("https://gitlab.com/sane-project/backends/-/archive/$version/backends-$version.tar.gz")
+hash=54f858b20a364fc35d820df935a86478
+release=2
+source=("https://gitlab.com/sane-project/backends/uploads/$hash/sane-backends-$version.tar.gz")
 
 build() {
-	cd "$SRC"/backends-$version
-	autoreconf -vif
+	cd "$SRC"/sane-backends-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
+		--without-v4l \
+		--enable-ipv6 \
+		--enable-pthread \
 		--disable-avahi \
 		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
 
+	install -D -m0644 tools/udev/libsane.rules "$PKG"/usr/lib/udev/rules.d/49-sane.rules
+	sed -i 's|NAME="%k", ||g' "$PKG"/usr/lib/udev/rules.d/49-sane.rules
+	install -D -m644 tools/sane-backends.pc "$PKG"/usr/lib/pkgconfig/sane-backends.pc
 	install -Dm0755 "$STUFF"/svc/saned.initd "$PKG"/etc/init.d/saned
 }
