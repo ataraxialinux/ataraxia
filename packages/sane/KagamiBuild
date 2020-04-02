@@ -7,7 +7,7 @@
 name=sane
 version=1.0.29
 hash=54f858b20a364fc35d820df935a86478
-release=2
+release=3
 source=("https://gitlab.com/sane-project/backends/uploads/$hash/sane-backends-$version.tar.gz")
 
 build() {
@@ -29,4 +29,6 @@ build() {
 	sed -i 's|NAME="%k", ||g' "$PKG"/usr/lib/udev/rules.d/49-sane.rules
 	install -D -m644 tools/sane-backends.pc "$PKG"/usr/lib/pkgconfig/sane-backends.pc
 	install -Dm0755 "$STUFF"/svc/saned.initd "$PKG"/etc/init.d/saned
+
+	rm -rvf "$PKG"/var/lock
 }
