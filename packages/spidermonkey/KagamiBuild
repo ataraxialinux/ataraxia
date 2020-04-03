@@ -1,7 +1,7 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python2 yasm llvm zlib readline libffi nspr icu
+# Depends on:  autoconf2.13 python2 yasm zlib readline libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
@@ -14,13 +14,14 @@ build() {
 	export PYTHON=/usr/bin/python2
 
 	pushd "$SRC"/mozjs-$version
-		patch -Np1 -i "$STUFF"/spidermonkey/no-rust.patch
+		sed '21,+4d' -i js/moz.configure
 	popd
 
 	cd "$SRC"
 	mkdir build
 	cd build
 
+	CC=gcc CXX=g++ LLVM_OBJDUMP=/bin/false \
 	"$SRC"/mozjs-$version/js/src/configure  \
 		--prefix=/usr \
 		--with-intl-api \
