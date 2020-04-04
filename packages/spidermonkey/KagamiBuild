@@ -1,7 +1,7 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python2 yasm zlib readline libffi nspr icu
+# Depends on:  autoconf2.13 python yasm zlib readline libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
@@ -11,11 +11,11 @@ source=("https://download.gnome.org/teams/releng/tarballs-needing-help/mozjs/moz
 
 build() {
 	export SHELL=/bin/bash
-	export PYTHON=/usr/bin/python2
+	export PYTHON=/usr/bin/python3
 
-	pushd "$SRC"/mozjs-$version
-		sed '21,+4d' -i js/moz.configure
-	popd
+	cd "$SRC"/mozjs-$version
+	patch -Np1 -i "$STUFF"/spidermonkey/python3.patch
+	sed '21,+4d' -i js/moz.configure
 
 	cd "$SRC"
 	mkdir build
