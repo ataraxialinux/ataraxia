@@ -44,31 +44,33 @@ build() {
 		host = [ "$RTARGET" ]
 		target = [ "$RTARGET" ]
 		docs = false
+		compiler-docs  = false
 		extended = true
 		submodules = false
 		python = "python3"
 		locked-deps = true
 		vendor = true
+		sanitizers = false
+		profiler = false
+		full-bootstrap = false
 
 		[install]
 		prefix = "/usr"
 
 		[rust]
-		channel = "stable"
-		rpath = false
+		channel = "nightly"
+		rpath  = false
 		codegen-units = 1
-		debuginfo-level = 2
-		backtrace = true
+		debuginfo-level = 0
+		debug = false
+		backtrace = false
 		jemalloc = false
+		debug-assertions = false
 		codegen-tests = false
 
 		[target.$RTARGET]
 		llvm-config = "/usr/bin/llvm-config"
 		crt-static = false
-		cc = "gcc"
-		cxx = "g++"
-		ar = "ar"
-		linker = "gcc"
 	EOF
 
 	python3 ./x.py build -j$(nproc)
