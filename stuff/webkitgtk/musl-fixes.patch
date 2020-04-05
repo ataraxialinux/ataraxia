@@ -1,6 +1,7 @@
---- a/Source/JavaScriptCore/runtime/MachineContext.h
-+++ b/Source/JavaScriptCore/runtime/MachineContext.h
-@@ -188,7 +188,7 @@ static inline void*& stackPointerImpl(mcontext_t& machineContext)
+diff -ruN webkitgtk-2.28.0-orig/Source/JavaScriptCore/runtime/MachineContext.h webkitgtk-2.28.0/Source/JavaScriptCore/runtime/MachineContext.h
+--- webkitgtk-2.28.0-orig/Source/JavaScriptCore/runtime/MachineContext.h	2020-02-04 19:23:59.000000000 +0900
++++ webkitgtk-2.28.0/Source/JavaScriptCore/runtime/MachineContext.h	2020-03-11 02:53:20.472322342 +0900
+@@ -196,7 +196,7 @@
  #error Unknown Architecture
  #endif
  
@@ -9,7 +10,7 @@
  
  #if CPU(X86)
      return reinterpret_cast<void*&>((uintptr_t&) machineContext.gregs[REG_ESP]);
-@@ -335,7 +335,7 @@ static inline void*& framePointerImpl(mcontext_t& machineContext)
+@@ -347,7 +347,7 @@
  #error Unknown Architecture
  #endif
  
@@ -18,7 +19,7 @@
  
  // The following sequence depends on glibc's sys/ucontext.h.
  #if CPU(X86)
-@@ -482,7 +482,7 @@ static inline void*& instructionPointerImpl(mcontext_t& machineContext)
+@@ -498,7 +498,7 @@
  #error Unknown Architecture
  #endif
  
@@ -27,7 +28,7 @@
  
  // The following sequence depends on glibc's sys/ucontext.h.
  #if CPU(X86)
-@@ -639,7 +639,7 @@ inline void*& argumentPointer<1>(mcontext_t& machineContext)
+@@ -656,7 +656,7 @@
  #error Unknown Architecture
  #endif
  
@@ -36,7 +37,7 @@
  
  // The following sequence depends on glibc's sys/ucontext.h.
  #if CPU(X86)
-@@ -756,7 +756,7 @@ inline void*& llintInstructionPointer(mcontext_t& machineContext)
+@@ -773,7 +773,7 @@
  #error Unknown Architecture
  #endif
  
@@ -45,10 +46,80 @@
  
  // The following sequence depends on glibc's sys/ucontext.h.
  #if CPU(X86)
+diff -ruN webkitgtk-2.28.0-orig/Source/JavaScriptCore/runtime/OptionsList.h webkitgtk-2.28.0/Source/JavaScriptCore/runtime/OptionsList.h
+--- webkitgtk-2.28.0-orig/Source/JavaScriptCore/runtime/OptionsList.h	2020-02-06 19:38:18.000000000 +0900
++++ webkitgtk-2.28.0/Source/JavaScriptCore/runtime/OptionsList.h	2020-03-11 03:00:13.227330527 +0900
+@@ -90,9 +90,9 @@
+     \
+     v(Bool, reportMustSucceedExecutableAllocations, false, Normal, nullptr) \
+     \
+-    v(Unsigned, maxPerThreadStackUsage, 5 * MB, Normal, "Max allowed stack usage by the VM") \
+-    v(Unsigned, softReservedZoneSize, 128 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
+-    v(Unsigned, reservedZoneSize, 64 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
++    v(Unsigned, maxPerThreadStackUsage, 80 * KB, Normal, "Max allowed stack usage by the VM") \
++    v(Unsigned, softReservedZoneSize, 32 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
++    v(Unsigned, reservedZoneSize, 16 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
+     \
+     v(Bool, crashIfCantAllocateJITMemory, false, Normal, nullptr) \
+     v(Unsigned, jitMemoryReservationSize, 0, Normal, "Set this number to change the executable allocation size in ExecutableAllocatorFixedVMPool. (In bytes.)") \
+diff -ruN webkitgtk-2.28.0-orig/Source/ThirdParty/ANGLE/src/compiler/preprocessor/preprocessor_tab_autogen.cpp webkitgtk-2.28.0/Source/ThirdParty/ANGLE/src/compiler/preprocessor/preprocessor_tab_autogen.cpp
+--- webkitgtk-2.28.0-orig/Source/ThirdParty/ANGLE/src/compiler/preprocessor/preprocessor_tab_autogen.cpp	2020-02-05 19:02:04.000000000 +0900
++++ webkitgtk-2.28.0/Source/ThirdParty/ANGLE/src/compiler/preprocessor/preprocessor_tab_autogen.cpp	2020-03-11 02:58:14.251328168 +0900
+@@ -728,7 +728,7 @@
+ #if YYERROR_VERBOSE
  
---- a/Source/WebCore/xml/XPathGrammar.cpp
-+++ b/Source/WebCore/xml/XPathGrammar.cpp
-@@ -966,7 +966,7 @@ int yydebug;
+ #    ifndef yystrlen
+-#        if defined __GLIBC__ && defined _STRING_H
++#        if defined __linux__ && defined _STRING_H
+ #            define yystrlen strlen
+ #        else
+ /* Return the length of YYSTR.  */
+@@ -743,7 +743,7 @@
+ #    endif
+ 
+ #    ifndef yystpcpy
+-#        if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
++#        if defined __linux__ && defined _STRING_H && defined _GNU_SOURCE
+ #            define yystpcpy stpcpy
+ #        else
+ /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+diff -ruN webkitgtk-2.28.0-orig/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab_autogen.cpp webkitgtk-2.28.0/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab_autogen.cpp
+--- webkitgtk-2.28.0-orig/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab_autogen.cpp	2020-02-05 19:02:04.000000000 +0900
++++ webkitgtk-2.28.0/Source/ThirdParty/ANGLE/src/compiler/translator/glslang_tab_autogen.cpp	2020-03-11 02:58:52.557328928 +0900
+@@ -1737,7 +1737,7 @@
+ #if YYERROR_VERBOSE
+ 
+ #    ifndef yystrlen
+-#        if defined __GLIBC__ && defined _STRING_H
++#        if defined __linux__ && defined _STRING_H
+ #            define yystrlen strlen
+ #        else
+ /* Return the length of YYSTR.  */
+@@ -1752,7 +1752,7 @@
+ #    endif
+ 
+ #    ifndef yystpcpy
+-#        if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
++#        if defined __linux__ && defined _STRING_H && defined _GNU_SOURCE
+ #            define yystpcpy stpcpy
+ #        else
+ /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+diff -ruN webkitgtk-2.28.0-orig/Source/WTF/wtf/PlatformHave.h webkitgtk-2.28.0/Source/WTF/wtf/PlatformHave.h
+--- webkitgtk-2.28.0-orig/Source/WTF/wtf/PlatformHave.h	2020-02-26 19:34:01.000000000 +0900
++++ webkitgtk-2.28.0/Source/WTF/wtf/PlatformHave.h	2020-03-11 03:01:13.126331715 +0900
+@@ -222,7 +222,7 @@
+ #define HAVE_HOSTED_CORE_ANIMATION 1
+ #endif
+ 
+-#if OS(DARWIN) || OS(FUCHSIA) || ((OS(FREEBSD) || defined(__GLIBC__) || defined(__BIONIC__)) && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)))
++#if OS(DARWIN) || OS(FUCHSIA) || ((OS(FREEBSD) || defined(__linux__)) && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)))
+ #define HAVE_MACHINE_CONTEXT 1
+ #endif
+ 
+diff -ruN webkitgtk-2.28.0-orig/Source/WebCore/xml/XPathGrammar.cpp webkitgtk-2.28.0/Source/WebCore/xml/XPathGrammar.cpp
+--- webkitgtk-2.28.0-orig/Source/WebCore/xml/XPathGrammar.cpp	2020-02-04 19:24:08.000000000 +0900
++++ webkitgtk-2.28.0/Source/WebCore/xml/XPathGrammar.cpp	2020-03-11 02:54:54.929324215 +0900
+@@ -966,7 +966,7 @@
  #if YYERROR_VERBOSE
  
  # ifndef yystrlen
@@ -57,7 +128,7 @@
  #   define yystrlen strlen
  #  else
  /* Return the length of YYSTR.  */
-@@ -989,7 +989,7 @@ yystrlen (yystr)
+@@ -989,7 +989,7 @@
  # endif
  
  # ifndef yystpcpy
@@ -66,21 +137,4 @@
  #   define yystpcpy stpcpy
  #  else
  /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
-diff --git a/Source/JavaScriptCore/runtime/OptionsList.h b/Source/JavaScriptCore/runtime/OptionsList.h
-index 41cab118..2ac66c7a 100644
---- a/Source/JavaScriptCore/runtime/OptionsList.h
-+++ b/Source/JavaScriptCore/runtime/OptionsList.h
-@@ -90,9 +90,9 @@ constexpr bool enableWebAssemblyStreamingApi = false;
-     \
-     v(Bool, reportMustSucceedExecutableAllocations, false, Normal, nullptr) \
-     \
--    v(Unsigned, maxPerThreadStackUsage, 5 * MB, Normal, "Max allowed stack usage by the VM") \
--    v(Unsigned, softReservedZoneSize, 128 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
--    v(Unsigned, reservedZoneSize, 64 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
-+    v(Unsigned, maxPerThreadStackUsage, 80 * KB , Normal, "Max allowed stack usage by the VM") \
-+    v(Unsigned, softReservedZoneSize, 32 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
-+    v(Unsigned, reservedZoneSize, 16 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
-     \
-     v(Bool, crashIfCantAllocateJITMemory, false, Normal, nullptr) \
-     v(Unsigned, jitMemoryReservationSize, 0, Normal, "Set this number to change the executable allocation size in ExecutableAllocatorFixedVMPool. (In bytes.)") \
 
