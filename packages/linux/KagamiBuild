@@ -5,14 +5,14 @@
 # Section:     kernel
 
 name=linux
-version=5.5.13
-hardenedver=5.5.13.a
-uksmver=5.5
+version=5.6.2
+hardenedver=5.6.2.a
+uksmver=5.6
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-release=2
+release=1
 options=('~strip' 'bootstrap' '~ccache')
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch"
@@ -388,14 +388,6 @@ generate_config() {
 	yconfig TYPEC TYPEC_TCPM TYPEC_TCPCI TYPEC_RT1711H TYPEC_FUSB302 TYPEC_WCOVE TYPEC_UCSI UCSI_CCG UCSI_ACPI
 	mconfig TYPEC_TPS6598X TYPEC_MUX_PI3USB30532 TYPEC_DP_ALTMODE TYPEC_NVIDIA_ALTMODE
 
-	# Thunderbolt support (x86)
-	case $BARCH in
-		x86_64|i586)
-			yconfig THUNDERBOLT
-			mconfig THUNDERBOLT_NET INTEL_WMI_THUNDERBOLT
-			;;
-	esac
-
 	# IEEE 1394 support (x86 and ppc)
 	case $BARCH in
 		x86_64|i586|ppc64le|ppc64|ppc)
@@ -548,7 +540,7 @@ generate_config() {
 		MISDN_AVMFRITZ MISDN_SPEEDFAX MISDN_INFINEON MISDN_W6692 MISDN_NETJET MISDN_IPAC MISDN_ISAR ISDN_HDLC ISDN_I4L ISDN_CAPI ISDN_CAPI_CAPI20 ISDN_CAPI_CAPIDRV ISDN_DRV_AVMB1_B1PCI \
 		ISDN_DRV_AVMB1_AVM_CS ISDN_DRV_AVMB1_T1PCI ISDN_DRV_AVMB1_C4 ISDN_DIVAS ISDN_DIVAS_DIVACAPI ISDN_DIVAS_USERIDI ISDN_DIVAS_MAINT ISDN_DRV_GIGASET \
 		ISDN_PPP_BSDCOMP ISDN_DIVERSION ISDN_DRV_HISAX HISAX_SEDLBAUER_CS HISAX_ELSA_CS HISAX_AVM_A1_CS HISAX_TELES_CS HISAX_ST5481 HISAX_HFCUSB HISAX_HFC4S8S \
-		HISAX_FRITZ_PCIPNP HISAX NET_9P
+		HISAX_FRITZ_PCIPNP HISAX NET_9P WIREGUARD
 	nconfig IP_FIB_TRIE_STATS IP_PNP BET_IPGRE_BROADCAST TUN_VNET_CROSS_LE ISDN_CAPI_CAPIDRV_VERBOSE HISAX_DEBUG DECNET RDS_DEBUG
 	strconfig DEFAULT_TCP_CONG "cubic"
 	strconfig DEFAULT_NET_SCH "fq_codel"
@@ -887,9 +879,7 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-#	patch -Np1 -i "$SRC"/uksm-$uksmver.patch
-#	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
-	patch -Np1 -i "$STUFF"/linux/hardened+uksm-5.5.patch
+	patch -Np1 -i "$STUFF"/linux/hardened+uksm-5.6.patch
 	patch -Np1 -i "$STUFF"/linux/0001-WireGuard-support.patch
 	patch -Np1 -i "$STUFF"/linux/0002-blk.patch
 	patch -Np1 -i "$STUFF"/linux/0003-scsi.patch
