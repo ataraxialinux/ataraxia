@@ -1,0 +1,31 @@
+From 241b8027b60e65cce1635e607b296e25201076e0 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 5 Apr 2020 14:13:46 +0000
+Subject: [PATCH] fix strlen on musl-linux
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gnome-initial-setup/pages/account/gis-account-page-local.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/gnome-initial-setup/pages/account/gis-account-page-local.c b/gnome-initial-setup/pages/account/gis-account-page-local.c
+index ade79c6..118047b 100644
+--- a/gnome-initial-setup/pages/account/gis-account-page-local.c
++++ b/gnome-initial-setup/pages/account/gis-account-page-local.c
+@@ -313,11 +313,13 @@ fullname_changed (GtkWidget      *w,
+ 
+   if ((name == NULL || strlen (name) == 0) && !priv->has_custom_username) {
+     gtk_entry_set_text (GTK_ENTRY (entry), "");
++  /*
+   }
+   else if (name != NULL && strlen (name) != 0) {
+     generate_username_choices (name, GTK_LIST_STORE (model));
+     if (!priv->has_custom_username)
+       gtk_combo_box_set_active (GTK_COMBO_BOX (priv->username_combo), 0);
++  */
+   }
+ 
+   clear_entry_validation_error (GTK_ENTRY (w));
+-- 
+2.26.0
+
