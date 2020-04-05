@@ -35,22 +35,6 @@ diff -ruN rustc-1.40.0-src-orig/src/librustc_target/spec/linux_musl_base.rs rust
 +    base.crt_static_default = false;
      // These targets allow the user to choose between static and dynamic linking.
      base.crt_static_respected = true;
- 
-diff -ruN rustc-1.40.0-src-orig/src/libunwind/build.rs rustc-1.40.0-src/src/libunwind/build.rs
---- rustc-1.40.0-src-orig/src/libunwind/build.rs	2019-12-17 00:38:06.000000000 +0900
-+++ rustc-1.40.0-src/src/libunwind/build.rs	2019-12-20 23:11:49.950342451 +0900
-@@ -10,10 +10,7 @@
-         // Build the unwinding from libunwind C/C++ source code.
-         llvm_libunwind::compile();
-     } else if target.contains("linux") {
--        if target.contains("musl") {
--            // linking for musl is handled in lib.rs
--            llvm_libunwind::compile();
--        } else if !target.contains("android") {
-+        if !target.contains("android") {
-             println!("cargo:rustc-link-lib=gcc_s");
-         }
-     } else if target.contains("freebsd") {
 diff -ruN rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs rustc-1.40.0-src/vendor/libc/src/unix/mod.rs
 --- rustc-1.40.0-src-orig/vendor/libc/src/unix/mod.rs	2019-12-17 02:26:11.000000000 +0900
 +++ rustc-1.40.0-src/vendor/libc/src/unix/mod.rs	2019-12-20 23:11:49.954342354 +0900
