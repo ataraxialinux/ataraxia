@@ -6,10 +6,11 @@
 # Section:     base
 
 name=neko
-version=0.102.1
+version=0.490
 release=1
 options=('bootstrap')
-backup=('etc/neko/make.conf')
+backup=('etc/neko/make.conf'
+	'etc/neko/mask')
 source=("https://github.com/ataraxialinux/neko/archive/$version.tar.gz")
 
 build() {
@@ -23,9 +24,9 @@ build() {
 
 	install -Dm755 "$STUFF"/reposync "$PKG"/usr/bin/reposync
 
-	mkdir -p "$PKG"/etc "$PKG"/var/cache/{packages,sources}
+	mkdir -p "$PKG"/etc/neko "$PKG"/var/cache/{packages,sources}
 
-	mkdir -p "$PKG"/etc/neko
+	touch "$PKG"/etc/neko/mask
 	cat > "$PKG"/etc/neko/make.conf <<-EOF
 		# Uncomment if you want parallel build or add certain options for 'make' or 'ninja'
 		#

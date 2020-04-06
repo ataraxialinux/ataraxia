@@ -214,6 +214,8 @@ build_environment() {
 
 	USE_HOST=1 generate_config "$BUILD"/host.config
 	USE_TARGET=1 generate_config "$BUILD"/target.config
+
+	touch "$BUILD"/mask
 }
 
 
@@ -237,14 +239,14 @@ build_toolchain() {
 			$EXTRAPKG slibtool autoconf automake cracklib pkgconf; do
 		case $toolchain in
 			base-files|fortify-headers|linux-headers)
-				neko em -c "$BUILD"/host.config -r "$ROOTFS" -wnd ${toolchain}
+				neko em -c "$BUILD"/host.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
 				;;
 			musl)
-				neko em -c "$BUILD"/target.config -r "$ROOTFS" -wnd ${toolchain}
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
 				;;
 			*)
 				pushd "$TCREPO/host-$toolchain"
-					neko build -c "$BUILD"/host.config -wP
+					neko build -c "$BUILD"/host.config -m "$BUILD"/mask -wP
 				popd
 				;;
 		esac
@@ -311,7 +313,7 @@ build_target() {
 			wireless_tools wpa_supplicant gptfdisk wget keyring libssh2 c-ares libev nghttp2 curl lua rpm neko $LINUX"
 	fi
 
-	neko em -c "$BUILD"/target.config -r "$ROOTFS" -wnd $packages
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $packages
 }
 
 case $1 in
