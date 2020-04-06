@@ -5,7 +5,8 @@ Ataraxia Linux is an independent, multi-platform,  general purpose operating sys
 
 If you want to get help or advice, please, check out our [IRC](irc://irc.freenode.net/#ataraxialinux), [Telegram](https://t.me/ataraxialinux), [Matrix](https://matrix.to/#/#ataraxialinux:matrix.org), [Reddit](https://www.reddit.com/r/ataraxialinux/) and [Discord](https://discord.gg/KrrkEEG).
 
-Also, you can help us with finances. Check out our [Patreon page](https://www.patreon.com/ataraxialinux).
+Also, you can help us with finances. Check out our [Patreon page](https://www.patreon.com/ataraxialinux)
+and Ethereum wallet: 0xE72931051e4aDB1c79bbAcad1E1427B2D4eD0D01
 
 ## Documentation
 * [About the build system](docs/aboutbuildsystem.md)
