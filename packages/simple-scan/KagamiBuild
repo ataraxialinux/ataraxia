@@ -1,7 +1,7 @@
 # Description: Simple scanning utility
 # URL:         https://gitlab.gnome.org/GNOME/simple-scan
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson vala yelp-tools colord gtk3 dconf libgusb
+# Depends on:  meson vala colord gtk3 dconf libgusb
 # Section:     gnome
 
 name=simple-scan
@@ -11,6 +11,8 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i "s|subdir ('help')|# subdir ('help')|" meson.build
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version
