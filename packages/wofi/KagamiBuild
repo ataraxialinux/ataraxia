@@ -1,7 +1,7 @@
 # Description: Rofi-like wlroots launcher
 # URL:         https://hg.sr.ht/~scoopta/wofi
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  wayland gtk3
+# Depends on:  meson gtk3
 # Section:     x11
 
 name=wofi
@@ -11,7 +11,9 @@ source=("https://hg.sr.ht/~scoopta/wofi/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version/Release
-	make
-
-	install -Dm755 wofi "$PKG"/usr/bin/wofi
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version/Release
+	ninja
+	DESTDIR="$PKG" ninja install
 }
