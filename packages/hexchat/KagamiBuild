@@ -1,20 +1,19 @@
 # Description: A popular and easy to use graphical IRC (chat) client
 # URL:         https://hexchat.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson gtk2 lua libnotify libcanberra libproxy
+# Depends on:  meson gtk2 luajit libnotify libcanberra libproxy
 # Section:     web
 
 name=hexchat
 version=2.14.3
-release=1
+release=2
 source=("https://dl.hexchat.net/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version \
-		-Dwith-lua=lua
+	ataraxia-meson "$SRC"/$name-$version
 	ninja
 	DESTDIR="$PKG" ninja install
 }

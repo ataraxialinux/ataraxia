@@ -6,15 +6,17 @@
 
 name=xorg-server
 version=1.20.8
-release=3
+release=4
 source=("https://xorg.freedesktop.org/releases/individual/xserver/$name-$version.tar.bz2")
 
 build() {
+	export CFLAGS=${CFLAGS/,-z,now}
 	export CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t"
 	export LDFLAGS="-Wl,-z,lazy"
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/xorg-server/rootless.patch
+	patch -Np1 -i "$STUFF"/xorg-server/shadow.patch
 
 	mkdir -p build
 	cd build
