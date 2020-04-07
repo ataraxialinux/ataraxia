@@ -6,13 +6,15 @@
 
 name=ghostscript
 version=9.52
-release=1
+release=2
 source=("https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs${version/./}/$name-${version}.tar.xz"
 	"https://downloads.sourceforge.net/gs-fonts/ghostscript-fonts-std-8.11.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	rm -rf freetype lcms2mt jpeg libpng openjpeg zlib
+	patch -Np1 -i "$STUFF"/ghostscript/sprintf.patch
+
+	rm -rf freetype jpeg lcms2mt libpng openjpeg tiff zlib cups/libs
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
