@@ -1,13 +1,13 @@
 # Description: IP Routing Utilities
 # URL:         https://git.kernel.org/pub/scm/network/iproute2/iproute2.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libcap iptables
+# Depends on:  libcap
 # Priority:    required
 # Section:     net
 
 name=iproute2
 version=5.6.0
-release=1
+release=2
 backup=('etc/iproute2/ematch_map'
 	'etc/iproute2/rt_dsfield'
 	'etc/iproute2/rt_protos'
@@ -24,7 +24,7 @@ build() {
 	patch -Np1 -i "$STUFF"/iproute2/musl-fixes.patch
 	patch -Np1 -i "$STUFF"/iproute2/avoid-arpd.patch
 
-	sed -i 's:/usr/local:/usr:' tc/m_ipt.c include/iptables.h
+	sed -i 's/.m_ipt.o//' tc/Makefile
 	sed -i -e 's:=/share:=/usr/share:' \
 		-e 's:-Werror::' Makefile
 	sed -e 's/^check_elf$/echo "no"/' -i configure

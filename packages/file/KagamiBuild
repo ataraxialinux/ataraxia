@@ -12,6 +12,21 @@ options=('bootstrap')
 source=("ftp://ftp.astron.com/pub/$name/$name-$version.tar.gz")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		cd "$SRC"
+		cp -a $name-$version file-bootstrap
+		(
+			unset CC CXX AR AS RANLIB LD STRIP
+			cd file-bootstrap
+			./configure \
+				--prefix="$SRC"/file \
+				--disable-libseccomp
+			make
+			make install
+		)
+		export PATH="$SRC/file/bin:$PATH"
+	fi
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

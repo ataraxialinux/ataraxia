@@ -15,6 +15,11 @@ build() {
 	CFLAGS="$CFLAGS -static"
 
 	cd "$SRC"/$name
-	make CC="$CC" CFLAGS="$CFLAGS"
+	patch -Np1 -i "$STUFF"/hostname/musl.patch
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CC="$CC" CFLAGS="$CFLAGS"
+	else
+		make CFLAGS="$CFLAGS"
+	fi
 	make BINDIR=/usr/bin BASEDIR="$PKG" install
 }

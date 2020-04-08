@@ -1,13 +1,13 @@
 # Description: A mouse server for the console and xterm
 # URL:         https://www.nico.schottelius.org/software/gpm/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses texinfo
+# Depends on:  netbsd-curses
 # Section:     utils
 
 name=gpm
 commit=1fd19417b8a4dd9945347e98dfa97e4cfd798d77
 version=1.20.7+${commit}
-release=1
+release=2
 source=("https://github.com/telmich/gpm/archive/$commit.tar.gz")
 
 build() {
@@ -20,8 +20,8 @@ build() {
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc
-	make
-	make DESTDIR="$PKG" install
+	make MAKEINFO="true"
+	make MAKEINFO="true" DESTDIR="$PKG" install
 
 	cd "$PKG"/usr/lib
 	ln -sf libgpm.so.2.* libgpm.so
