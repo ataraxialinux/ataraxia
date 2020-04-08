@@ -29,10 +29,12 @@ build_busybox() {
 }
 
 generate_initramfs() {
-	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam libpwquality attr acl libcap \
-		shadow pcre grep mksh bash expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive lzo kmod busybox \
-		mawk hostname dialog pigz libmnl libnl iproute2 kbd nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools \
-		hwids eudev openrc netifrc wireless_tools wpa_supplicant popt gptfdisk wget linux"
+	packages="base-files netbase linux-headers musl tzdata zlib netbsd-curses readline \
+		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh bash \
+		expat libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
+		coreutils sbase busybox dialog pigz iproute2 kbd vim libcap-ng util-linux \
+		e2fsprogs btrfs-progs hwids eudev openrc netifrc lua rpm libnl wireless_tools \
+		wpa_supplicant popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
 
@@ -45,43 +47,9 @@ generate_initramfs() {
 		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
 		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/
 
-		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
-				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
-				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
-				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio; do
-			rm -rf usr/bin/$bins
-		done
-
-		ln -sf bsdtar usr/bin/tar
-		ln -sf bsdcpio usr/bin/cpio
-
-		rm -rf usr/include
-		rm -rf usr/share/man
-		rm -rf usr/share/doc
-		rm -rf usr/share/info
-		rm -rf usr/share/icons
-		rm -rf usr/share/perl5
-		rm -rf usr/share/bash-completion
-		rm -rf usr/share/applications
-		rm -rf usr/share/aclocal
-		rm -rf usr/share/cracklib
-		rm -rf usr/share/dict
-		rm -rf usr/share/nano
-		rm -rf usr/lib/modules/*/kernel/sound
-		rm -rf usr/lib/modules/*/kernel/drivers/gpu
-		rm -rf etc/nanorc
-
-		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null || true
-		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
-		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null || true
-
-		find . -name "*.a" -print0 | xargs -0 rm -rf
-		find . -name "*.h" -print0 | xargs -0 rm -rf
-		find . -name "*.hpp" -print0 | xargs -0 rm -rf
-		find . -name "*.pc" -print0 | xargs -0 rm -r
-
 		mv $(realpath boot/vmlinuz) "$ISODIR"/seiba/seiba
 		rm -rf boot/vmlinuz
+		rm -rf boot/config*
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd

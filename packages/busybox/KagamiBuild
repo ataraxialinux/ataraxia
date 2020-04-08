@@ -12,12 +12,12 @@ source=("http://busybox.net/downloads/$name-$version.tar.bz2")
 
 
 build_busybox_standard() {
-	cp "$STUFF"/busybox/config .config
-
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" defconfig
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS"
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links
 	else
+		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" defconfig
 		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS"
 		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" busybox.links
 	fi
