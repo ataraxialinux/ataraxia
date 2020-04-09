@@ -1,13 +1,13 @@
 # Description: Vi Improved, a highly configurable, improved version of the vi text editor
 # URL:         https://www.vim.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses acl pcre
+# Depends on:  netbsd-curses acl pcre
 # Priority:    required
 # Section:     editors
 
 name=vim
-version=8.3.0525
-release=3
+version=8.2.0525
+release=2
 options=('bootstrap')
 source=("https://github.com/vim/vim/archive/v$version.tar.gz")
 
@@ -15,7 +15,7 @@ build() {
 	export vim_cv_terminfo=yes
 	export vim_cv_tgetent=zero
 	export vim_cv_tty_group=world
-	export vim_cv_tty_mode=0630
+	export vim_cv_tty_mode=0620
 	export vim_cv_getcwd_broken=no
 	export vim_cv_stat_ignores_slash=yes
 	export vim_cv_memmove_handles_overlap=yes
@@ -24,11 +24,12 @@ build() {
 	export vim_cv_toupper_broken=no
 
 	cd "$SRC"/vim-$version
+	LIBS="-lterminfo" \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--localstatedir=/var/lib/vim \
 		--with-compiledby='Ataraxia Linux' \
-		--with-features=normal \
+		--with-features=huge \
 		--with-tlib=ncursesw \
 		--without-x \
 		--enable-multibyte \

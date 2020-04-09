@@ -199,7 +199,7 @@ setup_environment() {
 		export CPPFLAGS="-D_FORTIFY_SOURCE=2"
 	fi
 	if [ -z "$CFLAGS" ]; then
-		export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fno-unwind-tables -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
+		export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
 	fi
 	if [ -z "$CXXFLAGS" ]; then
 		export CXXFLAGS="$CFLAGS"
@@ -234,7 +234,7 @@ build_toolchain() {
 				;;
 	esac
 
-	for toolchain in rpm base-files gettext-tiny m4 bison flex bc ncurses kmod gperf \
+	for toolchain in rpm base-files gettext-tiny m4 bison flex bc kmod gperf \
 			linux-headers binutils gcc-static musl gcc $EXTRAPKG slibtool \
 			autoconf automake cracklib pkgconf; do
 		case $toolchain in
@@ -305,7 +305,7 @@ build_target() {
 		packages="$LINUX busybox mksh"
 	else
 		packages="netbase tzdata man-pages musl-tools gettext-tiny zlib file \
-			ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+			netbsd-curses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
 			ccache bzip2 pkgconf cracklib pam libpwquality attr acl libcap shadow \
 			pcre grep mksh bash slibtool gdbm db expat perl libressl nettle ca-certificates \
 			autoconf automake xz lzip lz4 zstd libarchive lzo kmod libuargp libelf coreutils \
