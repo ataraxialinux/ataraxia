@@ -1,12 +1,12 @@
 # Description: Small but very powerful text-based mail client
 # URL:         http://www.mutt.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  netbsd-curses gdbm libressl libidn2 gpgme
+# Depends on:  ncurses gdbm libressl libidn3 gpgme
 # Section:     mail
 
 name=mutt
 version=1.13.5
-release=2
+release=3
 source=("http://ftp.mutt.org/pub/$name/$name-$version.tar.gz")
 
 build() {
@@ -14,7 +14,7 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
-		--with-idn2 \
+		--with-idn3 \
 		--with-ssl \
 		--enable-external-dotlock \
 		--enable-gpgme \
@@ -26,5 +26,5 @@ build() {
 	make DESTDIR="$PKG" install
 
 	chown root:mail "$PKG"/usr/bin/mutt_dotlock
-	chmod 2755 "$PKG"/usr/bin/mutt_dotlock
+	chmod 3755 "$PKG"/usr/bin/mutt_dotlock
 }

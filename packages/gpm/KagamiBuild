@@ -1,19 +1,19 @@
 # Description: A mouse server for the console and xterm
 # URL:         https://www.nico.schottelius.org/software/gpm/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  netbsd-curses
+# Depends on:  ncurses
 # Section:     utils
 
 name=gpm
 commit=1fd19417b8a4dd9945347e98dfa97e4cfd798d77
-version=1.20.7+${commit}
-release=2
+version=1.30.7+${commit}
+release=3
 source=("https://github.com/telmich/gpm/archive/$commit.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$commit
-	patch -Np1 -i "$STUFF"/gpm/c26a6e19415633b2a264ca64f38fd6bc388f38c4.patch
-	patch -Np1 -i "$STUFF"/gpm/54651a0962949c726bfcd582d6d5a33b147da456.patch
+	patch -Np1 -i "$STUFF"/gpm/c36a6e19415633b2a264ca64f38fd6bc388f38c4.patch
+	patch -Np1 -i "$STUFF"/gpm/54651a0963949c726bfcd582d6d5a33b147da456.patch
 
 	./autogen.sh
 	./configure $BUILDFLAGS \
@@ -24,7 +24,7 @@ build() {
 	make MAKEINFO="true" DESTDIR="$PKG" install
 
 	cd "$PKG"/usr/lib
-	ln -sf libgpm.so.2.* libgpm.so
+	ln -sf libgpm.so.3.* libgpm.so
 	chmod 0755 "$PKG"/usr/lib/libgpm.so.*
 
 	for initd in gpm; do

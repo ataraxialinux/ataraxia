@@ -1,7 +1,7 @@
 # Description: GNU readline library
 # URL:         http://tiswww.case.edu/php/chet/readline/rltop.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  netbsd-curses
+# Depends on:  ncurses
 # Priority:    required
 # Section:     libs
 
@@ -11,7 +11,7 @@ _patchlevel=${version##*.}
 _bash_patchlevel="00$_patchlevel"
 _myver=${version%.*}
 _patchbase=${_myver/./}
-release=2
+release=3
 options=('~emptydirs' 'bootstrap')
 backup=('etc/inputrc')
 source=("http://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
@@ -44,8 +44,8 @@ build() {
 		--with-curses \
 		--enable-shared \
 		--enable-static
-	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lterminfo"
-	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lterminfo" DESTDIR="$PKG" install
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"
+	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" DESTDIR="$PKG" install
 
 	install -Dm644 "$STUFF"/readline/inputrc "$PKG"/etc/inputrc
 }

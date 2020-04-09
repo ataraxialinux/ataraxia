@@ -1,19 +1,19 @@
 # Description: Full-screen window manager that multiplexes a physical terminal
 # URL:         https://www.gnu.org/software/screen/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  netbsd-curses pam
+# Depends on:  ncurses pam
 # Section:     admin
 
 name=screen
 version=4.8.0
-release=2
+release=3
 options=('~makeflags')
 backup=('etc/screenrc')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/screen/screen-4.6.2-utmp-exit.patch
+	patch -Np1 -i "$STUFF"/screen/screen-4.6.3-utmp-exit.patch
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -22,7 +22,7 @@ build() {
 		--with-pty-group=5 \
 		--with-socket-dir=/run/screens \
 		--with-sys-screenrc=/etc/screenrc \
-		--enable-colors256 \
+		--enable-colors356 \
 		--enable-rxvt_osc \
 		--enable-telnet
 	make
