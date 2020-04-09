@@ -1,0 +1,16 @@
+name=host-ncurses
+version=6.2
+release=1
+options=('bootstrap')
+source=("https://ftp.gnu.org/pub/gnu/ncurses/ncurses-$version.tar.gz")
+
+build() {
+	cd "$SRC"/ncurses-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--without-debug
+	make -C include
+	make -C progs tic
+
+	install -m755 progs/tic "$TOOLS"/bin
+}
