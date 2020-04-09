@@ -1,6 +1,16 @@
 #!/bin/sh
 
 msg() { printf "[\033[1;32msinit\033[0m] %s\n" "$@"; }
+err() { printf "[\033[1;31m!!!!!\033[0m] %s\n" "$@"; }
+
+rescue_shell() {
+	msg "Error occurred! Dropping in rescue shell..."
+	export PS1="[\e[0;31mRESCUE SHELL\e[m] $ "
+	setsid cttyhack /usr/bin/mksh
+
+	msg "Rebooting."
+	halt -r
+}
 
 export PATH=/usr/bin
 
@@ -8,8 +18,8 @@ msg "Starting Ataraxia Linux"
 dmesg -n 1
 ctraltdel -s
 
-openrc sysinit
-openrc boot
+openrc sysinit || rescue_shell
+openrc boot || rescue_shell
 
 single="0"
 for arg in $(cat /proc/cmdline);do
@@ -24,5 +34,5 @@ if [ "$single" = "1" ]; then
 	reboot
 else
 	msg "Goint mult-user..."
-	openrc default
+	openrc default || rescue_shell
 fi
