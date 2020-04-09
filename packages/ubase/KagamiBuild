@@ -1,0 +1,22 @@
+# Description: A suckless variant of the Linux system utilities
+# URL:         https://core.suckless.org/ubase/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=ubase
+version=52773c0417a7898fcbf5dce2f690213649e7bca7
+release=1
+options=('bootstrap')
+source=("https://github.com/michaelforney/ubase/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CPPFLAGS $CFLAGS" LDFLAGS='-static'
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CPPFLAGS $CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+	else
+		make CFLAGS="$CPPFLAGS $CFLAGS" LDFLAGS='-static'
+		make CFLAGS="$CPPFLAGS $CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+	fi
+}

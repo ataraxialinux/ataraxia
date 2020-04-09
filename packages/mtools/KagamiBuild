@@ -1,12 +1,11 @@
 # Description: A collection of utilities to access MS-DOS disks
 # URL:         https://www.gnu.org/software/mtools/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  texinfo
 # Section:     admin
 
 name=mtools
 version=4.0.24
-release=1
+release=2
 backup=('etc/mtools.conf')
 source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.bz2")
 
@@ -20,8 +19,8 @@ build() {
 		--infodir=/usr/share/info \
 		--sysconfdir=/etc \
 		--without-x
-	make
-	make -j1 DESTDIR="$PKG" install
+	make MAKEINFO="true"
+	make MAKEINFO="true" -j1 DESTDIR="$PKG" install
 
 	install -Dm644 mtools.conf "$PKG"/etc/mtools.conf
 }
