@@ -1,33 +1,5 @@
 #!/bin/bash
 
-build_busybox() {
-	local busyboxver="1.31.1"
-
-	pushd "$SRCDEST"
-		rm -rf busybox-$busyboxver
-		tar -xf busybox-$busyboxver.tar.bz2
-
-		cd busybox-$busyboxver
-		patch -Np1 -i "$STUFF"/busybox/musl.patch
-		make mrproper $MKOPTS
-
-		cp "$STUFF"/busybox/live-config .config
-
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" $MKOPTS
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links $MKOPTS
-
-		install -Dm4755 busybox "$INITRAMFS"/usr/bin/busybox
-
-		for applet in `cat busybox.links|sed 's|^.*/||'`; do
-			if [ ! -L "$INITRAMFS/usr/bin/$applet" ]; then
-				ln -sf busybox "$INITRAMFS"/usr/bin/$applet
-			fi
-		done
-
-		rm -rf busybox-$busyboxver
-	popd
-}
-
 generate_initramfs() {
 	packages="base-files netbase linux-headers musl tzdata zlib netbsd-curses readline \
 		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh bash \
@@ -37,8 +9,6 @@ generate_initramfs() {
 		wpa_supplicant popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
-
-	build_busybox
 
 	pushd "$INITRAMFS"
 		sed -i 's/agetty --noclear 38400 tty1 linux/agetty --autologin root --noclear 38400 tty1 linux/g' etc/inittab
@@ -66,7 +36,7 @@ make_iso_x86() {
 			efi="bootx64.efi"
 			;;
 		i586)
-			format="i586-efi"
+			format="i386-efi"
 			efi="bootia32.efi"
 			;;
 	esac
