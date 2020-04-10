@@ -5,23 +5,22 @@ generate_initramfs() {
 		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh \
 		expat db libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
 		coreutils sbase ubase sinit busybox dialog pigz iproute2 kbd nano libcap-ng util-linux \
-		e2fsprogs btrfs-progs hwids eudev openrc netifrc lua rpm libnl wireless_tools \
+		e2fsprogs btrfs-progs hwids eudev openrc netifrc libnl wireless_tools \
 		wpa_supplicant popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
 
 	pushd "$INITRAMFS"
-		rm -rf usr/lib/modules/*/kernel/drivers/{bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
+		rm -rf usr/lib/modules/*/kernel/drivers/{crypto,bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
 		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
-		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/pkgconfig usr/lib/rpm* usr/lib/lua usr/include usr/share/aclocal usr/share/bash-completion
-		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc
+		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/crypto usr/lib/pkgconfig usr/include \
+		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
 				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
 				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio bzless bzfgrep bzegrep \
-				bzcmp openssl lua gendiff rpm2archive rpm2cpio rpmbuild rpmdb rpmgraph rpmkeys \
-				rpmquery rpmsign rpmspec rpmverify nl*; do
+				bzcmp openssl nl*; do
 			rm -rf usr/bin/$bins
 		done
 
@@ -58,17 +57,17 @@ make_iso_x86() {
 			;;
 	esac
 
-cat << CEOF > "$GRUBEFICFG"
-search --no-floppy --set=root --label "ataraxialinux"
-set prefix=(\$root)/boot/grub
-CEOF
+	cat > "$GRUBEFICFG" <<- EOF
+		search --no-floppy --set=root --label "ataraxialinux"
+		set prefix=(\$root)/boot/grub
+	EOF
 
-cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
-menuentry "Ataraxia Linux" {
-linux	/seiba/seiba rw quiet
-initrd	/seiba/seiba.zst
-}
-CEOF
+	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
+			menuentry "Ataraxia Linux" {
+			linux	/seiba/seiba rw quiet live=1
+			initrd	/seiba/seiba.zst
+		}
+	EOF
 
 	"$BUILD"/tools/bin/grub-mkimage \
 		--config="$GRUBEFICFG" \
@@ -89,31 +88,31 @@ CEOF
 	cp -a "$STUFF"/mklive/chain.c32 "$ISODIR"/boot/isolinux
 	cp -a "$STUFF"/mklive/background.png "$ISODIR"/boot/isolinux/background.png
 
-cat << CEOF > "$ISODIR"/boot/isolinux/isolinux.cfg
-UI vesamenu.c32
-PROMPT 0
-TIMEOUT 100
-ONTIMEOUT ataraxialinux
-MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
-MENU AUTOBOOT BIOS default device boot in # second{,s}...
-MENU BACKGROUND /boot/isolinux/background.png
-MENU WIDTH 78
-MENU MARGIN 1
-MENU ROWS 4
-MENU VSHIFT 2
-MENU TIMEOUTROW 8
-MENU TABMSGROW 2
-MENU CMDLINEROW 11
-MENU HELPMSGROW 16
-MENU HELPMSGENDROW 29
-MENU COLOR title        * #9000FF *
-MENU COLOR border       * #00000000 #00000000 none
-MENU COLOR sel          * #ffffffff #9000FF *
-LABEL ataraxialinux
-MENU LABEL Ataraxia Linux
-KERNEL /seiba/seiba rw quiet
-APPEND initrd=/seiba/seiba.zst
-CEOF
+	cat > "$ISODIR"/boot/isolinux/isolinux.cfg <<- EOF
+		UI vesamenu.c32
+		PROMPT 0
+		TIMEOUT 100
+		ONTIMEOUT ataraxialinux
+		MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+		MENU AUTOBOOT BIOS default device boot in # second{,s}...
+		MENU BACKGROUND /boot/isolinux/background.png
+		MENU WIDTH 78
+		MENU MARGIN 1
+		MENU ROWS 4
+		MENU VSHIFT 2
+		MENU TIMEOUTROW 8
+		MENU TABMSGROW 2
+		MENU CMDLINEROW 11
+		MENU HELPMSGROW 16
+		MENU HELPMSGENDROW 29
+		MENU COLOR title        * #9000FF *
+		MENU COLOR border       * #00000000 #00000000 none
+		MENU COLOR sel          * #ffffffff #9000FF *
+		LABEL ataraxialinux
+		MENU LABEL Ataraxia Linux
+		KERNEL /seiba/seiba rw quiet
+		APPEND initrd=/seiba/seiba.zst
+	EOF
 
 	xorriso -as mkisofs \
 		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
@@ -135,12 +134,12 @@ CEOF
 make_iso_ppc() {
 	mkdir -p "$TOOLS"/share/grub "$ISODIR"/boot/grub
 
-cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
-menuentry "Ataraxia Linux" {
-linux	/seiba/seiba root=/dev/ram0 rw quiet
-initrd	/seiba/seiba.zst
-}
-CEOF
+	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
+		menuentry "Ataraxia Linux" {
+			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1
+			initrd	/seiba/seiba.zst
+		}
+	EOF
 
 	"$BUILD"/tools/bin/grub-mkrescue \
 		--output "$BUILD"/ataraxialinux-$BARCH.iso "$ISODIR"/ \
