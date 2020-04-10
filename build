@@ -49,7 +49,6 @@ if [ "$USE_TARGET" = "1" ]; then
 		export TOOLS="$TOOLS"
 		export PKGDEST="$PACKAGES"
 		export SRCDEST="$SOURCES"
-		export CPPFLAGS="$CPPFLAGS"
 		export CFLAGS="$CFLAGS"
 		export CXXFLAGS="$CXXFLAGS"
 		export XHOST="$XHOST"
@@ -85,7 +84,6 @@ elif [ "$USE_HOST" = "1" ]; then
 		export TOOLS="$TOOLS"
 		export PKGDEST="$PACKAGES"
 		export SRCDEST="$SOURCES"
-		export CPPFLAGS="$CPPFLAGS"
 		export CFLAGS="$CFLAGS"
 		export CXXFLAGS="$CXXFLAGS"
 		export XHOST="$XHOST"
@@ -195,11 +193,8 @@ setup_environment() {
 			;;
 	esac
 
-	if [ -z "$CPPFLAGS" ]; then
-		export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	fi
 	if [ -z "$CFLAGS" ]; then
-		export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
+		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
 	fi
 	if [ -z "$CXXFLAGS" ]; then
 		export CXXFLAGS="$CFLAGS"
