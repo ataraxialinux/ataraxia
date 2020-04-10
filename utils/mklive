@@ -1,24 +1,42 @@
 #!/bin/bash
 
 generate_initramfs() {
-	packages="base-files netbase linux-headers musl tzdata zlib ncurses readline \
-		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh bash \
-		expat libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
-		coreutils sbase ubase sinit busybox dialog pigz iproute2 kbd vim libcap-ng util-linux \
+	packages="base-files netbase linux-headers musl zlib ncurses readline \
+		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh \
+		expat db libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
+		coreutils sbase ubase sinit busybox dialog pigz iproute2 kbd nano libcap-ng util-linux \
 		e2fsprogs btrfs-progs hwids eudev openrc netifrc lua rpm libnl wireless_tools \
 		wpa_supplicant popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
 
 	pushd "$INITRAMFS"
+		rm -rf usr/lib/modules/*/kernel/drivers/{bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
+		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
+		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/pkgconfig usr/lib/rpm* usr/lib/lua usr/include usr/share/aclocal usr/share/bash-completion
+		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc
+
+		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
+				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
+				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
+				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio bzless bzfgrep bzegrep \
+				bzcmp openssl lua gendiff rpm2archive rpm2cpio rpmbuild rpmdb rpmgraph rpmkeys \
+				rpmquery rpmsign rpmspec rpmverify nl*; do
+			rm -rf usr/bin/$bins
+		done
+
+		ln -sf bsdtar usr/bin/tar
+		ln -sf bsdcpio usr/bin/cpio
+
 		ln -sf usr/bin/init init
 
 		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
 		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/
 
 		mv $(realpath boot/vmlinuz) "$ISODIR"/seiba/seiba
-		rm -rf boot/vmlinuz
-		rm -rf boot/config*
+		rm -rf boot
+
+		find . -name "*.a" -print0 | xargs -0 rm -rf
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
