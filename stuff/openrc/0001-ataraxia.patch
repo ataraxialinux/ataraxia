@@ -97,3 +97,124 @@ index 89707120..4b5046a6 100644
 -- 
 2.25.1
 
+From bb5740030ba783d0afb45730b80c1e3e7f04ee89 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 11 Apr 2020 00:18:53 +0900
+Subject: [PATCH] ataraxia 2
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ init.d/Makefile       |  3 +--
+ init.d/agetty.in      | 14 +++++++++-----
+ init.d/consolefont.in |  1 -
+ init.d/keymaps.in     |  1 -
+ 4 files changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/init.d/Makefile b/init.d/Makefile
+index c97aeda9..0e333d48 100644
+--- a/init.d/Makefile
++++ b/init.d/Makefile
+@@ -23,8 +23,7 @@ SRCS-FreeBSD+=	adjkerntz.in devd.in dumpon.in encswap.in ipfw.in \
+ 
+ SRCS-Linux=	agetty.in binfmt.in devfs.in cgroups.in dmesg.in hwclock.in \
+ 	consolefont.in keymaps.in killprocs.in modules.in \
+-	mount-ro.in mtab.in numlock.in procfs.in net-online.in save-keymaps.in \
+-	save-termencoding.in sysfs.in termencoding.in
++	mount-ro.in mtab.in numlock.in procfs.in net-online.in save-keymaps.in sysfs.in
+ 
+ # Generic BSD scripts
+ SRCS-NetBSD=	hostid.in moused.in newsyslog.in pf.in rarpd.in rc-enabled.in \
+diff --git a/init.d/agetty.in b/init.d/agetty.in
+index e4866f7a..eec6c0d7 100644
+--- a/init.d/agetty.in
++++ b/init.d/agetty.in
+@@ -12,11 +12,15 @@
+ description="start agetty on a terminal line"
+ supervisor=supervise-daemon
+ port="${RC_SVCNAME#*.}"
+-respawn_period="${respawn_period:-60}"
+-term_type="${term_type:-linux}"
+-command=/sbin/agetty
+-command_args_foreground="${agetty_options} ${port} ${baud} ${term_type}"
+-pidfile="/run/${RC_SVCNAME}.pid"
++command=/usr/bin/agetty
++case ${port} in
++	ttyS*|ttyUSB*|ttyAMA*)
++		command_args_foreground="-L always ${port} 115200 vt100"
++		;;
++	*)
++		command_args_foreground="${port} 38400 linux"
++		;;
++esac
+ 
+ depend() {
+ 	after local
+diff --git a/init.d/consolefont.in b/init.d/consolefont.in
+index d65dd14c..72c6a687 100644
+--- a/init.d/consolefont.in
++++ b/init.d/consolefont.in
+@@ -13,7 +13,6 @@ description="Sets a font for the consoles."
+ 
+ depend()
+ {
+-	need termencoding
+ 	after hotplug bootmisc modules
+ 	keyword -docker -lxc -openvz -prefix -systemd-nspawn -uml -vserver -xenu
+ }
+diff --git a/init.d/keymaps.in b/init.d/keymaps.in
+index 16ddcc96..511118f7 100644
+--- a/init.d/keymaps.in
++++ b/init.d/keymaps.in
+@@ -13,7 +13,6 @@ description="Applies a keymap for the consoles."
+ 
+ depend()
+ {
+-	need termencoding
+ 	after devfs
+ 	keyword -docker -lxc -openvz -prefix -systemd-nspawn -uml -vserver -xenu
+ }
+-- 
+2.25.1
+
+From c3d3c16ed7e74ade1ffee8882dc08f5d346746e4 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 11 Apr 2020 00:24:38 +0900
+Subject: [PATCH] ataraxia 3
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ init.d/agetty.in   | 3 +++
+ src/rc/fstabinfo.c | 3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/init.d/agetty.in b/init.d/agetty.in
+index eec6c0d7..bbd3413c 100644
+--- a/init.d/agetty.in
++++ b/init.d/agetty.in
+@@ -17,6 +17,9 @@ case ${port} in
+ 	ttyS*|ttyUSB*|ttyAMA*)
+ 		command_args_foreground="-L always ${port} 115200 vt100"
+ 		;;
++	tty1)
++		command_args_foreground="${port} --noclear 38400 linux"
++		;;
+ 	*)
+ 		command_args_foreground="${port} 38400 linux"
+ 		;;
+diff --git a/src/rc/fstabinfo.c b/src/rc/fstabinfo.c
+index a35a52f6..ad68390a 100644
+--- a/src/rc/fstabinfo.c
++++ b/src/rc/fstabinfo.c
+@@ -272,9 +272,6 @@ int main(int argc, char **argv)
+ 		while ((ent = GET_ENT))
+ 			rc_stringlist_add(files, ENT_FILE(ent));
+ 		END_ENT;
+-
+-		if (!TAILQ_FIRST(files))
+-			eerrorx("%s: empty fstab", argv[0]);
+ 	}
+ 
+ 	if (!TAILQ_FIRST(files)) {
+-- 
+2.25.1
+

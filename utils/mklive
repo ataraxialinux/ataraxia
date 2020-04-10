@@ -1,9 +1,9 @@
 #!/bin/bash
 
 generate_initramfs() {
-	packages="base-files netbase linux-headers musl zlib ncurses readline \
+	packages="base-files netbase linux-headers musl zlib file ncurses readline \
 		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh \
-		expat db libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
+		expat libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
 		coreutils sbase ubase sinit busybox dialog pigz iproute2 kbd nano libcap-ng util-linux \
 		e2fsprogs btrfs-progs hwids eudev openrc netifrc libnl wireless_tools \
 		wpa_supplicant popt gptfdisk wget linux"
@@ -11,7 +11,7 @@ generate_initramfs() {
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
 
 	pushd "$INITRAMFS"
-		rm -rf usr/lib/modules/*/kernel/drivers/{crypto,bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
+		rm -rf usr/lib/modules/*/kernel/drivers/{bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
 		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
 		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/crypto usr/lib/pkgconfig usr/include \
 		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
@@ -20,7 +20,7 @@ generate_initramfs() {
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
 				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
 				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio bzless bzfgrep bzegrep \
-				bzcmp openssl nl*; do
+				bzcmp openssl nl* file; do
 			rm -rf usr/bin/$bins
 		done
 
