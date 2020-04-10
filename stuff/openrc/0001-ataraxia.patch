@@ -1,0 +1,99 @@
+From 8ba943fc6d6328214d0aa0b96d739a8863566465 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 10 Apr 2020 23:52:45 +0900
+Subject: [PATCH] ataraxia
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ init.d/devfs.in      | 10 +---------
+ init.d/killprocs.in  |  4 ++--
+ init.d/localmount.in |  1 -
+ init.d/netmount.in   |  1 -
+ init.d/sysfs.in      |  3 ---
+ 5 files changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/init.d/devfs.in b/init.d/devfs.in
+index 61ba45f8..5602b348 100644
+--- a/init.d/devfs.in
++++ b/init.d/devfs.in
+@@ -35,12 +35,6 @@ mount_dev()
+ 		mountopts="remount,$mountopts"
+ 		msg=Remounting
+ 	fi
+-	if fstabinfo -q /dev; then
+-		ebegin "$msg /dev according to fstab"
+-		fstabinfo -q $action /dev
+-		eend $?
+-		return 0
+-	fi
+ 	if grep -q devtmpfs /proc/filesystems; then
+ 		devfstype=devtmpfs
+ 		mountopts="$mountopts,size=10M"
+@@ -103,9 +97,7 @@ seed_dev()
+ 
+ 		if [ -d $2 ]; then
+ 			ebegin "Mounting $2"
+-			if ! fstabinfo --mount $2; then
+-				mount -n -t $1 -o noexec,nosuid$4 $5 $2
+-			fi
++			mount -n -t $1 -o noexec,nosuid$4 $5 $2
+ 			eend $?
+ 		fi
+ 	done
+diff --git a/init.d/killprocs.in b/init.d/killprocs.in
+index fcf1364d..6cfce989 100644
+--- a/init.d/killprocs.in
++++ b/init.d/killprocs.in
+@@ -19,9 +19,9 @@ depend()
+ start()
+ {
+ 	ebegin "Terminating remaining processes"
+-	kill_all 15 ${killall5_opts}
++	killall5 -s TERM
+ 	eend 0
+ 	ebegin "Killing remaining processes"
+-	kill_all 9 ${killall5_opts}
++	killall5 -s KILL
+ 	eend 0
+ }
+diff --git a/init.d/localmount.in b/init.d/localmount.in
+index 31684191..cea6f6cc 100644
+--- a/init.d/localmount.in
++++ b/init.d/localmount.in
+@@ -42,7 +42,6 @@ start()
+ 		rc=0
+ 	else
+ 		for x in ${critical_mounts}; do
+-		fstabinfo -q $x || continue
+ 		if ! mountinfo -q $x; then
+ 			critical=x
+ 			eerror "Failed to mount $x"
+diff --git a/init.d/netmount.in b/init.d/netmount.in
+index 96f5d3e0..a8e1ebfb 100644
+--- a/init.d/netmount.in
++++ b/init.d/netmount.in
+@@ -48,7 +48,6 @@ start()
+ 		rc=0
+ 	else
+ 		for x in ${critical_mounts}; do
+-		fstabinfo -q $x || continue
+ 		if ! mountinfo -q $x; then
+ 			critical=x
+ 			eerror "Failed to mount $x"
+diff --git a/init.d/sysfs.in b/init.d/sysfs.in
+index 89707120..4b5046a6 100644
+--- a/init.d/sysfs.in
++++ b/init.d/sysfs.in
+@@ -31,9 +31,6 @@ mount_sys()
+ 	fi
+ 
+ 	ebegin "Mounting /sys"
+-	if ! fstabinfo --mount /sys; then
+-		mount -n -t sysfs -o ${sysfs_opts} sysfs /sys
+-	fi
+ 	eend $?
+ }
+ 
+-- 
+2.25.1
+
