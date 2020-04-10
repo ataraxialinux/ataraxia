@@ -6,18 +6,18 @@
 
 name=busybox
 version=1.31.1
-release=7
+release=8
 options=('bootstrap')
 source=("http://busybox.net/downloads/$name-$version.tar.bz2")
 
 
 build_busybox_standard() {
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" defconfig
+		cp "$STUFF"/busybox/config .config
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS"
 		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links
 	else
-		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" defconfig
+		cp "$STUFF"/busybox/config .config
 		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS"
 		make ARCH=$XKARCH EXTRA_CFLAGS="$CFLAGS" busybox.links
 	fi
@@ -25,8 +25,6 @@ build_busybox_standard() {
 	install -Dm0755 busybox "$PKG"/usr/bin/busybox
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -sf busybox "$PKG"/usr/bin/$applet || true; done
-
-	install -Dm0755 "$STUFF"/busybox/shutdown "$PKG"/usr/bin/shutdown
 
 	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
 
