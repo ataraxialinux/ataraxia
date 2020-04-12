@@ -16,7 +16,14 @@ build() {
 	make
 	make install
 
-	ln -sf pkgconf "$TOOLS"/bin/pkg-config
-	ln -sf pkgconf "$TOOLS"/bin/$XTARGET-pkg-config
-	ln -sf pkgconf "$TOOLS"/bin/$XTARGET-pkgconf
+	cat > "$TOOLS"/bin/$XTARGET-pkgconf <<- EOF
+		#!/usr/bin/env sh
+		PKG_CONFIG_DIR="" \
+		PKG_CONFIG_LIBDIR=""$ROOTFS"/usr/lib/pkgconfig:"$ROOTFS"/usr/share/pkgconfig" \
+		PKG_CONFIG_SYSROOT_DIR=""$ROOTFS"" \
+		"$TOOLS"/bin/pkgconf "$@"
+	EOF
+
+	ln -sf $XTARGET-pkgconf "$TOOLS"/bin/$XTARGET-pkg-config
+	ln -sf $XTARGET-pkgconf "$TOOLS"/bin/pkg-config
 }
