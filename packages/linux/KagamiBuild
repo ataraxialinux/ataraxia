@@ -79,9 +79,6 @@ generate_config() {
 		armv5tel)
 			export DEFCONFIG="multi_v5_defconfig"
 			;;
-		mips64|mips64el|mips|mipsel)
-			export DEFCONFIG="malta_defconfig"
-			;;
 		ppc64le)
 			export DEFCONFIG="powernv_defconfig"
 			;;
@@ -128,30 +125,8 @@ generate_config() {
 				HYPERV_MOUSE HYPERV_NET HYPERV_BALLOON
 			nconfig M686
 			;;
-		mips64|mips64el|mips|mipsel)
-			yconfig SERIAL_8250 SERIAL_8250_CONSOLE PCI NET_VENDOR_AMD PCNET32 POWER_RESET POWER_RESET_SYSCON
-			;;
 		riscv64|riscv32)
 			yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC
-			;;
-	esac
-
-	case $BARCH in
-		mips64|mips64el)
-			nconfig CPU_MIPS32_R2
-			nconfig 32BIT
-			for archconf in CPU_MIPS64_R2 MIPS_O32_FP64_SUPPORT 64BIT MIPS32_O32 MIPS32_N32; do
-				yconfig $archconf
-			done
-			;;
-	esac
-
-	case $BARCH in
-		mip64|mips)
-			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
-			;;
-		mips64el|mipsel)
-			sed -i -e 's:CONFIG_CPU_BIG_ENDIAN:CONFIG_CPU_LITTLE_ENDIAN:' .config
 			;;
 	esac
 
@@ -859,10 +834,6 @@ build() {
 		armv7hnl|armv7hl|armv5tel)
 			export XKARCH="arm"
 			export IMAGELOC="arch/arm/boot/zImage"
-			;;
-		mips64|mips64el|mips|mipsel)
-			export XKARCH="mips"
-			export IMAGELOC="vmlinux"
 			;;
 		ppc64le|ppc64|ppc)
 			export XKARCH="powerpc"

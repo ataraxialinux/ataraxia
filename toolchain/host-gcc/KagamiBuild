@@ -33,18 +33,6 @@ build() {
 			armv5tel)
 				export GCCOPTS="--with-arch=armv5te --with-float=soft"
 				;;
-			mips64)
-				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
-				;;
-			mips64el)
-				export GCCOPTS="--with-arch=mips3 --with-tune=mips64 --with-mips-plt --with-float=soft --with-abi=64"
-				;;
-			mips)
-				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
-				;;
-			mipsel)
-				export GCCOPTS="--with-arch=mips32 --with-mips-plt --with-float=soft --with-abi=32"
-				;;
 			ppc64le)
 				export GCCOPTS="--with-abi=elfv2 --enable-secureplt --enable-targets=powerpcle-linux --disable-decimal-float --disable-libquadmath"
 				;;
@@ -67,7 +55,6 @@ build() {
 	fi
 
 	case "$BARCH" in
-		mips64|mips64el|mips|mipsel)	HASHCONFIG="--with-linker-hash-style=sysv"	;;
 		*)				HASHCONFIG="--with-linker-hash-style=gnu"	;;
 	esac
 
@@ -88,6 +75,10 @@ build() {
 
 	cd "$SRC"/gcc-$version
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
+	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
+	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
+	sed -i 's/lib64/lib/' gcc/config/rs6000/linux64.h
+	sed -i 's/lib64/lib/' gcc/config/riscv/t-linux
 
 	patch -Np1 -i "$STUFF"/gcc/0001-Use-musl-s-libssp_nonshared.a.patch
 	patch -Np1 -i "$STUFF"/gcc/0002-POSIX-memalign.patch
@@ -102,9 +93,6 @@ build() {
 	patch -Np1 -i "$STUFF"/gcc/0011-fix-support-for-Ada.patch
 	patch -Np1 -i "$STUFF"/gcc/0003-gcc-poison-system-directories.patch
 	patch -Np1 -i "$STUFF"/gcc/security.patch
-	patch -Np1 -i "$STUFF"/gcc/gcc-pure64.patch
-	patch -Np1 -i "$STUFF"/gcc/gcc-pure64-mips.patch
-	patch -Np1 -i "$STUFF"/gcc/gcc-pure64-riscv.patch
 
 	mv ../gmp-$gmpver gmp
 	mv ../mpfr-$mpfrver mpfr
