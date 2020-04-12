@@ -1,0 +1,21 @@
+# Description: OpenBSD diffutils
+# URL:         https://github.com/ataraxialinux/openbsd-diffutils
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     devel
+
+name=openbsd-diffutils
+version=6.6
+release=1
+options=('bootstrap')
+source=("https://github.com/ataraxialinux/openbsd-diffutils/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib
+	make
+	make DESTDIR="$PKG" install
+}
