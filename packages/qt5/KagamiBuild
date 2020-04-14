@@ -6,22 +6,15 @@
 
 name=qt5
 version=5.14.2
-release=1
+release=2
 source=("https://download.qt.io/official_releases/qt/${version::4}/$version/single/qt-everywhere-src-$version.tar.xz")
 
 build() {
 	cd "$SRC"/qt-everywhere-src-$version
 	patch -Np1 -i "$STUFF"/qt5/main.patch
-	patch -Np1 -i "$STUFF"/qt5/webengine.patch
 	sed -i 's/python /python3 /' qtdeclarative/qtdeclarative.pro qtdeclarative/src/3rdparty/masm/masm.pri
 
-	case $BARCH in
-		riscv64|riscv32)
-			QTWEBENGINE="-skip qtwebengine"
-			;;
-	esac
-
-	./configure $QTWEBENGINE \
+	./configure \
 		-prefix /usr \
 		-docdir /usr/share/doc/qt \
 		-headerdir /usr/include/qt \
@@ -41,7 +34,8 @@ build() {
 		-openssl-linked \
 		-reduce-relocations \
 		-system-harfbuzz \
-		-system-sqlite
+		-system-sqlite \
+		-skip qtwebengine
 	make
 	make INSTALL_ROOT="$PKG" install
 
