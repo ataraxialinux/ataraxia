@@ -1,0 +1,19 @@
+# Description: A vi-like editor based on Plan 9's structural regular expressions
+# URL:         https://github.com/martanne/vis
+# Maintainer:  Ben O'Neill <ben@benoneill.xyz>
+# Depends on:  ncurses lua lua-lpeg
+# Section:     editors
+
+name=vis
+version=0.5
+release=1
+source=("https://github.com/martanne/vis/releases/download/v$version/vis-v$version.tar.gz")
+
+build() {
+	cd "$SRC"/vis-v$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-selinux
+	make
+	make DESTDIR="$PKG" install
+}
