@@ -1,24 +1,25 @@
-From ba7952ba4a50a8943074619cded2690564deee59 Mon Sep 17 00:00:00 2001
+From 48d7d00dba9719257d18580d1f663d5018379a3b Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 13 Apr 2020 04:00:46 +0900
+Date: Wed, 15 Apr 2020 20:25:07 +0900
 Subject: [PATCH] ataraxia
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- etc/rc.conf           |  2 +-
- init.d/Makefile       |  3 +--
- init.d/agetty.in      | 17 ++++++++++++-----
- init.d/consolefont.in |  1 -
- init.d/devfs.in       |  6 ------
- init.d/fsck.in        |  4 ++++
- init.d/keymaps.in     |  1 -
- init.d/killprocs.in   |  4 ++--
- init.d/localmount.in  |  3 +++
- init.d/netmount.in    |  6 ++++++
- init.d/root.in        |  2 ++
- init.d/sysfs.in       |  4 +---
- runlevels/Makefile    |  3 +--
- 13 files changed, 33 insertions(+), 23 deletions(-)
+ etc/rc.conf            |  2 +-
+ init.d/Makefile        |  3 +--
+ init.d/agetty.in       | 17 ++++++++++++-----
+ init.d/consolefont.in  |  1 -
+ init.d/devfs.in        |  6 ------
+ init.d/fsck.in         |  4 ++++
+ init.d/keymaps.in      |  1 -
+ init.d/killprocs.in    |  4 ++--
+ init.d/localmount.in   |  4 ++++
+ init.d/netmount.in     |  6 ++++++
+ init.d/root.in         |  2 ++
+ init.d/save-keymaps.in |  1 -
+ init.d/sysfs.in        |  4 +---
+ runlevels/Makefile     |  3 +--
+ 14 files changed, 34 insertions(+), 24 deletions(-)
 
 diff --git a/etc/rc.conf b/etc/rc.conf
 index 123d58e..b6bfcab 100644
@@ -164,7 +165,7 @@ index fcf1364..6cfce98 100644
  	eend 0
  }
 diff --git a/init.d/localmount.in b/init.d/localmount.in
-index 3168419..1e5b33e 100644
+index 3168419..50cf792 100644
 --- a/init.d/localmount.in
 +++ b/init.d/localmount.in
 @@ -21,6 +21,7 @@ depend()
@@ -188,6 +189,12 @@ index 3168419..1e5b33e 100644
  	yesno $RC_GOINGDOWN || return 0
  	# We never unmount / or /dev or $RC_SVCDIR
  
+@@ -130,4 +133,5 @@ stop()
+ 	eoutdent
+ 
+ 	return 0
++	fi
+ }
 diff --git a/init.d/netmount.in b/init.d/netmount.in
 index 96f5d3e..c78d04d 100644
 --- a/init.d/netmount.in
@@ -249,6 +256,18 @@ index 9d05344..7a6c61a 100644
  	done
  	eend 0
 +	fi
+ }
+diff --git a/init.d/save-keymaps.in b/init.d/save-keymaps.in
+index f35097c..284031d 100644
+--- a/init.d/save-keymaps.in
++++ b/init.d/save-keymaps.in
+@@ -11,7 +11,6 @@ description="Save the keymap for use as early as possible"
+ 
+ depend()
+ {
+-	need termencoding
+ 	after bootmisc clock keymaps
+ 	keyword -docker -lxc -openvz -prefix -systemd-nspawn -uml -vserver -xenu
  }
 diff --git a/init.d/sysfs.in b/init.d/sysfs.in
 index 8970712..ddb5c0e 100644
