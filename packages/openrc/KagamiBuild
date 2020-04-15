@@ -1,13 +1,13 @@
 # Description: Dependency based init system
 # URL:         https://github.com/OpenRC/openrc/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam kmod util-linux busybox
+# Depends on:  pam kmod util-linux busybox sinit
 # Priority:    required
 # Section:     base
 
 name=openrc
 version=0.42.1
-release=1
+release=2
 backup=('etc/rc.conf'
 	'etc/conf.d/bootmisc'
 	'etc/conf.d/consolefont'
@@ -43,6 +43,7 @@ build() {
 	makeagrs+=(LIBNAME=lib)
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/openrc/0001-ataraxia.patch
 	patch -Np1 -i "$STUFF"/openrc/0003-sysctl-add-compatibility-for-busybox-sysctl.patch
 
 	make "${makeargs[@]}"
@@ -51,5 +52,10 @@ build() {
 	for initd in hostname; do
 		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
 		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+
+	for MYTTY in 1 2 3 4 5 6 S0; do
+		ln -sf agetty "$PKG"/etc/init.d/agetty.tty$MYTTY
+		ln -sf ../../init.d/agetty.tty$MYTTY "$PKG"/etc/runlevels/default/agetty.tty$MYTTY
 	done
 }

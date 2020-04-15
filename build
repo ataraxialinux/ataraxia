@@ -49,7 +49,6 @@ if [ "$USE_TARGET" = "1" ]; then
 		export TOOLS="$TOOLS"
 		export PKGDEST="$PACKAGES"
 		export SRCDEST="$SOURCES"
-		export CPPFLAGS="$CPPFLAGS"
 		export CFLAGS="$CFLAGS"
 		export CXXFLAGS="$CXXFLAGS"
 		export XHOST="$XHOST"
@@ -85,7 +84,6 @@ elif [ "$USE_HOST" = "1" ]; then
 		export TOOLS="$TOOLS"
 		export PKGDEST="$PACKAGES"
 		export SRCDEST="$SOURCES"
-		export CPPFLAGS="$CPPFLAGS"
 		export CFLAGS="$CFLAGS"
 		export CXXFLAGS="$CXXFLAGS"
 		export XHOST="$XHOST"
@@ -118,25 +116,9 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
-		armv5tel)
+		armv6hl)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabi"
-			;;
-		mips64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips64-linux-musl"
-			;;
-		mips64el)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips64el-linux-musl"
-			;;
-		mips)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mips-linux-musl"
-			;;
-		mipsel)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="mipsel-linux-musl"
 			;;
 		ppc64le)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
@@ -195,11 +177,8 @@ setup_environment() {
 			;;
 	esac
 
-	if [ -z "$CPPFLAGS" ]; then
-		export CPPFLAGS="-D_FORTIFY_SOURCE=2"
-	fi
 	if [ -z "$CFLAGS" ]; then
-		export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
+		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
 	fi
 	if [ -z "$CXXFLAGS" ]; then
 		export CXXFLAGS="$CFLAGS"
@@ -234,9 +213,9 @@ build_toolchain() {
 				;;
 	esac
 
-	for toolchain in rpm base-files file gettext-tiny m4 bison \
-			flex bc ncurses kmod gperf linux-headers binutils gcc-static musl gcc \
-			$EXTRAPKG slibtool autoconf automake cracklib pkgconf; do
+	for toolchain in rpm base-files gettext-tiny m4 bison flex bc kmod gperf \
+			linux-headers binutils gcc-static musl gcc $EXTRAPKG slibtool \
+			autoconf automake cracklib pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko em -c "$BUILD"/host.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
@@ -304,13 +283,15 @@ build_target() {
 	if [ "$EMBEDDED" = "1" ]; then
 		packages="$LINUX busybox mksh"
 	else
-		packages="netbase tzdata man-pages musl-tools gettext-tiny zlib file ncurses readline \
-			m4 bison flex bc gmp mpfr mpc binutils gcc ccache bzip2 pkgconf cracklib pam libpwquality attr acl libcap \
-			shadow pcre grep mksh bash slibtool gdbm db expat perl nettle libressl ca-certificates autoconf automake \
-			xz lzip lz4 zstd libarchive lzo kmod libuargp libelf busybox coreutils mawk hostname mandoc dialog pigz \
-			libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd make patch \
-			nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools hwids gperf eudev openrc netifrc popt rsync \
-			wireless_tools wpa_supplicant gptfdisk wget keyring libssh2 c-ares libev nghttp2 curl lua rpm neko $LINUX"
+		packages="netbase tzdata man-pages musl-tools gettext-tiny zlib file \
+			ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
+			ccache bzip2 pkgconf cracklib pam libpwquality attr acl libcap shadow \
+			pcre grep mksh bash slibtool gdbm db expat perl libressl nettle ca-certificates \
+			autoconf automake xz lzip lz4 zstd libarchive lzo kmod libuargp libelf coreutils \
+			openbsd-diffutils sbase ubase sinit netbsd-tools busybox mandoc dialog pigz iproute2 \
+			kbd make vim libcap-ng util-linux e2fsprogs btrfs-progs dosfstools hwids gperf \
+			eudev openrc netifrc libssh2 nghttp2 curl lua popt rpm neko libnl wireless_tools \
+			wpa_supplicant gptfdisk wget nano $LINUX"
 	fi
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $packages

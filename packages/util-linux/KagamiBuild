@@ -11,7 +11,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=1
+release=4
 backup=('etc/pam.d/chfn'
 	'etc/pam.d/chsh'
 	'etc/pam.d/login'
@@ -48,9 +48,9 @@ build() {
 		--enable-tunelp \
 		--enable-usrdir-path \
 		--enable-vipw \
-		--enable-wall \
 		--enable-write \
-		--enable-zramctl
+		--enable-zramctl \
+		--disable-more
 	make
 	make DESTDIR="$PKG" install
 
@@ -69,6 +69,10 @@ build() {
 
 	mv usr/sbin/* usr/bin
 	rmdir usr/sbin
+
+	rm -rf "$PKG"/usr/bin/{cal,ctrlaltdel,eject,fallocate,flock,fsfreeze,kill,last,logger,mesg,nologin,rev}
+	rm -rf "$PKG"/usr/share/man/man1/{cal.1,eject.1,fallocate.1,flock.1,kill.1,logger.1,mesg.1,rev.1}
+	rm -rf "$PKG"/usr/share/man/man8/{ctrlaltdel.8,fsfreeze.8,nologin.8}
 
 	if [ "$EMBEDDED" = "1" ]; then
 		rm -rf "$PKG"/usr/bin

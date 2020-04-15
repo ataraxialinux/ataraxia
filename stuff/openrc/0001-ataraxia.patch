@@ -1,0 +1,303 @@
+From 48d7d00dba9719257d18580d1f663d5018379a3b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 15 Apr 2020 20:25:07 +0900
+Subject: [PATCH] ataraxia
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ etc/rc.conf            |  2 +-
+ init.d/Makefile        |  3 +--
+ init.d/agetty.in       | 17 ++++++++++++-----
+ init.d/consolefont.in  |  1 -
+ init.d/devfs.in        |  6 ------
+ init.d/fsck.in         |  4 ++++
+ init.d/keymaps.in      |  1 -
+ init.d/killprocs.in    |  4 ++--
+ init.d/localmount.in   |  4 ++++
+ init.d/netmount.in     |  6 ++++++
+ init.d/root.in         |  2 ++
+ init.d/save-keymaps.in |  1 -
+ init.d/sysfs.in        |  4 +---
+ runlevels/Makefile     |  3 +--
+ 14 files changed, 34 insertions(+), 24 deletions(-)
+
+diff --git a/etc/rc.conf b/etc/rc.conf
+index 123d58e..b6bfcab 100644
+--- a/etc/rc.conf
++++ b/etc/rc.conf
+@@ -7,7 +7,7 @@
+ # WARNING: whilst we have improved parallel, it can still potentially lock
+ # the boot process. Don't file bugs about this unless you can supply
+ # patches that fix it without breaking other things!
+-#rc_parallel="NO"
++rc_parallel="YES"
+ 
+ # Set rc_interactive to "YES" and you'll be able to press the I key during
+ # boot so you can choose to start specific services. Set to "NO" to disable
+diff --git a/init.d/Makefile b/init.d/Makefile
+index c97aeda..0e333d4 100644
+--- a/init.d/Makefile
++++ b/init.d/Makefile
+@@ -23,8 +23,7 @@ SRCS-FreeBSD+=	adjkerntz.in devd.in dumpon.in encswap.in ipfw.in \
+ 
+ SRCS-Linux=	agetty.in binfmt.in devfs.in cgroups.in dmesg.in hwclock.in \
+ 	consolefont.in keymaps.in killprocs.in modules.in \
+-	mount-ro.in mtab.in numlock.in procfs.in net-online.in save-keymaps.in \
+-	save-termencoding.in sysfs.in termencoding.in
++	mount-ro.in mtab.in numlock.in procfs.in net-online.in save-keymaps.in sysfs.in
+ 
+ # Generic BSD scripts
+ SRCS-NetBSD=	hostid.in moused.in newsyslog.in pf.in rarpd.in rc-enabled.in \
+diff --git a/init.d/agetty.in b/init.d/agetty.in
+index e4866f7..bbd3413 100644
+--- a/init.d/agetty.in
++++ b/init.d/agetty.in
+@@ -12,11 +12,18 @@
+ description="start agetty on a terminal line"
+ supervisor=supervise-daemon
+ port="${RC_SVCNAME#*.}"
+-respawn_period="${respawn_period:-60}"
+-term_type="${term_type:-linux}"
+-command=/sbin/agetty
+-command_args_foreground="${agetty_options} ${port} ${baud} ${term_type}"
+-pidfile="/run/${RC_SVCNAME}.pid"
++command=/usr/bin/agetty
++case ${port} in
++	ttyS*|ttyUSB*|ttyAMA*)
++		command_args_foreground="-L always ${port} 115200 vt100"
++		;;
++	tty1)
++		command_args_foreground="${port} --noclear 38400 linux"
++		;;
++	*)
++		command_args_foreground="${port} 38400 linux"
++		;;
++esac
+ 
+ depend() {
+ 	after local
+diff --git a/init.d/consolefont.in b/init.d/consolefont.in
+index d65dd14..72c6a68 100644
+--- a/init.d/consolefont.in
++++ b/init.d/consolefont.in
+@@ -13,7 +13,6 @@ description="Sets a font for the consoles."
+ 
+ depend()
+ {
+-	need termencoding
+ 	after hotplug bootmisc modules
+ 	keyword -docker -lxc -openvz -prefix -systemd-nspawn -uml -vserver -xenu
+ }
+diff --git a/init.d/devfs.in b/init.d/devfs.in
+index 61ba45f..058ea88 100644
+--- a/init.d/devfs.in
++++ b/init.d/devfs.in
+@@ -35,12 +35,6 @@ mount_dev()
+ 		mountopts="remount,$mountopts"
+ 		msg=Remounting
+ 	fi
+-	if fstabinfo -q /dev; then
+-		ebegin "$msg /dev according to fstab"
+-		fstabinfo -q $action /dev
+-		eend $?
+-		return 0
+-	fi
+ 	if grep -q devtmpfs /proc/filesystems; then
+ 		devfstype=devtmpfs
+ 		mountopts="$mountopts,size=10M"
+diff --git a/init.d/fsck.in b/init.d/fsck.in
+index 7052d80..d276164 100644
+--- a/init.d/fsck.in
++++ b/init.d/fsck.in
+@@ -40,6 +40,7 @@ _forcefsck()
+ 
+ start()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	local fsck_opts= p= check_extra=
+ 
+ 	if [ -e /fastboot ]; then
+@@ -117,15 +118,18 @@ start()
+ 	*)	eend 2 "Filesystems couldn't be fixed";;
+ 	esac
+ 	_abort || return 1
++	fi
+ }
+ 
+ stop()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	# Fake function so we always shutdown correctly.
+ 	_abort() { return 0; }
+ 	_reboot() { return 0; }
+ 	_forcefsck() { return 1; }
+ 
+ 	yesno $fsck_shutdown && start
++	fi
+ 	return 0
+ }
+diff --git a/init.d/keymaps.in b/init.d/keymaps.in
+index 16ddcc9..511118f 100644
+--- a/init.d/keymaps.in
++++ b/init.d/keymaps.in
+@@ -13,7 +13,6 @@ description="Applies a keymap for the consoles."
+ 
+ depend()
+ {
+-	need termencoding
+ 	after devfs
+ 	keyword -docker -lxc -openvz -prefix -systemd-nspawn -uml -vserver -xenu
+ }
+diff --git a/init.d/killprocs.in b/init.d/killprocs.in
+index fcf1364..6cfce98 100644
+--- a/init.d/killprocs.in
++++ b/init.d/killprocs.in
+@@ -19,9 +19,9 @@ depend()
+ start()
+ {
+ 	ebegin "Terminating remaining processes"
+-	kill_all 15 ${killall5_opts}
++	killall5 -s TERM
+ 	eend 0
+ 	ebegin "Killing remaining processes"
+-	kill_all 9 ${killall5_opts}
++	killall5 -s KILL
+ 	eend 0
+ }
+diff --git a/init.d/localmount.in b/init.d/localmount.in
+index 3168419..50cf792 100644
+--- a/init.d/localmount.in
++++ b/init.d/localmount.in
+@@ -21,6 +21,7 @@ depend()
+ 
+ start()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	# Mount local filesystems in /etc/fstab.
+ 	# The types variable must start with no, and must be a type
+ 	local critical= types="noproc" x= no_netdev= rc=
+@@ -51,10 +52,12 @@ start()
+ 		[ -z "$critical" ] && rc=0
+ 	fi
+ 	return $rc
++	fi
+ }
+ 
+ stop()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	yesno $RC_GOINGDOWN || return 0
+ 	# We never unmount / or /dev or $RC_SVCDIR
+ 
+@@ -130,4 +133,5 @@ stop()
+ 	eoutdent
+ 
+ 	return 0
++	fi
+ }
+diff --git a/init.d/netmount.in b/init.d/netmount.in
+index 96f5d3e..c78d04d 100644
+--- a/init.d/netmount.in
++++ b/init.d/netmount.in
+@@ -13,6 +13,7 @@ description="Mounts network shares according to /etc/fstab."
+ 
+ depend()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	local opts mywant=""
+ 	for opts in $(fstabinfo -o -t nfs,nfs4); do
+ 		case $opts in
+@@ -27,10 +28,12 @@ depend()
+ 	use dns
+ 	use root
+ 	keyword -docker -jail -lxc -prefix -systemd-nspawn -vserver
++	fi
+ }
+ 
+ start()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	local x= fs= rc=
+ 	for x in $net_fs_list $extra_net_fs_list; do
+ 		fs="$fs${fs:+,}$x"
+@@ -57,10 +60,12 @@ start()
+ 		[ -z "$critical" ] && rc=0
+ 	fi
+ 	return $rc
++	fi
+ }
+ 
+ stop()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	local x= fs=
+ 
+ 	ebegin "Unmounting network filesystems"
+@@ -88,4 +93,5 @@ stop()
+ 		retval=$?
+ 	fi
+ 	eend $retval "Failed to unmount network filesystems"
++	fi
+ }
+diff --git a/init.d/root.in b/init.d/root.in
+index 9d05344..7a6c61a 100644
+--- a/init.d/root.in
++++ b/init.d/root.in
+@@ -20,6 +20,7 @@ depend()
+ 
+ start()
+ {
++	if [ -z "$(grep -oh live /proc/cmdline)" ]; then
+ 	case ",$(fstabinfo -o /)," in
+ 		*,ro,*)
+ 		;;
+@@ -58,4 +59,5 @@ start()
+ 		esac
+ 	done
+ 	eend 0
++	fi
+ }
+diff --git a/init.d/save-keymaps.in b/init.d/save-keymaps.in
+index f35097c..284031d 100644
+--- a/init.d/save-keymaps.in
++++ b/init.d/save-keymaps.in
+@@ -11,7 +11,6 @@ description="Save the keymap for use as early as possible"
+ 
+ depend()
+ {
+-	need termencoding
+ 	after bootmisc clock keymaps
+ 	keyword -docker -lxc -openvz -prefix -systemd-nspawn -uml -vserver -xenu
+ }
+diff --git a/init.d/sysfs.in b/init.d/sysfs.in
+index 8970712..ddb5c0e 100644
+--- a/init.d/sysfs.in
++++ b/init.d/sysfs.in
+@@ -31,9 +31,7 @@ mount_sys()
+ 	fi
+ 
+ 	ebegin "Mounting /sys"
+-	if ! fstabinfo --mount /sys; then
+-		mount -n -t sysfs -o ${sysfs_opts} sysfs /sys
+-	fi
++	mount -n -t sysfs -o ${sysfs_opts} sysfs /sys
+ 	eend $?
+ }
+ 
+diff --git a/runlevels/Makefile b/runlevels/Makefile
+index 73843d8..229edac 100644
+--- a/runlevels/Makefile
++++ b/runlevels/Makefile
+@@ -36,8 +36,7 @@ BOOT-FreeBSD+=	hostid modules newsyslog savecore syslogd
+ # FreeBSD specific stuff
+ BOOT-FreeBSD+=	adjkerntz dumpon syscons
+ 
+-BOOT-Linux+=	binfmt hwclock keymaps modules mtab procfs save-keymaps \
+-	save-termencoding termencoding
++BOOT-Linux+=	binfmt hwclock keymaps modules mtab procfs save-keymaps
+ SHUTDOWN-Linux=	killprocs mount-ro
+ SYSINIT-Linux=	devfs cgroups dmesg sysfs
+ 
+-- 
+2.25.1
+

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+msg() { printf "[\033[1;34msinit\033[0m] %s\n" "$@"; }
+
+export PATH=/usr/bin
+
+msg "Shutting down..."
+clear && stty onlcr
+
+openrc shutdown
+
+case "$1" in
+	reboot)
+		msg "Rebooting."
+		halt -r
+		;;
+	poweroff)
+		msg "Power down."
+		halt -p
+		;;
+esac

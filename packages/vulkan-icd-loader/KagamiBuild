@@ -1,0 +1,29 @@
+# Description: Vulkan Installable Client Driver Loader
+# URL:         https://www.khronos.org/vulkan/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja vulkan-headers python-lxml libx11 libxrandr wayland
+# Section:     libs
+
+name=vulkan-icd-loader
+version=1.2.137
+release=1
+source=("https://github.com/KhronosGroup/Vulkan-Loader/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/Vulkan-Loader-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/Vulkan-Loader-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_RPATH=ON \
+		-DBUILD_TESTS=OFF \
+		-DBUILD_WSI_XCB_SUPPORT=On \
+		-DBUILD_WSI_XLIB_SUPPORT=On \
+		-DBUILD_WSI_WAYLAND_SUPPORT=On \
+		-DVULKAN_HEADERS_INSTALL_DIR=/usr \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

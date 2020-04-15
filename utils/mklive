@@ -1,87 +1,39 @@
 #!/bin/bash
 
-build_busybox() {
-	local busyboxver="1.31.1"
-
-	pushd "$SRCDEST"
-		rm -rf busybox-$busyboxver
-		tar -xf busybox-$busyboxver.tar.bz2
-
-		cd busybox-$busyboxver
-		patch -Np1 -i "$STUFF"/busybox/musl.patch
-		make mrproper $MKOPTS
-
-		cp "$STUFF"/busybox/live-config .config
-
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" $MKOPTS
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} EXTRA_CFLAGS="$CFLAGS" busybox.links $MKOPTS
-
-		install -Dm4755 busybox "$INITRAMFS"/usr/bin/busybox
-
-		for applet in `cat busybox.links|sed 's|^.*/||'`; do
-			if [ ! -L "$INITRAMFS/usr/bin/$applet" ]; then
-				ln -sf busybox "$INITRAMFS"/usr/bin/$applet
-			fi
-		done
-
-		rm -rf busybox-$busyboxver
-	popd
-}
-
 generate_initramfs() {
-	packages="base-files netbase musl zlib file ncurses readline bzip2 cracklib pam libpwquality attr acl libcap \
-		shadow pcre grep mksh bash expat nettle libressl ca-certificates xz lzip lz4 zstd libarchive lzo kmod busybox \
-		mawk hostname dialog pigz libmnl libnl iproute2 kbd nano libcap-ng util-linux e2fsprogs btrfs-progs dosfstools \
-		hwids eudev openrc netifrc wireless_tools wpa_supplicant popt gptfdisk wget linux"
+	packages="base-files netbase linux-headers musl zlib file ncurses readline \
+		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh \
+		expat libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
+		coreutils sbase ubase sinit netbsd-tools busybox dialog pigz iproute2 kbd nano \
+		libcap-ng util-linux e2fsprogs btrfs-progs hwids eudev openrc netifrc libnl \
+		wireless_tools wpa_supplicant popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
 
-	build_busybox
-
 	pushd "$INITRAMFS"
-		sed -i 's/agetty --noclear 38400 tty1 linux/agetty --autologin root --noclear 38400 tty1 linux/g' etc/inittab
+		rm -rf usr/lib/modules/*/kernel/drivers/{bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
+		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
+		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/crypto usr/lib/pkgconfig usr/include \
+		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
+
+		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
+				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
+				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
+				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio bzless bzfgrep bzegrep \
+				bzcmp openssl nl* file; do
+			rm -rf usr/bin/$bins
+		done
+
+		sed -i 's|${port} --noclear 38400 linux|${port} --autologin root --noclear 38400 linux|' etc/init.d/agetty
 		ln -sf usr/bin/init init
 
 		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
 		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/
 
-		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
-				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
-				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
-				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio; do
-			rm -rf usr/bin/$bins
-		done
-
-		ln -sf bsdtar usr/bin/tar
-		ln -sf bsdcpio usr/bin/cpio
-
-		rm -rf usr/include
-		rm -rf usr/share/man
-		rm -rf usr/share/doc
-		rm -rf usr/share/info
-		rm -rf usr/share/icons
-		rm -rf usr/share/perl5
-		rm -rf usr/share/bash-completion
-		rm -rf usr/share/applications
-		rm -rf usr/share/aclocal
-		rm -rf usr/share/cracklib
-		rm -rf usr/share/dict
-		rm -rf usr/share/nano
-		rm -rf usr/lib/modules/*/kernel/sound
-		rm -rf usr/lib/modules/*/kernel/drivers/gpu
-		rm -rf etc/nanorc
-
-		find . | xargs file | grep "executable" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-all 2>/dev/null || true
-		find . | xargs file | grep "shared object" | grep ELF | cut -f 1 -d : | xargs $STRIP --strip-unneeded 2>/dev/null || true
-		find . | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs $STRIP --strip-debug 2>/dev/null || true
+		mv $(realpath boot/vmlinuz) "$ISODIR"/seiba/seiba
+		rm -rf boot
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
-		find . -name "*.h" -print0 | xargs -0 rm -rf
-		find . -name "*.hpp" -print0 | xargs -0 rm -rf
-		find . -name "*.pc" -print0 | xargs -0 rm -r
-
-		mv $(realpath boot/vmlinuz) "$ISODIR"/seiba/seiba
-		rm -rf boot/vmlinuz
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
@@ -98,22 +50,22 @@ make_iso_x86() {
 			efi="bootx64.efi"
 			;;
 		i586)
-			format="i586-efi"
+			format="i386-efi"
 			efi="bootia32.efi"
 			;;
 	esac
 
-cat << CEOF > "$GRUBEFICFG"
-search --no-floppy --set=root --label "ataraxialinux"
-set prefix=(\$root)/boot/grub
-CEOF
+	cat > "$GRUBEFICFG" <<- EOF
+		search --no-floppy --set=root --label "ataraxialinux"
+		set prefix=(\$root)/boot/grub
+	EOF
 
-cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
-menuentry "Ataraxia Linux" {
-linux	/seiba/seiba rw quiet
-initrd	/seiba/seiba.zst
-}
-CEOF
+	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
+			menuentry "Ataraxia Linux" {
+			linux	/seiba/seiba rw quiet live
+			initrd	/seiba/seiba.zst
+		}
+	EOF
 
 	"$BUILD"/tools/bin/grub-mkimage \
 		--config="$GRUBEFICFG" \
@@ -134,31 +86,31 @@ CEOF
 	cp -a "$STUFF"/mklive/chain.c32 "$ISODIR"/boot/isolinux
 	cp -a "$STUFF"/mklive/background.png "$ISODIR"/boot/isolinux/background.png
 
-cat << CEOF > "$ISODIR"/boot/isolinux/isolinux.cfg
-UI vesamenu.c32
-PROMPT 0
-TIMEOUT 100
-ONTIMEOUT ataraxialinux
-MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
-MENU AUTOBOOT BIOS default device boot in # second{,s}...
-MENU BACKGROUND /boot/isolinux/background.png
-MENU WIDTH 78
-MENU MARGIN 1
-MENU ROWS 4
-MENU VSHIFT 2
-MENU TIMEOUTROW 8
-MENU TABMSGROW 2
-MENU CMDLINEROW 11
-MENU HELPMSGROW 16
-MENU HELPMSGENDROW 29
-MENU COLOR title        * #9000FF *
-MENU COLOR border       * #00000000 #00000000 none
-MENU COLOR sel          * #ffffffff #9000FF *
-LABEL ataraxialinux
-MENU LABEL Ataraxia Linux
-KERNEL /seiba/seiba rw quiet
-APPEND initrd=/seiba/seiba.zst
-CEOF
+	cat > "$ISODIR"/boot/isolinux/isolinux.cfg <<- EOF
+		UI vesamenu.c32
+		PROMPT 0
+		TIMEOUT 100
+		ONTIMEOUT ataraxialinux
+		MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+		MENU AUTOBOOT BIOS default device boot in # second{,s}...
+		MENU BACKGROUND /boot/isolinux/background.png
+		MENU WIDTH 78
+		MENU MARGIN 1
+		MENU ROWS 4
+		MENU VSHIFT 2
+		MENU TIMEOUTROW 8
+		MENU TABMSGROW 2
+		MENU CMDLINEROW 11
+		MENU HELPMSGROW 16
+		MENU HELPMSGENDROW 29
+		MENU COLOR title        * #9000FF *
+		MENU COLOR border       * #00000000 #00000000 none
+		MENU COLOR sel          * #ffffffff #9000FF *
+		LABEL ataraxialinux
+		MENU LABEL Ataraxia Linux
+		KERNEL /seiba/seiba rw quiet live
+		APPEND initrd=/seiba/seiba.zst
+	EOF
 
 	xorriso -as mkisofs \
 		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
@@ -180,12 +132,12 @@ CEOF
 make_iso_ppc() {
 	mkdir -p "$TOOLS"/share/grub "$ISODIR"/boot/grub
 
-cat << CEOF > "$ISODIR"/boot/grub/grub.cfg
-menuentry "Ataraxia Linux" {
-linux	/seiba/seiba root=/dev/ram0 rw quiet
-initrd	/seiba/seiba.zst
-}
-CEOF
+	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
+		menuentry "Ataraxia Linux" {
+			linux	/seiba/seiba root=/dev/ram0 rw quiet live
+			initrd	/seiba/seiba.zst
+		}
+	EOF
 
 	"$BUILD"/tools/bin/grub-mkrescue \
 		--output "$BUILD"/ataraxialinux-$BARCH.iso "$ISODIR"/ \

@@ -11,7 +11,7 @@ _patchlevel=${version##*.}
 _bash_patchlevel="00$_patchlevel"
 _myver=${version%.*}
 _patchbase=${_myver/./}
-release=1
+release=3
 options=('~emptydirs' 'bootstrap')
 backup=('etc/inputrc')
 source=("http://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
@@ -35,12 +35,9 @@ build() {
 			;;
 		esac
 	done
-
-	sed -i '/MV.*old/d' Makefile.in
-	sed -i '/{OLDSUFF}/c:' support/shlib-install
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
+		--with-curses \
 		--enable-shared \
 		--enable-static
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"

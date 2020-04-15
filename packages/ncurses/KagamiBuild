@@ -25,15 +25,36 @@ build() {
 		--with-normal \
 		--with-shared \
 		--without-ada \
+		--without-cxx-binding \
 		--without-debug \
 		--without-tests \
 		--enable-overwrite \
 		--enable-pc-files \
 		--enable-widec \
 		--disable-rpath-hack \
-		--disable-stripping
+		--disable-stripping \
+		--disable-termcap
 	make
 	make -j1 DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/share/man "$PKG"/usr/share/licenses
+
+	for i in ansi console dumb linux rxvt screen sun vt52 vt100 vt102 \
+			vt200 vt220 xterm xterm-color xterm-xfree86 xterm-256color \
+			alacritty tmux tmux-256color terminator terminology* \
+			vte vte-256color gnome gnome-256color kitty konsole konsole-256color \
+			konsole-linux putty putty-256color rxvt-256color st-* \
+			screen-256color; do
+		local termfile=$(find " $PKG"/usr/share/terminfo/ -name "$i" 2>/dev/null) || true
+		local basedir=$(basename "$(dirname "$termfile")")
+
+		[ -z "$termfile" ] && continue
+
+		install -d " $PKG"/etc/terminfo/$basedir
+		mv $termfile " $PKG"/etc/terminfo/$basedir/
+		ln -s ../../../../etc/terminfo/$basedir/$i \
+			" $PKG"/usr/share/terminfo/$basedir/$i
+	done
 
 	for lib in ncurses form panel menu; do
 		echo "INPUT(-l${lib}w)" > "$PKG"/usr/lib/lib${lib}.so

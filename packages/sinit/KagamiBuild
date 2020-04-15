@@ -1,0 +1,36 @@
+# Description: Suckless init
+# URL:         http://tools.suckless.org/sinit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=sinit
+version=1.1
+release=1
+options=('bootstrap')
+source=("https://github.com/henrysher/sinit/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	rm -rf config.h
+	cat > config.h <<-EOF
+		static char *const rcinitcmd[] = { "/usr/bin/rc.init", NULL };
+		static char *const rcrebootcmd[] = { "/usr/bin/rc.shutdown", "reboot", NULL };
+		static char *const rcpoweroffcmd[] = { "/usr/bin/rc.shutdown", "poweroff", NULL };
+	EOF
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+	else
+		make CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+	fi
+
+	ln -sf sinit "$PKG"/usr/bin/init
+
+	for i in rc.init rc.shutdown poweroff reboot; do
+		install -Dm0755 "$STUFF"/sinit/$i "$PKG"/usr/bin/$i
+	done
+}

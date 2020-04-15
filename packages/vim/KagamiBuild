@@ -2,25 +2,46 @@
 # URL:         https://www.vim.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  ncurses acl pcre
+# Priority:    required
 # Section:     editors
 
 name=vim
-version=8.2.0525
+version=8.2.0579
 release=1
+options=('bootstrap')
 source=("https://github.com/vim/vim/archive/v$version.tar.gz")
 
 build() {
+	export vim_cv_terminfo=yes
+	export vim_cv_tgetent=zero
+	export vim_cv_tty_group=world
+	export vim_cv_tty_mode=0620
+	export vim_cv_getcwd_broken=no
+	export vim_cv_stat_ignores_slash=yes
+	export vim_cv_memmove_handles_overlap=yes
+	export ac_cv_sizeof_int=4
+	export ac_cv_small_wchar_t=no
+	export vim_cv_toupper_broken=no
+
 	cd "$SRC"/vim-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--localstatedir=/var/lib/vim \
 		--with-compiledby='Ataraxia Linux' \
-		--with-features=huge \
+		--with-features=tiny \
 		--with-tlib=ncursesw \
 		--without-x \
+		--enable-gui=no \
 		--enable-multibyte \
-		--disable-nls \
-		--disable-gui
+		--disable-canberra \
+		--disable-gpm \
+		--disable-luainterp \
+		--disable-mzschemeinterp \
+		--disable-perlinterp \
+		--disable-pythoninterp \
+		--disable-rubyinterp \
+		--disable-selinux \
+		--disable-tclinterp
 	make
 	make DESTDIR="$PKG" install
 

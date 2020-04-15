@@ -7,7 +7,7 @@
 
 name=libpwquality
 version=1.4.2
-release=1
+release=2
 options=('bootstrap')
 source=("https://github.com/libpwquality/libpwquality/releases/download/$name-$version/$name-$version.tar.bz2")
 
@@ -20,12 +20,13 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-securedir=/usr/lib/security \
-		--disable-python-bindings \
-		--disable-static
+		--disable-python-bindings
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
 
 	install -m755 -d "$PKG"/etc/security/pwquality.conf.d
+
+	rm -rf "$PKG"/usr/lib/security/*.a
 }
