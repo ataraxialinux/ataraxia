@@ -74,10 +74,10 @@ generate_config() {
 			export DEFCONFIG="defconfig"
 			;;
 		armv7hnl|armv7hl)
-			export DEFCONFIG="multi_v7_defconfig"
+			export DEFCONFIG="vexpress_defconfig"
 			;;
-		armv5tel)
-			export DEFCONFIG="multi_v5_defconfig"
+		armv6hl)
+			export DEFCONFIG="versatile_defconfig"
 			;;
 		ppc64le)
 			export DEFCONFIG="powernv_defconfig"
@@ -232,7 +232,7 @@ generate_config() {
 				CRYPTO_SHA3_ARM64 CRYPTO_SM3_ARM64_CE CRYPTO_SM4_ARM64_CE CRYPTO_GHASH_ARM64_CE CRYPTO_CRCT10DIF_ARM64_CE \
 				CRYPTO_AES_ARM64 CRYPTO_AES_ARM64_CE CRYPTO_AES_ARM64_CE_CCM  CRYPTO_AES_ARM64_CE_BLK CRYPTO_AES_ARM64_NEON_BLK
 			;;
-		armv7hnl|armv7hl|armv5tel)
+		armv7hnl|armv7hl|armv6hl)
 			yconfig ARM_CRYPTO
 			mconfig CRYPTO_AES_ARM64_BS CRYPTO_SHA1_ARM CRYPTO_SHA256_ARM CRYPTO_SHA512_ARM CRYPTO_AES_ARM CRYPTO_SHA1_ARM CRYPTO_AES_ARM
 			nconfig CRYPTO_AES_ARM_CE CRYPTO_GHASH_ARM_CE CRYPTO_CRCT10DIF_ARM_CE CRYPTO_CRC32_ARM_CE CRYPTO_SHA1_ARM_CE CRYPTO_SHA2_ARM_CE
@@ -292,7 +292,7 @@ generate_config() {
 
 	# Platform specific SDHCI
 	case $BARCH in
-		aarch64|armv7hnl|armv7hl|armv5tel)
+		aarch64|armv7hnl|armv7hl|armv6hl)
 			yconfig MMC_ARMMMCI MMC_QCOM_DML MMC_SDHCI_OF_ASPEED MMC_SDHCI_OF_AT91 MMC_SDHCI_CADENCE MMC_SDHCI_ESDHC_IMX \
 				MMC_SDHCI_TEGRA MMC_SDHCI_PXAV3 MMC_SDHCI_F_SDH30 MMC_SUNXI MMC_DW MMC_DW_PLTFM MMC_DW_EXYNOS MMC_DW_K3 MMC_DW_PCI MMC_DW_ROCKCHIP
 			nconfig MMC_DW_BLUEFIELD MMC_DW_HI3798CV200
@@ -797,7 +797,7 @@ generate_config() {
 			yconfig ARM64_SW_TTBR0_PAN UNMAP_KERNEL_AT_EL0
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
 			;;
-		armv7hnl|armv7hl|armv5tel)
+		armv7hnl|armv7hl|armv6hl)
 			yconfig VMSPLIT_3G STRICT_MEMORY_RWX CPU_SW_DOMAIN_PAN
 			nconfig OABI_COMPAT
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
@@ -831,7 +831,7 @@ build() {
 			export XKARCH="arm64"
 			export IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armv7hnl|armv7hl|armv5tel)
+		armv7hnl|armv7hl|armv6hl)
 			export XKARCH="arm"
 			export IMAGELOC="arch/arm/boot/zImage"
 			;;
@@ -884,7 +884,7 @@ build() {
 	depmod -a -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
-		aarch64|armv7hnl|armv7hl|armv5tel)
+		aarch64|armv7hnl|armv7hl|armv6hl)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
 				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
