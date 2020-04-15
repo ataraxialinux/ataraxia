@@ -27,7 +27,7 @@ Stage 2 is complete!
  - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa, wireguard, retroshare, gnunet)
  - [ ] Add container management software (lxc, docker)
  - [ ] Add virtualization management software (libvirt, qemu, virt-manager)
- - [ ] Add GNOME apps
+ - [x] Add GNOME apps
  - [ ] Add support for LXDE, Cinnamon, MATE and Enlightement
  - [ ] Add misc software (snownews, aisterisk, bitcoin, httpup, zeromq, etherwall, firewalld, iptraf-ng)
  - [ ] Add misc GUI software
