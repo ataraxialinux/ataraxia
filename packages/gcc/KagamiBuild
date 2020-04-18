@@ -93,6 +93,11 @@ build() {
 	patch -Np1 -i "$STUFF"/gcc/0003-gcc-poison-system-directories.patch
 	patch -Np1 -i "$STUFF"/gcc/security.patch
 
+	# libcc1 requres gcc_cv_objdump when cross build, but gcc_cv_objdump is
+	# set in subdir gcc, so subdir libcc1 can't use it, export it here to
+	# fix the problem.
+	export gcc_cv_objdump="${CROSS_COMPILE}objdump"
+
 	mv ../isl-$islver isl
 
 	mkdir build
