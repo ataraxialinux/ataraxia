@@ -1,19 +1,20 @@
 #!/bin/bash
 
 generate_initramfs() {
-	packages="base-files netbase linux-headers musl zlib file ncurses readline \
-		bzip2 cracklib pam libpwquality attr acl libcap shadow pcre grep mksh bash \
-		expat libressl nettle ca-certificates xz lzip lz4 zstd libarchive lzo kmod \
-		coreutils sbase ubase sinit netbsd-tools busybox dialog pigz iproute2 kbd nano \
-		libcap-ng util-linux e2fsprogs btrfs-progs dosfstools hwids eudev openrc netifrc \
-		libnl wireless_tools wpa_supplicant popt gptfdisk wget linux"
+	packages="base-files netbase  musl zlib file ncurses readline bzip2 cracklib pam \
+		libpwquality attr acl libcap shadow pcre grep mksh bash expat libressl nettle \
+		ca-certificates xz lzip lz4 zstd libarchive lzo kmod coreutils sbase ubase sinit \
+		netbsd-tools busybox dialog pigz iproute2 kbd nano libcap-ng util-linux e2fsprogs \
+		btrfs-progs dosfstools hwids eudev openrc netifrc libnl wireless_tools wpa_supplicant \
+		popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$FIRMWAREFS" -wd linux-firmware
 
 	pushd "$INITRAMFS"
 		rm -rf usr/lib/modules/*/kernel/drivers/{bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
 		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
-		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/crypto usr/lib/pkgconfig usr/include \
+		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/pkgconfig usr/include
 		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
@@ -36,6 +37,10 @@ generate_initramfs() {
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
+	popd
+
+	pushd "$FIRMWAREFS"
+		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/firmware.zst
 	popd
 }
 
@@ -61,9 +66,13 @@ make_iso_x86() {
 	EOF
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
-			menuentry "Ataraxia Linux" {
+		menuentry "Ataraxia Linux" {
 			linux	/seiba/seiba rw quiet live
 			initrd	/seiba/seiba.zst
+		}
+		menuentry "Ataraxia Linux (with firmware)" {
+			linux	/seiba/seiba rw quiet live
+			initrd	/seiba/firmware.zst /seiba/seiba.zst
 		}
 	EOF
 
@@ -110,6 +119,10 @@ make_iso_x86() {
 		MENU LABEL Ataraxia Linux
 		KERNEL /seiba/seiba rw quiet live
 		APPEND initrd=/seiba/seiba.zst
+		LABEL firmware
+		MENU LABEL Ataraxia Linux (with firmware)
+		KERNEL /seiba/seiba rw quiet live
+		APPEND initrd=/seiba/firmware.zst,/seiba/seiba.zst
 	EOF
 
 	xorriso -as mkisofs \
@@ -137,6 +150,10 @@ make_iso_ppc() {
 			linux	/seiba/seiba root=/dev/ram0 rw quiet live
 			initrd	/seiba/seiba.zst
 		}
+		menuentry "Ataraxia Linux (with firmware)" {
+			linux	/seiba/seiba root=/dev/ram0 rw quiet live
+			initrd	/seiba/firmware.zst /seiba/seiba.zst
+		}
 	EOF
 
 	"$BUILD"/tools/bin/grub-mkrescue \
@@ -148,9 +165,10 @@ main() {
 	ISODIR="$BUILD/rootcd"
 	INITRAMFS="$BUILD/initramfs"
 	GRUBEFICFG="$BUILD/efi.cfg"
+	FIRMWAREFS="$BUILD/firmwarefs"
 
-	rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG"
-	mkdir -p "$ISODIR/seiba" "$INITRAMFS"
+	rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG" "$FIRMWAREFS"
+	mkdir -p "$ISODIR/seiba" "$INITRAMFS" "$FIRMWAREFS"
 
 	source "$BUILD/target.config"
 	generate_initramfs
