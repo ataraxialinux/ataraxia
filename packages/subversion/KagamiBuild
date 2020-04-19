@@ -1,0 +1,20 @@
+# Description: A Modern Concurrent Version Control System
+# URL:         https://subversion.apache.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  file lz4 sqlite apr-util libutf8proc
+# Section:     devel
+
+name=subversion
+version=1.13.0
+release=1
+options=('~makeflags' '~emptydirs')
+source=("https://archive.apache.org/dist/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-apache-libexecdir=/usr/lib/httpd/modules
+	make
+	make DESTDIR="$PKG" install
+}
