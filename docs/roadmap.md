@@ -21,8 +21,8 @@ Stage 1 is complete!
 Stage 2 is complete!
 
 ## Stage 3
- - [x] Move to sinit and perp
- - [ ] Add more version control software (svn, mercurial, fossil)
+ - [x] Move to sinit and OpenRC
+ - [x] Add more version control software (svn, fossil)
  - [ ] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, vsftpd, s6-dns, cyrus-sasl, openldap, cifs-utils, kubectl, kubeadm, kubelet)
  - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa, wireguard, retroshare, gnunet)
  - [ ] Add container management software (lxc, docker)

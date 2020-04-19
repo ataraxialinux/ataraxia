@@ -1,0 +1,20 @@
+# Description: Simple, high-reliability, distributed software configuration management
+# URL:         https://www.fossil-scm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl sqlite
+# Section:     devel
+
+name=fossil
+version=2.10
+release=1
+source=("https://www.fossil-scm.org/index.html/uv/fossil-src-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-internal-sqlite \
+		--json
+	make
+	make DESTDIR="$PKG" install
+}
