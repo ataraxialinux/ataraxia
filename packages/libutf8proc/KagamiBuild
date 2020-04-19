@@ -1,0 +1,32 @@
+# Description: C library for processing UTF-8 encoded Unicode strings
+# URL:         https://julialang.org/utf8proc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libutf8proc
+version=2.4.0
+release=1
+source=("https://github.com/JuliaStrings/utf8proc/archive/v$version.tar.gz")
+
+build() {
+	cd utf8proc-$version
+	make libutf8proc.so
+	make prefix=/usr libdir=/usr/lib includedir=/usr/include DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/pkgconfig
+	cat > "$PKG"/usr/lib/pkgconfig/libutf8proc.pc <<-EOF
+		prefix=/usr
+		exec_prefix=/usr
+		libdir=/usr/lib
+		includedir=/usr/include
+
+		Name: libutf8proc
+		Description: UTF8 processing
+		Version: 2.4.0
+		Libs: -L/usr/lib -lutf8proc
+		Cflags: -I/usr/include -DUTF8PROC_EXPORTS
+	EOF
+
+	mkdir -p "$PKG"/usr/include/libutf8proc
+	ln -sf ../utf8proc.h "$PKG"/usr/include/libutf8proc/utf8proc.h
+}
