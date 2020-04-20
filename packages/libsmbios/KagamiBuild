@@ -1,0 +1,24 @@
+# Description: A library for providing access to as much BIOS information as possible
+# URL:         https://github.com/dell/libsmbios
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=libsmbios
+version=2.4.3
+release=1
+source=("https://github.com/dell/libsmbios/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libsmbios/musl.patch
+
+	./autogen.sh --no-configure
+	CONFIG_SHELL=/bin/bash \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--disable-python
+	make
+	make DESTDIR="$PKG" install
+}
