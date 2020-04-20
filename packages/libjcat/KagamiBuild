@@ -1,0 +1,21 @@
+# Description: Library for reading and writing Jcat files
+# URL:         https://github.com/hughsie/libjcat
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala gnutls gpgme json-glib
+# Section:     gnome
+
+name=libjcat
+version=0.1.1
+release=1
+source=("https://people.freedesktop.org/~hughsient/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgtkdoc=false \
+		-Dman=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
