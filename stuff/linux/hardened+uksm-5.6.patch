@@ -1,14 +1,341 @@
-diff -ruN linux-5.6.2-orig/arch/arm64/configs/defconfig linux-5.6.2/arch/arm64/configs/defconfig
---- linux-5.6.2-orig/arch/arm64/configs/defconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/arm64/configs/defconfig	2020-04-06 02:58:09.192024546 +0900
+From d9b3ff56d0ca91287e817163103205809cae03a3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 20 Apr 2020 21:20:10 +0900
+Subject: [PATCH] hardened + uksm
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ .../admin-guide/kernel-parameters.txt         |   15 +-
+ Documentation/admin-guide/sysctl/kernel.rst   |   20 +
+ Documentation/vm/uksm.txt                     |   61 +
+ arch/Kconfig                                  |    4 +-
+ arch/arm64/Kconfig                            |    2 +
+ arch/arm64/Kconfig.debug                      |    1 +
+ arch/arm64/configs/defconfig                  |    1 -
+ arch/arm64/include/asm/elf.h                  |   14 +-
+ arch/x86/Kconfig                              |    8 +-
+ arch/x86/Kconfig.debug                        |    1 +
+ arch/x86/configs/x86_64_defconfig             |    1 -
+ arch/x86/entry/entry_32.S                     |    5 +
+ arch/x86/entry/entry_64.S                     |   37 +
+ arch/x86/entry/vdso/vma.c                     |   55 +-
+ arch/x86/include/asm/elf.h                    |   29 +-
+ arch/x86/include/asm/pgtable.h                |    2 +
+ arch/x86/include/asm/tlbflush.h               |    4 +
+ arch/x86/kernel/process.c                     |   31 +-
+ arch/x86/kernel/sys_x86_64.c                  |   22 +-
+ arch/x86/mm/fault.c                           |  219 +
+ arch/x86/mm/hugetlbpage.c                     |   10 +
+ arch/x86/mm/init_32.c                         |    4 +-
+ arch/x86/mm/init_64.c                         |    4 +-
+ arch/x86/mm/mmap.c                            |   11 +
+ block/blk-softirq.c                           |    2 +-
+ drivers/ata/libata-core.c                     |    4 +-
+ drivers/char/Kconfig                          |    2 -
+ drivers/tty/Kconfig                           |    1 -
+ drivers/tty/tty_io.c                          |   10 +
+ drivers/usb/core/hub.c                        |    8 +
+ fs/binfmt_elf.c                               |  115 +
+ fs/exec.c                                     |   32 +
+ fs/fs_struct.c                                |    2 +-
+ fs/hugetlbfs/inode.c                          |   10 +
+ fs/namei.c                                    |   15 +-
+ fs/nfs/Kconfig                                |    1 -
+ fs/open.c                                     |    4 +
+ fs/proc/Kconfig                               |    1 -
+ fs/proc/array.c                               |   18 +
+ fs/proc/meminfo.c                             |    5 +-
+ fs/stat.c                                     |   20 +-
+ fs/userfaultfd.c                              |    4 +
+ include/asm-generic/pgtable.h                 |   17 +-
+ include/linux/binfmts.h                       |    3 +
+ include/linux/cache.h                         |    2 +
+ include/linux/capability.h                    |    5 +
+ include/linux/elf.h                           |    2 +
+ include/linux/fcntl.h                         |    2 +-
+ include/linux/fs.h                            |   12 +
+ include/linux/fsnotify.h                      |    6 +
+ include/linux/gfp.h                           |    4 +-
+ include/linux/highmem.h                       |    7 +
+ include/linux/interrupt.h                     |    4 +-
+ include/linux/kobject_ns.h                    |    2 +-
+ include/linux/ksm.h                           |   45 +-
+ include/linux/mm.h                            |    2 +-
+ include/linux/mm_types.h                      |   10 +
+ include/linux/mmzone.h                        |    3 +
+ include/linux/percpu.h                        |    6 +-
+ include/linux/perf_event.h                    |    8 +
+ include/linux/random.h                        |    5 +
+ include/linux/sched.h                         |    9 +
+ include/linux/slab.h                          |   10 +-
+ include/linux/slub_def.h                      |    5 +
+ include/linux/sradix-tree.h                   |   77 +
+ include/linux/string.h                        |   26 +-
+ include/linux/tty.h                           |    4 +
+ include/linux/uksm.h                          |  149 +
+ include/linux/vmalloc.h                       |   22 +-
+ include/uapi/asm-generic/fcntl.h              |    4 +
+ include/uapi/linux/elf.h                      |    3 +
+ init/Kconfig                                  |   61 +-
+ ipc/shm.c                                     |    3 +
+ kernel/audit.c                                |    3 +
+ kernel/bpf/core.c                             |    2 +-
+ kernel/bpf/syscall.c                          |    2 +-
+ kernel/capability.c                           |    6 +
+ kernel/events/core.c                          |    7 +-
+ kernel/fork.c                                 |   17 +-
+ kernel/rcu/tiny.c                             |    2 +-
+ kernel/rcu/tree.c                             |    2 +-
+ kernel/sched/fair.c                           |    2 +-
+ kernel/softirq.c                              |   17 +-
+ kernel/sysctl.c                               |  124 +-
+ kernel/time/hrtimer.c                         |    2 +-
+ kernel/time/timer.c                           |    2 +-
+ kernel/user_namespace.c                       |    7 +
+ lib/Kconfig.debug                             |    9 +-
+ lib/Makefile                                  |    2 +-
+ lib/irq_poll.c                                |    2 +-
+ lib/kobject.c                                 |    4 +-
+ lib/nlattr.c                                  |    2 +
+ lib/sradix-tree.c                             |  476 ++
+ lib/vsprintf.c                                |    2 +-
+ mm/Kconfig                                    |   29 +-
+ mm/Makefile                                   |    3 +-
+ mm/ksm.c                                      |   11 -
+ mm/memory.c                                   |   33 +-
+ mm/mmap.c                                     |   92 +
+ mm/mprotect.c                                 |   13 +
+ mm/page_alloc.c                               |   39 +-
+ mm/slab.h                                     |   31 +-
+ mm/slab_common.c                              |    6 +-
+ mm/slub.c                                     |  148 +-
+ mm/swap.c                                     |    7 +
+ mm/uksm.c                                     | 5613 +++++++++++++++++
+ mm/util.c                                     |   15 +-
+ mm/vmstat.c                                   |    3 +
+ net/core/dev.c                                |    4 +-
+ net/ipv4/Kconfig                              |    1 +
+ scripts/Makefile.modpost                      |    1 +
+ scripts/gcc-plugins/Kconfig                   |    5 +
+ scripts/mod/modpost.c                         |   37 +-
+ security/Kconfig                              |  207 +-
+ security/Kconfig.hardening                    |   16 +
+ security/selinux/Kconfig                      |   22 +-
+ security/selinux/hooks.c                      |   13 +-
+ security/selinux/selinuxfs.c                  |    4 +-
+ security/yama/Kconfig                         |    2 +-
+ 119 files changed, 8051 insertions(+), 329 deletions(-)
+ create mode 100644 Documentation/vm/uksm.txt
+ create mode 100644 include/linux/sradix-tree.h
+ create mode 100644 include/linux/uksm.h
+ create mode 100644 lib/sradix-tree.c
+ create mode 100644 mm/uksm.c
+
+diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
+index c07815d23..8c9d19cf0 100644
+--- a/Documentation/admin-guide/kernel-parameters.txt
++++ b/Documentation/admin-guide/kernel-parameters.txt
+@@ -513,16 +513,6 @@
+ 			nosocket -- Disable socket memory accounting.
+ 			nokmem -- Disable kernel memory accounting.
+ 
+-	checkreqprot	[SELINUX] Set initial checkreqprot flag value.
+-			Format: { "0" | "1" }
+-			See security/selinux/Kconfig help text.
+-			0 -- check protection applied by kernel (includes
+-				any implied execute protection).
+-			1 -- check protection requested by application.
+-			Default value is set via a kernel config option.
+-			Value can be changed at runtime via
+-				/sys/fs/selinux/checkreqprot.
+-
+ 	cio_ignore=	[S390]
+ 			See Documentation/s390/common_io.rst for details.
+ 	clk_ignore_unused
+@@ -3409,6 +3399,11 @@
+ 			the specified number of seconds.  This is to be used if
+ 			your oopses keep scrolling off the screen.
+ 
++	extra_latent_entropy
++			Enable a very simple form of latent entropy extraction
++			from the first 4GB of memory as the bootmem allocator
++			passes the memory pages to the buddy allocator.
++
+ 	pcbit=		[HW,ISDN]
+ 
+ 	pcd.		[PARIDE]
+diff --git a/Documentation/admin-guide/sysctl/kernel.rst b/Documentation/admin-guide/sysctl/kernel.rst
+index def074807..8770b4bc2 100644
+--- a/Documentation/admin-guide/sysctl/kernel.rst
++++ b/Documentation/admin-guide/sysctl/kernel.rst
+@@ -102,6 +102,7 @@ show up in /proc/sys/kernel:
+ - sysctl_writes_strict
+ - tainted                     ==> Documentation/admin-guide/tainted-kernels.rst
+ - threads-max
++- tiocsti_restrict
+ - unknown_nmi_panic
+ - watchdog
+ - watchdog_thresh
+@@ -1112,6 +1113,25 @@ If a value outside of this range is written to threads-max an error
+ EINVAL occurs.
+ 
+ 
++tiocsti_restrict:
++=================
++
++This toggle indicates whether unprivileged users are prevented from using the
++TIOCSTI ioctl to inject commands into other processes which share a tty
++session.
++
++When tiocsti_restrict is set to (0) there are no restrictions(accept the
++default restriction of only being able to injection commands into one's own
++tty). When tiocsti_restrict is set to (1), users must have CAP_SYS_ADMIN to
++use the TIOCSTI ioctl.
++
++When user namespaces are in use, the check for the capability CAP_SYS_ADMIN is
++done against the user namespace that originally opened the tty.
++
++The kernel config option CONFIG_SECURITY_TIOCSTI_RESTRICT sets the default
++value of tiocsti_restrict.
++
++
+ unknown_nmi_panic:
+ ==================
+ 
+diff --git a/Documentation/vm/uksm.txt b/Documentation/vm/uksm.txt
+new file mode 100644
+index 000000000..be19a3127
+--- /dev/null
++++ b/Documentation/vm/uksm.txt
+@@ -0,0 +1,61 @@
++The Ultra Kernel Samepage Merging feature
++----------------------------------------------
++/*
++ * Ultra KSM. Copyright (C) 2011-2012 Nai Xia
++ *
++ * This is an improvement upon KSM. Some basic data structures and routines
++ * are borrowed from ksm.c .
++ *
++ * Its new features:
++ * 1. Full system scan:
++ *      It automatically scans all user processes' anonymous VMAs. Kernel-user
++ *      interaction to submit a memory area to KSM is no longer needed.
++ *
++ * 2. Rich area detection:
++ *      It automatically detects rich areas containing abundant duplicated
++ *      pages based. Rich areas are given a full scan speed. Poor areas are
++ *      sampled at a reasonable speed with very low CPU consumption.
++ *
++ * 3. Ultra Per-page scan speed improvement:
++ *      A new hash algorithm is proposed. As a result, on a machine with
++ *      Core(TM)2 Quad Q9300 CPU in 32-bit mode and 800MHZ DDR2 main memory, it
++ *      can scan memory areas that does not contain duplicated pages at speed of
++ *      627MB/sec ~ 2445MB/sec and can merge duplicated areas at speed of
++ *      477MB/sec ~ 923MB/sec.
++ *
++ * 4. Thrashing area avoidance:
++ *      Thrashing area(an VMA that has frequent Ksm page break-out) can be
++ *      filtered out. My benchmark shows it's more efficient than KSM's per-page
++ *      hash value based volatile page detection.
++ *
++ *
++ * 5. Misc changes upon KSM:
++ *      * It has a fully x86-opitmized memcmp dedicated for 4-byte-aligned page
++ *        comparison. It's much faster than default C version on x86.
++ *      * rmap_item now has an struct *page member to loosely cache a
++ *        address-->page mapping, which reduces too much time-costly
++ *        follow_page().
++ *      * The VMA creation/exit procedures are hooked to let the Ultra KSM know.
++ *      * try_to_merge_two_pages() now can revert a pte if it fails. No break_
++ *        ksm is needed for this case.
++ *
++ * 6. Full Zero Page consideration(contributed by Figo Zhang)
++ *    Now uksmd consider full zero pages as special pages and merge them to an
++ *    special unswappable uksm zero page.
++ */
++
++ChangeLog:
++
++2012-05-05 The creation of this Doc
++2012-05-08 UKSM 0.1.1.1 libc crash bug fix, api clean up, doc clean up.
++2012-05-28 UKSM 0.1.1.2 bug fix release
++2012-06-26 UKSM 0.1.2-beta1 first beta release for 0.1.2
++2012-07-2  UKSM 0.1.2-beta2
++2012-07-10 UKSM 0.1.2-beta3
++2012-07-26 UKSM 0.1.2 Fine grained speed control, more scan optimization.
++2012-10-13 UKSM 0.1.2.1 Bug fixes.
++2012-12-31 UKSM 0.1.2.2 Minor bug fixes.
++2014-07-02 UKSM 0.1.2.3 Fix a " __this_cpu_read() in preemptible bug".
++2015-04-22 UKSM 0.1.2.4 Fix a race condition that can sometimes trigger anonying warnings.
++2016-09-10 UKSM 0.1.2.5 Fix a bug in dedup ratio calculation.
++2017-02-26 UKSM 0.1.2.6 Fix a bug in hugetlbpage handling and a race bug with page migration.
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 17fe351cd..34ed60cb6 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -658,7 +658,7 @@ config ARCH_MMAP_RND_BITS
+ 	int "Number of bits to use for ASLR of mmap base address" if EXPERT
+ 	range ARCH_MMAP_RND_BITS_MIN ARCH_MMAP_RND_BITS_MAX
+ 	default ARCH_MMAP_RND_BITS_DEFAULT if ARCH_MMAP_RND_BITS_DEFAULT
+-	default ARCH_MMAP_RND_BITS_MIN
++	default ARCH_MMAP_RND_BITS_MAX
+ 	depends on HAVE_ARCH_MMAP_RND_BITS
+ 	help
+ 	  This value can be used to select the number of bits to use to
+@@ -692,7 +692,7 @@ config ARCH_MMAP_RND_COMPAT_BITS
+ 	int "Number of bits to use for ASLR of mmap base address for compatible applications" if EXPERT
+ 	range ARCH_MMAP_RND_COMPAT_BITS_MIN ARCH_MMAP_RND_COMPAT_BITS_MAX
+ 	default ARCH_MMAP_RND_COMPAT_BITS_DEFAULT if ARCH_MMAP_RND_COMPAT_BITS_DEFAULT
+-	default ARCH_MMAP_RND_COMPAT_BITS_MIN
++	default ARCH_MMAP_RND_COMPAT_BITS_MAX
+ 	depends on HAVE_ARCH_MMAP_RND_COMPAT_BITS
+ 	help
+ 	  This value can be used to select the number of bits to use to
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 0b30e884e..a5498cb01 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -1212,6 +1212,7 @@ config RODATA_FULL_DEFAULT_ENABLED
+ 
+ config ARM64_SW_TTBR0_PAN
+ 	bool "Emulate Privileged Access Never using TTBR0_EL1 switching"
++	default y
+ 	help
+ 	  Enabling this option prevents the kernel from accessing
+ 	  user-space memory directly by pointing TTBR0_EL1 to a reserved
+@@ -1640,6 +1641,7 @@ config RANDOMIZE_BASE
+ 	bool "Randomize the address of the kernel image"
+ 	select ARM64_MODULE_PLTS if MODULES
+ 	select RELOCATABLE
++	default y
+ 	help
+ 	  Randomizes the virtual address at which the kernel image is
+ 	  loaded, as a security feature that deters exploit attempts
+diff --git a/arch/arm64/Kconfig.debug b/arch/arm64/Kconfig.debug
+index 1c906d932..d8b5cdb45 100644
+--- a/arch/arm64/Kconfig.debug
++++ b/arch/arm64/Kconfig.debug
+@@ -26,6 +26,7 @@ config ARM64_RANDOMIZE_TEXT_OFFSET
+ config DEBUG_WX
+ 	bool "Warn on W+X mappings at boot"
+ 	select PTDUMP_CORE
++	default y
+ 	---help---
+ 	  Generate a warning if any W+X mappings are found at boot.
+ 
+diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
+index 4db223dbc..0d4c4df19 100644
+--- a/arch/arm64/configs/defconfig
++++ b/arch/arm64/configs/defconfig
 @@ -1,4 +1,3 @@
 -CONFIG_SYSVIPC=y
  CONFIG_POSIX_MQUEUE=y
  CONFIG_AUDIT=y
  CONFIG_NO_HZ_IDLE=y
-diff -ruN linux-5.6.2-orig/arch/arm64/include/asm/elf.h linux-5.6.2/arch/arm64/include/asm/elf.h
---- linux-5.6.2-orig/arch/arm64/include/asm/elf.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/arm64/include/asm/elf.h	2020-04-06 02:58:09.193024546 +0900
+diff --git a/arch/arm64/include/asm/elf.h b/arch/arm64/include/asm/elf.h
+index b61801720..0a228dbca 100644
+--- a/arch/arm64/include/asm/elf.h
++++ b/arch/arm64/include/asm/elf.h
 @@ -103,14 +103,10 @@
  
  /*
@@ -26,7 +353,7 @@ diff -ruN linux-5.6.2-orig/arch/arm64/include/asm/elf.h linux-5.6.2/arch/arm64/i
  
  #ifndef __ASSEMBLY__
  
-@@ -164,10 +160,10 @@
+@@ -164,10 +160,10 @@ extern int arch_setup_additional_pages(struct linux_binprm *bprm,
  /* 1GB of VA */
  #ifdef CONFIG_COMPAT
  #define STACK_RND_MASK			(test_thread_flag(TIF_32BIT) ? \
@@ -40,29 +367,44 @@ diff -ruN linux-5.6.2-orig/arch/arm64/include/asm/elf.h linux-5.6.2/arch/arm64/i
  #endif
  
  #ifdef __AARCH64EB__
-diff -ruN linux-5.6.2-orig/arch/arm64/Kconfig linux-5.6.2/arch/arm64/Kconfig
---- linux-5.6.2-orig/arch/arm64/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/arm64/Kconfig	2020-04-06 02:58:09.192024546 +0900
-@@ -1212,6 +1212,7 @@
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index beea77046..0d6108b38 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1193,8 +1193,7 @@ config VM86
+ 	default X86_LEGACY_VM86
  
- config ARM64_SW_TTBR0_PAN
- 	bool "Emulate Privileged Access Never using TTBR0_EL1 switching"
-+	default y
+ config X86_16BIT
+-	bool "Enable support for 16-bit segments" if EXPERT
+-	default y
++	bool "Enable support for 16-bit segments"
+ 	depends on MODIFY_LDT_SYSCALL
+ 	---help---
+ 	  This option is required by programs like Wine to run 16-bit
+@@ -2331,7 +2330,7 @@ config COMPAT_VDSO
+ choice
+ 	prompt "vsyscall table for legacy applications"
+ 	depends on X86_64
+-	default LEGACY_VSYSCALL_XONLY
++	default LEGACY_VSYSCALL_NONE
  	help
- 	  Enabling this option prevents the kernel from accessing
- 	  user-space memory directly by pointing TTBR0_EL1 to a reserved
-@@ -1640,6 +1641,7 @@
- 	bool "Randomize the address of the kernel image"
- 	select ARM64_MODULE_PLTS if MODULES
- 	select RELOCATABLE
-+	default y
- 	help
- 	  Randomizes the virtual address at which the kernel image is
- 	  loaded, as a security feature that deters exploit attempts
-diff -ruN linux-5.6.2-orig/arch/arm64/Kconfig.debug linux-5.6.2/arch/arm64/Kconfig.debug
---- linux-5.6.2-orig/arch/arm64/Kconfig.debug	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/arm64/Kconfig.debug	2020-04-06 02:58:09.192024546 +0900
-@@ -26,6 +26,7 @@
+ 	  Legacy user code that does not know how to find the vDSO expects
+ 	  to be able to issue three syscalls by calling fixed addresses in
+@@ -2427,8 +2426,7 @@ config CMDLINE_OVERRIDE
+ 	  be set to 'N' under normal conditions.
+ 
+ config MODIFY_LDT_SYSCALL
+-	bool "Enable the LDT (local descriptor table)" if EXPERT
+-	default y
++	bool "Enable the LDT (local descriptor table)"
+ 	---help---
+ 	  Linux can allow user programs to install a per-process x86
+ 	  Local Descriptor Table (LDT) using the modify_ldt(2) system
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 2e74690b0..87c7294dd 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -75,6 +75,7 @@ config EFI_PGT_DUMP
  config DEBUG_WX
  	bool "Warn on W+X mappings at boot"
  	select PTDUMP_CORE
@@ -70,40 +412,21 @@ diff -ruN linux-5.6.2-orig/arch/arm64/Kconfig.debug linux-5.6.2/arch/arm64/Kconf
  	---help---
  	  Generate a warning if any W+X mappings are found at boot.
  
-diff -ruN linux-5.6.2-orig/arch/Kconfig linux-5.6.2/arch/Kconfig
---- linux-5.6.2-orig/arch/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/Kconfig	2020-04-06 02:58:09.191024546 +0900
-@@ -658,7 +658,7 @@
- 	int "Number of bits to use for ASLR of mmap base address" if EXPERT
- 	range ARCH_MMAP_RND_BITS_MIN ARCH_MMAP_RND_BITS_MAX
- 	default ARCH_MMAP_RND_BITS_DEFAULT if ARCH_MMAP_RND_BITS_DEFAULT
--	default ARCH_MMAP_RND_BITS_MIN
-+	default ARCH_MMAP_RND_BITS_MAX
- 	depends on HAVE_ARCH_MMAP_RND_BITS
- 	help
- 	  This value can be used to select the number of bits to use to
-@@ -692,7 +692,7 @@
- 	int "Number of bits to use for ASLR of mmap base address for compatible applications" if EXPERT
- 	range ARCH_MMAP_RND_COMPAT_BITS_MIN ARCH_MMAP_RND_COMPAT_BITS_MAX
- 	default ARCH_MMAP_RND_COMPAT_BITS_DEFAULT if ARCH_MMAP_RND_COMPAT_BITS_DEFAULT
--	default ARCH_MMAP_RND_COMPAT_BITS_MIN
-+	default ARCH_MMAP_RND_COMPAT_BITS_MAX
- 	depends on HAVE_ARCH_MMAP_RND_COMPAT_BITS
- 	help
- 	  This value can be used to select the number of bits to use to
-diff -ruN linux-5.6.2-orig/arch/x86/configs/x86_64_defconfig linux-5.6.2/arch/x86/configs/x86_64_defconfig
---- linux-5.6.2-orig/arch/x86/configs/x86_64_defconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/configs/x86_64_defconfig	2020-04-06 02:58:09.195024546 +0900
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index 0b9654c7a..4fdb04daf 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
 @@ -1,5 +1,4 @@
  # CONFIG_LOCALVERSION_AUTO is not set
 -CONFIG_SYSVIPC=y
  CONFIG_POSIX_MQUEUE=y
  CONFIG_BSD_PROCESS_ACCT=y
  CONFIG_TASKSTATS=y
-diff -ruN linux-5.6.2-orig/arch/x86/entry/entry_32.S linux-5.6.2/arch/x86/entry/entry_32.S
---- linux-5.6.2-orig/arch/x86/entry/entry_32.S	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/entry/entry_32.S	2020-04-06 02:58:22.440024808 +0900
-@@ -1085,6 +1085,11 @@
+diff --git a/arch/x86/entry/entry_32.S b/arch/x86/entry/entry_32.S
+index 39243df98..784f8314d 100644
+--- a/arch/x86/entry/entry_32.S
++++ b/arch/x86/entry/entry_32.S
+@@ -1085,6 +1085,11 @@ SYM_FUNC_START(entry_INT80_32)
  	call	do_int80_syscall_32
  .Lsyscall_32_done:
  
@@ -115,10 +438,11 @@ diff -ruN linux-5.6.2-orig/arch/x86/entry/entry_32.S linux-5.6.2/arch/x86/entry/
  	STACKLEAK_ERASE
  
  restore_all:
-diff -ruN linux-5.6.2-orig/arch/x86/entry/entry_64.S linux-5.6.2/arch/x86/entry/entry_64.S
---- linux-5.6.2-orig/arch/x86/entry/entry_64.S	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/entry/entry_64.S	2020-04-06 02:58:22.440024808 +0900
-@@ -53,6 +53,15 @@
+diff --git a/arch/x86/entry/entry_64.S b/arch/x86/entry/entry_64.S
+index f2bb91e87..739d08732 100644
+--- a/arch/x86/entry/entry_64.S
++++ b/arch/x86/entry/entry_64.S
+@@ -53,6 +53,15 @@ SYM_CODE_START(native_usergs_sysret64)
  SYM_CODE_END(native_usergs_sysret64)
  #endif /* CONFIG_PARAVIRT */
  
@@ -134,7 +458,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/entry/entry_64.S linux-5.6.2/arch/x86/entry/
  .macro TRACE_IRQS_FLAGS flags:req
  #ifdef CONFIG_TRACE_IRQFLAGS
  	btl	$9, \flags		/* interrupts off? */
-@@ -170,9 +179,28 @@
+@@ -170,9 +179,28 @@ SYM_INNER_LABEL(entry_SYSCALL_64_after_hwframe, SYM_L_GLOBAL)
  	TRACE_IRQS_OFF
  
  	/* IRQs are off. */
@@ -163,7 +487,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/entry/entry_64.S linux-5.6.2/arch/x86/entry/
  
  	TRACE_IRQS_IRETQ		/* we're about to change IF */
  
-@@ -340,8 +368,17 @@
+@@ -340,8 +368,17 @@ SYM_CODE_START(ret_from_fork)
  
  2:
  	UNWIND_HINT_REGS
@@ -181,10 +505,11 @@ diff -ruN linux-5.6.2-orig/arch/x86/entry/entry_64.S linux-5.6.2/arch/x86/entry/
  	TRACE_IRQS_ON			/* user mode is traced as IRQS on */
  	jmp	swapgs_restore_regs_and_return_to_usermode
  
-diff -ruN linux-5.6.2-orig/arch/x86/entry/vdso/vma.c linux-5.6.2/arch/x86/entry/vdso/vma.c
---- linux-5.6.2-orig/arch/x86/entry/vdso/vma.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/entry/vdso/vma.c	2020-04-06 02:58:09.195024546 +0900
-@@ -314,55 +314,9 @@
+diff --git a/arch/x86/entry/vdso/vma.c b/arch/x86/entry/vdso/vma.c
+index c1b8496b5..7b55eeb8c 100644
+--- a/arch/x86/entry/vdso/vma.c
++++ b/arch/x86/entry/vdso/vma.c
+@@ -314,55 +314,18 @@ static int map_vdso(const struct vdso_image *image, unsigned long addr)
  }
  
  #ifdef CONFIG_X86_64
@@ -235,16 +560,25 @@ diff -ruN linux-5.6.2-orig/arch/x86/entry/vdso/vma.c linux-5.6.2/arch/x86/entry/
  static int map_vdso_randomized(const struct vdso_image *image)
  {
 -	unsigned long addr = vdso_addr(current->mm->start_stack, image->size-image->sym_vvar_start);
--
++	unsigned long addr;
+ 
 -	return map_vdso(image, addr);
-+	return map_vdso(image, 0);
++#ifdef CONFIG_PAX_RANDMMAP
++	if (current->mm->pax_flags & MF_PAX_RANDMMAP)
++		addr = 0;
++	else
++#endif
++	addr = vdso_addr(current->mm->start_stack, image->size-image->sym_vvar_start);
++ 
++ 	return map_vdso(image, addr);
  }
  #endif
  
-diff -ruN linux-5.6.2-orig/arch/x86/include/asm/elf.h linux-5.6.2/arch/x86/include/asm/elf.h
---- linux-5.6.2-orig/arch/x86/include/asm/elf.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/include/asm/elf.h	2020-04-06 02:58:09.195024546 +0900
-@@ -248,11 +248,11 @@
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 69c0f892e..7aba52550 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -248,11 +248,11 @@ extern int force_personality32;
  
  /*
   * This is the base location for PIE (ET_DYN with INTERP) loads. On
@@ -258,7 +592,28 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/elf.h linux-5.6.2/arch/x86/inclu
  
  /* This yields a mask that user programs can use to figure out what
     instruction set this CPU supports.  This could be done in user space,
-@@ -312,8 +312,8 @@
+@@ -260,6 +260,20 @@ extern int force_personality32;
+ 
+ #define ELF_HWCAP		(boot_cpu_data.x86_capability[CPUID_1_EDX])
+ 
++#ifdef CONFIG_PAX_ASLR
++#ifdef CONFIG_X86_32
++#define PAX_ELF_ET_DYN_BASE	0x10000000UL
++
++#define PAX_DELTA_MMAP_LEN	(current->mm->pax_flags & MF_PAX_SEGMEXEC ? 15 : 16)
++#define PAX_DELTA_STACK_LEN	(current->mm->pax_flags & MF_PAX_SEGMEXEC ? 15 : 16)
++#else
++#define PAX_ELF_ET_DYN_BASE	0x400000UL
++
++#define PAX_DELTA_MMAP_LEN	((test_thread_flag(TIF_ADDR32)) ? 16 : TASK_SIZE_MAX_SHIFT - PAGE_SHIFT - 3)
++#define PAX_DELTA_STACK_LEN	((test_thread_flag(TIF_ADDR32)) ? 16 : TASK_SIZE_MAX_SHIFT - PAGE_SHIFT - 3)
++#endif
++#endif
++
+ extern u32 elf_hwcap2;
+ 
+ /*
+@@ -312,8 +326,8 @@ extern bool mmap_address_hint_valid(unsigned long addr, unsigned long len);
  
  #ifdef CONFIG_X86_32
  
@@ -269,7 +624,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/elf.h linux-5.6.2/arch/x86/inclu
  
  #define ARCH_DLINFO		ARCH_DLINFO_IA32
  
-@@ -322,7 +322,11 @@
+@@ -322,7 +336,11 @@ extern bool mmap_address_hint_valid(unsigned long addr, unsigned long len);
  #else /* CONFIG_X86_32 */
  
  /* 1GB for 64bit, 8MB for 32bit */
@@ -282,16 +637,28 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/elf.h linux-5.6.2/arch/x86/inclu
  #define STACK_RND_MASK __STACK_RND_MASK(mmap_is_ia32())
  
  #define ARCH_DLINFO							\
-@@ -380,5 +384,4 @@
+@@ -380,5 +398,4 @@ struct va_alignment {
  } ____cacheline_aligned;
  
  extern struct va_alignment va_align;
 -extern unsigned long align_vdso_addr(unsigned long);
  #endif /* _ASM_X86_ELF_H */
-diff -ruN linux-5.6.2-orig/arch/x86/include/asm/tlbflush.h linux-5.6.2/arch/x86/include/asm/tlbflush.h
---- linux-5.6.2-orig/arch/x86/include/asm/tlbflush.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/include/asm/tlbflush.h	2020-04-06 02:58:09.196024546 +0900
-@@ -295,6 +295,7 @@
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 64a03f226..98c04687e 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -1481,4 +1481,6 @@ static inline bool arch_faults_on_old_pte(void)
+ #include <asm-generic/pgtable.h>
+ #endif	/* __ASSEMBLY__ */
+ 
++#define TASK_SIZE_MAX_SHIFT CONFIG_TASK_SIZE_MAX_SHIFT
++
+ #endif /* _ASM_X86_PGTABLE_H */
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 6f66d8412..b786e7cb3 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -295,6 +295,7 @@ static inline void cr4_set_bits_irqsoff(unsigned long mask)
  	unsigned long cr4;
  
  	cr4 = this_cpu_read(cpu_tlbstate.cr4);
@@ -299,7 +666,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/tlbflush.h linux-5.6.2/arch/x86/
  	if ((cr4 | mask) != cr4)
  		__cr4_set(cr4 | mask);
  }
-@@ -305,6 +306,7 @@
+@@ -305,6 +306,7 @@ static inline void cr4_clear_bits_irqsoff(unsigned long mask)
  	unsigned long cr4;
  
  	cr4 = this_cpu_read(cpu_tlbstate.cr4);
@@ -307,7 +674,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/tlbflush.h linux-5.6.2/arch/x86/
  	if ((cr4 & ~mask) != cr4)
  		__cr4_set(cr4 & ~mask);
  }
-@@ -334,6 +336,7 @@
+@@ -334,6 +336,7 @@ static inline void cr4_toggle_bits_irqsoff(unsigned long mask)
  	unsigned long cr4;
  
  	cr4 = this_cpu_read(cpu_tlbstate.cr4);
@@ -315,7 +682,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/tlbflush.h linux-5.6.2/arch/x86/
  	__cr4_set(cr4 ^ mask);
  }
  
-@@ -440,6 +443,7 @@
+@@ -440,6 +443,7 @@ static inline void __native_flush_tlb_global(void)
  	raw_local_irq_save(flags);
  
  	cr4 = this_cpu_read(cpu_tlbstate.cr4);
@@ -323,52 +690,10 @@ diff -ruN linux-5.6.2-orig/arch/x86/include/asm/tlbflush.h linux-5.6.2/arch/x86/
  	/* toggle PGE */
  	native_write_cr4(cr4 ^ X86_CR4_PGE);
  	/* write old PGE again and flush TLBs */
-diff -ruN linux-5.6.2-orig/arch/x86/Kconfig linux-5.6.2/arch/x86/Kconfig
---- linux-5.6.2-orig/arch/x86/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/Kconfig	2020-04-06 02:58:09.194024546 +0900
-@@ -1193,8 +1193,7 @@
- 	default X86_LEGACY_VM86
- 
- config X86_16BIT
--	bool "Enable support for 16-bit segments" if EXPERT
--	default y
-+	bool "Enable support for 16-bit segments"
- 	depends on MODIFY_LDT_SYSCALL
- 	---help---
- 	  This option is required by programs like Wine to run 16-bit
-@@ -2331,7 +2330,7 @@
- choice
- 	prompt "vsyscall table for legacy applications"
- 	depends on X86_64
--	default LEGACY_VSYSCALL_XONLY
-+	default LEGACY_VSYSCALL_NONE
- 	help
- 	  Legacy user code that does not know how to find the vDSO expects
- 	  to be able to issue three syscalls by calling fixed addresses in
-@@ -2427,8 +2426,7 @@
- 	  be set to 'N' under normal conditions.
- 
- config MODIFY_LDT_SYSCALL
--	bool "Enable the LDT (local descriptor table)" if EXPERT
--	default y
-+	bool "Enable the LDT (local descriptor table)"
- 	---help---
- 	  Linux can allow user programs to install a per-process x86
- 	  Local Descriptor Table (LDT) using the modify_ldt(2) system
-diff -ruN linux-5.6.2-orig/arch/x86/Kconfig.debug linux-5.6.2/arch/x86/Kconfig.debug
---- linux-5.6.2-orig/arch/x86/Kconfig.debug	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/Kconfig.debug	2020-04-06 02:58:09.194024546 +0900
-@@ -75,6 +75,7 @@
- config DEBUG_WX
- 	bool "Warn on W+X mappings at boot"
- 	select PTDUMP_CORE
-+	default y
- 	---help---
- 	  Generate a warning if any W+X mappings are found at boot.
- 
-diff -ruN linux-5.6.2-orig/arch/x86/kernel/process.c linux-5.6.2/arch/x86/kernel/process.c
---- linux-5.6.2-orig/arch/x86/kernel/process.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/kernel/process.c	2020-04-06 02:58:22.441024808 +0900
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 3053c85e0..5197ac941 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
 @@ -43,6 +43,8 @@
  #include <asm/spec-ctrl.h>
  #include <asm/io_bitmap.h>
@@ -378,7 +703,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/kernel/process.c linux-5.6.2/arch/x86/kernel
  
  #include "process.h"
  
-@@ -913,7 +915,10 @@
+@@ -913,7 +915,10 @@ unsigned long arch_align_stack(unsigned long sp)
  
  unsigned long arch_randomize_brk(struct mm_struct *mm)
  {
@@ -390,7 +715,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/kernel/process.c linux-5.6.2/arch/x86/kernel
  }
  
  /*
-@@ -990,3 +995,27 @@
+@@ -990,3 +995,27 @@ long do_arch_prctl_common(struct task_struct *task, int option,
  
  	return -EINVAL;
  }
@@ -418,10 +743,11 @@ diff -ruN linux-5.6.2-orig/arch/x86/kernel/process.c linux-5.6.2/arch/x86/kernel
 +	return sp1;
 +}
 +#endif
-diff -ruN linux-5.6.2-orig/arch/x86/kernel/sys_x86_64.c linux-5.6.2/arch/x86/kernel/sys_x86_64.c
---- linux-5.6.2-orig/arch/x86/kernel/sys_x86_64.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/kernel/sys_x86_64.c	2020-04-06 02:58:09.196024546 +0900
-@@ -53,13 +53,6 @@
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index ca3c11a17..f2068210c 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -53,13 +53,6 @@ static unsigned long get_align_bits(void)
  	return va_align.bits & get_align_mask();
  }
  
@@ -435,7 +761,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/kernel/sys_x86_64.c linux-5.6.2/arch/x86/ker
  static int __init control_va_addr_alignment(char *str)
  {
  	/* guard against enabling this on other CPU families */
-@@ -121,10 +114,7 @@
+@@ -121,10 +114,7 @@ static void find_start_end(unsigned long addr, unsigned long flags,
  	}
  
  	*begin	= get_mmap_base(1);
@@ -447,7 +773,29 @@ diff -ruN linux-5.6.2-orig/arch/x86/kernel/sys_x86_64.c linux-5.6.2/arch/x86/ker
  }
  
  unsigned long
-@@ -201,7 +191,7 @@
+@@ -144,6 +134,10 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	if (len > end)
+ 		return -ENOMEM;
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma(mm, addr);
+@@ -187,6 +181,10 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	if (!in_32bit_syscall() && (flags & MAP_32BIT))
+ 		goto bottomup;
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	/* requesting a specific address */
+ 	if (addr) {
+ 		addr &= PAGE_MASK;
+@@ -201,7 +199,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
  
  	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
  	info.length = len;
@@ -456,10 +804,11 @@ diff -ruN linux-5.6.2-orig/arch/x86/kernel/sys_x86_64.c linux-5.6.2/arch/x86/ker
  	info.high_limit = get_mmap_base(0);
  
  	/*
-diff -ruN linux-5.6.2-orig/arch/x86/mm/fault.c linux-5.6.2/arch/x86/mm/fault.c
---- linux-5.6.2-orig/arch/x86/mm/fault.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/mm/fault.c	2020-04-06 02:58:22.441024808 +0900
-@@ -143,6 +143,11 @@
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 629fdf13f..71a23db26 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -143,6 +143,11 @@ is_prefetch(struct pt_regs *regs, unsigned long error_code, unsigned long addr)
  	return prefetch;
  }
  
@@ -471,7 +820,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/mm/fault.c linux-5.6.2/arch/x86/mm/fault.c
  DEFINE_SPINLOCK(pgd_lock);
  LIST_HEAD(pgd_list);
  
-@@ -908,6 +913,14 @@
+@@ -908,6 +913,14 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
  		if (is_errata100(regs, address))
  			return;
  
@@ -486,7 +835,7 @@ diff -ruN linux-5.6.2-orig/arch/x86/mm/fault.c linux-5.6.2/arch/x86/mm/fault.c
  		/*
  		 * To avoid leaking information about the kernel page table
  		 * layout, pretend that user-mode accesses to kernel addresses
-@@ -1539,3 +1552,209 @@
+@@ -1539,3 +1552,209 @@ do_page_fault(struct pt_regs *regs, unsigned long hw_error_code,
  		do_user_addr_fault(regs, hw_error_code, address);
  }
  NOKPROBE_SYMBOL(do_page_fault);
@@ -499,9 +848,9 @@ diff -ruN linux-5.6.2-orig/arch/x86/mm/fault.c linux-5.6.2/arch/x86/mm/fault.c
 +	if (v8086_mode(regs))
 +		ip = ((regs->cs & 0xffff) << 4) + (ip & 0xffff);
 +
-+	if ((__supported_pte_mask & _PAGE_NX) && (error_code & PF_INSTR))
++	if ((__supported_pte_mask & _PAGE_NX) && (error_code & X86_PF_INSTR))
 +		return true;
-+	if (!(error_code & (PF_PROT | PF_WRITE)) && ip == address)
++	if (!(error_code & (X86_PF_PROT | X86_PF_WRITE)) && ip == address)
 +		return true;
 +	return false;
 +}
@@ -696,10 +1045,39 @@ diff -ruN linux-5.6.2-orig/arch/x86/mm/fault.c linux-5.6.2/arch/x86/mm/fault.c
 +#endif
 +}
 +#endif
-diff -ruN linux-5.6.2-orig/arch/x86/mm/init_32.c linux-5.6.2/arch/x86/mm/init_32.c
---- linux-5.6.2-orig/arch/x86/mm/init_32.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/mm/init_32.c	2020-04-06 02:58:09.196024546 +0900
-@@ -561,9 +561,9 @@
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 5bfd5aef5..cca590bf1 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -132,6 +132,12 @@ static unsigned long hugetlb_get_unmapped_area_topdown(struct file *file,
+ 		VM_BUG_ON(addr != -ENOMEM);
+ 		info.flags = 0;
+ 		info.low_limit = TASK_UNMAPPED_BASE;
++
++#ifdef CONFIG_PAX_RANDMMAP
++		if (current->mm->pax_flags & MF_PAX_RANDMMAP)
++			info.low_limit += current->mm->delta_mmap;
++#endif
++
+ 		info.high_limit = TASK_SIZE_LOW;
+ 		addr = vm_unmapped_area(&info);
+ 	}
+@@ -160,6 +166,10 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
+ 		return addr;
+ 	}
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	if (addr) {
+ 		addr &= huge_page_mask(h);
+ 		if (!mmap_address_hint_valid(addr, len))
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 23df4885b..6906855af 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -561,9 +561,9 @@ static void __init pagetable_init(void)
  
  #define DEFAULT_PTE_MASK ~(_PAGE_NX | _PAGE_GLOBAL)
  /* Bits supported by the hardware: */
@@ -711,10 +1089,11 @@ diff -ruN linux-5.6.2-orig/arch/x86/mm/init_32.c linux-5.6.2/arch/x86/mm/init_32
  EXPORT_SYMBOL_GPL(__supported_pte_mask);
  /* Used in PAGE_KERNEL_* macros which are reasonably used out-of-tree: */
  EXPORT_SYMBOL(__default_kernel_pte_mask);
-diff -ruN linux-5.6.2-orig/arch/x86/mm/init_64.c linux-5.6.2/arch/x86/mm/init_64.c
---- linux-5.6.2-orig/arch/x86/mm/init_64.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/arch/x86/mm/init_64.c	2020-04-06 02:58:09.197024546 +0900
-@@ -97,9 +97,9 @@
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index abbdecb75..a5c16ac72 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -97,9 +97,9 @@ DEFINE_ENTRY(pte, pte, init)
   */
  
  /* Bits supported by the hardware: */
@@ -726,10 +1105,38 @@ diff -ruN linux-5.6.2-orig/arch/x86/mm/init_64.c linux-5.6.2/arch/x86/mm/init_64
  EXPORT_SYMBOL_GPL(__supported_pte_mask);
  /* Used in PAGE_KERNEL_* macros which are reasonably used out-of-tree: */
  EXPORT_SYMBOL(__default_kernel_pte_mask);
-diff -ruN linux-5.6.2-orig/block/blk-softirq.c linux-5.6.2/block/blk-softirq.c
---- linux-5.6.2-orig/block/blk-softirq.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/block/blk-softirq.c	2020-04-06 02:58:09.197024546 +0900
-@@ -20,7 +20,7 @@
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index cb91eccc4..aea4f6ab9 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -126,11 +126,22 @@ static void arch_pick_mmap_base(unsigned long *base, unsigned long *legacy_base,
+ 
+ void arch_pick_mmap_layout(struct mm_struct *mm, struct rlimit *rlim_stack)
+ {
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	if (mmap_is_legacy())
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+ 	else
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (mm->pax_flags & MF_PAX_RANDMMAP) {
++		mm->mmap_legacy_base += mm->delta_mmap;
++		mm->mmap_base -= mm->delta_mmap + mm->delta_stack;
++	}
++#endif
++
+ 	arch_pick_mmap_base(&mm->mmap_base, &mm->mmap_legacy_base,
+ 			arch_rnd(mmap64_rnd_bits), task_size_64bit(0),
+ 			rlim_stack);
+diff --git a/block/blk-softirq.c b/block/blk-softirq.c
+index 6e7ec87d4..d6ee3f8b3 100644
+--- a/block/blk-softirq.c
++++ b/block/blk-softirq.c
+@@ -20,7 +20,7 @@ static DEFINE_PER_CPU(struct list_head, blk_cpu_done);
   * Softirq action handler - move entries to local list and loop over them
   * while passing them to the queue registered handler.
   */
@@ -738,144 +1145,11 @@ diff -ruN linux-5.6.2-orig/block/blk-softirq.c linux-5.6.2/block/blk-softirq.c
  {
  	struct list_head *cpu_list, local_list;
  
-diff -ruN linux-5.6.2-orig/Documentation/admin-guide/kernel-parameters.txt linux-5.6.2/Documentation/admin-guide/kernel-parameters.txt
---- linux-5.6.2-orig/Documentation/admin-guide/kernel-parameters.txt	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/Documentation/admin-guide/kernel-parameters.txt	2020-04-06 02:58:09.170024545 +0900
-@@ -513,16 +513,6 @@
- 			nosocket -- Disable socket memory accounting.
- 			nokmem -- Disable kernel memory accounting.
- 
--	checkreqprot	[SELINUX] Set initial checkreqprot flag value.
--			Format: { "0" | "1" }
--			See security/selinux/Kconfig help text.
--			0 -- check protection applied by kernel (includes
--				any implied execute protection).
--			1 -- check protection requested by application.
--			Default value is set via a kernel config option.
--			Value can be changed at runtime via
--				/sys/fs/selinux/checkreqprot.
--
- 	cio_ignore=	[S390]
- 			See Documentation/s390/common_io.rst for details.
- 	clk_ignore_unused
-@@ -3409,6 +3399,11 @@
- 			the specified number of seconds.  This is to be used if
- 			your oopses keep scrolling off the screen.
- 
-+	extra_latent_entropy
-+			Enable a very simple form of latent entropy extraction
-+			from the first 4GB of memory as the bootmem allocator
-+			passes the memory pages to the buddy allocator.
-+
- 	pcbit=		[HW,ISDN]
- 
- 	pcd.		[PARIDE]
-diff -ruN linux-5.6.2-orig/Documentation/admin-guide/sysctl/kernel.rst linux-5.6.2/Documentation/admin-guide/sysctl/kernel.rst
---- linux-5.6.2-orig/Documentation/admin-guide/sysctl/kernel.rst	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/Documentation/admin-guide/sysctl/kernel.rst	2020-04-06 02:58:09.190024546 +0900
-@@ -102,6 +102,7 @@
- - sysctl_writes_strict
- - tainted                     ==> Documentation/admin-guide/tainted-kernels.rst
- - threads-max
-+- tiocsti_restrict
- - unknown_nmi_panic
- - watchdog
- - watchdog_thresh
-@@ -1112,6 +1113,25 @@
- EINVAL occurs.
- 
- 
-+tiocsti_restrict:
-+=================
-+
-+This toggle indicates whether unprivileged users are prevented from using the
-+TIOCSTI ioctl to inject commands into other processes which share a tty
-+session.
-+
-+When tiocsti_restrict is set to (0) there are no restrictions(accept the
-+default restriction of only being able to injection commands into one's own
-+tty). When tiocsti_restrict is set to (1), users must have CAP_SYS_ADMIN to
-+use the TIOCSTI ioctl.
-+
-+When user namespaces are in use, the check for the capability CAP_SYS_ADMIN is
-+done against the user namespace that originally opened the tty.
-+
-+The kernel config option CONFIG_SECURITY_TIOCSTI_RESTRICT sets the default
-+value of tiocsti_restrict.
-+
-+
- unknown_nmi_panic:
- ==================
- 
-diff -ruN linux-5.6.2-orig/Documentation/vm/uksm.txt linux-5.6.2/Documentation/vm/uksm.txt
---- linux-5.6.2-orig/Documentation/vm/uksm.txt	1970-01-01 09:00:00.000000000 +0900
-+++ linux-5.6.2/Documentation/vm/uksm.txt	2020-04-06 02:58:33.798025034 +0900
-@@ -0,0 +1,61 @@
-+The Ultra Kernel Samepage Merging feature
-+----------------------------------------------
-+/*
-+ * Ultra KSM. Copyright (C) 2011-2012 Nai Xia
-+ *
-+ * This is an improvement upon KSM. Some basic data structures and routines
-+ * are borrowed from ksm.c .
-+ *
-+ * Its new features:
-+ * 1. Full system scan:
-+ *      It automatically scans all user processes' anonymous VMAs. Kernel-user
-+ *      interaction to submit a memory area to KSM is no longer needed.
-+ *
-+ * 2. Rich area detection:
-+ *      It automatically detects rich areas containing abundant duplicated
-+ *      pages based. Rich areas are given a full scan speed. Poor areas are
-+ *      sampled at a reasonable speed with very low CPU consumption.
-+ *
-+ * 3. Ultra Per-page scan speed improvement:
-+ *      A new hash algorithm is proposed. As a result, on a machine with
-+ *      Core(TM)2 Quad Q9300 CPU in 32-bit mode and 800MHZ DDR2 main memory, it
-+ *      can scan memory areas that does not contain duplicated pages at speed of
-+ *      627MB/sec ~ 2445MB/sec and can merge duplicated areas at speed of
-+ *      477MB/sec ~ 923MB/sec.
-+ *
-+ * 4. Thrashing area avoidance:
-+ *      Thrashing area(an VMA that has frequent Ksm page break-out) can be
-+ *      filtered out. My benchmark shows it's more efficient than KSM's per-page
-+ *      hash value based volatile page detection.
-+ *
-+ *
-+ * 5. Misc changes upon KSM:
-+ *      * It has a fully x86-opitmized memcmp dedicated for 4-byte-aligned page
-+ *        comparison. It's much faster than default C version on x86.
-+ *      * rmap_item now has an struct *page member to loosely cache a
-+ *        address-->page mapping, which reduces too much time-costly
-+ *        follow_page().
-+ *      * The VMA creation/exit procedures are hooked to let the Ultra KSM know.
-+ *      * try_to_merge_two_pages() now can revert a pte if it fails. No break_
-+ *        ksm is needed for this case.
-+ *
-+ * 6. Full Zero Page consideration(contributed by Figo Zhang)
-+ *    Now uksmd consider full zero pages as special pages and merge them to an
-+ *    special unswappable uksm zero page.
-+ */
-+
-+ChangeLog:
-+
-+2012-05-05 The creation of this Doc
-+2012-05-08 UKSM 0.1.1.1 libc crash bug fix, api clean up, doc clean up.
-+2012-05-28 UKSM 0.1.1.2 bug fix release
-+2012-06-26 UKSM 0.1.2-beta1 first beta release for 0.1.2
-+2012-07-2  UKSM 0.1.2-beta2
-+2012-07-10 UKSM 0.1.2-beta3
-+2012-07-26 UKSM 0.1.2 Fine grained speed control, more scan optimization.
-+2012-10-13 UKSM 0.1.2.1 Bug fixes.
-+2012-12-31 UKSM 0.1.2.2 Minor bug fixes.
-+2014-07-02 UKSM 0.1.2.3 Fix a " __this_cpu_read() in preemptible bug".
-+2015-04-22 UKSM 0.1.2.4 Fix a race condition that can sometimes trigger anonying warnings.
-+2016-09-10 UKSM 0.1.2.5 Fix a bug in dedup ratio calculation.
-+2017-02-26 UKSM 0.1.2.6 Fix a bug in hugetlbpage handling and a race bug with page migration.
-diff -ruN linux-5.6.2-orig/drivers/ata/libata-core.c linux-5.6.2/drivers/ata/libata-core.c
---- linux-5.6.2-orig/drivers/ata/libata-core.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/drivers/ata/libata-core.c	2020-04-06 02:58:09.198024546 +0900
-@@ -5146,7 +5146,7 @@
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 42c8728f6..69c425cf0 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -5146,7 +5146,7 @@ void ata_qc_free(struct ata_queued_cmd *qc)
  	struct ata_port *ap;
  	unsigned int tag;
  
@@ -884,7 +1158,7 @@ diff -ruN linux-5.6.2-orig/drivers/ata/libata-core.c linux-5.6.2/drivers/ata/lib
  	ap = qc->ap;
  
  	qc->flags = 0;
-@@ -5163,7 +5163,7 @@
+@@ -5163,7 +5163,7 @@ void __ata_qc_complete(struct ata_queued_cmd *qc)
  	struct ata_port *ap;
  	struct ata_link *link;
  
@@ -893,10 +1167,11 @@ diff -ruN linux-5.6.2-orig/drivers/ata/libata-core.c linux-5.6.2/drivers/ata/lib
  	WARN_ON_ONCE(!(qc->flags & ATA_QCFLAG_ACTIVE));
  	ap = qc->ap;
  	link = qc->dev->link;
-diff -ruN linux-5.6.2-orig/drivers/char/Kconfig linux-5.6.2/drivers/char/Kconfig
---- linux-5.6.2-orig/drivers/char/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/drivers/char/Kconfig	2020-04-06 02:58:09.198024546 +0900
-@@ -9,7 +9,6 @@
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 26956c006..206edc0b6 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -9,7 +9,6 @@ source "drivers/tty/Kconfig"
  
  config DEVMEM
  	bool "/dev/mem virtual device support"
@@ -904,7 +1179,7 @@ diff -ruN linux-5.6.2-orig/drivers/char/Kconfig linux-5.6.2/drivers/char/Kconfig
  	help
  	  Say Y here if you want to support the /dev/mem device.
  	  The /dev/mem device is used to access areas of physical
-@@ -514,7 +513,6 @@
+@@ -514,7 +513,6 @@ config TELCLOCK
  config DEVPORT
  	bool "/dev/port character device"
  	depends on ISA || PCI
@@ -912,10 +1187,11 @@ diff -ruN linux-5.6.2-orig/drivers/char/Kconfig linux-5.6.2/drivers/char/Kconfig
  	help
  	  Say Y here if you want to support the /dev/port device. The /dev/port
  	  device is similar to /dev/mem, but for I/O ports.
-diff -ruN linux-5.6.2-orig/drivers/tty/Kconfig linux-5.6.2/drivers/tty/Kconfig
---- linux-5.6.2-orig/drivers/tty/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/drivers/tty/Kconfig	2020-04-06 02:58:09.198024546 +0900
-@@ -122,7 +122,6 @@
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+index a312cb33a..b141c96e9 100644
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -122,7 +122,6 @@ config UNIX98_PTYS
  
  config LEGACY_PTYS
  	bool "Legacy (BSD) PTY support"
@@ -923,10 +1199,11 @@ diff -ruN linux-5.6.2-orig/drivers/tty/Kconfig linux-5.6.2/drivers/tty/Kconfig
  	---help---
  	  A pseudo terminal (PTY) is a software device consisting of two
  	  halves: a master and a slave. The slave device behaves identical to
-diff -ruN linux-5.6.2-orig/drivers/tty/tty_io.c linux-5.6.2/drivers/tty/tty_io.c
---- linux-5.6.2-orig/drivers/tty/tty_io.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/drivers/tty/tty_io.c	2020-04-06 02:58:09.199024546 +0900
-@@ -174,6 +174,7 @@
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 5a6f36b39..616d82a19 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -174,6 +174,7 @@ static void free_tty_struct(struct tty_struct *tty)
  	put_device(tty->dev);
  	kfree(tty->write_buf);
  	tty->magic = 0xDEADDEAD;
@@ -934,7 +1211,7 @@ diff -ruN linux-5.6.2-orig/drivers/tty/tty_io.c linux-5.6.2/drivers/tty/tty_io.c
  	kfree(tty);
  }
  
-@@ -2179,11 +2180,19 @@
+@@ -2179,11 +2180,19 @@ static int tty_fasync(int fd, struct file *filp, int on)
   *	FIXME: may race normal receive processing
   */
  
@@ -954,7 +1231,7 @@ diff -ruN linux-5.6.2-orig/drivers/tty/tty_io.c linux-5.6.2/drivers/tty/tty_io.c
  	if ((current->signal->tty != tty) && !capable(CAP_SYS_ADMIN))
  		return -EPERM;
  	if (get_user(ch, p))
-@@ -3009,6 +3018,7 @@
+@@ -3009,6 +3018,7 @@ struct tty_struct *alloc_tty_struct(struct tty_driver *driver, int idx)
  	tty->index = idx;
  	tty_line_name(driver, idx, tty->name);
  	tty->dev = tty_get_device(tty);
@@ -962,9 +1239,10 @@ diff -ruN linux-5.6.2-orig/drivers/tty/tty_io.c linux-5.6.2/drivers/tty/tty_io.c
  
  	return tty;
  }
-diff -ruN linux-5.6.2-orig/drivers/usb/core/hub.c linux-5.6.2/drivers/usb/core/hub.c
---- linux-5.6.2-orig/drivers/usb/core/hub.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/drivers/usb/core/hub.c	2020-04-06 02:58:09.199024546 +0900
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 54cd8ef79..3bbf4760f 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
 @@ -45,6 +45,8 @@
  #define USB_TP_TRANSMISSION_DELAY	40	/* ns */
  #define USB_TP_TRANSMISSION_DELAY_MAX	65535	/* ns */
@@ -974,7 +1252,7 @@ diff -ruN linux-5.6.2-orig/drivers/usb/core/hub.c linux-5.6.2/drivers/usb/core/h
  /* Protect struct usb_device->state and ->children members
   * Note: Both are also protected by ->dev.sem, except that ->state can
   * change to USB_STATE_NOTATTACHED even when the semaphore isn't held. */
-@@ -5087,6 +5089,12 @@
+@@ -5087,6 +5089,12 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
  			goto done;
  		return;
  	}
@@ -987,9 +1265,10 @@ diff -ruN linux-5.6.2-orig/drivers/usb/core/hub.c linux-5.6.2/drivers/usb/core/h
  	if (hub_is_superspeed(hub->hdev))
  		unit_load = 150;
  	else
-diff -ruN linux-5.6.2-orig/fs/binfmt_elf.c linux-5.6.2/fs/binfmt_elf.c
---- linux-5.6.2-orig/fs/binfmt_elf.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/binfmt_elf.c	2020-04-06 02:58:22.442024808 +0900
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index f4713ea76..1a8b04f51 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
 @@ -41,6 +41,7 @@
  #include <linux/sched/cputime.h>
  #include <linux/cred.h>
@@ -998,7 +1277,7 @@ diff -ruN linux-5.6.2-orig/fs/binfmt_elf.c linux-5.6.2/fs/binfmt_elf.c
  #include <linux/uaccess.h>
  #include <asm/param.h>
  #include <asm/page.h>
-@@ -75,6 +76,10 @@
+@@ -75,6 +76,10 @@ static int elf_core_dump(struct coredump_params *cprm);
  #define elf_core_dump	NULL
  #endif
  
@@ -1009,12 +1288,16 @@ diff -ruN linux-5.6.2-orig/fs/binfmt_elf.c linux-5.6.2/fs/binfmt_elf.c
  #if ELF_EXEC_PAGESIZE > PAGE_SIZE
  #define ELF_MIN_ALIGN	ELF_EXEC_PAGESIZE
  #else
-@@ -852,6 +857,18 @@
+@@ -852,6 +857,28 @@ static int load_elf_binary(struct linux_binprm *bprm)
  	/* Do this immediately, since STACK_TOP as used in setup_arg_pages
  	   may depend on the personality.  */
  	SET_PERSONALITY2(*elf_ex, &arch_state);
 +#if defined(CONFIG_PAX)
 +	current->mm->pax_flags = 0UL;
++#ifdef CONFIG_PAX_ASLR
++	current->mm->delta_mmap = 0UL;
++	current->mm->delta_stack = 0UL;
++#endif
 +#if defined(CONFIG_PAX_NOWRITEEXEC)
 +	if (executable_stack == EXSTACK_ENABLE_X)
 +	{
@@ -1024,11 +1307,83 @@ diff -ruN linux-5.6.2-orig/fs/binfmt_elf.c linux-5.6.2/fs/binfmt_elf.c
 +#endif
 +	}
 +#endif
++#ifdef CONFIG_PAX_ASLR
++	if (current->mm->pax_flags & MF_PAX_RANDMMAP) {
++		current->mm->delta_mmap = (pax_get_random_long() & ((1UL << PAX_DELTA_MMAP_LEN)-1)) << PAGE_SHIFT;
++		current->mm->delta_stack = (pax_get_random_long() & ((1UL << PAX_DELTA_STACK_LEN)-1)) << PAGE_SHIFT;
++	}
++#endif
 +#endif
  	if (elf_read_implies_exec(*elf_ex, executable_stack))
  		current->personality |= READ_IMPLIES_EXEC;
  
-@@ -2381,6 +2398,56 @@
+@@ -973,6 +1000,15 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 			 */
+ 			load_bias = ELF_PAGESTART(load_bias - vaddr);
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++			/* PaX: randomize base address at the default exe base if requested */
++			if ((current->mm->pax_flags & MF_PAX_RANDMMAP) && interpreter) {
++				load_bias = (pax_get_random_long() & ((1UL << PAX_DELTA_MMAP_LEN) - 1)) << PAGE_SHIFT;
++				load_bias = ELF_PAGESTART(PAX_ELF_ET_DYN_BASE - vaddr + load_bias);
++				elf_flags |= MAP_FIXED;
++			}
++#endif
++
+ 			total_size = total_mapping_size(elf_phdata,
+ 							elf_ex->e_phnum);
+ 			if (!total_size) {
+@@ -1054,6 +1090,33 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 		goto out_free_dentry;
+ 	}
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (current->mm->pax_flags & MF_PAX_RANDMMAP) {
++		unsigned long start, size, flags;
++		vm_flags_t vm_flags;
++
++		start = ELF_PAGEALIGN(elf_brk);
++		size = PAGE_SIZE + ((pax_get_random_long() & ((1UL << 22) - 1UL)) << 4);
++		flags = MAP_FIXED | MAP_PRIVATE;
++		vm_flags = VM_DONTEXPAND | VM_DONTDUMP;
++
++		down_write(&current->mm->mmap_sem);
++		start = get_unmapped_area(NULL, start, PAGE_ALIGN(size), 0, flags);
++		retval = -ENOMEM;
++		if (!IS_ERR_VALUE(start) && !find_vma_intersection(current->mm, start, start + size + PAGE_SIZE)) {
++//			if (current->personality & ADDR_NO_RANDOMIZE)
++//				vm_flags |= VM_READ | VM_MAYREAD;
++			start = mmap_region(NULL, start, PAGE_ALIGN(size), vm_flags, 0, NULL);
++			retval = IS_ERR_VALUE(start) ? start : 0;
++		}
++		up_write(&current->mm->mmap_sem);
++		if (retval == 0)
++			retval = set_brk(start + size, start + size + PAGE_SIZE, 0);
++		if (retval < 0)
++			goto out_free_dentry;
++	}
++#endif
++
+ 	if (interpreter) {
+ 		elf_entry = load_elf_interp(&loc->interp_elf_ex,
+ 					    interpreter,
+@@ -1106,6 +1169,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	mm->end_data = end_data;
+ 	mm->start_stack = bprm->p;
+ 
++#ifndef CONFIG_PAX_RANDMMAP
+ 	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
+ 		/*
+ 		 * For architectures with ELF randomization, when executing
+@@ -1124,6 +1188,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 		current->brk_randomized = 1;
+ #endif
+ 	}
++#endif
+ 
+ 	if (current->personality & MMAP_PAGE_ZERO) {
+ 		/* Why this, you ask???  Well SVr4 maps page 0 as read-only,
+@@ -2381,6 +2446,56 @@ static int elf_core_dump(struct coredump_params *cprm)
  
  #endif		/* CONFIG_ELF_CORE */
  
@@ -1085,9 +1440,10 @@ diff -ruN linux-5.6.2-orig/fs/binfmt_elf.c linux-5.6.2/fs/binfmt_elf.c
  static int __init init_elf_binfmt(void)
  {
  	register_binfmt(&elf_format);
-diff -ruN linux-5.6.2-orig/fs/exec.c linux-5.6.2/fs/exec.c
---- linux-5.6.2-orig/fs/exec.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/exec.c	2020-04-06 02:59:17.705025904 +0900
+diff --git a/fs/exec.c b/fs/exec.c
+index a58625f27..f5acba624 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
 @@ -62,6 +62,8 @@
  #include <linux/oom.h>
  #include <linux/compat.h>
@@ -1097,16 +1453,18 @@ diff -ruN linux-5.6.2-orig/fs/exec.c linux-5.6.2/fs/exec.c
  
  #include <linux/uaccess.h>
  #include <asm/mmu_context.h>
-@@ -274,6 +276,8 @@
+@@ -274,6 +276,10 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
  	mm->stack_vm = mm->total_vm = 1;
  	up_write(&mm->mmap_sem);
  	bprm->p = vma->vm_end - sizeof(void *);
++#ifdef CONFIG_PAX_RANDUSTACK
 +	if (randomize_va_space)
-+		bprm->p ^= get_random_int() & ~PAGE_MASK;
++		bprm->p ^= prandom_u32() & ~PAGE_MASK;
++#endif
  	return 0;
  err:
  	up_write(&mm->mmap_sem);
-@@ -750,7 +754,12 @@
+@@ -750,7 +756,12 @@ int setup_arg_pages(struct linux_binprm *bprm,
  	if (unlikely(executable_stack == EXSTACK_ENABLE_X))
  		vm_flags |= VM_EXEC;
  	else if (executable_stack == EXSTACK_DISABLE_X)
@@ -1119,28 +1477,78 @@ diff -ruN linux-5.6.2-orig/fs/exec.c linux-5.6.2/fs/exec.c
  	vm_flags |= mm->def_flags;
  	vm_flags |= VM_STACK_INCOMPLETE_SETUP;
  
-@@ -1387,6 +1396,7 @@
- 	/* An exec changes our domain. We are no longer part of the thread
- 	   group */
- 	current->self_exec_id++;
+@@ -795,6 +806,27 @@ int setup_arg_pages(struct linux_binprm *bprm,
+ #endif
+ 	current->mm->start_stack = bprm->p;
+ 	ret = expand_stack(vma, stack_base);
 +
- 	flush_signal_handlers(current, 0);
- }
- EXPORT_SYMBOL(setup_new_exec);
-diff -ruN linux-5.6.2-orig/fs/fs_struct.c linux-5.6.2/fs/fs_struct.c
---- linux-5.6.2-orig/fs/fs_struct.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/fs_struct.c	2020-04-06 02:58:22.442024808 +0900
-@@ -164,5 +164,5 @@
++#if !defined(CONFIG_STACK_GROWSUP) && defined(CONFIG_PAX_RANDMMAP)
++	if (!ret && (mm->pax_flags & MF_PAX_RANDMMAP) && STACK_TOP <= 0xFFFFFFFFU && STACK_TOP > vma->vm_end) {
++		unsigned long size;
++		vm_flags_t vm_flags;
++
++		size = STACK_TOP - vma->vm_end;
++		vm_flags = VM_NONE | VM_DONTEXPAND | VM_DONTDUMP;
++
++		ret = vma->vm_end != mmap_region(NULL, vma->vm_end, size, vm_flags, 0, NULL);
++
++#ifdef CONFIG_X86
++		if (!ret) {
++			size = PAGE_SIZE + mmap_min_addr + ((mm->delta_mmap ^ mm->delta_stack) & (0xFFUL << PAGE_SHIFT));
++			ret = 0 != mmap_region(NULL, 0, PAGE_ALIGN(size), vm_flags, 0, NULL);
++		}
++#endif
++
++	}
++#endif
++
+ 	if (ret)
+ 		ret = -EFAULT;
+ 
+diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+index ca639ed96..0725fdc78 100644
+--- a/fs/fs_struct.c
++++ b/fs/fs_struct.c
+@@ -164,5 +164,5 @@ struct fs_struct init_fs = {
  	.users		= 1,
  	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
  	.seq		= SEQCNT_ZERO(init_fs.seq),
 -	.umask		= 0022,
 +	.umask		= 0077,
  };
-diff -ruN linux-5.6.2-orig/fs/namei.c linux-5.6.2/fs/namei.c
---- linux-5.6.2-orig/fs/namei.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/namei.c	2020-04-06 02:58:22.443024809 +0900
-@@ -949,10 +949,10 @@
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index aff8642f0..f2b4d19ee 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -210,6 +210,10 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
+ 		return addr;
+ 	}
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	if (addr) {
+ 		addr = ALIGN(addr, huge_page_size(h));
+ 		vma = find_vma(mm, addr);
+@@ -221,6 +225,12 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
+ 	info.flags = 0;
+ 	info.length = len;
+ 	info.low_limit = TASK_UNMAPPED_BASE;
++
++#ifdef CONFIG_PAX_RANDMMAP
++	if (mm->pax_flags & MF_PAX_RANDMMAP)
++		info.low_limit += mm->delta_mmap;
++#endif
++
+ 	info.high_limit = TASK_SIZE;
+ 	info.align_mask = PAGE_MASK & ~huge_page_mask(h);
+ 	info.align_offset = 0;
+diff --git a/fs/namei.c b/fs/namei.c
+index db6565c99..19af57c34 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -949,10 +949,10 @@ static inline void put_link(struct nameidata *nd)
  		path_put(&last->link);
  }
  
@@ -1155,7 +1563,7 @@ diff -ruN linux-5.6.2-orig/fs/namei.c linux-5.6.2/fs/namei.c
  
  /**
   * may_follow_link - Check symlink following for unsafe situations
-@@ -3045,6 +3045,13 @@
+@@ -3045,6 +3045,13 @@ static int may_open(const struct path *path, int acc_mode, int flag)
  		break;
  	}
  
@@ -1169,10 +1577,11 @@ diff -ruN linux-5.6.2-orig/fs/namei.c linux-5.6.2/fs/namei.c
  	error = inode_permission(inode, MAY_OPEN | acc_mode);
  	if (error)
  		return error;
-diff -ruN linux-5.6.2-orig/fs/nfs/Kconfig linux-5.6.2/fs/nfs/Kconfig
---- linux-5.6.2-orig/fs/nfs/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/nfs/Kconfig	2020-04-06 02:58:09.201024546 +0900
-@@ -195,7 +195,6 @@
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index 40b6c5ac4..8fcd80d28 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -195,7 +195,6 @@ config NFS_DEBUG
  	bool
  	depends on NFS_FS && SUNRPC_DEBUG
  	select CRC32
@@ -1180,10 +1589,11 @@ diff -ruN linux-5.6.2-orig/fs/nfs/Kconfig linux-5.6.2/fs/nfs/Kconfig
  
  config NFS_DISABLE_UDP_SUPPORT
         bool "NFS: Disable NFS UDP protocol support"
-diff -ruN linux-5.6.2-orig/fs/open.c linux-5.6.2/fs/open.c
---- linux-5.6.2-orig/fs/open.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/open.c	2020-04-06 02:58:22.443024809 +0900
-@@ -1040,6 +1040,10 @@
+diff --git a/fs/open.c b/fs/open.c
+index b69d6eed6..70c83ec9f 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -1040,6 +1040,10 @@ inline int build_open_flags(const struct open_how *how, struct open_flags *op)
  	if (flags & O_APPEND)
  		acc_mode |= MAY_APPEND;
  
@@ -1194,10 +1604,11 @@ diff -ruN linux-5.6.2-orig/fs/open.c linux-5.6.2/fs/open.c
  	op->acc_mode = acc_mode;
  
  	op->intent = flags & O_PATH ? 0 : LOOKUP_OPEN;
-diff -ruN linux-5.6.2-orig/fs/proc/Kconfig linux-5.6.2/fs/proc/Kconfig
---- linux-5.6.2-orig/fs/proc/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/proc/Kconfig	2020-04-06 02:58:09.201024546 +0900
-@@ -41,7 +41,6 @@
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 27ef84d99..fb27f99a5 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -41,7 +41,6 @@ config PROC_KCORE
  config PROC_VMCORE
  	bool "/proc/vmcore support"
  	depends on PROC_FS && CRASH_DUMP
@@ -1205,10 +1616,47 @@ diff -ruN linux-5.6.2-orig/fs/proc/Kconfig linux-5.6.2/fs/proc/Kconfig
  	help
  	  Exports the dump image of crashed kernel in ELF format.
  
-diff -ruN linux-5.6.2-orig/fs/proc/meminfo.c linux-5.6.2/fs/proc/meminfo.c
---- linux-5.6.2-orig/fs/proc/meminfo.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/proc/meminfo.c	2020-04-06 02:58:33.800025034 +0900
-@@ -105,7 +105,10 @@
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 5efaf3708..b43f9460f 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -401,6 +401,21 @@ static inline void task_thp_status(struct seq_file *m, struct mm_struct *mm)
+ 	seq_printf(m, "THP_enabled:\t%d\n", thp_enabled);
+ }
+ 
++#if defined(CONFIG_PAX_NOWRITEEXEC) || defined(CONFIG_PAX_ASLR)
++static inline void task_pax(struct seq_file *m, struct task_struct *p)
++{
++	if (p->mm)
++		seq_printf(m, "PaX:\t%c%c%c%c%c\n",
++			   p->mm->pax_flags & MF_PAX_PAGEEXEC ? 'P' : 'p',
++			   p->mm->pax_flags & MF_PAX_EMUTRAMP ? 'E' : 'e',
++			   p->mm->pax_flags & MF_PAX_MPROTECT ? 'M' : 'm',
++			   p->mm->pax_flags & MF_PAX_RANDMMAP ? 'R' : 'r',
++			   p->mm->pax_flags & MF_PAX_SEGMEXEC ? 'S' : 's');
++	else
++		seq_printf(m, "PaX:\t-----\n");
++}
++#endif
++
+ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
+ 			struct pid *pid, struct task_struct *task)
+ {
+@@ -424,6 +439,9 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
+ 	task_cpus_allowed(m, task);
+ 	cpuset_task_status_allowed(m, task);
+ 	task_context_switch_counts(m, task);
++#if defined(CONFIG_PAX_NOWRITEEXEC) || defined(CONFIG_PAX_ASLR)
++	task_pax(m, task);
++#endif
+ 	return 0;
+ }
+ 
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 8c1f1bb1a..62e28cf10 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -105,7 +105,10 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
  		   global_zone_page_state(NR_KERNEL_STACK_KB));
  	show_val_kb(m, "PageTables:     ",
  		    global_zone_page_state(NR_PAGETABLE));
@@ -1220,10 +1668,11 @@ diff -ruN linux-5.6.2-orig/fs/proc/meminfo.c linux-5.6.2/fs/proc/meminfo.c
  	show_val_kb(m, "NFS_Unstable:   ",
  		    global_node_page_state(NR_UNSTABLE_NFS));
  	show_val_kb(m, "Bounce:         ",
-diff -ruN linux-5.6.2-orig/fs/stat.c linux-5.6.2/fs/stat.c
---- linux-5.6.2-orig/fs/stat.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/stat.c	2020-04-06 02:58:09.201024546 +0900
-@@ -42,8 +42,13 @@
+diff --git a/fs/stat.c b/fs/stat.c
+index 030008796..b1c2c0d5b 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -42,8 +42,13 @@ void generic_fillattr(struct inode *inode, struct kstat *stat)
  	stat->gid = inode->i_gid;
  	stat->rdev = inode->i_rdev;
  	stat->size = i_size_read(inode);
@@ -1239,7 +1688,7 @@ diff -ruN linux-5.6.2-orig/fs/stat.c linux-5.6.2/fs/stat.c
  	stat->ctime = inode->i_ctime;
  	stat->blksize = i_blocksize(inode);
  	stat->blocks = inode->i_blocks;
-@@ -79,9 +84,14 @@
+@@ -79,9 +84,14 @@ int vfs_getattr_nosec(const struct path *path, struct kstat *stat,
  	if (IS_AUTOMOUNT(inode))
  		stat->attributes |= STATX_ATTR_AUTOMOUNT;
  
@@ -1257,9 +1706,10 @@ diff -ruN linux-5.6.2-orig/fs/stat.c linux-5.6.2/fs/stat.c
  
  	generic_fillattr(inode, stat);
  	return 0;
-diff -ruN linux-5.6.2-orig/fs/userfaultfd.c linux-5.6.2/fs/userfaultfd.c
---- linux-5.6.2-orig/fs/userfaultfd.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/fs/userfaultfd.c	2020-04-06 02:58:09.201024546 +0900
+diff --git a/fs/userfaultfd.c b/fs/userfaultfd.c
+index 37df7c9ee..97e21b2c2 100644
+--- a/fs/userfaultfd.c
++++ b/fs/userfaultfd.c
 @@ -28,7 +28,11 @@
  #include <linux/security.h>
  #include <linux/hugetlb.h>
@@ -1272,10 +1722,11 @@ diff -ruN linux-5.6.2-orig/fs/userfaultfd.c linux-5.6.2/fs/userfaultfd.c
  
  static struct kmem_cache *userfaultfd_ctx_cachep __read_mostly;
  
-diff -ruN linux-5.6.2-orig/include/asm-generic/pgtable.h linux-5.6.2/include/asm-generic/pgtable.h
---- linux-5.6.2-orig/include/asm-generic/pgtable.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/asm-generic/pgtable.h	2020-04-06 02:58:33.800025034 +0900
-@@ -866,12 +866,25 @@
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index e2e2bef07..59675a348 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -866,12 +866,25 @@ extern void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
  extern void untrack_pfn_moved(struct vm_area_struct *vma);
  #endif
  
@@ -1302,7 +1753,7 @@ diff -ruN linux-5.6.2-orig/include/asm-generic/pgtable.h linux-5.6.2/include/asm
  }
  
  #define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
-@@ -880,7 +893,7 @@
+@@ -880,7 +893,7 @@ static inline int is_zero_pfn(unsigned long pfn)
  static inline int is_zero_pfn(unsigned long pfn)
  {
  	extern unsigned long zero_pfn;
@@ -1311,10 +1762,11 @@ diff -ruN linux-5.6.2-orig/include/asm-generic/pgtable.h linux-5.6.2/include/asm
  }
  
  static inline unsigned long my_zero_pfn(unsigned long addr)
-diff -ruN linux-5.6.2-orig/include/linux/binfmts.h linux-5.6.2/include/linux/binfmts.h
---- linux-5.6.2-orig/include/linux/binfmts.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/binfmts.h	2020-04-06 02:58:22.444024809 +0900
-@@ -99,6 +99,9 @@
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index b40fc633f..61740061c 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -99,6 +99,9 @@ struct linux_binfmt {
  	int (*load_binary)(struct linux_binprm *);
  	int (*load_shlib)(struct file *);
  	int (*core_dump)(struct coredump_params *cprm);
@@ -1324,9 +1776,10 @@ diff -ruN linux-5.6.2-orig/include/linux/binfmts.h linux-5.6.2/include/linux/bin
  	unsigned long min_coredump;	/* minimal dump size */
  } __randomize_layout;
  
-diff -ruN linux-5.6.2-orig/include/linux/cache.h linux-5.6.2/include/linux/cache.h
---- linux-5.6.2-orig/include/linux/cache.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/cache.h	2020-04-06 02:58:09.201024546 +0900
+diff --git a/include/linux/cache.h b/include/linux/cache.h
+index 750621e41..e7157c18c 100644
+--- a/include/linux/cache.h
++++ b/include/linux/cache.h
 @@ -31,6 +31,8 @@
  #define __ro_after_init __attribute__((__section__(".data..ro_after_init")))
  #endif
@@ -1336,10 +1789,11 @@ diff -ruN linux-5.6.2-orig/include/linux/cache.h linux-5.6.2/include/linux/cache
  #ifndef ____cacheline_aligned
  #define ____cacheline_aligned __attribute__((__aligned__(SMP_CACHE_BYTES)))
  #endif
-diff -ruN linux-5.6.2-orig/include/linux/capability.h linux-5.6.2/include/linux/capability.h
---- linux-5.6.2-orig/include/linux/capability.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/capability.h	2020-04-06 02:58:09.201024546 +0900
-@@ -208,6 +208,7 @@
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index ecce0f43c..e46306dd4 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -208,6 +208,7 @@ extern bool has_capability_noaudit(struct task_struct *t, int cap);
  extern bool has_ns_capability_noaudit(struct task_struct *t,
  				      struct user_namespace *ns, int cap);
  extern bool capable(int cap);
@@ -1347,7 +1801,7 @@ diff -ruN linux-5.6.2-orig/include/linux/capability.h linux-5.6.2/include/linux/
  extern bool ns_capable(struct user_namespace *ns, int cap);
  extern bool ns_capable_noaudit(struct user_namespace *ns, int cap);
  extern bool ns_capable_setid(struct user_namespace *ns, int cap);
-@@ -234,6 +235,10 @@
+@@ -234,6 +235,10 @@ static inline bool capable(int cap)
  {
  	return true;
  }
@@ -1358,10 +1812,11 @@ diff -ruN linux-5.6.2-orig/include/linux/capability.h linux-5.6.2/include/linux/
  static inline bool ns_capable(struct user_namespace *ns, int cap)
  {
  	return true;
-diff -ruN linux-5.6.2-orig/include/linux/elf.h linux-5.6.2/include/linux/elf.h
---- linux-5.6.2-orig/include/linux/elf.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/elf.h	2020-04-06 02:58:22.444024809 +0900
-@@ -31,6 +31,7 @@
+diff --git a/include/linux/elf.h b/include/linux/elf.h
+index e3649b3e9..c1e78a3bc 100644
+--- a/include/linux/elf.h
++++ b/include/linux/elf.h
+@@ -31,6 +31,7 @@ extern Elf32_Dyn _DYNAMIC [];
  #define elf_addr_t	Elf32_Off
  #define Elf_Half	Elf32_Half
  #define Elf_Word	Elf32_Word
@@ -1369,7 +1824,7 @@ diff -ruN linux-5.6.2-orig/include/linux/elf.h linux-5.6.2/include/linux/elf.h
  
  #else
  
-@@ -42,6 +43,7 @@
+@@ -42,6 +43,7 @@ extern Elf64_Dyn _DYNAMIC [];
  #define elf_addr_t	Elf64_Off
  #define Elf_Half	Elf64_Half
  #define Elf_Word	Elf64_Word
@@ -1377,9 +1832,10 @@ diff -ruN linux-5.6.2-orig/include/linux/elf.h linux-5.6.2/include/linux/elf.h
  
  #endif
  
-diff -ruN linux-5.6.2-orig/include/linux/fcntl.h linux-5.6.2/include/linux/fcntl.h
---- linux-5.6.2-orig/include/linux/fcntl.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/fcntl.h	2020-04-06 02:58:22.444024809 +0900
+diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
+index 7bcdcf4f6..e188a360f 100644
+--- a/include/linux/fcntl.h
++++ b/include/linux/fcntl.h
 @@ -10,7 +10,7 @@
  	(O_RDONLY | O_WRONLY | O_RDWR | O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC | \
  	 O_APPEND | O_NDELAY | O_NONBLOCK | O_NDELAY | __O_SYNC | O_DSYNC | \
@@ -1389,10 +1845,11 @@ diff -ruN linux-5.6.2-orig/include/linux/fcntl.h linux-5.6.2/include/linux/fcntl
  
  /* List of all valid flags for the how->upgrade_mask argument: */
  #define VALID_UPGRADE_FLAGS \
-diff -ruN linux-5.6.2-orig/include/linux/fs.h linux-5.6.2/include/linux/fs.h
---- linux-5.6.2-orig/include/linux/fs.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/fs.h	2020-04-06 02:58:22.444024809 +0900
-@@ -101,6 +101,7 @@
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index abedbffe2..39e466782 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -101,6 +101,7 @@ typedef int (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
  #define MAY_CHDIR		0x00000040
  /* called from RCU mode, don't block */
  #define MAY_NOT_BLOCK		0x00000080
@@ -1400,7 +1857,7 @@ diff -ruN linux-5.6.2-orig/include/linux/fs.h linux-5.6.2/include/linux/fs.h
  
  /*
   * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
-@@ -3652,4 +3653,15 @@
+@@ -3652,4 +3653,15 @@ static inline int inode_drain_writes(struct inode *inode)
  	return filemap_write_and_wait(inode->i_mapping);
  }
  
@@ -1416,10 +1873,11 @@ diff -ruN linux-5.6.2-orig/include/linux/fs.h linux-5.6.2/include/linux/fs.h
 +}
 +
  #endif /* _LINUX_FS_H */
-diff -ruN linux-5.6.2-orig/include/linux/fsnotify.h linux-5.6.2/include/linux/fsnotify.h
---- linux-5.6.2-orig/include/linux/fsnotify.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/fsnotify.h	2020-04-06 02:58:09.202024546 +0900
-@@ -233,6 +233,9 @@
+diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
+index a2d5d175d..e91ab0611 100644
+--- a/include/linux/fsnotify.h
++++ b/include/linux/fsnotify.h
+@@ -233,6 +233,9 @@ static inline void fsnotify_access(struct file *file)
  	struct inode *inode = file_inode(file);
  	__u32 mask = FS_ACCESS;
  
@@ -1429,7 +1887,7 @@ diff -ruN linux-5.6.2-orig/include/linux/fsnotify.h linux-5.6.2/include/linux/fs
  	if (S_ISDIR(inode->i_mode))
  		mask |= FS_ISDIR;
  
-@@ -249,6 +252,9 @@
+@@ -249,6 +252,9 @@ static inline void fsnotify_modify(struct file *file)
  	struct inode *inode = file_inode(file);
  	__u32 mask = FS_MODIFY;
  
@@ -1439,10 +1897,11 @@ diff -ruN linux-5.6.2-orig/include/linux/fsnotify.h linux-5.6.2/include/linux/fs
  	if (S_ISDIR(inode->i_mode))
  		mask |= FS_ISDIR;
  
-diff -ruN linux-5.6.2-orig/include/linux/gfp.h linux-5.6.2/include/linux/gfp.h
---- linux-5.6.2-orig/include/linux/gfp.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/gfp.h	2020-04-06 02:58:09.202024546 +0900
-@@ -553,9 +553,9 @@
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index e5b817cb8..7a266a15d 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -553,9 +553,9 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
  extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
  extern unsigned long get_zeroed_page(gfp_t gfp_mask);
  
@@ -1454,10 +1913,11 @@ diff -ruN linux-5.6.2-orig/include/linux/gfp.h linux-5.6.2/include/linux/gfp.h
  
  #define __get_free_page(gfp_mask) \
  		__get_free_pages((gfp_mask), 0)
-diff -ruN linux-5.6.2-orig/include/linux/highmem.h linux-5.6.2/include/linux/highmem.h
---- linux-5.6.2-orig/include/linux/highmem.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/highmem.h	2020-04-06 02:58:09.202024546 +0900
-@@ -215,6 +215,13 @@
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index ea5cdbd8c..805b84d6b 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -215,6 +215,13 @@ static inline void clear_highpage(struct page *page)
  	kunmap_atomic(kaddr);
  }
  
@@ -1471,10 +1931,11 @@ diff -ruN linux-5.6.2-orig/include/linux/highmem.h linux-5.6.2/include/linux/hig
  static inline void zero_user_segments(struct page *page,
  	unsigned start1, unsigned end1,
  	unsigned start2, unsigned end2)
-diff -ruN linux-5.6.2-orig/include/linux/interrupt.h linux-5.6.2/include/linux/interrupt.h
---- linux-5.6.2-orig/include/linux/interrupt.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/interrupt.h	2020-04-06 02:58:09.203024546 +0900
-@@ -552,7 +552,7 @@
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index c5fe60ec6..bdfb16b84 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -552,7 +552,7 @@ extern const char * const softirq_to_name[NR_SOFTIRQS];
  
  struct softirq_action
  {
@@ -1483,7 +1944,7 @@ diff -ruN linux-5.6.2-orig/include/linux/interrupt.h linux-5.6.2/include/linux/i
  };
  
  asmlinkage void do_softirq(void);
-@@ -567,7 +567,7 @@
+@@ -567,7 +567,7 @@ static inline void do_softirq_own_stack(void)
  }
  #endif
  
@@ -1492,10 +1953,11 @@ diff -ruN linux-5.6.2-orig/include/linux/interrupt.h linux-5.6.2/include/linux/i
  extern void softirq_init(void);
  extern void __raise_softirq_irqoff(unsigned int nr);
  
-diff -ruN linux-5.6.2-orig/include/linux/kobject_ns.h linux-5.6.2/include/linux/kobject_ns.h
---- linux-5.6.2-orig/include/linux/kobject_ns.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/kobject_ns.h	2020-04-06 02:58:09.203024546 +0900
-@@ -45,7 +45,7 @@
+diff --git a/include/linux/kobject_ns.h b/include/linux/kobject_ns.h
+index 069aa2ebe..cb9e3637a 100644
+--- a/include/linux/kobject_ns.h
++++ b/include/linux/kobject_ns.h
+@@ -45,7 +45,7 @@ struct kobj_ns_type_operations {
  	void (*drop_ns)(void *);
  };
  
@@ -1504,16 +1966,17 @@ diff -ruN linux-5.6.2-orig/include/linux/kobject_ns.h linux-5.6.2/include/linux/
  int kobj_ns_type_registered(enum kobj_ns_type type);
  const struct kobj_ns_type_operations *kobj_child_ns_ops(struct kobject *parent);
  const struct kobj_ns_type_operations *kobj_ns_ops(struct kobject *kobj);
-diff -ruN linux-5.6.2-orig/include/linux/ksm.h linux-5.6.2/include/linux/ksm.h
---- linux-5.6.2-orig/include/linux/ksm.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/ksm.h	2020-04-06 02:58:33.801025034 +0900
+diff --git a/include/linux/ksm.h b/include/linux/ksm.h
+index e48b1e453..095d59310 100644
+--- a/include/linux/ksm.h
++++ b/include/linux/ksm.h
 @@ -1,4 +1,4 @@
 -/* SPDX-License-Identifier: GPL-2.0 */
 +/* SPDX-License-Identifier: GPL-3.0 */
  #ifndef __LINUX_KSM_H
  #define __LINUX_KSM_H
  /*
-@@ -21,20 +21,16 @@
+@@ -21,20 +21,16 @@ struct mem_cgroup;
  #ifdef CONFIG_KSM
  int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
  		unsigned long end, int advice, unsigned long *vm_flags);
@@ -1539,7 +2002,7 @@ diff -ruN linux-5.6.2-orig/include/linux/ksm.h linux-5.6.2/include/linux/ksm.h
  }
  
  /*
-@@ -56,6 +52,33 @@
+@@ -56,6 +52,33 @@ void ksm_migrate_page(struct page *newpage, struct page *oldpage);
  bool reuse_ksm_page(struct page *page,
  			struct vm_area_struct *vma, unsigned long address);
  
@@ -1573,17 +2036,18 @@ diff -ruN linux-5.6.2-orig/include/linux/ksm.h linux-5.6.2/include/linux/ksm.h
  #else  /* !CONFIG_KSM */
  
  static inline int ksm_fork(struct mm_struct *mm, struct mm_struct *oldmm)
-@@ -96,4 +119,6 @@
+@@ -96,4 +119,6 @@ static inline bool reuse_ksm_page(struct page *page,
  #endif /* CONFIG_MMU */
  #endif /* !CONFIG_KSM */
  
 +#include <linux/uksm.h>
 +
  #endif /* __LINUX_KSM_H */
-diff -ruN linux-5.6.2-orig/include/linux/mm.h linux-5.6.2/include/linux/mm.h
---- linux-5.6.2-orig/include/linux/mm.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/mm.h	2020-04-06 02:58:09.203024546 +0900
-@@ -639,7 +639,7 @@
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c54fb96cb..2e9f24cc2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -639,7 +639,7 @@ static inline int is_vmalloc_or_module_addr(const void *x)
  }
  #endif
  
@@ -1592,10 +2056,11 @@ diff -ruN linux-5.6.2-orig/include/linux/mm.h linux-5.6.2/include/linux/mm.h
  static inline void *kvmalloc(size_t size, gfp_t flags)
  {
  	return kvmalloc_node(size, flags, NUMA_NO_NODE);
-diff -ruN linux-5.6.2-orig/include/linux/mm_types.h linux-5.6.2/include/linux/mm_types.h
---- linux-5.6.2-orig/include/linux/mm_types.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/mm_types.h	2020-04-06 02:58:33.801025034 +0900
-@@ -358,6 +358,9 @@
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index c28911c3a..f142e77fd 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -358,6 +358,9 @@ struct vm_area_struct {
  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
  #endif
  	struct vm_userfaultfd_ctx vm_userfaultfd_ctx;
@@ -1605,20 +2070,25 @@ diff -ruN linux-5.6.2-orig/include/linux/mm_types.h linux-5.6.2/include/linux/mm
  } __randomize_layout;
  
  struct core_thread {
-@@ -529,6 +532,9 @@
+@@ -529,6 +532,13 @@ struct mm_struct {
  		atomic_long_t hugetlb_usage;
  #endif
  		struct work_struct async_put_work;
 +#if defined(CONFIG_PAX)
 +		unsigned long pax_flags;
++#ifdef CONFIG_PAX_ASLR
++		unsigned long delta_mmap;		/* randomized offset */
++		unsigned long delta_stack;		/* randomized offset */
++#endif
 +#endif
  	} __randomize_layout;
  
  	/*
-diff -ruN linux-5.6.2-orig/include/linux/mmzone.h linux-5.6.2/include/linux/mmzone.h
---- linux-5.6.2-orig/include/linux/mmzone.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/mmzone.h	2020-04-06 02:58:33.801025034 +0900
-@@ -206,6 +206,9 @@
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 462f68739..43edd793d 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -206,6 +206,9 @@ enum zone_stat_item {
  	NR_ZSPAGES,		/* allocated in zsmalloc */
  #endif
  	NR_FREE_CMA_PAGES,
@@ -1628,10 +2098,11 @@ diff -ruN linux-5.6.2-orig/include/linux/mmzone.h linux-5.6.2/include/linux/mmzo
  	NR_VM_ZONE_STAT_ITEMS };
  
  enum node_stat_item {
-diff -ruN linux-5.6.2-orig/include/linux/percpu.h linux-5.6.2/include/linux/percpu.h
---- linux-5.6.2-orig/include/linux/percpu.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/percpu.h	2020-04-06 02:58:09.203024546 +0900
-@@ -123,7 +123,7 @@
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 5e76af742..9a6c682ec 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -123,7 +123,7 @@ extern int __init pcpu_page_first_chunk(size_t reserved_size,
  				pcpu_fc_populate_pte_fn_t populate_pte_fn);
  #endif
  
@@ -1640,7 +2111,7 @@ diff -ruN linux-5.6.2-orig/include/linux/percpu.h linux-5.6.2/include/linux/perc
  extern bool __is_kernel_percpu_address(unsigned long addr, unsigned long *can_addr);
  extern bool is_kernel_percpu_address(unsigned long addr);
  
-@@ -131,8 +131,8 @@
+@@ -131,8 +131,8 @@ extern bool is_kernel_percpu_address(unsigned long addr);
  extern void __init setup_per_cpu_areas(void);
  #endif
  
@@ -1651,10 +2122,11 @@ diff -ruN linux-5.6.2-orig/include/linux/percpu.h linux-5.6.2/include/linux/perc
  extern void free_percpu(void __percpu *__pdata);
  extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
  
-diff -ruN linux-5.6.2-orig/include/linux/perf_event.h linux-5.6.2/include/linux/perf_event.h
---- linux-5.6.2-orig/include/linux/perf_event.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/perf_event.h	2020-04-06 02:58:09.204024546 +0900
-@@ -1283,6 +1283,14 @@
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 547773f58..e9f179e06 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1283,6 +1283,14 @@ static inline int perf_is_paranoid(void)
  	return sysctl_perf_event_paranoid > -1;
  }
  
@@ -1669,22 +2141,45 @@ diff -ruN linux-5.6.2-orig/include/linux/perf_event.h linux-5.6.2/include/linux/
  static inline int perf_allow_kernel(struct perf_event_attr *attr)
  {
  	if (sysctl_perf_event_paranoid > 1 && !capable(CAP_SYS_ADMIN))
-diff -ruN linux-5.6.2-orig/include/linux/sched.h linux-5.6.2/include/linux/sched.h
---- linux-5.6.2-orig/include/linux/sched.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/sched.h	2020-04-06 02:58:22.445024809 +0900
-@@ -1871,6 +1871,8 @@
+diff --git a/include/linux/random.h b/include/linux/random.h
+index d319f9a1e..945535eb2 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -191,4 +191,9 @@ static inline u32 next_pseudo_random32(u32 seed)
+ 	return seed * 1664525 + 1013904223;
+ }
+ 
++static inline unsigned long pax_get_random_long(void)
++{
++	return prandom_u32() + (sizeof(long) > 4 ? (unsigned long)prandom_u32() << 32 : 0);
++}
++
+ #endif /* _LINUX_RANDOM_H */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0323e4f09..2d7e55eef 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1871,6 +1871,15 @@ extern long sched_getaffinity(pid_t pid, struct cpumask *mask);
  #define TASK_SIZE_OF(tsk)	TASK_SIZE
  #endif
  
++#define MF_PAX_PAGEEXEC		0x01000000	/* Paging based non-executable pages */
 +#define MF_PAX_EMUTRAMP		0x02000000	/* Emulate trampolines */
++#define MF_PAX_MPROTECT		0x04000000	/* Restrict mprotect() */
++#define MF_PAX_RANDMMAP		0x08000000	/* Randomize mmap() base */
++/*#define MF_PAX_RANDEXEC		0x10000000*/	/* Randomize ET_EXEC base */
++#define MF_PAX_SEGMEXEC		0x20000000	/* Segmentation based non-executable pages */
++
++#define PAX_PARSE_FLAGS_FALLBACK	(~0UL)
 +
  #ifdef CONFIG_RSEQ
  
  /*
-diff -ruN linux-5.6.2-orig/include/linux/slab.h linux-5.6.2/include/linux/slab.h
---- linux-5.6.2-orig/include/linux/slab.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/slab.h	2020-04-06 02:58:09.204024546 +0900
-@@ -184,7 +184,7 @@
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index 03a389358..1c1b4b3a7 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -184,7 +184,7 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *, struct mem_cgroup *);
  /*
   * Common kmalloc functions provided by all allocators
   */
@@ -1693,7 +2188,7 @@ diff -ruN linux-5.6.2-orig/include/linux/slab.h linux-5.6.2/include/linux/slab.h
  void kfree(const void *);
  void kzfree(const void *);
  size_t __ksize(const void *);
-@@ -389,7 +389,7 @@
+@@ -389,7 +389,7 @@ static __always_inline unsigned int kmalloc_index(size_t size)
  }
  #endif /* !CONFIG_SLOB */
  
@@ -1702,7 +2197,7 @@ diff -ruN linux-5.6.2-orig/include/linux/slab.h linux-5.6.2/include/linux/slab.h
  void *kmem_cache_alloc(struct kmem_cache *, gfp_t flags) __assume_slab_alignment __malloc;
  void kmem_cache_free(struct kmem_cache *, void *);
  
-@@ -413,7 +413,7 @@
+@@ -413,7 +413,7 @@ static __always_inline void kfree_bulk(size_t size, void **p)
  }
  
  #ifdef CONFIG_NUMA
@@ -1711,7 +2206,7 @@ diff -ruN linux-5.6.2-orig/include/linux/slab.h linux-5.6.2/include/linux/slab.h
  void *kmem_cache_alloc_node(struct kmem_cache *, gfp_t flags, int node) __assume_slab_alignment __malloc;
  #else
  static __always_inline void *__kmalloc_node(size_t size, gfp_t flags, int node)
-@@ -538,7 +538,7 @@
+@@ -538,7 +538,7 @@ static __always_inline void *kmalloc_large(size_t size, gfp_t flags)
   *	Try really hard to succeed the allocation but fail
   *	eventually.
   */
@@ -1720,7 +2215,7 @@ diff -ruN linux-5.6.2-orig/include/linux/slab.h linux-5.6.2/include/linux/slab.h
  {
  	if (__builtin_constant_p(size)) {
  #ifndef CONFIG_SLOB
-@@ -560,7 +560,7 @@
+@@ -560,7 +560,7 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
  	return __kmalloc(size, flags);
  }
  
@@ -1729,10 +2224,11 @@ diff -ruN linux-5.6.2-orig/include/linux/slab.h linux-5.6.2/include/linux/slab.h
  {
  #ifndef CONFIG_SLOB
  	if (__builtin_constant_p(size) &&
-diff -ruN linux-5.6.2-orig/include/linux/slub_def.h linux-5.6.2/include/linux/slub_def.h
---- linux-5.6.2-orig/include/linux/slub_def.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/slub_def.h	2020-04-06 02:58:09.204024546 +0900
-@@ -121,6 +121,11 @@
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index d2153789b..97da977d6 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -121,6 +121,11 @@ struct kmem_cache {
  	unsigned long random;
  #endif
  
@@ -1744,9 +2240,11 @@ diff -ruN linux-5.6.2-orig/include/linux/slub_def.h linux-5.6.2/include/linux/sl
  #ifdef CONFIG_NUMA
  	/*
  	 * Defragmentation by allocating from a remote node.
-diff -ruN linux-5.6.2-orig/include/linux/sradix-tree.h linux-5.6.2/include/linux/sradix-tree.h
---- linux-5.6.2-orig/include/linux/sradix-tree.h	1970-01-01 09:00:00.000000000 +0900
-+++ linux-5.6.2/include/linux/sradix-tree.h	2020-04-06 02:58:33.801025034 +0900
+diff --git a/include/linux/sradix-tree.h b/include/linux/sradix-tree.h
+new file mode 100644
+index 000000000..d71edba6b
+--- /dev/null
++++ b/include/linux/sradix-tree.h
 @@ -0,0 +1,77 @@
 +#ifndef _LINUX_SRADIX_TREE_H
 +#define _LINUX_SRADIX_TREE_H
@@ -1825,10 +2323,11 @@ diff -ruN linux-5.6.2-orig/include/linux/sradix-tree.h linux-5.6.2/include/linux
 +extern void *sradix_tree_lookup(struct sradix_tree_root *root, unsigned long index);
 +
 +#endif /* _LINUX_SRADIX_TREE_H */
-diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/string.h
---- linux-5.6.2-orig/include/linux/string.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/string.h	2020-04-06 02:58:09.204024546 +0900
-@@ -271,10 +271,16 @@
+diff --git a/include/linux/string.h b/include/linux/string.h
+index 6dfbb2efa..c06ca2838 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -271,10 +271,16 @@ void __read_overflow2(void) __compiletime_error("detected read beyond size of ob
  void __read_overflow3(void) __compiletime_error("detected read beyond size of object passed as 3rd parameter");
  void __write_overflow(void) __compiletime_error("detected write beyond size of object passed as 1st parameter");
  
@@ -1846,7 +2345,7 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  	if (__builtin_constant_p(size) && p_size < size)
  		__write_overflow();
  	if (p_size < size)
-@@ -284,7 +290,7 @@
+@@ -284,7 +290,7 @@ __FORTIFY_INLINE char *strncpy(char *p, const char *q, __kernel_size_t size)
  
  __FORTIFY_INLINE char *strcat(char *p, const char *q)
  {
@@ -1855,7 +2354,7 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  	if (p_size == (size_t)-1)
  		return __builtin_strcat(p, q);
  	if (strlcat(p, q, p_size) >= p_size)
-@@ -295,7 +301,7 @@
+@@ -295,7 +301,7 @@ __FORTIFY_INLINE char *strcat(char *p, const char *q)
  __FORTIFY_INLINE __kernel_size_t strlen(const char *p)
  {
  	__kernel_size_t ret;
@@ -1864,7 +2363,7 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  
  	/* Work around gcc excess stack consumption issue */
  	if (p_size == (size_t)-1 ||
-@@ -310,7 +316,7 @@
+@@ -310,7 +316,7 @@ __FORTIFY_INLINE __kernel_size_t strlen(const char *p)
  extern __kernel_size_t __real_strnlen(const char *, __kernel_size_t) __RENAME(strnlen);
  __FORTIFY_INLINE __kernel_size_t strnlen(const char *p, __kernel_size_t maxlen)
  {
@@ -1873,7 +2372,7 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  	__kernel_size_t ret = __real_strnlen(p, maxlen < p_size ? maxlen : p_size);
  	if (p_size <= ret && maxlen != ret)
  		fortify_panic(__func__);
-@@ -322,8 +328,8 @@
+@@ -322,8 +328,8 @@ extern size_t __real_strlcpy(char *, const char *, size_t) __RENAME(strlcpy);
  __FORTIFY_INLINE size_t strlcpy(char *p, const char *q, size_t size)
  {
  	size_t ret;
@@ -1884,7 +2383,7 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  	if (p_size == (size_t)-1 && q_size == (size_t)-1)
  		return __real_strlcpy(p, q, size);
  	ret = strlen(q);
-@@ -343,8 +349,8 @@
+@@ -343,8 +349,8 @@ __FORTIFY_INLINE size_t strlcpy(char *p, const char *q, size_t size)
  __FORTIFY_INLINE char *strncat(char *p, const char *q, __kernel_size_t count)
  {
  	size_t p_len, copy_len;
@@ -1895,7 +2394,7 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  	if (p_size == (size_t)-1 && q_size == (size_t)-1)
  		return __builtin_strncat(p, q, count);
  	p_len = strlen(p);
-@@ -457,8 +463,8 @@
+@@ -457,8 +463,8 @@ __FORTIFY_INLINE void *kmemdup(const void *p, size_t size, gfp_t gfp)
  /* defined after fortified strlen and memcpy to reuse them */
  __FORTIFY_INLINE char *strcpy(char *p, const char *q)
  {
@@ -1906,9 +2405,10 @@ diff -ruN linux-5.6.2-orig/include/linux/string.h linux-5.6.2/include/linux/stri
  	if (p_size == (size_t)-1 && q_size == (size_t)-1)
  		return __builtin_strcpy(p, q);
  	memcpy(p, q, strlen(q) + 1);
-diff -ruN linux-5.6.2-orig/include/linux/tty.h linux-5.6.2/include/linux/tty.h
---- linux-5.6.2-orig/include/linux/tty.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/tty.h	2020-04-06 02:58:09.204024546 +0900
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index bd5fe0e90..5d0444635 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
 @@ -14,6 +14,7 @@
  #include <uapi/linux/tty.h>
  #include <linux/rwsem.h>
@@ -1917,7 +2417,7 @@ diff -ruN linux-5.6.2-orig/include/linux/tty.h linux-5.6.2/include/linux/tty.h
  
  
  /*
-@@ -338,6 +339,7 @@
+@@ -338,6 +339,7 @@ struct tty_struct {
  	/* If the tty has a pending do_SAK, queue it here - akpm */
  	struct work_struct SAK_work;
  	struct tty_port *port;
@@ -1925,7 +2425,7 @@ diff -ruN linux-5.6.2-orig/include/linux/tty.h linux-5.6.2/include/linux/tty.h
  } __randomize_layout;
  
  /* Each of a tty's open files has private_data pointing to tty_file_private */
-@@ -347,6 +349,8 @@
+@@ -347,6 +349,8 @@ struct tty_file_private {
  	struct list_head list;
  };
  
@@ -1934,9 +2434,11 @@ diff -ruN linux-5.6.2-orig/include/linux/tty.h linux-5.6.2/include/linux/tty.h
  /* tty magic number */
  #define TTY_MAGIC		0x5401
  
-diff -ruN linux-5.6.2-orig/include/linux/uksm.h linux-5.6.2/include/linux/uksm.h
---- linux-5.6.2-orig/include/linux/uksm.h	1970-01-01 09:00:00.000000000 +0900
-+++ linux-5.6.2/include/linux/uksm.h	2020-04-06 02:58:33.802025034 +0900
+diff --git a/include/linux/uksm.h b/include/linux/uksm.h
+new file mode 100644
+index 000000000..bb8651f53
+--- /dev/null
++++ b/include/linux/uksm.h
 @@ -0,0 +1,149 @@
 +#ifndef __LINUX_UKSM_H
 +#define __LINUX_UKSM_H
@@ -2087,10 +2589,11 @@ diff -ruN linux-5.6.2-orig/include/linux/uksm.h linux-5.6.2/include/linux/uksm.h
 +}
 +#endif /* !CONFIG_UKSM */
 +#endif /* __LINUX_UKSM_H */
-diff -ruN linux-5.6.2-orig/include/linux/vmalloc.h linux-5.6.2/include/linux/vmalloc.h
---- linux-5.6.2-orig/include/linux/vmalloc.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/linux/vmalloc.h	2020-04-06 02:58:09.204024546 +0900
-@@ -102,20 +102,20 @@
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 0507a162c..ee85d1fa1 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -102,20 +102,20 @@ static inline void vmalloc_init(void)
  static inline unsigned long vmalloc_nr_pages(void) { return 0; }
  #endif
  
@@ -2122,9 +2625,10 @@ diff -ruN linux-5.6.2-orig/include/linux/vmalloc.h linux-5.6.2/include/linux/vma
  #ifndef CONFIG_MMU
  extern void *__vmalloc_node_flags(unsigned long size, int node, gfp_t flags);
  static inline void *__vmalloc_node_flags_caller(unsigned long size, int node,
-diff -ruN linux-5.6.2-orig/include/uapi/asm-generic/fcntl.h linux-5.6.2/include/uapi/asm-generic/fcntl.h
---- linux-5.6.2-orig/include/uapi/asm-generic/fcntl.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/uapi/asm-generic/fcntl.h	2020-04-06 02:58:22.445024809 +0900
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index 9dc0bf0c5..4171782fe 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
 @@ -97,6 +97,10 @@
  #define O_NDELAY	O_NONBLOCK
  #endif
@@ -2136,10 +2640,11 @@ diff -ruN linux-5.6.2-orig/include/uapi/asm-generic/fcntl.h linux-5.6.2/include/
  #define F_DUPFD		0	/* dup */
  #define F_GETFD		1	/* get close_on_exec */
  #define F_SETFD		2	/* set/clear close_on_exec */
-diff -ruN linux-5.6.2-orig/include/uapi/linux/elf.h linux-5.6.2/include/uapi/linux/elf.h
---- linux-5.6.2-orig/include/uapi/linux/elf.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/include/uapi/linux/elf.h	2020-04-06 02:58:22.445024809 +0900
-@@ -38,6 +38,7 @@
+diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+index 34c02e429..90b458759 100644
+--- a/include/uapi/linux/elf.h
++++ b/include/uapi/linux/elf.h
+@@ -38,6 +38,7 @@ typedef __s64	Elf64_Sxword;
  #define PT_GNU_EH_FRAME		0x6474e550
  
  #define PT_GNU_STACK	(PT_LOOS + 0x474e551)
@@ -2147,7 +2652,7 @@ diff -ruN linux-5.6.2-orig/include/uapi/linux/elf.h linux-5.6.2/include/uapi/lin
  
  /*
   * Extended Numbering
-@@ -95,6 +96,8 @@
+@@ -95,6 +96,8 @@ typedef __s64	Elf64_Sxword;
  #define DT_DEBUG	21
  #define DT_TEXTREL	22
  #define DT_JMPREL	23
@@ -2156,10 +2661,11 @@ diff -ruN linux-5.6.2-orig/include/uapi/linux/elf.h linux-5.6.2/include/uapi/lin
  #define DT_ENCODING	32
  #define OLD_DT_LOOS	0x60000000
  #define DT_LOOS		0x6000000d
-diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
---- linux-5.6.2-orig/init/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/init/Kconfig	2020-04-06 02:58:09.205024546 +0900
-@@ -362,6 +362,7 @@
+diff --git a/init/Kconfig b/init/Kconfig
+index 4f717bfdb..83b01b099 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -362,6 +362,7 @@ config USELIB
  config AUDIT
  	bool "Auditing support"
  	depends on NET
@@ -2167,7 +2673,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  	help
  	  Enable auditing infrastructure that can be used with another
  	  kernel subsystem, such as SELinux (which requires this for
-@@ -1110,6 +1111,22 @@
+@@ -1110,6 +1111,22 @@ config USER_NS
  
  	  If unsure, say N.
  
@@ -2190,7 +2696,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  config PID_NS
  	bool "PID Namespaces"
  	default y
-@@ -1525,8 +1542,7 @@
+@@ -1525,8 +1542,7 @@ config SHMEM
  	  which may be appropriate on small systems without swap.
  
  config AIO
@@ -2200,7 +2706,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  	help
  	  This option enables POSIX asynchronous I/O which may by used
  	  by some high performance threaded applications. Disabling
-@@ -1645,6 +1661,23 @@
+@@ -1645,6 +1661,23 @@ config USERFAULTFD
  	  Enable the userfaultfd() system call that allows to intercept and
  	  handle page faults in userland.
  
@@ -2224,7 +2730,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  config ARCH_HAS_MEMBARRIER_CALLBACKS
  	bool
  
-@@ -1757,7 +1790,7 @@
+@@ -1757,7 +1790,7 @@ config VM_EVENT_COUNTERS
  
  config SLUB_DEBUG
  	default y
@@ -2233,7 +2739,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  	depends on SLUB && SYSFS
  	help
  	  SLUB has extensive debug support features. Disabling these can
-@@ -1781,7 +1814,6 @@
+@@ -1781,7 +1814,6 @@ config SLUB_MEMCG_SYSFS_ON
  
  config COMPAT_BRK
  	bool "Disable heap randomization"
@@ -2241,7 +2747,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  	help
  	  Randomizing heap placement makes heap exploits harder, but it
  	  also breaks ancient binaries (including anything libc5 based).
-@@ -1828,7 +1860,6 @@
+@@ -1828,7 +1860,6 @@ endchoice
  
  config SLAB_MERGE_DEFAULT
  	bool "Allow slab caches to be merged"
@@ -2249,7 +2755,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  	help
  	  For reduced kernel memory fragmentation, slab caches can be
  	  merged when they share the same size and other characteristics.
-@@ -1841,9 +1872,9 @@
+@@ -1841,9 +1872,9 @@ config SLAB_MERGE_DEFAULT
  	  command line.
  
  config SLAB_FREELIST_RANDOM
@@ -2260,7 +2766,7 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  	help
  	  Randomizes the freelist order used on creating new pages. This
  	  security feature reduces the predictability of the kernel slab
-@@ -1852,12 +1883,30 @@
+@@ -1852,12 +1883,30 @@ config SLAB_FREELIST_RANDOM
  config SLAB_FREELIST_HARDENED
  	bool "Harden slab freelist metadata"
  	depends on SLUB
@@ -2291,10 +2797,11 @@ diff -ruN linux-5.6.2-orig/init/Kconfig linux-5.6.2/init/Kconfig
  config SHUFFLE_PAGE_ALLOCATOR
  	bool "Page allocator randomization"
  	default SLAB_FREELIST_RANDOM && ACPI_NUMA
-diff -ruN linux-5.6.2-orig/ipc/shm.c linux-5.6.2/ipc/shm.c
---- linux-5.6.2-orig/ipc/shm.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/ipc/shm.c	2020-04-06 02:58:22.446024809 +0900
-@@ -1468,6 +1468,9 @@
+diff --git a/ipc/shm.c b/ipc/shm.c
+index ce1ca9f7c..3da134c8d 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -1468,6 +1468,9 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg,
  		f_flags = O_RDWR;
  	}
  	if (shmflg & SHM_EXEC) {
@@ -2304,10 +2811,11 @@ diff -ruN linux-5.6.2-orig/ipc/shm.c linux-5.6.2/ipc/shm.c
  		prot |= PROT_EXEC;
  		acc_mode |= S_IXUGO;
  	}
-diff -ruN linux-5.6.2-orig/kernel/audit.c linux-5.6.2/kernel/audit.c
---- linux-5.6.2-orig/kernel/audit.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/audit.c	2020-04-06 02:58:09.205024546 +0900
-@@ -1631,6 +1631,9 @@
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 9ddfe2aa6..4a89d4864 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1631,6 +1631,9 @@ static int __init audit_enable(char *str)
  
  	if (audit_default == AUDIT_OFF)
  		audit_initialized = AUDIT_DISABLED;
@@ -2317,10 +2825,11 @@ diff -ruN linux-5.6.2-orig/kernel/audit.c linux-5.6.2/kernel/audit.c
  	if (audit_set_enabled(audit_default))
  		pr_err("audit: error setting audit state (%d)\n",
  		       audit_default);
-diff -ruN linux-5.6.2-orig/kernel/bpf/core.c linux-5.6.2/kernel/bpf/core.c
---- linux-5.6.2-orig/kernel/bpf/core.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/bpf/core.c	2020-04-06 02:58:09.206024546 +0900
-@@ -520,7 +520,7 @@
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index 973a20d49..1405760c9 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -520,7 +520,7 @@ void bpf_prog_kallsyms_del_all(struct bpf_prog *fp)
  /* All BPF JIT sysctl knobs here. */
  int bpf_jit_enable   __read_mostly = IS_BUILTIN(CONFIG_BPF_JIT_DEFAULT_ON);
  int bpf_jit_kallsyms __read_mostly = IS_BUILTIN(CONFIG_BPF_JIT_DEFAULT_ON);
@@ -2329,10 +2838,11 @@ diff -ruN linux-5.6.2-orig/kernel/bpf/core.c linux-5.6.2/kernel/bpf/core.c
  long bpf_jit_limit   __read_mostly;
  
  static __always_inline void
-diff -ruN linux-5.6.2-orig/kernel/bpf/syscall.c linux-5.6.2/kernel/bpf/syscall.c
---- linux-5.6.2-orig/kernel/bpf/syscall.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/bpf/syscall.c	2020-04-06 02:58:09.206024546 +0900
-@@ -42,7 +42,7 @@
+diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
+index 966b7b34c..eca1ee402 100644
+--- a/kernel/bpf/syscall.c
++++ b/kernel/bpf/syscall.c
+@@ -42,7 +42,7 @@ static DEFINE_SPINLOCK(prog_idr_lock);
  static DEFINE_IDR(map_idr);
  static DEFINE_SPINLOCK(map_idr_lock);
  
@@ -2341,10 +2851,11 @@ diff -ruN linux-5.6.2-orig/kernel/bpf/syscall.c linux-5.6.2/kernel/bpf/syscall.c
  
  static const struct bpf_map_ops * const bpf_map_types[] = {
  #define BPF_PROG_TYPE(_id, _name, prog_ctx_type, kern_ctx_type)
-diff -ruN linux-5.6.2-orig/kernel/capability.c linux-5.6.2/kernel/capability.c
---- linux-5.6.2-orig/kernel/capability.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/capability.c	2020-04-06 02:58:09.206024546 +0900
-@@ -449,6 +449,12 @@
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 1444f3954..8cc9dd799 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -449,6 +449,12 @@ bool capable(int cap)
  	return ns_capable(&init_user_ns, cap);
  }
  EXPORT_SYMBOL(capable);
@@ -2357,10 +2868,11 @@ diff -ruN linux-5.6.2-orig/kernel/capability.c linux-5.6.2/kernel/capability.c
  #endif /* CONFIG_MULTIUSER */
  
  /**
-diff -ruN linux-5.6.2-orig/kernel/events/core.c linux-5.6.2/kernel/events/core.c
---- linux-5.6.2-orig/kernel/events/core.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/events/core.c	2020-04-06 02:58:09.208024546 +0900
-@@ -398,8 +398,13 @@
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 243717177..e1caf2b02 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -398,8 +398,13 @@ static cpumask_var_t perf_online_mask;
   *   0 - disallow raw tracepoint access for unpriv
   *   1 - disallow cpu events for unpriv
   *   2 - disallow kernel profiling for unpriv
@@ -2374,7 +2886,7 @@ diff -ruN linux-5.6.2-orig/kernel/events/core.c linux-5.6.2/kernel/events/core.c
  
  /* Minimum for 512 kiB + 1 user control page */
  int sysctl_perf_event_mlock __read_mostly = 512 + (PAGE_SIZE / 1024); /* 'free' kiB per user */
-@@ -11180,7 +11185,7 @@
+@@ -11166,7 +11171,7 @@ SYSCALL_DEFINE5(perf_event_open,
  		return -EINVAL;
  
  	/* Do we allow access to perf_event_open(2) ? */
@@ -2383,9 +2895,10 @@ diff -ruN linux-5.6.2-orig/kernel/events/core.c linux-5.6.2/kernel/events/core.c
  	if (err)
  		return err;
  
-diff -ruN linux-5.6.2-orig/kernel/fork.c linux-5.6.2/kernel/fork.c
---- linux-5.6.2-orig/kernel/fork.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/fork.c	2020-04-06 02:58:33.802025034 +0900
+diff --git a/kernel/fork.c b/kernel/fork.c
+index d90af1343..b398cc78e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
 @@ -106,6 +106,11 @@
  
  #define CREATE_TRACE_POINTS
@@ -2398,7 +2911,7 @@ diff -ruN linux-5.6.2-orig/kernel/fork.c linux-5.6.2/kernel/fork.c
  
  /*
   * Minimum number of threads to boot the kernel
-@@ -598,7 +603,7 @@
+@@ -598,7 +603,7 @@ static __latent_entropy int dup_mmap(struct mm_struct *mm,
  		__vma_link_rb(mm, tmp, rb_link, rb_parent);
  		rb_link = &tmp->vm_rb.rb_right;
  		rb_parent = &tmp->vm_rb;
@@ -2407,7 +2920,7 @@ diff -ruN linux-5.6.2-orig/kernel/fork.c linux-5.6.2/kernel/fork.c
  		mm->map_count++;
  		if (!(tmp->vm_flags & VM_WIPEONFORK))
  			retval = copy_page_range(mm, oldmm, mpnt);
-@@ -1844,6 +1849,10 @@
+@@ -1844,6 +1849,10 @@ static __latent_entropy struct task_struct *copy_process(
  	if ((clone_flags & (CLONE_NEWUSER|CLONE_FS)) == (CLONE_NEWUSER|CLONE_FS))
  		return ERR_PTR(-EINVAL);
  
@@ -2418,7 +2931,7 @@ diff -ruN linux-5.6.2-orig/kernel/fork.c linux-5.6.2/kernel/fork.c
  	/*
  	 * Thread groups must share signals as well, and detached threads
  	 * can only be started up within the thread group.
-@@ -2933,6 +2942,12 @@
+@@ -2933,6 +2942,12 @@ int ksys_unshare(unsigned long unshare_flags)
  	if (unshare_flags & CLONE_NEWNS)
  		unshare_flags |= CLONE_FS;
  
@@ -2431,10 +2944,11 @@ diff -ruN linux-5.6.2-orig/kernel/fork.c linux-5.6.2/kernel/fork.c
  	err = check_unshare_flags(unshare_flags);
  	if (err)
  		goto bad_unshare_out;
-diff -ruN linux-5.6.2-orig/kernel/rcu/tiny.c linux-5.6.2/kernel/rcu/tiny.c
---- linux-5.6.2-orig/kernel/rcu/tiny.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/rcu/tiny.c	2020-04-06 02:58:09.209024546 +0900
-@@ -100,7 +100,7 @@
+diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+index dd572ce7c..95af139ac 100644
+--- a/kernel/rcu/tiny.c
++++ b/kernel/rcu/tiny.c
+@@ -100,7 +100,7 @@ static inline bool rcu_reclaim_tiny(struct rcu_head *head)
  }
  
  /* Invoke the RCU callbacks whose grace period has elapsed.  */
@@ -2443,10 +2957,11 @@ diff -ruN linux-5.6.2-orig/kernel/rcu/tiny.c linux-5.6.2/kernel/rcu/tiny.c
  {
  	struct rcu_head *next, *list;
  	unsigned long flags;
-diff -ruN linux-5.6.2-orig/kernel/rcu/tree.c linux-5.6.2/kernel/rcu/tree.c
---- linux-5.6.2-orig/kernel/rcu/tree.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/rcu/tree.c	2020-04-06 02:58:09.209024546 +0900
-@@ -2414,7 +2414,7 @@
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index c0a9865b1..ee8a17735 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -2414,7 +2414,7 @@ static __latent_entropy void rcu_core(void)
  	trace_rcu_utilization(TPS("End RCU core"));
  }
  
@@ -2455,10 +2970,11 @@ diff -ruN linux-5.6.2-orig/kernel/rcu/tree.c linux-5.6.2/kernel/rcu/tree.c
  {
  	rcu_core();
  }
-diff -ruN linux-5.6.2-orig/kernel/sched/fair.c linux-5.6.2/kernel/sched/fair.c
---- linux-5.6.2-orig/kernel/sched/fair.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/sched/fair.c	2020-04-06 02:58:09.211024546 +0900
-@@ -10252,7 +10252,7 @@
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c76a20648..a54a864cc 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -10271,7 +10271,7 @@ int newidle_balance(struct rq *this_rq, struct rq_flags *rf)
   * run_rebalance_domains is triggered when needed from the scheduler tick.
   * Also triggered for nohz idle balancing (with nohz_balancing_kick set).
   */
@@ -2467,10 +2983,11 @@ diff -ruN linux-5.6.2-orig/kernel/sched/fair.c linux-5.6.2/kernel/sched/fair.c
  {
  	struct rq *this_rq = this_rq();
  	enum cpu_idle_type idle = this_rq->idle_balance ?
-diff -ruN linux-5.6.2-orig/kernel/softirq.c linux-5.6.2/kernel/softirq.c
---- linux-5.6.2-orig/kernel/softirq.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/softirq.c	2020-04-06 02:58:09.211024546 +0900
-@@ -52,7 +52,7 @@
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 0427a8674..5e6a9b4cc 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -52,7 +52,7 @@ DEFINE_PER_CPU_ALIGNED(irq_cpustat_t, irq_stat);
  EXPORT_PER_CPU_SYMBOL(irq_stat);
  #endif
  
@@ -2479,7 +2996,7 @@ diff -ruN linux-5.6.2-orig/kernel/softirq.c linux-5.6.2/kernel/softirq.c
  
  DEFINE_PER_CPU(struct task_struct *, ksoftirqd);
  
-@@ -289,7 +289,7 @@
+@@ -289,7 +289,7 @@ asmlinkage __visible void __softirq_entry __do_softirq(void)
  		kstat_incr_softirqs_this_cpu(vec_nr);
  
  		trace_softirq_entry(vec_nr);
@@ -2488,7 +3005,7 @@ diff -ruN linux-5.6.2-orig/kernel/softirq.c linux-5.6.2/kernel/softirq.c
  		trace_softirq_exit(vec_nr);
  		if (unlikely(prev_count != preempt_count())) {
  			pr_err("huh, entered softirq %u %s %p with preempt_count %08x, exited with %08x?\n",
-@@ -452,7 +452,7 @@
+@@ -452,7 +452,7 @@ void __raise_softirq_irqoff(unsigned int nr)
  	or_softirq_pending(1UL << nr);
  }
  
@@ -2497,7 +3014,7 @@ diff -ruN linux-5.6.2-orig/kernel/softirq.c linux-5.6.2/kernel/softirq.c
  {
  	softirq_vec[nr].action = action;
  }
-@@ -498,8 +498,7 @@
+@@ -498,8 +498,7 @@ void __tasklet_hi_schedule(struct tasklet_struct *t)
  }
  EXPORT_SYMBOL(__tasklet_hi_schedule);
  
@@ -2507,7 +3024,7 @@ diff -ruN linux-5.6.2-orig/kernel/softirq.c linux-5.6.2/kernel/softirq.c
  				  unsigned int softirq_nr)
  {
  	struct tasklet_struct *list;
-@@ -536,14 +535,14 @@
+@@ -536,14 +535,14 @@ static void tasklet_action_common(struct softirq_action *a,
  	}
  }
  
@@ -2526,9 +3043,10 @@ diff -ruN linux-5.6.2-orig/kernel/softirq.c linux-5.6.2/kernel/softirq.c
  }
  
  void tasklet_init(struct tasklet_struct *t,
-diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
---- linux-5.6.2-orig/kernel/sysctl.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/sysctl.c	2020-04-06 02:58:22.446024809 +0900
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index ad5b88a53..bc7eae0eb 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
 @@ -68,6 +68,7 @@
  #include <linux/bpf.h>
  #include <linux/mount.h>
@@ -2557,7 +3075,7 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  extern int pid_max;
  extern int pid_max_min, pid_max_max;
  extern int percpu_pagelist_fraction;
-@@ -121,32 +129,32 @@
+@@ -121,32 +129,32 @@ extern int sysctl_nr_trim_pages;
  
  /* Constants used for minimum and  maximum */
  #ifdef CONFIG_LOCKUP_DETECTOR
@@ -2605,7 +3123,7 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  static const int cap_last_cap = CAP_LAST_CAP;
  
  /*
-@@ -154,9 +162,12 @@
+@@ -154,9 +162,12 @@ static const int cap_last_cap = CAP_LAST_CAP;
   * and hung_task_check_interval_secs
   */
  #ifdef CONFIG_DETECT_HUNG_TASK
@@ -2619,7 +3137,7 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  #ifdef CONFIG_INOTIFY_USER
  #include <linux/inotify.h>
  #endif
-@@ -301,19 +312,19 @@
+@@ -301,19 +312,19 @@ static struct ctl_table sysctl_base_table[] = {
  };
  
  #ifdef CONFIG_SCHED_DEBUG
@@ -2647,7 +3165,7 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  #endif
  
  static struct ctl_table kern_table[] = {
-@@ -546,6 +557,15 @@
+@@ -546,6 +557,15 @@ static struct ctl_table kern_table[] = {
  		.proc_handler	= proc_dointvec,
  	},
  #endif
@@ -2663,7 +3181,7 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  #ifdef CONFIG_PROC_SYSCTL
  	{
  		.procname	= "tainted",
-@@ -717,15 +737,6 @@
+@@ -717,15 +737,6 @@ static struct ctl_table kern_table[] = {
  		.extra2		= SYSCTL_ONE,
  	},
  #endif
@@ -2679,10 +3197,11 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  #ifdef CONFIG_CHR_DEV_SG
  	{
  		.procname	= "sg-big-buff",
-@@ -893,6 +904,37 @@
+@@ -892,6 +903,37 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= SYSCTL_ZERO,
  		.extra2		= &two,
  	},
- #endif
++#endif
 +#if defined CONFIG_TTY
 +	{
 +		.procname	= "tiocsti_restrict",
@@ -2713,11 +3232,10 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
 +		.extra1		= SYSCTL_ZERO,
 +		.extra2		= SYSCTL_ONE,
 +	},
-+#endif
+ #endif
  	{
  		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
-@@ -1638,22 +1680,6 @@
+@@ -1638,22 +1680,6 @@ static struct ctl_table vm_table[] = {
  		.proc_handler	= numa_zonelist_order_handler,
  	},
  #endif
@@ -2740,10 +3258,11 @@ diff -ruN linux-5.6.2-orig/kernel/sysctl.c linux-5.6.2/kernel/sysctl.c
  #ifdef CONFIG_HIGHMEM
  	{
  		.procname	= "highmem_is_dirtyable",
-diff -ruN linux-5.6.2-orig/kernel/time/hrtimer.c linux-5.6.2/kernel/time/hrtimer.c
---- linux-5.6.2-orig/kernel/time/hrtimer.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/time/hrtimer.c	2020-04-06 02:58:09.212024546 +0900
-@@ -1583,7 +1583,7 @@
+diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
+index 3a609e734..ee935fc11 100644
+--- a/kernel/time/hrtimer.c
++++ b/kernel/time/hrtimer.c
+@@ -1583,7 +1583,7 @@ static void __hrtimer_run_queues(struct hrtimer_cpu_base *cpu_base, ktime_t now,
  	}
  }
  
@@ -2752,10 +3271,11 @@ diff -ruN linux-5.6.2-orig/kernel/time/hrtimer.c linux-5.6.2/kernel/time/hrtimer
  {
  	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
  	unsigned long flags;
-diff -ruN linux-5.6.2-orig/kernel/time/timer.c linux-5.6.2/kernel/time/timer.c
---- linux-5.6.2-orig/kernel/time/timer.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/time/timer.c	2020-04-06 02:58:09.212024546 +0900
-@@ -1779,7 +1779,7 @@
+diff --git a/kernel/time/timer.c b/kernel/time/timer.c
+index 482082351..1a61e5aa8 100644
+--- a/kernel/time/timer.c
++++ b/kernel/time/timer.c
+@@ -1779,7 +1779,7 @@ static inline void __run_timers(struct timer_base *base)
  /*
   * This function runs timers and the timer-tq in bottom half context.
   */
@@ -2764,9 +3284,10 @@ diff -ruN linux-5.6.2-orig/kernel/time/timer.c linux-5.6.2/kernel/time/timer.c
  {
  	struct timer_base *base = this_cpu_ptr(&timer_bases[BASE_STD]);
  
-diff -ruN linux-5.6.2-orig/kernel/user_namespace.c linux-5.6.2/kernel/user_namespace.c
---- linux-5.6.2-orig/kernel/user_namespace.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/kernel/user_namespace.c	2020-04-06 02:58:09.212024546 +0900
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 8eadadc47..c36ecd195 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
 @@ -21,6 +21,13 @@
  #include <linux/bsearch.h>
  #include <linux/sort.h>
@@ -2781,22 +3302,11 @@ diff -ruN linux-5.6.2-orig/kernel/user_namespace.c linux-5.6.2/kernel/user_names
  static struct kmem_cache *user_ns_cachep __read_mostly;
  static DEFINE_MUTEX(userns_state_mutex);
  
-diff -ruN linux-5.6.2-orig/lib/irq_poll.c linux-5.6.2/lib/irq_poll.c
---- linux-5.6.2-orig/lib/irq_poll.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/lib/irq_poll.c	2020-04-06 02:58:09.213024546 +0900
-@@ -75,7 +75,7 @@
- }
- EXPORT_SYMBOL(irq_poll_complete);
- 
--static void __latent_entropy irq_poll_softirq(struct softirq_action *h)
-+static void __latent_entropy irq_poll_softirq(void)
- {
- 	struct list_head *list = this_cpu_ptr(&blk_cpu_iopoll);
- 	int rearm = 0, budget = irq_poll_budget;
-diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
---- linux-5.6.2-orig/lib/Kconfig.debug	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/lib/Kconfig.debug	2020-04-06 02:58:09.213024546 +0900
-@@ -347,6 +347,9 @@
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 69def4a9d..12b8dff83 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -347,6 +347,9 @@ config SECTION_MISMATCH_WARN_ONLY
  
  	  If unsure, say Y.
  
@@ -2806,7 +3316,7 @@ diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
  #
  # Select this config option from the architecture Kconfig, if it
  # is preferred to always offer frame pointers as a config
-@@ -798,6 +801,7 @@
+@@ -798,6 +801,7 @@ menu "Debug Oops, Lockups and Hangs"
  
  config PANIC_ON_OOPS
  	bool "Panic on Oops"
@@ -2814,7 +3324,7 @@ diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
  	help
  	  Say Y here to enable the kernel to panic when it oopses. This
  	  has the same effect as setting oops=panic on the kernel command
-@@ -807,7 +811,7 @@
+@@ -807,7 +811,7 @@ config PANIC_ON_OOPS
  	  anything erroneous after an oops which could result in data
  	  corruption or other issues.
  
@@ -2823,7 +3333,7 @@ diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
  
  config PANIC_ON_OOPS_VALUE
  	int
-@@ -1317,6 +1321,7 @@
+@@ -1317,6 +1321,7 @@ menu "Debug kernel data structures"
  config DEBUG_LIST
  	bool "Debug linked list manipulation"
  	depends on DEBUG_KERNEL || BUG_ON_DATA_CORRUPTION
@@ -2831,7 +3341,7 @@ diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
  	help
  	  Enable this to turn on extended checks in the linked-list
  	  walking routines.
-@@ -1356,6 +1361,7 @@
+@@ -1356,6 +1361,7 @@ config DEBUG_NOTIFIERS
  config BUG_ON_DATA_CORRUPTION
  	bool "Trigger a BUG when data corruption is detected"
  	select DEBUG_LIST
@@ -2839,7 +3349,7 @@ diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
  	help
  	  Select this option if the kernel should BUG when it encounters
  	  data corruption in kernel memory structures when they get checked
-@@ -1511,6 +1517,7 @@
+@@ -1511,6 +1517,7 @@ config STRICT_DEVMEM
  config IO_STRICT_DEVMEM
  	bool "Filter I/O access to /dev/mem"
  	depends on STRICT_DEVMEM
@@ -2847,10 +3357,37 @@ diff -ruN linux-5.6.2-orig/lib/Kconfig.debug linux-5.6.2/lib/Kconfig.debug
  	help
  	  If this option is disabled, you allow userspace (root) access to all
  	  io-memory regardless of whether a driver is actively using that
-diff -ruN linux-5.6.2-orig/lib/kobject.c linux-5.6.2/lib/kobject.c
---- linux-5.6.2-orig/lib/kobject.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/lib/kobject.c	2020-04-06 02:58:09.213024546 +0900
-@@ -1009,9 +1009,9 @@
+diff --git a/lib/Makefile b/lib/Makefile
+index 611872c06..1e3d86def 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -26,7 +26,7 @@ CFLAGS_string.o := $(call cc-option, -fno-stack-protector)
+ endif
+ 
+ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+-	 rbtree.o radix-tree.o timerqueue.o xarray.o \
++	 rbtree.o radix-tree.o sradix-tree.o timerqueue.o xarray.o \
+ 	 idr.o extable.o sha1.o irq_regs.o argv_split.o \
+ 	 flex_proportions.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
+diff --git a/lib/irq_poll.c b/lib/irq_poll.c
+index 2f17b488d..b6e7996a0 100644
+--- a/lib/irq_poll.c
++++ b/lib/irq_poll.c
+@@ -75,7 +75,7 @@ void irq_poll_complete(struct irq_poll *iop)
+ }
+ EXPORT_SYMBOL(irq_poll_complete);
+ 
+-static void __latent_entropy irq_poll_softirq(struct softirq_action *h)
++static void __latent_entropy irq_poll_softirq(void)
+ {
+ 	struct list_head *list = this_cpu_ptr(&blk_cpu_iopoll);
+ 	int rearm = 0, budget = irq_poll_budget;
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 83198cb37..4a053b7ae 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -1009,9 +1009,9 @@ EXPORT_SYMBOL_GPL(kset_create_and_add);
  
  
  static DEFINE_SPINLOCK(kobj_ns_type_lock);
@@ -2862,22 +3399,11 @@ diff -ruN linux-5.6.2-orig/lib/kobject.c linux-5.6.2/lib/kobject.c
  {
  	enum kobj_ns_type type = ops->type;
  	int error;
-diff -ruN linux-5.6.2-orig/lib/Makefile linux-5.6.2/lib/Makefile
---- linux-5.6.2-orig/lib/Makefile	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/lib/Makefile	2020-04-06 02:58:33.802025034 +0900
-@@ -26,7 +26,7 @@
- endif
- 
- lib-y := ctype.o string.o vsprintf.o cmdline.o \
--	 rbtree.o radix-tree.o timerqueue.o xarray.o \
-+	 rbtree.o radix-tree.o sradix-tree.o timerqueue.o xarray.o \
- 	 idr.o extable.o sha1.o irq_regs.o argv_split.o \
- 	 flex_proportions.o ratelimit.o show_mem.o \
- 	 is_single_threaded.o plist.o decompress.o kobject_uevent.o \
-diff -ruN linux-5.6.2-orig/lib/nlattr.c linux-5.6.2/lib/nlattr.c
---- linux-5.6.2-orig/lib/nlattr.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/lib/nlattr.c	2020-04-06 02:58:09.213024546 +0900
-@@ -571,6 +571,8 @@
+diff --git a/lib/nlattr.c b/lib/nlattr.c
+index cace9b307..39ba13870 100644
+--- a/lib/nlattr.c
++++ b/lib/nlattr.c
+@@ -571,6 +571,8 @@ int nla_memcpy(void *dest, const struct nlattr *src, int count)
  {
  	int minlen = min_t(int, count, nla_len(src));
  
@@ -2886,9 +3412,11 @@ diff -ruN linux-5.6.2-orig/lib/nlattr.c linux-5.6.2/lib/nlattr.c
  	memcpy(dest, nla_data(src), minlen);
  	if (count > minlen)
  		memset(dest + minlen, 0, count - minlen);
-diff -ruN linux-5.6.2-orig/lib/sradix-tree.c linux-5.6.2/lib/sradix-tree.c
---- linux-5.6.2-orig/lib/sradix-tree.c	1970-01-01 09:00:00.000000000 +0900
-+++ linux-5.6.2/lib/sradix-tree.c	2020-04-06 02:58:33.803025034 +0900
+diff --git a/lib/sradix-tree.c b/lib/sradix-tree.c
+new file mode 100644
+index 000000000..ab21e6309
+--- /dev/null
++++ b/lib/sradix-tree.c
 @@ -0,0 +1,476 @@
 +#include <linux/errno.h>
 +#include <linux/mm.h>
@@ -3366,10 +3894,11 @@ diff -ruN linux-5.6.2-orig/lib/sradix-tree.c linux-5.6.2/lib/sradix-tree.c
 +
 +	return 0;
 +}
-diff -ruN linux-5.6.2-orig/lib/vsprintf.c linux-5.6.2/lib/vsprintf.c
---- linux-5.6.2-orig/lib/vsprintf.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/lib/vsprintf.c	2020-04-06 02:58:09.214024546 +0900
-@@ -810,7 +810,7 @@
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 7c488a1ce..27e16ab85 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -810,7 +810,7 @@ static char *ptr_to_id(char *buf, char *end, const void *ptr,
  	return pointer_string(buf, end, (const void *)hashval, spec);
  }
  
@@ -3378,10 +3907,11 @@ diff -ruN linux-5.6.2-orig/lib/vsprintf.c linux-5.6.2/lib/vsprintf.c
  
  static noinline_for_stack
  char *restricted_pointer(char *buf, char *end, const void *ptr,
-diff -ruN linux-5.6.2-orig/mm/Kconfig linux-5.6.2/mm/Kconfig
---- linux-5.6.2-orig/mm/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/Kconfig	2020-04-06 02:58:33.803025034 +0900
-@@ -300,11 +300,38 @@
+diff --git a/mm/Kconfig b/mm/Kconfig
+index ab80933be..55b176f8d 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -300,11 +300,38 @@ config KSM
  	  See Documentation/vm/ksm.rst for more information: KSM is inactive
  	  until a program has madvised that an area is MADV_MERGEABLE, and
  	  root has set /sys/kernel/mm/ksm/run to 1 (if CONFIG_SYSFS is set).
@@ -3421,10 +3951,25 @@ diff -ruN linux-5.6.2-orig/mm/Kconfig linux-5.6.2/mm/Kconfig
  	help
  	  This is the portion of low virtual memory which should be protected
  	  from userspace allocation.  Keeping a user from writing to low pages
-diff -ruN linux-5.6.2-orig/mm/ksm.c linux-5.6.2/mm/ksm.c
---- linux-5.6.2-orig/mm/ksm.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/ksm.c	2020-04-06 02:58:33.804025034 +0900
-@@ -857,17 +857,6 @@
+diff --git a/mm/Makefile b/mm/Makefile
+index 272e66039..20ec701ed 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -67,7 +67,8 @@ obj-$(CONFIG_SPARSEMEM)	+= sparse.o
+ obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
+ obj-$(CONFIG_SLOB) += slob.o
+ obj-$(CONFIG_MMU_NOTIFIER) += mmu_notifier.o
+-obj-$(CONFIG_KSM) += ksm.o
++obj-$(CONFIG_KSM_LEGACY) += ksm.o
++obj-$(CONFIG_UKSM) += uksm.o
+ obj-$(CONFIG_PAGE_POISONING) += page_poison.o
+ obj-$(CONFIG_SLAB) += slab.o
+ obj-$(CONFIG_SLUB) += slub.o
+diff --git a/mm/ksm.c b/mm/ksm.c
+index d17c7d57d..d9942db0a 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -857,17 +857,6 @@ static int unmerge_ksm_pages(struct vm_area_struct *vma,
  	return err;
  }
  
@@ -3442,23 +3987,11 @@ diff -ruN linux-5.6.2-orig/mm/ksm.c linux-5.6.2/mm/ksm.c
  #ifdef CONFIG_SYSFS
  /*
   * Only called through the sysfs control interface:
-diff -ruN linux-5.6.2-orig/mm/Makefile linux-5.6.2/mm/Makefile
---- linux-5.6.2-orig/mm/Makefile	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/Makefile	2020-04-06 02:58:33.803025034 +0900
-@@ -67,7 +67,8 @@
- obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
- obj-$(CONFIG_SLOB) += slob.o
- obj-$(CONFIG_MMU_NOTIFIER) += mmu_notifier.o
--obj-$(CONFIG_KSM) += ksm.o
-+obj-$(CONFIG_KSM_LEGACY) += ksm.o
-+obj-$(CONFIG_UKSM) += uksm.o
- obj-$(CONFIG_PAGE_POISONING) += page_poison.o
- obj-$(CONFIG_SLAB) += slab.o
- obj-$(CONFIG_SLUB) += slub.o
-diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
---- linux-5.6.2-orig/mm/memory.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/memory.c	2020-04-06 02:58:33.805025034 +0900
-@@ -144,6 +144,25 @@
+diff --git a/mm/memory.c b/mm/memory.c
+index e8bfdf0d9..3507bfef1 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -144,6 +144,25 @@ EXPORT_SYMBOL(zero_pfn);
  
  unsigned long highest_memmap_pfn __read_mostly;
  
@@ -3484,7 +4017,7 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  /*
   * CONFIG_MMU architectures set up ZERO_PAGE in their paging_init()
   */
-@@ -159,6 +178,7 @@
+@@ -159,6 +178,7 @@ void mm_trace_rss_stat(struct mm_struct *mm, int member, long count)
  	trace_rss_stat(mm, member, count);
  }
  
@@ -3492,7 +4025,7 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  #if defined(SPLIT_RSS_COUNTING)
  
  void sync_mm_rss(struct mm_struct *mm)
-@@ -790,8 +810,13 @@
+@@ -790,8 +810,13 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
  		get_page(page);
  		page_dup_rmap(page, false);
  		rss[mm_counter(page)]++;
@@ -3506,7 +4039,7 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  	}
  
  out_set_pte:
-@@ -1064,8 +1089,10 @@
+@@ -1064,8 +1089,10 @@ static unsigned long zap_pte_range(struct mmu_gather *tlb,
  			ptent = ptep_get_and_clear_full(mm, addr, pte,
  							tlb->fullmm);
  			tlb_remove_tlb_entry(tlb, pte, addr);
@@ -3518,7 +4051,7 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  
  			if (!PageAnon(page)) {
  				if (pte_dirty(ptent)) {
-@@ -2266,6 +2293,7 @@
+@@ -2266,6 +2293,7 @@ static inline bool cow_user_page(struct page *dst, struct page *src,
  
  	if (likely(src)) {
  		copy_user_highpage(dst, src, addr, vma);
@@ -3526,7 +4059,7 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  		return true;
  	}
  
-@@ -2512,6 +2540,7 @@
+@@ -2512,6 +2540,7 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
  							      vmf->address);
  		if (!new_page)
  			goto oom;
@@ -3534,7 +4067,7 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  	} else {
  		new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma,
  				vmf->address);
-@@ -2553,7 +2582,9 @@
+@@ -2553,7 +2582,9 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
  						mm_counter_file(old_page));
  				inc_mm_counter_fast(mm, MM_ANONPAGES);
  			}
@@ -3544,9 +4077,10 @@ diff -ruN linux-5.6.2-orig/mm/memory.c linux-5.6.2/mm/memory.c
  			inc_mm_counter_fast(mm, MM_ANONPAGES);
  		}
  		flush_cache_page(vma, vmf->address, pte_pfn(vmf->orig_pte));
-diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
---- linux-5.6.2-orig/mm/mmap.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/mmap.c	2020-04-06 02:59:35.258026253 +0900
+diff --git a/mm/mmap.c b/mm/mmap.c
+index d681a20eb..6267e6977 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
 @@ -46,6 +46,7 @@
  #include <linux/moduleparam.h>
  #include <linux/pkeys.h>
@@ -3555,7 +4089,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  #include <linux/sched/mm.h>
  
  #include <linux/uaccess.h>
-@@ -178,6 +179,7 @@
+@@ -178,6 +179,7 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
  	if (vma->vm_file)
  		fput(vma->vm_file);
  	mpol_put(vma_policy(vma));
@@ -3563,7 +4097,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	vm_area_free(vma);
  	return next;
  }
-@@ -228,6 +230,13 @@
+@@ -228,6 +230,13 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
  
  	newbrk = PAGE_ALIGN(brk);
  	oldbrk = PAGE_ALIGN(mm->brk);
@@ -3577,7 +4111,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	if (oldbrk == newbrk) {
  		mm->brk = brk;
  		goto success;
-@@ -705,9 +714,16 @@
+@@ -705,9 +714,16 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  	long adjust_next = 0;
  	int remove_next = 0;
  
@@ -3594,7 +4128,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  		if (end >= next->vm_end) {
  			/*
  			 * vma expands, overlapping all the next, and
-@@ -838,6 +854,7 @@
+@@ -838,6 +854,7 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  		end_changed = true;
  	}
  	vma->vm_pgoff = pgoff;
@@ -3602,7 +4136,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	if (adjust_next) {
  		next->vm_start += adjust_next << PAGE_SHIFT;
  		next->vm_pgoff += adjust_next;
-@@ -943,6 +960,7 @@
+@@ -943,6 +960,7 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  		if (remove_next == 2) {
  			remove_next = 1;
  			end = next->vm_end;
@@ -3610,7 +4144,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  			goto again;
  		}
  		else if (next)
-@@ -969,10 +987,14 @@
+@@ -969,10 +987,14 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  			 */
  			VM_WARN_ON(mm->highest_vm_end != vm_end_gap(vma));
  		}
@@ -3625,7 +4159,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	validate_mm(mm);
  
  	return 0;
-@@ -1431,6 +1453,20 @@
+@@ -1431,6 +1453,20 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
  	vm_flags |= calc_vm_prot_bits(prot, pkey) | calc_vm_flag_bits(flags) |
  			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
  
@@ -3646,7 +4180,19 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	if (flags & MAP_LOCKED)
  		if (!can_do_mlock())
  			return -EPERM;
-@@ -1799,6 +1835,7 @@
+@@ -1693,6 +1729,11 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
+ 	unsigned long charged = 0;
+ 
+ 	/* Check against address space limit. */
++
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP) || (vm_flags & (VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)))
++#endif
++
+ 	if (!may_expand_vm(mm, vm_flags, len >> PAGE_SHIFT)) {
+ 		unsigned long nr_pages;
+ 
+@@ -1799,6 +1840,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
  			allow_write_access(file);
  	}
  	file = vma->vm_file;
@@ -3654,7 +4200,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  out:
  	perf_event_mmap(vma);
  
-@@ -1841,6 +1878,7 @@
+@@ -1841,6 +1883,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
  	if (vm_flags & VM_DENYWRITE)
  		allow_write_access(file);
  free_vma:
@@ -3662,7 +4208,42 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	vm_area_free(vma);
  unacct_error:
  	if (charged)
-@@ -2670,6 +2708,8 @@
+@@ -2086,6 +2129,10 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	if (flags & MAP_FIXED)
+ 		return addr;
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+ 		vma = find_vma_prev(mm, addr, &prev);
+@@ -2126,6 +2173,10 @@ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
+ 	if (flags & MAP_FIXED)
+ 		return addr;
+ 
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
++#endif
++
+ 	/* requesting a specific address */
+ 	if (addr) {
+ 		addr = PAGE_ALIGN(addr);
+@@ -2153,6 +2204,12 @@ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
+ 		VM_BUG_ON(addr != -ENOMEM);
+ 		info.flags = 0;
+ 		info.low_limit = TASK_UNMAPPED_BASE;
++
++#ifdef CONFIG_PAX_RANDMMAP
++		if (mm->pax_flags & MF_PAX_RANDMMAP)
++			info.low_limit += mm->delta_mmap;
++#endif
++
+ 		info.high_limit = mmap_end;
+ 		addr = vm_unmapped_area(&info);
+ 	}
+@@ -2670,6 +2727,8 @@ int __split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
  	else
  		err = vma_adjust(vma, vma->vm_start, addr, vma->vm_pgoff, new);
  
@@ -3671,7 +4252,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	/* Success. */
  	if (!err)
  		return 0;
-@@ -2976,6 +3016,10 @@
+@@ -2976,6 +3035,10 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
  	if ((flags & (~VM_EXEC)) != 0)
  		return -EINVAL;
  	flags |= VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
@@ -3682,7 +4263,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  
  	mapped_addr = get_unmapped_area(NULL, addr, len, 0, MAP_FIXED);
  	if (IS_ERR_VALUE(mapped_addr))
-@@ -3026,6 +3070,7 @@
+@@ -3026,6 +3089,7 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
  	vma->vm_flags = flags;
  	vma->vm_page_prot = vm_get_page_prot(flags);
  	vma_link(mm, vma, prev, rb_link, rb_parent);
@@ -3690,7 +4271,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  out:
  	perf_event_mmap(vma);
  	mm->total_vm += len >> PAGE_SHIFT;
-@@ -3103,6 +3148,12 @@
+@@ -3103,6 +3167,12 @@ void exit_mmap(struct mm_struct *mm)
  		up_write(&mm->mmap_sem);
  	}
  
@@ -3703,7 +4284,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	if (mm->locked_vm) {
  		vma = mm->mmap;
  		while (vma) {
-@@ -3137,6 +3188,11 @@
+@@ -3137,6 +3207,11 @@ void exit_mmap(struct mm_struct *mm)
  		vma = remove_vma(vma);
  	}
  	vm_unacct_memory(nr_accounted);
@@ -3715,7 +4296,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  }
  
  /* Insert vm structure into process list sorted by address
-@@ -3244,6 +3300,7 @@
+@@ -3244,6 +3319,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
  			new_vma->vm_ops->open(new_vma);
  		vma_link(mm, new_vma, prev, rb_link, rb_parent);
  		*need_rmap_locks = false;
@@ -3723,7 +4304,18 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	}
  	return new_vma;
  
-@@ -3383,6 +3440,17 @@
+@@ -3286,6 +3362,10 @@ bool may_expand_vm(struct mm_struct *mm, vm_flags_t flags, unsigned long npages)
+ 
+ void vm_stat_account(struct mm_struct *mm, vm_flags_t flags, long npages)
+ {
++#ifdef CONFIG_PAX_RANDMMAP
++	if (!(mm->pax_flags & MF_PAX_RANDMMAP) || (flags & (VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)))
++#endif
++
+ 	mm->total_vm += npages;
+ 
+ 	if (is_exec_mapping(flags))
+@@ -3383,6 +3463,17 @@ static struct vm_area_struct *__install_special_mapping(
  	vma->vm_start = addr;
  	vma->vm_end = addr + len;
  
@@ -3741,7 +4333,7 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  	vma->vm_flags = vm_flags | mm->def_flags | VM_DONTEXPAND | VM_SOFTDIRTY;
  	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
  
-@@ -3396,6 +3464,7 @@
+@@ -3396,6 +3487,7 @@ static struct vm_area_struct *__install_special_mapping(
  	vm_stat_account(mm, vma->vm_flags, len >> PAGE_SHIFT);
  
  	perf_event_mmap(vma);
@@ -3749,9 +4341,10 @@ diff -ruN linux-5.6.2-orig/mm/mmap.c linux-5.6.2/mm/mmap.c
  
  	return vma;
  
-diff -ruN linux-5.6.2-orig/mm/mprotect.c linux-5.6.2/mm/mprotect.c
---- linux-5.6.2-orig/mm/mprotect.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/mprotect.c	2020-04-06 02:58:22.447024809 +0900
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 311c0dadf..6f5ff0b5b 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
 @@ -26,6 +26,10 @@
  #include <linux/perf_event.h>
  #include <linux/pkeys.h>
@@ -3763,7 +4356,7 @@ diff -ruN linux-5.6.2-orig/mm/mprotect.c linux-5.6.2/mm/mprotect.c
  #include <linux/uaccess.h>
  #include <linux/mm_inline.h>
  #include <asm/pgtable.h>
-@@ -455,6 +459,10 @@
+@@ -455,6 +459,10 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
  	 * held in write mode.
  	 */
  	vma->vm_flags = newflags;
@@ -3774,7 +4367,7 @@ diff -ruN linux-5.6.2-orig/mm/mprotect.c linux-5.6.2/mm/mprotect.c
  	dirty_accountable = vma_wants_writenotify(vma, vma->vm_page_prot);
  	vma_set_page_prot(vma);
  
-@@ -548,6 +556,11 @@
+@@ -548,6 +556,11 @@ static int do_mprotect_pkey(unsigned long start, size_t len,
  	if (start > vma->vm_start)
  		prev = vma;
  
@@ -3786,9 +4379,10 @@ diff -ruN linux-5.6.2-orig/mm/mprotect.c linux-5.6.2/mm/mprotect.c
  	for (nstart = start ; ; ) {
  		unsigned long mask_off_old_flags;
  		unsigned long newflags;
-diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
---- linux-5.6.2-orig/mm/page_alloc.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/page_alloc.c	2020-04-06 02:58:09.216024546 +0900
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3c4eb750a..03e7e786d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
 @@ -68,6 +68,7 @@
  #include <linux/lockdep.h>
  #include <linux/nmi.h>
@@ -3797,7 +4391,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  
  #include <asm/sections.h>
  #include <asm/tlbflush.h>
-@@ -106,6 +107,15 @@
+@@ -106,6 +107,15 @@ struct pcpu_drain {
  DEFINE_MUTEX(pcpu_drain_mutex);
  DEFINE_PER_CPU(struct pcpu_drain, pcpu_drain);
  
@@ -3813,7 +4407,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  #ifdef CONFIG_GCC_PLUGIN_LATENT_ENTROPY
  volatile unsigned long latent_entropy __latent_entropy;
  EXPORT_SYMBOL(latent_entropy);
-@@ -1427,6 +1437,25 @@
+@@ -1427,6 +1437,25 @@ static void __free_pages_ok(struct page *page, unsigned int order)
  	local_irq_restore(flags);
  }
  
@@ -3839,7 +4433,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  void __free_pages_core(struct page *page, unsigned int order)
  {
  	unsigned int nr_pages = 1 << order;
-@@ -1441,7 +1470,6 @@
+@@ -1441,7 +1470,6 @@ void __free_pages_core(struct page *page, unsigned int order)
  	}
  	__ClearPageReserved(p);
  	set_page_count(p, 0);
@@ -3847,7 +4441,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  	atomic_long_add(nr_pages, &page_zone(page)->managed_pages);
  	set_page_refcounted(page);
  	__free_pages(page, order);
-@@ -1492,6 +1520,7 @@
+@@ -1492,6 +1520,7 @@ void __init memblock_free_pages(struct page *page, unsigned long pfn,
  {
  	if (early_page_uninitialised(pfn))
  		return;
@@ -3855,7 +4449,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  	__free_pages_core(page, order);
  }
  
-@@ -1582,6 +1611,7 @@
+@@ -1582,6 +1611,7 @@ static void __init deferred_free_range(unsigned long pfn,
  	if (nr_pages == pageblock_nr_pages &&
  	    (pfn & (pageblock_nr_pages - 1)) == 0) {
  		set_pageblock_migratetype(page, MIGRATE_MOVABLE);
@@ -3863,7 +4457,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  		__free_pages_core(page, pageblock_order);
  		return;
  	}
-@@ -1589,6 +1619,7 @@
+@@ -1589,6 +1619,7 @@ static void __init deferred_free_range(unsigned long pfn,
  	for (i = 0; i < nr_pages; i++, page++, pfn++) {
  		if ((pfn & (pageblock_nr_pages - 1)) == 0)
  			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
@@ -3871,7 +4465,7 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  		__free_pages_core(page, 0);
  	}
  }
-@@ -2156,6 +2187,12 @@
+@@ -2156,6 +2187,12 @@ static void prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags
  {
  	post_alloc_hook(page, order, gfp_flags);
  
@@ -3884,35 +4478,11 @@ diff -ruN linux-5.6.2-orig/mm/page_alloc.c linux-5.6.2/mm/page_alloc.c
  	if (!free_pages_prezeroed() && want_init_on_alloc(gfp_flags))
  		kernel_init_free_pages(page, 1 << order);
  
-diff -ruN linux-5.6.2-orig/mm/slab_common.c linux-5.6.2/mm/slab_common.c
---- linux-5.6.2-orig/mm/slab_common.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/slab_common.c	2020-04-06 02:58:09.216024546 +0900
-@@ -28,10 +28,10 @@
- 
- #include "slab.h"
- 
--enum slab_state slab_state;
-+enum slab_state slab_state __ro_after_init;
- LIST_HEAD(slab_caches);
- DEFINE_MUTEX(slab_mutex);
--struct kmem_cache *kmem_cache;
-+struct kmem_cache *kmem_cache __ro_after_init;
- 
- #ifdef CONFIG_HARDENED_USERCOPY
- bool usercopy_fallback __ro_after_init =
-@@ -59,7 +59,7 @@
- /*
-  * Merge control. If this is set then no merging of slab caches will occur.
-  */
--static bool slab_nomerge = !IS_ENABLED(CONFIG_SLAB_MERGE_DEFAULT);
-+static bool slab_nomerge __ro_after_init = !IS_ENABLED(CONFIG_SLAB_MERGE_DEFAULT);
- 
- static int __init setup_slab_nomerge(char *str)
- {
-diff -ruN linux-5.6.2-orig/mm/slab.h linux-5.6.2/mm/slab.h
---- linux-5.6.2-orig/mm/slab.h	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/slab.h	2020-04-06 02:58:09.216024546 +0900
-@@ -470,9 +470,13 @@
+diff --git a/mm/slab.h b/mm/slab.h
+index 7e94700aa..975a75b72 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -470,9 +470,13 @@ static inline struct kmem_cache *virt_to_cache(const void *obj)
  	struct page *page;
  
  	page = virt_to_head_page(obj);
@@ -3926,7 +4496,7 @@ diff -ruN linux-5.6.2-orig/mm/slab.h linux-5.6.2/mm/slab.h
  	return page->slab_cache;
  }
  
-@@ -518,9 +522,14 @@
+@@ -518,9 +522,14 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
  		return s;
  
  	cachep = virt_to_cache(x);
@@ -3944,7 +4514,7 @@ diff -ruN linux-5.6.2-orig/mm/slab.h linux-5.6.2/mm/slab.h
  	return cachep;
  }
  
-@@ -545,7 +554,7 @@
+@@ -545,7 +554,7 @@ static inline size_t slab_ksize(const struct kmem_cache *s)
  	 * back there or track user information then we can
  	 * only use the space before that information.
  	 */
@@ -3953,7 +4523,7 @@ diff -ruN linux-5.6.2-orig/mm/slab.h linux-5.6.2/mm/slab.h
  		return s->inuse;
  	/*
  	 * Else we can use all the padding etc for the allocation
-@@ -674,8 +683,10 @@
+@@ -674,8 +683,10 @@ static inline void cache_random_seq_destroy(struct kmem_cache *cachep) { }
  static inline bool slab_want_init_on_alloc(gfp_t flags, struct kmem_cache *c)
  {
  	if (static_branch_unlikely(&init_on_alloc)) {
@@ -3964,7 +4534,7 @@ diff -ruN linux-5.6.2-orig/mm/slab.h linux-5.6.2/mm/slab.h
  		if (c->flags & (SLAB_TYPESAFE_BY_RCU | SLAB_POISON))
  			return flags & __GFP_ZERO;
  		return true;
-@@ -685,9 +696,15 @@
+@@ -685,9 +696,15 @@ static inline bool slab_want_init_on_alloc(gfp_t flags, struct kmem_cache *c)
  
  static inline bool slab_want_init_on_free(struct kmem_cache *c)
  {
@@ -3983,10 +4553,37 @@ diff -ruN linux-5.6.2-orig/mm/slab.h linux-5.6.2/mm/slab.h
  	return false;
  }
  
-diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
---- linux-5.6.2-orig/mm/slub.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/slub.c	2020-04-06 02:58:09.217024546 +0900
-@@ -123,6 +123,12 @@
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 1907cb290..d92bcd846 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -28,10 +28,10 @@
+ 
+ #include "slab.h"
+ 
+-enum slab_state slab_state;
++enum slab_state slab_state __ro_after_init;
+ LIST_HEAD(slab_caches);
+ DEFINE_MUTEX(slab_mutex);
+-struct kmem_cache *kmem_cache;
++struct kmem_cache *kmem_cache __ro_after_init;
+ 
+ #ifdef CONFIG_HARDENED_USERCOPY
+ bool usercopy_fallback __ro_after_init =
+@@ -59,7 +59,7 @@ static DECLARE_WORK(slab_caches_to_rcu_destroy_work,
+ /*
+  * Merge control. If this is set then no merging of slab caches will occur.
+  */
+-static bool slab_nomerge = !IS_ENABLED(CONFIG_SLAB_MERGE_DEFAULT);
++static bool slab_nomerge __ro_after_init = !IS_ENABLED(CONFIG_SLAB_MERGE_DEFAULT);
+ 
+ static int __init setup_slab_nomerge(char *str)
+ {
+diff --git a/mm/slub.c b/mm/slub.c
+index 3b17e7748..9d6346e22 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -123,6 +123,12 @@ static inline int kmem_cache_debug(struct kmem_cache *s)
  #endif
  }
  
@@ -3999,7 +4596,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  void *fixup_red_left(struct kmem_cache *s, void *p)
  {
  	if (kmem_cache_debug(s) && s->flags & SLAB_RED_ZONE)
-@@ -307,6 +313,35 @@
+@@ -307,6 +313,35 @@ static inline void set_freepointer(struct kmem_cache *s, void *object, void *fp)
  	*(void **)freeptr_addr = freelist_ptr(s, fp, freeptr_addr);
  }
  
@@ -4035,7 +4632,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  /* Loop over all objects in a slab */
  #define for_each_object(__p, __s, __addr, __objects) \
  	for (__p = fixup_red_left(__s, __addr); \
-@@ -493,13 +528,13 @@
+@@ -493,13 +528,13 @@ static inline void *restore_red_left(struct kmem_cache *s, void *p)
   * Debug settings:
   */
  #if defined(CONFIG_SLUB_DEBUG_ON)
@@ -4053,7 +4650,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  
  /*
   * slub is about to manipulate internal object metadata.  This memory lies
-@@ -560,6 +595,9 @@
+@@ -560,6 +595,9 @@ static struct track *get_track(struct kmem_cache *s, void *object,
  	else
  		p = object + s->inuse;
  
@@ -4063,7 +4660,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  	return p + alloc;
  }
  
-@@ -690,6 +728,9 @@
+@@ -690,6 +728,9 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
  	else
  		off = s->inuse;
  
@@ -4073,7 +4670,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  	if (s->flags & SLAB_STORE_USER)
  		off += 2 * sizeof(struct track);
  
-@@ -821,6 +862,9 @@
+@@ -821,6 +862,9 @@ static int check_pad_bytes(struct kmem_cache *s, struct page *page, u8 *p)
  		/* Freepointer is placed after the object. */
  		off += sizeof(void *);
  
@@ -4083,7 +4680,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  	if (s->flags & SLAB_STORE_USER)
  		/* We also have user information there */
  		off += 2 * sizeof(struct track);
-@@ -1461,6 +1505,8 @@
+@@ -1461,6 +1505,8 @@ static inline bool slab_free_freelist_hook(struct kmem_cache *s,
  		object = next;
  		next = get_freepointer(s, object);
  
@@ -4092,7 +4689,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  		if (slab_want_init_on_free(s)) {
  			/*
  			 * Clear the object and the metadata, but don't touch
-@@ -1471,8 +1517,12 @@
+@@ -1471,8 +1517,12 @@ static inline bool slab_free_freelist_hook(struct kmem_cache *s,
  							   : 0;
  			memset((char *)object + s->inuse, 0,
  			       s->size - s->inuse - rsize);
@@ -4106,7 +4703,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  		/* If object's reuse doesn't have to be delayed */
  		if (!slab_free_hook(s, object)) {
  			/* Move object to the new freelist */
-@@ -1480,6 +1530,17 @@
+@@ -1480,6 +1530,17 @@ static inline bool slab_free_freelist_hook(struct kmem_cache *s,
  			*head = object;
  			if (!*tail)
  				*tail = object;
@@ -4124,7 +4721,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  		}
  	} while (object != old_tail);
  
-@@ -1493,8 +1554,9 @@
+@@ -1493,8 +1554,9 @@ static void *setup_object(struct kmem_cache *s, struct page *page,
  				void *object)
  {
  	setup_object_debug(s, page, object);
@@ -4135,7 +4732,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  		kasan_unpoison_object_data(s, object);
  		s->ctor(object);
  		kasan_poison_object_data(s, object);
-@@ -2780,8 +2842,28 @@
+@@ -2780,8 +2842,28 @@ static __always_inline void *slab_alloc_node(struct kmem_cache *s,
  
  	maybe_wipe_obj_freeptr(s, object);
  
@@ -4165,7 +4762,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  
  	slab_post_alloc_hook(s, gfpflags, 1, &object);
  
-@@ -3166,7 +3248,7 @@
+@@ -3166,7 +3248,7 @@ int kmem_cache_alloc_bulk(struct kmem_cache *s, gfp_t flags, size_t size,
  			  void **p)
  {
  	struct kmem_cache_cpu *c;
@@ -4174,7 +4771,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  
  	/* memcg and kmem_cache debug support */
  	s = slab_pre_alloc_hook(s, flags);
-@@ -3215,11 +3297,35 @@
+@@ -3215,11 +3297,35 @@ int kmem_cache_alloc_bulk(struct kmem_cache *s, gfp_t flags, size_t size,
  	local_irq_enable();
  
  	/* Clear memory outside IRQ disabled fastpath loop */
@@ -4212,7 +4809,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  	}
  
  	/* memcg and kmem_cache debug support */
-@@ -3253,9 +3359,9 @@
+@@ -3253,9 +3359,9 @@ EXPORT_SYMBOL(kmem_cache_alloc_bulk);
   * and increases the number of allocations possible without having to
   * take the list_lock.
   */
@@ -4225,7 +4822,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  
  /*
   * Calculate the order of allocation given an slab object size.
-@@ -3423,6 +3529,7 @@
+@@ -3423,6 +3529,7 @@ static void early_kmem_cache_node_alloc(int node)
  	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
  	init_tracking(kmem_cache_node, n);
  #endif
@@ -4233,7 +4830,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  	n = kasan_kmalloc(kmem_cache_node, n, sizeof(struct kmem_cache_node),
  		      GFP_KERNEL);
  	page->freelist = get_freepointer(kmem_cache_node, n);
-@@ -3583,6 +3690,9 @@
+@@ -3583,6 +3690,9 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
  		size += sizeof(void *);
  	}
  
@@ -4243,7 +4840,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  #ifdef CONFIG_SLUB_DEBUG
  	if (flags & SLAB_STORE_USER)
  		/*
-@@ -3655,6 +3765,10 @@
+@@ -3655,6 +3765,10 @@ static int kmem_cache_open(struct kmem_cache *s, slab_flags_t flags)
  #ifdef CONFIG_SLAB_FREELIST_HARDENED
  	s->random = get_random_long();
  #endif
@@ -4254,7 +4851,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  
  	if (!calculate_sizes(s, -1))
  		goto error;
-@@ -3930,6 +4044,8 @@
+@@ -3930,6 +4044,8 @@ void __check_heap_object(const void *ptr, unsigned long n, struct page *page,
  		offset -= s->red_left_pad;
  	}
  
@@ -4263,7 +4860,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  	/* Allow address range falling entirely within usercopy region. */
  	if (offset >= s->useroffset &&
  	    offset - s->useroffset <= s->usersize &&
-@@ -3963,7 +4079,11 @@
+@@ -3963,7 +4079,11 @@ size_t __ksize(const void *object)
  	page = virt_to_head_page(object);
  
  	if (unlikely(!PageSlab(page))) {
@@ -4275,7 +4872,7 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  		return page_size(page);
  	}
  
-@@ -4790,7 +4910,7 @@
+@@ -4790,7 +4910,7 @@ enum slab_stat_type {
  #define SO_TOTAL	(1 << SL_TOTAL)
  
  #ifdef CONFIG_MEMCG
@@ -4284,10 +4881,11 @@ diff -ruN linux-5.6.2-orig/mm/slub.c linux-5.6.2/mm/slub.c
  
  static int __init setup_slub_memcg_sysfs(char *str)
  {
-diff -ruN linux-5.6.2-orig/mm/swap.c linux-5.6.2/mm/swap.c
---- linux-5.6.2-orig/mm/swap.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/swap.c	2020-04-06 02:58:09.217024546 +0900
-@@ -94,6 +94,13 @@
+diff --git a/mm/swap.c b/mm/swap.c
+index cf39d24ad..c7cb787e1 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -94,6 +94,13 @@ static void __put_compound_page(struct page *page)
  	if (!PageHuge(page))
  		__page_cache_release(page);
  	dtor = get_compound_page_dtor(page);
@@ -4301,9 +4899,11 @@ diff -ruN linux-5.6.2-orig/mm/swap.c linux-5.6.2/mm/swap.c
  	(*dtor)(page);
  }
  
-diff -ruN linux-5.6.2-orig/mm/uksm.c linux-5.6.2/mm/uksm.c
---- linux-5.6.2-orig/mm/uksm.c	1970-01-01 09:00:00.000000000 +0900
-+++ linux-5.6.2/mm/uksm.c	2020-04-06 02:58:33.807025034 +0900
+diff --git a/mm/uksm.c b/mm/uksm.c
+new file mode 100644
+index 000000000..ef068d5dc
+--- /dev/null
++++ b/mm/uksm.c
 @@ -0,0 +1,5613 @@
 +/*
 + * Ultra KSM. Copyright (C) 2011-2012 Nai Xia
@@ -9918,10 +10518,23 @@ diff -ruN linux-5.6.2-orig/mm/uksm.c linux-5.6.2/mm/uksm.c
 +late_initcall(uksm_init);
 +#endif
 +
-diff -ruN linux-5.6.2-orig/mm/util.c linux-5.6.2/mm/util.c
---- linux-5.6.2-orig/mm/util.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/util.c	2020-04-06 02:58:09.217024546 +0900
-@@ -335,9 +335,9 @@
+diff --git a/mm/util.c b/mm/util.c
+index 988d11e6c..d70130aa6 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -318,6 +318,11 @@ unsigned long randomize_stack_top(unsigned long stack_top)
+ {
+ 	unsigned long random_variable = 0;
+ 
++#ifdef CONFIG_PAX_RANDUSTACK
++	if (current->mm->pax_flags & MF_PAX_RANDMMAP)
++		return stack_top - current->mm->delta_stack;
++#endif
++
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		random_variable = get_random_long();
+ 		random_variable &= STACK_RND_MASK;
+@@ -335,9 +340,9 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
  {
  	/* Is the current task 32bit ? */
  	if (!IS_ENABLED(CONFIG_64BIT) || is_compat_task())
@@ -9933,10 +10546,24 @@ diff -ruN linux-5.6.2-orig/mm/util.c linux-5.6.2/mm/util.c
  }
  
  unsigned long arch_mmap_rnd(void)
-diff -ruN linux-5.6.2-orig/mm/vmstat.c linux-5.6.2/mm/vmstat.c
---- linux-5.6.2-orig/mm/vmstat.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/mm/vmstat.c	2020-04-06 02:58:33.808025034 +0900
-@@ -1169,6 +1169,9 @@
+@@ -412,6 +417,12 @@ void arch_pick_mmap_layout(struct mm_struct *mm, struct rlimit *rlim_stack)
+ void arch_pick_mmap_layout(struct mm_struct *mm, struct rlimit *rlim_stack)
+ {
+ 	mm->mmap_base = TASK_UNMAPPED_BASE;
++
++#ifdef CONFIG_PAX_RANDMMAP
++	if (mm->pax_flags & MF_PAX_RANDMMAP)
++		mm->mmap_base += mm->delta_mmap;
++#endif
++
+ 	mm->get_unmapped_area = arch_get_unmapped_area;
+ }
+ #endif
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 78d53378d..fbb16b46b 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -1169,6 +1169,9 @@ const char * const vmstat_text[] = {
  	"nr_written",
  	"nr_kernel_misc_reclaimable",
  
@@ -9946,10 +10573,11 @@ diff -ruN linux-5.6.2-orig/mm/vmstat.c linux-5.6.2/mm/vmstat.c
  	/* enum writeback_stat_item counters */
  	"nr_dirty_threshold",
  	"nr_dirty_background_threshold",
-diff -ruN linux-5.6.2-orig/net/core/dev.c linux-5.6.2/net/core/dev.c
---- linux-5.6.2-orig/net/core/dev.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/net/core/dev.c	2020-04-06 02:58:09.219024546 +0900
-@@ -4752,7 +4752,7 @@
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 500bba887..d0d82e36c 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4752,7 +4752,7 @@ int netif_rx_ni(struct sk_buff *skb)
  }
  EXPORT_SYMBOL(netif_rx_ni);
  
@@ -9958,7 +10586,7 @@ diff -ruN linux-5.6.2-orig/net/core/dev.c linux-5.6.2/net/core/dev.c
  {
  	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
  
-@@ -6613,7 +6613,7 @@
+@@ -6613,7 +6613,7 @@ static int napi_poll(struct napi_struct *n, struct list_head *repoll)
  	return work;
  }
  
@@ -9967,10 +10595,11 @@ diff -ruN linux-5.6.2-orig/net/core/dev.c linux-5.6.2/net/core/dev.c
  {
  	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
  	unsigned long time_limit = jiffies +
-diff -ruN linux-5.6.2-orig/net/ipv4/Kconfig linux-5.6.2/net/ipv4/Kconfig
---- linux-5.6.2-orig/net/ipv4/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/net/ipv4/Kconfig	2020-04-06 02:58:09.219024546 +0900
-@@ -267,6 +267,7 @@
+diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
+index 6490b845e..bfd8b0874 100644
+--- a/net/ipv4/Kconfig
++++ b/net/ipv4/Kconfig
+@@ -267,6 +267,7 @@ config IP_PIMSM_V2
  
  config SYN_COOKIES
  	bool "IP: TCP syncookie support"
@@ -9978,10 +10607,23 @@ diff -ruN linux-5.6.2-orig/net/ipv4/Kconfig linux-5.6.2/net/ipv4/Kconfig
  	---help---
  	  Normal TCP/IP networking is open to an attack known as "SYN
  	  flooding". This denial-of-service attack prevents legitimate remote
-diff -ruN linux-5.6.2-orig/scripts/gcc-plugins/Kconfig linux-5.6.2/scripts/gcc-plugins/Kconfig
---- linux-5.6.2-orig/scripts/gcc-plugins/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/scripts/gcc-plugins/Kconfig	2020-04-06 02:58:09.219024546 +0900
-@@ -61,6 +61,11 @@
+diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+index b4d3f2d12..fc2e8ae73 100644
+--- a/scripts/Makefile.modpost
++++ b/scripts/Makefile.modpost
+@@ -53,6 +53,7 @@ MODPOST = scripts/mod/modpost						\
+ 	$(if $(KBUILD_EXTMOD),$(addprefix -e ,$(KBUILD_EXTRA_SYMBOLS)))	\
+ 	$(if $(KBUILD_EXTMOD),-o $(modulesymfile))			\
+ 	$(if $(CONFIG_SECTION_MISMATCH_WARN_ONLY),,-E)			\
++	$(if $(CONFIG_DEBUG_WRITABLE_FUNCTION_POINTERS_VERBOSE),-f)	\
+ 	$(if $(KBUILD_MODPOST_WARN),-w)
+ 
+ ifdef MODPOST_VMLINUX
+diff --git a/scripts/gcc-plugins/Kconfig b/scripts/gcc-plugins/Kconfig
+index e3569543b..55cc439b3 100644
+--- a/scripts/gcc-plugins/Kconfig
++++ b/scripts/gcc-plugins/Kconfig
+@@ -61,6 +61,11 @@ config GCC_PLUGIN_LATENT_ENTROPY
  	  is some slowdown of the boot process (about 0.5%) and fork and
  	  irq processing.
  
@@ -9993,21 +10635,11 @@ diff -ruN linux-5.6.2-orig/scripts/gcc-plugins/Kconfig linux-5.6.2/scripts/gcc-p
  	  Note that entropy extracted this way is not cryptographically
  	  secure!
  
-diff -ruN linux-5.6.2-orig/scripts/Makefile.modpost linux-5.6.2/scripts/Makefile.modpost
---- linux-5.6.2-orig/scripts/Makefile.modpost	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/scripts/Makefile.modpost	2020-04-06 02:58:09.219024546 +0900
-@@ -53,6 +53,7 @@
- 	$(if $(KBUILD_EXTMOD),$(addprefix -e ,$(KBUILD_EXTRA_SYMBOLS)))	\
- 	$(if $(KBUILD_EXTMOD),-o $(modulesymfile))			\
- 	$(if $(CONFIG_SECTION_MISMATCH_WARN_ONLY),,-E)			\
-+	$(if $(CONFIG_DEBUG_WRITABLE_FUNCTION_POINTERS_VERBOSE),-f)	\
- 	$(if $(KBUILD_MODPOST_WARN),-w)
- 
- ifdef MODPOST_VMLINUX
-diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost.c
---- linux-5.6.2-orig/scripts/mod/modpost.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/scripts/mod/modpost.c	2020-04-06 02:58:09.220024546 +0900
-@@ -37,6 +37,8 @@
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 55a0a2ecc..d0909b315 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -37,6 +37,8 @@ static int warn_unresolved = 0;
  /* How a symbol is exported */
  static int sec_mismatch_count = 0;
  static int sec_mismatch_fatal = 0;
@@ -10016,7 +10648,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  /* ignore missing files */
  static int ignore_missing_files;
  
-@@ -1013,6 +1015,7 @@
+@@ -1013,6 +1015,7 @@ enum mismatch {
  	ANY_EXIT_TO_ANY_INIT,
  	EXPORT_TO_INIT_EXIT,
  	EXTABLE_TO_NON_TEXT,
@@ -10024,7 +10656,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  };
  
  /**
-@@ -1139,6 +1142,12 @@
+@@ -1139,6 +1142,12 @@ static const struct sectioncheck sectioncheck[] = {
  	.good_tosec = {ALL_TEXT_SECTIONS , NULL},
  	.mismatch = EXTABLE_TO_NON_TEXT,
  	.handler = extable_mismatch_handler,
@@ -10037,7 +10669,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  }
  };
  
-@@ -1326,10 +1335,10 @@
+@@ -1326,10 +1335,10 @@ static Elf_Sym *find_elf_symbol(struct elf_info *elf, Elf64_Sword addr,
  			continue;
  		if (!is_valid_name(elf, sym))
  			continue;
@@ -10050,7 +10682,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  		if (d < 0)
  			d = addr - sym->st_value;
  		if (d < distance) {
-@@ -1464,7 +1473,13 @@
+@@ -1464,7 +1473,13 @@ static void report_sec_mismatch(const char *modname,
  	char *prl_from;
  	char *prl_to;
  
@@ -10065,7 +10697,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  
  	get_pretty_name(from_is_func, &from, &from_p);
  	get_pretty_name(to_is_func, &to, &to_p);
-@@ -1586,6 +1601,12 @@
+@@ -1586,6 +1601,12 @@ static void report_sec_mismatch(const char *modname,
  		fatal("There's a special handler for this mismatch type, "
  		      "we should never get here.");
  		break;
@@ -10078,7 +10710,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  	}
  	fprintf(stderr, "\n");
  }
-@@ -2561,7 +2582,7 @@
+@@ -2561,7 +2582,7 @@ int main(int argc, char **argv)
  	struct ext_sym_list *extsym_iter;
  	struct ext_sym_list *extsym_start = NULL;
  
@@ -10087,7 +10719,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  		switch (opt) {
  		case 'i':
  			kernel_read = optarg;
-@@ -2575,6 +2596,9 @@
+@@ -2575,6 +2596,9 @@ int main(int argc, char **argv)
  			extsym_iter->file = optarg;
  			extsym_start = extsym_iter;
  			break;
@@ -10097,7 +10729,7 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  		case 'm':
  			modversions = 1;
  			break;
-@@ -2675,6 +2699,11 @@
+@@ -2675,6 +2699,11 @@ int main(int argc, char **argv)
  	}
  
  	free(buf.p);
@@ -10109,10 +10741,11 @@ diff -ruN linux-5.6.2-orig/scripts/mod/modpost.c linux-5.6.2/scripts/mod/modpost
  
  	return err;
  }
-diff -ruN linux-5.6.2-orig/security/Kconfig linux-5.6.2/security/Kconfig
---- linux-5.6.2-orig/security/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/security/Kconfig	2020-04-06 02:58:22.447024809 +0900
-@@ -5,11 +5,104 @@
+diff --git a/security/Kconfig b/security/Kconfig
+index 2a1a2d396..0db0be68e 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -5,11 +5,178 @@
  
  menu "Security options"
  
@@ -10125,6 +10758,11 @@ diff -ruN linux-5.6.2-orig/security/Kconfig linux-5.6.2/security/Kconfig
 +	  the risks posed by exploitable memory corruption bugs.
 +
 +if PAX
++config TASK_SIZE_MAX_SHIFT
++	int
++	depends on X86_64
++	default 47
++
 +config PAX_NOWRITEEXEC
 +	bool "Enforce non-executable pages"
 +	depends on X86
@@ -10140,7 +10778,6 @@ diff -ruN linux-5.6.2-orig/security/Kconfig linux-5.6.2/security/Kconfig
 +	  of functions is executable (which it is not).  Notable examples
 +	  are the XFree86 4.x server, the java runtime and wine.
 +
-+if PAX_NOWRITEEXEC
 +choice
 +	prompt "Executable stack"
 +
@@ -10193,807 +10830,6 @@ diff -ruN linux-5.6.2-orig/security/Kconfig linux-5.6.2/security/Kconfig
 +
 +endif
 +
-+config PAX_RANDKSTACK
-+	bool "Randomize kernel stack base"
-+	depends on X86_TSC && X86
-+	help
-+	  By saying Y here the kernel will randomize every task's kernel
-+	  stack on every system call.  This will not only force an attacker
-+	  to guess it but also prevent him from making use of possible
-+	  leaked information about it.
-+
-+	  Since the kernel stack is a rather scarce resource, randomization
-+	  may cause unexpected stack overflows, therefore you should very
-+	  carefully test your system.  Note that once enabled in the kernel
-+	  configuration, this feature cannot be disabled on a per file basis.
-+
-+endif
-+
- source "security/keys/Kconfig"
- 
- config SECURITY_DMESG_RESTRICT
- 	bool "Restrict unprivileged access to the kernel syslog"
--	default n
-+	default y
- 	help
- 	  This enforces restrictions on unprivileged users reading the kernel
- 	  syslog via dmesg(8).
-@@ -19,10 +112,34 @@
- 
- 	  If you are unsure how to answer this question, answer N.
- 
-+config SECURITY_PERF_EVENTS_RESTRICT
-+	bool "Restrict unprivileged use of performance events"
-+	depends on PERF_EVENTS
-+	default y
-+	help
-+	  If you say Y here, the kernel.perf_event_paranoid sysctl
-+	  will be set to 3 by default, and no unprivileged use of the
-+	  perf_event_open syscall will be permitted unless it is
-+	  changed.
-+
-+config SECURITY_TIOCSTI_RESTRICT
-+	bool "Restrict unprivileged use of tiocsti command injection"
-+	default y
-+	help
-+	  This enforces restrictions on unprivileged users injecting commands
-+	  into other processes which share a tty session using the TIOCSTI
-+	  ioctl. This option makes TIOCSTI use require CAP_SYS_ADMIN.
-+
-+	  If this option is not selected, no restrictions will be enforced
-+	  unless the tiocsti_restrict sysctl is explicitly set to (1).
-+
-+	  If you are unsure how to answer this question, answer N.
-+
- config SECURITY
- 	bool "Enable different security models"
- 	depends on SYSFS
- 	depends on MULTIUSER
-+	default y
- 	help
- 	  This allows you to choose different security modules to be
- 	  configured into your kernel.
-@@ -48,6 +165,7 @@
- config SECURITY_NETWORK
- 	bool "Socket and Networking Security Hooks"
- 	depends on SECURITY
-+	default y
- 	help
- 	  This enables the socket and networking security hooks.
- 	  If enabled, a security module can use these hooks to
-@@ -154,6 +272,7 @@
- 	bool "Harden memory copies between kernel and userspace"
- 	depends on HAVE_HARDENED_USERCOPY_ALLOCATOR
- 	imply STRICT_DEVMEM
-+	default y
- 	help
- 	  This option checks for obviously wrong memory regions when
- 	  copying memory to/from the kernel (via copy_to_user() and
-@@ -166,7 +285,6 @@
- config HARDENED_USERCOPY_FALLBACK
- 	bool "Allow usercopy whitelist violations to fallback to object size"
- 	depends on HARDENED_USERCOPY
--	default y
- 	help
- 	  This is a temporary option that allows missing usercopy whitelists
- 	  to be discovered via a WARN() to the kernel log, instead of
-@@ -191,10 +309,21 @@
- config FORTIFY_SOURCE
- 	bool "Harden common str/mem functions against buffer overflows"
- 	depends on ARCH_HAS_FORTIFY_SOURCE
-+	default y
- 	help
- 	  Detect overflows of buffers in common string and memory functions
- 	  where the compiler can determine and validate the buffer sizes.
- 
-+config FORTIFY_SOURCE_STRICT_STRING
-+	bool "Harden common functions against buffer overflows"
-+	depends on FORTIFY_SOURCE
-+	depends on EXPERT
-+	help
-+	  Perform stricter overflow checks catching overflows within objects
-+	  for common C string functions rather than only between objects.
-+
-+	  This is not yet intended for production use, only bug finding.
-+
- config STATIC_USERMODEHELPER
- 	bool "Force all usermode helper calls through a single binary"
- 	help
-diff -ruN linux-5.6.2-orig/security/Kconfig.hardening linux-5.6.2/security/Kconfig.hardening
---- linux-5.6.2-orig/security/Kconfig.hardening	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/security/Kconfig.hardening	2020-04-06 02:58:09.220024546 +0900
-@@ -169,6 +169,7 @@
- 
- config INIT_ON_ALLOC_DEFAULT_ON
- 	bool "Enable heap memory zeroing on allocation by default"
-+	default yes
- 	help
- 	  This has the effect of setting "init_on_alloc=1" on the kernel
- 	  command line. This can be disabled with "init_on_alloc=0".
-@@ -181,6 +182,7 @@
- 
- config INIT_ON_FREE_DEFAULT_ON
- 	bool "Enable heap memory zeroing on free by default"
-+	default yes
- 	help
- 	  This has the effect of setting "init_on_free=1" on the kernel
- 	  command line. This can be disabled with "init_on_free=0".
-@@ -196,6 +198,20 @@
- 	  touching "cold" memory areas. Most cases see 3-5% impact. Some
- 	  synthetic workloads have measured as high as 8%.
- 
-+config PAGE_SANITIZE_VERIFY
-+	bool "Verify sanitized pages"
-+	default y
-+	help
-+	  When init_on_free is enabled, verify that newly allocated pages
-+	  are zeroed to detect write-after-free bugs.
-+
-+config SLAB_SANITIZE_VERIFY
-+	default y
-+	bool "Verify sanitized SLAB allocations"
-+	help
-+	  When init_on_free is enabled, verify that newly allocated slab
-+	  objects are zeroed to detect write-after-free bugs.
-+
- endmenu
- 
- endmenu
-diff -ruN linux-5.6.2-orig/security/selinux/hooks.c linux-5.6.2/security/selinux/hooks.c
---- linux-5.6.2-orig/security/selinux/hooks.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/security/selinux/hooks.c	2020-04-06 02:58:09.221024546 +0900
-@@ -135,18 +135,7 @@
- __setup("selinux=", selinux_enabled_setup);
- #endif
- 
--static unsigned int selinux_checkreqprot_boot =
--	CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE;
--
--static int __init checkreqprot_setup(char *str)
--{
--	unsigned long checkreqprot;
--
--	if (!kstrtoul(str, 0, &checkreqprot))
--		selinux_checkreqprot_boot = checkreqprot ? 1 : 0;
--	return 1;
--}
--__setup("checkreqprot=", checkreqprot_setup);
-+static const unsigned int selinux_checkreqprot_boot;
- 
- /**
-  * selinux_secmark_enabled - Check to see if SECMARK is currently enabled
-diff -ruN linux-5.6.2-orig/security/selinux/Kconfig linux-5.6.2/security/selinux/Kconfig
---- linux-5.6.2-orig/security/selinux/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/security/selinux/Kconfig	2020-04-06 02:58:09.220024546 +0900
-@@ -3,7 +3,7 @@
- 	bool "NSA SELinux Support"
- 	depends on SECURITY_NETWORK && AUDIT && NET && INET
- 	select NETWORK_SECMARK
--	default n
-+	default y
- 	help
- 	  This selects NSA Security-Enhanced Linux (SELinux).
- 	  You will also need a policy configuration and a labeled filesystem.
-@@ -70,26 +70,6 @@
- 	  /sys/fs/selinux/avc/cache_stats, which may be monitored via
- 	  tools such as avcstat.
- 
--config SECURITY_SELINUX_CHECKREQPROT_VALUE
--	int "NSA SELinux checkreqprot default value"
--	depends on SECURITY_SELINUX
--	range 0 1
--	default 0
--	help
--	  This option sets the default value for the 'checkreqprot' flag
--	  that determines whether SELinux checks the protection requested
--	  by the application or the protection that will be applied by the
--	  kernel (including any implied execute for read-implies-exec) for
--	  mmap and mprotect calls.  If this option is set to 0 (zero),
--	  SELinux will default to checking the protection that will be applied
--	  by the kernel.  If this option is set to 1 (one), SELinux will
--	  default to checking the protection requested by the application.
--	  The checkreqprot flag may be changed from the default via the
--	  'checkreqprot=' boot parameter.  It may also be changed at runtime
--	  via /sys/fs/selinux/checkreqprot if authorized by policy.
--
--	  If you are unsure how to answer this question, answer 0.
--
- config SECURITY_SELINUX_SIDTAB_HASH_BITS
- 	int "NSA SELinux sidtab hashtable size"
- 	depends on SECURITY_SELINUX
-diff -ruN linux-5.6.2-orig/security/selinux/selinuxfs.c linux-5.6.2/security/selinux/selinuxfs.c
---- linux-5.6.2-orig/security/selinux/selinuxfs.c	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/security/selinux/selinuxfs.c	2020-04-06 02:58:09.221024546 +0900
-@@ -641,7 +641,6 @@
- static ssize_t sel_write_checkreqprot(struct file *file, const char __user *buf,
- 				      size_t count, loff_t *ppos)
- {
--	struct selinux_fs_info *fsi = file_inode(file)->i_sb->s_fs_info;
- 	char *page;
- 	ssize_t length;
- 	unsigned int new_value;
-@@ -665,10 +664,9 @@
- 		return PTR_ERR(page);
- 
- 	length = -EINVAL;
--	if (sscanf(page, "%u", &new_value) != 1)
-+	if (sscanf(page, "%u", &new_value) != 1 || new_value)
- 		goto out;
- 
--	fsi->state->checkreqprot = new_value ? 1 : 0;
- 	length = count;
- out:
- 	kfree(page);
-diff -ruN linux-5.6.2-orig/security/yama/Kconfig linux-5.6.2/security/yama/Kconfig
---- linux-5.6.2-orig/security/yama/Kconfig	2020-04-02 15:02:32.000000000 +0900
-+++ linux-5.6.2/security/yama/Kconfig	2020-04-06 02:58:09.221024546 +0900
-@@ -2,7 +2,7 @@
- config SECURITY_YAMA
- 	bool "Yama support"
- 	depends on SECURITY
--	default n
-+	default y
- 	help
- 	  This selects Yama, which extends DAC support with additional
- 	  system-wide security settings beyond regular Linux discretionary
-
-From 6fe40bc5cb31c0eb310bfef7fdb5f300da57de2e Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 17 Apr 2020 02:46:13 +0900
-Subject: [PATCH] add ASLR
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- arch/x86/entry/vdso/vma.c      |  9 +++-
- arch/x86/include/asm/elf.h     | 14 +++++++
- arch/x86/include/asm/pgtable.h |  2 +
- arch/x86/kernel/sys_x86_64.c   |  8 ++++
- arch/x86/mm/fault.c            |  4 +-
- arch/x86/mm/hugetlbpage.c      | 10 +++++
- arch/x86/mm/mmap.c             | 11 +++++
- fs/binfmt_elf.c                | 48 +++++++++++++++++++++
- fs/exec.c                      | 28 +++++++++++++
- fs/hugetlbfs/inode.c           | 10 +++++
- fs/proc/array.c                | 18 ++++++++
- include/linux/mm_types.h       |  4 ++
- include/linux/random.h         |  5 +++
- include/linux/sched.h          |  7 ++++
- mm/mmap.c                      | 23 ++++++++++
- mm/util.c                      | 11 +++++
- security/Kconfig               | 76 +++++++++++++++++++++++++++++++++-
- 17 files changed, 284 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/entry/vdso/vma.c b/arch/x86/entry/vdso/vma.c
-index c1b8496b56067..c22892bd293e4 100644
---- a/arch/x86/entry/vdso/vma.c
-+++ b/arch/x86/entry/vdso/vma.c
-@@ -360,7 +360,14 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
- 
- static int map_vdso_randomized(const struct vdso_image *image)
- {
--	unsigned long addr = vdso_addr(current->mm->start_stack, image->size-image->sym_vvar_start);
-+	unsigned long addr;
-+
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (current->mm->pax_flags & MF_PAX_RANDMMAP)
-+		addr = 0;
-+	else
-+#endif
-+	addr = vdso_addr(current->mm->start_stack, image->size-image->sym_vvar_start);
- 
- 	return map_vdso(image, addr);
- }
-diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
-index 69c0f892e310a..77b5bc7b0c17c 100644
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -260,6 +260,20 @@ extern int force_personality32;
- 
- #define ELF_HWCAP		(boot_cpu_data.x86_capability[CPUID_1_EDX])
- 
-+#ifdef CONFIG_PAX_ASLR
-+#ifdef CONFIG_X86_32
-+#define PAX_ELF_ET_DYN_BASE	0x10000000UL
-+
-+#define PAX_DELTA_MMAP_LEN	(current->mm->pax_flags & MF_PAX_SEGMEXEC ? 15 : 16)
-+#define PAX_DELTA_STACK_LEN	(current->mm->pax_flags & MF_PAX_SEGMEXEC ? 15 : 16)
-+#else
-+#define PAX_ELF_ET_DYN_BASE	0x400000UL
-+
-+#define PAX_DELTA_MMAP_LEN	((test_thread_flag(TIF_ADDR32)) ? 16 : TASK_SIZE_MAX_SHIFT - PAGE_SHIFT - 3)
-+#define PAX_DELTA_STACK_LEN	((test_thread_flag(TIF_ADDR32)) ? 16 : TASK_SIZE_MAX_SHIFT - PAGE_SHIFT - 3)
-+#endif
-+#endif
-+
- extern u32 elf_hwcap2;
- 
- /*
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 7e118660bbd98..3ffd241b3a0a0 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -1478,4 +1478,6 @@ static inline bool arch_faults_on_old_pte(void)
- #include <asm-generic/pgtable.h>
- #endif	/* __ASSEMBLY__ */
- 
-+#define TASK_SIZE_MAX_SHIFT CONFIG_TASK_SIZE_MAX_SHIFT
-+
- #endif /* _ASM_X86_PGTABLE_H */
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index ca3c11a17b5a1..2dc23e2e47178 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -144,6 +144,10 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	if (len > end)
- 		return -ENOMEM;
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma(mm, addr);
-@@ -187,6 +191,10 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	if (!in_32bit_syscall() && (flags & MAP_32BIT))
- 		goto bottomup;
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	/* requesting a specific address */
- 	if (addr) {
- 		addr &= PAGE_MASK;
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 3ca8ce2b30613..71a23db26ef13 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1561,9 +1561,9 @@ static bool pax_is_fetch_fault(struct pt_regs *regs, unsigned long error_code, u
- 	if (v8086_mode(regs))
- 		ip = ((regs->cs & 0xffff) << 4) + (ip & 0xffff);
- 
--	if ((__supported_pte_mask & _PAGE_NX) && (error_code & PF_INSTR))
-+	if ((__supported_pte_mask & _PAGE_NX) && (error_code & X86_PF_INSTR))
- 		return true;
--	if (!(error_code & (PF_PROT | PF_WRITE)) && ip == address)
-+	if (!(error_code & (X86_PF_PROT | X86_PF_WRITE)) && ip == address)
- 		return true;
- 	return false;
- }
-diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-index 5bfd5aef53787..cca590bf16a6d 100644
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -132,6 +132,12 @@ static unsigned long hugetlb_get_unmapped_area_topdown(struct file *file,
- 		VM_BUG_ON(addr != -ENOMEM);
- 		info.flags = 0;
- 		info.low_limit = TASK_UNMAPPED_BASE;
-+
-+#ifdef CONFIG_PAX_RANDMMAP
-+		if (current->mm->pax_flags & MF_PAX_RANDMMAP)
-+			info.low_limit += current->mm->delta_mmap;
-+#endif
-+
- 		info.high_limit = TASK_SIZE_LOW;
- 		addr = vm_unmapped_area(&info);
- 	}
-@@ -160,6 +166,10 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
- 		return addr;
- 	}
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	if (addr) {
- 		addr &= huge_page_mask(h);
- 		if (!mmap_address_hint_valid(addr, len))
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index cb91eccc4960c..aea4f6ab996c6 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -126,11 +126,22 @@ static void arch_pick_mmap_base(unsigned long *base, unsigned long *legacy_base,
- 
- void arch_pick_mmap_layout(struct mm_struct *mm, struct rlimit *rlim_stack)
- {
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	if (mmap_is_legacy())
- 		mm->get_unmapped_area = arch_get_unmapped_area;
- 	else
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (mm->pax_flags & MF_PAX_RANDMMAP) {
-+		mm->mmap_legacy_base += mm->delta_mmap;
-+		mm->mmap_base -= mm->delta_mmap + mm->delta_stack;
-+	}
-+#endif
-+
- 	arch_pick_mmap_base(&mm->mmap_base, &mm->mmap_legacy_base,
- 			arch_rnd(mmap64_rnd_bits), task_size_64bit(0),
- 			rlim_stack);
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 4f660924077ee..1a8b04f514a08 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -859,6 +859,10 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 	SET_PERSONALITY2(*elf_ex, &arch_state);
- #if defined(CONFIG_PAX)
- 	current->mm->pax_flags = 0UL;
-+#ifdef CONFIG_PAX_ASLR
-+	current->mm->delta_mmap = 0UL;
-+	current->mm->delta_stack = 0UL;
-+#endif
- #if defined(CONFIG_PAX_NOWRITEEXEC)
- 	if (executable_stack == EXSTACK_ENABLE_X)
- 	{
-@@ -868,6 +872,12 @@ static int load_elf_binary(struct linux_binprm *bprm)
- #endif
- 	}
- #endif
-+#ifdef CONFIG_PAX_ASLR
-+	if (current->mm->pax_flags & MF_PAX_RANDMMAP) {
-+		current->mm->delta_mmap = (pax_get_random_long() & ((1UL << PAX_DELTA_MMAP_LEN)-1)) << PAGE_SHIFT;
-+		current->mm->delta_stack = (pax_get_random_long() & ((1UL << PAX_DELTA_STACK_LEN)-1)) << PAGE_SHIFT;
-+	}
-+#endif
- #endif
- 	if (elf_read_implies_exec(*elf_ex, executable_stack))
- 		current->personality |= READ_IMPLIES_EXEC;
-@@ -990,6 +1000,15 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 			 */
- 			load_bias = ELF_PAGESTART(load_bias - vaddr);
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+			/* PaX: randomize base address at the default exe base if requested */
-+			if ((current->mm->pax_flags & MF_PAX_RANDMMAP) && interpreter) {
-+				load_bias = (pax_get_random_long() & ((1UL << PAX_DELTA_MMAP_LEN) - 1)) << PAGE_SHIFT;
-+				load_bias = ELF_PAGESTART(PAX_ELF_ET_DYN_BASE - vaddr + load_bias);
-+				elf_flags |= MAP_FIXED;
-+			}
-+#endif
-+
- 			total_size = total_mapping_size(elf_phdata,
- 							elf_ex->e_phnum);
- 			if (!total_size) {
-@@ -1071,6 +1090,33 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 		goto out_free_dentry;
- 	}
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (current->mm->pax_flags & MF_PAX_RANDMMAP) {
-+		unsigned long start, size, flags;
-+		vm_flags_t vm_flags;
-+
-+		start = ELF_PAGEALIGN(elf_brk);
-+		size = PAGE_SIZE + ((pax_get_random_long() & ((1UL << 22) - 1UL)) << 4);
-+		flags = MAP_FIXED | MAP_PRIVATE;
-+		vm_flags = VM_DONTEXPAND | VM_DONTDUMP;
-+
-+		down_write(&current->mm->mmap_sem);
-+		start = get_unmapped_area(NULL, start, PAGE_ALIGN(size), 0, flags);
-+		retval = -ENOMEM;
-+		if (!IS_ERR_VALUE(start) && !find_vma_intersection(current->mm, start, start + size + PAGE_SIZE)) {
-+//			if (current->personality & ADDR_NO_RANDOMIZE)
-+//				vm_flags |= VM_READ | VM_MAYREAD;
-+			start = mmap_region(NULL, start, PAGE_ALIGN(size), vm_flags, 0, NULL);
-+			retval = IS_ERR_VALUE(start) ? start : 0;
-+		}
-+		up_write(&current->mm->mmap_sem);
-+		if (retval == 0)
-+			retval = set_brk(start + size, start + size + PAGE_SIZE, 0);
-+		if (retval < 0)
-+			goto out_free_dentry;
-+	}
-+#endif
-+
- 	if (interpreter) {
- 		elf_entry = load_elf_interp(&loc->interp_elf_ex,
- 					    interpreter,
-@@ -1123,6 +1169,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 	mm->end_data = end_data;
- 	mm->start_stack = bprm->p;
- 
-+#ifndef CONFIG_PAX_RANDMMAP
- 	if ((current->flags & PF_RANDOMIZE) && (randomize_va_space > 1)) {
- 		/*
- 		 * For architectures with ELF randomization, when executing
-@@ -1141,6 +1188,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 		current->brk_randomized = 1;
- #endif
- 	}
-+#endif
- 
- 	if (current->personality & MMAP_PAGE_ZERO) {
- 		/* Why this, you ask???  Well SVr4 maps page 0 as read-only,
-diff --git a/fs/exec.c b/fs/exec.c
-index cea2dfcfd4fab..03a86e6382dcf 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -62,6 +62,7 @@
- #include <linux/oom.h>
- #include <linux/compat.h>
- #include <linux/vmalloc.h>
-+#include <linux/random.h>
- 
- #include <linux/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -274,6 +275,12 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
- 	mm->stack_vm = mm->total_vm = 1;
- 	up_write(&mm->mmap_sem);
- 	bprm->p = vma->vm_end - sizeof(void *);
-+
-+#ifdef CONFIG_PAX_RANDUSTACK
-+	if (randomize_va_space)
-+		bprm->p ^= prandom_u32() & ~PAGE_MASK;
-+#endif
-+
- 	return 0;
- err:
- 	up_write(&mm->mmap_sem);
-@@ -800,6 +807,27 @@ int setup_arg_pages(struct linux_binprm *bprm,
- #endif
- 	current->mm->start_stack = bprm->p;
- 	ret = expand_stack(vma, stack_base);
-+
-+#if !defined(CONFIG_STACK_GROWSUP) && defined(CONFIG_PAX_RANDMMAP)
-+	if (!ret && (mm->pax_flags & MF_PAX_RANDMMAP) && STACK_TOP <= 0xFFFFFFFFU && STACK_TOP > vma->vm_end) {
-+		unsigned long size;
-+		vm_flags_t vm_flags;
-+
-+		size = STACK_TOP - vma->vm_end;
-+		vm_flags = VM_NONE | VM_DONTEXPAND | VM_DONTDUMP;
-+
-+		ret = vma->vm_end != mmap_region(NULL, vma->vm_end, size, vm_flags, 0, NULL);
-+
-+#ifdef CONFIG_X86
-+		if (!ret) {
-+			size = PAGE_SIZE + mmap_min_addr + ((mm->delta_mmap ^ mm->delta_stack) & (0xFFUL << PAGE_SHIFT));
-+			ret = 0 != mmap_region(NULL, 0, PAGE_ALIGN(size), vm_flags, 0, NULL);
-+		}
-+#endif
-+
-+	}
-+#endif
-+
- 	if (ret)
- 		ret = -EFAULT;
- 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index aff8642f0c2ee..f2b4d19ee007d 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -210,6 +210,10 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
- 		return addr;
- 	}
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	if (addr) {
- 		addr = ALIGN(addr, huge_page_size(h));
- 		vma = find_vma(mm, addr);
-@@ -221,6 +225,12 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
- 	info.flags = 0;
- 	info.length = len;
- 	info.low_limit = TASK_UNMAPPED_BASE;
-+
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (mm->pax_flags & MF_PAX_RANDMMAP)
-+		info.low_limit += mm->delta_mmap;
-+#endif
-+
- 	info.high_limit = TASK_SIZE;
- 	info.align_mask = PAGE_MASK & ~huge_page_mask(h);
- 	info.align_offset = 0;
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 5efaf3708ec69..b43f9460fac20 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -401,6 +401,21 @@ static inline void task_thp_status(struct seq_file *m, struct mm_struct *mm)
- 	seq_printf(m, "THP_enabled:\t%d\n", thp_enabled);
- }
- 
-+#if defined(CONFIG_PAX_NOWRITEEXEC) || defined(CONFIG_PAX_ASLR)
-+static inline void task_pax(struct seq_file *m, struct task_struct *p)
-+{
-+	if (p->mm)
-+		seq_printf(m, "PaX:\t%c%c%c%c%c\n",
-+			   p->mm->pax_flags & MF_PAX_PAGEEXEC ? 'P' : 'p',
-+			   p->mm->pax_flags & MF_PAX_EMUTRAMP ? 'E' : 'e',
-+			   p->mm->pax_flags & MF_PAX_MPROTECT ? 'M' : 'm',
-+			   p->mm->pax_flags & MF_PAX_RANDMMAP ? 'R' : 'r',
-+			   p->mm->pax_flags & MF_PAX_SEGMEXEC ? 'S' : 's');
-+	else
-+		seq_printf(m, "PaX:\t-----\n");
-+}
-+#endif
-+
- int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
- 			struct pid *pid, struct task_struct *task)
- {
-@@ -424,6 +439,9 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
- 	task_cpus_allowed(m, task);
- 	cpuset_task_status_allowed(m, task);
- 	task_context_switch_counts(m, task);
-+#if defined(CONFIG_PAX_NOWRITEEXEC) || defined(CONFIG_PAX_ASLR)
-+	task_pax(m, task);
-+#endif
- 	return 0;
- }
- 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 3dad92df4411d..b4225a7a0e780 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -531,6 +531,10 @@ struct mm_struct {
- 		struct work_struct async_put_work;
- #if defined(CONFIG_PAX)
- 		unsigned long pax_flags;
-+#ifdef CONFIG_PAX_ASLR
-+		unsigned long delta_mmap;		/* randomized offset */
-+		unsigned long delta_stack;		/* randomized offset */
-+#endif
- #endif
- 	} __randomize_layout;
- 
-diff --git a/include/linux/random.h b/include/linux/random.h
-index d319f9a1e4290..945535eb21373 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -191,4 +191,9 @@ static inline u32 next_pseudo_random32(u32 seed)
- 	return seed * 1664525 + 1013904223;
- }
- 
-+static inline unsigned long pax_get_random_long(void)
-+{
-+	return prandom_u32() + (sizeof(long) > 4 ? (unsigned long)prandom_u32() << 32 : 0);
-+}
-+
- #endif /* _LINUX_RANDOM_H */
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 574ec930f9087..bfe68f1ea1ec7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1871,7 +1871,14 @@ extern long sched_getaffinity(pid_t pid, struct cpumask *mask);
- #define TASK_SIZE_OF(tsk)	TASK_SIZE
- #endif
- 
-+#define MF_PAX_PAGEEXEC		0x01000000	/* Paging based non-executable pages */
- #define MF_PAX_EMUTRAMP		0x02000000	/* Emulate trampolines */
-+#define MF_PAX_MPROTECT		0x04000000	/* Restrict mprotect() */
-+#define MF_PAX_RANDMMAP		0x08000000	/* Randomize mmap() base */
-+/*#define MF_PAX_RANDEXEC		0x10000000*/	/* Randomize ET_EXEC base */
-+#define MF_PAX_SEGMEXEC		0x20000000	/* Segmentation based non-executable pages */
-+
-+#define PAX_PARSE_FLAGS_FALLBACK	(~0UL)
- 
- #ifdef CONFIG_RSEQ
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 67d2bf53262c4..d1aed03735b40 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1704,6 +1704,11 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	unsigned long charged = 0;
- 
- 	/* Check against address space limit. */
-+
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP) || (vm_flags & (VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)))
-+#endif
-+
- 	if (!may_expand_vm(mm, vm_flags, len >> PAGE_SHIFT)) {
- 		unsigned long nr_pages;
- 
-@@ -2097,6 +2102,10 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	if (flags & MAP_FIXED)
- 		return addr;
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
- 		vma = find_vma_prev(mm, addr, &prev);
-@@ -2137,6 +2146,10 @@ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
- 	if (flags & MAP_FIXED)
- 		return addr;
- 
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP))
-+#endif
-+
- 	/* requesting a specific address */
- 	if (addr) {
- 		addr = PAGE_ALIGN(addr);
-@@ -2164,6 +2177,12 @@ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
- 		VM_BUG_ON(addr != -ENOMEM);
- 		info.flags = 0;
- 		info.low_limit = TASK_UNMAPPED_BASE;
-+
-+#ifdef CONFIG_PAX_RANDMMAP
-+		if (mm->pax_flags & MF_PAX_RANDMMAP)
-+			info.low_limit += mm->delta_mmap;
-+#endif
-+
- 		info.high_limit = mmap_end;
- 		addr = vm_unmapped_area(&info);
- 	}
-@@ -3300,6 +3319,10 @@ bool may_expand_vm(struct mm_struct *mm, vm_flags_t flags, unsigned long npages)
- 
- void vm_stat_account(struct mm_struct *mm, vm_flags_t flags, long npages)
- {
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (!(mm->pax_flags & MF_PAX_RANDMMAP) || (flags & (VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)))
-+#endif
-+
- 	mm->total_vm += npages;
- 
- 	if (is_exec_mapping(flags))
-diff --git a/mm/util.c b/mm/util.c
-index 988d11e6c17cb..a3e39c7f30e76 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -318,6 +318,11 @@ unsigned long randomize_stack_top(unsigned long stack_top)
- {
- 	unsigned long random_variable = 0;
- 
-+#ifdef CONFIG_PAX_RANDUSTACK
-+	if (current->mm->pax_flags & MF_PAX_RANDMMAP)
-+		return stack_top - current->mm->delta_stack;
-+#endif
-+
- 	if (current->flags & PF_RANDOMIZE) {
- 		random_variable = get_random_long();
- 		random_variable &= STACK_RND_MASK;
-@@ -412,6 +417,12 @@ void arch_pick_mmap_layout(struct mm_struct *mm, struct rlimit *rlim_stack)
- void arch_pick_mmap_layout(struct mm_struct *mm, struct rlimit *rlim_stack)
- {
- 	mm->mmap_base = TASK_UNMAPPED_BASE;
-+
-+#ifdef CONFIG_PAX_RANDMMAP
-+	if (mm->pax_flags & MF_PAX_RANDMMAP)
-+		mm->mmap_base += mm->delta_mmap;
-+#endif
-+
- 	mm->get_unmapped_area = arch_get_unmapped_area;
- }
- #endif
-diff --git a/security/Kconfig b/security/Kconfig
-index 02cc24ffe4a39..0249afc105966 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -14,6 +14,11 @@ menuconfig PAX
- 	  the risks posed by exploitable memory corruption bugs.
- 
- if PAX
-+config TASK_SIZE_MAX_SHIFT
-+	int
-+	depends on X86_64
-+	default 47
-+
- config PAX_NOWRITEEXEC
- 	bool "Enforce non-executable pages"
- 	depends on X86
-@@ -29,7 +34,6 @@ config PAX_NOWRITEEXEC
- 	  of functions is executable (which it is not).  Notable examples
- 	  are the XFree86 4.x server, the java runtime and wine.
- 
--if PAX_NOWRITEEXEC
- choice
- 	prompt "Executable stack"
- 
-@@ -82,6 +86,40 @@ config PAX_MPROTECT
- 
- endif
- 
 +if PAX
 +menuconfig PAX_MEMORY
 +	bool "Address Space Layout Randomization"
@@ -11028,13 +10864,20 @@ index 02cc24ffe4a39..0249afc105966 100644
 +	  NOTE: you can use the 'chpax' or 'paxctl' utilities to control
 +	  this feature on a per file basis.
 +
- config PAX_RANDKSTACK
- 	bool "Randomize kernel stack base"
- 	depends on X86_TSC && X86
-@@ -96,6 +134,42 @@ config PAX_RANDKSTACK
- 	  carefully test your system.  Note that once enabled in the kernel
- 	  configuration, this feature cannot be disabled on a per file basis.
- 
++config PAX_RANDKSTACK
++	bool "Randomize kernel stack base"
++	depends on X86_TSC && X86
++	help
++	  By saying Y here the kernel will randomize every task's kernel
++	  stack on every system call.  This will not only force an attacker
++	  to guess it but also prevent him from making use of possible
++	  leaked information about it.
++
++	  Since the kernel stack is a rather scarce resource, randomization
++	  may cause unexpected stack overflows, therefore you should very
++	  carefully test your system.  Note that once enabled in the kernel
++	  configuration, this feature cannot be disabled on a per file basis.
++
 +
 +config PAX_RANDUSTACK
 +	bool
@@ -11071,7 +10914,240 @@ index 02cc24ffe4a39..0249afc105966 100644
 +
 +endif
 +
- endif
- 
++endif
++
  source "security/keys/Kconfig"
+ 
+ config SECURITY_DMESG_RESTRICT
+ 	bool "Restrict unprivileged access to the kernel syslog"
+-	default n
++	default y
+ 	help
+ 	  This enforces restrictions on unprivileged users reading the kernel
+ 	  syslog via dmesg(8).
+@@ -19,10 +186,34 @@ config SECURITY_DMESG_RESTRICT
+ 
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config SECURITY_PERF_EVENTS_RESTRICT
++	bool "Restrict unprivileged use of performance events"
++	depends on PERF_EVENTS
++	default y
++	help
++	  If you say Y here, the kernel.perf_event_paranoid sysctl
++	  will be set to 3 by default, and no unprivileged use of the
++	  perf_event_open syscall will be permitted unless it is
++	  changed.
++
++config SECURITY_TIOCSTI_RESTRICT
++	bool "Restrict unprivileged use of tiocsti command injection"
++	default y
++	help
++	  This enforces restrictions on unprivileged users injecting commands
++	  into other processes which share a tty session using the TIOCSTI
++	  ioctl. This option makes TIOCSTI use require CAP_SYS_ADMIN.
++
++	  If this option is not selected, no restrictions will be enforced
++	  unless the tiocsti_restrict sysctl is explicitly set to (1).
++
++	  If you are unsure how to answer this question, answer N.
++
+ config SECURITY
+ 	bool "Enable different security models"
+ 	depends on SYSFS
+ 	depends on MULTIUSER
++	default y
+ 	help
+ 	  This allows you to choose different security modules to be
+ 	  configured into your kernel.
+@@ -48,6 +239,7 @@ config SECURITYFS
+ config SECURITY_NETWORK
+ 	bool "Socket and Networking Security Hooks"
+ 	depends on SECURITY
++	default y
+ 	help
+ 	  This enables the socket and networking security hooks.
+ 	  If enabled, a security module can use these hooks to
+@@ -154,6 +346,7 @@ config HARDENED_USERCOPY
+ 	bool "Harden memory copies between kernel and userspace"
+ 	depends on HAVE_HARDENED_USERCOPY_ALLOCATOR
+ 	imply STRICT_DEVMEM
++	default y
+ 	help
+ 	  This option checks for obviously wrong memory regions when
+ 	  copying memory to/from the kernel (via copy_to_user() and
+@@ -166,7 +359,6 @@ config HARDENED_USERCOPY
+ config HARDENED_USERCOPY_FALLBACK
+ 	bool "Allow usercopy whitelist violations to fallback to object size"
+ 	depends on HARDENED_USERCOPY
+-	default y
+ 	help
+ 	  This is a temporary option that allows missing usercopy whitelists
+ 	  to be discovered via a WARN() to the kernel log, instead of
+@@ -191,10 +383,21 @@ config HARDENED_USERCOPY_PAGESPAN
+ config FORTIFY_SOURCE
+ 	bool "Harden common str/mem functions against buffer overflows"
+ 	depends on ARCH_HAS_FORTIFY_SOURCE
++	default y
+ 	help
+ 	  Detect overflows of buffers in common string and memory functions
+ 	  where the compiler can determine and validate the buffer sizes.
+ 
++config FORTIFY_SOURCE_STRICT_STRING
++	bool "Harden common functions against buffer overflows"
++	depends on FORTIFY_SOURCE
++	depends on EXPERT
++	help
++	  Perform stricter overflow checks catching overflows within objects
++	  for common C string functions rather than only between objects.
++
++	  This is not yet intended for production use, only bug finding.
++
+ config STATIC_USERMODEHELPER
+ 	bool "Force all usermode helper calls through a single binary"
+ 	help
+diff --git a/security/Kconfig.hardening b/security/Kconfig.hardening
+index af4c979b3..473e40bb8 100644
+--- a/security/Kconfig.hardening
++++ b/security/Kconfig.hardening
+@@ -169,6 +169,7 @@ config STACKLEAK_RUNTIME_DISABLE
+ 
+ config INIT_ON_ALLOC_DEFAULT_ON
+ 	bool "Enable heap memory zeroing on allocation by default"
++	default yes
+ 	help
+ 	  This has the effect of setting "init_on_alloc=1" on the kernel
+ 	  command line. This can be disabled with "init_on_alloc=0".
+@@ -181,6 +182,7 @@ config INIT_ON_ALLOC_DEFAULT_ON
+ 
+ config INIT_ON_FREE_DEFAULT_ON
+ 	bool "Enable heap memory zeroing on free by default"
++	default yes
+ 	help
+ 	  This has the effect of setting "init_on_free=1" on the kernel
+ 	  command line. This can be disabled with "init_on_free=0".
+@@ -196,6 +198,20 @@ config INIT_ON_FREE_DEFAULT_ON
+ 	  touching "cold" memory areas. Most cases see 3-5% impact. Some
+ 	  synthetic workloads have measured as high as 8%.
+ 
++config PAGE_SANITIZE_VERIFY
++	bool "Verify sanitized pages"
++	default y
++	help
++	  When init_on_free is enabled, verify that newly allocated pages
++	  are zeroed to detect write-after-free bugs.
++
++config SLAB_SANITIZE_VERIFY
++	default y
++	bool "Verify sanitized SLAB allocations"
++	help
++	  When init_on_free is enabled, verify that newly allocated slab
++	  objects are zeroed to detect write-after-free bugs.
++
+ endmenu
+ 
+ endmenu
+diff --git a/security/selinux/Kconfig b/security/selinux/Kconfig
+index 1014cb0ee..ae851a826 100644
+--- a/security/selinux/Kconfig
++++ b/security/selinux/Kconfig
+@@ -3,7 +3,7 @@ config SECURITY_SELINUX
+ 	bool "NSA SELinux Support"
+ 	depends on SECURITY_NETWORK && AUDIT && NET && INET
+ 	select NETWORK_SECMARK
+-	default n
++	default y
+ 	help
+ 	  This selects NSA Security-Enhanced Linux (SELinux).
+ 	  You will also need a policy configuration and a labeled filesystem.
+@@ -70,26 +70,6 @@ config SECURITY_SELINUX_AVC_STATS
+ 	  /sys/fs/selinux/avc/cache_stats, which may be monitored via
+ 	  tools such as avcstat.
+ 
+-config SECURITY_SELINUX_CHECKREQPROT_VALUE
+-	int "NSA SELinux checkreqprot default value"
+-	depends on SECURITY_SELINUX
+-	range 0 1
+-	default 0
+-	help
+-	  This option sets the default value for the 'checkreqprot' flag
+-	  that determines whether SELinux checks the protection requested
+-	  by the application or the protection that will be applied by the
+-	  kernel (including any implied execute for read-implies-exec) for
+-	  mmap and mprotect calls.  If this option is set to 0 (zero),
+-	  SELinux will default to checking the protection that will be applied
+-	  by the kernel.  If this option is set to 1 (one), SELinux will
+-	  default to checking the protection requested by the application.
+-	  The checkreqprot flag may be changed from the default via the
+-	  'checkreqprot=' boot parameter.  It may also be changed at runtime
+-	  via /sys/fs/selinux/checkreqprot if authorized by policy.
+-
+-	  If you are unsure how to answer this question, answer 0.
+-
+ config SECURITY_SELINUX_SIDTAB_HASH_BITS
+ 	int "NSA SELinux sidtab hashtable size"
+ 	depends on SECURITY_SELINUX
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 1659b59fb..199eb62a0 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -135,18 +135,7 @@ static int __init selinux_enabled_setup(char *str)
+ __setup("selinux=", selinux_enabled_setup);
+ #endif
+ 
+-static unsigned int selinux_checkreqprot_boot =
+-	CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE;
+-
+-static int __init checkreqprot_setup(char *str)
+-{
+-	unsigned long checkreqprot;
+-
+-	if (!kstrtoul(str, 0, &checkreqprot))
+-		selinux_checkreqprot_boot = checkreqprot ? 1 : 0;
+-	return 1;
+-}
+-__setup("checkreqprot=", checkreqprot_setup);
++static const unsigned int selinux_checkreqprot_boot;
+ 
+ /**
+  * selinux_secmark_enabled - Check to see if SECMARK is currently enabled
+diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+index 79c710911..09b7b543f 100644
+--- a/security/selinux/selinuxfs.c
++++ b/security/selinux/selinuxfs.c
+@@ -641,7 +641,6 @@ static ssize_t sel_read_checkreqprot(struct file *filp, char __user *buf,
+ static ssize_t sel_write_checkreqprot(struct file *file, const char __user *buf,
+ 				      size_t count, loff_t *ppos)
+ {
+-	struct selinux_fs_info *fsi = file_inode(file)->i_sb->s_fs_info;
+ 	char *page;
+ 	ssize_t length;
+ 	unsigned int new_value;
+@@ -665,10 +664,9 @@ static ssize_t sel_write_checkreqprot(struct file *file, const char __user *buf,
+ 		return PTR_ERR(page);
+ 
+ 	length = -EINVAL;
+-	if (sscanf(page, "%u", &new_value) != 1)
++	if (sscanf(page, "%u", &new_value) != 1 || new_value)
+ 		goto out;
+ 
+-	fsi->state->checkreqprot = new_value ? 1 : 0;
+ 	length = count;
+ out:
+ 	kfree(page);
+diff --git a/security/yama/Kconfig b/security/yama/Kconfig
+index a81030412..b809050b2 100644
+--- a/security/yama/Kconfig
++++ b/security/yama/Kconfig
+@@ -2,7 +2,7 @@
+ config SECURITY_YAMA
+ 	bool "Yama support"
+ 	depends on SECURITY
+-	default n
++	default y
+ 	help
+ 	  This selects Yama, which extends DAC support with additional
+ 	  system-wide security settings beyond regular Linux discretionary
+-- 
+2.25.3
 
