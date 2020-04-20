@@ -1,0 +1,33 @@
+# Description: Qt Cryptographic Architecture
+# URL:         https://userbase.kde.org/QCA
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja qt5 ca-certificates
+# Section:     kde
+
+name=qca
+version=2.3.0
+release=1
+source=("http://download.kde.org/stable/$name/$version/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/qca/qca-2.3.0-libressl.patch
+	sed -i 's@cert.pem@certs/ca-certificates.crt@' CMakeLists.txt
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_TESTS=OFF \
+		-DQCA_MAN_INSTALL_DIR=/usr/share/man \
+		-DWITH_botan_PLUGIN=no \
+		-DWITH_cyrus-sasl_PLUGIN=no \
+		-DWITH_gcrypt_PLUGIN=no \
+		-DWITH_gnupg_PLUGIN=no \
+		-DWITH_nss_PLUGIN=no \
+		-DWITH_pkcs11_PLUGIN=no \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

@@ -1,0 +1,21 @@
+# Description: A library that allows developers to access PolicyKit API with a nice Qt-style API
+# URL:         https://www.kde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  extra-cmake-modules qt5 polkit
+# Section:     kde
+
+name=polkit-qt-1
+version=0.113.0
+release=1
+source=("http://download.kde.org/stable/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
