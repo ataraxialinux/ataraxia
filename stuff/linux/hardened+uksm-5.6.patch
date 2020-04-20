@@ -11151,3 +11151,41 @@ index a81030412..b809050b2 100644
 -- 
 2.25.3
 
+From f7fd86edf9cee24edb04315747c22fb0dc6c9e5e Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 20 Apr 2020 21:24:23 +0900
+Subject: [PATCH] okay okay
+
+---
+ arch/x86/entry/vdso/vma.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/entry/vdso/vma.c b/arch/x86/entry/vdso/vma.c
+index 7b55eeb8c..49942372c 100644
+--- a/arch/x86/entry/vdso/vma.c
++++ b/arch/x86/entry/vdso/vma.c
+@@ -313,19 +313,11 @@ static int map_vdso(const struct vdso_image *image, unsigned long addr)
+ 	return ret;
+ }
+ 
++
+ #ifdef CONFIG_X86_64
+ static int map_vdso_randomized(const struct vdso_image *image)
+ {
+-	unsigned long addr;
+-
+-#ifdef CONFIG_PAX_RANDMMAP
+-	if (current->mm->pax_flags & MF_PAX_RANDMMAP)
+-		addr = 0;
+-	else
+-#endif
+-	addr = vdso_addr(current->mm->start_stack, image->size-image->sym_vvar_start);
+- 
+- 	return map_vdso(image, addr);
++	return map_vdso(image, 0);
+ }
+ #endif
+ 
+-- 
+2.25.3
+
