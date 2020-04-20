@@ -2,14 +2,25 @@
 # URL:         https://wiki.gnome.org/Apps/Software
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  meson appstream-glib gnome-desktop gnome-online-accounts gspell libxmlb ostree flatpak
+# Dep x86_64:  fwupd
+# Dep i586:    fwupd
 # Section:     gnome
 
 name=gnome-software
 version=3.36.0
-release=1
+release=2
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
+	case $BARCH in
+		x86_64|i586)
+			fwupd="true"
+			;;
+		*)
+			fwupd="false"
+			;;
+	esac
+
 	cd "$SRC"/$name-$version
 	sed -i "s|subdir('po')|# subdir('po')|" meson.build
 
@@ -18,11 +29,12 @@ build() {
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dexternal_appstream=true \
 		-Ddefault_featured_apps=true \
-		-Dfwupd=false \
+		-Dfwupd=$fwupd \
 		-Dgtk_doc=false \
 		-Dmalcontent=false \
 		-Dman=false \
 		-Dpackagekit=false \
+		-Dtests=false \
 		-Dvalgrind=false
 	ninja
 	DESTDIR="$PKG" ninja install

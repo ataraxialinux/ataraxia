@@ -1,0 +1,51 @@
+# Description: Simple daemon to allow session software to update firmware
+# URL:         https://github.com/fwupd/fwupd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala bash-completion gnu-efi pygobject python-pillow efivar gcab gpgme json-glib libarchive libgudev libgusb libsmbios libsoup libxmlb polkit shared-mime-info tpm2-tss modemmanager udisks libjcat
+# Section:     hardware
+
+name=fwupd
+version=1.4.0
+release=1
+backup=('etc/fwupd/daemon.conf'
+	'etc/fwupd/redfish.conf'
+	'etc/fwupd/remotes.d/dell-esrt.conf'
+	'etc/fwupd/remotes.d/lvfs-testing.conf'
+	'etc/fwupd/remotes.d/lvfs.conf'
+	'etc/fwupd/remotes.d/vendor-directory.conf'
+	'etc/fwupd/remotes.d/vendor.conf'
+	'etc/fwupd/uefi.conf'
+	'etc/fwupd/upower.conf')
+source=("https://people.freedesktop.org/~hughsient/releases/$name-$version.tar.xz")
+
+build() {
+	case $BARCH in
+		x86_64|i586)
+			true
+			;;
+		*)
+			die "fwupd is supported on x86 only"
+			;;
+	esac
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/fwupd/lib64.patch
+
+	sed -i 's|genpeimg|# genpeimg|' meson.build
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Db_lto=false \
+		-Dconsolekit=false \
+		-Delogind=true \
+		-Dgtkdoc=false \
+		-Dman=false \
+		-Dsystemd=false \
+		-Dtests=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -Dm0755 "$STUFF"/svc/fwupd.initd "$PKG"/etc/init.d/fwupd
+	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
+}
