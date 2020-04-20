@@ -6,7 +6,7 @@
 
 name=tpm2-tss
 version=2.4.0
-release=1
+release=2
 backup=('etc/tpm2-tss/fapi-config.json'
 	'etc/tpm2-tss/fapi-profiles/P_ECCP256SHA256.json'
 	'etc/tpm2-tss/fapi-profiles/P_RSA2048SHA256.json')
@@ -14,6 +14,8 @@ source=("https://github.com/tpm2-software/tpm2-tss/releases/download/$version/$n
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/tpm2-tss/libressl.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
