@@ -1,0 +1,25 @@
+# Description: Library for building UEFI Applications using GNU toolchain
+# URL:         http://sourceforge.net/projects/gnu-efi/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=gnu-efi
+version=3.0.11
+release=1
+options=('~strip' '~makeflags')
+source=("http://download.sourceforge.net/$name/$name-$version.tar.bz2")
+
+build() {
+	case $BARCH in
+		x86_64|i586)
+			true
+			;;
+		*)
+			die "gnu-efi is supported on x86 only"
+			;;
+	esac
+
+	cd "$SRC"/$name-$version
+	make -j1
+	make INSTALLROOT="$PKG" PREFIX=/usr LIBDIR=/usr/lib install
+}
