@@ -1,6 +1,12 @@
 #!/bin/bash
 
 generate_initramfs() {
+	if [ -n "$(which gcpio)" ]; then
+		CPIO="$(which gcpio)"
+	else
+		CPIO="cpio"
+	fi
+
 	packages="base-files netbase  musl zlib file ncurses readline bzip2 cracklib pam \
 		libpwquality attr acl libcap shadow pcre grep mksh bash expat libressl nettle \
 		ca-certificates xz lzip lz4 zstd libarchive lzo kmod coreutils sbase ubase sinit \
@@ -20,7 +26,7 @@ generate_initramfs() {
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
 				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
-				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore tar cpio bzless bzfgrep bzegrep \
+				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore bzless bzfgrep bzegrep \
 				bzcmp openssl nl* file; do
 			rm -rf usr/bin/$bins
 		done
@@ -36,11 +42,11 @@ generate_initramfs() {
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 
-		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
+		find . | $CPIO -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
 
 	pushd "$FIRMWAREFS"
-		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/firmware.zst
+		find . | $CPIO -H newc -o | zstd -12 > "$ISODIR"/seiba/firmware.zst
 	popd
 }
 
