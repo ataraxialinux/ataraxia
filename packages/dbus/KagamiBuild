@@ -6,11 +6,13 @@
 
 name=dbus
 version=1.12.16
-release=1
+release=2
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/dbus/0001-dbus-don-t-fingerprint-us.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib/dbus-1.0 \
@@ -31,7 +33,6 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	ln -sf /var/lib/dbus/machine-id "$PKG"/etc/machine-id
 	rm -rf "$PKG"/var/run
 
 	install -Dm0755 "$STUFF"/svc/dbus.initd "$PKG"/etc/init.d/dbus

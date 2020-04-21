@@ -1,0 +1,354 @@
+From 1395b88b051447f177cfc69c5214b5c7e92d639f Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 21 Apr 2020 22:53:37 +0900
+Subject: [PATCH] dbus: don't fingerprint us
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ bus/dispatch.c           |  4 ++++
+ bus/driver.c             |  6 ++++--
+ dbus/dbus-internals.c    |  4 +++-
+ dbus/dbus-sysdeps-unix.c |  2 ++
+ dbus/dbus-sysdeps-win.c  |  2 ++
+ dbus/dbus-uuidgen.c      |  2 ++
+ tools/dbus-launch-x11.c  | 19 +++++++++++--------
+ tools/dbus-launch.c      | 16 ++++++++++++----
+ 8 files changed, 40 insertions(+), 15 deletions(-)
+
+diff --git a/bus/dispatch.c b/bus/dispatch.c
+index c3019b1e..3f48f955 100644
+--- a/bus/dispatch.c
++++ b/bus/dispatch.c
+@@ -3328,6 +3328,7 @@ check_existent_ping (BusContext     *context,
+ /* returns TRUE if the correct thing happens,
+  * but the correct thing may include OOM errors.
+  */
++#if 0
+ static dbus_bool_t
+ check_existent_get_machine_id (BusContext     *context,
+                                DBusConnection *connection)
+@@ -3416,6 +3417,7 @@ check_existent_get_machine_id (BusContext     *context,
+ 
+   return TRUE;
+ }
++#endif
+ 
+ /* returns TRUE if the correct thing happens,
+  * but the correct thing may include OOM errors.
+@@ -3598,8 +3600,10 @@ check_existent_service_auto_start (BusContext     *context,
+   if (!check_existent_ping (context, connection))
+     goto out;
+ 
++#if 0
+   if (!check_existent_get_machine_id (context, connection))
+     goto out;
++#endif
+ 
+   if (!check_existent_hello_from_self (context, connection))
+     goto out;
+diff --git a/bus/driver.c b/bus/driver.c
+index 3898cfd6..ad921784 100644
+--- a/bus/driver.c
++++ b/bus/driver.c
+@@ -2380,6 +2380,7 @@ out:
+   return ret;
+ }
+ 
++#if 0
+ static dbus_bool_t
+ bus_driver_handle_get_machine_id (DBusConnection *connection,
+                                   BusTransaction *transaction,
+@@ -2436,6 +2437,7 @@ fail:
+   _dbus_string_free (&uuid);
+   return FALSE;
+ }
++#endif
+ 
+ static dbus_bool_t
+ bus_driver_handle_ping (DBusConnection *connection,
+@@ -2684,8 +2686,8 @@ static const MessageHandler stats_message_handlers[] = {
+ #endif
+ 
+ static const MessageHandler peer_message_handlers[] = {
+-  { "GetMachineId", "", "s", bus_driver_handle_get_machine_id,
+-    METHOD_FLAG_ANY_PATH },
++//  { "GetMachineId", "", "s", bus_driver_handle_get_machine_id,
++//    METHOD_FLAG_ANY_PATH },
+   { "Ping", "", "", bus_driver_handle_ping, METHOD_FLAG_ANY_PATH },
+   { NULL, NULL, NULL, NULL }
+ };
+diff --git a/dbus/dbus-internals.c b/dbus/dbus-internals.c
+index 7420f203..b25255ba 100644
+--- a/dbus/dbus-internals.c
++++ b/dbus/dbus-internals.c
+@@ -881,7 +881,7 @@ _dbus_read_uuid_file (const DBusString *filename,
+ }
+ 
+ /* Protected by _DBUS_LOCK (machine_uuid) */
+-static int machine_uuid_initialized_generation = 0;
++//static int machine_uuid_initialized_generation = 0;
+ static DBusGUID machine_uuid;
+ 
+ /**
+@@ -907,11 +907,13 @@ _dbus_get_local_machine_uuid_encoded (DBusString *uuid_str,
+       return FALSE;
+     }
+ 
++#if 0
+   if (machine_uuid_initialized_generation != _dbus_current_generation)
+     {
+       if (!_dbus_read_local_machine_uuid (&machine_uuid, FALSE, error))
+         ok = FALSE;
+     }
++#endif
+ 
+   if (ok)
+     {
+diff --git a/dbus/dbus-sysdeps-unix.c b/dbus/dbus-sysdeps-unix.c
+index 1eb54bd4..ef80a967 100644
+--- a/dbus/dbus-sysdeps-unix.c
++++ b/dbus/dbus-sysdeps-unix.c
+@@ -4180,6 +4180,7 @@ _dbus_get_autolaunch_address (const char *scope,
+  * @param error the error return
+  * @returns #FALSE if the error is set
+  */
++#if 0
+ dbus_bool_t
+ _dbus_read_local_machine_uuid (DBusGUID   *machine_id,
+                                dbus_bool_t create_if_not_found,
+@@ -4237,6 +4238,7 @@ _dbus_read_local_machine_uuid (DBusGUID   *machine_id,
+ 
+   return _dbus_write_uuid_file (&filename, machine_id, error);
+ }
++#endif
+ 
+ /**
+  * quries launchd for a specific env var which holds the socket path.
+diff --git a/dbus/dbus-sysdeps-win.c b/dbus/dbus-sysdeps-win.c
+index ee8b9678..3b78fbd6 100644
+--- a/dbus/dbus-sysdeps-win.c
++++ b/dbus/dbus-sysdeps-win.c
+@@ -2727,6 +2727,7 @@ static dbus_uint32_t fromAscii(char ascii)
+     return 0;    
+ }
+ 
++#if 0
+ dbus_bool_t _dbus_read_local_machine_uuid   (DBusGUID         *machine_id,
+                                              dbus_bool_t       create_if_not_found,
+                                              DBusError        *error)
+@@ -2797,6 +2798,7 @@ dbus_bool_t _dbus_read_local_machine_uuid   (DBusGUID         *machine_id,
+ #endif
+     return TRUE;
+ }
++#endif
+ 
+ static
+ HANDLE _dbus_global_lock (const char *mutexname)
+diff --git a/dbus/dbus-uuidgen.c b/dbus/dbus-uuidgen.c
+index 79159106..ebb89d58 100644
+--- a/dbus/dbus-uuidgen.c
++++ b/dbus/dbus-uuidgen.c
+@@ -85,6 +85,7 @@ _dbus_get_uuid (const char   *filename,
+                 dbus_bool_t   create_if_not_found,
+                 DBusError    *error)
+ {
++#if 0
+   DBusGUID uuid;
+   
+   if (filename)
+@@ -102,6 +103,7 @@ _dbus_get_uuid (const char   *filename,
+ 
+   if (!return_uuid(&uuid, uuid_p, error))
+     goto error;
++#endif
+ 
+   return TRUE;
+   
+diff --git a/tools/dbus-launch-x11.c b/tools/dbus-launch-x11.c
+index c4b97904..50d822f6 100644
+--- a/tools/dbus-launch-x11.c
++++ b/tools/dbus-launch-x11.c
+@@ -94,15 +94,17 @@ static char *
+ get_session_file (void)
+ {
+   static const char prefix[] = "/" DBUS_DIR "/" DBUS_SESSION_BUS_DIR "/";
+-  const char *machine;
++//  const char *machine;
+   const char *home;
+   char *display;
+   char *result;
+   char *p;
+ 
++#if 0
+   machine = get_machine_uuid ();
+   if (machine == NULL)
+     return NULL;
++#endif
+ 
+   display = xstrdup (getenv ("DISPLAY"));
+   if (display == NULL)
+@@ -151,7 +153,7 @@ get_session_file (void)
+   
+   home = get_homedir ();
+   
+-  result = malloc (strlen (home) + strlen (prefix) + strlen (machine) +
++  result = malloc (strlen (home) + strlen (prefix) +
+                    strlen (display) + 2);
+   if (result == NULL)
+     {
+@@ -162,7 +164,7 @@ get_session_file (void)
+ 
+   strcpy (result, home);
+   strcat (result, prefix);
+-  strcat (result, machine);
++//  strcat (result, machine);
+   strcat (result, "-");
+   strcat (result, display);
+   free (display);
+@@ -234,16 +236,18 @@ init_x_atoms (Display *display)
+   static const char pid_prefix[] = "_DBUS_SESSION_BUS_PID";
+   static int init = FALSE;
+   char *atom_name;
+-  const char *machine;
++//  const char *machine;
+   char *user_name;
+   struct passwd *user;
+ 
+   if (init)
+     return TRUE;
+ 
++#if 0
+   machine = get_machine_uuid ();
+   if (machine == NULL)
+     return FALSE;
++#endif
+ 
+   user = getpwuid (getuid ());
+   if (user == NULL)
+@@ -253,7 +257,7 @@ init_x_atoms (Display *display)
+     }
+   user_name = xstrdup(user->pw_name);
+ 
+-  atom_name = malloc (strlen (machine) + strlen (user_name) + 2 +
++  atom_name = malloc (strlen (user_name) + 2 +
+                       MAX (strlen (selection_prefix),
+                            MAX (strlen (address_prefix),
+                                 strlen (pid_prefix))));
+@@ -268,7 +272,7 @@ init_x_atoms (Display *display)
+   strcpy (atom_name, selection_prefix);
+   strcat (atom_name, user_name);
+   strcat (atom_name, "_");
+-  strcat (atom_name, machine);
++//  strcat (atom_name, machine);
+   selection_atom = XInternAtom (display, atom_name, FALSE);
+ 
+   /* create the address property atom */
+@@ -415,10 +419,9 @@ set_address_in_file (char *address, pid_t pid, Window wid)
+            "# If the DBUS_SESSION_BUS_ADDRESS environment variable is set, it will\n"
+            "# be used rather than this file.\n"
+            "# See \"man dbus-launch\" for more details.\n"
+-           "DBUS_SESSION_BUS_ADDRESS='%s'\n"
++           "DBUS_SESSION_BUS_ADDRESS='0'\n"
+            "DBUS_SESSION_BUS_PID=%ld\n"
+            "DBUS_SESSION_BUS_WINDOWID=%ld\n",
+-           get_machine_uuid (),
+            getenv ("DISPLAY"),
+            address, (long)pid, (long)wid);
+ 
+diff --git a/tools/dbus-launch.c b/tools/dbus-launch.c
+index f1a5b970..ccafb09e 100644
+--- a/tools/dbus-launch.c
++++ b/tools/dbus-launch.c
+@@ -92,6 +92,7 @@ extern Display *xdisplay;
+  * for the "dbus-launch a test suite in an isolated session" use-case.
+  */
+ 
++#if 0
+ static char* machine_uuid = NULL;
+ 
+ const char*
+@@ -112,6 +113,7 @@ save_machine_uuid (const char *uuid_arg)
+ 
+   machine_uuid = _dbus_strdup (uuid_arg);
+ }
++#endif
+ 
+ #ifdef DBUS_BUILD_X11
+ /* Read the machine uuid from file if needed. Returns TRUE if machine_uuid is
+@@ -119,6 +121,7 @@ save_machine_uuid (const char *uuid_arg)
+ static int
+ read_machine_uuid_if_needed (DBusError *error)
+ {
++#if 0
+   if (machine_uuid != NULL)
+     return TRUE;
+ 
+@@ -129,6 +132,8 @@ read_machine_uuid_if_needed (DBusError *error)
+ 
+   verbose ("UID: %s\n", machine_uuid);
+   return TRUE;
++#endif
++  return TRUE;
+ }
+ #endif /* DBUS_BUILD_X11 */
+ 
+@@ -910,7 +915,7 @@ main (int argc, char **argv)
+           s = strchr (arg, '=');
+           ++s;
+ 
+-          save_machine_uuid (s);
++          //save_machine_uuid (s);
+         }
+       else if (prev_arg &&
+                strcmp (prev_arg, "--autolaunch") == 0)
+@@ -923,7 +928,7 @@ main (int argc, char **argv)
+           
+           autolaunch = TRUE;
+ 
+-          save_machine_uuid (arg);
++          //save_machine_uuid (arg);
+ 	  requires_arg = FALSE;
+         }
+       else if (strcmp (arg, "--autolaunch") == 0)
+@@ -1021,12 +1026,14 @@ main (int argc, char **argv)
+       char *address;
+       pid_t pid;
+       long wid;
+-      
++
++#if 0
+       if (get_machine_uuid () == NULL)
+         {
+           fprintf (stderr, "Machine UUID not provided as arg to --autolaunch\n");
+           exit (1);
+         }
++#endif
+ 
+       if (!_dbus_string_init (&user_bus))
+         tool_oom ("initializing");
+@@ -1094,12 +1101,14 @@ main (int argc, char **argv)
+       fprintf (stderr, "Session lifetime based on X11 requested, but X11 support not compiled in.\n");
+       exit (1);
+ #else /* DBUS_BUILD_X11 */
++#if 0
+       if (!read_machine_uuid_if_needed (&error))
+         {
+           fprintf (stderr, "Session lifetime based on X11 requested, but machine UUID unavailable: %s.\n", error.message);
+           dbus_error_free (&error);
+           exit (1);
+         }
++#endif
+ 
+       if (!x11_init ())
+         {
+@@ -1121,7 +1130,6 @@ main (int argc, char **argv)
+     }
+ #endif /* DBUS_BUILD_X11 */
+ 
+-
+   if (pipe (bus_pid_to_launcher_pipe) < 0 ||
+       pipe (bus_address_to_launcher_pipe) < 0 ||
+       pipe (bus_pid_to_babysitter_pipe) < 0)
+-- 
+2.25.3
+
