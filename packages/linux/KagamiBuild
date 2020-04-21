@@ -12,7 +12,7 @@ case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-release=2
+release=3
 options=('~strip' 'bootstrap')
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch"
@@ -896,12 +896,8 @@ build() {
 	esac
 
 	mkdir -p "$PKG"/boot
-	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-${version}-ataraxia
-	cp .config "$PKG"/boot/config-${version}-ataraxia
-
-	for a in vmlinuz config; do
-		ln -sf ${a}-${version}-ataraxia "$PKG"/boot/$a
-	done
+	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-ataraxia
+	cp .config "$PKG"/boot/config-ataraxia
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
