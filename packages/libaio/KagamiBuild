@@ -5,13 +5,12 @@
 
 name=libaio
 version=0.3.112
-release=1
+release=2
 source=("http://ftp.de.debian.org/debian/pool/main/liba/$name/${name}_${version}.orig.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	export CFLAGS=${CFLAGS/-fstack-protector-strong}
-	export CFLAGS="$CFLAGS -fno-stack-protector"
+	export CFLAGS="-Os -g0 -pipe"
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make CC="$CC" HOSTCC="$HOSTCC"
