@@ -1,0 +1,21 @@
+# Description: Machine-readable files for the SPIR-V Registry
+# URL:         https://www.khronos.org/vulkan/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
+# Section:     devel
+
+name=spirv-headers
+version=1.5.1
+release=1
+source=("https://github.com/KhronosGroup/SPIRV-Headers/archive/${version}.tar.gz")
+
+build() {
+	cd "$SRC"/SPIRV-Headers-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/SPIRV-Headers-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
