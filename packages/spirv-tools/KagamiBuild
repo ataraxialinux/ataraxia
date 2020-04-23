@@ -1,0 +1,25 @@
+# Description: API and commands for processing SPIR-V modules
+# URL:         https://www.khronos.org/vulkan/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja spirv-headers
+# Section:     devel
+
+name=spirv-tools
+version=2020.2
+release=1
+source=("https://github.com/KhronosGroup/SPIRV-Tools/archive/v${version}.tar.gz")
+
+build() {
+	cd "$SRC"/SPIRV-Tools-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/SPIRV-Tools-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-DSPIRV_WERROR=Off \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
