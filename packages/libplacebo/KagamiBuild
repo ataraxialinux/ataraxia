@@ -1,0 +1,26 @@
+# Description: Reusable library for GPU-accelerated video/image rendering primitives
+# URL:         https://github.com/haasn/libplacebo
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson vulkan-loader lcms2 shaderc
+# Section:     libs
+
+name=libplacebo
+version=1.29.1
+release=1
+source=("https://code.videolan.org/videolan/libplacebo/-/archive/v$version/$name-v$version.tar.gz")
+
+build() {
+	export CXXFLAGS+=" -I/usr/include/glslang"
+
+	cd "$SRC"/$name-v$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-v$version \
+		-Dglslang=enabled \
+		-Dlcms=enabled \
+		-Dshaderc=enabled \
+		-Dtests=false \
+		-Dvulkan=enabled
+	ninja
+	DESTDIR="$PKG" ninja install
+}
