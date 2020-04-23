@@ -1,0 +1,28 @@
+# Description: Collection of tools, libraries and tests for shader compilation
+# URL:         https://github.com/google/shaderc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja glslang
+# Section:     devel
+
+name=shaderc
+version=2019.0
+release=1
+source=("https://github.com/google/shaderc/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/shaderc/glslang.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-DSHADERC_ENABLE_NV_EXTENSIONS=OFF \
+		-DSHADERC_SKIP_TESTS=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
