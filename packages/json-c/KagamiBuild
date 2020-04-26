@@ -1,23 +1,24 @@
 # Description: A JSON implementation in C
 # URL:         https://github.com/json-c/json-c/wiki
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
 # Section:     libs
 
 name=json-c
-version=0.13.1
+version=0.14
 release=1
 source=("https://s3.amazonaws.com/${name}_releases/releases/$name-${version}.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-
-	export CFLAGS="$CFLAGS -Wno-error=unused-but-set-variable"
-
-	NOCONFIGURE=1 ./autogen.sh
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--enable-threading \
-		--disable-static
-	make -j1 LIBTOOL=slibtool
-	make -j1 LIBTOOL=slibtool DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
 }
