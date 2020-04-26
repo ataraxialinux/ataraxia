@@ -5,15 +5,25 @@
 # Section:     devel
 
 name=shaderc
-version=2020.0
+version=2019.0
 release=1
-source=("https://github.com/google/shaderc/archive/$version.tar.gz")
+source=("https://github.com/google/shaderc/archive/v$version.tar.gz")
 
 build() {
 	export CXXFLAGS+=" -I/usr/include/glslang"
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/shaderc/glslang.patch
+	sed -i \
+		-e "s|\$<TARGET_FILE:spirv-dis>|/usr/bin/spirv-dis|" \
+		glslc/test/CMakeLists.txt
+	sed '/examples/d;/third_party/d' -i CMakeLists.txt
+	sed '/build-version/d' -i glslc/CMakeLists.txt
+cat <<- EOF > glslc/src/build-version.inc
+"${version}\\n"
+"$(find_instver spirv-tools|cut -d \  -f 2|sed 's/-.*//')\\n"
+"$(find_instver glslang|cut -d \  -f 2|sed 's/-.*//')\\n"
+EOF
 
 	mkdir -p build
 	cd build
