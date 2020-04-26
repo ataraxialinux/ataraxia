@@ -6,7 +6,7 @@
 
 name=clang
 version=10.0.0
-release=1
+release=2
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz")
@@ -29,6 +29,7 @@ build() {
 
 	cd "$SRC"/$builddir
 	patch -Np1 -i "$STUFF"/clang/0001-add-musl-triplets.patch
+	patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 
 	mv "$SRC"/clang-tools-extra-$version.src tools/extra
 
@@ -38,7 +39,6 @@ build() {
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DPYTHON_EXECUTABLE=/usr/bin/python \
-		-DCLANG_VENDOR=AtaraxiaLinux \
 		-DCLANG_BUILD_EXAMPLES=OFF \
 		-DCLANG_INCLUDE_DOCS=OFF \
 		-DCLANG_INCLUDE_TESTS=OFF \
