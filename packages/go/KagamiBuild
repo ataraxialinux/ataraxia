@@ -6,7 +6,7 @@
 name=go
 version=1.14.2
 bootver=20171003
-release=1
+release=2
 source=("https://dl.google.com/go/go${version}.src.tar.gz"
 	"https://dl.google.com/go/go1.4-bootstrap-$bootver.tar.gz")
 noextract=("go${version}.src.tar.gz"
@@ -34,6 +34,10 @@ build() {
 
 	tar -xvf "$SRCDEST"/go1.4-bootstrap-$bootver.tar.gz
 	mv go go-boot-$bootver
+
+	pushd "$SRC"/go-${version}
+		patch -Np1 -i "$STUFF"/go/0001-go-enable-PIE-by-default.patch
+	popd
 
 	cd "$SRC"/go-boot-$bootver/src
 	case "$BARCH" in
