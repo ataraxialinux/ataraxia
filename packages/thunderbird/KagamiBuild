@@ -7,11 +7,15 @@
 name=thunderbird
 version=68.7.0
 release=1
-options=('~emptydirs' '~ccache')
+options=('~emptydirs')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
+	if [ "$opt_ccache" = "1" ]; then
+		unset CC CXX
+		export PATH="/usr/lib/ccache/bin:$PATH"
+	fi
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/thunderbird/fix-fortify-system-wrappers.patch
@@ -40,7 +44,6 @@ build() {
 		ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
 		ac_add_options --enable-ffmpeg
 		ac_add_options --enable-hardening
-		ac_add_options --enable-official-branding
 		ac_add_options --enable-optimize
 		ac_add_options --enable-release
 		ac_add_options --enable-rust-simd
@@ -57,11 +60,13 @@ build() {
 		ac_add_options --disable-gold
 		ac_add_options --disable-jemalloc
 		ac_add_options --disable-necko-wifi
+		ac_add_options --disable-official-branding
 		ac_add_options --disable-profiling
 		ac_add_options --disable-pulseaudio
 		ac_add_options --disable-tests
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
+		ac_add_options --with-branding=comm/mail/branding/nightly
 		ac_add_options --with-system-bz2
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent
@@ -88,7 +93,7 @@ build() {
 	DESTDIR="$PKG" ./mach install
 
 	for i in 16 22 24 32 48 64 128 256; do
-		install -Dm644 comm/mail/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/thunderbird.png
+		install -Dm644 comm/mail/branding/nightly/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/thunderbird.png
 	done
 
 	install -Dm644 "$STUFF"/thunderbird/vendor.js "$PKG"/usr/lib/thunderbird/browser/defaults/preferences/vendor.js
@@ -100,9 +105,9 @@ build() {
 	mkdir -p "$PKG"/usr/share/applications/
 	cat > "$PKG"/usr/share/applications/thunderbird.desktop <<-EOF
 [Desktop Entry]
-		Name=Thunderbird Mail
-		Comment=Send and receive mail with Thunderbird
-		GenericName=Mail Client
+		Name=Daily
+		Comment=Mail & News Reader
+		GenericName=Mail Client & News Reader
 		Exec=thunderbird %u
 		Terminal=false
 		Type=Application

@@ -6,12 +6,16 @@
 
 name=firefox
 version=68.7.0
-release=2
-options=('~emptydirs' '~ccache')
+release=3
+options=('~emptydirs')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
+	if [ "$opt_ccache" = "1" ]; then
+		unset CC CXX
+		export PATH="/usr/lib/ccache/bin:$PATH"
+	fi
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
@@ -36,7 +40,6 @@ build() {
 		ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
 		ac_add_options --enable-ffmpeg
 		ac_add_options --enable-hardening
-		ac_add_options --enable-official-branding
 		ac_add_options --enable-optimize
 		ac_add_options --enable-release
 		ac_add_options --enable-rust-simd
@@ -53,11 +56,13 @@ build() {
 		ac_add_options --disable-gold
 		ac_add_options --disable-jemalloc
 		ac_add_options --disable-necko-wifi
+		ac_add_options --disable-official-branding
 		ac_add_options --disable-profiling
 		ac_add_options --disable-pulseaudio
 		ac_add_options --disable-tests
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
+		ac_add_options --with-branding=browser/branding/unofficial
 		ac_add_options --with-system-bz2
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent
@@ -78,14 +83,13 @@ build() {
 		ac_add_options MOZ_DEVICES=
 		ac_add_options MOZ_REQUIRE_SIGNING=
 		ac_add_options MOZ_TELEMETRY_REPORTING=
-		export MOZILLA_OFFICIAL=1
 	EOF
 
 	./mach build -j$(nproc)
 	DESTDIR="$PKG" ./mach install
 
 	for i in 16 22 24 32 48 64 128 256; do
-		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
+		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
 	install -Dm644 "$STUFF"/firefox/vendor.js "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js
@@ -98,14 +102,15 @@ build() {
 	cat > "$PKG"/usr/share/applications/firefox.desktop <<-EOF
 		[Desktop Entry]
 		Encoding=UTF-8
-		Name=Firefox Web Browser
-		Comment=Browse the World Wide Web
+		Name=Nightly
 		GenericName=Web Browser
+		Comment=Browse the Web
 		Exec=firefox %u
 		Terminal=false
 		Type=Application
 		Icon=firefox
-		Categories=GNOME;GTK;Network;WebBrowser;
+		Categories=GTK;Network;WebBrowser;
+		Actions=new-window;new-private-window;
 		MimeType=application/xhtml+xml;text/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;text/mml;x-scheme-handler/http;x-scheme-handler/https;
 		StartupNotify=true
 	EOF
