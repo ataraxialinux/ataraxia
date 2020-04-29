@@ -1,17 +1,18 @@
 # Description: GObject-based multi-platform GUI toolkit
 # URL:         https://www.gtk.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson at-spi2-atk fribidi gdk-pixbuf librsvg libepoxy pango hicolor-icon-theme iso-codes libxcomposite libxcursor libxdamage libxi libxinerama libxkbcommon libxrandr sassc wayland-protocols cups
+# Depends on:  meson at-spi2-atk fribidi gdk-pixbuf librsvg libepoxy pango hicolor-icon-theme iso-codes libxcomposite libxcursor libxdamage libxi libxinerama libxkbcommon libxrandr sassc wayland-protocols cups json-glib rest
 # Section:     libs
 
 name=gtk3
 version=3.24.20
-release=1
+release=2
 source=("http://ftp.gnome.org/pub/gnome/sources/gtk+/${version%.*}/gtk+-$version.tar.xz")
 
 build() {
 	cd "$SRC"/gtk+-$version
-	sed -i 's|find_program('check-version.py'),|# find_program('check-version.py'),|' meson.build
+	patch -Np1 -i "$STUFF"/gtk3/0001-gtk-don-t-use-check-version.py.patch
+
 	mkdir -p build
 	cd build
 
