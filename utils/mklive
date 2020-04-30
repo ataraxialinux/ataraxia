@@ -44,10 +44,6 @@ generate_initramfs() {
 
 		find . | $CPIO -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
-
-	pushd "$FIRMWAREFS"
-		find . | $CPIO -H newc -o | zstd -12 > "$ISODIR"/seiba/firmware.zst
-	popd
 }
 
 make_iso_x86() {
@@ -75,10 +71,6 @@ make_iso_x86() {
 		menuentry "Ataraxia Linux" {
 			linux	/seiba/seiba rw quiet live LABEL=ataraxialinux
 			initrd	/seiba/seiba.zst
-		}
-		menuentry "Ataraxia Linux (with firmware)" {
-			linux	/seiba/seiba rw quiet live LABEL=ataraxialinux
-			initrd	/seiba/firmware.zst /seiba/seiba.zst
 		}
 	EOF
 
@@ -125,10 +117,6 @@ make_iso_x86() {
 		MENU LABEL Ataraxia Linux
 		KERNEL /seiba/seiba rw quiet live LABEL=ataraxialinux
 		APPEND initrd=/seiba/seiba.zst
-		LABEL firmware
-		MENU LABEL Ataraxia Linux (with firmware)
-		KERNEL /seiba/seiba rw quiet live LABEL=ataraxialinux
-		APPEND initrd=/seiba/firmware.zst,/seiba/seiba.zst
 	EOF
 
 	xorriso -as mkisofs \
@@ -156,10 +144,6 @@ make_iso_ppc() {
 			linux	/seiba/seiba root=/dev/ram0 rw quiet live LABEL=ataraxialinux
 			initrd	/seiba/seiba.zst
 		}
-		menuentry "Ataraxia Linux (with firmware)" {
-			linux	/seiba/seiba root=/dev/ram0 rw quiet live LABEL=ataraxialinux
-			initrd	/seiba/firmware.zst /seiba/seiba.zst
-		}
 	EOF
 
 	"$BUILD"/tools/bin/grub-mkrescue \
@@ -171,7 +155,6 @@ main() {
 	ISODIR="$BUILD/rootcd"
 	INITRAMFS="$BUILD/initramfs"
 	GRUBEFICFG="$BUILD/efi.cfg"
-	FIRMWAREFS="$BUILD/firmwarefs"
 
 	rm -rf "$ISODIR" "$INITRAMFS" "$GRUBEFICFG" "$FIRMWAREFS"
 	mkdir -p "$ISODIR/seiba" "$INITRAMFS" "$FIRMWAREFS"
