@@ -1,0 +1,20 @@
+# Description: The core library of gphoto2, designed to allow access to digital camera by external programs
+# URL:         http://www.gphoto.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libexif libjpeg-turbo libltdl libusb libxml2
+# Section:     libs
+
+name=libgphoto2
+version=2.5.22
+release=1
+source=("https://sourceforge.net/projects/gphoto/files/libgphoto/$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
