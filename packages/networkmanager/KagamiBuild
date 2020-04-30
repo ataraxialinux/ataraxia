@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.22.10
-release=3
+release=4
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -56,14 +56,6 @@ build() {
 		[main]
 		auth-polkit=true
 		dhcp=dhcpcd
-
-		[device]
-		wifi.scan-rand-mac-address=yes
-
-		[connection]
-		wifi.cloned-mac-address=random
-		ethernet.cloned-mac-address=random
-		connection.stable-id=${CONNECTION}/${BOOT}
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
