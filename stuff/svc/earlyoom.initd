@@ -1,0 +1,27 @@
+#!/usr/bin/openrc-run
+
+name="earlyoom"
+description="Early OOM Daemon"
+
+command=/usr/bin/earlyoom
+command_args=-k
+command_background=1
+pidfile=/run/earlyoom.pid
+
+start() {
+	ebegin "Starting $name"
+	start-stop-daemon \
+		--start --quiet --pidfile $pidfile \
+		--exec $command -- $command_args $EARLYOOM_ARGS
+	local ret=$?
+	eend $ret
+	return $ret
+}
+
+stop() {
+	ebegin "Stopping $name"
+	start-stop-daemon --stop --quiet --pidfile $pidfile
+	local ret=$?
+	eend $ret
+	return $ret
+}
