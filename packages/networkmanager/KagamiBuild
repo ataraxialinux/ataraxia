@@ -1,36 +1,34 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala lpppd iwd mobile-broadband-provider-info
+# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala iwd
 # Section:     net
 
 name=networkmanager
 version=1.22.10
-release=4
+release=5
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
 build() {
 	cd "$SRC"/NetworkManager-$version
 	patch -Np1 -i "$STUFF"/networkmanager/musl.patch
-	patch ./src/dhcp/nm-dhcp-dhcpcd.c "$STUFF"/networkmanager/secure.patch
 
 	sed '/initrd/d' -i src/meson.build
-	grep -rl '^#!.*python$' | xargs sed -i '1s/python/&3/'
 
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/NetworkManager-$version \
+		-Db_lto=false \
+		-Dconfig_dhcp_default=dhcpcd \
+		-Dconfig_plugins_default=keyfile \
 		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
-		-Ddnsmasq=/usr/bin/dnsmasq \
+		-Ddhcpcd=true \
 		-Ddocs=false \
 		-Debpf=true \
-		-Dibft=true \
 		-Diptables=/usr/bin/iptables \
 		-Diwd=true \
-		-Djson_validation=false \
 		-Dlibaudit=no \
-		-Dlibnm_glib=true \
 		-Dmodify_system=true \
 		-Dnmtui=true \
 		-Dovs=false \
@@ -38,8 +36,8 @@ build() {
 		-Dpppd=/usr/bin/pppd \
 		-Dqt=false \
 		-Dselinux=false \
-		-Dsession_tracking=elogind \
 		-Dsession_tracking_consolekit=false \
+		-Dsession_tracking=elogind \
 		-Dsuspend_resume=elogind \
 		-Dsystemd_journal=false \
 		-Dsystemdsystemunitdir=no \
@@ -56,6 +54,14 @@ build() {
 		[main]
 		auth-polkit=true
 		dhcp=dhcpcd
+
+		[device]
+		wifi.scan-rand-mac-address=yes
+
+		[connection]
+		wifi.cloned-mac-address=random
+		ethernet.cloned-mac-address=random
+		connection.stable-id=${CONNECTION}/${BOOT}
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
