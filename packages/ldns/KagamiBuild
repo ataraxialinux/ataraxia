@@ -1,0 +1,24 @@
+# Description: Fast DNS library supporting recent RFCs
+# URL:         https://www.nlnetlabs.nl/projects/ldns/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl libpcap unbound
+# Section:     net
+
+name=ldns
+version=1.7.1
+release=1
+source=("https://www.nlnetlabs.nl/downloads/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-trust-anchor=/etc/trusted-key.key \
+		--without-examples \
+		--disable-dane-ta-usage \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}

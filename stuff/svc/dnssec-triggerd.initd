@@ -14,22 +14,33 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-name="earlyoom"
-description="Early OOM Daemon"
+name="dnssec-triggerd"
+description="Reconfigure local DNSSEC resolver on network change"
+pidfile="/run/dnssec-triggerd.pid"
+command="/usr/bin/dnssec-triggerd"
+command_args="-c /etc/dnssec-trigger/dnssec-trigger.conf"
 
-command=/usr/bin/earlyoom
-command_args=-k
-command_background=1
-pidfile=/run/earlyoom.pid
+depend() {
+	need unbound
+	after net
+}
+
+start_pre() {
+	/usr/bin/dnssec-trigger-control-setup -d /etc/dnssec-trigger/
+}
 
 start() {
 	ebegin "Starting $name"
 	start-stop-daemon \
 		--start --quiet --pidfile $pidfile \
-		--exec $command -- $command_args $EARLYOOM_ARGS
+		--exec $command -- $command_args
 	local ret=$?
 	eend $ret
 	return $ret
+}
+
+start_post() {
+	/etc/NetworkManager/dispatcher.d/01-dnssec-trigger
 }
 
 stop() {
