@@ -11,12 +11,15 @@ source=("https://github.com/PipeWire/pipewire/archive/$version/$name-$version.ta
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i "s|subdir('tests')|# subdir('tests')|" spa/meson.build
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Djack=false \
 		-Dpipewire-jack=false \
-		-Dpipewire-pulseaudio=false
+		-Dpipewire-pulseaudio=false \
+		-Dtests=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }
