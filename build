@@ -451,6 +451,58 @@ case $1 in
 			popd
 		done
 		;;
+	enter-chroot)
+		shift
+		while getopts a:s opts; do
+			case $opts in
+				a)
+					BARCH="$OPTARG"
+					;;
+				s)
+					STAGE=1
+					;;
+				:)
+					die "Option '-${OPTARG}' needs an argument"
+					;;
+				\?)
+					die "Option '-${OPTARG}' is illegal"
+					;;
+			esac
+		done
+		shift $((OPTIND - 1))
+
+		check_for_root
+		setup_architecture
+		setup_environment
+
+		if [ "$BARCH" = "i586" ] && [ "$(uname -m)" = "x86_64" ]; then
+			HELPER="linux32"
+		fi
+
+		if [ "$STAGE" = "1" ]; then
+			rootdir="$BUILD/stage"
+		else
+			rootdir="$BUILD/rootfs"
+		fi
+		for i in proc sys dev; do
+			mount --bind /$i $rootdir/$i
+		done
+		mkdir -p "$rootdir"/usr/ports/packages "$rootdir"/usr/ports/stuff
+		for i in packages stuff; do
+			mount --bind "$CWD/$i" "$rootdir/usr/ports/$i"
+		done
+		for i in packages sources; do
+			mount --bind "$BUILD/$i" "$rootdir/var/cache/$i"
+		done
+		$HELPER chroot "$rootdir" /usr/bin/env -i \
+			HOME=/home/root \
+			TERM="$TERM" \
+			PATH=/usr/bin \
+			/usr/bin/mksh
+		for i in proc sys dev usr/ports/packages usr/ports/stuff var/cache/packages var/cache/sources; do
+			umount -l $rootdir/$i
+		done
+		;;
 esac
 
 exit 0
