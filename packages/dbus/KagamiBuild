@@ -6,7 +6,7 @@
 
 name=dbus
 version=1.12.16
-release=2
+release=3
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -36,4 +36,7 @@ build() {
 	rm -rf "$PKG"/var/run
 
 	install -Dm0755 "$STUFF"/svc/dbus.initd "$PKG"/etc/init.d/dbus
+
+	echo "0" > "$PKG"/etc/machine-id
+	ln -sf /etc/machine-id "$PKG"/var/lib/dbus/machine-id
 }
