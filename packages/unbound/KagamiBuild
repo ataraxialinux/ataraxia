@@ -6,7 +6,7 @@
 
 name=unbound
 version=1.10.0
-release=2
+release=3
 backup=('etc/unbound/unbound.conf')
 source=("https://unbound.net/downloads/$name-$version.tar.gz")
 
@@ -31,8 +31,6 @@ build() {
 		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm644 "$STUFF"/unbound/config "$PKG"/etc/unbound/unbound.conf
 
 	for initd in unbound; do
 		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
