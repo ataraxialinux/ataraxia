@@ -1,0 +1,19 @@
+# Description: A Partition Magic clone, frontend to GNU Parted
+# URL:         http://gparted.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool itstool yelp-tools gtkmm3 parted btrfs-progs e2fsprogs dosfstools mtools ntfs-3g polkit
+# Section:     utils
+
+name=gparted
+version=1.1.0
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-doc
+	make
+	make DESTDIR="$PKG" install
+}
