@@ -218,7 +218,7 @@ build_toolchain() {
 
 	for toolchain in rpm base-files gettext-tiny m4 bison flex bc kmod gperf \
 			linux-headers binutils gcc-static musl gcc $EXTRAPKG slibtool \
-			autoconf automake cracklib pkgconf; do
+			autoconf automake cracklib heimdal pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko em -c "$BUILD"/host.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
@@ -267,6 +267,7 @@ build_toolchain() {
 	fi
 
 	msg "Cleaning up"
+	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
 
@@ -292,7 +293,7 @@ build_target() {
 			pcre grep mksh bash slibtool gdbm db expat perl libressl nettle ca-certificates \
 			autoconf automake xz lzip lz4 zstd libarchive lzo kmod libuargp libelf coreutils \
 			openbsd-diffutils sbase ubase sinit netbsd-tools busybox mandoc dialog pigz iproute2 \
-			kbd make vim libcap-ng util-linux e2fsprogs btrfs-progs dosfstools hwids gperf \
+			kbd make vim libcap-ng util-linux e2fsprogs btrfs-progs dosfstools heimdal hwids gperf \
 			eudev openrc netifrc libssh2 nghttp2 curl lua popt rpm neko libnl wireless_tools \
 			wpa_supplicant gptfdisk wget nano $LINUX"
 	fi

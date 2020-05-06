@@ -1,12 +1,12 @@
 # Description: A version of mutt with added features
 # URL:         https://neomutt.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  tcl ncurses gdbm libressl libidn gpgme
+# Depends on:  tcl ncurses gdbm libressl libidn2 gpgme sqlite heimdal
 # Section:     mail
 
 name=neomutt
 version=20200501
-release=1
+release=2
 source=("https://github.com/neomutt/neomutt/archive/$version.tar.gz")
 
 build() {
@@ -20,7 +20,13 @@ build() {
 		--disable-doc \
 		--gpgme \
 		--gdbm \
-		--ssl
+		--gss \
+		--ssl \
+		--lz4 \
+		--zstd \
+		--zlib \
+		--sqlite \
+		--idn2
 	make
 	make DESTDIR="$PKG" install
 }

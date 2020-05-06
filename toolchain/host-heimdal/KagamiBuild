@@ -1,0 +1,30 @@
+name=host-heimdal
+version=7.7.0
+release=1
+options=('bootstrap')
+source=("https://github.com/heimdal/heimdal/releases/download/heimdal-$version/heimdal-$version.tar.gz")
+
+build() {
+	cd "$SRC"/heimdal-$version
+	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
+	export ac_cv_header_execinfo_h=no
+
+	./configure $BUILDFLAGS \
+		--prefix="$TOOLS" \
+		--sbindir="$TOOLS"/bin \
+		--without-berkeley-db \
+		--without-mdb-db \
+		--without-ndbm-db \
+		--without-x \
+		--disable-afs-support \
+		--disable-mdb-db \
+		--disable-otp \
+		--disable-shared
+	make MAKEINFO=true
+	make MAKEINFO=true install
+
+	install -Dm755 lib/com_err/compile_et "$TOOLS"/bin/compile_et
+	install -Dm755 lib/asn1/asn1_compile "$TOOLS"/bin/asn1_compile
+	install -Dm755 lib/sl/slc "$TOOLS"/bin/slc
+	rm "$TOOLS"/bin/su
+}

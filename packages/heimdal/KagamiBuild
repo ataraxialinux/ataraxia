@@ -1,0 +1,72 @@
+# Description: Kerberos 5 implementation
+# URL:         https://github.com/heimdal/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses gdbm libcap-ng e2fsprogs
+# Priority:    required
+# Section:     security
+
+name=heimdal
+version=7.7.0
+release=1
+options=('bootstrap')
+backup=('etc/krb5.conf')
+source=("https://github.com/heimdal/heimdal/releases/download/$name-$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/heimdal/0001-fix-slc.patch
+	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
+	autoreconf -fi
+
+	export ac_cv_header_execinfo_h=no
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		export COMPILE_ET="$TOOLS/bin/compile_et"
+		export ASN1_COMPILE="$TOOLS/bin/asn1_compile"
+		export SLC="$TOOLS/bin/slc"
+	fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/heimdal \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-libintl \
+		--without-berkeley-db \
+		--without-mdb-db \
+		--without-x \
+		--enable-kcm \
+		--enable-kx509 \
+		--enable-pk-init \
+		--enable-pthread-support \
+		--enable-shared \
+		--disable-afs-support \
+		--disable-mdb-db \
+		--disable-osfc2 \
+		--disable-otp
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE MAKEINFO=true
+		$ORIGMAKE MAKEINFO=true DESTDIR="$PKG" install
+	else
+		make MAKEINFO=true
+		make MAKEINFO=true DESTDIR="$PKG" install
+	fi
+
+	mv "$PKG"/usr/bin/su "$PKG"/usr/bin/ksu
+	mv "$PKG"/usr/share/man/man1/su.1 "$PKG"/usr/share/man/man1/ksu.1
+
+	for initd in heimdal-kdc heimdal-kadmind heimdal-kpasswdd heimdal-kcm; do
+		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	done
+	mkdir -p "$PKG"/var/heimdal
+
+	cat > "$PKG"/etc/krb5.conf <<-EOF
+		[domain_realm]
+			.my.domain = MY.REALM
+	EOF
+
+	rm -rf "$PKG"/usr/include/com_err.h "$PKG"/usr/lib/libcom_err.a "$PKG"/usr/lib/libcom_err.so
+}

@@ -2,12 +2,12 @@
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
 #### Debian or Ubuntu (and derivatives):
 ```
-apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz zstd rsync pkg-config liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libarchive-dev libzstd-dev libfreetype6-dev libpopt-dev libacl1-dev libcap-dev libmagic-dev libdb-dev
+apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz zstd rsync pkg-config liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libarchive-dev libzstd-dev libfreetype6-dev libpopt-dev libacl1-dev libcap-dev libmagic-dev libdb-dev libreadline-dev
 ```
 #### Fedora/RHEL/CentOS
 ```
 dnf groupinstall "Development Tools" "C Development Tools and Libraries"
-dnf install gcc gcc-g++ libstdc++-static glibc-static mtools libisoburn python3 pigz libarchive curl bsdtar xorriso autoconf automake libtool freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel libdb-devel popt-devel file-devel libacl-devel libcap-devel gettext-devel gcc-plugin-devel gmp-devel mpfr-devel libmpc-devel
+dnf install gcc gcc-g++ libstdc++-static glibc-static mtools libisoburn python3 pigz libarchive curl bsdtar xorriso autoconf automake libtool freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel libdb-devel popt-devel file-devel libacl-devel libcap-devel gettext-devel gcc-plugin-devel gmp-devel mpfr-devel libmpc-devel readline-devel
 ln -sf python3 /usr/bin/python
 ```
 #### Arch Linux (and derivatives):
