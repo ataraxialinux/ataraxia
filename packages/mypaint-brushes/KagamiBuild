@@ -1,0 +1,21 @@
+# Description: Brushes used by MyPaint and other software using libmypaint
+# URL:         http://mypaint.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libmypaint
+# Section:     libs
+
+name=mypaint-brushes
+version=2.0.2
+release=1
+source=("https://github.com/mypaint/mypaint-brushes/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/mypaint-brushes/automake.patch
+
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
