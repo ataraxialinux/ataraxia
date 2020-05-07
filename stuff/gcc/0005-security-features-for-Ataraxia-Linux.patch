@@ -1,7 +1,40 @@
-diff -ruN gcc-9.1.0-orig/gcc/c-family/c-cppbuiltin.c gcc-9.1.0/gcc/c-family/c-cppbuiltin.c
---- gcc-9.1.0-orig/gcc/c-family/c-cppbuiltin.c	2019-01-15 05:12:11.000000000 +0900
-+++ gcc-9.1.0/gcc/c-family/c-cppbuiltin.c	2019-05-04 01:09:48.037366817 +0900
-@@ -1357,6 +1357,10 @@
+From eb6ccaf96a5e4922890e46d28ed1897b889d0c8f Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 7 May 2020 17:37:17 +0300
+Subject: [PATCH 05/11] security features for Ataraxia Linux
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gcc/c-family/c-cppbuiltin.c        |  4 ++++
+ gcc/c-family/c.opt                 |  4 ++--
+ gcc/common.opt                     |  2 +-
+ gcc/config/aarch64/aarch64-linux.h |  1 +
+ gcc/config/alpha/linux-elf.h       |  2 +-
+ gcc/config/arm/linux-elf.h         |  1 +
+ gcc/config/gnu-user.h              |  6 ++---
+ gcc/config/i386/gnu-user.h         |  2 +-
+ gcc/config/i386/gnu-user64.h       |  1 +
+ gcc/config/ia64/linux.h            |  2 +-
+ gcc/config/mips/gnu-user.h         |  1 +
+ gcc/config/riscv/linux.h           |  1 +
+ gcc/config/rs6000/linux64.h        |  4 ++--
+ gcc/config/rs6000/sysv4.h          |  2 +-
+ gcc/config/s390/linux.h            |  2 +-
+ gcc/config/sparc/linux.h           |  2 +-
+ gcc/doc/invoke.texi                |  9 ++++++++
+ gcc/gcc.c                          | 37 ++++++++++++++++++++++--------
+ include/libiberty.h                |  2 ++
+ libiberty/Makefile.in              |  1 +
+ libitm/configure.tgt               | 10 ++++++++
+ libstdc++-v3/po/Makefile.am        |  1 +
+ libstdc++-v3/po/Makefile.in        |  1 +
+ 23 files changed, 75 insertions(+), 23 deletions(-)
+
+diff --git a/gcc/c-family/c-cppbuiltin.c b/gcc/c-family/c-cppbuiltin.c
+index db91a3679..ed976c714 100644
+--- a/gcc/c-family/c-cppbuiltin.c
++++ b/gcc/c-family/c-cppbuiltin.c
+@@ -1385,6 +1385,10 @@ c_cpp_builtins (cpp_reader *pfile)
    builtin_define_with_value ("__REGISTER_PREFIX__", REGISTER_PREFIX, 0);
    builtin_define_with_value ("__USER_LABEL_PREFIX__", user_label_prefix, 0);
  
@@ -12,10 +45,11 @@ diff -ruN gcc-9.1.0-orig/gcc/c-family/c-cppbuiltin.c gcc-9.1.0/gcc/c-family/c-cp
    /* Misc.  */
    if (flag_gnu89_inline)
      cpp_define (pfile, "__GNUC_GNU_INLINE__");
-diff -ruN gcc-9.1.0-orig/gcc/c-family/c.opt gcc-9.1.0/gcc/c-family/c.opt
---- gcc-9.1.0-orig/gcc/c-family/c.opt	2019-04-13 01:12:49.000000000 +0900
-+++ gcc-9.1.0/gcc/c-family/c.opt	2019-05-04 01:24:57.237421032 +0900
-@@ -576,7 +576,7 @@
+diff --git a/gcc/c-family/c.opt b/gcc/c-family/c.opt
+index c49da99d3..93f253190 100644
+--- a/gcc/c-family/c.opt
++++ b/gcc/c-family/c.opt
+@@ -599,7 +599,7 @@ Warn about function calls with format strings that write past the end
  of the destination region.  Same as -Wformat-overflow=1.
  
  Wformat-security
@@ -24,7 +58,7 @@ diff -ruN gcc-9.1.0-orig/gcc/c-family/c.opt gcc-9.1.0/gcc/c-family/c.opt
  Warn about possible security problems with format functions.
  
  Wformat-signedness
-@@ -597,7 +597,7 @@
+@@ -620,7 +620,7 @@ C ObjC C++ ObjC++ Var(warn_format_zero_length) Warning LangEnabledBy(C ObjC C++
  Warn about zero-length formats.
  
  Wformat=
@@ -33,9 +67,23 @@ diff -ruN gcc-9.1.0-orig/gcc/c-family/c.opt gcc-9.1.0/gcc/c-family/c.opt
  Warn about printf/scanf/strftime/strfmon format string anomalies.
  
  Wformat-overflow=
-diff -ruN gcc-9.1.0-orig/gcc/config/aarch64/aarch64-linux.h gcc-9.1.0/gcc/config/aarch64/aarch64-linux.h
---- gcc-9.1.0-orig/gcc/config/aarch64/aarch64-linux.h	2019-04-24 00:51:25.000000000 +0900
-+++ gcc-9.1.0/gcc/config/aarch64/aarch64-linux.h	2019-05-04 01:16:30.791467659 +0900
+diff --git a/gcc/common.opt b/gcc/common.opt
+index 49fdd6b42..67b6de2df 100644
+--- a/gcc/common.opt
++++ b/gcc/common.opt
+@@ -770,7 +770,7 @@ Common Var(warn_system_headers) Warning
+ Do not suppress warnings from system headers.
+ 
+ Wtrampolines
+-Common Var(warn_trampolines) Warning
++Common Var(warn_trampolines) Init(1) Warning
+ Warn whenever a trampoline is generated.
+ 
+ Wtype-limits
+diff --git a/gcc/config/aarch64/aarch64-linux.h b/gcc/config/aarch64/aarch64-linux.h
+index e587e2e9a..1d1017aa5 100644
+--- a/gcc/config/aarch64/aarch64-linux.h
++++ b/gcc/config/aarch64/aarch64-linux.h
 @@ -35,6 +35,7 @@
  #define CPP_SPEC "%{pthread:-D_REENTRANT}"
  
@@ -44,9 +92,23 @@ diff -ruN gcc-9.1.0-orig/gcc/config/aarch64/aarch64-linux.h gcc-9.1.0/gcc/config
     %{static:-Bstatic}				\
     %{shared:-shared}				\
     %{symbolic:-Bsymbolic}			\
-diff -ruN gcc-9.1.0-orig/gcc/config/arm/linux-elf.h gcc-9.1.0/gcc/config/arm/linux-elf.h
---- gcc-9.1.0-orig/gcc/config/arm/linux-elf.h	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/config/arm/linux-elf.h	2019-05-04 01:21:25.223112262 +0900
+diff --git a/gcc/config/alpha/linux-elf.h b/gcc/config/alpha/linux-elf.h
+index e25fcac3c..22b2f7b0d 100644
+--- a/gcc/config/alpha/linux-elf.h
++++ b/gcc/config/alpha/linux-elf.h
+@@ -37,7 +37,7 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ #define ELF_DYNAMIC_LINKER	GNU_USER_DYNAMIC_LINKER
+ 
+-#define LINK_SPEC "-m elf64alpha %{G*} %{relax:-relax}		\
++#define LINK_SPEC "-m elf64alpha --as-needed %{G*} %{relax:-relax}		\
+   %{O*:-O3} %{!O*:-O1}						\
+   %{shared:-shared}						\
+   %{!shared:							\
+diff --git a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+index 0ec3aa531..f8bda84de 100644
+--- a/gcc/config/arm/linux-elf.h
++++ b/gcc/config/arm/linux-elf.h
 @@ -70,6 +70,7 @@
       %{rdynamic:-export-dynamic} \
       %{!shared:-dynamic-linker " GNU_USER_DYNAMIC_LINKER "}} \
@@ -55,10 +117,11 @@ diff -ruN gcc-9.1.0-orig/gcc/config/arm/linux-elf.h gcc-9.1.0/gcc/config/arm/lin
     %{mbig-endian:-EB} %{mlittle-endian:-EL}" \
     SUBTARGET_EXTRA_LINK_SPEC
  
-diff -ruN gcc-9.1.0-orig/gcc/config/gnu-user.h gcc-9.1.0/gcc/config/gnu-user.h
---- gcc-9.1.0-orig/gcc/config/gnu-user.h	2019-01-16 18:38:21.000000000 +0900
-+++ gcc-9.1.0/gcc/config/gnu-user.h	2019-05-04 01:13:31.484067424 +0900
-@@ -136,17 +136,17 @@
+diff --git a/gcc/config/gnu-user.h b/gcc/config/gnu-user.h
+index 448f879d9..2bcbcfce9 100644
+--- a/gcc/config/gnu-user.h
++++ b/gcc/config/gnu-user.h
+@@ -134,17 +134,17 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
  #define LIBASAN_EARLY_SPEC "%{!shared:libasan_preinit%O%s} " \
    "%{static-libasan:%{!shared:" \
    LD_STATIC_OPTION " --whole-archive -lasan --no-whole-archive " \
@@ -79,21 +142,11 @@ diff -ruN gcc-9.1.0-orig/gcc/config/gnu-user.h gcc-9.1.0/gcc/config/gnu-user.h
  #endif
  
  #undef TARGET_F951_OPTIONS
-diff -ruN gcc-9.1.0-orig/gcc/config/i386/gnu-user64.h gcc-9.1.0/gcc/config/i386/gnu-user64.h
---- gcc-9.1.0-orig/gcc/config/i386/gnu-user64.h	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/config/i386/gnu-user64.h	2019-05-04 01:19:41.341987517 +0900
-@@ -56,6 +56,7 @@
-                   "%{" SPEC_64 ":-m " GNU_USER_LINK_EMULATION64 "} \
-                    %{" SPEC_32 ":-m " GNU_USER_LINK_EMULATION32 "} \
-                    %{" SPEC_X32 ":-m " GNU_USER_LINK_EMULATIONX32 "} \
-+  --as-needed \
-   %{shared:-shared} \
-   %{!shared: \
-     %{!static: \
-diff -ruN gcc-9.1.0-orig/gcc/config/i386/gnu-user.h gcc-9.1.0/gcc/config/i386/gnu-user.h
---- gcc-9.1.0-orig/gcc/config/i386/gnu-user.h	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/config/i386/gnu-user.h	2019-05-04 01:20:12.729111590 +0900
-@@ -74,7 +74,7 @@
+diff --git a/gcc/config/i386/gnu-user.h b/gcc/config/i386/gnu-user.h
+index ae4aa844f..54b91c049 100644
+--- a/gcc/config/i386/gnu-user.h
++++ b/gcc/config/i386/gnu-user.h
+@@ -74,7 +74,7 @@ along with GCC; see the file COPYING3.  If not see
    { "link_emulation", GNU_USER_LINK_EMULATION },\
    { "dynamic_linker", GNU_USER_DYNAMIC_LINKER }
  
@@ -102,21 +155,48 @@ diff -ruN gcc-9.1.0-orig/gcc/config/i386/gnu-user.h gcc-9.1.0/gcc/config/i386/gn
    %{!shared: \
      %{!static: \
        %{!static-pie: \
-diff -ruN gcc-9.1.0-orig/gcc/config/mips/gnu-user.h gcc-9.1.0/gcc/config/mips/gnu-user.h
---- gcc-9.1.0-orig/gcc/config/mips/gnu-user.h	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/config/mips/gnu-user.h	2019-05-04 01:20:35.796471936 +0900
-@@ -55,6 +55,7 @@
+diff --git a/gcc/config/i386/gnu-user64.h b/gcc/config/i386/gnu-user64.h
+index 785c68220..21dd66b41 100644
+--- a/gcc/config/i386/gnu-user64.h
++++ b/gcc/config/i386/gnu-user64.h
+@@ -56,6 +56,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+                   "%{" SPEC_64 ":-m " GNU_USER_LINK_EMULATION64 "} \
+                    %{" SPEC_32 ":-m " GNU_USER_LINK_EMULATION32 "} \
+                    %{" SPEC_X32 ":-m " GNU_USER_LINK_EMULATIONX32 "} \
++  --as-needed \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/ia64/linux.h b/gcc/config/ia64/linux.h
+index ee38e218a..0325971d8 100644
+--- a/gcc/config/ia64/linux.h
++++ b/gcc/config/ia64/linux.h
+@@ -58,7 +58,7 @@ do {						\
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld-linux-ia64.so.2"
+ 
+ #undef LINK_SPEC
+-#define LINK_SPEC "\
++#define LINK_SPEC " --as-needed \
+   %{shared:-shared} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/config/mips/gnu-user.h b/gcc/config/mips/gnu-user.h
+index 5d0782100..4be5fbb21 100644
+--- a/gcc/config/mips/gnu-user.h
++++ b/gcc/config/mips/gnu-user.h
+@@ -55,6 +55,7 @@ along with GCC; see the file COPYING3.  If not see
  #undef GNU_USER_TARGET_LINK_SPEC
  #define GNU_USER_TARGET_LINK_SPEC "\
    %{G*} %{EB} %{EL} %{mips*} %{shared} \
-+  -as-needed \
++ -as-needed \
    %{!shared: \
      %{!static: \
        %{rdynamic:-export-dynamic} \
-diff -ruN gcc-9.1.0-orig/gcc/config/riscv/linux.h gcc-9.1.0/gcc/config/riscv/linux.h
---- gcc-9.1.0-orig/gcc/config/riscv/linux.h	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/config/riscv/linux.h	2019-05-04 01:20:57.327877854 +0900
-@@ -58,6 +58,7 @@
+diff --git a/gcc/config/riscv/linux.h b/gcc/config/riscv/linux.h
+index 4afef7c22..ba1a6e60e 100644
+--- a/gcc/config/riscv/linux.h
++++ b/gcc/config/riscv/linux.h
+@@ -58,6 +58,7 @@ along with GCC; see the file COPYING3.  If not see
    "%{mabi=ilp32:_ilp32}"
  
  #define LINK_SPEC "\
@@ -124,10 +204,11 @@ diff -ruN gcc-9.1.0-orig/gcc/config/riscv/linux.h gcc-9.1.0/gcc/config/riscv/lin
  -melf" XLEN_SPEC "lriscv" LD_EMUL_SUFFIX " \
  %{mno-relax:--no-relax} \
  %{shared} \
-diff -ruN gcc-9.1.0-orig/gcc/config/rs6000/linux64.h gcc-9.1.0/gcc/config/rs6000/linux64.h
---- gcc-9.1.0-orig/gcc/config/rs6000/linux64.h	2019-03-11 22:58:44.000000000 +0900
-+++ gcc-9.1.0/gcc/config/rs6000/linux64.h	2019-05-04 01:17:53.833041958 +0900
-@@ -473,13 +473,13 @@
+diff --git a/gcc/config/rs6000/linux64.h b/gcc/config/rs6000/linux64.h
+index 34776c842..83c3c0aae 100644
+--- a/gcc/config/rs6000/linux64.h
++++ b/gcc/config/rs6000/linux64.h
+@@ -457,13 +457,13 @@ extern int dot_symbols;
  					   " -m elf64ppc")
  #endif
  
@@ -143,10 +224,11 @@ diff -ruN gcc-9.1.0-orig/gcc/config/rs6000/linux64.h gcc-9.1.0/gcc/config/rs6000
    %{!static-pie: \
      %{rdynamic:-export-dynamic} \
      -dynamic-linker " GNU_USER_DYNAMIC_LINKER64 "}}} \
-diff -ruN gcc-9.1.0-orig/gcc/config/rs6000/sysv4.h gcc-9.1.0/gcc/config/rs6000/sysv4.h
---- gcc-9.1.0-orig/gcc/config/rs6000/sysv4.h	2019-02-12 00:19:59.000000000 +0900
-+++ gcc-9.1.0/gcc/config/rs6000/sysv4.h	2019-05-04 01:18:44.403594142 +0900
-@@ -790,7 +790,7 @@
+diff --git a/gcc/config/rs6000/sysv4.h b/gcc/config/rs6000/sysv4.h
+index 9ade72114..9490b84a1 100644
+--- a/gcc/config/rs6000/sysv4.h
++++ b/gcc/config/rs6000/sysv4.h
+@@ -789,7 +789,7 @@ GNU_USER_TARGET_CC1_SPEC
  #define GNU_USER_DYNAMIC_LINKER GLIBC_DYNAMIC_LINKER
  #endif
  
@@ -155,10 +237,11 @@ diff -ruN gcc-9.1.0-orig/gcc/config/rs6000/sysv4.h gcc-9.1.0/gcc/config/rs6000/s
    %{rdynamic:-export-dynamic} \
    -dynamic-linker " GNU_USER_DYNAMIC_LINKER "}}"
  
-diff -ruN gcc-9.1.0-orig/gcc/config/s390/linux.h gcc-9.1.0/gcc/config/s390/linux.h
---- gcc-9.1.0-orig/gcc/config/s390/linux.h	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/config/s390/linux.h	2019-05-04 01:16:56.430711859 +0900
-@@ -77,7 +77,7 @@
+diff --git a/gcc/config/s390/linux.h b/gcc/config/s390/linux.h
+index 6919b468f..56d52d41b 100644
+--- a/gcc/config/s390/linux.h
++++ b/gcc/config/s390/linux.h
+@@ -82,7 +82,7 @@ along with GCC; see the file COPYING3.  If not see
  
  #undef  LINK_SPEC
  #define LINK_SPEC \
@@ -167,10 +250,24 @@ diff -ruN gcc-9.1.0-orig/gcc/config/s390/linux.h gcc-9.1.0/gcc/config/s390/linux
     %{shared:-shared} \
     %{!shared: \
        %{static:-static} \
-diff -ruN gcc-9.1.0-orig/gcc/doc/invoke.texi gcc-9.1.0/gcc/doc/invoke.texi
---- gcc-9.1.0-orig/gcc/doc/invoke.texi	2019-04-23 19:03:41.000000000 +0900
-+++ gcc-9.1.0/gcc/doc/invoke.texi	2019-05-04 01:09:26.689872777 +0900
-@@ -8308,6 +8308,12 @@
+diff --git a/gcc/config/sparc/linux.h b/gcc/config/sparc/linux.h
+index 81201e67a..6477d7ec5 100644
+--- a/gcc/config/sparc/linux.h
++++ b/gcc/config/sparc/linux.h
+@@ -87,7 +87,7 @@ extern const char *host_detect_local_cpu (int argc, const char **argv);
+ #define GLIBC_DYNAMIC_LINKER "/lib/ld-linux.so.2"
+ 
+ #undef  LINK_SPEC
+-#define LINK_SPEC "-m elf32_sparc %{shared:-shared} \
++#define LINK_SPEC "-m elf32_sparc --as-needed %{shared:-shared} \
+   %{!mno-relax:%{!r:-relax}} \
+   %{!shared: \
+     %{!static: \
+diff --git a/gcc/doc/invoke.texi b/gcc/doc/invoke.texi
+index 527d36253..030a9da8d 100644
+--- a/gcc/doc/invoke.texi
++++ b/gcc/doc/invoke.texi
+@@ -9219,6 +9219,12 @@ also turns on the following optimization flags:
  Please note the warning under @option{-fgcse} about
  invoking @option{-O2} on programs that use computed gotos.
  
@@ -183,21 +280,21 @@ diff -ruN gcc-9.1.0-orig/gcc/doc/invoke.texi gcc-9.1.0/gcc/doc/invoke.texi
  @item -O3
  @opindex O3
  Optimize yet more.  @option{-O3} turns on all optimizations specified
-@@ -13491,6 +13497,10 @@
+@@ -14592,6 +14598,9 @@ For example, @option{-Wl,-Map,output.map} passes @option{-Map output.map} to the
  linker.  When using the GNU linker, you can also get the same effect with
  @option{-Wl,-Map=output.map}.
  
-+
 +NOTE: In Ataraxia Linux, for LDFLAGS, the option
 +@option{-Wl,-z,relro,now} is used.  To disable, use @option{-Wl,-z,norelro}.
 +
  @item -u @var{symbol}
  @opindex u
  Pretend the symbol @var{symbol} is undefined, to force linking of
-diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
---- gcc-9.1.0-orig/gcc/gcc.c	2019-03-11 22:58:44.000000000 +0900
-+++ gcc-9.1.0/gcc/gcc.c	2019-05-04 01:26:45.898574024 +0900
-@@ -696,8 +696,11 @@
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 036729981..146e9b004 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -695,8 +695,11 @@ proper position among the other output files.  */
  #ifdef LIBASAN_EARLY_SPEC
  #define LIBASAN_SPEC STATIC_LIBASAN_LIBS
  #elif defined(HAVE_LD_STATIC_DYNAMIC)
@@ -211,7 +308,21 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
  		     STATIC_LIBASAN_LIBS
  #else
  #define LIBASAN_SPEC "-lasan" STATIC_LIBASAN_LIBS
-@@ -732,8 +735,11 @@
+@@ -713,8 +716,11 @@ proper position among the other output files.  */
+ #ifdef LIBTSAN_EARLY_SPEC
+ #define LIBTSAN_SPEC STATIC_LIBTSAN_LIBS
+ #elif defined(HAVE_LD_STATIC_DYNAMIC)
+-#define LIBTSAN_SPEC "%{static-libtsan:" LD_STATIC_OPTION \
+-		     "} -ltsan %{static-libtsan:" LD_DYNAMIC_OPTION "}" \
++#define LIBTSAN_SPEC "%{static-libtsan:" LD_STATIC_OPTION "}" \
++		     " %{!static-libtsan:%{!fuse-ld=gold:--push-state }--no-as-needed}" \
++		     " -ltsan " \
++		     " %{static-libtsan:" LD_DYNAMIC_OPTION "}" \
++		     " %{!static-libtsan:%{fuse-ld=gold:--as-needed;:--pop-state}}" \
+ 		     STATIC_LIBTSAN_LIBS
+ #else
+ #define LIBTSAN_SPEC "-ltsan" STATIC_LIBTSAN_LIBS
+@@ -731,8 +737,11 @@ proper position among the other output files.  */
  #ifdef LIBLSAN_EARLY_SPEC
  #define LIBLSAN_SPEC STATIC_LIBLSAN_LIBS
  #elif defined(HAVE_LD_STATIC_DYNAMIC)
@@ -225,7 +336,7 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
  		     STATIC_LIBLSAN_LIBS
  #else
  #define LIBLSAN_SPEC "-llsan" STATIC_LIBLSAN_LIBS
-@@ -748,8 +754,11 @@
+@@ -747,8 +756,11 @@ proper position among the other output files.  */
  #define STATIC_LIBUBSAN_LIBS \
    " %{static-libubsan|static:%:include(libsanitizer.spec)%(link_libubsan)}"
  #ifdef HAVE_LD_STATIC_DYNAMIC
@@ -239,7 +350,7 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
  		     STATIC_LIBUBSAN_LIBS
  #else
  #define LIBUBSAN_SPEC "-lubsan" STATIC_LIBUBSAN_LIBS
-@@ -875,6 +884,12 @@
+@@ -874,6 +886,12 @@ proper position among the other output files.  */
  #define LINK_GCC_C_SEQUENCE_SPEC "%G %{!nolibc:%L %G}"
  #endif
  
@@ -252,7 +363,7 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
  #ifndef LINK_SSP_SPEC
  #ifdef TARGET_LIBC_PROVIDES_SSP
  #define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
-@@ -1040,6 +1055,7 @@
+@@ -1040,6 +1058,7 @@ proper position among the other output files.  */
     "%{flto|flto=*:%<fcompare-debug*} \
      %{flto} %{fno-lto} %{flto=*} %l " LINK_PIE_SPEC \
     "%{fuse-ld=*:-fuse-ld=%*} " LINK_COMPRESS_DEBUG_SPEC \
@@ -260,7 +371,7 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
     "%X %{o*} %{e*} %{N} %{n} %{r}\
      %{s} %{t} %{u*} %{z} %{Z} %{!nostdlib:%{!r:%{!nostartfiles:%S}}} \
      %{static|no-pie|static-pie:} %@{L*} %(mfwrap) %(link_libgcc) " \
-@@ -1156,7 +1172,7 @@
+@@ -1156,7 +1175,7 @@ static const char *cc1_options =
   %{-version:--version}\
   %{-help=*:--help=%*}\
   %{!fsyntax-only:%{S:%W{o*}%{!o*:-o %b.s}}}\
@@ -269,26 +380,14 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
   %{coverage:-fprofile-arcs -ftest-coverage}\
   %{fprofile-arcs|fprofile-generate*|coverage:\
     %{!fprofile-update=single:\
-diff -ruN gcc-9.1.0-orig/gcc/params.def gcc-9.1.0/gcc/params.def
---- gcc-9.1.0-orig/gcc/params.def	2019-04-12 23:35:48.000000000 +0900
-+++ gcc-9.1.0/gcc/params.def	2019-05-04 01:27:14.409833210 +0900
-@@ -752,7 +752,7 @@
- DEFPARAM (PARAM_SSP_BUFFER_SIZE,
- 	  "ssp-buffer-size",
- 	  "The lower bound for a buffer to be considered for stack smashing protection.",
--	  8, 1, 0)
-+	  4, 1, 0)
- 
- DEFPARAM (PARAM_MIN_SIZE_FOR_STACK_SHARING,
- 	  "min-size-for-stack-sharing",
-diff -ruN gcc-9.1.0-orig/include/libiberty.h gcc-9.1.0/include/libiberty.h
---- gcc-9.1.0-orig/include/libiberty.h	2019-01-10 06:39:49.000000000 +0900
-+++ gcc-9.1.0/include/libiberty.h	2019-05-04 01:29:45.965931181 +0900
-@@ -641,8 +641,11 @@
+diff --git a/include/libiberty.h b/include/libiberty.h
+index 141cb886a..dc8be557b 100644
+--- a/include/libiberty.h
++++ b/include/libiberty.h
+@@ -645,8 +645,10 @@ extern int pwait (int, int *, int);
  /* Like sprintf but provides a pointer to malloc'd storage, which must
     be freed by the caller.  */
  
-+/* asprintf may be declared as a macro by glibc with __USE_FORTIFY_LEVEL.  */
 +#ifndef asprintf
  extern int asprintf (char **, const char *, ...) ATTRIBUTE_PRINTF_2;
  #endif
@@ -296,34 +395,23 @@ diff -ruN gcc-9.1.0-orig/include/libiberty.h gcc-9.1.0/include/libiberty.h
  
  /* Like asprintf but allocates memory without fail. This works like
     xmalloc.  */
-diff -ruN gcc-9.1.0-orig/libatomic/Makefile.in gcc-9.1.0/libatomic/Makefile.in
---- gcc-9.1.0-orig/libatomic/Makefile.in	2019-05-03 17:01:59.000000000 +0900
-+++ gcc-9.1.0/libatomic/Makefile.in	2019-05-04 01:32:15.606126510 +0900
-@@ -414,7 +414,8 @@
- PAT_S = $(word 3,$(PAT_SPLIT))
- IFUNC_DEF = -DIFUNC_ALT=$(PAT_S)
- IFUNC_OPT = $(word $(PAT_S),$(IFUNC_OPTIONS))
--M_DEPS = -MT $@ -MD -MP -MF $(DEPDIR)/$(@F).Ppo
-+@AMDEP_TRUE@M_DEPS = -MT $@ -MD -MP -MF $(DEPDIR)/$(@F).Ppo
-+@AMDEP_FALSE@M_DEPS =
- M_SIZE = -DN=$(PAT_N)
- M_IFUNC = $(if $(PAT_S),$(IFUNC_DEF) $(IFUNC_OPT))
- M_FILE = $(PAT_BASE)_n.c
-diff -ruN gcc-9.1.0-orig/libiberty/Makefile.in gcc-9.1.0/libiberty/Makefile.in
---- gcc-9.1.0-orig/libiberty/Makefile.in	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/libiberty/Makefile.in	2019-05-04 01:31:02.099990325 +0900
-@@ -254,6 +254,7 @@
+diff --git a/libiberty/Makefile.in b/libiberty/Makefile.in
+index d6b302e02..8d84a09f1 100644
+--- a/libiberty/Makefile.in
++++ b/libiberty/Makefile.in
+@@ -256,6 +256,7 @@ $(TARGETLIB): $(REQUIRED_OFILES) $(EXTRA_OFILES) $(LIBOBJS)
  	  $(AR) $(AR_FLAGS) $(TARGETLIB) \
  	    $(REQUIRED_OFILES) $(EXTRA_OFILES) $(LIBOBJS); \
  	  $(RANLIB) $(TARGETLIB); \
-+          cp $(TARGETLIB) ../ ; \
++	  cp $(TARGETLIB) ../ ; \
  	  cd ..; \
  	else true; fi; \
  	if [ x"$(NOASANFLAG)" != x ]; then \
-diff -ruN gcc-9.1.0-orig/libitm/configure.tgt gcc-9.1.0/libitm/configure.tgt
---- gcc-9.1.0-orig/libitm/configure.tgt	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/libitm/configure.tgt	2019-05-04 01:31:41.866980860 +0900
-@@ -43,6 +43,16 @@
+diff --git a/libitm/configure.tgt b/libitm/configure.tgt
+index 04109160e..107b957ec 100644
+--- a/libitm/configure.tgt
++++ b/libitm/configure.tgt
+@@ -46,6 +46,16 @@ if test "$gcc_cv_have_tls" = yes ; then
    esac
  fi
  
@@ -340,10 +428,11 @@ diff -ruN gcc-9.1.0-orig/libitm/configure.tgt gcc-9.1.0/libitm/configure.tgt
  # Map the target cpu to an ARCH sub-directory.  At the same time,
  # work out any special compilation flags as necessary.
  case "${target_cpu}" in
-diff -ruN gcc-9.1.0-orig/libstdc++-v3/po/Makefile.am gcc-9.1.0/libstdc++-v3/po/Makefile.am
---- gcc-9.1.0-orig/libstdc++-v3/po/Makefile.am	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/libstdc++-v3/po/Makefile.am	2019-05-04 01:27:52.480847581 +0900
-@@ -38,6 +38,7 @@
+diff --git a/libstdc++-v3/po/Makefile.am b/libstdc++-v3/po/Makefile.am
+index a9391d8d1..f7eee24dc 100644
+--- a/libstdc++-v3/po/Makefile.am
++++ b/libstdc++-v3/po/Makefile.am
+@@ -38,6 +38,7 @@ MSGFMT = msgfmt
  EXTRA_DIST = string_literals.cc POTFILES.in $(PACKAGE).pot $(LOCALE_IN)
  
  .po.mo:
@@ -351,10 +440,11 @@ diff -ruN gcc-9.1.0-orig/libstdc++-v3/po/Makefile.am gcc-9.1.0/libstdc++-v3/po/M
  	$(MSGFMT) -o $@ $<
  
  all-local: all-local-$(USE_NLS)
-diff -ruN gcc-9.1.0-orig/libstdc++-v3/po/Makefile.in gcc-9.1.0/libstdc++-v3/po/Makefile.in
---- gcc-9.1.0-orig/libstdc++-v3/po/Makefile.in	2019-02-27 20:25:44.000000000 +0900
-+++ gcc-9.1.0/libstdc++-v3/po/Makefile.in	2019-05-04 01:28:13.624301863 +0900
-@@ -547,6 +547,7 @@
+diff --git a/libstdc++-v3/po/Makefile.in b/libstdc++-v3/po/Makefile.in
+index a0f84b0cf..ab24a47a2 100644
+--- a/libstdc++-v3/po/Makefile.in
++++ b/libstdc++-v3/po/Makefile.in
+@@ -548,6 +548,7 @@ uninstall-am:
  
  
  .po.mo:
@@ -362,3 +452,6 @@ diff -ruN gcc-9.1.0-orig/libstdc++-v3/po/Makefile.in gcc-9.1.0/libstdc++-v3/po/M
  	$(MSGFMT) -o $@ $<
  
  all-local: all-local-$(USE_NLS)
+-- 
+2.26.2
+

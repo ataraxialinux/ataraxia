@@ -1,0 +1,33 @@
+From a707b23f60e648f06574c24cbb2a307c0b924d62 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 7 May 2020 17:25:13 +0300
+Subject: [PATCH 04/11] fix libstdc++ futex time64
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ libstdc++-v3/src/c++11/futex.cc | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/libstdc++-v3/src/c++11/futex.cc b/libstdc++-v3/src/c++11/futex.cc
+index c9de11a7e..7be702dbe 100644
+--- a/libstdc++-v3/src/c++11/futex.cc
++++ b/libstdc++-v3/src/c++11/futex.cc
+@@ -61,7 +61,15 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+ 	struct timeval tv;
+ 	gettimeofday (&tv, NULL);
+ 	// Convert the absolute timeout value to a relative timeout
++#if defined(SYS_futex_time64)
++	struct
++	  {
++	    long tv_sec;
++	    long tv_nsec;
++	  } rt;
++#else
+ 	struct timespec rt;
++#endif
+ 	rt.tv_sec = __s.count() - tv.tv_sec;
+ 	rt.tv_nsec = __ns.count() - tv.tv_usec * 1000;
+ 	if (rt.tv_nsec < 0)
+-- 
+2.26.2
+

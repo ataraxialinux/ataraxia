@@ -1,7 +1,7 @@
-From 347212e2ab57b8b4723f2571d539eae0b0d5c7ca Mon Sep 17 00:00:00 2001
+From c08a13671694ab494fb5ccdd8f9bd84117edffc4 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 13 Jun 2019 00:38:14 +0900
-Subject: [PATCH 07/11] add support for static pie
+Date: Thu, 7 May 2020 17:22:09 +0300
+Subject: [PATCH 03/11] Support for static PIE
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -11,10 +11,10 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  3 files changed, 9 insertions(+), 11 deletions(-)
 
 diff --git a/gcc/common.opt b/gcc/common.opt
-index d342c4f37..2aae4a3ce 100644
+index d33383b52..49fdd6b42 100644
 --- a/gcc/common.opt
 +++ b/gcc/common.opt
-@@ -3287,11 +3287,11 @@ Driver
+@@ -3391,11 +3391,11 @@ Driver
  
  no-pie
  Driver RejectNegative Negative(shared)
@@ -29,7 +29,7 @@ index d342c4f37..2aae4a3ce 100644
  static-pie
  Driver RejectNegative Negative(pie)
 diff --git a/gcc/config/gnu-user.h b/gcc/config/gnu-user.h
-index 055a4f0af..7a671c6a4 100644
+index ff2e880b1..448f879d9 100644
 --- a/gcc/config/gnu-user.h
 +++ b/gcc/config/gnu-user.h
 @@ -51,13 +51,12 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
@@ -50,9 +50,9 @@ index 055a4f0af..7a671c6a4 100644
     %{fvtable-verify=none:%s; \
       fvtable-verify=preinit:vtv_start_preinit.o%s; \
 @@ -76,8 +75,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
-   "%{fvtable-verify=none:%s; \
+   "%{!static:%{fvtable-verify=none:%s; \
       fvtable-verify=preinit:vtv_end_preinit.o%s; \
-      fvtable-verify=std:vtv_end.o%s} \
+      fvtable-verify=std:vtv_end.o%s}} \
 -   %{static:crtend.o%s; \
 -     shared|static-pie|" PIE_SPEC ":crtendS.o%s; \
 +   %{shared|" PIE_SPEC ":crtendS.o%s; \
@@ -69,15 +69,15 @@ index 055a4f0af..7a671c6a4 100644
  
  #define GNU_USER_TARGET_LINK_GCC_C_SEQUENCE_SPEC \
 diff --git a/gcc/gcc.c b/gcc/gcc.c
-index 09499212e..797cad682 100644
+index e6887590a..036729981 100644
 --- a/gcc/gcc.c
 +++ b/gcc/gcc.c
-@@ -930,12 +930,12 @@ proper position among the other output files.  */
+@@ -931,12 +931,12 @@ proper position among the other output files.  */
  #ifndef LINK_PIE_SPEC
  #ifdef HAVE_LD_PIE
  #ifndef LD_PIE_SPEC
 -#define LD_PIE_SPEC "-pie"
-+#define LD_PIE_SPEC "-pie %{static|static-pie:--no-dynamic-linker -z text -Bsymbolic}"
++#define LD_PIE_SPEC "-pie %{static-pie:-static} %{static|static-pie:--no-dynamic-linker -z text -Bsymbolic}"
  #endif
  #else
  #define LD_PIE_SPEC ""
@@ -88,5 +88,5 @@ index 09499212e..797cad682 100644
  
  #ifndef LINK_BUILDID_SPEC
 -- 
-2.20.1
+2.26.2
 

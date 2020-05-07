@@ -1,12 +1,24 @@
-gcc: poison-system-directories
+From 5be6a4f4703e39de7a85a9c3cf198c188816572b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 7 May 2020 17:44:31 +0300
+Subject: [PATCH 09/11] support for system position directories
 
-Patch by Ishimoto Shinobu
-Based on Khem Raj's work
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gcc/common.opt      |  4 ++++
+ gcc/config.in       |  6 ++++++
+ gcc/configure       | 16 ++++++++++++++++
+ gcc/configure.ac    | 10 ++++++++++
+ gcc/doc/invoke.texi |  9 +++++++++
+ gcc/gcc.c           |  2 ++
+ gcc/incpath.c       | 21 +++++++++++++++++++++
+ 7 files changed, 68 insertions(+)
 
-diff -ruN gcc-9.1.0-orig/gcc/common.opt gcc-9.1.0/gcc/common.opt
---- gcc-9.1.0-orig/gcc/common.opt	2019-03-09 18:28:04.000000000 +0900
-+++ gcc-9.1.0/gcc/common.opt	2019-05-03 21:14:32.246010724 +0900
-@@ -684,6 +684,10 @@
+diff --git a/gcc/common.opt b/gcc/common.opt
+index 67b6de2df..6b1a78586 100644
+--- a/gcc/common.opt
++++ b/gcc/common.opt
+@@ -682,6 +682,10 @@ Wreturn-local-addr
  Common Var(warn_return_local_addr) Init(1) Warning
  Warn about returning a pointer/reference to a local or temporary variable.
  
@@ -17,25 +29,28 @@ diff -ruN gcc-9.1.0-orig/gcc/common.opt gcc-9.1.0/gcc/common.opt
  Wshadow
  Common Var(warn_shadow) Warning
  Warn when one variable shadows another.  Same as -Wshadow=global.
-diff -ruN gcc-9.1.0-orig/gcc/config.in gcc-9.1.0/gcc/config.in
---- gcc-9.1.0-orig/gcc/config.in	2019-05-03 17:01:59.000000000 +0900
-+++ gcc-9.1.0/gcc/config.in	2019-05-03 21:15:21.820919133 +0900
-@@ -199,6 +199,11 @@
- #undef ENABLE_PLUGIN
+diff --git a/gcc/config.in b/gcc/config.in
+index 809e7b268..5adeaeed3 100644
+--- a/gcc/config.in
++++ b/gcc/config.in
+@@ -224,6 +224,12 @@
  #endif
+ 
  
 +/* Define to warn for use of native system header directories */
 +#ifndef USED_FOR_TARGET
 +#undef ENABLE_POISON_SYSTEM_DIRECTORIES
 +#endif
 +
- 
++
  /* Define if you want all operations on RTL (the basic data structure of the
     optimizer and back end) to be checked for dynamic type safety at runtime.
-diff -ruN gcc-9.1.0-orig/gcc/configure gcc-9.1.0/gcc/configure
---- gcc-9.1.0-orig/gcc/configure	2019-04-15 16:39:20.000000000 +0900
-+++ gcc-9.1.0/gcc/configure	2019-05-03 21:17:28.393581249 +0900
-@@ -995,6 +995,7 @@
+    This is quite expensive. */
+diff --git a/gcc/configure b/gcc/configure
+index cd3d9516f..8de766a94 100755
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -1010,6 +1010,7 @@ with_system_zlib
  enable_maintainer_mode
  enable_link_mutex
  enable_version_specific_runtime_libs
@@ -43,7 +58,7 @@ diff -ruN gcc-9.1.0-orig/gcc/configure gcc-9.1.0/gcc/configure
  enable_plugin
  enable_host_shared
  enable_libquadmath_support
-@@ -1748,6 +1749,8 @@
+@@ -1766,6 +1767,8 @@ Optional Features:
    --enable-version-specific-runtime-libs
                            specify that runtime libraries should be installed
                            in a compiler-specific directory
@@ -52,9 +67,9 @@ diff -ruN gcc-9.1.0-orig/gcc/configure gcc-9.1.0/gcc/configure
    --enable-plugin         enable plugin support
    --enable-host-shared    build host code as shared libraries
    --disable-libquadmath-support
-@@ -29753,6 +29756,18 @@
-   enableval=$enable_version_specific_runtime_libs;
+@@ -30235,6 +30238,19 @@ if test "${enable_version_specific_runtime_libs+set}" = set; then :
  fi
+ 
  
 +# Check whether --enable-poison-system-directories was given.
 +if test "${enable_poison_system_directories+set}" = set; then :
@@ -68,13 +83,15 @@ diff -ruN gcc-9.1.0-orig/gcc/configure gcc-9.1.0/gcc/configure
 +$as_echo "#define ENABLE_POISON_SYSTEM_DIRECTORIES 1" >>confdefs.h
 +
 +fi
- 
++
  # Substitute configuration variables
  
-diff -ruN gcc-9.1.0-orig/gcc/configure.ac gcc-9.1.0/gcc/configure.ac
---- gcc-9.1.0-orig/gcc/configure.ac	2019-04-15 16:39:20.000000000 +0900
-+++ gcc-9.1.0/gcc/configure.ac	2019-05-03 21:18:06.432364222 +0900
-@@ -6382,6 +6382,16 @@
+ 
+diff --git a/gcc/configure.ac b/gcc/configure.ac
+index 0de3b4bf9..8bfd6feb7 100644
+--- a/gcc/configure.ac
++++ b/gcc/configure.ac
+@@ -6595,6 +6595,16 @@ AC_ARG_ENABLE(version-specific-runtime-libs,
                  [specify that runtime libraries should be
                   installed in a compiler-specific directory])])
  
@@ -91,18 +108,19 @@ diff -ruN gcc-9.1.0-orig/gcc/configure.ac gcc-9.1.0/gcc/configure.ac
  # Substitute configuration variables
  AC_SUBST(subdirs)
  AC_SUBST(srcdir)
-diff -ruN gcc-9.1.0-orig/gcc/doc/invoke.texi gcc-9.1.0/gcc/doc/invoke.texi
---- gcc-9.1.0-orig/gcc/doc/invoke.texi	2019-04-23 19:03:41.000000000 +0900
-+++ gcc-9.1.0/gcc/doc/invoke.texi	2019-05-03 21:18:53.386896977 +0900
-@@ -332,6 +332,7 @@
- -Wpacked  -Wpacked-bitfield-compat -Wpacked-not-aligned  -Wpadded @gol
+diff --git a/gcc/doc/invoke.texi b/gcc/doc/invoke.texi
+index 030a9da8d..05544ae4d 100644
+--- a/gcc/doc/invoke.texi
++++ b/gcc/doc/invoke.texi
+@@ -347,6 +347,7 @@ Objective-C and Objective-C++ Dialects}.
+ -Wno-overflow  -Woverlength-strings  -Wno-override-init-side-effects @gol
+ -Wpacked  -Wno-packed-bitfield-compat  -Wpacked-not-aligned  -Wpadded @gol
  -Wparentheses  -Wno-pedantic-ms-format @gol
- -Wplacement-new  -Wplacement-new=@var{n} @gol
 +-Wno-poison-system-directories @gol
- -Wpointer-arith  -Wpointer-compare  -Wno-pointer-to-int-cast @gol
+ -Wpointer-arith  -Wno-pointer-compare  -Wno-pointer-to-int-cast @gol
  -Wno-pragmas  -Wno-prio-ctor-dtor  -Wredundant-decls @gol
- -Wrestrict  -Wno-return-local-addr @gol
-@@ -6289,6 +6290,14 @@
+ -Wrestrict  -Wno-return-local-addr  -Wreturn-type @gol
+@@ -6924,6 +6925,14 @@ made up of data only and thus requires no special treatment.  But, for
  most targets, it is made up of code and thus requires the stack to be
  made executable in order for the program to work properly.
  
@@ -117,11 +135,12 @@ diff -ruN gcc-9.1.0-orig/gcc/doc/invoke.texi gcc-9.1.0/gcc/doc/invoke.texi
  @item -Wfloat-equal
  @opindex Wfloat-equal
  @opindex Wno-float-equal
-diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
---- gcc-9.1.0-orig/gcc/gcc.c	2019-03-11 22:58:44.000000000 +0900
-+++ gcc-9.1.0/gcc/gcc.c	2019-05-03 21:19:36.577578788 +0900
-@@ -1042,6 +1042,8 @@
-    "%{fuse-ld=*:-fuse-ld=%*} " LINK_COMPRESS_DEBUG_SPEC \
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index 06065c7f4..e796c0c82 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -1061,6 +1061,8 @@ proper position among the other output files.  */
+    "-z relro -z now " \
     "%X %{o*} %{e*} %{N} %{n} %{r}\
      %{s} %{t} %{u*} %{z} %{Z} %{!nostdlib:%{!r:%{!nostartfiles:%S}}} \
 +    %{Wno-poison-system-directories:--no-poison-system-directories} \
@@ -129,9 +148,10 @@ diff -ruN gcc-9.1.0-orig/gcc/gcc.c gcc-9.1.0/gcc/gcc.c
      %{static|no-pie|static-pie:} %@{L*} %(mfwrap) %(link_libgcc) " \
      VTABLE_VERIFICATION_SPEC " " SANITIZER_EARLY_SPEC " %o "" \
      %{fopenacc|fopenmp|%:gt(%{ftree-parallelize-loops=*:%*} 1):\
-diff -ruN gcc-9.1.0-orig/gcc/incpath.c gcc-9.1.0/gcc/incpath.c
---- gcc-9.1.0-orig/gcc/incpath.c	2019-01-01 21:31:55.000000000 +0900
-+++ gcc-9.1.0/gcc/incpath.c	2019-05-03 21:20:54.647264644 +0900
+diff --git a/gcc/incpath.c b/gcc/incpath.c
+index 8a2bda00f..9098ab044 100644
+--- a/gcc/incpath.c
++++ b/gcc/incpath.c
 @@ -26,6 +26,7 @@
  #include "intl.h"
  #include "incpath.h"
@@ -140,10 +160,11 @@ diff -ruN gcc-9.1.0-orig/gcc/incpath.c gcc-9.1.0/gcc/incpath.c
  
  /* Microsoft Windows does not natively support inodes.
     VMS has non-numeric inodes.  */
-@@ -393,6 +394,25 @@
+@@ -393,6 +394,26 @@ merge_include_chains (const char *sysroot, cpp_reader *pfile, int verbose)
  	}
        fprintf (stderr, _("End of search list.\n"));
      }
++
 +#ifdef ENABLE_POISON_SYSTEM_DIRECTORIES
 +  if (flag_poison_system_directories)
 +    {
@@ -166,3 +187,6 @@ diff -ruN gcc-9.1.0-orig/gcc/incpath.c gcc-9.1.0/gcc/incpath.c
  }
  
  /* Use given -I paths for #include "..." but not #include <...>, and
+-- 
+2.26.2
+
