@@ -13,6 +13,36 @@ backup=('etc/krb5.conf')
 source=("https://github.com/heimdal/heimdal/releases/download/$name-$version/$name-$version.tar.gz")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		cd "$SRC"
+		cp -a $name-$version heimdal-bootstrap
+		(
+			unset CC CXX AR AS RANLIB LD STRIP
+			cd heimdal-bootstrap
+			patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
+			export ac_cv_header_execinfo_h=no
+
+			./configure \
+				--prefix="$SRC"/heimdal \
+				--sbindir="$SRC"/heimdal/bin \
+				--without-berkeley-db \
+				--without-mdb-db \
+				--without-ndbm-db \
+				--without-x \
+				--disable-afs-support \
+				--disable-mdb-db \
+				--disable-otp \
+				--disable-shared
+			make MAKEINFO=true
+			make MAKEINFO=true install
+
+			install -Dm755 lib/com_err/compile_et "$SRC"/heimdal/bin/compile_et
+			install -Dm755 lib/asn1/asn1_compile "$SRC"/heimdal/bin/asn1_compile
+			install -Dm755 lib/sl/slc "$SRC"/heimdal/bin/slc
+		)
+		export PATH="$SRC/heimdal/bin:$PATH"
+	fi
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/heimdal/0001-fix-slc.patch
 	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
@@ -21,9 +51,9 @@ build() {
 	export ac_cv_header_execinfo_h=no
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		export COMPILE_ET="$TOOLS/bin/compile_et"
-		export ASN1_COMPILE="$TOOLS/bin/asn1_compile"
-		export SLC="$TOOLS/bin/slc"
+		export COMPILE_ET="$SRC/heimdal/bin/compile_et"
+		export ASN1_COMPILE="$SRC/heimdal/bin/asn1_compile"
+		export SLC="$SRC/heimdal/bin/slc"
 	fi
 
 	./configure $BUILDFLAGS \
