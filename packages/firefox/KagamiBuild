@@ -6,9 +6,11 @@
 
 name=firefox
 version=68.8.0
+ghacks=68.0
 release=1
 options=('~emptydirs')
-source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
+source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz"
+	"https://raw.githubusercontent.com/ghacksuserjs/ghacks-user.js/$version/user.js")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
@@ -92,7 +94,7 @@ build() {
 		install -Dm644 browser/branding/unofficial/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
-	install -Dm644 "$STUFF"/firefox/vendor.js "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js
+	install -Dm644 "$SRC"/vendor.js "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js
 	install -Dm644 "$STUFF"/firefox/policies.json "$PKG"/usr/lib/firefox/distribution/policies.json
 
 	mkdir -p "$PKG"/usr/bin/

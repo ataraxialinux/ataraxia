@@ -6,9 +6,11 @@
 
 name=thunderbird
 version=68.8.0
+ghacks=68.0
 release=1
 options=('~emptydirs')
-source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
+source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz"
+	"https://raw.githubusercontent.com/ghacksuserjs/ghacks-user.js/$version/user.js")
 
 build() {
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
@@ -96,7 +98,7 @@ build() {
 		install -Dm644 comm/mail/branding/nightly/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/thunderbird.png
 	done
 
-	install -Dm644 "$STUFF"/thunderbird/vendor.js "$PKG"/usr/lib/thunderbird/browser/defaults/preferences/vendor.js
+	install -Dm644 "$SRC"/vendor.js "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js
 	install -Dm644 "$STUFF"/thunderbird/policies.json "$PKG"/usr/lib/thunderbird/distribution/policies.json
 
 	mkdir -p "$PKG"/usr/bin/
