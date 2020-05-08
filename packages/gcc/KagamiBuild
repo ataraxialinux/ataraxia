@@ -14,10 +14,6 @@ source=("https://gcc.gnu.org/pub/gcc/releases/$name-$version/$name-$version.tar.
 	"http://isl.gforge.inria.fr/isl-$islver.tar.xz")
 
 build() {
-	if [ -z "$XTARGET" ]; then
-		export XTARGET="$(cc -dumpmachine)"
-	fi
-
 	if [ -z "$GCCOPTS" ]; then
 		case $BARCH in
 			x86_64)
@@ -48,10 +44,10 @@ build() {
 				export GCCOPTS="--with-long-double=64 --enable-secureplt --disable-decimal-float"
 				;;
 			riscv64)
-				export GCCOPTS=""
+				export GCCOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
 				;;
 			riscv32)
-				export GCCOPTS=""
+				export GCCOPTS="--with-arch=rv32imafc --with-abi=ilp32f"
 				;;
 			*)
 				echo "Architecture is not set or is not supported by Ataraxia Linux"
