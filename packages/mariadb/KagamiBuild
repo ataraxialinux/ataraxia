@@ -1,10 +1,10 @@
 # Description: Fast SQL database server
 # URL:         https://mariadb.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja
+# Depends on:  cmake ninja libevent cracklib lzo lz4 snappy zstd pam readline heimdal libaio
 # Section:     database
 
-name=snappy
+name=mariadb
 version=10.5.2
 release=1
 backup=('etc/my.cnf'
@@ -19,11 +19,38 @@ build() {
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version \
+		-DINSTALL_LAYOUT=RPM \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DINSTALL_SCRIPTDIR=bin \
+		-DINSTALL_INCLUDEDIR=include/mysql \
+		-DINSTALL_LIBDIR=lib \
+		-DINSTALL_PLUGINDIR=lib/mysql/plugin \
+		-DINSTALL_SYSCONFDIR=/etc \
+		-DINSTALL_SYSCONF2DIR=/etc/my.cnf.d \
+		-DINSTALL_UNIX_ADDRDIR=/run/mysqld/mysqld.sock \
+		-DMYSQL_DATADIR=/var/lib/mysql \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DBUILD_SHARED_LIBS=yes \
+		-DCOMPILATION_COMMENT="Ataraxia Linux" \
+		-DSKIP_TESTS=ON \
+		-DWITH_EMBEDDED_SERVER=ON \
+		-DWITH_EXTRA_CHARSETS=complex \
+		-DWITH_JEMALLOC=OFF \
+		-DWITH_LIBWRAP=OFF \
+		-DWITH_PCRE=bundled \
+		-DWITH_READLINE=ON \
+		-DWITH_SSL=system \
+		-DWITH_SYSTEMD=no \
+		-DWITH_UNIT_TESTS=OFF \
+		-DWITH_ZLIB=system \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	rm -rf "$PKG"/etc/{init.d,logrotate.d}
+	rm -rf "$PKG"/usr/share/{doc,groonga*,mysql-test}
+	find "$PKG"/usr/share/mysql/* -type d ! -name english ! -name charsets | xargs rm -rf {} \;
+
+	install -d -m 700 -o root -g 40 "$PKG"/var/{lib,log}/mysql
+
+	install -Dm0755 "$STUFF"/svc/mysqld.initd "$PKG"/etc/init.d/mysqld
 }
