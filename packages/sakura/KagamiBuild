@@ -1,0 +1,22 @@
+# Description: Simple but powerful libvte based terminal emulator
+# URL:         https://launchpad.net/sakura
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja vte libxft
+# Section:     utils
+
+name=sakura
+version=3.7.1
+release=1
+source=("https://launchpad.net/sakura/trunk/$version/+download/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
