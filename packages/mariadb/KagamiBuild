@@ -1,0 +1,29 @@
+# Description: Fast SQL database server
+# URL:         https://mariadb.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja
+# Section:     database
+
+name=snappy
+version=5.1.67
+release=1
+backup=('etc/my.cnf'
+	'etc/my.cnf.d/client.cnf'
+	'etc/my.cnf.d/enable_encryption.preset'
+	'etc/my.cnf.d/mysql-clients.cnf'
+	'etc/my.cnf.d/server.cnf')
+source=("https://downloads.mariadb.org/interstitial/$name-$version/source/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
