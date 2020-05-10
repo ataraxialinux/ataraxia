@@ -1,0 +1,32 @@
+# Description: The optimized HTTP/1.x, HTTP/2 server
+# URL:         https://h2o.examp1e.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja libressl libuv
+# Section:     httpd
+
+name=h2o
+version=2.2.6
+release=1
+backup=('etc/h2o.conf')
+source=("https://github.com/h2o/h2o/archive/v$version.tar.gz"
+	"https://github.com/h2o/neverbleed/commit/d3d8d54f7526bc24e4c80f2d3511c9443fd078ab.patch")
+
+build() {
+	cd "$SRC"/$name-$version
+	pushd deps/neverbleed
+		patch -Np1 -i "$SRC"/d3d8d54f7526bc24e4c80f2d3511c9443fd078ab.patch
+	popd
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -Dm0755 "$STUFF"/svc/h2o.initd "$PKG"/etc/init.d/h2o
+}
