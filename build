@@ -297,6 +297,13 @@ build_target() {
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $packages
 }
 
+genrepo() {
+	local name="$(grep ^name $1/KagamiBuild | sed -e 's/name=//g')"
+	local version="$(grep ^version $1/KagamiBuild | sed -e 's/version=//g')"
+	local release="$(grep ^release $1/KagamiBuild | sed -e 's/release=//g')"
+	echo "$name $version $release" >> "$2"
+}
+
 case $1 in
 	stage)
 		shift
@@ -422,17 +429,13 @@ case $1 in
 		done
 		shift $((OPTIND - 1))
 
-		if [ "$AUTOBUMB" = "yes" ]; then
-			cuopt="-a"
-		fi
-
-		if [ "$AUTOCOMMIT" = "yes" ]; then
-			cuopttwo="-c"
-		fi
+		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
+		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
 
 		SILENT=1 setup_environment
 		msg "Checking packages for updates"
-		for packages in $(ls "$REPO/"); do
+		[ -f "$REPO/repo" ] && rm "$REPO/repo"
+		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
 					if [ "$packages" = "shaderc" ]; then
@@ -444,9 +447,14 @@ case $1 in
 					else
 						"$UTILS/check-updates" $cuopt $cuopttwo $packages
 					fi
+					genrepo $packages $REPO/repo
 				)
 			popd
 		done
+		if [ "$AUTOCOMMIT" = "yes" ]; then
+			git add $REPO/repo
+			git commit -m "update repo"
+		fi
 		;;
 	enter-chroot)
 		shift

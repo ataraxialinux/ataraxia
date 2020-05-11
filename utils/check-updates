@@ -24,7 +24,7 @@ check_updates() {
 
 	local i p url sfname lpname bbname githubname rx found_version consider
 	local update_override=$mypkg/update
-	local original_pkgname=$name
+	local original_name=$name
 	local urlpfx urlsfx
 
 	if [ -r $update_override ]; then
@@ -32,8 +32,7 @@ check_updates() {
 	fi
 
 	if ! type curl >/dev/null 2>&1; then
-		echo "ERROR: cannot find \`curl' executable!"
-		return 1
+		die "cannot find \`curl' executable!"
 	fi
 
 	export LC_ALL=C
@@ -113,10 +112,10 @@ check_updates() {
 				lpname="$(printf %s "$url" | cut -d/ -f4)"
 				url="https://launchpad.net/$lpname/+download";;
 			*cpan.*)
-				pkgname=${pkgname#perl-};;
+				name=${name#perl-};;
 			*pythonhosted.org*)
-				pkgname=${pkgname#python-}
-				pkgname=${pkgname#python3-}
+				name=${name#python-}
+				name=${name#python3-}
 				url="https://pypi.org/simple/$name";;
 			*github.com*)
 				githubname="$(printf %s "$url" | cut -d/ -f4,5)"
@@ -136,13 +135,13 @@ check_updates() {
 			*kernel.org/pub/linux/kernel/*)
 				rx=linux-'\K'${version%.*}'[\d.]+(?=\.tar\.xz)';;
 			*cran.r-project.org/src/contrib*)
-				rx='\b\Q'"${pkgname#R-cran-}"'\E_\K\d+(\.\d+)*(-\d+)?(?=\.tar)';;
+				rx='\b\Q'"${name#R-cran-}"'\E_\K\d+(\.\d+)*(-\d+)?(?=\.tar)';;
 			*rubygems.org*)
-				url="https://rubygems.org/gems/${pkgname#ruby-}"
-				rx='href="/gems/'${pkgname#ruby-}'/versions/\K[\d\.]*(?=")' ;;
+				url="https://rubygems.org/gems/${name#ruby-}"
+				rx='href="/gems/'${name#ruby-}'/versions/\K[\d\.]*(?=")' ;;
 			*crates.io*)
-				url="https://crates.io/api/v1/crates/${pkgname#rust-}"
-				rx='/crates/'${pkgname#rust-}'/\K[0-9.]*(?=/download)' ;;
+				url="https://crates.io/api/v1/crates/${name#rust-}"
+				rx='/crates/'${name#rust-}'/\K[0-9.]*(?=/download)' ;;
 			esac
 		fi
 
@@ -165,10 +164,10 @@ check_updates() {
 			esac
 		done
 		if $consider; then
-			vercmp "$original_pkgname-${version}_1" "$original_pkgname-$(printf %s "$found_version" | tr - .)_1"
+			vercmp "$original_name-${version}_1" "$original_name-$(printf %s "$found_version" | tr - .)_1"
 			if [ $? = 255 ]; then
-				if [ "$AUTOBUMB" = "yes" ]; then
-					msg "Auto-updating ${original_pkgname} to $found_version"
+				if [ "$AUTOBUMP" = "yes" ]; then
+					msg "Auto-updating ${original_name} to $found_version"
 					local oldver oldrel
 					found_version="$(printf %s "$found_version" | tr - +)"
 					oldver="$(grep ^version $mypkg/KagamiBuild | sed -e 's,version=,,g' )"
@@ -177,22 +176,22 @@ check_updates() {
 					sed -i "s,release=${oldrel},release=1,g" "$mypkg/KagamiBuild"
 					if [ "$AUTOCOMMIT" = "yes" ]; then
 						git add $mypkg
-						git commit -m "bump ${original_pkgname} to ${found_version}"
+						git commit -m "bump ${original_name} to ${found_version}"
 					fi
 				else
-					msg "Update ${original_pkgname} to ${found_version}"
+					msg "Update ${original_name} to ${found_version}"
 				fi
 			fi
 		fi
 	done
 }
 
-AUTOBUMB="no"
+AUTOBUMP="no"
 
 while getopts ac options; do
 	case $options in
 		a)
-			AUTOBUMB="yes"
+			AUTOBUMP="yes"
 			;;
 		c)
 			AUTOCOMMIT="yes"
