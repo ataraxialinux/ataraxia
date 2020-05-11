@@ -20,6 +20,9 @@ build() {
 			unset CC CXX AR AS RANLIB LD STRIP
 			cd heimdal-bootstrap
 			patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
+			patch -Np1 -i "$STUFF"/heimdal/0001-always-compile-compile_et.patch
+			autoreconf -fi
+
 			export ac_cv_header_execinfo_h=no
 
 			./configure \
@@ -36,18 +39,12 @@ build() {
 				--disable-shared
 			$ORIGMAKE MAKEINFO=true
 			$ORIGMAKE MAKEINFO=true install
-
-			install -Dm755 lib/com_err/compile_et "$SRC"/heimdal/bin/compile_et
-			install -Dm755 lib/asn1/asn1_compile "$SRC"/heimdal/bin/asn1_compile
-			install -Dm755 lib/sl/slc "$SRC"/heimdal/bin/slc
 		)
-		export PATH="$SRC/heimdal/bin:$PATH"
+		export BUILDFLAGS="$BUILDFLAGS --with-cross-tools=$SRC/heimdal/libexec/heimdal"
 	fi
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/heimdal/0001-fix-slc.patch
 	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
-	autoreconf -fi
 
 	export ac_cv_header_execinfo_h=no
 
@@ -99,5 +96,5 @@ build() {
 			.my.domain = MY.REALM
 	EOF
 
-	rm -rf "$PKG"/usr/include/com_err.h "$PKG"/usr/lib/libcom_err.a "$PKG"/usr/lib/libcom_err.so
+	rm -rf "$PKG"/usr/include/com_err.h "$PKG"/usr/lib/libcom_err.a "$PKG"/usr/lib/libcom_err*.so
 }

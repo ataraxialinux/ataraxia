@@ -1,0 +1,38 @@
+From c1be11947679fa83671cf7303ae12c64841a1268 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 11 May 2020 11:53:25 +0000
+Subject: [PATCH] always compile compile_et
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ cf/check-compile-et.m4 | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/cf/check-compile-et.m4 b/cf/check-compile-et.m4
+index e580cbb..8f1cb7c 100644
+--- a/cf/check-compile-et.m4
++++ b/cf/check-compile-et.m4
+@@ -80,13 +80,13 @@ fi
+ dnl Only use the system's com_err if we found compile_et, libcom_err, and
+ dnl com_err.h.
+ if test "${krb_cv_com_err}" = "yes"; then
+-    DIR_com_err=""
+-    LIB_com_err="-lcom_err"
+-    LIB_com_err_a=""
+-    LIB_com_err_so=""
+-    AC_MSG_NOTICE(Using the already-installed com_err)
+-    COMPILE_ET="${ac_cv_prog_COMPILE_ET}"
+-    localcomerr=no
++    COMPILE_ET="\$(top_builddir)/lib/com_err/compile_et"
++    DIR_com_err="com_err"
++    LIB_com_err="\$(top_builddir)/lib/com_err/libcom_err.la"
++    LIB_com_err_a="\$(top_builddir)/lib/com_err/.libs/libcom_err.a"
++    LIB_com_err_so="\$(top_builddir)/lib/com_err/.libs/libcom_err.so"
++    AC_MSG_NOTICE(Using our own com_err)
++    localcomerr=yes
+ elif test "${krb_cv_com_err}" = "cross"; then
+     DIR_com_err="com_err"
+     LIB_com_err="\$(top_builddir)/lib/com_err/libcom_err.la"
+-- 
+2.26.2
+
