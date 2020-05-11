@@ -456,6 +456,17 @@ case $1 in
 			git commit -m "update repo"
 		fi
 		;;
+	gen-repo)
+		shift
+		[ -f "$REPO/repo" ] && rm "$REPO/repo"
+		for packages in $(ls "$REPO/" | sort); do
+			pushd "$REPO"
+				(
+					genrepo $packages $REPO/repo
+				)
+			popd
+		done
+		;;
 	enter-chroot)
 		shift
 		while getopts a:s opts; do
