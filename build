@@ -434,7 +434,6 @@ case $1 in
 
 		SILENT=1 setup_environment
 		msg "Checking packages for updates"
-		[ -f "$REPO/repo" ] && rm "$REPO/repo"
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
@@ -447,14 +446,9 @@ case $1 in
 					else
 						"$UTILS/check-updates" $cuopt $cuopttwo $packages
 					fi
-					genrepo $packages $REPO/repo
 				)
 			popd
 		done
-		if [ "$AUTOCOMMIT" = "yes" ]; then
-			git add $REPO/repo
-			git commit -m "update repo"
-		fi
 		;;
 	gen-repo)
 		shift
