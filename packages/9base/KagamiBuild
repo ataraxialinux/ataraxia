@@ -1,16 +1,16 @@
-# Description: A port of various original Plan 9 tools for Unix, based on plan9port.
+# Description: A port of various original Plan 9 tools to Unix, based on plan9port.
 # URL:         http://tools.suckless.org/9base
 # Maintainer:  Ben O'Neill <ben@benoneill.xyz>
 # Section:     plan9
 
 name=9base
 version=6
-release=1
+release=2
 source=("http://dl.suckless.org/tools/$name-$version.tar.gz")
 
 build() {
 	cd $SRC/$name-$version
-	patch lib9/dirread.c < "$STUFF"/9base/dirread.patch
+	patch -Np1 -i "$STUFF"/9base/dirread.patch lib9/dirread.c
 	make
 	make DESTDIR="$PKG" install
 }
