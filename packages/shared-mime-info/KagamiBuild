@@ -1,20 +1,20 @@
 # Description: Freedesktop.org Shared MIME Info
 # URL:         https://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  intltool glib libxml2 itstool
+# Depends on:  meson glib libxml2 itstool
 # Section:     x11
 
 name=shared-mime-info
 version=2.0
-release=1
+release=2
 source=("https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	autoreconf -vif
-
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dupdate-mimedb=true
+	ninja
+	DESTDIR="$PKG" ninja install
 }
