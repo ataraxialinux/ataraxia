@@ -6,11 +6,13 @@
 
 name=gst-plugins-bad
 version=1.16.2
-release=2
+release=3
 source=("https://gstreamer.freedesktop.org/src/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gst-plugins-bad/0001-vulkan-Drop-use-of-VK_RESULT_BEGIN_RANGE.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
