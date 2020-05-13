@@ -6,11 +6,13 @@
 
 name=graphene
 version=1.10.0
-release=1
+release=2
 source=("https://github.com/ebassi/graphene/releases/download/$version/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/graphene/0001-musl.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \

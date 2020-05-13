@@ -1,0 +1,58 @@
+From f1b990858fcf4aec593ec66a3918a00b92478cea Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 13 May 2020 16:00:53 +0000
+Subject: [PATCH] musl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/graphene-box.c | 4 ++--
+ src/graphene-ray.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/graphene-box.c b/src/graphene-box.c
+index 2099c60..28a4e3b 100644
+--- a/src/graphene-box.c
++++ b/src/graphene-box.c
+@@ -427,7 +427,7 @@ graphene_box_get_depth (const graphene_box_t *box)
+ static inline bool
+ graphene_box_is_empty (const graphene_box_t *box)
+ {
+-#ifdef HAVE_ISINFF
++#ifdef __GLIBC__
+   float vmin[3], vmax[3];
+ 
+   graphene_simd4f_dup_3f (box->min.value, vmin);
+@@ -454,7 +454,7 @@ graphene_box_is_empty (const graphene_box_t *box)
+ static inline bool
+ graphene_box_is_infinity (const graphene_box_t *box)
+ {
+-#ifdef HAVE_ISINFF
++#ifdef __GLIBC__
+   float vmin[3], vmax[3];
+ 
+   graphene_simd4f_dup_3f (box->min.value, vmin);
+diff --git a/src/graphene-ray.c b/src/graphene-ray.c
+index e850e0b..274e6f8 100644
+--- a/src/graphene-ray.c
++++ b/src/graphene-ray.c
+@@ -526,7 +526,7 @@ graphene_ray_intersect_box (const graphene_ray_t *r,
+   /* These lines also handle the case where tx_min or tx_max is NaN
+    * (result of 0 * INFINITY): NaN != NaN
+    */
+-#ifdef HAVE_ISNANF
++#ifdef __GLIBC__
+   if (ty_min > tx_min || isnanf (tx_min))
+     tx_min = ty_min;
+   if (ty_max < tx_max || isnanf (tx_max))
+@@ -553,7 +553,7 @@ graphene_ray_intersect_box (const graphene_ray_t *r,
+   if ((tx_min > tz_max) || (tz_min > tx_max))
+     return GRAPHENE_RAY_INTERSECTION_KIND_NONE;
+ 
+-#ifdef HAVE_ISNANF
++#ifdef __GLIBC__
+   if (tz_min > tx_min || isnanf (tx_min))
+     tx_min = tz_min;
+   if (tz_max < tx_max || isnanf (tx_max))
+-- 
+2.26.2
+
