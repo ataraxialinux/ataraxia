@@ -78,11 +78,8 @@ build() {
 
 	cd "$SRC"/gcc-$version
 	sed -i 's@\./fixinc\.sh@-c true@' gcc/Makefile.in
-	sed -i '/m64=/s/lib64/lib/' gcc/config/i386/t-linux64
-	sed -i '/m64=/s/lib64/lib/' gcc/config/aarch64/t-aarch64-linux
-	sed -i 's/lib64/lib/' gcc/config/rs6000/linux64.h
-	sed -i 's/lib64/lib/' gcc/config/riscv/t-linux
 
+	patch -Np1 -i "$STUFF"/gcc/0001-pure-64-bit.patch
 	patch -Np1 -i "$STUFF"/gcc/0001-Use-musl-s-libssp_nonshared.a.patch
 	patch -Np1 -i "$STUFF"/gcc/0002-POSIX-memalign.patch
 	patch -Np1 -i "$STUFF"/gcc/0003-Support-for-static-PIE.patch
