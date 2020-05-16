@@ -1,5 +1,5 @@
 ## Supported platforms
-Ataraxia Linux has been ported to 11 different CPU architectures:
+Ataraxia Linux has been ported to 12 different CPU architectures:
 ```
  * x86_64       - for 64-bit x86 CPUs
  * i586         - for 32-bit x86 CPUs beginning with classic Intel Pentium
@@ -10,6 +10,7 @@ Ataraxia Linux has been ported to 11 different CPU architectures:
  * ppc64le      - for 64-bit PowerPC CPUs (little-endian)
  * ppc64        - for 64-bit PowerPC CPUs (big-endian)
  * ppc          - for 32-bit PowerPC CPUs
+ * s390x        - for 64-bit IBM System Z CPUs
  * riscv64      - for 64-bit RISC V CPUs
  * riscv32      - for 32-bit RISC V CPUs
 ```
