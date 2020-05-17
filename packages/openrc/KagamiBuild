@@ -7,7 +7,7 @@
 
 name=openrc
 version=0.42.1
-release=2
+release=3
 backup=('etc/rc.conf'
 	'etc/conf.d/bootmisc'
 	'etc/conf.d/consolefont'
@@ -27,6 +27,18 @@ options=('bootstrap')
 source=("https://github.com/OpenRC/openrc/archive/$version.tar.gz")
 
 build() {
+	case $BARCH in
+		x86_64|i586)
+			export EXTRATTY="S0"
+			;;
+		aarch64|armv7hnl|armv7hl|armv6hl)
+			export EXTRATTY="AMA0"
+			;;
+		s390x)
+			export EXTRATTY="sclp0"
+			;;
+	esac
+
 	makeargs=(BRANDING="\e[35mAtaraxia Linux\e[0m")
 	makeargs+=(MKSELINUX=no)
 	makeargs+=(MKTERMCAP=ncurses)
@@ -55,7 +67,7 @@ build() {
 		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
 	done
 
-	for MYTTY in 1 2 3 4 5 6 S0; do
+	for MYTTY in 1 2 3 4 5 6 $EXTRATTY; do
 		ln -sf agetty "$PKG"/etc/init.d/agetty.tty$MYTTY
 		ln -sf ../../init.d/agetty.tty$MYTTY "$PKG"/etc/runlevels/default/agetty.tty$MYTTY
 	done
