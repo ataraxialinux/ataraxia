@@ -304,8 +304,21 @@ build_target() {
 genrepo() {
 	local name="$(grep ^name $1/KagamiBuild | sed -e 's/name=//g')"
 	local version="$(grep ^version $1/KagamiBuild | sed -e 's/version=//g')"
-	local release="$(grep ^release $1/KagamiBuild | sed -e 's/release=//g')"
-	echo "$name $version $release" >> "$2"
+	local summary="$(npk-parse $1/KagamiBuild "# Description:")"
+	local maintainer="$(npk-parse  $1/KagamiBuild "# Maintainer:" | sed -e 's/, / /g' | sed -e 's/ at /@/g' | sed -e 's/ dot /./')"
+	local homepage="$(npk-parse $1/KagamiBuild "# URL:")"
+	local category="$(npk-parse $1/KagamiBuild "# Section:")"
+
+	echo -e '\t{' >> "$2"
+	echo -e '\t\t"name": "'${name}'",' >> "$2"
+	echo -e '\t\t"version": "'${version}'",' >> "$2"
+	echo -e '\t\t"summary": "'${summary}'",' >> "$2"
+	echo -e '\t\t"maintainer": "'${maintainer}'",' >> "$2"
+	echo -e '\t\t"license": "''",' >> "$2"
+	echo -e '\t\t"download": "''",' >> "$2"
+	echo -e '\t\t"homepage": "'${homepage}'",' >> "$2"
+	echo -e '\t\t"category": "'${category}'"' >> "$2"
+	echo -e '\t},' >> "$2"
 }
 
 case $1 in
@@ -441,15 +454,15 @@ case $1 in
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
-					#if [ "$packages" = "shaderc" ]; then
-					#	"$UTILS/check-updates" linux
+					if [ "$packages" = "repo" ]; then
+						true
 					#elif [ "$packages" = "linux" ]; then
 					#	"$UTILS/check-updates" linux
 					#elif [ "$packages" = "linux-headers" ]; then
 					#	"$UTILS/check-updates" linux-headers
-					#else
+					else
 						"$UTILS/check-updates" $cuopt $cuopttwo $packages
-					#fi
+					fi
 				)
 			popd
 		done
@@ -459,13 +472,19 @@ case $1 in
 		SILENT=1 setup_environment
 
 		[ -f "$REPO/repo" ] && rm "$REPO/repo"
+		echo "[" >> "$REPO/repo"
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
-					genrepo $packages $REPO/repo
+					if [ "$packages" = "repo" ]; then
+						true
+					else
+						genrepo $packages $REPO/repo
+					fi
 				)
 			popd
 		done
+		echo "]" >> "$REPO/repo"
 		;;
 	enter-chroot)
 		shift
