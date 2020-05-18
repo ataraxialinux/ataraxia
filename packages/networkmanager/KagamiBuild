@@ -1,12 +1,12 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dnssec-trigger
+# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dnsmasq
 # Section:     net
 
 name=networkmanager
 version=1.24.0
-release=2
+release=3
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -25,7 +25,6 @@ build() {
 		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
 		-Ddhcpcd=true \
 		-Ddnsmasq=/usr/bin/dnsmasq \
-		-Ddnssec_trigger=/usr/bin/dnssec-triggerd \
 		-Ddocs=false \
 		-Debpf=true \
 		-Diptables=/usr/bin/iptables \
@@ -56,13 +55,6 @@ build() {
 		[main]
 		auth-polkit=true
 		dhcp=dhcpcd
-
-		[device]
-		wifi.scan-rand-mac-address=yes
-
-		[connection]
-		wifi.cloned-mac-address=random
-		ethernet.cloned-mac-address=random
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
