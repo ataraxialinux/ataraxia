@@ -1,16 +1,18 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dnsmasq
+# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala iwd
 # Section:     net
 
 name=networkmanager
 version=1.24.0
-release=3
+release=4
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
 build() {
+	unset CFLAGS CXXFLAGS
+
 	cd "$SRC"/NetworkManager-$version
 	patch -Np1 -i "$STUFF"/networkmanager/musl.patch
 

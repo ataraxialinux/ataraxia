@@ -305,22 +305,31 @@ genrepo() {
 	unset name version release options backup source noextract depends
 	local d
 	local i
+	local e
+	local f
 
 	source $1/KagamiBuild
 	local summary="$(npk-parse $1/KagamiBuild "# Description:")"
-	local maintainer="$(npk-parse  $1/KagamiBuild "# Maintainer:" | sed -e 's/, / /g' | sed -e 's/ at /@/g' | sed -e 's/ dot /./')"
 	local homepage="$(npk-parse $1/KagamiBuild "# URL:")"
 	local category="$(npk-parse $1/KagamiBuild "# Section:")"
+	local maintainer="$(npk-parse  $1/KagamiBuild "# Maintainer:" | sed -e 's/, / /g' | sed -e 's/ at /@/g' | sed -e 's/ dot /./')"
+
+	e="$(echo $maintainer | awk '{print $1}')"
+	f="$(echo $maintainer | sed -e "s/$e //g")"
 
 	for i in ${source[*]}; do
-		d="$d $i"
+		if [ -n "$d" ]; then
+			d="$d $i"
+		else
+			d="$i"
+		fi
 	done
 
 	echo -e '\t{' >> "$2"
 	echo -e '\t\t"name": "'${name}'",' >> "$2"
 	echo -e '\t\t"version": "'${version}'",' >> "$2"
 	echo -e '\t\t"summary": "'${summary}'",' >> "$2"
-	echo -e '\t\t"maintainer": "'${maintainer}'",' >> "$2"
+	echo -e '\t\t"maintainer": "'${f}'",' >> "$2"
 	echo -e '\t\t"download": "'${d}'",' >> "$2"
 	echo -e '\t\t"homepage": "'${homepage}'",' >> "$2"
 	echo -e '\t\t"category": "'${category}'"' >> "$2"
