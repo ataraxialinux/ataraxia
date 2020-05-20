@@ -6,11 +6,13 @@
 
 name=htop
 version=2.2.0
-release=2
+release=3
 source=("https://hisham.hm/$name/releases/$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/htop/gcc10.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
