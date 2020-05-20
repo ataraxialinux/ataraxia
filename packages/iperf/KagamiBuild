@@ -1,21 +1,18 @@
 # Description: A tool to measure maximum TCP bandwidth
 # URL:         https://sourceforge.net/projects/iperf2/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
 # Section:     net
 
 name=iperf
-version=2.0.13
+version=3.7
 release=1
-source=("https://downloads.sourceforge.net/iperf2/$name-$version.tar.gz")
+source=("http://downloads.es.net/pub/iperf/iperf-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--enable-fastsampling \
-		--enable-ipv6 \
-		--enable-multicast \
-		--enable-threads
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 }

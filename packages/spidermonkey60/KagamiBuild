@@ -7,13 +7,13 @@
 name=spidermonkey60
 version=60.8.0
 release=12
-source=("https://download.gnome.org/teams/releng/tarballs-needing-help/mozjs/mozjs-$version.tar.bz2")
+source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
 	export SHELL=/bin/bash
 	export PYTHON=/usr/bin/python2
 
-	cd "$SRC"/mozjs-$version
+	cd "$SRC"/firefox-${version}
 	patch -Np1 -i "$STUFF"/spidermonkey60/0008-add-riscv-support.patch
 	patch -Np1 -i "$STUFF"/spidermonkey60/0013-riscv-Disable-atomic-operations.patch
 	patch -Np1 -i "$STUFF"/spidermonkey60/endian.patch
@@ -22,7 +22,7 @@ build() {
 	mkdir build
 	cd build
 
-	"$SRC"/mozjs-$version/js/src/configure  \
+	"$SRC"/firefox-${version}/js/src/configure  \
 		--prefix=/usr \
 		--with-intl-api \
 		--with-system-icu \
