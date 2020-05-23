@@ -1,0 +1,21 @@
+# Description: LXC is the well-known and heavily tested low-level Linux container runtime.
+# URL:         https://github.com/lxc/lxc
+# Maintainer:  gkc, roland christmann at gmail dot com
+# Section:     admin
+
+name=lxc
+version=4.0.2
+release=1
+source=("https://linuxcontainers.org/downloads/lxc/lxc-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib \
+		--enable-pie
+	make
+	make DESTDIR="$PKG" install
+}
