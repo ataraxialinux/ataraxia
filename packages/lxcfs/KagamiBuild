@@ -1,0 +1,21 @@
+# Description: LXCFS has the intention of making Linux containers feel more like a virtual machine.
+# URL:         https://github.com/lxc/lxcfs
+# Maintainer:  gkc, roland christmann at gmail dot com
+# Section:     admin
+
+name=lxcfs
+version=0.26.0
+release=1
+source=("https://github.com/lxc/lxcfs/archive/master.zip")
+
+build() {
+	cd "$SRC"/$name-master
+	./bootstrap.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib \
+		--enable-pie
+	make
+	make DESTDIR="$PKG" install
+}
