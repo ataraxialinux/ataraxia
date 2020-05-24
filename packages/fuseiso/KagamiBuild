@@ -1,0 +1,22 @@
+# Description: FuseISO is a FUSE module to mount ISO filesystem images (iso,nrg,bin,mdf and img files).
+# URL:         https://github.com/lxc/lxcfs
+# Maintainer:  gkc, roland christmann at gmail dot com
+# Section:     admin
+
+name=fuseiso
+version=20070708
+release=1
+source=("https://sourceforge.net/projects/fuseiso/files/latest/download/fuseiso-20070708.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--libexecdir=/usr/lib \
+		--build=x86_64 \
+		--host=x86_64 \
+		--enable-pie
+	make
+	make DESTDIR="$PKG" install
+}
