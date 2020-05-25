@@ -1,0 +1,20 @@
+# Description: A performance-focused json library for C
+# URL:         https://github.com/rsyslog/libfastjson
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     libs
+
+name=libfastjson
+version=0.99.8
+release=1
+options=('bootstrap')
+source=("https://github.com/rsyslog/libfastjson/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
