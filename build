@@ -105,15 +105,15 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="x86_64-linux-musl"
 			;;
-		i586)
+		i686)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i586-linux-musl"
+			export XTARGET="i686-linux-musl"
 			;;
 		aarch64)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
-		armv7hnl|armv7hl)
+		armv7hnl)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
@@ -176,7 +176,7 @@ setup_environment() {
 	export MKOPTS="-j$JOBS"
 
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			ARCHFLAGS="-fcf-protection"
 			;;
 	esac
@@ -212,7 +212,7 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	case $BARCH in
-		x86_64|i586|aarch64|ppc64le|ppc64|ppc)
+		x86_64|i686|aarch64|ppc64le|ppc64|ppc)
 				EXTRAPKG="grub"
 				;;
 	esac
@@ -525,7 +525,7 @@ case $1 in
 		setup_architecture
 		setup_environment
 
-		if [ "$BARCH" = "i586" ] && [ "$(uname -m)" = "x86_64" ]; then
+		if [ "$BARCH" = "i686" ] && [ "$(uname -m)" = "x86_64" ]; then
 			HELPER="linux32"
 		fi
 

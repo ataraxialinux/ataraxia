@@ -55,7 +55,7 @@ strconfig() {
 
 generate_config() {
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			SUBKARCH="x86"
 			;;
 		*)
@@ -67,13 +67,13 @@ generate_config() {
 		x86_64)
 			export DEFCONFIG="x86_64_defconfig"
 			;;
-		i586)
+		i686)
 			export DEFCONFIG="i386_defconfig"
 			;;
 		aarch64)
 			export DEFCONFIG="defconfig"
 			;;
-		armv7hnl|armv7hl)
+		armv7hnl)
 			export DEFCONFIG="vexpress_defconfig"
 			;;
 		armv6hl)
@@ -120,13 +120,12 @@ generate_config() {
 			varconfig XEN_BALLOON_MEMORY_HOTPLUG_LIMIT 512
 			varconfig NODES_SHIFT 6
 			;;
-		i586)
-			yconfig M586 PCI SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
+		i686)
+			yconfig M686 PCI SERIAL_8250 SERIAL_8250_CONSOLE RTC_CLASS \
 				EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS \
 				MICROCODE MICROCODE_EARLY MICROCODE_INTEL MICROCODE_AMD X86_PM_TIMER KVM_AMD_SEV RCU_NOCB_CPU
 			mconfig KVM_INTEL KVM_AMD FB_HYPERV VBOXGUEST HYPERV HYPERV_UTILS \
 				HYPERV_MOUSE HYPERV_NET HYPERV_BALLOON
-			nconfig M686
 			;;
 		aarch64)
 			yconfig EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS
@@ -138,7 +137,7 @@ generate_config() {
 
 	# Laptop drivers
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			yconfig X86_PLATFORM_DEVICES INTEL_TURBO_MAX_3 INTEL_PMC_CORE THINKPAD_ACPI_ALSA_SUPPORT THINKPAD_ACPI_VIDEO THINKPAD_ACPI_HOTKEY_POLL \
 				SONYPI_COMPAT DELL_SMBIOS_WMI DELL_SMBIOS_SMM
 			mconfig ACER_WMI ACER_WIRELESS ACERHDF ALIENWARE_WMI ASUS_LAPTOP DCDBAS DELL_SMBIOS DELL_LAPTOP DELL_WMI DELL_WMI_DESCRIPTOR DELL_WMI_AIO \
@@ -223,7 +222,7 @@ generate_config() {
 
 	# Platform specific crypto
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			mconfig CRYPTO_GLUE_HELPER_X86 CRYPTO_AEGIS128_AESNI_SSE2 CRYPTO_NHPOLY1305_SSE2 CRYPTO_SHA1_SSSE3 CRYPTO_SHA256_SSSE3 CRYPTO_SHA512_SSSE3 CRYPTO_NHPOLY1305_AVX2
 			;;
 	esac
@@ -239,7 +238,7 @@ generate_config() {
 				CRYPTO_SHA3_ARM64 CRYPTO_SM3_ARM64_CE CRYPTO_SM4_ARM64_CE CRYPTO_GHASH_ARM64_CE CRYPTO_CRCT10DIF_ARM64_CE \
 				CRYPTO_AES_ARM64 CRYPTO_AES_ARM64_CE CRYPTO_AES_ARM64_CE_CCM  CRYPTO_AES_ARM64_CE_BLK CRYPTO_AES_ARM64_NEON_BLK
 			;;
-		armv7hnl|armv7hl|armv5tel)
+		armv7hnl|armv5tel)
 			yconfig ARM_CRYPTO
 			mconfig CRYPTO_AES_ARM64_BS CRYPTO_SHA1_ARM CRYPTO_SHA256_ARM CRYPTO_SHA512_ARM CRYPTO_AES_ARM CRYPTO_SHA1_ARM CRYPTO_AES_ARM
 			nconfig CRYPTO_AES_ARM_CE CRYPTO_GHASH_ARM_CE CRYPTO_CRCT10DIF_ARM_CE CRYPTO_CRC32_ARM_CE CRYPTO_SHA1_ARM_CE CRYPTO_SHA2_ARM_CE
@@ -273,7 +272,7 @@ generate_config() {
 
 	# Platform specific SCSI
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			yconfig VMWARE_PVSCSI XEN_SCSI_FRONTEND HYPERV_STORAGE
 			;;
 	esac
@@ -300,7 +299,7 @@ generate_config() {
 
 	# Platform specific SDHCI
 	case $BARCH in
-		aarch64|armv7hnl|armv7hl|armv5tel)
+		aarch64|armv7hnl|armv5tel)
 			yconfig MMC_ARMMMCI MMC_QCOM_DML MMC_SDHCI_OF_ASPEED MMC_SDHCI_OF_AT91 MMC_SDHCI_CADENCE MMC_SDHCI_ESDHC_IMX \
 				MMC_SDHCI_TEGRA MMC_SDHCI_PXAV3 MMC_SDHCI_F_SDH30 MMC_SUNXI MMC_DW MMC_DW_PLTFM MMC_DW_EXYNOS MMC_DW_K3 MMC_DW_PCI MMC_DW_ROCKCHIP
 			nconfig MMC_DW_BLUEFIELD MMC_DW_HI3798CV200
@@ -373,7 +372,7 @@ generate_config() {
 
 	# IEEE 1394 support (x86 and ppc)
 	case $BARCH in
-		x86_64|i586|ppc64le|ppc64|ppc)
+		x86_64|i686|ppc64le|ppc64|ppc)
 			yconfig MACINTOSH_DRIVERS
 			mconfig FIREWIRE FIREWIRE_OHCI FIREWIRE_SBP2 FIREWIRE_NET FIREWIRE_NOSY
 			;;
@@ -485,7 +484,7 @@ generate_config() {
 
 	# Platform specific HID support
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			mconfig INTEL_ISH_HID
 			;;
 	esac
@@ -645,7 +644,7 @@ generate_config() {
 
 	# Platform specific virtualiztion
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			yconfig INTEL_IOMMU INTEL_IOMMU_SVM AMD_IOMMU AMD_IOMMU_V2 XEN_TMEM CLEANCACHE \
 				FRONTSWAP XEN_SELFBALLOONING X86_IO_APIC ACPI_PROCFS PCI_XEN
 			mconfig XEN_PCIDEV_BACKEND
@@ -663,7 +662,7 @@ generate_config() {
 
 	# Platform specific GPU support
 	case $BARCH in
-		x86_64|i586)
+		x86_64|i686)
 			yconfig DRM_I915_ALPHA_SUPPORT DRM_I915_CAPTURE_ERROR DRM_I915_COMPRESS_ERROR \
 				DRM_I915_USERPTR DRM_GMA600 DRM_GMA3600 DRM_VMWGFX_FBCON
 			mconfig DRM_I915 DRM_VMWGFX DRM_GMA500
@@ -797,8 +796,8 @@ generate_config() {
 			nconfig X86_X32 MODIFY_LDT_SYSCALL
 			varconfig DEFAULT_MMAP_MIN_ADDR 65536
 			;;
-		i586)
-			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY PAGE_TABLE_ISOLATION
+		i686)
+			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY PAGE_TABLE_ISOLATION HIGHMEM64G X86_PAE
 			nconfig MODIFY_LDT_SYSCALL
 			varconfig DEFAULT_MMAP_MIN_ADDR 65536
 			;;
@@ -806,7 +805,7 @@ generate_config() {
 			yconfig ARM64_SW_TTBR0_PAN UNMAP_KERNEL_AT_EL0
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
 			;;
-		armv7hnl|armv7hl|armv6hl)
+		armv7hnl|armv6hl)
 			yconfig VMSPLIT_3G STRICT_MEMORY_RWX CPU_SW_DOMAIN_PAN
 			nconfig OABI_COMPAT
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
@@ -835,7 +834,7 @@ build() {
 			export XKARCH="x86_64"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		i586)
+		i686)
 			export XKARCH="i386"
 			export IMAGELOC="arch/x86/boot/bzImage"
 			;;
@@ -843,7 +842,7 @@ build() {
 			export XKARCH="arm64"
 			export IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armv7hnl|armv7hl|armv6hl)
+		armv7hnl|armv6hl)
 			export XKARCH="arm"
 			export IMAGELOC="arch/arm/boot/zImage"
 			;;
@@ -905,7 +904,7 @@ build() {
 	depmod -a -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
-		aarch64|armv7hnl|armv7hl|armv6hl)
+		aarch64|armv7hnl|armv6hl)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
 				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
