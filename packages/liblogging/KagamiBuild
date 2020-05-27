@@ -1,0 +1,21 @@
+# Description: Easy to use, portable, open source library for system logging
+# URL:         http://www.liblogging.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     libs
+
+name=liblogging
+version=1.0.6
+release=1
+options=('bootstrap')
+source=("https://github.com/rsyslog/liblogging/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vfi
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-man-pages
+	make
+	make DESTDIR="$PKG" install
+}

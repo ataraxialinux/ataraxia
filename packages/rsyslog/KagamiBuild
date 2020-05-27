@@ -1,0 +1,34 @@
+# Description: An enhanced multi-threaded syslogd
+# URL:         https://www.rsyslog.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libfastjson libestr librelp liblogging util-linux curl
+# Priority:    required
+# Section:     admin
+
+name=rsyslog
+version=8.2004.0
+release=1
+#backup=('etc/rsyslog.conf')
+options=('bootstrap')
+source=("http://www.rsyslog.com/files/download/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--enable-imfile \
+		--enable-impstats \
+		--enable-imptcp \
+		--enable-inet \
+		--enable-mail \
+		--enable-omprog \
+		--enable-relp \
+		--disable-debug-symbols \
+		--disable-generate-man-pages \
+		--disable-gnutls \
+		--disable-mysql \
+		--disable-pgsql
+	make
+	make DESTDIR="$PKG" install
+}
