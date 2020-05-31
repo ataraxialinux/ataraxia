@@ -1,0 +1,41 @@
+# Description: An advanced cron daemon
+# URL:         https://github.com/cronie-crond/cronie/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam
+# Priority:    required
+# Section:     admin
+
+name=cronie
+version=1.5.5
+release=1
+options=('bootstrap')
+backup=('etc/cron.deny'
+	'etc/pam.d/crond'
+	'etc/cron.d/0hourly'
+	'etc/anacrontab')
+source=("https://github.com/cronie-crond/cronie/releases/download/$name-$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-inotify \
+		--with-pam \
+		--enable-anacron
+	make
+	make DESTDIR="$PKG" install
+
+	chmod u+s "$PKG"/usr/bin/crontab
+	install -d "$PKG"/var/spool/{ana,}cron
+	install -d "$PKG"/etc/cron.{d,hourly,daily,weekly,monthly}
+	install -Dm0644 contrib/anacrontab "$PKG"/etc/anacrontab
+	install -Dm0644 contrib/0hourly "$PKG"/etc/cron.d/0hourly
+	install -Dm0755 contrib/0anacron "$PKG"/etc/cron.hourly/0anacron
+
+	touch "$PKG"/etc/cron.deny
+	install -Dm644 "$STUFF"/pam.d/crond "$PKG"/etc/pam.d/crond
+	install -Dm0644 "$STUFF"/svc/crond.confd "$PKG"/etc/conf.d/crond
+}
