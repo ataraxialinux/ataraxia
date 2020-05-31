@@ -14,17 +14,31 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-supervisor=supervise-daemon
+: ${cfgfile:=${CONFIGFILE:="/etc/rsyslog.conf"}}
 
-command="/usr/bin/rsyslog"
-command_args="-n -f /etc/rsyslog.conf"
+command="/usr/bin/rsyslogd"
+command_args="-i $pidfile -f $cfgfile"
 pidfile="/run/rsyslogd.pid"
 
 depend() {
 	need clock hostname localmount
+	before net
 	provide logger
 }
 
 start_pre() {
 	[ ! -f "/etc/rsyslog.conf" ] && die "Configuration for rsyslog is not found"
+}
+
+start() {
+	ebegin "Starting rsyslog"
+	start-stop-daemon --start --quiet --pidfile "$pidfile" \
+		--exec $command -- $command_args
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping rsyslog"
+	start-stop-daemon --stop --quiet --pidfile "$pidfile"
+	eend $?
 }

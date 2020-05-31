@@ -49,9 +49,10 @@ build() {
 		make DESTDIR="$PKG" install
 	fi
 
+	mkdir -p "$PKG"/var/lib/dhcpd "$PKG"/var/lib/dhclient
+
 	mv "$PKG"/etc/dhclient.conf.example "$PKG"/etc/dhclient.conf
 	mv "$PKG"/etc/dhcpd.conf.example "$PKG"/etc/dhcpd.conf
 	install -Dm644 doc/examples/dhcpd-dhcpv6.conf "$PKG"/etc/dhcpd6.conf
-
-	install -Dm755 client/scripts/linux "$PKG"/usr/bin/dhclient-script
+	install -Dm755 client/scripts/linux "$PKG"/etc/dhclient-script
 }
