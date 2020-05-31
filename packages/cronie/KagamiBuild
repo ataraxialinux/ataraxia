@@ -17,6 +17,9 @@ source=("https://github.com/cronie-crond/cronie/releases/download/$name-$version
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/cronie/0001-add-obstack.patch
+
+	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
