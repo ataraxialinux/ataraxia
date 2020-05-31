@@ -1,12 +1,12 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl dhcpcd gobject-introspection iptables jansson newt nss polkit pygobject vala iwd
+# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dhcp
 # Section:     net
 
 name=networkmanager
 version=1.24.2
-release=1
+release=2
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -22,10 +22,8 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/NetworkManager-$version \
 		-Db_lto=false \
-		-Dconfig_dhcp_default=dhcpcd \
 		-Dconfig_plugins_default=keyfile \
 		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
-		-Ddhcpcd=true \
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
 		-Debpf=true \
@@ -56,7 +54,6 @@ build() {
 	cat > "$PKG"/etc/NetworkManager/NetworkManager.conf <<-EOF
 		[main]
 		auth-polkit=true
-		dhcp=dhcpcd
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
