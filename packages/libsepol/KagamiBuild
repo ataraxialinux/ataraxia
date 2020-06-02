@@ -1,0 +1,22 @@
+# Description: SELinux binary policy representation library
+# URL:         https://github.com/SELinuxProject/selinux/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     security
+
+name=libsepol
+version=3.0
+release=1
+options=('bootstrap')
+source=("https://github.com/SELinuxProject/selinux/releases/download/20191204/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC"
+		make HOSTCC="$HOSTCC" CC="$CC" DESTDIR="$PKG" SHLIBDIR=/usr/lib install
+	else
+		make
+		make DESTDIR="$PKG" SHLIBDIR=/usr/lib install
+	fi
+}
