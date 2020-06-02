@@ -22,6 +22,7 @@ source=("https://people.redhat.com/sgrubb/$name/$name-$version.tar.gz")
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np0 -i "$STUFF"/audit/fix.patch
+	patch -Np1 -i "$STUFF"/audit/audit-3.0-no-common.patch
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -32,8 +33,14 @@ build() {
 		--without-python3 \
 		--enable-shared=audit \
 		--disable-zos-remote
-	make
-	make DESTDIR="$PKG" INSTALL='install -p' install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" INSTALL='install -p' install
+	else
+		make
+		make DESTDIR="$PKG" INSTALL='install -p' install
+	fi
 
 	install -d "$PKG"/var/log/audit
 
