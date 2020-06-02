@@ -6,7 +6,7 @@
 
 name=busybox
 version=1.31.1
-release=10
+release=11
 options=('bootstrap')
 source=("http://busybox.net/downloads/$name-$version.tar.bz2")
 
@@ -25,17 +25,6 @@ build_busybox_standard() {
 	install -Dm0755 busybox "$PKG"/usr/bin/busybox
 
 	for applet in `cat busybox.links|sed 's|^.*/||'`; do ln -sf busybox "$PKG"/usr/bin/$applet || true; done
-
-	install -Dm0755 "$SRC"/$name-$version/examples/udhcp/simple.script "$PKG"/usr/share/udhcpc/default.script
-
-	for initd in crond klogd rdate syslog watchdog ntpd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
-
-	for initd in acpid inetd udhcpd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-	done
 
 	cd "$STUFF"/busybox
 	${CROSS_COMPILE}cc $CFLAGS -static what.c -o "$PKG"/usr/bin/what
