@@ -1,7 +1,7 @@
 # Description: SELinux userland library
 # URL:         https://github.com/SELinuxProject/selinux/wiki
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  xz libsepol
+# Depends on:  xz pcre libsepol
 # Priority:    required
 # Section:     security
 
@@ -13,7 +13,7 @@ source=("https://github.com/SELinuxProject/selinux/releases/download/20191204/$n
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/libselinux/0001-add-internal-fts.patch
+	patch -Np1 -i "$STUFF"/libselinux/musl.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread"
