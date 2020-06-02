@@ -1,0 +1,22 @@
+# Description: A terminal based program for viewing text files
+# URL:         http://www.greenwoodsoftware.com/less
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses pcre
+# Priority:    required
+# Section:     base
+
+name=less
+version=551
+release=1
+options=('bootstrap')
+source=("http://www.greenwoodsoftware.com/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sh configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-regex=pcre
+	make
+	make DESTDIR="$PKG" install
+}
