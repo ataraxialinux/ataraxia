@@ -12,9 +12,17 @@ options=('bootstrap')
 source=("http://www.landley.net/toybox/downloads/$name-$version.tar.gz")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		unset CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE
+	fi
+
 	cd "$SRC"/$name-$version
 	cp "$STUFF"/toybox/config .config
-
 	make
-	make DESTDIR="$PKG" install
+	make PREFIX="$PKG" install
+
+	cd "$PKG"
+	mv {,s}bin/* usr/bin
+	mv usr/sbin/* usr/bin
+	rmdir usr/sbin bin sbin
 }
