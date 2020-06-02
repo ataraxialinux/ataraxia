@@ -1,0 +1,21 @@
+# Description: An interpreter for the AWK Programming Language
+# URL:         http://invisible-island.net/mawk/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=mawk
+version=1.3.4+20200120
+release=1
+options=('bootstrap')
+source=("https://invisible-mirror.net/archives/$name/$name-${version/+/-}.tgz")
+
+build() {
+	cd "$SRC"/$name-${version/+/-}
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	ln -sf mawk "$PKG"/usr/bin/awk
+}
