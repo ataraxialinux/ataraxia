@@ -1,6 +1,6 @@
 #!/bin/bash
 
-main_standard() {
+main() {
 	if [ -z "$LINUX" ]; then
 		LINUX="linux"
 	fi
@@ -45,48 +45,4 @@ main_standard() {
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev
-}
-
-main_embedded() {
-	IMAGEFS="$BUILD/imagefs"
-
-	rm -rf "$IMAGEFS"
-	mkdir -p "$IMAGEFS"
-
-	IMG="$BUILD/ataraxialinux-sdcard-$BARCH.img"
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=32M
-	losetup -f $IMG
-	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
-
-	parted -s $lodev mklabel msdos
-	parted -a optimal -s $lodev mkpart primary 0% 100%
-
-	lopart="${lodev}p1"
-	yes | mkfs.ext2 $lopart
-	mount -o loop $lopart "$IMAGEFS"
-
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$IMAGEFS" -wd base-files mksh busybox
-
-	pushd "$IMAGEFS"
-		rm -rf usr/include
-		rm -rf usr/share/man
-		rm -rf usr/share/doc
-		rm -rf usr/share/info
-
-		find . -name "*.a" -print0 | xargs -0 rm -rf
-		find . -name "*.h" -print0 | xargs -0 rm -rf
-		find . -name "*.hpp" -print0 | xargs -0 rm -rf
-		find . -name "*.pc" -print0 | xargs -0 rm -r
-	popd
-
-	umount -l "$IMAGEFS"
-	losetup -d $lodev
-}
-
-main() {
-	if [ "$EMBEDDED" = "1" ]; then
-		main_embedded
-	else
-		main_standard
-	fi
 }
