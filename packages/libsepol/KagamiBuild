@@ -12,6 +12,9 @@ source=("https://github.com/SELinuxProject/selinux/releases/download/20191204/$n
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libsepol/0002-libsepol-fix-CIL_KEY_-build-errors-with-fno-common.patch
+	patch -Np1 -i "$STUFF"/libsepol/0003-libsepol-remove-leftovers-of-cil_mem_error_handler.patch
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC"
 		make HOSTCC="$HOSTCC" CC="$CC" DESTDIR="$PKG" SHLIBDIR=/usr/lib install
