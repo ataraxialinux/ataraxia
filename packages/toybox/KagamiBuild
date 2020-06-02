@@ -1,19 +1,20 @@
-# Description: The GNU macro processor
-# URL:         http://www.gnu.org/software/m4
+# Description: All-in-one Linux command line
+# URL:         https://landley.net/toybox
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libselinux
 # Priority:    required
-# Section:     devel
+# Section:     base
 
-name=m4
-version=1.4.18
+name=toybox
+version=0.8.3
 release=1
 options=('bootstrap')
-source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("http://www.landley.net/toybox/downloads/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
+	cp "$STUFF"/toybox/config .config
+
 	make
 	make DESTDIR="$PKG" install
 }
