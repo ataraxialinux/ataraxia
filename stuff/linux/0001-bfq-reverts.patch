@@ -1,4 +1,4 @@
-From a3b8914d38b0d9789c74b11b3f48355ecdd6fe35 Mon Sep 17 00:00:00 2001
+From a3f9b627d2cc9bebb95edf419f33db946d1350eb Mon Sep 17 00:00:00 2001
 From: Piotr Gorski <lucjan.lucjanov@gmail.com>
 Date: Mon, 30 Mar 2020 03:00:34 +0200
 Subject: [PATCH 1/5] Revert "block, bfq: invoke flush_idle_tree after
@@ -12,7 +12,7 @@ Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
  1 file changed, 7 insertions(+), 13 deletions(-)
 
 diff --git a/block/bfq-cgroup.c b/block/bfq-cgroup.c
-index 68882b9..efb89db 100644
+index 68882b9b8..efb89db7b 100644
 --- a/block/bfq-cgroup.c
 +++ b/block/bfq-cgroup.c
 @@ -893,6 +893,13 @@ static void bfq_pd_offline(struct blkg_policy_data *pd)
@@ -50,10 +50,10 @@ index 68882b9..efb89db 100644
  
  	__bfq_deactivate_entity(entity, false);
 -- 
-2.26.1.107.gefe3874640
+2.27.0.rc2
 
 
-From 616409325f819f0e2dc452a9eaf3c0b0c0749b3d Mon Sep 17 00:00:00 2001
+From a2d2678fc5eb4aaf517699f8dab9d1a48f98f2db Mon Sep 17 00:00:00 2001
 From: Piotr Gorski <lucjan.lucjanov@gmail.com>
 Date: Mon, 30 Mar 2020 03:00:35 +0200
 Subject: [PATCH 2/5] Revert "block, bfq: make reparent_leaf_entity actually
@@ -67,7 +67,7 @@ Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
  1 file changed, 17 insertions(+), 31 deletions(-)
 
 diff --git a/block/bfq-cgroup.c b/block/bfq-cgroup.c
-index efb89db..72c6151 100644
+index efb89db7b..72c6151ac 100644
 --- a/block/bfq-cgroup.c
 +++ b/block/bfq-cgroup.c
 @@ -815,53 +815,39 @@ static void bfq_flush_idle_tree(struct bfq_service_tree *st)
@@ -150,10 +150,10 @@ index efb89db..72c6151 100644
  
  	__bfq_deactivate_entity(entity, false);
 -- 
-2.26.1.107.gefe3874640
+2.27.0.rc2
 
 
-From 8521a1adf44c099e56760d3190cfa8e1fcd2c6b7 Mon Sep 17 00:00:00 2001
+From 35c5c257a7cb851b5712090cc42f6d058d981296 Mon Sep 17 00:00:00 2001
 From: Piotr Gorski <lucjan.lucjanov@gmail.com>
 Date: Mon, 30 Mar 2020 03:00:36 +0200
 Subject: [PATCH 3/5] Revert "block, bfq: turn put_queue into
@@ -169,7 +169,7 @@ Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
  3 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/block/bfq-cgroup.c b/block/bfq-cgroup.c
-index 72c6151..9d963ed 100644
+index 72c6151ac..9d963ed51 100644
 --- a/block/bfq-cgroup.c
 +++ b/block/bfq-cgroup.c
 @@ -714,7 +714,10 @@ static struct bfq_group *__bfq_bic_change_cgroup(struct bfq_data *bfqd,
@@ -185,10 +185,10 @@ index 72c6151..9d963ed 100644
  	}
  
 diff --git a/block/bfq-iosched.c b/block/bfq-iosched.c
-index 78ba57e..4a44c7f 100644
+index aee0ee875..168b1796b 100644
 --- a/block/bfq-iosched.c
 +++ b/block/bfq-iosched.c
-@@ -2716,6 +2716,8 @@ static void bfq_bfqq_save_state(struct bfq_queue *bfqq)
+@@ -2717,6 +2717,8 @@ static void bfq_bfqq_save_state(struct bfq_queue *bfqq)
  	}
  }
  
@@ -198,7 +198,7 @@ index 78ba57e..4a44c7f 100644
  {
  	/*
 diff --git a/block/bfq-iosched.h b/block/bfq-iosched.h
-index cd224aa..d1233af 100644
+index cd224aaf9..d1233af9c 100644
 --- a/block/bfq-iosched.h
 +++ b/block/bfq-iosched.h
 @@ -955,7 +955,6 @@ void bfq_bfqq_expire(struct bfq_data *bfqd, struct bfq_queue *bfqq,
@@ -210,10 +210,10 @@ index cd224aa..d1233af 100644
  void bfq_put_async_queues(struct bfq_data *bfqd, struct bfq_group *bfqg);
  
 -- 
-2.26.1.107.gefe3874640
+2.27.0.rc2
 
 
-From 2ce7f9956129a6fdd8e7c056352f08f17d3620d3 Mon Sep 17 00:00:00 2001
+From 2c17339970d95efda0d48d3920a771ed76c85896 Mon Sep 17 00:00:00 2001
 From: Piotr Gorski <lucjan.lucjanov@gmail.com>
 Date: Mon, 30 Mar 2020 03:00:37 +0200
 Subject: [PATCH 4/5] Revert "block, bfq: move forward the getting of an extra
@@ -227,7 +227,7 @@ Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
  1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/block/bfq-cgroup.c b/block/bfq-cgroup.c
-index 9d963ed..f0ff665 100644
+index 9d963ed51..f0ff6654a 100644
 --- a/block/bfq-cgroup.c
 +++ b/block/bfq-cgroup.c
 @@ -642,12 +642,6 @@ void bfq_bfqq_move(struct bfq_data *bfqd, struct bfq_queue *bfqq,
@@ -266,10 +266,10 @@ index 9d963ed..f0ff665 100644
  }
  
 -- 
-2.26.1.107.gefe3874640
+2.27.0.rc2
 
 
-From 654c19a2a56272bed10379d63446480e61ed16c5 Mon Sep 17 00:00:00 2001
+From afef34dadde7eb5bbdf55f0656c4be1a0c05c468 Mon Sep 17 00:00:00 2001
 From: Piotr Gorski <lucjan.lucjanov@gmail.com>
 Date: Mon, 30 Mar 2020 03:00:37 +0200
 Subject: [PATCH 5/5] Revert "block, bfq: fix use-after-free in
@@ -283,10 +283,10 @@ Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
  1 file changed, 4 insertions(+), 12 deletions(-)
 
 diff --git a/block/bfq-iosched.c b/block/bfq-iosched.c
-index 4a44c7f..8c436ab 100644
+index 168b1796b..3230e87e7 100644
 --- a/block/bfq-iosched.c
 +++ b/block/bfq-iosched.c
-@@ -6215,28 +6215,20 @@ static struct bfq_queue *bfq_init_rq(struct request *rq)
+@@ -6217,28 +6217,20 @@ static struct bfq_queue *bfq_init_rq(struct request *rq)
  	return bfqq;
  }
  
@@ -318,7 +318,7 @@ index 4a44c7f..8c436ab 100644
  	if (bfq_bfqq_budget_timeout(bfqq))
  		/*
  		 * Also here the queue can be safely expired
-@@ -6281,7 +6273,7 @@ static enum hrtimer_restart bfq_idle_slice_timer(struct hrtimer *timer)
+@@ -6283,7 +6275,7 @@ static enum hrtimer_restart bfq_idle_slice_timer(struct hrtimer *timer)
  	 * early.
  	 */
  	if (bfqq)
@@ -328,5 +328,6 @@ index 4a44c7f..8c436ab 100644
  	return HRTIMER_NORESTART;
  }
 -- 
-2.26.1.107.gefe3874640
+2.27.0.rc2
+
 
