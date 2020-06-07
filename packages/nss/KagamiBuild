@@ -10,31 +10,37 @@ release=1
 source=("https://ftp.mozilla.org/pub/security/nss/releases/NSS_${version//./_}_RTM/src/nss-${version}.tar.gz")
 
 build() {
-	local vmajor vminor vpatch
+	local vmajor vminor vpatch nsprver
+	nsprver="$(pkgconf --modversion nspr)"
 
 	cd "$SRC"/$name-$version/$name
-	bash -x build.sh \
+	bash build.sh \
 		--opt \
 		--system-sqlite \
 		--system-nspr \
 		--enable-libpkix \
 		--disable-tests
 
+	mkdir -p "$PKG"/usr/bin "$PKG"/usr/include/nss "$PKG"/usr/lib/pkgconfig
+
 	{ read vmajor; read vminor; read vpatch; } \
 		< <(awk '/#define.*NSS_V(MAJOR|MINOR|PATCH)/ {print $3}' lib/nss/nss.h)
 
-	sed pkg/pkg-config/nss.pc.in \
+	cd "$SRC"/$name-$version
+	sed nss/pkg/pkg-config/nss.pc.in \
 		-e "s,%libdir%,/usr/lib,g" \
 		-e "s,%prefix%,/usr,g" \
 		-e "s,%exec_prefix%,/usr/bin,g" \
 		-e "s,%includedir%,/usr/include/nss,g" \
-		-e "s,%NSPR_VERSION%,$_nsprver,g" \
-		-e "s,%NSS_VERSION%,$pkgver,g" |
-		install -Dm644 /dev/stdin "$PKG"/usr/lib/pkgconfig/nss.pc
+		-e "s,%NSPR_VERSION%,$nsprver,g" \
+		-e "s,%NSS_VERSION%,$version,g" |
+	install -Dm644 /dev/stdin "$PKG"/usr/lib/pkgconfig/nss.pc
 
 	ln -sf nss.pc "$PKG"/usr/lib/pkgconfig/mozilla-nss.pc
 
-	sed pkg/pkg-config/nss-config.in \
+	install -D dist/Release/lib/*.so "$PKG"/usr/lib
+
+	sed nss/pkg/pkg-config/nss-config.in \
 		-e "s,@libdir@,/usr/lib,g" \
 		-e "s,@prefix@,/usr/bin,g" \
 		-e "s,@exec_prefix@,/usr/bin,g" \
@@ -42,16 +48,10 @@ build() {
 		-e "s,@MOD_MAJOR_VERSION@,$vmajor,g" \
 		-e "s,@MOD_MINOR_VERSION@,$vminor,g" \
 		-e "s,@MOD_PATCH_VERSION@,$vpatch,g" |
-		install -D /dev/stdin "$PKG"/usr/bin/nss-config
+	install -Dm755 /dev/stdin "$PKG"/usr/bin/nss-config
 
-	cd "$SRC"/$name-$version/dist
-	install -Dt "$PKG"/usr/include/nss -m644 public/nss/*.h
-
-	cd "$SRC"/$name-$version/dist/Release/bin
-	install -Dt "$PKG"/usr/bin *util shlibsign signtool signver ssltap
-
-	cd "$SRC"/$name-$version/dist/Release/lib
-	install -Dt "$PKG"/usr/lib/ *.so
+	install -Dm755 dist/Release/bin/{*util,shlibsign,signtool,signver,ssltap} "$PKG"/usr/bin
+	install -Dm644 dist/public/nss/*.h "$PKG"/usr/include/nss
 
 	ln -sf pkcs11/p11-kit-trust.so "$PKG"/usr/lib/p11-kit-trust.so
 	ln -sf p11-kit-trust.so "$PKG"/usr/lib/libnssckbi.so
