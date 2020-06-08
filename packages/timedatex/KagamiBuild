@@ -1,0 +1,27 @@
+# Description: D-Bus service for system clock and RTC settings
+# URL:         https://github.com/mlichvar/timedatex
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  glib
+# Section:     admin
+
+name=timedatex
+version=0.6
+release=1
+source=("https://github.com/mlichvar/timedatex/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make timedated.h
+
+	${CC:cc} $CFLAGS -Wall -o timedatex timedatex.c $(pkg-config --cflags glib-2.0 gio-2.0 libselinux) -lglib-2.0 -lgio-2.0 -lgobject-2.0 -lselinux
+
+	install -Dm755 timedatex "$PKG"/usr/bin/timedatex
+	install -Dm644 timedatex.8 "$PKG"/usr/share/man/man8/timedatex.8
+
+	install -Dm644 "$STUFF"/timedatex/org.freedesktop.timedate1.service \
+		"$PKG"/usr/share/dbus-1/system-services/org.freedesktop.timedate1.service
+	install -Dm644 "$STUFF"/timedatex/org.freedesktop.timedate1.conf \
+		"$PKG"/usr/share/dbus-1/system.d/org.freedesktop.timedate1.conf
+	install -Dm644 "$STUFF"/timedatex/org.freedesktop.timedate1.policy \
+		"$PKG"/usr/share/polkit-1/actions//org.freedesktop.timedate1.policy
+}
