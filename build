@@ -33,70 +33,63 @@ check_for_root() {
 generate_config() {
 	local file="$1"
 
-if [ "$USE_TARGET" = "1" ]; then
-	if [ "$EMBEDDED" = "1" ]; then
-		opts="emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool embedded"
-	else
-		opts="emptydirs strip makeflags ~locales ~docs ~ccache ~libtool"
+	if [ "$USE_TARGET" = "1" ]; then
+		cat > "$file" <<- EOF
+			export BARCH="$BARCH"
+			export MKOPTS="$MKOPTS"
+			export OPTIONS=(emptydirs strip makeflags ~locales ~docs ~ccache ~libtool)
+			export REPOS=("${REPO}")
+			export ROOTFS="$ROOTFS"
+			export TOOLS="$TOOLS"
+			export PKGDEST="$PACKAGES"
+			export SRCDEST="$SOURCES"
+			export CFLAGS="$CFLAGS"
+			export CXXFLAGS="$CXXFLAGS"
+			export XHOST="$XHOST"
+			export XTARGET="$XTARGET"
+			export CROSS_COMPILE="$XTARGET-"
+			export CC="$XTARGET-gcc"
+			export CXX="$XTARGET-g++"
+			export AR="$XTARGET-ar"
+			export AS="$XTARGET-as"
+			export RANLIB="$XTARGET-ranlib"
+			export LD="$XTARGET-ld"
+			export STRIP="$XTARGET-strip"
+			export OBJCOPY="$XTARGET-objcopy"
+			export OBJDUMP="$XTARGET-objdump"
+			export SIZE="$XTARGET-size"
+			export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+			export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+			export PERLFLAGS="--target=$XTARGET"
+			export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+			export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+			export HOSTCC="$HOSTCC"
+			export HOSTCXX="$HOSTCXX"
+			export ORIGMAKE="$ORIGMAKE"
+			export PATH="$PATH"
+			export STUFF="$STUFF"
+		EOF
+	elif [ "$USE_HOST" = "1" ]; then
+		cat > "$file" <<- EOF
+			export BARCH="$BARCH"
+			export MKOPTS="$MKOPTS"
+			export OPTIONS=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool)
+			export REPOS=("${TCREPO}" "${REPO}")
+			export ROOTFS="$ROOTFS"
+			export TOOLS="$TOOLS"
+			export PKGDEST="$PACKAGES"
+			export SRCDEST="$SOURCES"
+			export CFLAGS="$CFLAGS"
+			export CXXFLAGS="$CXXFLAGS"
+			export XHOST="$XHOST"
+			export XTARGET="$XTARGET"
+			export HOSTCC="$HOSTCC"
+			export HOSTCXX="$HOSTCXX"
+			export ORIGMAKE="$ORIGMAKE"
+			export PATH="$PATH"
+			export STUFF="$STUFF"
+		EOF
 	fi
-	cat > "$file" <<- EOF
-		export BARCH="$BARCH"
-		export MKOPTS="$MKOPTS"
-		export OPTIONS=($opts)
-		export REPOS=("${REPO}")
-		export ROOTFS="$ROOTFS"
-		export TOOLS="$TOOLS"
-		export PKGDEST="$PACKAGES"
-		export SRCDEST="$SOURCES"
-		export CFLAGS="$CFLAGS"
-		export CXXFLAGS="$CXXFLAGS"
-		export XHOST="$XHOST"
-		export XTARGET="$XTARGET"
-		export CROSS_COMPILE="$XTARGET-"
-		export CC="$XTARGET-gcc"
-		export CXX="$XTARGET-g++"
-		export AR="$XTARGET-ar"
-		export AS="$XTARGET-as"
-		export RANLIB="$XTARGET-ranlib"
-		export LD="$XTARGET-ld"
-		export STRIP="$XTARGET-strip"
-		export OBJCOPY="$XTARGET-objcopy"
-		export OBJDUMP="$XTARGET-objdump"
-		export SIZE="$XTARGET-size"
-		export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
-		export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
-		export PERLFLAGS="--target=$XTARGET"
-		export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
-		export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
-		export HOSTCC="$HOSTCC"
-		export HOSTCXX="$HOSTCXX"
-		export ORIGMAKE="$ORIGMAKE"
-		export PATH="$PATH"
-		export STUFF="$STUFF"
-		export EMBEDDED="$EMBEDDED"
-	EOF
-elif [ "$USE_HOST" = "1" ]; then
-	cat > "$file" <<- EOF
-		export BARCH="$BARCH"
-		export MKOPTS="$MKOPTS"
-		export OPTIONS=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool)
-		export REPOS=("${TCREPO}" "${REPO}")
-		export ROOTFS="$ROOTFS"
-		export TOOLS="$TOOLS"
-		export PKGDEST="$PACKAGES"
-		export SRCDEST="$SOURCES"
-		export CFLAGS="$CFLAGS"
-		export CXXFLAGS="$CXXFLAGS"
-		export XHOST="$XHOST"
-		export XTARGET="$XTARGET"
-		export HOSTCC="$HOSTCC"
-		export HOSTCXX="$HOSTCXX"
-		export ORIGMAKE="$ORIGMAKE"
-		export PATH="$PATH"
-		export STUFF="$STUFF"
-		export EMBEDDED="$EMBEDDED"
-	EOF
-fi
 }
 
 setup_architecture() {
@@ -285,18 +278,14 @@ build_target() {
 		LINUX="linux"
 	fi
 
-	if [ "$EMBEDDED" = "1" ]; then
-		packages="$LINUX busybox mksh"
-	else
-		packages="netbase tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 file \
-			ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache pkgconf \
-			cracklib pam libpwquality attr acl libcap shadow pcre grep mksh bash slibtool gdbm db \
-			expat perl libressl nettle ca-certificates autoconf automake lzip libarchive lzo kmod \
-			libuargp libelf coreutils openbsd-diffutils sbase ubase sinit netbsd-tools busybox \
-			mandoc dialog pigz iproute2 kbd make vim libcap-ng util-linux e2fsprogs btrfs-progs dosfstools \
-			heimdal hwids gperf eudev openrc ifupdown dhcp libssh2 nghttp2 curl libfastjson libestr librelp \
-			liblogging rsyslog lua popt rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget nano $LINUX"
-	fi
+	packages="netbase selinux-policy tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
+		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache pkgconf \
+		pcre libcap-ng audit libsepol libselinux libsemanage cracklib pam libpwquality attr acl libcap \
+		shadow grep mksh bash slibtool gdbm db expat perl libressl nettle ca-certificates \
+		autoconf automake lzip libarchive lzo kmod libuargp libelf coreutils mawk openbsd-diffutils \
+		ubase sinit netbsd-tools toybox less mandoc checkpolicy policycoreutils dialog pigz iproute2 kbd \
+		make vim util-linux e2fsprogs btrfs-progs dosfstools heimdal hwids gperf eudev openrc ifupdown dhcp \
+		libssh2 nghttp2 curl lua popt rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget nano $LINUX"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $packages
 }
@@ -353,9 +342,6 @@ case $1 in
 					;;
 				l)
 					LINUX="$OPTARG"
-					;;
-				E)
-					EMBEDDED="1"
 					;;
 				:)
 					die "Option '-${OPTARG}' needs an argument"
@@ -418,9 +404,6 @@ case $1 in
 					;;
 				l)
 					LINUX="$OPTARG"
-					;;
-				E)
-					EMBEDDED="1"
 					;;
 				:)
 					die "Option '-${OPTARG}' needs an argument"

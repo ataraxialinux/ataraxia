@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.24.2
-release=3
+release=6
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -30,14 +30,12 @@ build() {
 		-Difupdown=true \
 		-Diptables=/usr/bin/iptables \
 		-Diwd=true \
-		-Dlibaudit=no \
 		-Dmodify_system=true \
 		-Dnmtui=true \
 		-Dovs=false \
 		-Dpolkit_agent=true \
 		-Dppp=false \
 		-Dqt=false \
-		-Dselinux=false \
 		-Dsession_tracking_consolekit=false \
 		-Dsession_tracking=elogind \
 		-Dsuspend_resume=elogind \
@@ -55,6 +53,9 @@ build() {
 	cat > "$PKG"/etc/NetworkManager/NetworkManager.conf <<-EOF
 		[main]
 		auth-polkit=true
+
+		[device]
+		wifi.backend=iwd
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d

@@ -19,9 +19,7 @@
 #include <time.h>
 
 #include <tzfile.h>
-#include <compat.h>
-
-#define pledge(request, paths) 0 /* linux doesn't have pledge */
+#include <bsd.h>
 
 #define TRUE	1
 #define FALSE	0
@@ -46,6 +44,8 @@ typedef int_fast64_t	zic_t;
 #define RULE_STRLEN_MAXIMUM	8	/* "Mdd.dd.d" */
 
 #define end(cp, n)	(memchr((cp), '\0', (n)))
+
+#define pledge(request, paths) 0 /* linux doesn't have pledge */
 
 struct rule {
 	const char 	*r_filename;

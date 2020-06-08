@@ -1,12 +1,12 @@
 # Description: Pluggable Authentication Modules
 # URL:         http://linux-pam.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cracklib
+# Depends on:  cracklib libselinux
 # Section:     security
 
 name=pam
 version=1.3.1
-release=3
+release=4
 options=('~emptydirs' 'bootstrap')
 backup=('etc/security/access.conf'
 	'etc/security/group.conf'
@@ -32,12 +32,11 @@ build() {
 		--disable-audit \
 		--disable-db \
 		--disable-nls \
-		--disable-selinux \
 		--disable-regenerate-docu
 	make
 	make DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/usr/lib/security/*.a
+	rm -rf "$PKG"/usr/lib/security/*.a "$PKG"/var/run
 
 	chmod 4755 "$PKG"/usr/bin/unix_chkpwd
 
