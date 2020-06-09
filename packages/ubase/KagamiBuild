@@ -6,7 +6,7 @@
 
 name=ubase
 version=52773c0417a7898fcbf5dce2f690213649e7bca7
-release=2
+release=3
 options=('bootstrap')
 source=("https://github.com/michaelforney/ubase/archive/$version.tar.gz")
 
@@ -14,13 +14,10 @@ build() {
 	cd "$SRC"/$name-$version
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
-		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	else
 		make CFLAGS="$CFLAGS" LDFLAGS='-static'
-		make CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	fi
 
-	rm -rf "$PKG"/usr/bin/{free,clear,dd,df,id,insmod,lastlog,lsmod,passwd,rmmod,stat,stty,truncate,who,lsusb,getty,chvt,su,unshare,mountpoint,renice,logger,login,hwclock,mkswap,mount,pivot_root,swaplabel,swapoff,swapon,switch_root,umount,blkdiscard,dmesg,sysctl}
-	rm -rf "$PKG"/usr/share/man/man1/{clear.1,dd.1,df.1,id.1,passwd.1,stat.1,truncate.1,who.1,chvt.1,su.1,unshare.1,mountpoint.1,renice.1,logger.1,login.1,dmesg.1,free.1}
-	rm -rf "$PKG"/usr/share/man/man8/{lastlog.8,lsmod.8,lsusb.8,getty.8,hwclock.8,mkswap.8,mount.8,pivot_root.8,swaplabel.8,swapoff.8,swapon.8,switch_root.8,umount.8,sysctl.8}
+	mkdir -p "$PKG"/usr/bin
+	cp respawn ctrlaltdel halt killall5 "$PKG"/usr/bin
 }

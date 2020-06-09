@@ -27,11 +27,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	if [ "$EMBEDDED" != "1" ]; then
-		for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
-			ln -sf kmod "$PKG"/usr/bin/$tool
-		done
-	fi
+	for tool in {ins,ls,rm,dep}mod mod{probe,info}; do
+		ln -sf kmod "$PKG"/usr/bin/$tool
+	done
 
 	install -Dm644 "$STUFF"/kmod/depmod-search.conf "$PKG"/usr/lib/depmod.d/search.conf
 

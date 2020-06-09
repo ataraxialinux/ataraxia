@@ -1,6 +1,6 @@
 #!/bin/bash
 
-main_standard() {
+main() {
 	if [ -z "$LINUX" ]; then
 		LINUX="linux"
 	fi
@@ -32,61 +32,16 @@ main_standard() {
 
 	mount -o loop $lopart "$IMAGEFS"
 
-	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
+	packages="base-files netbase selinux-policy linux-headers musl tzdata man-pages musl-tools gettext-tiny \
 			zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-			ccache pkgconf cracklib pam libpwquality attr acl libcap shadow pcre grep mksh bash \
-			slibtool gdbm db expat perl libressl nettle ca-certificates autoconf automake lzip libarchive \
-			lzo kmod libuargp libelf coreutils openbsd-diffutils sbase ubase sinit netbsd-tools busybox mandoc \
-			dialog pigz iproute2 kbd make vim libcap-ng util-linux e2fsprogs btrfs-progs heimdal hwids gperf eudev \
-			openrc ifupdown dhcp libssh2 nghttp2 curl libfastjson libestr librelp liblogging rsyslog \
-			lua popt rpm neko $LINUX"
+			ccache pkgconf pcre libcap-ng audit libsepol libselinux libsemanage cracklib pam libpwquality attr acl libcap \
+			shadow grep mksh bash slibtool gdbm db expat perl libressl nettle ca-certificates autoconf automake \
+			lzip libarchive lzo kmod libuargp libelf coreutils mawk openbsd-diffutils ubase sinit netbsd-tools toybox \
+			less mandoc checkpolicy policycoreutils dialog pigz iproute2 kbd make vim util-linux e2fsprogs btrfs-progs heimdal \
+			hwids gperf eudev openrc ifupdown dhcp libssh2 nghttp2 curl lua popt rpm neko $LINUX"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$IMAGEFS" -wd $packages
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev
-}
-
-main_embedded() {
-	IMAGEFS="$BUILD/imagefs"
-
-	rm -rf "$IMAGEFS"
-	mkdir -p "$IMAGEFS"
-
-	IMG="$BUILD/ataraxialinux-sdcard-$BARCH.img"
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=32M
-	losetup -f $IMG
-	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
-
-	parted -s $lodev mklabel msdos
-	parted -a optimal -s $lodev mkpart primary 0% 100%
-
-	lopart="${lodev}p1"
-	yes | mkfs.ext2 $lopart
-	mount -o loop $lopart "$IMAGEFS"
-
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$IMAGEFS" -wd base-files mksh busybox
-
-	pushd "$IMAGEFS"
-		rm -rf usr/include
-		rm -rf usr/share/man
-		rm -rf usr/share/doc
-		rm -rf usr/share/info
-
-		find . -name "*.a" -print0 | xargs -0 rm -rf
-		find . -name "*.h" -print0 | xargs -0 rm -rf
-		find . -name "*.hpp" -print0 | xargs -0 rm -rf
-		find . -name "*.pc" -print0 | xargs -0 rm -r
-	popd
-
-	umount -l "$IMAGEFS"
-	losetup -d $lodev
-}
-
-main() {
-	if [ "$EMBEDDED" = "1" ]; then
-		main_embedded
-	else
-		main_standard
-	fi
 }

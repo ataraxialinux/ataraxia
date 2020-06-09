@@ -1,0 +1,25 @@
+# Description: SELinux policy core utilities
+# URL:         https://github.com/SELinuxProject/selinux/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam libsemanage
+# Priority:    required
+# Section:     security
+
+name=policycoreutils
+version=3.0
+release=1
+options=('bootstrap')
+source=("https://github.com/SELinuxProject/selinux/releases/download/20191204/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/policycoreutils/0001-internal-fts.patch
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" 
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" DESTDIR="$PKG" LIBEXECDIR=/usr/lib SBINDIR=/usr/bin install
+	else
+		make CFLAGS="$CFLAGS"
+		make CFLAGS="$CFLAGS" DESTDIR="$PKG" LIBEXECDIR=/usr/lib SBINDIR=/usr/bin install
+	fi
+}

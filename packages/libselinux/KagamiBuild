@@ -1,0 +1,27 @@
+# Description: SELinux userland library
+# URL:         https://github.com/SELinuxProject/selinux/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  xz pcre libsepol
+# Priority:    required
+# Section:     security
+
+name=libselinux
+version=3.0
+release=1
+options=('bootstrap')
+source=("https://github.com/SELinuxProject/selinux/releases/download/20191204/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libselinux/musl.patch
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread"
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" \
+			DESTDIR="$PKG" SBINDIR=/usr/bin SHLIBDIR=/usr/lib install
+	else
+		make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread"
+		make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" \
+			DESTDIR="$PKG" SBINDIR=/usr/bin SHLIBDIR=/usr/lib install
+	fi
+}
