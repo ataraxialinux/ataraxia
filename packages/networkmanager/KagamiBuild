@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.24.2
-release=5
+release=6
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -53,6 +53,9 @@ build() {
 	cat > "$PKG"/etc/NetworkManager/NetworkManager.conf <<-EOF
 		[main]
 		auth-polkit=true
+
+		[device]
+		wifi.backend=iwd
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
