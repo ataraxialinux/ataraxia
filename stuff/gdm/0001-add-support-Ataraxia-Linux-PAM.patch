@@ -1,19 +1,19 @@
-From 68302eb3706f4d77729a6ec6714f2145440df4a9 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Wed, 25 Mar 2020 20:57:08 +0900
-Subject: [PATCH] add support for Ataraxia Linux PAM
+From 9594de0c9290aff1814efdd1cbd6f1c1e8f3b25b Mon Sep 17 00:00:00 2001
+From: root <root@localhost.localdomain>
+Date: Wed, 10 Jun 2020 08:24:11 +0900
+Subject: [PATCH] add support for Ataraxia Linux
 
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+Signed-off-by: root <root@localhost.localdomain>
 ---
  configure.ac                                 |  7 ++++++-
  data/Makefile.am                             | 12 ++++++++++++
  data/pam-ataraxia/gdm-autologin.pam          | 13 +++++++++++++
- data/pam-ataraxia/gdm-fingerprint.pam        | 14 ++++++++++++++
+ data/pam-ataraxia/gdm-fingerprint.pam        | 13 +++++++++++++
  data/pam-ataraxia/gdm-launch-environment.pam | 13 +++++++++++++
  data/pam-ataraxia/gdm-password.pam           | 11 +++++++++++
  data/pam-ataraxia/gdm-pin.pam                | 13 +++++++++++++
- data/pam-ataraxia/gdm-smartcard.pam          | 14 ++++++++++++++
- 8 files changed, 96 insertions(+), 1 deletion(-)
+ data/pam-ataraxia/gdm-smartcard.pam          | 13 +++++++++++++
+ 8 files changed, 94 insertions(+), 1 deletion(-)
  create mode 100644 data/pam-ataraxia/gdm-autologin.pam
  create mode 100644 data/pam-ataraxia/gdm-fingerprint.pam
  create mode 100644 data/pam-ataraxia/gdm-launch-environment.pam
@@ -22,7 +22,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  create mode 100644 data/pam-ataraxia/gdm-smartcard.pam
 
 diff --git a/configure.ac b/configure.ac
-index db85229..06a95be 100644
+index 39fc45f..c56fa90 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -206,13 +206,17 @@ if test x$with_default_pam_config = x; then
@@ -103,11 +103,10 @@ index 0000000..99b1420
 +session  optional  pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-fingerprint.pam b/data/pam-ataraxia/gdm-fingerprint.pam
 new file mode 100644
-index 0000000..a480861
+index 0000000..7490ec5
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-fingerprint.pam
-@@ -0,0 +1,14 @@
-+auth     required  pam_tally.so onerr=succeed file=/var/log/faillog
+@@ -0,0 +1,13 @@
 +auth     required  pam_shells.so
 +auth     requisite pam_nologin.so
 +auth     required  pam_env.so
@@ -178,11 +177,10 @@ index 0000000..135e205
 +session  optional  pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-smartcard.pam b/data/pam-ataraxia/gdm-smartcard.pam
 new file mode 100644
-index 0000000..ec6f75d
+index 0000000..63569a6
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-smartcard.pam
-@@ -0,0 +1,14 @@
-+auth     required  pam_tally.so onerr=succeed file=/var/log/faillog
+@@ -0,0 +1,13 @@
 +auth     required  pam_shells.so
 +auth     requisite pam_nologin.so
 +auth     required  pam_env.so
@@ -197,5 +195,5 @@ index 0000000..ec6f75d
 +session  optional  pam_keyinit.so force revoke
 +session  include   system-local-login
 -- 
-2.25.1
+2.27.0
 
