@@ -1,0 +1,109 @@
+From 2b0b47e3e1266fc1ede9f0311652f5aaecf9dcd3 Mon Sep 17 00:00:00 2001
+From: yuyu <yuyu@localhost.localdomain>
+Date: Wed, 10 Jun 2020 07:44:27 +0900
+Subject: [PATCH] fix build on musl
+
+Signed-off-by: yuyu <yuyu@localhost.localdomain>
+---
+ modules/pam_faillock/pam_faillock.c | 53 +++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/modules/pam_faillock/pam_faillock.c b/modules/pam_faillock/pam_faillock.c
+index f592d0a..24d6e79 100644
+--- a/modules/pam_faillock/pam_faillock.c
++++ b/modules/pam_faillock/pam_faillock.c
+@@ -73,6 +73,59 @@
+ 
+ #define PATH_PASSWD "/etc/passwd"
+ 
++#if defined(BSD) || (defined(__linux__) && !defined(__GLIBC__))
++
++int fgetpwent_r(FILE *f, struct passwd *pw, char *line, size_t size, struct passwd **res);
++
++static unsigned atou(char **s)
++{
++	unsigned x;
++	for (x=0; **s-'0'<10U; ++*s) x=10*x+(**s-'0');
++	return x;
++}
++
++int fgetpwent_r(FILE *f, struct passwd *pw, char *line, size_t size, struct passwd **res)
++{
++	char *s;
++	int rv = 0;
++	for (;;) {
++		line[size-1] = '\xff';
++		if ( (fgets(line, size, f) == NULL) || ferror(f) || line[size-1] != '\xff' ) {
++			rv = (line[size-1] != '\xff') ? ERANGE : ENOENT;
++			line = 0;
++			pw = 0;
++			break;
++		}
++		line[strcspn(line, "\n")] = 0;
++
++		s = line;
++		pw->pw_name = s++;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_passwd = s;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_uid = atou(&s);
++		if (*s != ':') continue;
++
++		*s++ = 0; pw->pw_gid = atou(&s);
++		if (*s != ':') continue;
++
++		*s++ = 0; pw->pw_gecos = s;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_dir = s;
++		if (!(s = strchr(s, ':'))) continue;
++
++		*s++ = 0; pw->pw_shell = s;
++		break;
++	}
++	*res = pw;
++	if (rv) errno = rv;
++	return rv;
++}
++#endif
++
+ static const char default_faillock_conf[] = FAILLOCK_DEFAULT_CONF;
+ 
+ struct options {
+-- 
+2.27.0
+
+--- Linux-PAM-1.1.6.orig/modules/pam_lastlog/pam_lastlog.c
++++ Linux-PAM-1.1.6/modules/pam_lastlog/pam_lastlog.c
+@@ -10,6 +10,7 @@
+ 
+ #include "config.h"
+ 
++#include <paths.h>
+ #include <fcntl.h>
+ #include <time.h>
+ #include <errno.h>
+@@ -48,6 +49,10 @@
+ 
+ #ifndef _PATH_BTMP
+ # define _PATH_BTMP "/var/log/btmp"
++#endif
++
++#ifndef __GLIBC__
++#define logwtmp(args...)
+ #endif
+ 
+ /* XXX - time before ignoring lock. Is 1 sec enough? */
+--- a/modules/pam_unix/pam_unix_acct.c
++++ b/modules/pam_unix/pam_unix_acct.c
+@@ -48,6 +48,7 @@
+ #include <time.h>		/* for time() */
+ #include <errno.h>
+ #include <sys/wait.h>
++#include <sys/resource.h>
+ 
+ #include <security/_pam_macros.h>
+ 
+
