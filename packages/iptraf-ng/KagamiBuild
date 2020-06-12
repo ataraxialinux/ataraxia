@@ -1,0 +1,19 @@
+# Description: Console-based network monitoring utility
+# URL:         https://sourceforge.net/projects/iptraf-ng/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     net
+
+name=iptraf-ng
+version=1.1.4
+release=1
+source=("https://infrastructure.fedoraproject.org/infra/hosted-content/iptraf-ng/iptraf-ng/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -std=gnu99"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
