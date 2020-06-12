@@ -55,6 +55,8 @@ build() {
 	mv "$PKG"/etc/dhcpd.conf.example "$PKG"/etc/dhcpd.conf
 	install -Dm644 doc/examples/dhcpd-dhcpv6.conf "$PKG"/etc/dhcpd6.conf
 
+	sed -i 's|/etc/dhclient-script|/usr/bin/dhclient-script|' "$PKG"/etc/dhclient.conf
+
 	install -Dm755 client/scripts/linux "$PKG"/usr/bin/dhclient-script
 
 	for i in dhcp{,6}; do
