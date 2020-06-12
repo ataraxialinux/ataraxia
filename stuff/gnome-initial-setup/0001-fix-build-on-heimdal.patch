@@ -1,0 +1,37 @@
+From 6f2dc38342cafdcb307b87b45ff6bc705c2c9bab Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 9 Jun 2020 10:55:42 +0900
+Subject: [PATCH] fix build on heimdal
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ gnome-initial-setup/pages/account/um-realm-manager.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/gnome-initial-setup/pages/account/um-realm-manager.c b/gnome-initial-setup/pages/account/um-realm-manager.c
+index bc4fd33..b33df08 100644
+--- a/gnome-initial-setup/pages/account/um-realm-manager.c
++++ b/gnome-initial-setup/pages/account/um-realm-manager.c
+@@ -23,7 +23,7 @@
+ 
+ #include "um-realm-manager.h"
+ 
+-#include <krb5/krb5.h>
++#include <krb5.h>
+ 
+ #include <glib.h>
+ #include <glib/gi18n.h>
+@@ -706,8 +706,10 @@ login_perform_kinit (krb5_context k5,
+         code = krb5_get_init_creds_opt_alloc (k5, &opts);
+         g_return_val_if_fail (code == 0, code);
+ 
++#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_OUT_CCACHE
+         code = krb5_get_init_creds_opt_set_out_ccache (k5, opts, ccache);
+         g_return_val_if_fail (code == 0, code);
++#endif
+ 
+         code = krb5_get_init_creds_password (k5, &creds, principal,
+                                              (char *)password,
+-- 
+2.27.0
+
