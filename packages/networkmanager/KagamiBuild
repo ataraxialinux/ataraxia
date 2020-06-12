@@ -6,7 +6,7 @@
 
 name=networkmanager
 version=1.24.2
-release=6
+release=7
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -22,8 +22,10 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/NetworkManager-$version \
 		-Db_lto=false \
+		-Dconfig_dhcp_default=dhclient \
 		-Dconfig_plugins_default=keyfile \
 		-Ddbus_conf_dir=/usr/share/dbus-1/system.d \
+		-Ddhclient=true \
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
 		-Debpf=true \
