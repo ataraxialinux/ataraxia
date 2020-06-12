@@ -7,11 +7,9 @@
 
 name=eudev
 version=3.2.9
-scriptsver=32
-release=2
+release=3
 options=('bootstrap')
-source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz"
-	"http://dev.gentoo.org/~williamh/dist/udev-init-scripts-$scriptsver.tar.gz")
+source=("https://dev.gentoo.org/~blueness/eudev/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -38,26 +36,16 @@ build() {
 	rm "$PKG"/usr/lib/udev/rules.d/80-net-name-slot.rules 
 	touch "$PKG"/usr/lib/udev/rules.d/80-net-name-slot.rules 
 
-cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules << "EOF"
-# set bfq by default
-ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
-ACTION=="add|change", KERNEL=="nvme[0-9]", ATTR{queue/scheduler}="bfq"
-ACTION=="add|change", KERNEL=="mmcblk[0-9]", ATTR{queue/scheduler}="bfq"
-EOF
+	cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules <<-EOF
+		# set bfq by default
+		ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
+		ACTION=="add|change", KERNEL=="nvme[0-9]", ATTR{queue/scheduler}="bfq"
+		ACTION=="add|change", KERNEL=="mmcblk[0-9]", ATTR{queue/scheduler}="bfq"
+	EOF
 
 	rm -rf "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules
-cat > "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules << "EOF"
-# spoof mac address
-ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
-EOF
-
-	mkdir -p "$PKG"/etc/runlevels/sysinit
-
-	for MYUDEV in udev udev-settle udev-trigger; do
-		ln -sf ../../init.d/$MYUDEV "$PKG"/etc/runlevels/sysinit/$MYUDEV
-	done
-
-	cd "$SRC"/udev-init-scripts-$scriptsver
-	make PREFIX=/usr
-	make PREFIX=/usr DESTDIR="$PKG" install
+	cat > "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules <<-EOF
+		# spoof mac address
+		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
+	EOF
 }
