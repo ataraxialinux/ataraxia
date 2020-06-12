@@ -20,9 +20,10 @@ trap "" HUP INT QUIT ABRT TERM
 echo; stty onlcr
 clear
 
-msg "Stopping services"
-sv force-stop /run/service/*
-sv exit /run/service/*
+if [ -L "/run/services" ]; then
+	msg "Stopping services"
+	sv down /run/service/*
+fi
 
 msg "Stopping networking"
 ifdown -a
@@ -38,7 +39,7 @@ if [ -x "/usr/bin/udevadm" ]; then
 	udevadm control --exit
 fi
 
-msh "Sending all processes the TERM signal"
+msg "Sending all processes the TERM signal"
 killall5 -s TERM; sleep 1
 
 msg "Sending all processes the KILL signal"
