@@ -1,0 +1,144 @@
+#!/usr/bin/sh
+#
+# Bootstrap script
+#
+
+msg() { printf "ataraxialinux: %s\n" >> /dev/kmsg "$@"; }
+
+export PATH=/usr/bin
+
+msg "Starting Ataraxia Linux"
+dmesg -n 1
+ctrlaltdel -s
+
+msg "Mounting pseudo-filesystems"
+mountpoint -q /proc                || mount -t proc proc /proc -o nosuid,noexec,nodev
+mountpoint -q /sys                 || mount -t sysfs sys /sys -o nosuid,noexec,nodev
+mountpoint -q /run                 || mount -t tmpfs run /run -o mode=0755,nosuid,nodev
+mountpoint -q /dev                 || mount -t devtmpfs dev /dev -o mode=0755,nosuid
+mkdir -p -m0755 /run/lvm /run/user /run/lock /dev/pts /dev/shm
+mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
+mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
+mountpoint -q /sys/kernel/security || mount -n -t selinuxfs selinuxfs /sys/kernel/security
+mountpoint -q /sys/fs/selinux      || mount -n -t securityfs securityfs /sys/fs/selinux
+mountpoint -q /sys/fs/cgroup       || mount -o mode=0755 -t tmpfs cgroup /sys/fs/cgroup
+
+live="0"
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)        live="${arg#*=}" ;;
+		single=*)      single="${arg#*=}" ;;
+	esac
+done
+
+if [ -x /usr/bin/udevd ]; then
+	msg "Starting udev"
+	udevd --daemon
+	udevadm trigger --action=add --type=subsystems
+	udevadm trigger --action=add --type=devices
+	udevadm trigger --action=change --type=devices
+	udevadm settle
+fi
+
+msg "Mounting root device read-only"
+mount -o remount,ro /
+
+if [ "$live" != "1" ] && [ -x /usr/bin/mdadm -o -f /etc/mdadm/mdadm.conf ]; then
+	msg "Activating RAID devices"
+	mdadm -As
+fi
+
+if [ "$live" != "1" ] && [ -x /usr/bin/vgchange ]; then
+	msg "Scanning for volume groups"
+	vgscan --mknodes --ignorelockingfailure >/dev/null 2>&1
+	vgchange --sysinit --activate y >/dev/null 2>&1
+fi
+
+if [ "$live" != "1" ]; then
+	# CRUX
+	if [ -f /forcefsck ]; then
+		FORCEFSCK="-f"
+	fi
+
+	msg "Checking filesystems"
+	fsck $FORCEFSCK -ATCa
+	if [ $? -gt 1 ]; then
+		echo
+		echo "***************  FILESYSTEM CHECK FAILED  ******************"
+		echo "*                                                          *"
+		echo "*  Please repair manually and reboot. Note that the root   *"
+		echo "*  file system is currently mounted read-only. To remount  *"
+		echo "*  it read-write type: mount -n -o remount,rw /            *"
+		echo "*  When you exit the maintainance shell the system will    *"
+		echo "*  reboot automatically.                                   *"
+		echo "*                                                          *"
+		echo "************************************************************"
+		echo
+		sulogin
+		umount -a -r
+		reboot
+	fi
+fi
+
+if [ -n "$(grep -wo "rw" /proc/cmdline)" ] || [ "$live" = "1" ]; then
+	msg "Remounting root device read-write"
+	mount -o remount,rw /
+fi
+
+if [ "$live" != "1" ]; then
+	msg "Mounting other local filesystems"
+	mount -a -O no_netdev
+
+	msg "Activating swap partition"
+	swapon -a
+fi
+
+msg "Setting kernel parameters"
+sysctl -qp /etc/sysctl.d/*.conf
+
+if [ -f "/etc/hostname" ]; then
+	msg "Setting hostname to $(cat /etc/hostname)"
+	hostname "$(cat /etc/hostname)"
+fi
+
+msg "Starting network"
+ifup -a
+
+msg "Initializing random number generator"
+[ -f /etc/random-seed ] && cat /etc/random-seed >/dev/urandom
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+msg "Setting system time from hardware clock"
+hwclock --hctosys
+
+msg "Cleaning up misc files"
+: > /run/utmp
+rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
+(cd /run && /usr/bin/find . -name "*.pid" -delete)
+(cd /run/lock && /usr/bin/find . ! -type d -delete)
+(cd /tmp && /usr/bin/find . ! -name . -delete)
+
+msg "Creating hierarchy for temporary files"
+install -dm1777 /tmp/.X11-unix /tmp/.ICE-unix
+
+msg "Saving boot log"
+dmesg > /var/log/dmesg.log
+chmod 600 /var/log/dmesg.log
+
+if [ "$single" = "1" ]; then
+	msg "Going single-user"
+	sulogin
+	poweroff
+else
+	msg "Going multi-user"
+
+	if [ -x /etc/rc.d/rc.local ]; then
+		msg "Running user's commands"
+		/etc/rc.d/rc.local
+	fi
+
+	echo "Starting services"
+	ln -sf /var/service /run/service
+	respawn runsvdir -P /run/service 'log: ................................................................................................................................................................................................................................................................' &
+fi

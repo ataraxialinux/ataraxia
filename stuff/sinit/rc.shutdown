@@ -1,13 +1,70 @@
-#!/bin/sh
+#!/usr/bin/sh
+#
+# Shutdown script
+#
 
-msg() { printf "[\033[1;34msinit\033[0m] %s\n" "$@"; }
+msg() { printf "ataraxialinux: %s\n" >> /dev/kmsg "$@"; }
 
 export PATH=/usr/bin
 
-msg "Shutting down..."
-clear && stty onlcr
+live="0"
+single="0"
+for arg in $(cat /proc/cmdline);do
+	case "$arg" in
+		live=*)        live="${arg#*=}" ;;
+		single=*)      single="${arg#*=}" ;;
+	esac
+done
 
-openrc shutdown
+trap "" HUP INT QUIT ABRT TERM
+echo; stty onlcr
+clear
+
+msg "Stopping services"
+sv force-stop /run/service/*
+sv exit /run/service/*
+
+msg "Stopping networking"
+ifdown -a
+
+msg "Saving the system time to hardware clock"
+hwclock --systohc --utc
+
+msg "Saving random seed to a temporary file"
+dd if=/dev/urandom of=/etc/random-seed count=1 bs=512 2>/dev/null
+
+if [ -x "/usr/bin/udevadm" ]; then
+	msg "Stopping udev"
+	udevadm control --exit
+fi
+
+msh "Sending all processes the TERM signal"
+killall5 -s TERM; sleep 1
+
+msg "Sending all processes the KILL signal"
+killall5 -s KILL
+
+if [ "$live" != "1" ]; then
+	msg "Deactivating swap partition"
+	swapoff -a
+
+	if [ -x /usr/bin/vgchange ]; then
+		echo "Deactivating volume groups"
+		vgchange -an
+	fi
+
+	msg "Unmounting other local filesystems"
+	umount -a -r
+
+	msg "Mounting root device read-only"
+	mount -o remount,ro /
+fi
+
+msg "Flushing filesystem buffers"
+sync
+
+msg "Bye"
+wait
 
 case "$1" in
 	reboot)
