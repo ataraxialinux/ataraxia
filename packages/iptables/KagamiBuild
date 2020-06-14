@@ -6,7 +6,7 @@
 
 name=iptables
 version=1.8.5
-release=1
+release=2
 backup=('etc/ethertypes'
 	'etc/iptables/iptables.rules'
 	'etc/iptables/ip6tables.rules')
@@ -35,11 +35,8 @@ build() {
 	mkdir -p "$PKG"/etc/iptables
 	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
 
-	mkdir -p "$PKG"/var/lib/iptables "$PKG"/var/lib/ip6tables
-
-	for initd in iptables; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	for i in iptables ip6tables; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
 	done
-	install -Dm0644 "$STUFF"/svc/ip6tables.confd "$PKG"/etc/conf.d/ip6tables
 }

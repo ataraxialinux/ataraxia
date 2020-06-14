@@ -7,7 +7,7 @@
 name=gpm
 commit=4a938233fbe6de7af05aabc74891b68d4bae40f8
 version=1.20.7
-release=3
+release=4
 source=("https://github.com/telmich/gpm/archive/$commit.tar.gz")
 
 build() {
@@ -24,8 +24,5 @@ build() {
 	ln -sf libgpm.so.2.* libgpm.so
 	chmod 0755 "$PKG"/usr/lib/libgpm.so.*
 
-	for initd in gpm; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/gpm "$PKG"/etc/service/gpm/run
 }

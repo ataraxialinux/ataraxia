@@ -6,7 +6,7 @@
 
 name=apache
 version=2.4.43
-release=1
+release=2
 backup=(etc/httpd/conf/httpd.conf
 	etc/httpd/conf/extra/httpd-{autoindex,dav,default,info,languages}.conf
 	etc/httpd/conf/extra/httpd-{manual,mpm,multilang-errordoc}.conf
@@ -41,10 +41,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in httpd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/httpd "$PKG"/etc/service/httpd/run
 
 	install -D -m644 "$STUFF"/apache/logrotate "$PKG"/etc/logrotate.d/httpd
 

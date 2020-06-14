@@ -6,7 +6,7 @@
 
 name=ipset
 version=7.6
-release=1
+release=2
 backup=("etc/ipset.conf")
 source=("http://ipset.netfilter.org/$name-$version.tar.bz2")
 
@@ -20,12 +20,12 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 lib/libipset.pc "$PKG"/usr/lib/pkgconfig/libipset.pc
-	install -Dm 644 /dev/null "$PKG"/etc/$pkgname.conf
+	install -Dm 644 /dev/null "$PKG"/etc/ipset.conf
 
 	mkdir -p "$PKG"/var/lib/ipset
 
-	for initd in ipset; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	for i in ipset; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
 	done
 }

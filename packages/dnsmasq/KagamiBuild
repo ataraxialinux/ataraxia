@@ -6,7 +6,7 @@
 
 name=dnsmasq
 version=2.81
-release=2
+release=3
 backup=('etc/dnsmasq.conf')
 source=("http://www.thekelleys.org.uk/$name/$name-$version.tar.xz")
 
@@ -30,8 +30,5 @@ build() {
 	sed -i 's,%%PREFIX%%,/usr,' "$PKG"/etc/dnsmasq.conf
 	install -Dm644 "trust-anchors.conf" "$PKG"/usr/share/dnsmasq/trust-anchors.conf
 
-	for initd in dnsmasq; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/dnsmasq "$PKG"/etc/service/dnsmasq/run
 }

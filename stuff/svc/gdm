@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+if [ -d "/run/service/elogind" ]; then
+	sv check /run/service/elogind || sv up /run/service/elogind
+else
+	rm -rf /run/service/gdm
+fi
+[ ! -d "/run/gdm" ] && mkdir -m0711 -p /run/gdm && chown root:gdm /run/gdm
+exec gdm
