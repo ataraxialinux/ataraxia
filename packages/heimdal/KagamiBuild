@@ -1,12 +1,12 @@
 # Description: Kerberos 5 implementation
 # URL:         https://github.com/heimdal/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses gdbm libcap-ng e2fsprogs
+# Depends on:  ncurses gdbm libcap-ng e2fsprogs libselinux
 # Section:     security
 
 name=heimdal
 version=7.7.0
-release=1
+release=2
 backup=('etc/krb5.conf')
 source=("https://github.com/heimdal/heimdal/releases/download/$name-$version/$name-$version.tar.gz")
 
@@ -43,10 +43,6 @@ build() {
 	mv "$PKG"/usr/bin/su "$PKG"/usr/bin/ksu
 	mv "$PKG"/usr/share/man/man1/su.1 "$PKG"/usr/share/man/man1/ksu.1
 
-	for initd in heimdal-kdc heimdal-kadmind heimdal-kpasswdd heimdal-kcm; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
 	mkdir -p "$PKG"/var/heimdal
 
 	cat > "$PKG"/etc/krb5.conf <<-EOF

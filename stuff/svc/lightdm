@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+if [ -d "/run/service/dbus" ]; then
+	sv check /run/service/dbus || sv up /run/service/dbus
+else
+	rm -rf /run/service/lightdm
+fi
+[ ! -d "/run/lightdm" ] && install -d -m0711 -olightdm -glightdm /run/lightdm
+exec lightdm
