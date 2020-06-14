@@ -40,6 +40,11 @@ if [ -x "/usr/bin/load_policy" ]; then
 	load_policy -i
 fi
 
+msg "Loading static devnodes"
+for f in $(kmod static-nodes 2>/dev/null|awk '/Module/ {print $2}'); do
+	modprobe -bq $f 2>/dev/null
+done
+
 if [ -x "/usr/bin/udevd" ]; then
 	msg "Starting udev"
 	udevd --daemon
