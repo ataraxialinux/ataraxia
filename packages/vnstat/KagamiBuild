@@ -6,7 +6,7 @@
 
 name=vnstat
 version=2.6
-release=1
+release=2
 backup=('etc/vnstat.conf')
 source=("https://humdi.net/vnstat/$name-$version.tar.gz")
 
@@ -24,10 +24,5 @@ build() {
 	mkdir -p "$PKG"/usr/bin
 	make DESTDIR="$PKG" install
 
-	for initd in vnstatd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
-
-	mkdir -p "$PKG"/var/lib/vnstat
+	install -Dm755 "$STUFF"/svc/vnstatd "$PKG"/etc/service/vnstatd/run
 }
