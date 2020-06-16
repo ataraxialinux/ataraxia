@@ -1,136 +1,104 @@
-From ab1ff5051dcda2e7677f5d6e3166a6fbcc0309bf Mon Sep 17 00:00:00 2001
+From c1555f593c8270dee7d93e63123605e710474d78 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 16 Jun 2020 00:44:13 +0900
+Date: Tue, 16 Jun 2020 22:20:47 +0900
 Subject: [PATCH] fix
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- lib9/dirread.c | 8 +++++++-
- yacc/Makefile  | 2 ++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ Makefile       | 52 +-------------------------------------------------
+ config.mk      |  5 ++---
+ lib9/dirread.c | 13 +++----------
+ yacc/Makefile  |  2 ++
+ 4 files changed, 8 insertions(+), 64 deletions(-)
 
+diff --git a/Makefile b/Makefile
+index 4f54354..2776f64 100644
+--- a/Makefile
++++ b/Makefile
+@@ -2,57 +2,7 @@
+ 
+ include config.mk
+ 
+-SUBDIRS  = lib9\
+-	yacc\
+-	ascii\
+-	awk\
+-	basename\
+-	bc\
+-	cal\
+-	cat\
+-	cleanname\
+-	cmp\
+-	date\
+-	dc\
+-	du\
+-	dd\
+-	diff\
+-	echo\
+-	ed\
+-	factor\
+-	fortune\
+-	fmt\
+-	freq\
+-	getflags\
+-	grep\
+-	hoc\
+-	join\
+-	look\
+-	ls\
+-	mk\
+-	mkdir\
+-	mtime\
+-	pbd\
+-	primes\
+-	rc\
+-	read\
+-	sam\
+-	sha1sum\
+-	sed\
+-	seq\
+-	sleep\
+-	sort\
+-	split\
+-	strings\
+-	tail\
+-	tee\
+-	test\
+-	touch\
+-	tr\
+-	troff\
+-	unicode\
+-	uniq\
+-	unutf\
++SUBDIRS = lib9 ascii cleanname fortune freq pbd primes sam unutf
+ 
+ all:
+ 	@echo 9base build options:
+diff --git a/config.mk b/config.mk
+index d5a8ea0..67833fa 100644
+--- a/config.mk
++++ b/config.mk
+@@ -12,7 +12,6 @@ OBJTYPE     = 386
+ # Linux/BSD
+ #CFLAGS      += -Wall -Wno-missing-braces -Wno-parentheses -Wno-switch -c -I. -DPREFIX="\"${PREFIX}\""
+ CFLAGS      += -c -I. -DPREFIX="\"${PREFIX}\""
+-LDFLAGS     += -static
+ 
+ # Solaris
+ #CFLAGS      = -fast -xtarget=ultra -D__sun__ -c -I. -DPREFIX="\"${PREFIX}\""
+@@ -20,5 +19,5 @@ LDFLAGS     += -static
+ 
+ # compiler
+ AR          = ar rc
+-CC          = cc
+-YACC        = ../yacc/9yacc
++CC          ?= cc
++YACC        ?= yacc
 diff --git a/lib9/dirread.c b/lib9/dirread.c
-index a7c9976..0c03031 100644
+index a7c9976..fd34ed7 100644
 --- a/lib9/dirread.c
 +++ b/lib9/dirread.c
-@@ -29,7 +29,13 @@ mygetdents(int fd, struct dirent *buf, int n)
- static int
- mygetdents(int fd, struct dirent *buf, int n)
- {
--	return getdents(fd, (void*)buf, n);
-+ 	off_t off;
-+ 	int nn;
-+ 
-+ 	/* This doesn't match the man page, but it works in Debian with a 2.2 kernel */
-+ 	off = p9seek(fd, 0, 1);
-+ 	nn = getdirentries(fd, (void*)buf, n, &off);
-+ 	return nn;
- }
- #elif defined(__AIX__)
- static int
-diff --git a/yacc/Makefile b/yacc/Makefile
-index 3e9d573..af64bd0 100644
---- a/yacc/Makefile
-+++ b/yacc/Makefile
-@@ -5,6 +5,8 @@ TARG      = yacc
- 
- include ../std.mk
- 
-+CC = cc
-+
- pre-uninstall:
- 
- post-install:
--- 
-2.26.2
-
-From eda4a53f9138dfb7d5480d99f1191523d5d88d32 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 16 Jun 2020 00:45:52 +0900
-Subject: [PATCH] ok buddy retard
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- lib9/dirread.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
-
-diff --git a/lib9/dirread.c b/lib9/dirread.c
-index 0c03031..d9889d5 100644
---- a/lib9/dirread.c
-+++ b/lib9/dirread.c
-@@ -29,13 +29,7 @@ mygetdents(int fd, struct dirent *buf, int n)
- static int
- mygetdents(int fd, struct dirent *buf, int n)
- {
-- 	off_t off;
-- 	int nn;
-- 
-- 	/* This doesn't match the man page, but it works in Debian with a 2.2 kernel */
-- 	off = p9seek(fd, 0, 1);
-- 	nn = getdirentries(fd, (void*)buf, n, &off);
-- 	return nn;
-+ 	return 0;
- }
- #elif defined(__AIX__)
- static int
--- 
-2.26.2
-
-From f2f6ecd662d9be9bca84b8ee33b7ecca8b976c0e Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 16 Jun 2020 00:47:04 +0900
-Subject: [PATCH] ok boomer
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- 0001-ok-buddy-retard.patch | 32 ++++++++++++++++++++++++++++++++
- lib9/dirread.c             | 11 ++---------
- 2 files changed, 34 insertions(+), 9 deletions(-)
- create mode 100644 0001-ok-buddy-retard.patch
-
-diff --git a/0001-ok-buddy-retard.patch b/0001-ok-buddy-retard.patch
-new file mode 100644
-index 0000000..c7f6acf
---- /dev/null
-+++ b/0001-ok-buddy-retard.patch
-@@ -0,0 +1,32 @@
-+From eda4a53f9138dfb7d5480d99f1191523d5d88d32 Mon Sep 17 00:00:00 2001
-+From: Ishimoto Shinobu <nagakamira@gmail.com>
-+Date: Tue, 16 Jun 2020 00:45:52 +0900
-+Subject: [PATCH] ok buddy retard
-+
-+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
-+---
-+ lib9/dirread.c | 8 +-------
-+ 1 file changed, 1 insertion(+), 7 deletions(-)
-+
-+diff --git a/lib9/dirread.c b/lib9/dirread.c
-+index 0c03031..d9889d5 100644
-+--- a/lib9/dirread.c
-++++ b/lib9/dirread.c
-+@@ -29,13 +29,7 @@ mygetdents(int fd, struct dirent *buf, int n)
-+ static int
-+ mygetdents(int fd, struct dirent *buf, int n)
-+ {
-+- 	off_t off;
-+- 	int nn;
-+- 
-+- 	/* This doesn't match the man page, but it works in Debian with a 2.2 kernel */
-+- 	off = p9seek(fd, 0, 1);
-+- 	nn = getdirentries(fd, (void*)buf, n, &off);
-+- 	return nn;
-++ 	return 0;
-+ }
-+ #elif defined(__AIX__)
-+ static int
-+-- 
-+2.26.2
-+
-diff --git a/lib9/dirread.c b/lib9/dirread.c
-index d9889d5..fd34ed7 100644
---- a/lib9/dirread.c
-+++ b/lib9/dirread.c
-@@ -10,20 +10,13 @@ extern int _p9dir(struct stat*, struct stat*, char*, Dir*, char**, char*);
+@@ -10,26 +10,19 @@ extern int _p9dir(struct stat*, struct stat*, char*, Dir*, char**, char*);
  static int
  mygetdents(int fd, struct dirent *buf, int n)
  {
@@ -153,72 +121,26 @@ index d9889d5..fd34ed7 100644
  }
  #elif defined(__sun__) || defined(__NetBSD__)
  static int
--- 
-2.26.2
-
-From 4f1cd4d5eb6c44f74a356fd31248bc9db51b5b3a Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 16 Jun 2020 00:47:49 +0900
-Subject: [PATCH] ok buddy
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- 0001-ok-buddy-retard.patch | 32 --------------------------------
- config.mk                  |  2 +-
- 2 files changed, 1 insertion(+), 33 deletions(-)
- delete mode 100644 0001-ok-buddy-retard.patch
-
-diff --git a/0001-ok-buddy-retard.patch b/0001-ok-buddy-retard.patch
-deleted file mode 100644
-index c7f6acf..0000000
---- a/0001-ok-buddy-retard.patch
-+++ /dev/null
-@@ -1,32 +0,0 @@
--From eda4a53f9138dfb7d5480d99f1191523d5d88d32 Mon Sep 17 00:00:00 2001
--From: Ishimoto Shinobu <nagakamira@gmail.com>
--Date: Tue, 16 Jun 2020 00:45:52 +0900
--Subject: [PATCH] ok buddy retard
--
--Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
-----
-- lib9/dirread.c | 8 +-------
-- 1 file changed, 1 insertion(+), 7 deletions(-)
--
--diff --git a/lib9/dirread.c b/lib9/dirread.c
--index 0c03031..d9889d5 100644
----- a/lib9/dirread.c
--+++ b/lib9/dirread.c
--@@ -29,13 +29,7 @@ mygetdents(int fd, struct dirent *buf, int n)
-- static int
-- mygetdents(int fd, struct dirent *buf, int n)
-- {
--- 	off_t off;
--- 	int nn;
--- 
--- 	/* This doesn't match the man page, but it works in Debian with a 2.2 kernel */
--- 	off = p9seek(fd, 0, 1);
--- 	nn = getdirentries(fd, (void*)buf, n, &off);
--- 	return nn;
--+ 	return 0;
-- }
-- #elif defined(__AIX__)
-- static int
---- 
--2.26.2
--
-diff --git a/config.mk b/config.mk
-index d5a8ea0..9741040 100644
---- a/config.mk
-+++ b/config.mk
-@@ -12,7 +12,7 @@ OBJTYPE     = 386
- # Linux/BSD
- #CFLAGS      += -Wall -Wno-missing-braces -Wno-parentheses -Wno-switch -c -I. -DPREFIX="\"${PREFIX}\""
- CFLAGS      += -c -I. -DPREFIX="\"${PREFIX}\""
--LDFLAGS     += -static
-+LDFLAGS     += 
+ mygetdents(int fd, struct dirent *buf, int n)
+ {
+-	return getdents(fd, (void*)buf, n);
++ 	return 0;
+ }
+ #elif defined(__AIX__)
+ static int
+diff --git a/yacc/Makefile b/yacc/Makefile
+index 3e9d573..af64bd0 100644
+--- a/yacc/Makefile
++++ b/yacc/Makefile
+@@ -5,6 +5,8 @@ TARG      = yacc
  
- # Solaris
- #CFLAGS      = -fast -xtarget=ultra -D__sun__ -c -I. -DPREFIX="\"${PREFIX}\""
+ include ../std.mk
+ 
++CC = cc
++
+ pre-uninstall:
+ 
+ post-install:
 -- 
 2.26.2
 
