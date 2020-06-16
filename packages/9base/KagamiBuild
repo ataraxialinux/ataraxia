@@ -1,16 +1,22 @@
 # Description: A port of various original Plan 9 tools to Unix, based on plan9port.
 # URL:         http://tools.suckless.org/9base
-# Maintainer:  Ben O'Neill <ben@benoneill.xyz>
-# Section:     plan9
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
 
 name=9base
 version=6
-release=2
+release=3
+options=('bootstrap')
 source=("http://dl.suckless.org/tools/$name-$version.tar.gz")
 
 build() {
 	cd $SRC/$name-$version
-	patch -Np1 -i "$STUFF"/9base/dirread.patch lib9/dirread.c
+	patch -Np1 -i "$STUFF"/9base/0001-fix.patch
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s/CC          = cc/CC          = $CC/g" config.mk
+	fi
+
 	make
-	make DESTDIR="$PKG" install
 }
