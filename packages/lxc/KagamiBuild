@@ -1,6 +1,7 @@
 # Description: LXC is the well-known and heavily tested low-level Linux container runtime.
 # URL:         https://github.com/lxc/lxc
 # Maintainer:  gkc, roland christmann at gmail dot com
+# Depends on:  perl
 # Section:     admin
 
 name=lxc
@@ -9,13 +10,17 @@ release=1
 source=("https://linuxcontainers.org/downloads/lxc/lxc-$version.tar.gz")
 
 build() {
+	perl -MCPAN -e 'install XML::SAX'
+	perl -MCPAN -e 'install XML::SAX::Expat'
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/$name/0001-docbook2man.patch
 	./autogen.sh
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--sbindir=/usr/bin \
 		--libexecdir=/usr/lib \
+		--enable-pam \
 		--enable-pie
 	make
 	make DESTDIR="$PKG" install
