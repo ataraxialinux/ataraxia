@@ -1,0 +1,169 @@
+#!/usr/bin/sh
+
+set -e
+
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; umountall; rm -rf "$tmpdir"; exit 1; }
+
+get_target() {
+	local pkg name version release
+	pkg="$1/KagamiBuild"
+	name="$(grep ^name $pkg | sed -e 's/name=//g')"
+	version="$(grep ^version $pkg | sed -e 's/version=//g')"
+	release="$(grep ^release $pkg | sed -e 's/release=//g')"
+
+	echo "$name-$version-$release.$barch.rpm"
+}
+
+mountall() {
+	for a in /proc /sys /dev; do
+		mount --bind $a "${tmpdir}${a}"
+	done
+}
+
+umountall() {
+	for a in /proc /sys /dev /var/cache/packages /usr/ports/packages /usr/ports/stuff; do
+		umount -l "${tmpdir}${a}"
+	done
+}
+
+source_recipe() {
+	unset name version release options backup source noextract depends
+	unset -f build
+	local myport fakedep
+
+	if [ -f "$topdir/KagamiBuild" ]; then
+		myport="$topdir/KagamiBuild"
+	elif [ -f "$topdir/Pkgfile" ]; then
+		myport="$topdir/Pkgfile"
+	else
+		die "Failed to source the package recipe"
+	fi
+
+	source "$myport"
+
+	depends="$(npk-parse $myport "# Depends on:")"
+	if [ ! -z "$(npk-parse $myport "# Dep $BARCH:")" ]; then
+		depends="$depends $(npk-parse $myport "# Dep $BARCH:")"
+	fi
+	weakdeps="$(npk-parse $myport "# Weak deps:")"
+	conflicts="$(npk-parse $myport "# Conflicts with:")"
+	provides="$(npk-parse $myport "# Provides:")"
+	obsoletes="$(npk-parse $myport "# obsoletes:")"
+	summary="$(npk-parse $myport "# Description:")"
+	url="$(npk-parse $myport "# URL:")"
+	section="$(npk-parse $myport "# Section:")"
+	priority="$(npk-parse $myport "# Priority:")"
+	maintainer="$(npk-parse $myport "# Maintainer:" | sed -e 's/, / /g' | sed -e 's/ at /@/g' | sed -e 's/ dot /./')"
+	license="(null)"
+
+	if [ "$bootstrap" = "yes" ]; then
+		if [ -z "$summary" ]; then
+			summary="(null)"
+		fi
+		if [ -z "$section" ]; then
+			section="misc"
+		fi
+	fi
+
+	if [ -z "$name" ]; then
+		die "The name of package is not set"
+	elif [ -z "$version" ]; then
+		die "The version of package is not set"
+	elif [ -z "$release" ]; then
+		die "The release of package is not set"
+	elif [ -z "$summary" ]; then
+		die "The summary of package is not set"
+	elif [ -z "$section" ]; then
+		die "The section of package is not set"
+	fi
+}
+
+run_container() {
+	local container="$1"
+	local root="$2"
+	local repo="$3"
+	local stuff="$4"
+	local packages="$5"
+	local cmd="$6"
+
+	bsdtar -C "$root" -xf "$container"
+
+	mkdir -p "$tmpdir/usr/ports/packages" "$tmpdir/usr/ports/stuff"
+
+	mountall
+
+	mount --bind "$repo" "$tmpdir/usr/ports/packages"
+	mount --bind "$stuff" "$tmpdir/usr/ports/stuff"
+	mount --bind "$packages" "$tmpdir/var/cache/packages"
+
+	chroot "$root" /usr/bin/env -i \
+		HOME=/home/root \
+		TERM="$TERM" \
+		PATH=/usr/bin \
+		/usr/bin/$cmd || umountall
+
+	umountall
+}
+
+emerge_package() {
+	local pkg="$1"
+	local repo="$2"
+	local stuff="$3"
+	local packages="$4"
+	local container="$5"
+	local tgt="$(get_target $repo/$pkg)"
+
+	export tmpdir="$(mktemp -d)"
+
+	pushd "$repo/$pkg"
+		export topdir="$PWD"
+		source_recipe
+
+		if [ ! -f "/home/yuyu/junk/ataraxia/OUT.x86_64/packages/$tgt" ]; then
+			run_container "$container" "$tmpdir" "$repo" "$stuff" "$packages" "neko em $name"
+
+			pushd "/home/yuyu/junk/ataraxia/OUT.x86_64/packages"
+				createrepo --xz --distro=ataraxia .
+			popd
+
+			rm -rf "$tmpdir"
+		fi
+	popd
+}
+
+main() {
+	local repo="$1"
+	local stuff="$2"
+	local packages="$3"
+	local compsfile="$4"
+	local barch="$5"
+	local container="$6"
+
+	[ ! -d "$repo" ] && die "Repository with ports is not specified or does not exist"
+	[ ! -d "$stuff" ] && die "Package files directory is not specified or does not exist"
+	[ ! -d "$packages" ] && die "Package repository is not specified or does not exist"
+	[ ! -f "$compsfile" ] && die "Comps file is not specified or does not exist"
+	[ -z "$barch" ] && die "Architecture is not specified"
+	[ ! -f "$container" ] && die "Docker container is not specified"
+
+	repo="$(realpath $repo)"
+	stuff="$(realpath $stuff)"
+	packages="$(realpath $packages)"
+
+	for l in $(cat $compsfile); do
+		tgt="$(get_target $repo/$l)"
+		if [ ! -f "/var/cache/packages/$tgt" ]; then
+			(
+				emerge_package "$l" "$repo" "$stuff" "$packages" "$container"
+			)
+		else
+			msg "Skipping $l"
+		fi
+	done
+}
+
+main "$@"
+
+exit 0
+
