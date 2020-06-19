@@ -1,0 +1,51 @@
+From c5495dc5e94136e82aba48e0b7b096ae18b1cab0 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 20 Jun 2020 05:54:25 +0900
+Subject: [PATCH] make it work with gettext-tiny
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ configure.ac | 25 +------------------------
+ 1 file changed, 1 insertion(+), 24 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 38ebdd1..f088636 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -649,32 +649,9 @@ IT_PROG_INTLTOOL(intltool_required_version)
+ AM_GLIB_GNU_GETTEXT
+ 
+ # Testing xgettext version since we had some problem with localizing script-fu. See bug 720052.
+-AC_MSG_CHECKING([for xgettext version (>= xgettext_required_version)])
+-XGETTEXT_REQUIRED_VERSION_MAJOR=`echo $XGETTEXT_REQUIRED_VERSION | awk -F. '{ print $ 1; }'`
+-XGETTEXT_REQUIRED_VERSION_MINOR_1=`echo $XGETTEXT_REQUIRED_VERSION | awk -F. '{ print $ 2; }'`
+-
+-XGETTEXT_APPLIED_VERSION=`$XGETTEXT --version | head -1 | cut -d" " -f4`
+-XGETTEXT_APPLIED_VERSION_MAJOR=`echo $XGETTEXT_APPLIED_VERSION | awk -F. '{ print $ 1; }'`
+-XGETTEXT_APPLIED_VERSION_MINOR_1=`echo $XGETTEXT_APPLIED_VERSION | awk -F. '{ print $ 2; }'`
+-
+-have_required_xgettext="no"
+-if test -n "$XGETTEXT_APPLIED_VERSION_MAJOR"; then
+-    if test "$XGETTEXT_REQUIRED_VERSION_MAJOR" -lt "$XGETTEXT_APPLIED_VERSION_MAJOR"; then
+-        have_required_xgettext="yes"
+-    elif test "$XGETTEXT_REQUIRED_VERSION_MAJOR" -eq "$XGETTEXT_APPLIED_VERSION_MAJOR"; then
+-        if test -n "$XGETTEXT_APPLIED_VERSION_MINOR_1"; then
+-            if test "$XGETTEXT_REQUIRED_VERSION_MINOR_1" -le "$XGETTEXT_APPLIED_VERSION_MINOR_1"; then
+-                have_required_xgettext="yes"
+-            fi
+-        fi
+-    fi
+-fi
++have_required_xgettext="yes"
+ AC_MSG_RESULT($have_required_xgettext)
+ 
+-if test "x$have_required_xgettext" = "xno"; then
+-    add_deps_error([xgettext], [xgettext >= xgettext_required_version])
+-fi
+-
+ ###########
+ # iso-codes
+ ###########
+-- 
+2.27.0
+
