@@ -32,12 +32,12 @@ build() {
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
-	make DESTDIR="$PKG" install
+	make DESTDIR="$PKG" pkgconfigdir="/usr/lib/imagemagick6/pkgconfig" install
 
 	cd PerlMagick
 	find . -name '*.so' -delete
 	sed -i 's,LD_RUN_PATH="$(LD_RUN_PATH)" ,,' quantum/Makefile
 	make DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/usr/lib/*.la
+	rm -rf "$PKG"/usr/lib/*.la "$PKG"/usr/lib/perl5 "$PKG"/usr/share/man "$PKG"/usr/bin
 }
