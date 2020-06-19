@@ -1,0 +1,28 @@
+# Description: Professional vector graphics editor
+# URL:         https://inkscape.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja boost double-conversion gc gdl gsl gtkmm3 libsoup libxslt poppler popt imagemagick6 lcms2 libcanberra python-lxml scour potrace dbus-glib
+# Section:     graphics
+
+name=inkscape
+version=1.0
+release=1
+source=("https://gitlab.com/inkscape/inkscape/-/archive/INKSCAPE_${version//./_}/inkscape-INKSCAPE_${version//./_}.tar.bz2")
+
+build() {
+	export PKG_CONFIG_PATH='/usr/lib/imagemagick6/pkgconfig'
+
+	cd "$SRC"/inkscape-INKSCAPE_${version//./_}
+	sed -e "/-Werror=format/d" -i CMakeScripts/DefineDependsandFlags.cmake
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/inkscape-INKSCAPE_${version//./_} \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_DBUS=ON \
+		-DWITH_IMAGE_MAGICK=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}
