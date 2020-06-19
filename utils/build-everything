@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/env bash
 
 set -e
 
@@ -120,10 +120,10 @@ emerge_package() {
 		export topdir="$PWD"
 		source_recipe
 
-		if [ ! -f "/home/yuyu/junk/ataraxia/OUT.x86_64/packages/$tgt" ]; then
+		if [ ! -f "$packages/$tgt" ]; then
 			run_container "$container" "$tmpdir" "$repo" "$stuff" "$packages" "neko em $name"
 
-			pushd "/home/yuyu/junk/ataraxia/OUT.x86_64/packages"
+			pushd "$packages"
 				createrepo --xz --distro=ataraxia .
 			popd
 
@@ -153,7 +153,7 @@ main() {
 
 	for l in $(cat $compsfile); do
 		tgt="$(get_target $repo/$l)"
-		if [ ! -f "/var/cache/packages/$tgt" ]; then
+		if [ ! -f "$packages/$tgt" ]; then
 			(
 				emerge_package "$l" "$repo" "$stuff" "$packages" "$container"
 			)
