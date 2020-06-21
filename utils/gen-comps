@@ -32,9 +32,6 @@ main() {
 						x86_64|i686) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
 					esac
 					;;
-				rust|firefox|cbindgen|thunderbird)
-					true # avoid rust for a while
-					;;
 				xf86-video-armsoc|xf86-video-fbturbo|xf86-video-freedreno|xf86-video-omap)
 					case $barch in
 						aarch64|armv7hnl|armv6l) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
@@ -54,6 +51,12 @@ main() {
 					case $barch in
 						riscv64|riscv32) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
 					esac
+					;;
+				rust|firefox|cbindgen|thunderbird)
+					true # avoid rust for a while
+					;;
+				syslinux|gtk4)
+					true # broken packages
 					;;
 				*)
 					[ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile"
