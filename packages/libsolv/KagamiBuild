@@ -1,12 +1,12 @@
 # Description: Library for solving packages and reading repositories
 # URL:         https://github.com/openSUSE/libsolv
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja swig perl python bzip2 expat rpm xz libxml2
+# Depends on:  cmake ninja bzip2 expat rpm xz libxml2
 # Section:     libs
 
 name=libsolv
 version=0.7.14
-release=3
+release=4
 source=("https://github.com/openSUSE/libsolv/archive/$version.tar.gz")
 
 build() {
@@ -21,13 +21,17 @@ build() {
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DWITH_SYSTEM_ZCHUNK=OFF \
+		-DENABLE_COMPLEX_DEPS=ON \
+		-DENABLE_PERL=OFF \
+		-DENABLE_PYTHON=OFF \
+		-DENABLE_RPMDB=ON \
+		-DENABLE_RPMMD=ON \
+		-DENABLE_RPMPKG=ON \
 		-DENABLE_RUBY=OFF \
 		-DENABLE_TCL=OFF \
+		-DENABLE_ZSTD_COMPRESSION=ON \
 		-DFEDORA=ON \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
-
-	mkdir -p "$PKG"/usr/lib/cmake/LibSolv/
-	mv "$PKG"/usr/share/cmake/Modules/FindLibSolv.cmake "$PKG"/usr/lib/cmake/LibSolv/LibSolvConfig.cmake
 }
