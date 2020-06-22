@@ -7,24 +7,26 @@
 name=neovim
 version=0.4.3
 release=1
-backup=('etc/xdg/nvim/sysinit.vim')
 source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
- build() {	
+build() {
+	export CFLAGS="$CFLAGS -fcommon"
+	export CXXFLAGS="$CXXFLAGS -fcommon"
+
 	case "$BARCH" in
 		riscv32|riscv64)
 			die "Not supported on your architecture"	
 			;;
 	esac
 
- 	cd "$SRC"/$name-$version
+	cd "$SRC"/$name-$version
 	mkdir .deps
 	cd .deps
 	cmake "$SRC"/$name-$version/third-party \
 		-Wno-dev -G Ninja
 	ninja luarocks lpeg mpack luv
 
- 	cd "$SRC"/$name-$version
+	cd "$SRC"/$name-$version
 	mkdir build
 	cd build
 	cmake "$SRC"/$name-$version \
@@ -35,6 +37,6 @@ source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 	ninja
 	DESTDIR="$PKG" ninja install
 
- 	install -Dm644 "$SRC"/$name-$version/runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
+	install -Dm644 "$SRC"/$name-$version/runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
 	install -Dm644 "$SRC"/$name-$version/runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
 }

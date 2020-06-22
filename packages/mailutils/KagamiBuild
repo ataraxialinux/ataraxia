@@ -1,7 +1,7 @@
 # Description: MUA command line tool
 # URL:         https://www.gnu.org/software/mailutils/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  readline pam gdbm gnutls heimdal
+# Depends on:  readline pam gdbm gnutls
 # Section:     mail
 
 name=mailutils
@@ -13,6 +13,7 @@ source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.bz2")
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/mailutils/fix-build-mb-len-max.patch
+	patch -Np1 -i "$STUFF"/mailutils/mailutils-3.8-fno-common.patch
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
