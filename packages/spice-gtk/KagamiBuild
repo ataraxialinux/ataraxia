@@ -1,0 +1,20 @@
+# Description: GTK+ client library for SPICE
+# URL:         https://spice-space.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson python-pyparsing gobject-introspection vala spice-protocol gst-plugins-base gtk3 libjpeg-turbo opus
+# Section:     libs
+
+name=spice-gtk
+version=0.38
+release=1
+source=("https://www.spice-space.org/download/gtk/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dcoroutine=gthread
+	ninja
+	DESTDIR="$PKG" ninja install
+}

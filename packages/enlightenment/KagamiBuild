@@ -1,19 +1,19 @@
 # Description: Enlightenment window manager
 # URL:         http://www.enlightenment.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson pam efl xcb-util-keysyms hicolor-icon-theme desktop-file-utils udisks
+# Depends on:  meson xorg-server efl xcb-util-keysyms hicolor-icon-theme desktop-file-utils udisks
 # Section:     x11
 
 name=enlightenment
 version=0.24.1
-release=1
+release=2
 backup=('etc/enlightenment/sysactions.conf'
 	'etc/xdg/menus/e-applications.menu')
 source=("https://download.enlightenment.org/rel/apps/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np0 -i "$STUFF"/enlightenment/0001-remove-dependency-on-libexecinfo_h.patch
+	patch -Np1 -i "$STUFF"/enlightenment/0001-includes.patch
 
 	mkdir -p build
 	cd build

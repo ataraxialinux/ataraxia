@@ -1,12 +1,13 @@
 # Description: Generates status bar to use with i3bar, dzen2 or xmobar
 # URL:         https://i3wm.org/i3status/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  confuse libnl yajl
+# Depends on:  confuse libnl yajl pulseaudio
 # Section:     x11
 
 name=i3status
 version=2.13
-release=1
+release=2
+options=('~bootstrap')
 backup=('etc/i3status.conf')
 source=("https://i3wm.org/$name/$name-$version.tar.bz2"
 	"https://github.com/i3/i3status/commit/4bd07355abb1ad6b5463db7e7c763ea0075ebbc8.patch")
@@ -15,7 +16,11 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$SRC"/4bd07355abb1ad6b5463db7e7c763ea0075ebbc8.patch
 
-	./configure $BUILDFLAGS \
+	autoreconf -vif
+
+	mkdir build
+	cd build
+	../configure \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--disable-mans \

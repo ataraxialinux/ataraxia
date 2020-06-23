@@ -1,0 +1,20 @@
+# Description: Set of tools for processing plaintext docs into formats such as HTML, XML, or LaTeX
+# URL:         http://docutils.sourceforge.net
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python
+# Section:     python
+
+name=python-docutils
+version=0.16
+release=1
+source=("http://downloads.sourceforge.net/docutils/docutils-$version.tar.gz")
+
+build() {
+	cd "$SRC"/docutils-$version
+	python3 setup.py build
+	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+
+	for f in "$PKG"/usr/bin/*.py; do
+		ln -sf "$(basename $f)" "$PKG"/usr/bin/$(basename $f .py)
+	done
+}

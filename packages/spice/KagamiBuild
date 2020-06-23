@@ -1,0 +1,21 @@
+# Description: SPICE server
+# URL:         https://www.spice-space.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson spice-protocol pixman opus libjpeg-turbo glib lz4
+# Section:     libs
+
+name=spice
+version=0.14.3
+release=1
+source=("https://www.spice-space.org/download/releases/spice-server/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgstreamer=no \
+		-Dsasl=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}

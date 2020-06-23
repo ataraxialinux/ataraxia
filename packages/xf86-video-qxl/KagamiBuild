@@ -1,15 +1,18 @@
-# Description: Synaptics driver for notebook touchpads
-# URL:         https://xorg.freedesktop.org/
+# Description: Xorg X11 qxl video driver
+# URL:         https://www.x.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  xorg-server libevdev
+# Depends on:  xorg-server spice
 # Section:     x11
 
-name=xf86-input-synaptics
-version=1.9.1
+name=xf86-video-qxl
+version=0.1.5
 release=1
 source=("https://xorg.freedesktop.org/releases/individual/driver/$name-$version.tar.bz2")
 
 build() {
+	export CFLAGS=${CFLAGS/,-z,now}
+	export LDFLAGS="-Wl,-z,lazy"
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr

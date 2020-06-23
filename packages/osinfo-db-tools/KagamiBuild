@@ -1,0 +1,19 @@
+# Description: Tools for managing the osinfo database
+# URL:         https://libosinfo.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson json-glib libarchive libsoup libxslt
+# Section:     devel
+
+name=osinfo-db-tools
+version=1.7.0
+release=1
+source=("https://releases.pagure.org/libosinfo/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
