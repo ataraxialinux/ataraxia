@@ -35,4 +35,16 @@ build() {
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	mkdir -p "$PKG"/etc/zypp/repos.d
+	cat > "$PKG"/etc/zypp/repos.d/ataraxia.repo <<-EOF
+		[ataraxia]
+		enabled=1
+		autorefresh=1
+		baseurl=file:/media/cdrom
+		#baseurl=https://protonesso.moe/ataraxia/x86_64
+		type=rpm-md
+	EOF
+
+	ln -sf zypp/repos.d "$PKG"/etc/yum.repos.d
 }
