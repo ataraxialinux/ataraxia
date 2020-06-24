@@ -1,0 +1,16 @@
+# Description: Desktop Management Interface table related utilities
+# URL:         https://www.nongnu.org/dmidecode
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=dmidecode
+version=3.2
+release=1
+source=("https://download.savannah.nongnu.org/releases/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i "s|sbin|bin|" Makefile
+	make prefix=/usr
+	make prefix=/usr DESTDIR="$PKG" install
+}
