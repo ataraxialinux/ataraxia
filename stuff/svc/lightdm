@@ -1,8 +1,5 @@
 #!/usr/bin/sh
-if [ -d "/run/service/elogind" ]; then
-	sv check /run/service/elogind || sv up /run/service/elogind
-else
-	rm -rf /run/service/lightdm
-fi
+sv check /run/service/dbus || exit 1
+sleep 3
 [ ! -d "/run/lightdm" ] && install -d -m0711 -olightdm -glightdm /run/lightdm
 exec lightdm
