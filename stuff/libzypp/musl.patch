@@ -1,0 +1,77 @@
+diff -ruN libzypp-17.23.7/CMakeLists.txt libzypp-17.23.7-patched/CMakeLists.txt
+--- libzypp-17.23.7/CMakeLists.txt	Wed Jun 24 00:46:31 2020
++++ libzypp-17.23.7-patched/CMakeLists.txt	Wed Jun 24 11:03:30 2020
+@@ -133,7 +133,7 @@
+ 
+   # rpmtsSetVfyFlags were introduced in rpm-4.15
+   UNSET( RPMTSSETVFYFLAGS_FOUND CACHE )
+-  SET( CMAKE_REQUIRED_LIBRARIES "-lrpm" )
++  SET( CMAKE_REQUIRED_LIBRARIES "-lrpm -lexecinfo" )
+   CHECK_SYMBOL_EXISTS( rpmtsSetVfyFlags rpm/rpmts.h RPMTSSETVFYFLAGS_FOUND )
+   IF ( NOT RPMTSSETVFYFLAGS_FOUND )
+     ADD_DEFINITIONS( -DHAVE_NO_RPMTSSETVFYFLAGS )
+diff -ruN libzypp-17.23.7/zypp/Date.cc libzypp-17.23.7-patched/zypp/Date.cc
+--- libzypp-17.23.7/zypp/Date.cc	Wed Jun 24 00:46:31 2020
++++ libzypp-17.23.7-patched/zypp/Date.cc	Wed Jun 24 10:56:36 2020
+@@ -17,6 +17,17 @@
+ 
+ #include <zypp/Date.h>
+ 
++// OpenBSD
++static struct tm	tm;
++
++time_t
++timelocal(struct tm *tmp)
++{
++	if (tmp != NULL)
++		tmp->tm_isdst = -1;	/* in case it wasn't initialized */
++	return mktime(tmp);
++}
++
+ using std::endl;
+ 
+ ///////////////////////////////////////////////////////////////////
+diff -ruN libzypp-17.23.7/zypp/Glob.h libzypp-17.23.7-patched/zypp/Glob.h
+--- libzypp-17.23.7/zypp/Glob.h	Wed Jun 24 00:46:31 2020
++++ libzypp-17.23.7-patched/zypp/Glob.h	Wed Jun 24 10:57:52 2020
+@@ -12,6 +12,11 @@
+ #ifndef ZYPP_GLOB_H
+ #define ZYPP_GLOB_H
+ 
++#define GLOB_ALTDIRFUNC (1 << 9)/* Use gl_opendir et al functions.  */
++#define GLOB_BRACE	 (1 << 10)/* Expand "{a,b}" to "a" "b".  */
++#define GLOB_NOMAGIC	 (1 << 11)/* If no magic chars, return the pattern.  */
++#define GLOB_ONLYDIR	 (1 << 13)/* Match only directories.  */
++
+ extern "C"
+ {
+ #include <glob.h>
+diff -ruN libzypp-17.23.7/zypp/ZConfig.cc libzypp-17.23.7-patched/zypp/ZConfig.cc
+--- libzypp-17.23.7/zypp/ZConfig.cc	Wed Jun 24 00:46:31 2020
++++ libzypp-17.23.7-patched/zypp/ZConfig.cc	Wed Jun 24 11:02:06 2020
+@@ -13,9 +13,6 @@
+ {
+ #include <features.h>
+ #include <sys/utsname.h>
+-#if __GLIBC_PREREQ (2,16)
+-#include <sys/auxv.h>	// getauxval for PPC64P7 detection
+-#endif
+ #include <unistd.h>
+ #include <solv/solvversion.h>
+ }
+@@ -155,15 +152,6 @@
+ 	  }
+ 	}
+       }
+-#if __GLIBC_PREREQ (2,16)
+-      else if ( architecture == Arch_ppc64 )
+-      {
+-	const char * platform = (const char *)getauxval( AT_PLATFORM );
+-	int powerlvl;
+-	if ( platform && sscanf( platform, "power%d", &powerlvl ) == 1 && powerlvl > 6 )
+-	  architecture = Arch_ppc64p7;
+-      }
+-#endif
+       return architecture;
+     }
+ 
