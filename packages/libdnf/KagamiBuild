@@ -1,0 +1,36 @@
+# Description: Library providing simplified C and Python API to libsolv
+# URL:         https://github.com/rpm-software-management/libdnf
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja check glib gpgme json-c libmodulemd librepo libsolv librhsm
+# Section:     libs
+
+name=libdnf
+version=0.48.0
+release=1
+source=("https://github.com/rpm-software-management/libdnf/archive/$version.tar.gz")
+
+# -DENABLE_RHSM_SUPPORT=ON :smile-1:
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|add_subdirectory(docs/libdnf)|# add_subdirectory(docs/libdnf)|' CMakeLists.txt
+	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' CMakeLists.txt
+
+	cp -p "$ROOTFS"/usr/share/cmake/Modules/FindLibSolv.cmake cmake/modules/
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_BINDINGS=OFF \
+		-DWITH_GTKDOC=OFF \
+		-DWITH_HTML=OFF \
+		-DWITH_MAN=OFF \
+		-DWITH_ZCHUNK=OFF \
+		-DENABLE_RHSM_SUPPORT=ON \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+}

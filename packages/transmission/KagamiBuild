@@ -6,7 +6,7 @@
 
 name=transmission
 version=3.00
-release=1
+release=2
 source=("https://raw.githubusercontent.com/transmission/transmission-releases/master/$name-$version.tar.xz")
 
 build() {
@@ -21,8 +21,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in transmission; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/transmission "$PKG"/etc/service/transmission/run
 }

@@ -6,7 +6,7 @@
 
 name=cups
 version=2.3.3
-release=1
+release=2
 backup=('etc/cups/cupsd.conf'
 	'etc/cups/snmp.conf'
 	'etc/cups/cups-files.conf'
@@ -43,6 +43,7 @@ build() {
 
 	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
 	install -Dm644 "$STUFF"/pam.d/cups "$PKG"/etc/pam.d/cups
+	install -Dm755 "$STUFF"/svc/cupsd "$PKG"/etc/service/cupsd/run
 
 	rm -rf "$PKG"/etc/rc*.d
 	rm -rf "$PKG"/etc/init.d
@@ -53,6 +54,4 @@ build() {
 	chmod -R +w "$PKG"
 
 	install -dm700 -g 209 "$PKG"/etc/cups/ssl
-
-	install -Dm0755 "$STUFF"/svc/cupsd.initd "$PKG"/etc/init.d/cupsd
 }

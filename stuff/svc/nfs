@@ -1,0 +1,16 @@
+#!/usr/bin/sh
+if [ -d "/run/service/rpc.statd" ]; then
+	sv check /run/service/rpc.statd || sv up /run/service/rpc.statd
+else
+	rm -rf /run/service/nfs
+fi
+if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
+	mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || rm -rf /run/service/nfs
+fi
+if ! mountpoint -q /proc/fs/nfsd; then
+	mount -t nfsd nfsd /proc/fs/nfsd || rm -rf /run/service/nfs
+fi
+exportfs -ra > /dev/null || rm -rf /run/service/nfs
+rpc.nfsd -- ${PROCESSES:=4} || rm -rf /run/service/nfs
+sm-notify
+exec rpc.mountd --foreground

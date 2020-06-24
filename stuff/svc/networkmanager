@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+if [ -d "/run/service/dbus" ]; then
+	sv check /run/service/dbus || sv up /run/service/dbus
+else
+	rm -rf /run/service/networkmanager
+fi
+[ ! -d "/run/NetworkManager" ] && install -d -o root -g root -m 755 /run/NetworkManager
+exec NetworkManager -n

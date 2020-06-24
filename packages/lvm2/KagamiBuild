@@ -6,7 +6,7 @@
 
 name=lvm2
 version=2.03.09
-release=2
+release=3
 backup=('etc/lvm/lvm.conf'
 	'etc/lvm/lvmlocal.conf')
 source=("http://sourceware.org/pub/lvm2/LVM2.${version}.tgz")
@@ -44,19 +44,13 @@ build() {
 		--enable-udev_sync \
 		--disable-readline \
 		--disable-udev-systemd-background-jobs
-	make SHELL=/bin/bash
-	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install
+	make SHELL=/usr/bin/bash
+	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install
 
 	install -d "$PKG"/etc/lvm/{archive,backup}
 
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
 
-	for initd in device-mapper dmeventd lvmetad lvm lvm-monitoring lvmpolld; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-	done
-
-	for confd in device-mapper lvm; do
-		install -D -m644 "$STUFF"/svc/${confd}.confd "$PKG"/etc/conf.d/$confd
-	done
+	install -Dm755 "$STUFF"/svc/dmeventd "$PKG"/etc/service/dmeventd/run
 }

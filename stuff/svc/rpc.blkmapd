@@ -1,0 +1,11 @@
+#!/usr/bin/sh
+if [ -d "/run/service/rpcbind" ]; then
+	sv check /run/service/rpcbind || sv up /run/service/rpcbind
+else
+	rm -rf /run/service/rpc.blkmapd
+fi
+if ! mountpoint -q /var/lib/nfs/rpc_pipefs; then
+	mount -t rpc_pipefs rpc_pipefs /var/lib/nfs/rpc_pipefs -o defaults || rm -rf /run/service/rpc.blkmapd
+fi
+modprobe blocklayoutdriver || true
+exec blkmapd -f

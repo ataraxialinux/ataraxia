@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+if [ -d "/run/service/rpcbind" ]; then
+	sv check /run/service/rpcbind || sv up /run/service/rpcbind
+else
+	rm -rf /run/service/rpc.statd
+fi
+modprobe nfs || true
+exec rpc.statd -F -d -L

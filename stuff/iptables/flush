@@ -1,0 +1,21 @@
+#!/usr/bin/sh
+# Usage: iptables-flush [-6]
+# Thanks Void Linux!
+
+iptables=/usr/bin/iptables
+tables="filter mangle raw"
+
+if [ "$1" = "-6" ]; then
+	iptables=/usr/bin/ip6tables
+else
+	tables="$tables nat"
+fi
+
+for table in ${tables}; do
+	$iptables -t "$table" -F
+	$iptables -t "$table" -X
+done
+
+for chain in INPUT FORWARD OUTPUT; do
+	$iptables -P "$chain" ACCEPT
+done

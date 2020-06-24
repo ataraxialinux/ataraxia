@@ -1,12 +1,12 @@
 # Description: Library for solving packages and reading repositories
 # URL:         https://github.com/openSUSE/libsolv
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja swig perl python bzip2 expat rpm xz
+# Depends on:  cmake ninja bzip2 expat rpm xz libxml2
 # Section:     libs
 
 name=libsolv
 version=0.7.14
-release=1
+release=4
 source=("https://github.com/openSUSE/libsolv/archive/$version.tar.gz")
 
 build() {
@@ -20,39 +20,32 @@ build() {
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DENABLE_APPDATA=ON \
-		-DENABLE_ARCHREPO=ON \
-		-DENABLE_BZIP2_COMPRESSION=ON \
-		-DENABLE_COMPLEX_DEPS=1 \
-		-DENABLE_COMPS=ON \
-		-DENABLE_CONDA=ON \
-		-DENABLE_CUDFREPO=ON \
-		-DENABLE_DEBIAN=ON \
-		-DENABLE_HAIKU=OFF \
+		-DWITH_SYSTEM_ZCHUNK=OFF \
+		-DENABLE_COMPLEX_DEPS=ON \
 		-DENABLE_HELIXREPO=ON \
-		-DENABLE_LZMA_COMPRESSION=ON \
-		-DENABLE_MDKREPO=ON \
-		-DENABLE_PERL=ON \
-		-DENABLE_PUBKEY=ON \
-		-DENABLE_PYTHON=ON \
-		-DENABLE_RPMDB_BYRPMHEADER=ON \
-		-DENABLE_RPMDB_LIBRPM=ON \
+		-DENABLE_PERL=OFF \
+		-DENABLE_PYTHON=OFF \
 		-DENABLE_RPMDB=ON \
 		-DENABLE_RPMMD=ON \
 		-DENABLE_RPMPKG=ON \
 		-DENABLE_RUBY=OFF \
-		-DENABLE_SUSEREPO=ON \
 		-DENABLE_TCL=OFF \
-		-DENABLE_ZCHUNK_COMPRESSION=OFF \
 		-DENABLE_ZSTD_COMPRESSION=ON \
-		-DMULTI_SEMANTICS=ON \
-		-DUSE_VENDORDIRS=ON \
-		-DWITH_LIBXML2=OFF \
-		-DWITH_SYSTEM_ZCHUNK=OFF \
+		-DFEDORA=ON \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	mkdir -p "$PKG"/usr/lib/cmake/LibSolv/
-	mv "$PKG"/usr/share/cmake/Modules/FindLibSolv.cmake "$PKG"/usr/lib/cmake/LibSolv/LibSolvConfig.cmake
+	mkdir -p "$PKG"/etc/zypp/repos.d
+	cat > "$PKG"/etc/zypp/repos.d/ataraxia.repo <<-EOF
+		[ataraxia]
+		enabled=1
+		autorefresh=1
+		baseurl=file:/media/cdrom
+		#baseurl=https://protonesso.moe/ataraxia/x86_64
+		type=rpm-md
+		gpgcheck=0
+	EOF
+
+	ln -sf zypp/repos.d "$PKG"/etc/yum.repos.d
 }

@@ -6,7 +6,7 @@
 
 name=hostapd
 version=2.9
-release=2
+release=3
 source=("https://w1.fi/releases/$name-$version.tar.gz")
 
 build() {
@@ -78,8 +78,5 @@ build() {
 	install -Dm644 hostapd.8 "$PKG"/usr/share/man/man8/hostapd.8
 	install -Dm644 hostapd_cli.1 "$PKG"/usr/share/man/man1/hostapd_cli.1
 
-	for initd in hostapd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/hostapd "$PKG"/etc/service/hostapd/run
 }

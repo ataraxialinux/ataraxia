@@ -5,8 +5,8 @@
 # Section:     admin
 
 name=bolt
-version=0.8
-release=1
+version=0.9
+release=2
 source=("https://gitlab.freedesktop.org/bolt/bolt/-/archive/$version/$name-$version.tar.gz")
 
 build() {
@@ -19,5 +19,7 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	install -Dm0755 "$STUFF"/svc/boltd.initd "$PKG"/etc/init.d/boltd
+	install -Dm755 "$STUFF"/svc/bolt "$PKG"/etc/service/bolt/run
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
 }

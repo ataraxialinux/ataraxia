@@ -4,8 +4,8 @@
 # Section:     admin
 
 name=haveged
-version=1.9.8
-release=1
+version=1.9.11
+release=2
 source=("https://github.com/jirka-h/haveged/archive/v$version.tar.gz")
 
 build() {
@@ -17,8 +17,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in haveged; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/haveged "$PKG"/etc/service/haveged/run
 }

@@ -1,0 +1,47 @@
+# Description: A statically typed compiled systems programming language
+# URL:         https://nim-lang.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     devel
+
+name=nim
+version=1.2.2
+release=1
+source=("https://nim-lang.org/download/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	bash build.sh
+
+	./bin/nim compile -d:release koch
+	./koch boot -d:release
+	./bin/nim compile -d:release nimsuggest/nimsuggest.nim
+
+	cd tools
+	../bin/nim c -d:release nimgrep.nim
+
+	cd ..
+	./koch install "$PKG"
+
+	mkdir -p "$PKG"/usr/lib "$PKG"/usr/bin
+	mv lib "$PKG"/usr/lib/nim
+	mv compiler "$PKG"/usr/lib/nim
+
+	install -Dm644 compiler.nimble "$PKG"/usr/lib/nim/compiler
+
+	for i in config/*; do install -Dm644 "$i" "$PKG"/etc/nim; done
+	for i in bin/*; do install -Dm755 "$i" "$PKG"/usr/bin; done
+
+	install -Dm755 nimsuggest/nimsuggest "$PKG"/usr/bin/nimsuggest
+	install -Dm755 tools/niminst/niminst "$PKG"/usr/bin/niminst
+	install -Dm755 tools/nimgrep "$PKG"/usr/bin/nimgrep
+
+	# Taken from Alpine
+	cd "$PKG"
+	mkdir -p usr/include
+	local file; for file in usr/lib/nim/*.h; do
+		mv $file usr/include/
+		ln -s ../../include/${file##*/} usr/lib/nim/${file##*/}
+	done
+
+	rm -rf "$PKG"/nim
+}

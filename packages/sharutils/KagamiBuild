@@ -11,6 +11,7 @@ source=("http://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/sharutils/sharutils-4.15.2-gcc-10.patch
 	sed 's/FUNC_FFLUSH_STDIN/-1/g' -i lib/fseeko.c
 
 	./configure $BUILDFLAGS \

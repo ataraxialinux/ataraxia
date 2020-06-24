@@ -1,0 +1,32 @@
+# Description: A system designed to make installation and updates of packages easier
+# URL:         https://www.freedesktop.org/software/PackageKit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson intltool gobject-introspection vala bash-completion polkit sqlite libzypp gtk3 gst-plugins-base
+# Section:     admin
+
+name=packagekit
+version=1.2.0
+release=1
+source=("https://www.freedesktop.org/software/PackageKit/releases/PackageKit-$version.tar.xz")
+
+build() {
+	cd "$SRC"/PackageKit-$version
+	patch -Np1 -i "$STUFF"/packagekit/0001-adopt-for-Ataraxia-Linux.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/PackageKit-$version \
+		-Dcron=false \
+		-Ddbus_sys=/usr/share/dbus-1/system.d \
+		-Delogind=true \
+		-Dgtk_doc=false \
+		-Doffline_update=false \
+		-Dpackaging_backend=zypp \
+		-Dsystemd=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+
+	rm -rvf "$PKG"/etc/sysconfig
+}

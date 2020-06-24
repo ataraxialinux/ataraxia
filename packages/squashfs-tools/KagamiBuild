@@ -10,7 +10,10 @@ release=1
 source=("https://github.com/plougher/squashfs-tools/archive/$version.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version/$name
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/squashfs-tools/squashfs-tools-4.4-fno-common.patch
+
+	cd $name
 	patch -Np1 -i "$STUFF"/squashfs-tools/fix-glibc-2.28.patch
 
 	make GZIP_SUPPORT=1 XZ_SUPPORT=1 LZO_SUPPORT=1 LZMA_XZ_SUPPORT=1 LZ4_SUPPORT=1 ZSTD_SUPPORT=1 XATTR_SUPPORT=1

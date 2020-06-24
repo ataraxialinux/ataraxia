@@ -1,0 +1,146 @@
+From c1555f593c8270dee7d93e63123605e710474d78 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 16 Jun 2020 22:20:47 +0900
+Subject: [PATCH] fix
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ Makefile       | 52 +-------------------------------------------------
+ config.mk      |  5 ++---
+ lib9/dirread.c | 13 +++----------
+ yacc/Makefile  |  2 ++
+ 4 files changed, 8 insertions(+), 64 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 4f54354..2776f64 100644
+--- a/Makefile
++++ b/Makefile
+@@ -2,57 +2,7 @@
+ 
+ include config.mk
+ 
+-SUBDIRS  = lib9\
+-	yacc\
+-	ascii\
+-	awk\
+-	basename\
+-	bc\
+-	cal\
+-	cat\
+-	cleanname\
+-	cmp\
+-	date\
+-	dc\
+-	du\
+-	dd\
+-	diff\
+-	echo\
+-	ed\
+-	factor\
+-	fortune\
+-	fmt\
+-	freq\
+-	getflags\
+-	grep\
+-	hoc\
+-	join\
+-	look\
+-	ls\
+-	mk\
+-	mkdir\
+-	mtime\
+-	pbd\
+-	primes\
+-	rc\
+-	read\
+-	sam\
+-	sha1sum\
+-	sed\
+-	seq\
+-	sleep\
+-	sort\
+-	split\
+-	strings\
+-	tail\
+-	tee\
+-	test\
+-	touch\
+-	tr\
+-	troff\
+-	unicode\
+-	uniq\
+-	unutf\
++SUBDIRS = lib9 ascii cleanname fortune freq mk pbd primes sam unutf
+ 
+ all:
+ 	@echo 9base build options:
+diff --git a/config.mk b/config.mk
+index d5a8ea0..67833fa 100644
+--- a/config.mk
++++ b/config.mk
+@@ -12,7 +12,6 @@ OBJTYPE     = 386
+ # Linux/BSD
+ #CFLAGS      += -Wall -Wno-missing-braces -Wno-parentheses -Wno-switch -c -I. -DPREFIX="\"${PREFIX}\""
+ CFLAGS      += -c -I. -DPREFIX="\"${PREFIX}\""
+-LDFLAGS     += -static
+ 
+ # Solaris
+ #CFLAGS      = -fast -xtarget=ultra -D__sun__ -c -I. -DPREFIX="\"${PREFIX}\""
+@@ -20,5 +19,5 @@ LDFLAGS     += -static
+ 
+ # compiler
+ AR          = ar rc
+-CC          = cc
+-YACC        = ../yacc/9yacc
++CC          ?= cc
++YACC        ?= yacc
+diff --git a/lib9/dirread.c b/lib9/dirread.c
+index a7c9976..fd34ed7 100644
+--- a/lib9/dirread.c
++++ b/lib9/dirread.c
+@@ -10,26 +10,19 @@ extern int _p9dir(struct stat*, struct stat*, char*, Dir*, char**, char*);
+ static int
+ mygetdents(int fd, struct dirent *buf, int n)
+ {
+-	off_t off;
+-	int nn;
+-
+-	/* This doesn't match the man page, but it works in Debian with a 2.2 kernel */
+-	off = p9seek(fd, 0, 1);
+-	nn = getdirentries(fd, (void*)buf, n, &off);
+-	return nn;
++	return 0;
+ }
+ #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
+ static int
+ mygetdents(int fd, struct dirent *buf, int n)
+ {
+-	long off;
+-	return getdirentries(fd, (void*)buf, n, &off);
++	return 0;
+ }
+ #elif defined(__sun__) || defined(__NetBSD__)
+ static int
+ mygetdents(int fd, struct dirent *buf, int n)
+ {
+-	return getdents(fd, (void*)buf, n);
++ 	return 0;
+ }
+ #elif defined(__AIX__)
+ static int
+diff --git a/yacc/Makefile b/yacc/Makefile
+index 3e9d573..af64bd0 100644
+--- a/yacc/Makefile
++++ b/yacc/Makefile
+@@ -5,6 +5,8 @@ TARG      = yacc
+ 
+ include ../std.mk
+ 
++CC = cc
++
+ pre-uninstall:
+ 
+ post-install:
+-- 
+2.26.2
+

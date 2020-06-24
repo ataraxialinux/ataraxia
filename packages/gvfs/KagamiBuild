@@ -1,12 +1,14 @@
 # Description: Virtual filesystem implementation for GIO
 # URL:         https://wiki.gnome.org/Projects/gvfs
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson dbus glib libusb libsecret libsoup gcr gtk3 libcdio-paranoia libgudev libimobiledevice libmtp libgphoto2 libbluray udisks gnome-online-accounts openssh
+# Depends on:  meson dbus glib libusb libsecret libsoup gcr gtk3 libcdio-paranoia libgudev libmtp libgphoto2 libbluray udisks gnome-online-accounts openssh
 # Section:     gnome
+
+# BACK: libimobiledevice
 
 name=gvfs
 version=1.44.1
-release=2
+release=3
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -14,6 +16,7 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
+		-Dafc=false \
 		-Ddnssd=false \
 		-Dfuse=false \
 		-Dgoogle=false \

@@ -1,12 +1,12 @@
 # Description: A DHCP server, client, and relay agent
 # URL:         https://www.isc.org/software/dhcp
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  toybox
+# Depends on:  run-parts
 # Section:     net
 
 name=dhcp
 version=4.4.2
-release=2
+release=3
 options=('bootstrap')
 backup=('etc/dhclient.conf'
 	'etc/dhcpd.conf'
@@ -54,5 +54,12 @@ build() {
 	mv "$PKG"/etc/dhclient.conf.example "$PKG"/etc/dhclient.conf
 	mv "$PKG"/etc/dhcpd.conf.example "$PKG"/etc/dhcpd.conf
 	install -Dm644 doc/examples/dhcpd-dhcpv6.conf "$PKG"/etc/dhcpd6.conf
-	install -Dm755 client/scripts/linux "$PKG"/etc/dhclient-script
+
+	sed -i 's|/etc/dhclient-script|/usr/bin/dhclient-script|' "$PKG"/etc/dhclient.conf
+
+	install -Dm755 client/scripts/linux "$PKG"/usr/bin/dhclient-script
+
+	for i in dhcp{,6}; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+	done
 }

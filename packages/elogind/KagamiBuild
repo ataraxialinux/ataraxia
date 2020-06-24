@@ -6,7 +6,7 @@
 
 name=elogind
 version=243.7
-release=2
+release=5
 backup=('etc/elogind/logind.conf')
 source=("https://github.com/elogind/elogind/archive/v$version.tar.gz")
 
@@ -15,7 +15,6 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Dcgroup-controller=openrc \
 		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
 		-Ddefault-hierarchy=unified \
 		-Ddefault-kill-user-processes=false \
@@ -36,5 +35,5 @@ build() {
 	ln -sf libelogind.pc "$PKG"/usr/lib/pkgconfig/libsystemd.pc
 	ln -sf elogind "$PKG"/usr/include/systemd
 
-	install -Dm0755 "$STUFF"/svc/elogind.initd "$PKG"/etc/init.d/elogind
+	install -Dm755 "$STUFF"/svc/elogind "$PKG"/etc/service/elogind/run
 }

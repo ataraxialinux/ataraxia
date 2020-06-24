@@ -7,15 +7,14 @@
 name=wireguard-tools
 version=1.0.20200513
 release=1
-source=("https://git.zx2c4.com/WireGuard/snapshot/WireGuard-$version.tar.xz")
+source=("https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-$version.tar.xz")
 
 build() {
-	cd "$SRC"/WireGuard-$version
-	sed -i -e '/depmod -a/d' src/Makefile
+	cd "$SRC"/wireguard-tools-$version/src
+	sed -i -e '/depmod -a/d' Makefile
 
-	make -C src/tools
-	make -C src/tools \
-		DESTDIR="$PKG" \
+	make
+	make DESTDIR="$PKG" \
 		WITH_BASHCOMPLETION=yes \
 		WITH_WGQUICK=yes \
 		WITH_SYSTEMDUNITS=no \

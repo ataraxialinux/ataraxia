@@ -18,7 +18,7 @@ index 75e6744..80547b3 100644
    up
      [[/bin/ip link set dev %iface% address %hwaddress%]]
 -    /sbin/dhclient -v -pf /run/dhclient.%iface%.pid -lf /var/lib/dhcp/dhclient.%iface%.leases -I -df /var/lib/dhcp/dhclient6.%iface%.leases %iface% \
-+    /sbin/dhclient -v -pf /run/dhclient.%iface%.pid %iface% \
++    /usr/bin/dhclient -v -pf /run/dhclient.%iface%.pid %iface% \
  	[[-e IF_METRIC=%metric%]] \
          if (execable("/sbin/dhclient"))
      /sbin/pump -i %iface% [[-h %hostname%]] [[-l %leasehours%]] \
@@ -27,7 +27,7 @@ index 75e6744..80547b3 100644
  
    down
 -    /sbin/dhclient -v -r -pf /run/dhclient.%iface%.pid -lf /var/lib/dhcp/dhclient.%iface%.leases -I -df /var/lib/dhcp/dhclient6.%iface%.leases %iface% \
-+    /sbin/dhclient -v -r -pf /run/dhclient.%iface%.pid %iface% \
++    /usr/bin/dhclient -v -r -pf /run/dhclient.%iface%.pid %iface% \
          if (execable("/sbin/dhclient"))
      /sbin/pump -i %iface% -r \
          elsif (execable("/sbin/pump"))
@@ -36,7 +36,7 @@ index 75e6744..80547b3 100644
    up
      [[/sbin/ifconfig %iface% link %hwaddress%]]
 -    /sbin/dhclient -v -pf /run/dhclient.%iface%.pid -lf /var/lib/dhcp/dhclient.%iface%.leases -I -df /var/lib/dhcp/dhclient6.%iface%.leases %iface% \
-+    /sbin/dhclient -v -pf /run/dhclient.%iface%.pid %iface% \
++    /usr/bin/dhclient -v -pf /run/dhclient.%iface%.pid %iface% \
  	[[-e IF_METRIC=%metric%]] \
          if (execable("/sbin/dhclient"))
      /sbin/udhcpc -n -p /run/udhcpc.%iface%.pid -i %iface% [[-H %hostname%]] \
@@ -45,7 +45,7 @@ index 75e6744..80547b3 100644
  
    down
 -    /sbin/dhclient -v -r -pf /run/dhclient.%iface%.pid -lf /var/lib/dhcp/dhclient.%iface%.leases -I -df /var/lib/dhcp/dhclient6.%iface%.leases %iface% \
-+    /sbin/dhclient -v -r -pf /run/dhclient.%iface%.pid %iface% \
++    /usr/bin/dhclient -v -r -pf /run/dhclient.%iface%.pid %iface% \
          if (execable("/sbin/dhclient"))
      if test -f /run/udhcpc.%iface%.pid; then kill -USR2 $(/bin/cat /run/udhcpc.%iface%.pid); kill -TERM $(/bin/cat /run/udhcpc.%iface%.pid); fi \
          elsif (execable("/sbin/udhcpc"))
@@ -58,10 +58,10 @@ index 3c0b83f..6ceeb7a 100644
      /bin/ip link set dev %iface% up
      /lib/ifupdown/wait-for-ll6.sh if (var_true("dhcp", ifd) && execable("/lib/ifupdown/wait-for-ll6.sh"))
 -    /sbin/dhclient -6 -P -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -P -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -P -pf /run/dhclient6.%iface%.pid %iface% \
          if (var_true("dhcp", ifd) && execable("/sbin/dhclient") && var_true("request_prefix", ifd))
 -    /sbin/dhclient -6 -S -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -S -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -S -pf /run/dhclient6.%iface%.pid %iface% \
          elsif (var_true("dhcp", ifd) && execable("/sbin/dhclient"))
      echo 'No DHCPv6 client software found!' >/dev/stderr; false \
          elsif (var_true("dhcp", ifd))
@@ -70,14 +70,14 @@ index 3c0b83f..6ceeb7a 100644
      /sbin/dhclient -6 -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -P -N -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
          if (execable("/sbin/dhclient") && var_true("request_prefix", ifd))
 -    /sbin/dhclient -6 -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -pf /run/dhclient6.%iface%.pid %iface% \
          elsif (execable("/sbin/dhclient"))
      echo 'No DHCPv6 client software found!' >/dev/stderr; false \
          elsif (1)
  
    down
 -    /sbin/dhclient -6 -r -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -r -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -r -pf /run/dhclient6.%iface%.pid %iface% \
          if (execable("/sbin/dhclient"))
      echo 'No DHCPv6 client software found!' >/dev/stderr; false \
          elsif (1)
@@ -86,7 +86,7 @@ index 3c0b83f..6ceeb7a 100644
    up
      /sbin/ifconfig %iface% inet6 accept_rtadv up
 -    /sbin/dhclient -6 -S -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -S -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -S -pf /run/dhclient6.%iface%.pid %iface% \
          if (var_true("dhcp", ifd) && execable("/sbin/dhclient"))
      echo 'No DHCPv6 client software found!' >/dev/stderr; false \
          elsif (var_true("dhcp", ifd))
@@ -95,14 +95,14 @@ index 3c0b83f..6ceeb7a 100644
    up
      /sbin/ifconfig %iface% [[link %hwaddress%]] up
 -    /sbin/dhclient -6 -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -pf /run/dhclient6.%iface%.pid %iface% \
          if (execable("/sbin/dhclient"))
      echo 'No DHCPv6 client software found!' >/dev/stderr; false \
          elsif (1)
  
    down
 -    /sbin/dhclient -6 -r -pf /run/dhclient6.%iface%.pid -lf /var/lib/dhcp/dhclient6.%iface%.leases -I -df /var/lib/dhcp/dhclient.%iface%.leases %iface% \
-+    /sbin/dhclient -6 -r -pf /run/dhclient6.%iface%.pid %iface% \
++    /usr/bin/dhclient -6 -r -pf /run/dhclient6.%iface%.pid %iface% \
          if (execable("/sbin/dhclient"))
      echo 'No DHCPv6 client software found!' >/dev/stderr; false \
          elsif (1)

@@ -1,0 +1,61 @@
+# Description: C toolkit to manipulate virtual machines
+# URL:         http://www.libvirt.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python-docutils bash-completion readline audit libcap-ng dbus util-linux curl lvm2 rpcsvc-proto dnsmasq iproute2 qemu libpciaccess yajl fuse2 gnutls parted libxml2 numactl polkit libtirpc libnl libgcrypt dbus libpcap iptables dmidecode
+# Section:     virt
+
+name=libvirt
+version=6.4.0
+release=1
+source=("https://libvirt.org/sources/$name-$version.tar.xz")
+
+build() {
+	export ac_cv_path_QEMU_BRIDGE_HELPER="/usr/lib/qemu/qemu-bridge-helper"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libvirt/musl-fix-includes.patch
+	patch -Np1 -i "$STUFF"/libvirt/stderr-fix.patch
+
+	mkdir build
+	cd build
+	../configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexec=/usr/lib/libvirt \
+		--sbindir=/usr/bin \
+		--with-runstatedir=/run \
+		--with-qemu-group=kvm \
+		--without-hal \
+		--without-netcf \
+		--without-sanlock \
+		--disable-nls \
+		--disable-werror
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+
+	for i in libvirtd virtlockd; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
+	done
+	for i in  /var/lib/libvirt/uml /var/lib/libvirt/qemu/nvram /var/lib/libvirt/qemu/channel/target \
+		/var/lib/libvirt/network /var/lib/libvirt/lxc /var/lib/libvirt/lockd/files /var/lib/libvirt/libxl \
+		/var/lib/libvirt/images /var/lib/libvirt/filesystems /var/lib/libvirt/dnsmasq /var/libvirt/boot /var/cache/libvirt/qemu; do
+		install -dm755 "${PKG}{i}"
+	done
+
+	# Don't track us
+	sed -i 's|<uuid>.*</uuid>|<uuid>0</uuid>|' "$PKG"/etc/libvirt/qemu/networks/default.xml
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+
+	chmod 600 "$PKG"/etc/libvirt/nwfilter/*.xml "$PKG/etc/libvirt/qemu/networks/default.xml"
+
+	rm -rf \
+		"$PKG"/run \
+		"$PKG"/var/lib/libvirt/qemu \
+		"$PKG"/var/cache/libvirt/qemu \
+		"$PKG"/etc/logrotate.d/libvirtd.libxl
+
+ 	rm -f "$PKG"/etc/libvirt/qemu/networks/autostart/default.xml
+}

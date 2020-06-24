@@ -4,8 +4,8 @@
 # Section:     admin
 
 name=redis
-version=6.0.4
-release=1
+version=6.0.5
+release=2
 backup=('etc/redis.conf'
 	'etc/logrotate.d/redis')
 source=("http://download.redis.io/releases/$name-$version.tar.gz")
@@ -29,8 +29,5 @@ build() {
 		"$PKG"/var/lib/redis \
 		"$PKG"/var/log/redis
 
-	for initd in redis; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/redis "$PKG"/etc/service/redis/run
 }

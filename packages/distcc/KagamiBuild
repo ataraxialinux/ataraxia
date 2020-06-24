@@ -6,9 +6,8 @@
 
 name=distcc
 version=3.3.3
-release=2
-backup=('etc/conf.d/distcc'
-	'etc/distcc/hosts')
+release=3
+backup=('etc/distcc/hosts')
 source=("https://github.com/distcc/distcc/releases/download/v$version/$name-$version.tar.gz")
 
 build() {
@@ -32,8 +31,5 @@ build() {
 		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/$bin
 	done
 
-	for initd in distcc; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/distccd "$PKG"/etc/service/distccd/run
 }

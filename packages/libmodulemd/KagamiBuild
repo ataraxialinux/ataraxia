@@ -1,7 +1,7 @@
 # Description: C Library for manipulating module metadata files
 # URL:         https://github.com/fedora-modularity/libmodulemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson gobject-introspection pygobject yaml rpm
+# Depends on:  meson gobject-introspection yaml rpm
 # Section:     libs
 
 name=libmodulemd
@@ -15,9 +15,10 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/modulemd-$version \
 		-Ddeveloper_build=false \
-		-Dwith_py3_overrides=true \
-		-Dwith_py2_overrides=false \
-		-Dwith_docs=false
+		-Dgobject_overrides_dir_py3=false \
+		-Dgobject_overrides_dir_py2=false \
+		-Dwith_docs=false \
+		-Dwith_manpages=disabled
 	ninja
 	DESTDIR="$PKG" ninja install
 }

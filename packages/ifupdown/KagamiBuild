@@ -1,12 +1,13 @@
 # Description: Scripts to configure network
 # URL:         http://snapshot.debian.org/archive/debian/20160922T165503Z/pool/main/i/ifupdown
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  run-parts
 # Priority:    required
-# Section:     base
+# Section:     net
 
 name=ifupdown
 version=0.8.16
-release=2
+release=5
 options=('bootstrap')
 source=("http://snapshot.debian.org/archive/debian/20160922T165503Z/pool/main/i/ifupdown/${name}_${version}.tar.xz")
 
@@ -27,11 +28,4 @@ build() {
 		make CFLAGS="$CFLAGS -std=gnu99"
 		make DESTDIR="$PKG" install
 	fi
-
-	install -Dm0755 "$STUFF"/svc/ifupdown.initd "$PKG"/etc/init.d/ifupdown
-
-	mkdir -p "$PKG"/etc/runlevels/default
-	ln -sf ../../init.d/ifupdown "$PKG"/etc/runlevels/default/ifupdown
-
-	${CROSS_COMPILE}cc $CFLAGS "$STUFF"/ifupdown/run-parts.c -o "$PKG"/usr/bin/run-parts
 }

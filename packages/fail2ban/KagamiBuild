@@ -6,7 +6,7 @@
 
 name=fail2ban
 version=0.11.1
-release=1
+release=2
 backup=('etc/fail2ban/fail2ban.conf'
 	'etc/fail2ban/jail.conf'
 	'etc/logrotate.d/fail2ban')
@@ -25,10 +25,7 @@ build() {
 	install -Dm644 files/fail2ban-logrotate "$PKG"/etc/logrotate.d/fail2ban
 	install -Dm644 files/bash-completion "$PKG"/usr/share/bash-completion/completions/fail2ban
 
-	for initd in fail2ban; do
-		install -Dm0755 files/gentoo-initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 files/gentoo-confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/fail2ban "$PKG"/etc/service/fail2ban/run
 
 	rm -rf "$PKG"/run
 }

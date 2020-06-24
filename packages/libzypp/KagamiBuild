@@ -1,0 +1,49 @@
+# Description: Package, Patch, Pattern, and Product Management
+# URL:         https://github.com/openSUSE/libzypp/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja boost rpm libxml2 gpgme libproxy libsolv libsigc++
+# Section:     libs
+
+name=libzypp
+version=17.23.7
+release=1
+source=("https://github.com/openSUSE/libzypp/archive/$version.tar.gz")
+
+build() {
+	# required on musl systems
+	export CFLAGS="-include sys/types.h $CFLAGS"
+	export CXXFLAGS="$CFLAGS"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libzypp/musl.patch
+
+	sed -i 's|ADD_SUBDIRECTORY( doc )|# ADD_SUBDIRECTORY( doc )|' CMakeLists.txt
+	sed -i 's|ADD_SUBDIRECTORY( tests EXCLUDE_FROM_ALL )|# ADD_SUBDIRECTORY( tests EXCLUDE_FROM_ALL )|' CMakeLists.txt
+
+	cp -p /usr/share/cmake/Modules/FindLibSolv.cmake cmake/modules/
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_SKIP_RPATH=ON \
+		-DENABLE_BUILD_DOCS=OFF \
+		-DENABLE_BUILD_TESTS=OFF \
+		-DENABLE_BUILD_TRANS=OFF \
+		-DENABLE_ZCHUNK_COMPRESSION=OFF \
+		-DDISABLE_AUTODOCS=ON \
+		-DDISABLE_LIBPROXY=OFF \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	mkdir -p "$PKG"/usr/lib/cmake/Zypp/
+	mv "$PKG"/usr/share/cmake/Modules/FindZypp.cmake "$PKG"/usr/lib/cmake/Zypp/ZyppConfig.cmake
+	mv "$PKG"/usr/share/cmake/Modules/ZyppCommon.cmake "$PKG"/usr/lib/cmake/Zypp/ZyppCommon.cmake
+
+	if [ -d "$PKG/usr/lib64" ]; then
+		mv "$PKG"/usr/lib64/* "$PKG"/usr/lib/
+		rmdir "$PKG"/usr/lib64
+	fi
+}

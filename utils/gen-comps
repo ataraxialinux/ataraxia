@@ -1,0 +1,70 @@
+#!/usr/bin/sh
+
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
+
+main() {
+	local repo="$1"
+	local outfile="$2"
+	local barch="$3"
+
+	[ ! -d "$repo" ] && die "Repository with ports is not specified or does not exist"
+	[ -z "$outfile" ] && die "Output file is not specified"
+	[ -z "$barch" ] && die "Architecture is not specified"
+
+	msg "Generating package list"
+	rm -rf "$outfile"
+	touch "$outfile"
+
+	#for i in $(egrep -r "# Section:" $repo | awk '{print $3}' | sort | uniq); do
+	for i in base kernel security libs admin utils shells editors net httpd database mail comm \
+		devel interpreters lua perl python otherosfs fonts graphics video audio sound x11 metapackages gnome xfce kde \
+		games localization text virt web doc misc hardware; do
+		for a in $(egrep -r "# Section:" $repo | grep -E '(^|\s)'${i}'($|\s)' | awk '{print $1}' | sed -e 's/\/KagamiBuild:#//g' | sed -e "s|${repo%/}/||"); do
+			case $a in
+				fasm)
+					case $barch in
+						x86_64) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
+					esac
+					;;
+				go|xf86-video-intel|xf86-video-vmware)
+					case $barch in
+						x86_64|i686) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
+					esac
+					;;
+				xf86-video-armsoc|xf86-video-fbturbo|xf86-video-freedreno|xf86-video-omap)
+					case $barch in
+						aarch64|armv7hnl|armv6l) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
+					esac
+					;;
+				grub)
+					case $barch in
+						x86_64|i686|aarch64|ppc64le|ppc64|ppc) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
+					esac
+					;;
+				bbl)
+					case $barch in
+						riscv64|riscv32) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
+					esac
+					;;
+				rust|firefox|cbindgen|thunderbird)
+					true # avoid rust for a while
+					;;
+				gnome-core|xfce-core)
+					true # useless packages
+					;;
+				syslinux|gtk4|kismet|gnome-games|mariadb|xfce4-xkb-plugin)
+					true # broken packages
+					;;
+				*)
+					[ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile"
+					;;
+			esac
+		done
+	done
+}
+
+main "$@"
+
+exit 0
+

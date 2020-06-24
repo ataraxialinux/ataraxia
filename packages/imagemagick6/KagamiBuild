@@ -1,0 +1,43 @@
+# Description: An image viewing/manipulation program
+# URL:         https://www.imagemagick.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl libltdl fontconfig libxext libxml2 lcms2 ghostscript libraw librsvg tiff openjpeg pango libwebp
+# Section:     graphics
+
+name=imagemagick6
+version=6.9.11+19
+release=1
+options=('libtool')
+source=("https://www.imagemagick.org/download/releases/ImageMagick-${version/+/-}.tar.xz")
+
+build() {
+	cd "$SRC"/ImageMagick-${version/+/-}
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-gs-font-dir=/usr/share/fonts/gsfonts \
+		--with-gslib \
+		--with-jpeg \
+		--with-lcms \
+		--with-modules \
+		--with-pango \
+		--with-perl \
+		--with-perl-options=INSTALLDIRS=vendor \
+		--with-png \
+		--with-rsvg \
+		--with-tiff \
+		--with-webp \
+		--enable-hdri \
+		--enable-shared
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" pkgconfigdir="/usr/lib/imagemagick6/pkgconfig" install
+
+	cd PerlMagick
+	find . -name '*.so' -delete
+	sed -i 's,LD_RUN_PATH="$(LD_RUN_PATH)" ,,' quantum/Makefile
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/lib/*.la "$PKG"/usr/lib/perl5 "$PKG"/usr/share/man "$PKG"/usr/bin
+}

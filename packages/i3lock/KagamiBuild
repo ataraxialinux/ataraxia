@@ -1,17 +1,19 @@
 # Description: Improved screenlocker based upon XCB and PAM
 # URL:         https://i3wm.org/i3lock/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam xcb-util-image xcb-util-xrm libev libxkbcommon
+# Depends on:  pam xcb-util-image xcb-util-xrm libev libxkbcommon cairo
 # Section:     x11
 
 name=i3lock
 version=2.12
-release=1
+release=2
 backup=('etc/pam.d/i3lock')
 source=("https://i3wm.org/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/i3lock/i3lock-2.12-fno-common.patch
+
 	sed -i -e 's:login:system-auth:' pam/i3lock
 	autoreconf -fiv
 

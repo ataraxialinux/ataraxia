@@ -6,7 +6,7 @@
 
 name=bluez
 version=5.54
-release=1
+release=2
 backup=('etc/bluetooth/main.conf')
 source=("https://www.kernel.org/pub/linux/bluetooth/$name-$version.tar.xz")
 
@@ -30,5 +30,8 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 src/main.conf "$PKG"/etc/bluetooth/main.conf
-	install -Dm0755 "$STUFF"/svc/bluetooth.initd "$PKG"/etc/init.d/bluetooth
+
+	for i in bluetooth bluetooth-mesh; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+	done
 }

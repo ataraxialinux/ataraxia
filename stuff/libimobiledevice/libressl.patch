@@ -1,31 +1,26 @@
-Upstream: Yes
-From 13bf235cac2201747de11652cf14fe2714ca0718 Mon Sep 17 00:00:00 2001
-From: David Weinstein
-Date: Mon, 21 Mar 2016 17:45:59 -0400
-Subject: Fix SSL version negotiation for newer versions of OpenSSL
+From 7d6730dc8d5291fe8a3383a12ad6b55b83774b64 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 22 Jun 2020 04:46:07 +0900
+Subject: [PATCH] libressl
 
-Depending on the OpenSSL version (and custom distribution patches), `SSLv3_method()`
-would return NULL on some systems and also `SSLv23_method()` fails with some older
-iOS versions...
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
  src/idevice.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-(limited to 'src/idevice.c')
-
 diff --git a/src/idevice.c b/src/idevice.c
-index f2de6a3..1dcdae2 100644
+index fea1e03..47c9ab4 100644
 --- a/src/idevice.c
 +++ b/src/idevice.c
-@@ -703,7 +703,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
+@@ -1015,7 +1015,7 @@ LIBIMOBILEDEVICE_API idevice_error_t idevice_connection_enable_ssl(idevice_conne
+ 		return ret;
  	}
- 	BIO_set_fd(ssl_bio, (int)(long)connection->data, BIO_NOCLOSE);
  
--	SSL_CTX *ssl_ctx = SSL_CTX_new(SSLv3_method());
-+	SSL_CTX *ssl_ctx = SSL_CTX_new(TLSv1_method());
- 	if (ssl_ctx == NULL) {
- 		debug_info("ERROR: Could not create SSL context.");
- 		BIO_free(ssl_bio);
+-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
++#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+ 	SSL_CTX_set_security_level(ssl_ctx, 0);
+ #endif
+ 
 -- 
-cgit v1.1-32-gdbae
+2.27.0
 

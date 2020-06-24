@@ -1,0 +1,46 @@
+From c51cf7bf14b20d4bdab05df5f42abe931aed7f7d Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 22 Jun 2020 04:17:41 +0900
+Subject: [PATCH] evince: don't require adwaita
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build       | 8 --------
+ shell/meson.build | 2 --
+ 2 files changed, 10 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 5e3c772..e270cf1 100644
+--- a/meson.build
++++ b/meson.build
+@@ -170,14 +170,6 @@ assert(zlib_dep.found() and cc.has_function('inflate', dependencies: zlib_dep) a
+ 
+ ev_platform = get_option('platform')
+ if ev_platform == 'gnome'
+-  # Evince has a rather soft run-time dependency on hicolor-icon-theme.
+-  # If the hicolor theme is not available, Evince fails to display some
+-  # icons. Because we cannot check for it at run-time, we instead
+-  # would like to require the icon theme at compile-time. But, because
+-  # the hicolor-icon-theme does not have a pkgconfig file, on gnome we
+-  # require the gnome icon theme instead.
+-  adwaita_icon_theme_dep = dependency('adwaita-icon-theme', version: '>= 2.17.1')
+-
+   # *** Nautilus property page build ***
+   enable_nautilus = get_option('nautilus')
+   if enable_nautilus
+diff --git a/shell/meson.build b/shell/meson.build
+index cc1db2a..febb71e 100644
+--- a/shell/meson.build
++++ b/shell/meson.build
+@@ -91,8 +91,6 @@ if ev_platform == 'win32'
+     output: resource,
+     command: [find_program('windres'), '@INPUT@', '-I', data_dir, '@OUTPUT@'],
+   )
+-else
+-  deps += adwaita_icon_theme_dep
+ endif
+ 
+ if enable_dbus
+-- 
+2.27.0
+

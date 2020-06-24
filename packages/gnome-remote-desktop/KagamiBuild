@@ -1,7 +1,7 @@
 # Description: GNOME Remote Desktop server
 # URL:         https://wiki.gnome.org/Projects/Mutter/RemoteDesktop
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson libsecret pipewire libvncserver libnotify dconf
+# Depends on:  meson elogind libsecret pipewire libvncserver libnotify dconf
 # Section:     gnome
 
 name=gnome-remote-desktop
@@ -11,9 +11,16 @@ source=("https://gitlab.gnome.org/jadahl/gnome-remote-desktop/-/archive/$version
 
 build() {
 	cd "$SRC"/$name-$version
+
+	# systemd removal
+	sed -i "s|dependency('systemd')|dependency('libelogind')|" meson.build
+	sed -i "s|systemd_dep.get_pkgconfig_variable('systemduserunitdir')|'/usr/no'|" meson.build
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	rm -rf "$PKG"/usr/no
 }

@@ -5,7 +5,7 @@
 # Section:     net
 
 name=iwd
-version=1.7
+version=1.8
 release=1
 source=("https://www.kernel.org/pub/linux/network/wireless/$name-$version.tar.xz")
 
@@ -26,9 +26,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in iwd ead; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
+	for i in iwd ead; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
 	done
-
-	mkdir -p "$PKG"/var/lib/iwd "$PKG"/var/lib/ead
 }

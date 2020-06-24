@@ -10,6 +10,9 @@ source=("https://github.com/neovim/libvterm/archive/$version.zip")
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i 's|all: $(LIBRARY) $(BINFILES)|all: $(LIBRARY)|' Makefile
+	sed -i 's|install: install-inc install-lib install-bin|install: install-inc install-lib|' Makefile
+
 	make PREFIX=/usr
 	make PREFIX=/usr DESTDIR="$PKG" install
 }

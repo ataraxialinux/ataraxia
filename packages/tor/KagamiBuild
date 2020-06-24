@@ -6,7 +6,7 @@
 
 name=tor
 version=0.4.3.5
-release=1
+release=2
 backup=('etc/tor/torrc')
 source=("https://dist.torproject.org/$name-$version.tar.gz")
 
@@ -23,8 +23,6 @@ build() {
 
 	mv "$PKG"/etc/tor/torrc.sample "$PKG"/etc/tor/torrc
 
-	for initd in tor; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/tor "$PKG"/etc/service/tor/run
+	touch "$PKG"/etc/service/tor/.NOLOG
 }

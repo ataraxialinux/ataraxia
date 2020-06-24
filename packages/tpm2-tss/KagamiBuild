@@ -1,31 +1,27 @@
 # Description: Implementation of the TCG Trusted Platform Module 2.0 Software Stack (TSS2)
 # URL:         https://github.com/tpm2-software/tpm2-tss
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  curl json-c
+# Depends on:  libgcrypt
 # Section:     libs
 
 name=tpm2-tss
 version=2.4.1
-release=1
-backup=('etc/tpm2-tss/fapi-config.json'
-	'etc/tpm2-tss/fapi-profiles/P_ECCP256SHA256.json'
-	'etc/tpm2-tss/fapi-profiles/P_RSA2048SHA256.json')
+release=2
 source=("https://github.com/tpm2-software/tpm2-tss/releases/download/$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/tpm2-tss/libressl.patch
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-runstatedir=/run \
-		--with-crypto=ossl \
+		--with-crypto=gcrypt \
 		--with-udevrulesdir=/usr/lib/udev/rules.d \
 		--with-udevrulesprefix=60- \
 		--disable-defaultflags \
 		--disable-doxygen-doc \
+		--disable-fapi \
 		--disable-unit \
 		--disable-weakcrypto
 	make

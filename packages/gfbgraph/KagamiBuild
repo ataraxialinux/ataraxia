@@ -11,6 +11,9 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gfbgraph/0001-no-gtk-doc.patch
+
+	autoreconf -vi
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make

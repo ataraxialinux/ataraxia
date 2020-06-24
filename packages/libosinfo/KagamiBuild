@@ -1,0 +1,22 @@
+# Description: GObject based library API for managing information about operating systems, hypervisors and the (virtual) hardware devices they can support
+# URL:         https://libosinfo.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala libsoup libxslt osinfo-db
+# Section:     devel
+
+name=libosinfo
+version=1.7.1
+release=1
+source=("https://releases.pagure.org/libosinfo/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dwith-pci-ids-path=/usr/share/hwdata/pci.ids \
+		-Dwith-usb-ids-path=/usr/share/hwdata/usb.ids \
+		-Denable-gtk-doc=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}

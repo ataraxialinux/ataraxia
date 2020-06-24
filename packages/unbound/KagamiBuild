@@ -6,7 +6,7 @@
 
 name=unbound
 version=1.10.1
-release=1
+release=2
 backup=('etc/unbound/unbound.conf')
 source=("https://unbound.net/downloads/$name-$version.tar.gz")
 
@@ -32,10 +32,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in unbound; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/unbound "$PKG"/etc/service/unbound/run
 
 	export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PKG/usr/lib"
 	export PATH="$PATH:$PKG/usr/bin"

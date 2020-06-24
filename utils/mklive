@@ -10,10 +10,10 @@ generate_initramfs() {
 	packages="base-files netbase selinux-policy musl zlib xz bzip2 file ncurses readline \
 		pcre libcap-ng audit libsepol libselinux libsemanage cracklib pam libpwquality attr acl \
 		libcap shadow grep mksh bash expat libressl nettle ca-certificates lzip lz4 zstd \
-		libarchive lzo kmod coreutils mawk ubase sinit netbsd-tools toybox dialog pigz \
-		policycoreutils iproute2 kbd nano util-linux e2fsprogs btrfs-progs dosfstools heimdal \
-		hwids eudev openrc ifupdown dhcp libnl wireless_tools wpa_supplicant popt gptfdisk \
-		wget linux"
+		libarchive lzo kmod coreutils 9base mawk ubase sinit netbsd-tools toybox dialog pigz \
+		policycoreutils iproute2 kbd nano util-linux e2fsprogs btrfs-progs dosfstools \
+		hwids eudev runit run-parts ifupdown dhcp libnl wireless_tools wpa_supplicant \
+		popt gptfdisk wget linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
 
@@ -31,7 +31,6 @@ generate_initramfs() {
 			rm -rf usr/bin/$bins
 		done
 
-		sed -i 's|${port} --noclear 38400 linux|${port} --autologin root --noclear 38400 linux|' etc/init.d/agetty
 		ln -sf usr/bin/init init
 
 		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
@@ -69,7 +68,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live
+			linux	/seiba/seiba rw quiet live=1 enforcing=0
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -115,7 +114,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live
+		KERNEL /seiba/seiba rw quiet live=1 enforcing=0
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -155,7 +154,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live
+			linux	/seiba/seiba rw quiet live=1 enforcing=0
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -188,7 +187,7 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba root=/dev/ram0 rw quiet live
+			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1 enforcing=0
 			initrd	/seiba/seiba.zst
 		}
 	EOF

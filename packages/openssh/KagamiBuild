@@ -6,7 +6,7 @@
 
 name=openssh
 version=8.3p1
-release=2
+release=3
 backup=('etc/ssh/ssh_config'
 	'etc/ssh/sshd_config')
 source=("https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$name-$version.tar.gz")
@@ -34,9 +34,5 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 "$STUFF"/pam.d/sshd "$PKG"/etc/pam.d/sshd
-
-	for initd in sshd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/sshd "$PKG"/etc/service/sshd/run
 }

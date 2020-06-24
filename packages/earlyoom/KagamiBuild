@@ -5,7 +5,7 @@
 
 name=earlyoom
 version=1.6
-release=2
+release=3
 source=("https://github.com/rfjakob/earlyoom/archive/v$version/$name-$version.tar.gz")
 
 build() {
@@ -13,8 +13,5 @@ build() {
 	make
 	make install DESTDIR="$PKG" PREFIX=/usr SYSTEMDUNITDIR=/usr/lib/systemd/system
 
-	for initd in earlyoom; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/earlyoom "$PKG"/etc/service/earlyoom/run
 }

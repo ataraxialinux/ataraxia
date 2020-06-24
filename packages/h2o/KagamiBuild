@@ -6,16 +6,12 @@
 
 name=h2o
 version=2.2.6
-release=1
-backup=('etc/h2o.conf')
-source=("https://github.com/h2o/h2o/archive/v$version.tar.gz"
-	"https://github.com/h2o/neverbleed/commit/d3d8d54f7526bc24e4c80f2d3511c9443fd078ab.patch")
+release=2
+source=("https://github.com/h2o/h2o/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	pushd deps/neverbleed
-		patch -Np1 -i "$SRC"/d3d8d54f7526bc24e4c80f2d3511c9443fd078ab.patch
-	popd
+	patch -Np0 -i "$STUFF"/h2o/patch-deps_neverbleed_neverbleed_c
 
 	mkdir -p build
 	cd build
@@ -28,5 +24,5 @@ build() {
 	ninja
 	DESTDIR="$PKG" ninja install
 
-	install -Dm0755 "$STUFF"/svc/h2o.initd "$PKG"/etc/init.d/h2o
+	install -Dm755 "$STUFF"/svc/h2o "$PKG"/etc/service/h2o/run
 }

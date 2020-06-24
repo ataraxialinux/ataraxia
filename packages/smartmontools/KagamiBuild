@@ -6,7 +6,7 @@
 
 name=smartmontools
 version=7.1
-release=2
+release=3
 backup=('etc/smartd.conf')
 source=("https://downloads.sourceforge.net/sourceforge/$name/$name-$version.tar.gz")
 
@@ -23,8 +23,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in smartd; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
-	done
+	install -Dm755 "$STUFF"/svc/smartd "$PKG"/etc/service/smartd/run
 }

@@ -11,7 +11,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=3
+release=4
 backup=('etc/pam.d/chfn'
 	'etc/pam.d/chsh'
 	'etc/pam.d/login'
@@ -23,6 +23,15 @@ options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
 build() {
+	case $BARCH in
+		aarch64|armv7hnl|armv6hl)
+			export EXTRATTY="ttyAMA0"
+			;;
+		s390x)
+			export EXTRATTY="ttysclp0"
+			;;
+	esac
+
 	cd "$SRC"/$name-$version
 	ADJTIME_PATH=/var/lib/hwclock/adjtime \
 	./configure $BUILDFLAGS \
@@ -50,6 +59,7 @@ build() {
 		--enable-vipw \
 		--enable-write \
 		--enable-zramctl \
+		--disable-makeinstall-chown \
 		--disable-more
 	make
 	make DESTDIR="$PKG" install
@@ -71,4 +81,13 @@ build() {
 	rmdir usr/sbin
 
 	rm usr/bin/ctrlaltdel
+
+	mkdir -p "$PKG"/var/service
+	for i in tty{1,2,3,4,5,6,S0,AMA0,USB0,sclp0}; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+		touch "$PKG"/etc/service/$i/.NOLOG
+	done
+	for i in tty1 $EXTRATTY; do
+		ln -sf /etc/service/$i "$PKG"/var/service/$i
+	done
 }

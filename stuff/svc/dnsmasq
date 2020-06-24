@@ -1,0 +1,8 @@
+#!/usr/bin/sh
+if [ -d "/run/service/dbus" ]; then
+	sv check /run/service/dbus || sv up /run/service/dbus
+else
+	rm -rf /run/service/dnsmasq
+fi
+[ ! -d "/var/lib/misc" ] && mkdir -p /var/lib/misc
+exec dnsmasq -k --enable-dbus -u dnsmasq -g dnsmasq

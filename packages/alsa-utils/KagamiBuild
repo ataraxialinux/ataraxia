@@ -6,7 +6,7 @@
 
 name=alsa-utils
 version=1.2.3
-release=1
+release=2
 source=("ftp://ftp.alsa-project.org/pub/utils/$name-$version.tar.bz2")
 
 build() {
@@ -27,9 +27,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	for initd in alsasound; do
-		install -Dm0755 "$STUFF"/svc/${initd}.initd "$PKG"/etc/init.d/$initd
-		install -Dm0644 "$STUFF"/svc/${initd}.confd "$PKG"/etc/conf.d/$initd
+	for i in alsa; do
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
 	done
 
 	install -d "$PKG"/var/lib/alsa

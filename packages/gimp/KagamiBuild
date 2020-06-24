@@ -6,12 +6,14 @@
 
 name=gimp
 version=2.10.20
-release=1
+release=2
 source=("https://download.gimp.org/pub/$name/v${version%.*}/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gimp/0001-make-it-work-with-gettext-tiny.patch
 
+	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/bin \

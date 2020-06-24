@@ -6,7 +6,7 @@
 
 name=rsyslog
 version=8.2004.0
-release=1
+release=2
 backup=('etc/rsyslog.conf')
 source=("http://www.rsyslog.com/files/download/$name/$name-$version.tar.gz")
 
@@ -33,10 +33,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm0755 "$STUFF"/svc/rsyslog.initd "$PKG"/etc/init.d/rsyslog
-
-	mkdir -p "$PKG"/etc/runlevels/default
-	ln -sf ../../init.d/rsyslog "$PKG"/etc/runlevels/default/rsyslog
+	install -Dm755 "$STUFF"/svc/rsyslogd "$PKG"/etc/service/rsyslogd/run
+	touch "$PKG"/etc/service/rsyslogd/.NOLOG
 
 	install -Dm0644 "$STUFF"/rsyslog/rsyslog.conf "$PKG"/etc/rsyslog.conf
 	mkdir -p "$PKG"/var/spool/rsyslog
