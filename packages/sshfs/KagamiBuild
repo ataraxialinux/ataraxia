@@ -20,4 +20,9 @@ build() {
 		-Dman=false
 	ninja
 	DESTDIR="$PKG" ninja install
+
+	for i in mount.fuse.sshfs mount.sshfs; do
+		rm -rf "$PKG"/usr/bin/$i
+		ln -sf sshfs "$PKG"/usr/bin/$i
+	done
 }
