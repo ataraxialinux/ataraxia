@@ -11,10 +11,11 @@ source=("https://github.com/flatpak/libportal/releases/download/$version/$name-$
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -i "s|subdir('doc')|# subdir('doc')|" meson.build
+
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version \
-		-Dgtk_doc=false
+	ataraxia-meson "$SRC"/$name-$version
 	ninja
 	DESTDIR="$PKG" ninja install
 }
