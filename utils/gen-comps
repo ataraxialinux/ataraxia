@@ -18,8 +18,8 @@ main() {
 
 	#for i in $(egrep -r "# Section:" $repo | awk '{print $3}' | sort | uniq); do
 	for i in base kernel security libs admin utils shells editors net httpd database mail comm \
-		devel interpreters lua perl python otherosfs fonts graphics video audio sound x11 gnome xfce kde \
-		games localization text virt web doc misc hardware metapackages; do
+		devel interpreters lua perl python otherosfs fonts graphics video audio sound x11 metapackages gnome xfce kde \
+		games localization text virt web doc misc hardware; do
 		for a in $(egrep -r "# Section:" $repo | grep -E '(^|\s)'${i}'($|\s)' | awk '{print $1}' | sed -e 's/\/KagamiBuild:#//g' | sed -e "s|${repo%/}/||"); do
 			case $a in
 				fasm)
@@ -49,6 +49,9 @@ main() {
 					;;
 				rust|firefox|cbindgen|thunderbird)
 					true # avoid rust for a while
+					;;
+				gnome-core|xfce-core)
+					true # useless packages
 					;;
 				syslinux|gtk4|kismet|gnome-games)
 					true # broken packages

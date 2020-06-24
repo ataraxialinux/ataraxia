@@ -121,7 +121,8 @@ emerge_package() {
 		source_recipe
 
 		if [ ! -f "$packages/$tgt" ]; then
-			run_container "$container" "$tmpdir" "$repo" "$stuff" "$packages" "neko em $name"
+			[ "$pkg" = "shared-mime-info" ] && opt="-s"
+			run_container "$container" "$tmpdir" "$repo" "$stuff" "$packages" "neko em $opt $name"
 			rm -rf "$tmpdir"
 		fi
 	popd
