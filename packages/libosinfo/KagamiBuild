@@ -13,7 +13,10 @@ build() {
 	cd "$SRC"
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dwith-pci-ids-path=/usr/share/hwdata/pci.ids \
+		-Dwith-usb-ids-path=/usr/share/hwdata/usb.ids \
+		-Denable-gtk-doc=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }

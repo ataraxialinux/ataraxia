@@ -27,6 +27,7 @@ build() {
 		--without-hal \
 		--without-netcf \
 		--without-sanlock \
+		--disable-nls \
 		--disable-werror
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
@@ -47,7 +48,6 @@ build() {
 	sed -i 's|<uuid>.*</uuid>|<uuid>0</uuid>|' "$PKG"/etc/libvirt/qemu/networks/default.xml
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
-	install -dm 751 "$PKG"/usr/share/polkit-1/rules.d
 
 	chmod 600 "$PKG"/etc/libvirt/nwfilter/*.xml "$PKG/etc/libvirt/qemu/networks/default.xml"
 
