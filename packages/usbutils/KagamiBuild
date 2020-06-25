@@ -1,7 +1,7 @@
 # Description: USB Device Utilities
 # URL:         http://linux-usb.sourceforge.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libusb hwids
+# Depends on:  libusb hwids libselinux
 # Section:     hardware
 
 name=usbutils
@@ -11,7 +11,8 @@ source=("http://www.kernel.org/pub/linux/utils/usb/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./autogen.sh $BUILDFLAGS \
+	autoreconf -fi
+	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--datadir=/usr/share/hwdata \
 		--disable-zlib
