@@ -26,7 +26,7 @@ cd /tmp
 git clone https://github.com/ataraxialinux/neko.git --depth 1
 cd neko
 autoreconf -vif
-./configure --disable-libprotonesso
+./configure
 make
 make install
 ```
