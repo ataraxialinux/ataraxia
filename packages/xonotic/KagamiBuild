@@ -1,0 +1,40 @@
+# Description: The Free and Fast Arena Shooter
+# URL:         http://xonotic.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  mesa alsa-lib curl libjpeg-turbo libmodplug libvorbis libxpm libxxf86vm libpng
+# Section:     games
+
+name=xonotic
+version=0.8.2
+release=1
+source=("https://dl.xonotic.org/$name-$version.zip")
+
+build() {
+	cd "$SRC"
+	sed -i \
+		-e "s:-O3:${CFLAGS}:" \
+		-e '/^STRIP/s/strip/true/' \
+		source/darkplaces/makefile.inc
+
+	make -C Xonotic/source/darkplaces \
+		CPUOPTIMIZATIONS="$CFLAGS" \
+		DP_FS_BASEDIR=/usr/share/xonotic \
+		DP_LINK_TO_LIBJPEG=1 sv-release
+
+	cd Xonotic
+	mkdir -p "$PKG"/usr/share/xonotic
+	mv data "$PKG"/usr/share/xonotic
+	cp -r server "$PKG"/usr/share/xonotic	
+
+	install -Dm755 source/darkplaces/darkplaces-glx "$PKG"/usr/games/xonotic
+	for i in *.desktop; do
+		install -Dm644 $i "$PKG"/usr/share/applications/$(basename $i)
+	done
+	for size in 16 22 24 32 48 64 128 256 512; do
+		install -Dm644 "$srcdir"/Xonotic/misc/logos/icons_png/xonotic_${size}.png \
+			"$PKG"/usr/share/icons/hicolor/${size}x${size}/apps/xonotic.png
+	done
+
+	rm "$PKG"/usr/share/applications/xonotic-sdl.desktop
+	sed -i 's/xonotic-glx/xonotic/g' "$PKG"/usr/share/applications/xonotic-glx.desktop
+}
