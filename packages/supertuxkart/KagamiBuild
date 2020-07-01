@@ -1,0 +1,27 @@
+# Description: The best game ever created, change my mind
+# URL:         https://supertuxkart.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja mesa imagemagick openal libvorbis curl libxrandr glu libxkbcommon sqlite libjpeg-turbo libraqm
+# Section:     games
+
+name=supertuxkart
+version=1.1
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version-src.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version-src
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_BINDIR=/usr/games \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	# the game
+	rm -rf "$PKG"/usr/lib "$PKG"/usr/include
+}
