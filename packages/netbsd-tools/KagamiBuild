@@ -1,22 +1,21 @@
 # Description: NetBSD userland tools
 # URL:         https://github.com/ataraxialinux/netbsd-tools
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Priority:    required
-# Section:     base
+# Section:     utils
 
 name=netbsd-tools
 version=9.0
 release=1
-options=('bootstrap')
 source=("https://github.com/ataraxialinux/netbsd-tools/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	autoreconf -vif
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--program-prefix=netbsd-
 	make
 	make DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/usr/bin/sed "$PKG"/usr/share/man/man1/sed.1
+	rm -rf "$PKG"/usr/bin/{cpio,tar}
 }
