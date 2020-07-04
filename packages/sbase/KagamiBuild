@@ -1,0 +1,25 @@
+# Description: A suckless variant of the *nix core utilities
+# URL:         https://core.suckless.org/ubase/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=sbase
+version=2b8f1ee3a6a4e16d9a83b40b2ce647f1f6cce1f8
+release=1
+options=('bootstrap')
+source=("https://github.com/michaelforney/sbase/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
+	else
+		make CFLAGS="$CFLAGS" LDFLAGS='-static'
+	fi
+
+	mkdir -p "$PKG"/usr/bin "$PKG"/usr/share/man/man1
+	cp expr fold join pathchk tsort ed unexpand "$PKG"/usr/bin
+
+	cp expr.1 fold.1 join.1 pathchk.1 tsort.1 ed.1 unexpand.1 "$PKG"/usr/share/man/man1
+}
