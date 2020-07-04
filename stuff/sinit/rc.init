@@ -140,7 +140,7 @@ rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
 (cd /tmp && /usr/bin/find . ! -name . -delete)
 
 msg "Creating hierarchy for temporary files"
-install -dm1777 /tmp/.X11-unix /tmp/.ICE-unix
+mkdir -m1777 /tmp/.X11-unix /tmp/.ICE-unix
 
 msg "Saving boot log"
 dmesg > /var/log/dmesg.log
@@ -161,20 +161,18 @@ else
 	msg "Starting services"
 	ln -sf /var/service /run/service
 
-	pushd /run/service
-		for i in $(ls); do
-			if [ ! -f "/run/service/$i/.NOLOG" ]; then
-				msg "Configuring logger for $i"
-				mkdir /run/service/$i/log
-				touch /run/service/$i/log/run && chmod +x /run/service/$i/log/run
+	for i in $(ls /run/service); do
+		if [ ! -f "/run/service/$i/.NOLOG" ] && [ ! -d "/run/service/$i/log" ]; then
+			msg "Configuring logger for $i"
+			mkdir /run/service/$i/log
+			touch /run/service/$i/log/run && chmod +x /run/service/$i/log/run
 
-				cat > /run/service/$i/log/run <<-EOF
-					#!/usr/bin/sh
-					exec logger -i -p daemon.notice -t $i
-				EOF
-			fi
-		done
-	popd
+			cat > /run/service/$i/log/run <<-EOF
+				#!/usr/bin/sh
+				exec logger -i -p daemon.notice -t $i
+			EOF
+		fi
+	done
 
 	respawn runsvdir -P /run/service 'log: ................................................................................................................................................................................................................................................................' &
 fi
