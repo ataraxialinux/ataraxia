@@ -30,14 +30,16 @@ mountpoint -q /sys/fs/cgroup       || mount -t cgroup2 none /sys/fs/cgroup
 
 live="0"
 single="0"
+selinux="1"
 for arg in $(cat /proc/cmdline);do
 	case "$arg" in
 		live=*)        live="${arg#*=}" ;;
 		single=*)      single="${arg#*=}" ;;
+		selinux=*)      selinux="${arg#*=}" ;;
 	esac
 done
 
-if [ -x "/usr/bin/load_policy" ]; then
+if [ -x "/usr/bin/load_policy" ] && [ "$selinux" = "1" ]; then
 	msg "Loading SELinux policy"
 	load_policy -i
 fi
@@ -56,7 +58,7 @@ if [ -x "/usr/bin/udevd" ]; then
 	udevadm settle
 fi
 
-if [ -x "/usr/bin/restorecon" ] && [ ! -f "/fastboot" ]; then
+if [ -x "/usr/bin/restorecon" ] && [ ! -f "/fastboot" ] && [ "$selinux" = "1" ]; then
 	msg "Restoring SELinux contexts"
 	restorecon -F /
 fi
@@ -140,7 +142,7 @@ rm -rf /forcefsck /fastboot /etc/nologin /etc/shutdownpid
 (cd /tmp && /usr/bin/find . ! -name . -delete)
 
 msg "Creating hierarchy for temporary files"
-mkdir -m1777 /tmp/.X11-unix /tmp/.ICE-unix
+mkdir -m1777 /tmp/.X11-unix /tmp/.ICE-unix &>/dev/null
 
 msg "Saving boot log"
 dmesg > /var/log/dmesg.log

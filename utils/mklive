@@ -16,6 +16,7 @@ generate_initramfs() {
 		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
 		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/pkgconfig usr/include
 		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
+		rm -rf etc/selinux/targeted var/lib/selinux/targeted
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
@@ -62,7 +63,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1 enforcing=0
+			linux	/seiba/seiba rw quiet live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -108,7 +109,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live=1 enforcing=0
+		KERNEL /seiba/seiba rw quiet live=1
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -148,7 +149,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1 enforcing=0
+			linux	/seiba/seiba rw quiet live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -181,7 +182,7 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1 enforcing=0
+			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
