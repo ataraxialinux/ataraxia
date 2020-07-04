@@ -6,7 +6,7 @@
 
 name=sinit
 version=1.1
-release=4
+release=5
 options=('bootstrap')
 source=("https://github.com/henrysher/sinit/archive/v$version.tar.gz")
 
@@ -15,7 +15,7 @@ build() {
 
 	rm -rf config.h
 	cat > config.h <<-EOF
-		static char *const rcinitcmd[] = { "/usr/bin/rc", NULL };
+		static char *const rcinitcmd[] = { "/usr/bin/rc.init", NULL };
 		static char *const rcrebootcmd[] = { "/usr/bin/rc.shutdown", "reboot", NULL };
 		static char *const rcpoweroffcmd[] = { "/usr/bin/rc.shutdown", "poweroff", NULL };
 	EOF
@@ -32,7 +32,7 @@ build() {
 
 	${CROSS_COMPILE}cc $CFLAGS -static "$STUFF"/sinit/loop.c -o "$PKG"/usr/bin/svloop
 
-	for i in rc rc.local rc.shutdown poweroff reboot; do
+	for i in rc.init rc.local rc.shutdown poweroff reboot; do
 		install -Dm0755 "$STUFF"/sinit/$i "$PKG"/usr/bin/$i
 	done
 }

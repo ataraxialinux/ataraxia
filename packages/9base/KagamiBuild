@@ -8,6 +8,7 @@ name=9base
 version=6
 release=3
 options=('bootstrap')
+backup=('etc/rcmain')
 source=("http://dl.suckless.org/tools/$name-$version.tar.gz")
 
 build() {
@@ -16,13 +17,18 @@ build() {
 	cd $SRC/$name-$version
 	patch -Np1 -i "$STUFF"/9base/0001-fix.patch
 
+	sed -i 's|PREFIX      = /usr/local/plan9|PREFIX      = /|' config.mk
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make CC="$CC"
 	else
 		make
 	fi
 
-	for i in ascii cleanname fortune freq mk pbd primes sam unutf; do
+	for i in ascii cleanname fortune freq mk pbd primes sam unutf rc; do
 		install -Dm755 $i/$i "$PKG"/usr/bin/$i
+		install -Dm644 $i/$i.1 "$PKG"/usr/share/man/man1/$i.1
 	done
+
+	install -Dm644 rc/rcmain "$PKG"/etc/rcmain
 }

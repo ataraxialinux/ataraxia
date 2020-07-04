@@ -18,4 +18,9 @@ build() {
 		--without-xml2
 	make
 	make DESTDIR="$PKG" install
+
+	for i in tar cpio; do
+		ln -sf bsd${i} "$PKG"/usr/bin/$i
+		ln -sf bsd${i}.1 "$PKG"/usr/share/man/man1/${i}.1
+	done
 }

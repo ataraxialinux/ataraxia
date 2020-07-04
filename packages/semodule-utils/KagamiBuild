@@ -1,0 +1,23 @@
+# Description: SELinux module tools
+# URL:         https://github.com/SELinuxProject/selinux/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libsepol
+# Priority:    required
+# Section:     security
+
+name=semodule-utils
+version=3.0
+release=1
+options=('bootstrap')
+source=("https://github.com/SELinuxProject/selinux/releases/download/20191204/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" 
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" DESTDIR="$PKG" install
+	else
+		make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread"
+		make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" DESTDIR="$PKG" install
+	fi
+}

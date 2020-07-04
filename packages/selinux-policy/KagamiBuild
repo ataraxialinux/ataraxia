@@ -5,7 +5,7 @@
 # Section:     security
 
 name=selinux-policy
-version=20200701
+version=20200704.2
 release=1
 options=('bootstrap')
 source=("https://github.com/ataraxialinux/selinux-policy/archive/$version.tar.gz")
@@ -14,6 +14,8 @@ build() {
 	cd "$SRC"/$name-$version
 	mkdir -p "$PKG"
 	cp -av * "$PKG"/
-	rm -rf "$PKG"/build.sh "$PKG"/patches
-	chmod -Rv 755 "$PKG"/*
+	rm -rf "$PKG"/build.sh "$PKG"/patches "$PKG"/usr
+	mv "$PKG"/config "$PKG"/etc/selinux/config
+
+	find "$PKG" -type d -exec chmod 755 {} +
 }
