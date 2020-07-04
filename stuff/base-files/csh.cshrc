@@ -12,6 +12,9 @@
 ## 2003-01-24  --  Alain Penders (alain@gentoo.org)
 ##     Improved config file handling.
 ##
+## 2020-07-04  --  Ishimoto Shinobu (nagakamira@gmail.com)
+##     Improved config for Ataraxia Linux.
+##
 onintr -
 ##
 
@@ -26,15 +29,9 @@ endif
 ##
 ## Make sure our path includes the basic stuff for root and normal users.
 ##
-if ($LOGNAME == "root") then
-    set -f path = ( $path /sbin )
-    set -f path = ( $path /usr/sbin )
-    set -f path = ( $path /usr/local/sbin )
-endif
-set -f path = ( $path /bin )
 set -f path = ( $path /usr/bin )
+set -f path = ( $path /usr/games )
 set -f path = ( $path /usr/local/bin )
-set -f path = ( $path /opt/bin )
 
 
 ##

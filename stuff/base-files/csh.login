@@ -6,6 +6,9 @@
 ##
 ##     Initial version.  Inspired by the Suse version.
 ##
+## 2020-07-04  --  Ishimoto Shinobu (nagakamira@gmail.com)
+##     Improved config for Ataraxia Linux.
+##
 
 
 ##
@@ -30,13 +33,13 @@ umask 022
 ##
 ## Set our SHELL variable.
 ##
-setenv SHELL /bin/tcsh
+setenv SHELL /usr/bin/tcsh
 
 ##
 ## Setup a default MAIL variable
 ##
-if ( -f /var/mail/$USER ) then
-    setenv MAIL /var/mail/$USER
+if ( -f /var/spool/mail/$USER ) then
+    setenv MAIL /var/spool/mail/$USER
     set mail=$MAIL
 endif
 
@@ -68,5 +71,3 @@ endif
 ## Send us home.
 ##
 cd
-
-
