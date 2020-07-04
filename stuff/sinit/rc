@@ -4,6 +4,8 @@
 #
 
 msg() { printf "ataraxialinux: %s\n" >> /dev/kmsg "$@"; }
+pushd() { command pushd "$1" > /dev/kmsg; }
+popd() { command popd "$1" > /dev/kmsg; }
 
 export PATH=/usr/bin
 
@@ -158,5 +160,21 @@ else
 
 	msg "Starting services"
 	ln -sf /var/service /run/service
+
+	pushd /run/service
+		for i in $(ls); do
+			if [ ! -f "/run/service/$i/.NOLOG" ]; then
+				msg "Configuring logger for $i"
+				mkdir /run/service/$i/log
+				touch /run/service/$i/log/run && chmod +x /run/service/$i/log/run
+
+				cat > /run/service/$i/log/run <<-EOF
+					#!/usr/bin/sh
+					exec logger -i -p daemon.notice -t $i
+				EOF
+			fi
+		done
+	popd
+
 	respawn runsvdir -P /run/service 'log: ................................................................................................................................................................................................................................................................' &
 fi
