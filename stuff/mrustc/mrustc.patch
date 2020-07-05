@@ -1,0 +1,177 @@
+From a8c188e0d0ce0d89e1d32271b3db8d014b826bbd Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 5 Jul 2020 17:26:02 +0300
+Subject: [PATCH] ataraxia
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ Makefile     | 5 ++++-
+ minicargo.mk | 2 +-
+ rust-version | 2 +-
+ 3 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 97c6500..75cab25 100644
+--- a/Makefile
++++ b/Makefile
+@@ -210,7 +210,10 @@ $(RUSTC_SRC_TARBALL): $(RUSTC_SRC_DES)
+ 	@curl -sS https://static.rust-lang.org/dist/$@ -o $@
+ $(RUSTC_SRC_DL): $(RUSTC_SRC_TARBALL) rustc-$(RUSTC_VERSION)-src.patch
+ 	tar -xf $(RUSTC_SRC_TARBALL)
+-	cd $(RUSTCSRC) && patch -p0 < ../rustc-$(RUSTC_VERSION)-src.patch;
++	cd $(RUSTCSRC) && patch -p1 < ../rustc.patch;
++	cd $(RUSTCSRC) && patch -p1 < ../musl.patch;
++	cd $(RUSTCSRC) && patch -p1 < ../hardening.patch;
++	cd $(RUSTCSRC) && patch -p1 < ../libressl.patch;
+ 	cat $(RUSTC_SRC_DES) > $(RUSTC_SRC_DL)
+ endif
+ 
+diff --git a/minicargo.mk b/minicargo.mk
+index 63869f2..0d910f8 100644
+--- a/minicargo.mk
++++ b/minicargo.mk
+@@ -31,7 +31,7 @@ OUTDIR := output$(OUTDIR_SUF)/
+ MRUSTC ?= bin/mrustc$(EXESUF)
+ MINICARGO := bin/minicargo$(EXESUF)
+ RUSTC_OUT_BIN := rustc
+-ifeq ($(RUSTC_VERSION),1.29.0)
++ifeq ($(RUSTC_VERSION),1.44.1)
+   RUSTC_OUT_BIN := rustc_binary
+ endif
+ ifeq ($(RUSTC_CHANNEL),nightly)
+diff --git a/rust-version b/rust-version
+index 5e57fb8..d724e43 100644
+--- a/rust-version
++++ b/rust-version
+@@ -1 +1 @@
+-1.29.0
++1.44.1
+-- 
+2.27.0
+
+From 1db9ec54229c532ff0f5ba1af638b42d0de81f75 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 5 Jul 2020 17:44:17 +0300
+Subject: [PATCH] musl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ run_rustc/Makefile           |  2 +-
+ src/trans/target.cpp         | 22 +++++++++++-----------
+ tools/common/target_detect.h |  8 ++++----
+ tools/minicargo/manifest.cpp |  2 +-
+ 4 files changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/run_rustc/Makefile b/run_rustc/Makefile
+index 4dcbf1f..cf07175 100644
+--- a/run_rustc/Makefile
++++ b/run_rustc/Makefile
+@@ -9,7 +9,7 @@ else
+ OUTDIR_SUF ?= -$(RUSTC_VERSION)
+ endif
+ 
+-RUSTC_TARGET := x86_64-unknown-linux-gnu
++RUSTC_TARGET := x86_64-unknown-linux-musl
+ 
+ OUTDIR := output$(OUTDIR_SUF)/
+ PREFIX := $(OUTDIR)prefix/
+diff --git a/src/trans/target.cpp b/src/trans/target.cpp
+index f36bbfc..06bbecc 100644
+--- a/src/trans/target.cpp
++++ b/src/trans/target.cpp
+@@ -369,38 +369,38 @@ namespace
+         {
+             return load_spec_from_file(target_name);
+         }
+-        else if(target_name == "i586-linux-gnu")
++        else if(target_name == "i686-linux-musl")
+         {
+             return TargetSpec {
+-                "unix", "linux", "gnu", {CodegenMode::Gnu11, true, "i586-linux-gnu", BACKEND_C_OPTS_GNU},
++                "unix", "linux", "musl", {CodegenMode::Gnu11, true, "i686-linux-musl", BACKEND_C_OPTS_GNU},
+                 ARCH_X86
+                 };
+         }
+-        else if(target_name == "x86_64-linux-gnu")
++        else if(target_name == "x86_64-linux-musl")
+         {
+             return TargetSpec {
+-                "unix", "linux", "gnu", {CodegenMode::Gnu11, false, "x86_64-linux-gnu", BACKEND_C_OPTS_GNU},
++                "unix", "linux", "musl", {CodegenMode::Gnu11, false, "x86_64-linux-musl", BACKEND_C_OPTS_GNU},
+                 ARCH_X86_64
+                 };
+         }
+-        else if(target_name == "arm-linux-gnu")
++        else if(target_name == "arm-linux-musl")
+         {
+             return TargetSpec {
+-                "unix", "linux", "gnu", {CodegenMode::Gnu11, true, "arm-elf-eabi", BACKEND_C_OPTS_GNU},
++                "unix", "linux", "musl", {CodegenMode::Gnu11, true, "arm-elf-eabi", BACKEND_C_OPTS_GNU},
+                 ARCH_ARM32
+                 };
+         }
+-        else if(target_name == "aarch64-linux-gnu")
++        else if(target_name == "aarch64-linux-musl")
+         {
+             return TargetSpec {
+-                "unix", "linux", "gnu", {CodegenMode::Gnu11, false, "aarch64-linux-gnu", BACKEND_C_OPTS_GNU},
++                "unix", "linux", "musl", {CodegenMode::Gnu11, false, "aarch64-linux-musl", BACKEND_C_OPTS_GNU},
+                 ARCH_ARM64
+                 };
+         }
+-        else if(target_name == "m68k-linux-gnu")
++        else if(target_name == "m68k-linux-musl")
+         {
+             return TargetSpec {
+-                "unix", "linux", "gnu", {CodegenMode::Gnu11, true, "m68k-linux-gnu", BACKEND_C_OPTS_GNU},
++                "unix", "linux", "musl", {CodegenMode::Gnu11, true, "m68k-linux-musl", BACKEND_C_OPTS_GNU},
+                 ARCH_M68K
+                 };
+         }
+@@ -557,7 +557,7 @@ void Target_SetCfg(const ::std::string& target_name)
+     if( g_target.m_os_name == "linux" )
+     {
+         Cfg_SetFlag("linux");
+-        Cfg_SetValue("target_vendor", "gnu");
++        Cfg_SetValue("target_vendor", "unknown");
+     }
+ 
+     if( g_target.m_os_name == "freebsd" )
+diff --git a/tools/common/target_detect.h b/tools/common/target_detect.h
+index dda4bc3..6b6328f 100644
+--- a/tools/common/target_detect.h
++++ b/tools/common/target_detect.h
+@@ -17,13 +17,13 @@
+ // - Linux
+ #elif defined(__linux__)
+ # if defined(__amd64__)
+-#  define DEFAULT_TARGET_NAME "x86_64-linux-gnu"
++#  define DEFAULT_TARGET_NAME "x86_64-linux-musl"
+ # elif defined(__aarch64__)
+-#  define DEFAULT_TARGET_NAME "aarch64-linux-gnu"
++#  define DEFAULT_TARGET_NAME "aarch64-linux-musl"
+ # elif defined(__arm__)
+-#  define DEFAULT_TARGET_NAME "arm-linux-gnu"
++#  define DEFAULT_TARGET_NAME "arm-linux-musl"
+ # elif defined(__i386__)
+-#  define DEFAULT_TARGET_NAME "i586-linux-gnu"
++#  define DEFAULT_TARGET_NAME "i686-linux-musl"
+ # elif defined(__m68k__)
+ #  define DEFAULT_TARGET_NAME "m68k-linux-gnu"
+ # else
+diff --git a/tools/minicargo/manifest.cpp b/tools/minicargo/manifest.cpp
+index 569b669..d2fb3aa 100644
+--- a/tools/minicargo/manifest.cpp
++++ b/tools/minicargo/manifest.cpp
+@@ -21,7 +21,7 @@
+ #elif defined(__NetBSD__)
+ # define TARGET_NAME "x86_64-unknown-netbsd"
+ #else
+-# define TARGET_NAME "x86_64-unknown-linux-gnu"
++# define TARGET_NAME "x86_64-unknown-linux-musl"
+ #endif
+ 
+ static ::std::vector<::std::shared_ptr<PackageManifest>>    g_loaded_manifests;
+-- 
+2.27.0
+

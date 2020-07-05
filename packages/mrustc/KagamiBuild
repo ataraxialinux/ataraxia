@@ -1,0 +1,42 @@
+# Description: Alternative rust compiler written in C++
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  llvm curl
+# Section:     devel
+
+name=mrustc
+version=84b22a9c8b16a96491b896e76e7da4834e96c439
+release=1
+source=("https://github.com/thepowersgang/mrustc/archive/$version.tar.gz")
+
+build() {
+	case $BARCH in
+		x86_64)
+			export RTARGET="x86_64-unknown-linux-musl"
+			export LTARGET="X86"
+			;;
+		i686)
+			export RTARGET="i686-unknown-linux-musl"
+			export LTARGET="X86"
+			;;
+		aarch64)
+			export RTARGET="aarch64-unknown-linux-musl"
+			export LTARGET="AArch64"
+			;;
+		armv7hnl|armv6hl)
+			export RTARGET="arm-unknown-linux-musleabihf"
+			export LTARGET="ARM"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Rust Language"
+			exit 1
+	esac
+
+	cd "$SRC"/$name-$version
+
+	cp -av "$STUFF"/mrustc/*.patch .
+	patch -Np1 -i mrustc.patch
+
+	make RUSTSRC
+	make RUSTC_TARGET=$RTARGET LLVM_CONFIG=/usr/bin/llvm-config PREFIX=/usr -f minicargo.mk
+}
