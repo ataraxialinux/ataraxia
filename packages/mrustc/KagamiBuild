@@ -6,8 +6,13 @@
 
 name=mrustc
 version=84b22a9c8b16a96491b896e76e7da4834e96c439
+rustver-1.44.1
 release=1
 source=("https://github.com/thepowersgang/mrustc/archive/$version.tar.gz")
+
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' "$SRC"/$name-$version/rustc-$rustver-src/vendor/$1/.cargo-checksum.json
+}
 
 build() {
 	case $BARCH in
@@ -38,5 +43,10 @@ build() {
 	patch -Np1 -i mrustc.patch
 
 	make RUSTCSRC
+
+	clear_vendor_checksums libc
+	clear_vendor_checksums openssl-src
+	clear_vendor_checksums openssl-sys
+
 	make RUSTC_TARGET=$RTARGET LLVM_CONFIG=/usr/bin/llvm-config PREFIX=/usr -f minicargo.mk
 }
