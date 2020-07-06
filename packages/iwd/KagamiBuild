@@ -6,7 +6,7 @@
 
 name=iwd
 version=1.8
-release=1
+release=2
 source=("https://www.kernel.org/pub/linux/network/wireless/$name-$version.tar.xz")
 
 build() {
@@ -25,6 +25,8 @@ build() {
 		--disable-systemd-service
 	make
 	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/var/lib/iwd "$PKG"/var/lib/ead
 
 	for i in iwd ead; do
 		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
