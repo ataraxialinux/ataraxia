@@ -1,0 +1,21 @@
+# Description: Clientside library to implement the iSCSI protocol
+# URL:         https://github.com/sahlberg/libiscsi
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  popt libgcrypt
+# Section:     hardware
+
+name=libiscsi
+version=1.19.0
+release=1
+source=("https://github.com/sahlberg/libiscsi/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--disable-werror
+	make
+	make DESTDIR="$PKG" install
+}
