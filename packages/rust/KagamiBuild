@@ -6,9 +6,14 @@
 
 name=rust
 version=1.44.1
+bootver=1.43.1
 release=1
 options=('~emptydirs')
-source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz")
+source=("https://static.rust-lang.org/dist/rustc-$version-src.tar.gz"
+	"https://portage.smaeul.xyz/distfiles/rust-$bootver-x86_64-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$bootver-i686-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$bootver-aarch64-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$bootver-armv7a-unknown-linux-musleabihf.tar.xz")
 
 clear_vendor_checksums() {
 	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
@@ -21,28 +26,52 @@ build() {
 
 	case $BARCH in
 		x86_64)
+			export RBTARGET="x86_64-gentoo-linux-musl"
 			export RTARGET="x86_64-unknown-linux-musl"
+			;;
+		i686)
+			export RBTARGET="i686-gentoo-linux-musl"
+			export RTARGET="i686-unknown-linux-musl"
+			;;
+		aarch64)
+			export RBTARGET="aarch64-gentoo-linux-musl"
+			export RTARGET="aarch64-unknown-linux-musl"
+			;;
+		armv7hnl)
+			export RBTARGET="armv7a-unknown-linux-musleabihf"
+			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Rust Language"
 			exit 1
 	esac
 
-	cd "$SRC"/rustc-$version-src
-	patch -Np1 -i "$STUFF"/rust/0001-improve-musl-support.patch
-	patch -Np1 -i "$STUFF"/rust/static-pie.patch
-	patch -Np1 -i "$STUFF"/rust/1.42.0-libressl.patch
-	patch -Np1 -i "$STUFF"/rust/1.43.0-llvm10.patch
+	mkdir -p "$SRC"/rust
+	pushd "$SRC"/rust-$bootver-$RBTARGET
+		./install.sh \
+			--prefix="$SRC/rust" \
+			--disable-ldconfig
+	popd
 
+	export PATH="$SRC/rust/bin:$PATH"
+
+	cd "$SRC"/rustc-$version-src
+	patch -Np1 -i "$STUFF"/rust/musl.patch
+	patch -Np1 -i "$STUFF"/rust/libressl.patch
+	patch -Np1 -i "$STUFF"/rust/hardening.patch
+
+	clear_vendor_checksums openssl-src
 	clear_vendor_checksums openssl-sys
 	clear_vendor_checksums libc
+
+	rm -rf src/llvm-project
 
 	cat > config.toml <<- EOF
 		[llvm]
 		link-shared = true
 
 		[build]
-		build = "$RTARGET"
+		build = "$RBTARGET"
 		host = [ "$RTARGET" ]
 		target = [ "$RTARGET" ]
 		docs = false
@@ -60,7 +89,7 @@ build() {
 		prefix = "/usr"
 
 		[rust]
-		channel = "nightly"
+		channel = "stable"
 		rpath  = false
 		codegen-units = 1
 		debuginfo-level = 0
