@@ -1,0 +1,22 @@
+# Description: iSCSI userland tools
+# URL:         https://www.open-iscsi.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  open-isns util-linux kmod
+# Section:     hardware
+
+name=open-iscsi
+version=2.1.1
+release=1
+backup=('etc/iscsi/iscsid.conf'')
+source=("https://github.com/open-iscsi/open-iscsi/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make user LIB_DIR=/usr/lib
+	make DESTDIR="$PKG" LIB_DIR=/usr/lib install
+
+	mv "$PKG"/sbin/* "$PKG"/usr/bin/
+	rm -rf "$PKG"/sbin
+
+	install -Dm644 etc/iscsid.conf "$pkgdir"/etc/iscsi/iscsid.conf
+}
