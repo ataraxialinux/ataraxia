@@ -1,0 +1,21 @@
+# Description: Notification daemon for MATE
+# URL:         http://mate-desktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python libcanberra libnotify libwnck
+# Section:     mate
+
+name=mate-notification-daemon
+version=1.24.0
+release=1
+source=("https://pub.mate-desktop.org/releases/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
