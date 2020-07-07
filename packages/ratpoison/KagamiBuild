@@ -1,0 +1,23 @@
+# Description: A simple keystroke-driven window manager
+# URL:         https://www.nongnu.org/ratpoison/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline perl bash libxinerama libxtst libxft libxrandr
+# Section:     x11
+
+name=ratpoison
+version=1.4.9
+release=1
+source=("https://savannah.nongnu.org/download/$name/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|PRINT_ERROR (("XGetWMName|PRINT_DEBUG (("XGetWMName|' src/manage.c
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make MAKEINFO="true" CFLAGS="$CFLAGS -DHAVE_GETLINE"
+	make MAKEINFO="true" DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/ratpoison/ratpoison.desktop \
+		"$PKG"/usr/share/xsessions/ratpoison.desktop
+}
