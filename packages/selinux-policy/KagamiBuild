@@ -5,17 +5,20 @@
 # Section:     security
 
 name=selinux-policy
-version=20200704.2
+version=20200711
 release=1
 options=('bootstrap')
-source=("https://github.com/ataraxialinux/selinux-policy/archive/$version.tar.gz")
+backup=('etc/selinux/config')
+source=("https://github.com/ataraxialinux/selinux-policy/releases/download/$version/policy.tar.xz")
+noextract=("policy.tar.xz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"
 	mkdir -p "$PKG"
-	cp -av * "$PKG"/
-	rm -rf "$PKG"/build.sh "$PKG"/patches "$PKG"/usr
-	mv "$PKG"/config "$PKG"/etc/selinux/config
-
-	find "$PKG" -type d -exec chmod 755 {} +
+	bsdtar -C "$PKG" -xvf policy.tar.xz
+	rm -rvf "$PKG"/usr
+	cat > "$PKG"/etc/selinux/config <<-EOF
+		SELINUX=enforcing
+		SELINUXTYPE=mls
+	EOF
 }
