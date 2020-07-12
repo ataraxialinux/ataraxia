@@ -1,0 +1,102 @@
+# Description: Open Source Private Branch Exchange
+# URL:         https://www.asterisk.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib curl gsm jansson libedit libvorbis libxslt opus popt speexdsp sqlite bluez libcap lua newt pjproject unbound portaudio
+# Section:     comm
+
+name=asterisk
+version=17.5.1
+release=1
+backup=('etc/asterisk/acl.conf'
+	'etc/asterisk/adsi.conf'
+	'etc/asterisk/agents.conf'
+	'etc/asterisk/alarmreceiver.conf'
+	'etc/asterisk/amd.conf'
+	'etc/asterisk/ari.conf'
+	'etc/asterisk/ast_debug_tools.conf'
+	'etc/asterisk/asterisk.adsi'
+	'etc/asterisk/asterisk.conf'
+	'etc/asterisk/ccss.conf'
+	'etc/asterisk/cdr.conf'
+	'etc/asterisk/cdr_beanstalkd.conf'
+	'etc/asterisk/cdr_custom.conf'
+	'etc/asterisk/cdr_manager.conf'
+	'etc/asterisk/cdr_syslog.conf'
+	'etc/asterisk/cel.conf'
+	'etc/asterisk/cel_beanstalkd.conf'
+	'etc/asterisk/cel_custom.conf'
+	'etc/asterisk/cli.conf'
+	'etc/asterisk/cli_aliases.conf'
+	'etc/asterisk/cli_permissions.conf'
+	'etc/asterisk/codecs.conf'
+	'etc/asterisk/confbridge.conf'
+	'etc/asterisk/dnsmgr.conf'
+	'etc/asterisk/dsp.conf'
+	'etc/asterisk/dundi.conf'
+	'etc/asterisk/enum.conf'
+	'etc/asterisk/extconfig.conf'
+	'etc/asterisk/extensions.conf'
+	'etc/asterisk/features.conf'
+	'etc/asterisk/followme.conf'
+	'etc/asterisk/http.conf'
+	'etc/asterisk/indications.conf'
+	'etc/asterisk/logger.conf'
+	'etc/asterisk/manager.conf'
+	'etc/asterisk/modules.conf'
+	'etc/asterisk/musiconhold.conf'
+	'etc/asterisk/muted.conf'
+	'etc/asterisk/osp.conf'
+	'etc/asterisk/phoneprov.conf'
+	'etc/asterisk/prometheus.conf'
+	'etc/asterisk/queuerules.conf'
+	'etc/asterisk/queues.conf'
+	'etc/asterisk/res_parking.conf'
+	'etc/asterisk/res_stun_monitor.conf'
+	'etc/asterisk/resolver_unbound.conf'
+	'etc/asterisk/rtp.conf'
+	'etc/asterisk/say.conf'
+	'etc/asterisk/sla.conf'
+	'etc/asterisk/smdi.conf'
+	'etc/asterisk/sorcery.conf'
+	'etc/asterisk/stasis.conf'
+	'etc/asterisk/statsd.conf'
+	'etc/asterisk/telcordia-1.adsi'
+	'etc/asterisk/udptl.conf'
+	'etc/asterisk/users.conf'
+	'etc/asterisk/vpb.conf'
+	'etc/logrotate.d/asterisk')
+source=("https://downloads.asterisk.org/pub/telephony/asterisk/releases/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="-I$STUFF/include $CFLAGS"
+	export CXXFLAGS="-I$STUFF/include $CXXFLAGS"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--without-pjproject-bundled
+	make menuselect.makeopts
+
+	./menuselect/menuselect \
+		--enable chan_mobile \
+		--enable app_meetme \
+		--enable IMAP_STORAGE \
+		--disable BUILD_NATIVE \
+		menuselect.makeopts
+
+	make
+	make -j1 DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/var/run
+	sed -i -e 's,/var/run,/run,' "$PKG"/etc/asterisk/asterisk.conf
+
+	install -d "$PKG"/var/lib/asterisk
+
+	install -Dm755 "$STUFF"/svc/asterisk "$PKG"/etc/service/asterisk/run
+	install -Dm755 "$STUFF"/svc/asterisk-finish "$PKG"/etc/service/asterisk/finish
+	
+	install -Dm644 "$STUFF"/asterisk/logrotate "$PKG"/etc/logrotate.d/asterisk
+}
