@@ -72,6 +72,10 @@ build() {
 	export CXXFLAGS="-I$STUFF/include $CXXFLAGS"
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/asterisk/10-musl-mutex-init.patch
+	patch -Np1 -i "$STUFF"/asterisk/20-musl-astmm-fix.patch
+	patch -Np1 -i "$STUFF"/asterisk/40-asterisk-cdefs.patch	
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
