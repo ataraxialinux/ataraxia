@@ -28,5 +28,5 @@ Stage 2 is complete!
  - [ ] Add container management software (lxc, docker)
  - [ ] Add virtualization management software (libvirt, qemu, virt-manager)
  - [x] Add GNOME apps
- - [ ] Add support for LXDE, Cinnamon, MATE
+ - [ ] Add support for MATE
  - [ ] Add misc software (snownews, asterisk, bitcoin, etherwall, abiword, audacity, balsa, banshee, calcurse, dilo, django, earlyoom, elixir, entr, epdfview, erlang, exaile, falkon, fcgi, fcgiwrap, filezilla, firewalld, geary, gftp, gimp, gnumeric, haveged, iftop, inkscape, iotop, iptraf-ng, kdenlive, keepassxc, kodi, krita, lftp, libpiniyn, libreoffice, lmms, minidlna, mocp, mono, motion, mpd, mudpf, ncmpc, ncmpcpp, obconf, obs, openshot, openvswitch, osu, peek, pidgin, pitivi, poeedit, pwgen, recordmydesktop, s6-dns, schism, seamonkey, simplescreenrecorder, spacefm, surf, tint2, transcode, vlc, wavemon, xarchiver, xine-ui, xmms, xscreensaver, znc, surf, falkon)
