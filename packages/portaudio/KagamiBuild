@@ -1,0 +1,19 @@
+# Description: A free, cross-platform, open source, audio I/O library.
+# URL:         http://www.portaudio.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib
+# Section:     audio
+
+name=portaudio
+version=190600_20161030
+release=1
+source=("http://www.portaudio.com/archives/pa_stable_v${version}.tgz")
+
+build() {
+	cd "$SRC"/$name
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-cxx
+	make -j1
+	make DESTDIR="$PKG" install
+}
