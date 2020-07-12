@@ -1,0 +1,32 @@
+# Description: A sophisticated Object-Relational DBMS
+# URL:         http://www.postgresql.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python perl readline pam libressl heimdal icu libxml2
+# Section:     database
+
+name=postgresql
+version=12.3
+release=1
+source=("http://ftp.postgresql.org/pub/source/v$version/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i '/DEFAULT_PGSOCKET_DIR/s@/tmp@/run/postgresql@' src/include/pg_config_manual.h
+
+	PYTHON=/usr/bin/python3 \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-openssl \
+		--without-llvm \
+		--without-systemd \
+		--without-tcl \
+		--enable-thread-safety \
+		--disable-nls \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/postgresql "$PKG"/etc/service/postgresql/run
+	install -Dm644 "$STUFF"/pam.d/postgresql "$PKG"/etc/pam.d/postgresql
+}
