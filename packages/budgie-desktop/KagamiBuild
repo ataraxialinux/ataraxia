@@ -10,6 +10,7 @@ release=1
 source=("https://raw.githubusercontent.com/solus-project/budgie-desktop/master/README.md")
 
 build() {
+	mkdir -p "$SRC"/$name-$version || true
 	cd "$SRC"/$name-$version
 	git clone  --depth=1 https://github.com/solus-project/budgie-desktop
 	cd budgie-desktop
@@ -20,6 +21,7 @@ build() {
 		-D packagekit=false \
 		-D with-desktop-icons=none \
 		-D with-polkit=false
+	cd "$SRC"/$name-$version
 	ninja
 	DESTDIR="$PKG" ninja install
 }
