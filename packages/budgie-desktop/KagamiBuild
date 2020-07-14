@@ -1,0 +1,25 @@
+# Description: The Budgie desktop
+# URL:         https://gitlab.gnome.org/GNOME/gnome-session
+# Maintainer:  paledega, paledega at yandex dot ru
+# Depends on:  meson gnome-desktop mesa upower dconf gnome-session
+# Section:     gnome
+
+name=budgie-desktop
+version=10.5.1p
+release=1
+source=("https://raw.githubusercontent.com/solus-project/budgie-desktop/master/README.md")
+
+build() {
+	cd "$SRC"/$name-$version
+  git clone  --depth=1 https://github.com/solus-project/budgie-desktop
+  cd budgie-desktop
+  git submodule init
+  git submodule update
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dselinux=false  \
+    -D packagekit=false \
+    -D with-desktop-icons=none \
+    -D with-polkit=false
+	ninja
+	DESTDIR="$PKG" ninja install
+}
