@@ -1,17 +1,23 @@
-From 8c5c7b1c8459c05fe9481fcc1d922dd345c77461 Mon Sep 17 00:00:00 2001
+From 451f106f836a7e52431b4bf3274152cbc9c0fed5 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 14 Jul 2020 17:29:07 +0300
+Date: Tue, 14 Jul 2020 18:46:20 +0300
 Subject: [PATCH] internal fts
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- include/bsd.h  |  59 +++++++++++++++++++++++
- include/fts.h  | 127 +++++++++++++++++++++++++++++++++++++++++++++++++
- src/Makefile   |   3 +-
- utils/Makefile |   4 +-
- 4 files changed, 191 insertions(+), 2 deletions(-)
+ include/bsd.h       |   59 +++
+ include/fts.h       |  127 +++++
+ src/Makefile        |    2 +-
+ src/fts.c           | 1074 +++++++++++++++++++++++++++++++++++++++++++
+ src/reallocarray.c  |   41 ++
+ src/recallocarray.c |   83 ++++
+ utils/Makefile      |    8 +-
+ 7 files changed, 1391 insertions(+), 3 deletions(-)
  create mode 100644 include/bsd.h
  create mode 100644 include/fts.h
+ create mode 100644 src/fts.c
+ create mode 100644 src/reallocarray.c
+ create mode 100644 src/recallocarray.c
 
 diff --git a/include/bsd.h b/include/bsd.h
 new file mode 100644
@@ -212,18 +218,10 @@ index 0000000..ddb8a4f
 +
 +#endif /* !_FTS_H_ */
 diff --git a/src/Makefile b/src/Makefile
-index 190016e..471f07b 100644
+index 190016e..5697383 100644
 --- a/src/Makefile
 +++ b/src/Makefile
-@@ -57,6 +57,7 @@ endif
- 
- GENERATED=$(SWIGCOUT) $(SWIGRUBYCOUT) $(SWIGCOUT) selinuxswig_python_exception.i
- SRCS= $(filter-out $(GENERATED) audit2why.c, $(sort $(wildcard *.c)))
-+SRCS += ../src/fts.c ../src/reallocarray.c ../src/recallocarray.c
- 
- MAX_STACK_SIZE=32768
- 
-@@ -87,7 +88,7 @@ CFLAGS ?= -O -Wall -W -Wundef -Wformat-y2k -Wformat-security -Winit-self -Wmissi
+@@ -87,7 +87,7 @@ CFLAGS ?= -O -Wall -W -Wundef -Wformat-y2k -Wformat-security -Winit-self -Wmissi
            -Wno-format-nonliteral -Wframe-larger-than=$(MAX_STACK_SIZE) \
            -fstack-protector-all --param=ssp-buffer-size=4 -fexceptions \
            -fasynchronous-unwind-tables -fdiagnostics-show-option -funit-at-a-time \
@@ -232,46 +230,6 @@ index 190016e..471f07b 100644
            $(EXTRA_CFLAGS)
  
  LD_SONAME_FLAGS=-soname,$(LIBSO),--version-script=libselinux.map,-z,defs,-z,relro
-diff --git a/utils/Makefile b/utils/Makefile
-index aa2d3e1..fdd4930 100644
---- a/utils/Makefile
-+++ b/utils/Makefile
-@@ -33,7 +33,7 @@ CFLAGS ?= -O -Wall -W -Wundef -Wformat-y2k -Wformat-security -Winit-self -Wmissi
-           -Wno-format-nonliteral -Wframe-larger-than=$(MAX_STACK_SIZE) -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 \
-           -fstack-protector-all --param=ssp-buffer-size=4 -fexceptions \
-           -fasynchronous-unwind-tables -fdiagnostics-show-option -funit-at-a-time \
--          -Werror -Wno-aggregate-return -Wno-redundant-decls -Wstrict-overflow=5 \
-+          -Wno-aggregate-return -Wno-redundant-decls -Wstrict-overflow=5 \
-           $(EXTRA_CFLAGS)
- 
- ifeq ($(OS), Darwin)
-@@ -52,6 +52,8 @@ else
- TARGETS=$(patsubst %.c,%,$(sort $(wildcard *.c)))
- endif
- 
-+TARGETS += ../src/fts.c ../src/reallocarray.c ../src/recallocarray.c
-+
- sefcontext_compile: LDLIBS += $(PCRE_LDLIBS) ../src/libselinux.a -lsepol
- 
- sefcontext_compile: sefcontext_compile.o ../src/regex.o
--- 
-2.27.0
-
-From 38eee556edb747048efaf78bcaf7ecf60d9ecc8b Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 14 Jul 2020 17:32:13 +0300
-Subject: [PATCH] missing files
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- src/fts.c           | 1074 +++++++++++++++++++++++++++++++++++++++++++
- src/reallocarray.c  |   41 ++
- src/recallocarray.c |   83 ++++
- 3 files changed, 1198 insertions(+)
- create mode 100644 src/fts.c
- create mode 100644 src/reallocarray.c
- create mode 100644 src/recallocarray.c
-
 diff --git a/src/fts.c b/src/fts.c
 new file mode 100644
 index 0000000..2439813
@@ -1488,6 +1446,32 @@ index 0000000..b1c8c35
 +	return newptr;
 +}
 +DEF_WEAK(recallocarray);
+diff --git a/utils/Makefile b/utils/Makefile
+index aa2d3e1..d6df2f8 100644
+--- a/utils/Makefile
++++ b/utils/Makefile
+@@ -33,7 +33,7 @@ CFLAGS ?= -O -Wall -W -Wundef -Wformat-y2k -Wformat-security -Winit-self -Wmissi
+           -Wno-format-nonliteral -Wframe-larger-than=$(MAX_STACK_SIZE) -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 \
+           -fstack-protector-all --param=ssp-buffer-size=4 -fexceptions \
+           -fasynchronous-unwind-tables -fdiagnostics-show-option -funit-at-a-time \
+-          -Werror -Wno-aggregate-return -Wno-redundant-decls -Wstrict-overflow=5 \
++          -Wno-aggregate-return -Wno-redundant-decls -Wstrict-overflow=5 \
+           $(EXTRA_CFLAGS)
+ 
+ ifeq ($(OS), Darwin)
+@@ -54,7 +54,11 @@ endif
+ 
+ sefcontext_compile: LDLIBS += $(PCRE_LDLIBS) ../src/libselinux.a -lsepol
+ 
+-sefcontext_compile: sefcontext_compile.o ../src/regex.o
++sefcontext_compile: sefcontext_compile.o ../src/regex.o ../src/fts.o ../src/reallocarray.o ../src/recallocarray.o
++
++sefcontext_compile: LDLIBS += ../src/libselinux.a -lsepol
++
++selabel_get_digests_all_partial_matches: selabel_get_digests_all_partial_matches.o ../src/fts.o ../src/reallocarray.o ../src/recallocarray.o
+ 
+ matchpathcon: CFLAGS += -Wno-deprecated-declarations
+ 
 -- 
-2.27.0
+2.28.0.rc0
 
