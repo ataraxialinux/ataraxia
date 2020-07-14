@@ -1,26 +1,25 @@
-# Description: The Budgie desktop
-# URL:         https://gitlab.gnome.org/GNOME/gnome-session
+# Description: I Tawt I Taw A Purdy Desktop 
+# URL:         https://solus-project.com/
 # Maintainer:  paledega, paledega at yandex dot ru
-# Depends on:  meson gnome-desktop mesa upower dconf gnome-session
+# Depends on:  git meson sassc intltool gobject-introspection vala gnome-control-center gnome-menus gnome-session ibus libpeas libwnck mutter network-manager-applet gnome-menus wallpapers cantarell-fonts font-adobe-source-code-pro-fonts adwaita-icon-theme
 # Section:     gnome
 
 name=budgie-desktop
-version=10.5.1p
+version=10.5.1
 release=1
-source=("https://raw.githubusercontent.com/solus-project/budgie-desktop/master/README.md")
+source=("https://github.com/solus-project/budgie-desktop/releases/download/v$version/$name-$version.tar.xz")
 
 build() {
-	mkdir -p "$SRC"/$name-$version || true
 	cd "$SRC"/$name-$version
-	git clone  --depth=1 https://github.com/solus-project/budgie-desktop
-	cd budgie-desktop
-	git submodule init
-	git submodule update
+
+	# Don't use systemd session management, it's not supported by Budgie (thanks Arch Linux)
+	sed -i 's/exec gnome-session/exec gnome-session --builtin/' src/session/budgie-desktop.in
+
+	mkdir -p build
+	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-D packagekit=false \
-		-D with-desktop-icons=none \
-		-D with-polkit=false
-	cd "$SRC"/$name-$version
+		-Dwith-desktop-icons=none \
+		-Dpackagekit=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }
