@@ -14,6 +14,14 @@ build() {
 	patch -Np1 -i "$STUFF"/open-isns/libressl.patch
 	sed -i 's/-Werror//' configure.ac
 
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	autoreconf -fi
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

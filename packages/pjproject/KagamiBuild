@@ -11,10 +11,18 @@ options=('~makeflags')
 source=("https://github.com/pjsip/pjproject/archive/$version.tar.gz")
 
 build() {
-	export CFLAGS="$CFLAGS -fPIC
-	export CXXFLAGS="$CXXFLAGS -fPIC
+	export CFLAGS="$CFLAGS -fPIC"
+	export CXXFLAGS="$CXXFLAGS -fPIC"
 
 	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-external-gsm \

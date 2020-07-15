@@ -14,7 +14,6 @@ backup=('etc/asterisk/acl.conf'
 	'etc/asterisk/amd.conf'
 	'etc/asterisk/ari.conf'
 	'etc/asterisk/ast_debug_tools.conf'
-	'etc/asterisk/asterisk.adsi'
 	'etc/asterisk/asterisk.conf'
 	'etc/asterisk/ccss.conf'
 	'etc/asterisk/cdr.conf'
@@ -60,7 +59,6 @@ backup=('etc/asterisk/acl.conf'
 	'etc/asterisk/sorcery.conf'
 	'etc/asterisk/stasis.conf'
 	'etc/asterisk/statsd.conf'
-	'etc/asterisk/telcordia-1.adsi'
 	'etc/asterisk/udptl.conf'
 	'etc/asterisk/users.conf'
 	'etc/asterisk/vpb.conf'
@@ -92,7 +90,13 @@ build() {
 		menuselect.makeopts
 
 	make
-	make -j1 DESTDIR="$PKG" install
+	make -j1 DESTDIR="$PKG" install install-headers
+
+	for i in configs/samples/*.sample; do
+		a="$(basename $i)"
+		b="${a%*.sample}"
+		install -Dm644 $i "$PKG"/etc/asterisk/$b
+	done
 
 	rm -rf "$PKG"/var/run
 	sed -i -e 's,/var/run,/run,' "$PKG"/etc/asterisk/asterisk.conf
