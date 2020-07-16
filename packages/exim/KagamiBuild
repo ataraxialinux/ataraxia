@@ -27,11 +27,18 @@ build() {
 		CONFIGURE_FILE=/etc/exim/exim.conf
 		SYSTEM_ALIASES_FILE=/etc/mail/aliases
 		LOOKUP_MODULE_DIR=/usr/lib/exim/
+		LOG_FILE_PATH=/var/log/exim/%slog
 		SUPPORT_TLS=yes
 		USE_OPENSSL=yes
 		USE_OPENSSL_PC=openssl
 		LOOKUP_SQLITE=2
 		LOOKUP_SQLITE_LIBS=-lsqlite3
+		LOOKUP_CDB=2
+		LOOKUP_DBM=2
+		LOOKUP_DNSDB=2
+		LOOKUP_DSEARCH=yes
+		LOOKUP_LSEARCH=yes
+		LOOKUP_PASSWD=yes
 		EXIM_USER=exim
 		USE_GDBM = yes
 		DBMLIB = -lgdbm
@@ -44,9 +51,7 @@ build() {
 	install -Dm755 "$STUFF"/svc/exim "$PKG"/etc/service/exim/run
 
 	install -Dm644 doc/exim.8 "$PKG"/usr/share/man/man8
-	install -d -m750 -o 31 -g 31 "$PKG"/var/spool/exim
-
-	ln -sf exim "$PKG"/usr/bin/sendmail # original sendmail is too old
+	install -d -m750 -o 31 -g 31 "$PKG"/var/spool/exim "$PKG"/var/log/exim
 
 	cat > "$PKG"/etc/exim/aliases <<-EOF
 		postmaster: root

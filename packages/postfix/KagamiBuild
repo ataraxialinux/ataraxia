@@ -1,0 +1,57 @@
+# Description: Fast, easy to administer, secure mail server
+# URL:         http://www.postfix.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl libnsl db sqlite mariadb
+# Section:     mail
+
+name=postfix
+version=3.5.4
+release=1
+backup=('etc/postfix/aliases'
+	'etc/postfix/main.cf'
+	'etc/postfix/master.cf')
+source=("ftp://ftp.porcupine.org/mirrors/postfix-release/official/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/postfix/libressl.patch
+
+	make \
+		DEBUG='' \
+		pie=yes \
+		shared=yes \
+		CCARGS="-DUSE_TLS -I/usr/include/openssl -DHAS_MYSQL -I/usr/include/mysql -DHAS_SQLITE" \
+		AUXLIBS="-lssl -lcrypto -lmysqlclient -lz -lm -lsqlite3 -lpthread" \
+		OPT="$CFLAGS" \
+		makefiles
+	make
+
+	LD_LIBRARY_PATH="$PWD/lib:$LD_LIBRARY_PATH" \
+	sh postfix-install -non-interactive \
+		install_root="$PKG" \
+		command_directory=/usr/bin \
+		daemon_directory=/usr/lib/postfix \
+		config_directory=/etc/postfix \
+		meta_directory=/etc/postfix \
+		manpage_directory=/usr/share/man
+
+	for name in posttls-finger {smtp,qmqp}-{sink,source}; do
+		install -Dm644 man/man1/${name}.1 "$PKG"/usr/share/man/man1/${name}.1
+		install -Dm755 bin/${name} "$PKG"/usr/bin/${name}
+	done
+
+	pushd "$PKG"
+		patch --no-backup-if-mismatch -p0 -i "$STUFF"/postfix/paths.patch
+	popd
+
+	cat > "$PKG"/etc/postfix/aliases <<-EOF
+		postmaster: root
+		MAILER-DAEMON: postmaster
+	EOF
+
+	install -Dm755 "$STUFF"/svc/postfix "$PKG"/etc/service/postfix/run
+	install -Dm755 "$STUFF"/svc/postfix-finish "$PKG"/etc/service/postfix/finish
+
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin/
+	rm -rf "$PKG"/usr/sbin
+}
