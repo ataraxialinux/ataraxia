@@ -12,16 +12,31 @@ backup=('etc/exim/aliases'
 source=("https://ftp.exim.org/pub/exim/exim4/$name-$version.tar.bz2")
 
 build() {
-	cd "$SRC"/$name-$version
+	export CFLAGS="-fPIC $CFLAGS"
 
-	# from LFS
-	sed -e 's,^BIN_DIR.*$,BIN_DIRECTORY=/usr/sbin,' \
-		-e 's,^CONF.*$,CONFIGURE_FILE=/etc/exim/exim.conf,' \
-		-e 's,^EXIM_USER.*$,EXIM_USER=exim,' \
-		-e '/# SUPPORT_TLS=yes/s,^#,,' \
-		-e '/# USE_OPENSSL/s,^#,,' \
-		-e 's,^EXIM_MONITOR,#EXIM_MONITOR,' src/EDITME > Local/Makefile
-	printf "USE_GDBM = yes\nDBMLIB = -lgdbm\n" >> Local/Makefile 
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
+		bash "$topdir"/pre-install
+	fi
+
+	cd "$SRC"/$name-$version
+	sed -i 's/#define OPTSTYLE 1/#define OPTSTYLE 2/g' src/smtp_in.c
+
+	cat > Local/Makefile <<-EOF
+		TMPDIR="/tmp"
+		BIN_DIRECTORY=/usr/bin
+		CONFIGURE_FILE=/etc/exim/exim.conf
+		SYSTEM_ALIASES_FILE=/etc/mail/aliases
+		LOOKUP_MODULE_DIR=/usr/lib/exim/
+		SUPPORT_TLS=yes
+		USE_OPENSSL=yes
+		USE_OPENSSL_PC=openssl
+		LOOKUP_SQLITE=2
+		LOOKUP_SQLITE_LIBS=-lsqlite3
+		EXIM_USER=exim
+		USE_GDBM = yes
+		DBMLIB = -lgdbm
+		LDFLAGS += -lidn
+	EOF
 
 	make
 	make DESTDIR="$PKG" install
@@ -37,7 +52,4 @@ build() {
 		postmaster: root
 		MAILER-DAEMON: root
 	EOF
-
-	sed -e "s|/etc/aliases|/etc/exim/aliases|g" \
-		-e "s|SYSTEM_ALIASES_FILE|/etc/exim/aliases|g" -i "$PKG"/etc/mail/exim.conf
 }
