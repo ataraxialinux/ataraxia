@@ -1,0 +1,62 @@
+# Description: An IMAP and POP3 server written with security primarily in mind
+# URL:         https://dovecot.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib bzip2 lz4 pam libcap libressl expat curl heimdal libsodium
+# Section:     mail
+
+name=dovecot
+version=2.3.10.1
+release=1
+backup=('etc/dovecot/dovecot.conf'
+	'etc/dovecot/conf.d/10-auth.conf'
+	'etc/dovecot/conf.d/10-director.conf'
+	'etc/dovecot/conf.d/10-logging.conf'
+	'etc/dovecot/conf.d/10-mail.conf'
+	'etc/dovecot/conf.d/10-master.conf'
+	'etc/dovecot/conf.d/10-ssl.conf'
+	'etc/dovecot/conf.d/15-lda.conf'
+	'etc/dovecot/conf.d/15-mailboxes.conf'
+	'etc/dovecot/conf.d/20-imap.conf'
+	'etc/dovecot/conf.d/20-lmtp.conf'
+	'etc/dovecot/conf.d/20-pop3.conf'
+	'etc/dovecot/conf.d/20-submission.conf'
+	'etc/dovecot/conf.d/90-acl.conf'
+	'etc/dovecot/conf.d/90-quota.conf'
+	'etc/dovecot/conf.d/90-plugin.conf'
+	'etc/dovecot/conf.d/auth-checkpassword.conf.ext'
+	'etc/dovecot/conf.d/auth-deny.conf.ext'
+	'etc/dovecot/conf.d/auth-dict.conf.ext'
+	'etc/dovecot/conf.d/auth-ldap.conf.ext'
+	'etc/dovecot/conf.d/auth-master.conf.ext'
+	'etc/dovecot/conf.d/auth-passwdfile.conf.ext'
+	'etc/dovecot/conf.d/auth-sql.conf.ext'
+	'etc/dovecot/conf.d/auth-static.conf.ext'
+	'etc/dovecot/conf.d/auth-system.conf.ext'
+	'etc/dovecot/conf.d/auth-vpopmail.conf.ext'
+	'etc/pam.d/dovecot')
+source=("https://dovecot.org/releases/2.3/$name-$version.tar.gz")
+
+build() {
+	cd $name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--sbindir=/usr/bin \
+		--localstatedir=/var \
+		--with-moduledir=/usr/lib/dovecot/modules \
+		--with-ssl=openssl \
+		--without-libwrap
+	make
+	make DESTDIR="$PKG" install
+
+	cp -r "$PKG"/usr/share/doc/dovecot/example-config/* "$PKG"/etc/dovecot
+
+	rm -r "$PKG"/usr/share/doc
+	rm "$PKG"/etc/dovecot/README
+
+	install -d -m 0750 "$PKG"/var/lib/dovecot
+
+	install -Dm0755 "$STUFF"/svc/dovecot "$PKG"/etc/service/dovecot/run
+	install -Dm0755 "$STUFF"/pam.d/dovecot "$PKG"/etc/pam.d/dovecot
+}
