@@ -5,9 +5,15 @@
 # Section:     libs
 
 name=cairo
-version=1.16.0
+version=1.17.2
 release=1
-source=("https://www.cairographics.org/releases/$name-$version.tar.xz")
+case $version in
+	*.[0-9]*[13579].*)
+		url="https://www.cairographics.org/snapshots" ;;
+	*)
+		url="https://www.cairographics.org/releases" ;;
+esac
+source=("$url/$name-$version.tar.xz")
 
 build() {
 	export CFLAGS=${CFLAGS/-Wl,--gc-sections}
