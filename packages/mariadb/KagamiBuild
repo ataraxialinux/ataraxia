@@ -15,6 +15,9 @@ backup=('etc/my.cnf'
 source=("https://downloads.mariadb.org/interstitial/$name-$version/source/$name-$version.tar.gz")
 
 build() {
+	export CFLAGS=${CFLAGS/-fno-asynchronous-unwind-tables}
+	export CXXFLAGS=${CXXFLAGS/-fno-asynchronous-unwind-tables}
+
 	cd "$SRC"/$name-$version
 	patch -Np0 -i "$STUFF"/mariadb/musl_ucontext-h.patch
 
