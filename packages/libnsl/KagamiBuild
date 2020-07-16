@@ -11,7 +11,9 @@ source=("https://github.com/thkukuk/libnsl/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./autogen.sh
+	patch -Np1 -i "$STUFF"/libnsl/0001-libnsl-no-gettext.patch
+
+	autoreconf -fi
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make

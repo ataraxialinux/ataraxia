@@ -1,0 +1,43 @@
+# Description: Message Transfer Agent
+# URL:         https://www.exim.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam pcre gdbm libressl libnsl sqlite libidn
+# Section:     mail
+
+name=exim
+version=4.94
+release=1
+backup=('etc/exim/aliases'
+	'etc/exim/exim.conf')
+source=("https://ftp.exim.org/pub/exim/exim4/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	# from LFS
+	sed -e 's,^BIN_DIR.*$,BIN_DIRECTORY=/usr/sbin,' \
+		-e 's,^CONF.*$,CONFIGURE_FILE=/etc/exim/exim.conf,' \
+		-e 's,^EXIM_USER.*$,EXIM_USER=exim,' \
+		-e '/# SUPPORT_TLS=yes/s,^#,,' \
+		-e '/# USE_OPENSSL/s,^#,,' \
+		-e 's,^EXIM_MONITOR,#EXIM_MONITOR,' src/EDITME > Local/Makefile
+	printf "USE_GDBM = yes\nDBMLIB = -lgdbm\n" >> Local/Makefile 
+
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/exim "$PKG"/etc/service/exim/run
+
+	install -Dm644 doc/exim.8 "$PKG"/usr/share/man/man8
+	install -d -m750 -o 31 -g 31 "$PKG"/var/spool/exim
+
+	ln -sf exim "$PKG"/usr/bin/sendmail # original sendmail is too old
+
+	cat > "$PKG"/etc/exim/aliases <<-EOF
+		postmaster: root
+		MAILER-DAEMON: root
+	EOF
+
+	sed -e "s|/etc/aliases|/etc/exim/aliases|g" \
+		-e "s|SYSTEM_ALIASES_FILE|/etc/exim/aliases|g" -i "$PKG"/etc/mail/exim.conf
+}
