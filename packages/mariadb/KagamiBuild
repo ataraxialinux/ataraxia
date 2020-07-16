@@ -6,7 +6,7 @@
 
 name=mariadb
 version=10.5.4
-release=4
+release=5
 backup=('etc/my.cnf'
 	'etc/my.cnf.d/client.cnf'
 	'etc/my.cnf.d/enable_encryption.preset'
@@ -27,6 +27,7 @@ build() {
 		-DINSTALL_LAYOUT=RPM \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DINSTALL_SCRIPTDIR=bin \
+		-DINSTALL_SBINDIR=bin \
 		-DINSTALL_INCLUDEDIR=include/mysql \
 		-DINSTALL_LIBDIR=lib \
 		-DINSTALL_PCDIR=lib/pkgconfig \
@@ -35,6 +36,7 @@ build() {
 		-DINSTALL_SYSCONF2DIR=/etc/my.cnf.d \
 		-DINSTALL_UNIX_ADDRDIR=/run/mysqld/mysqld.sock \
 		-DMYSQL_DATADIR=/var/lib/mysql \
+		-DTMPDIR=/var/tmp \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCOMPILATION_COMMENT="Ataraxia Linux" \
 		-DSKIP_TESTS=ON \
@@ -50,6 +52,7 @@ build() {
 		-DWITH_ZLIB=system \
 		-DAUTH_GSSAPI_PLUGIN_TYPE=OFF \
 		-DPLUGIN_AUTH_GSSAPI=NO \
+		-DSECURITY_HARDENED=ON \
 		-Wno-dev -G Ninja
 	ninja
 	DESTDIR="$PKG" ninja install
@@ -61,4 +64,14 @@ build() {
 	install -d -m 700 -o root -g 40 "$PKG"/var/{lib,log}/mysql
 
 	install -Dm755 "$STUFF"/svc/mysqld "$PKG"/etc/service/mysqld/run
+
+	install -d "$PKG"/usr/lib/security
+
+	if [ -d "$PKG/lib64/security" ]; then
+		mv "$PKG"/lib64/security/* "$PKG"/usr/lib/security/
+		rm -rf "$PKG"/lib64
+	elif [ -d "$PKG/lib/security" ]; then
+		mv "$PKG"/lib/security/* "$PKG"/usr/lib/security/
+		rm -rf "$PKG"/lib
+	fi
 }
