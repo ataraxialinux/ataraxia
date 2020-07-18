@@ -1,0 +1,23 @@
+# Description: An open source tracing framework for Linux
+# URL:         https://lttng.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python util-linux numactl urcu
+# Section:     devel
+
+name=lttng-ust
+version=2.12.0
+release=1
+source=("https://lttng.org/files/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-examples \
+		--disable-man-pages
+	make
+	make DESTDIR="$PKG" install
+
+	cd python-lttngust
+	make DESTDIR="$PKG" PYTHON=/usr/bin/python install
+}
