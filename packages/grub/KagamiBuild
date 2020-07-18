@@ -6,13 +6,13 @@
 
 name=grub
 version=2.04
-unifontver=12.1.04
-release=13
+unifontver=13.0.02
+release=14
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
-	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
-noextract=("unifont-$unifontver.pcf.gz")
+	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.bdf.gz")
+noextract=("unifont-$unifontver.bdf.gz")
 
 build_flavor() {
 	local flavor="$1"
@@ -59,9 +59,6 @@ build() {
 			exit 1
 	esac
 
-	cd "$SRC"
-	gunzip -c unifont-$unifontver.pcf.gz > unifont.pcf
-
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
 	patch -Np1 -i "$STUFF"/grub/locale.patch
@@ -69,6 +66,8 @@ build() {
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
+
+	gzip -cd "$SRC"/unifont-$unifontver.bdf.gz > unifont.bdf
 
 	./autogen.sh
 	for f in $FLAVOR; do

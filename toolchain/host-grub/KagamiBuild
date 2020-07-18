@@ -1,11 +1,11 @@
 name=host-grub
 version=2.04
-unifontver=12.1.04
+unifontver=13.0.02
 release=1
 options=('bootstrap')
 source=("https://ftp.gnu.org/gnu/grub/grub-$version.tar.xz"
-	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
-noextract=("unifont-$unifontver.pcf.gz")
+	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.bdf.gz")
+noextract=("unifont-$unifontver.bdf.gz")
 
 build_flavor() {
 	local flavor="$1"
@@ -51,15 +51,14 @@ build() {
 			exit 1
 	esac
 
-	cd "$SRC"
-	gunzip -c unifont-$unifontver.pcf.gz > unifont.pcf
-
 	cd "$SRC"/grub-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
 	patch -Np1 -i "$STUFF"/grub/locale.patch
 
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
+
+	gzip -cd "$SRC"/unifont-$unifontver.bdf.gz > unifont.bdf
 
 	./autogen.sh
 	for f in $FLAVOR; do
