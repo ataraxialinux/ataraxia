@@ -7,12 +7,14 @@
 name=grub
 version=2.04
 unifontver=13.0.02
-release=14
+dejavuver=2.37
+release=15
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
-	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.bdf.gz")
-noextract=("unifont-$unifontver.bdf.gz")
+	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
+	"https://downloads.sourceforge.net/project/dejavu/dejavu/$dejavuver/dejavu-fonts-ttf-$dejavuver.tar.bz2")
+noextract=("unifont-$unifontver.pcf.gz")
 
 build_flavor() {
 	local flavor="$1"
@@ -45,8 +47,13 @@ build() {
 	export BUILD_LDFLAGS=""
 
 	case $BARCH in
-		x86_64|i686)
+		x86_64)
+			FLAVOR="efi efi32 pc"
+			EFITGT="x86_64"
+			;;
+		i686)
 			FLAVOR="efi pc"
+			EFITGT="i386"
 			;;
 		aarch64)
 			FLAVOR="efi"
@@ -67,13 +74,15 @@ build() {
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
 
-	gzip -cd "$SRC"/unifont-$unifontver.bdf.gz > unifont.bdf
+	gzip -cd "$SRC"/unifont-$unifontver.pcf.gz > unifont.pcf
+	ln -sf "$SRC"/dejavu-fonts-ttf-$version/ttf/DejaVuSans.ttf DejaVuSans.ttf
 
 	./autogen.sh
 	for f in $FLAVOR; do
 		case "$f" in
-			efi) build_flavor $f --with-platform=efi --disable-efiemu;;
-			*)   build_flavor $f --with-platform=$f;;
+			efi) build_flavor $f --target=$EFITGT --with-platform=efi --disable-efiemu ;;
+			efi32) build_flavor $f --target=i386 --with-platform=efi --disable-efiemu ;;
+			*)   build_flavor $f --with-platform=$f ;;
 		esac
 	done
 
