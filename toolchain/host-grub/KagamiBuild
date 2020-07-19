@@ -39,13 +39,8 @@ build() {
 	export BUILD_LDFLAGS=""
 
 	case $BARCH in
-		x86_64)
-			FLAVOR="efi efi32 pc"
-			EFITGT="x86_64"
-			;;
-		i686)
+		x86_64|i686)
 			FLAVOR="efi pc"
-			EFITGT="i386"
 			;;
 		aarch64)
 			FLAVOR="efi"
@@ -72,8 +67,7 @@ build() {
 	./autogen.sh
 	for f in $FLAVOR; do
 		case "$f" in
-			efi) build_flavor $f --target=$EFITGT --with-platform=efi --disable-efiemu ;;
-			efi32) build_flavor $f --target=i386 --with-platform=efi --disable-efiemu ;;
+			efi) build_flavor $f --with-platform=efi --disable-efiemu ;;
 			*)   build_flavor $f --with-platform=$f ;;
 		esac
 	done
