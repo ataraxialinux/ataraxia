@@ -25,7 +25,6 @@ mkdir -p -m0755 /run/lvm /run/user /run/lock /dev/pts /dev/shm
 mountpoint -q /dev/pts             || mount -t devpts devpts /dev/pts -o mode=0620,gid=5,nosuid,noexec
 mountpoint -q /dev/shm             || mount -t tmpfs shm /dev/shm -o mode=1777,nosuid,nodev
 mountpoint -q /sys/kernel/security || mount -t securityfs securityfs /sys/kernel/security
-mountpoint -q /sys/fs/selinux      || mount -t selinuxfs selinuxfs /sys/fs/selinux
 mountpoint -q /sys/fs/cgroup       || mount -t cgroup2 none /sys/fs/cgroup
 
 live="0"
@@ -39,11 +38,6 @@ for arg in $(cat /proc/cmdline);do
 	esac
 done
 
-if [ -x "/usr/bin/load_policy" ] && [ "$selinux" = "1" ]; then
-	msg "Loading SELinux policy"
-	load_policy -i
-fi
-
 msg "Loading static devnodes"
 for f in $(kmod static-nodes 2>/dev/null|awk '/Module/ {print $2}'); do
 	modprobe -bq $f 2>/dev/null
@@ -56,11 +50,6 @@ if [ -x "/usr/bin/udevd" ]; then
 	udevadm trigger --action=add --type=devices
 	udevadm trigger --action=change --type=devices
 	udevadm settle
-fi
-
-if [ -x "/usr/bin/restorecon" ] && [ ! -f "/fastboot" ] && [ "$selinux" = "1" ]; then
-	msg "Restoring SELinux contexts"
-	restorecon -F /
 fi
 
 msg "Mounting root device read-only"
