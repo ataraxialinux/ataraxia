@@ -1,0 +1,31 @@
+name=host-heimdal
+version=7.7.0
+release=1
+options=('bootstrap')
+source=("https://github.com/heimdal/heimdal/releases/download/heimdal-$version/heimdal-$version.tar.gz")
+
+build() {
+	export ac_cv_header_execinfo_h=no
+
+	cd "$SRC"/heimdal-$version
+	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
+	patch -Np1 -i "$STUFF"/heimdal/0001-always-compile-compile_et.patch
+	patch -Np1 -i "$STUFF"/heimdal/heimdal_missing-include.patch
+
+	autoreconf -fi
+
+	./configure \
+		--prefix="$TOOLS" \
+		--without-berkeley-db \
+		--disable-afs-support \
+		--disable-heimdal-documentation \
+		--disable-mdb-db \
+		--disable-otp
+	make MAKEINFO=true
+	make MAKEINFO=true install
+
+	sed -i "s,$TOOLS,$ROOTFS/usr,g" "$TOOLS"/bin/krb5-config
+
+	cp lib/com_err/.libs/compile_et "$TOOLS"/libexec/heimdal/compile_et
+	rm "$TOOLS"/bin/su
+}

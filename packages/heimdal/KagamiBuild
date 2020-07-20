@@ -1,44 +1,69 @@
 # Description: Kerberos 5 implementation
 # URL:         https://github.com/heimdal/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  ncurses gdbm libcap-ng e2fsprogs
+# Depends on:  readline libcap-ng gdbm libressl e2fsprogs
+# Priority:    required
 # Section:     security
 
 name=heimdal
 version=7.7.0
-release=3
+release=4
+options=('bootstrap')
 backup=('etc/krb5.conf')
 source=("https://github.com/heimdal/heimdal/releases/download/$name-$version/$name-$version.tar.gz")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		export CPPFLAGS="-isystem $ROOTFS/usr/include"
+		export LDFLAGS="-L$ROOTFS/usr/lib"
+		export BUILDFLAGS="$BUILDFLAGS --with-cross-tools=$TOOLS/libexec/heimdal"
+	else
+		unset ROOTFS
+	fi
+
 	export ac_cv_header_execinfo_h=no
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
 	patch -Np1 -i "$STUFF"/heimdal/0001-always-compile-compile_et.patch
+	patch -Np1 -i "$STUFF"/heimdal/heimdal_missing-include.patch
+
 	autoreconf -fi
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--libexecdir=/usr/lib/heimdal \
+		--libexecdir=/usr/bin \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--with-libintl \
+		--with-libintl="$ROOTFS"/usr \
+		--with-readline="$ROOTFS"/usr \
+		--with-ssl="$ROOTFS"/usr \
+		--with-ipv6 \
 		--without-berkeley-db \
-		--without-mdb-db \
 		--without-x \
 		--enable-kcm \
 		--enable-kx509 \
+		--enable-ndbm-db \
 		--enable-pk-init \
 		--enable-pthread-support \
 		--enable-shared \
 		--disable-afs-support \
 		--disable-mdb-db \
-		--disable-osfc2 \
 		--disable-otp
-	make MAKEINFO=true
-	make MAKEINFO=true DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		local a="$(grep ^sys_lib_search_path_spec libtool | sed -e 's/sys_lib_search_path_spec=//g')"
+		local b="$(grep ^sys_lib_dlsearch_path_spec libtool | sed -e 's/sys_lib_dlsearch_path_spec=//g')"
+
+		sed -i "s,$b,$a,g" libtool
+
+		$ORIGMAKE MAKEINFO=true
+		$ORIGMAKE MAKEINFO=true DESTDIR="$PKG" install
+	else
+		make MAKEINFO=true
+		make MAKEINFO=true DESTDIR="$PKG" install
+	fi
 
 	mv "$PKG"/usr/bin/su "$PKG"/usr/bin/ksu
 	mv "$PKG"/usr/share/man/man1/su.1 "$PKG"/usr/share/man/man1/ksu.1
