@@ -1,15 +1,15 @@
 # Description: PHP interpreter
 # URL:         https://www.php.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gmp acl db gdbm curl pcre2 libxslt apache sqlite libzip argon2 libffi icu heimdal libsodium oniguruma xz
+# Depends on:  gmp acl db gdbm curl pcre2 libxslt apache sqlite libzip argon2 libffi icu heimdal libsodium oniguruma xz apparmor
 # Section:     interpreters
 
 name=php
 version=7.4.8
 release=1
 backup=('etc/php/php.ini'
-	'etc/php-fpm.conf'
-	'etc/php-fpm.d/www.conf')
+	'etc/php/php-fpm.conf'
+	'etc/php/php-fpm.d/www.conf')
 source=("http://www.php.net/distributions/$name-$version.tar.xz")
 
 build() {
@@ -26,10 +26,9 @@ build() {
 		--with-layout=GNU \
 		--with-bz2=shared \
 		--with-curl=shared \
-		--with-db4 \
 		--with-external-pcre \
 		--with-ffi \
-		--with-gdb \
+		--with-gdbm \
 		--with-gmp \
 		--with-kerberos \
 		--with-openssl=shared \
@@ -38,7 +37,8 @@ build() {
 		--with-pic \
 		--with-readline \
 		--with-sodium \
-		--with-xml \
+		--with-xmlrpc \
+		--with-zip \
 		--with-zlib \
 		--without-iodbc \
 		--without-pdo-odbc \
@@ -50,7 +50,6 @@ build() {
 		--enable-ctype \
 		--enable-dba=shared \
 		--enable-dom \
-		--enable-file-info \
 		--enable-filter \
 		--enable-fpm \
 		--enable-ftp \
@@ -68,7 +67,6 @@ build() {
 		--enable-sysvsem=shared \
 		--enable-sysvshm=shared \
 		--enable-tokenizer \
-		--enable-zip \
 		--disable-cgi \
 		--disable-debug \
 		--disable-mbregex \
@@ -76,5 +74,11 @@ build() {
 	make
 	make -j1 INSTALL_ROOT="$PKG" install
 
-	rm "$PKG"/usr/lib/php/extensions/*.a
+	rm -f "$PKG"/usr/lib/php/modules/*.a
+	rmdir "$PKG"/usr/include/php/include "$PKG"/var/run
+
+	install -Dm644 php.ini-production "$PKG"/etc/php/php.ini
+
+	mv "$PKG"/etc/php/php-fpm.conf.default "$PKG"/etc/php/php-fpm.conf
+	mv "$PKG"/etc/php/php-fpm.d/www.conf.default "$PKG"/etc/php/php-fpm.d/www.conf
 }

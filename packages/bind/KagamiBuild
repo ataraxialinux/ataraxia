@@ -1,0 +1,42 @@
+# Description: The ISC DNS Server
+# URL:         https://www.isc.org/software/bind/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib xz readline libcap libressl heimdal libidn2 libuv libxml2 json-c
+# Section:     net
+
+name=bind
+version=9.16.5
+release=1
+backup=('etc/named.conf')
+source=("http://ftp.isc.org/isc/bind9/$version/$name-$version.tar.xz")
+
+build() {
+	export CFLAGS="$CFLAGS -fcommon"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--mandir=/usr/share/man \
+		--with-json-c \
+		--with-libidn2 \
+		--with-libtool \
+		--with-libxml2 \
+		--with-openssl \
+		--without-python \
+		--enable-full-report
+	make
+	make DESTDIR="$PKG" install
+
+	install -D -m640 -o 0 -g 40 "$STUFF"/bind/named.conf "$PKG"/etc/named.conf
+	install -d -m770 -o 0 -g 40 "$PKG"/var/named
+	install -m640 -o 0 -g 40 "$STUFF"/bind/localhost.zone "$PKG"/var/named
+	install -m640 -o 0 -g 40 "$STUFF"/bind/localhost.ip6.zone "$PKG"/var/named
+	install -m640 -o 0 -g 40 "$STUFF"/bind/127.0.0.zone "$PKG"/var/named
+
+	install -Dm755 "$STUFF"/svc/named "$PKG"/etc/service/named/run
+
+	rm -rf "$PKG"/var/run
+}
