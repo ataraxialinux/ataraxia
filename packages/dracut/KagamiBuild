@@ -1,12 +1,12 @@
 # Description: Generic, modular, cross-distribution initramfs generation tool
 # URL:         https://dracut.wiki.kernel.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  toybox util-linux mksh bash kbd kmod pigz zstd libarchive
+# Depends on:  toybox util-linux eudev mksh bash kbd kmod pigz zstd libarchive
 # Section:     admin
 
 name=dracut
 version=050
-release=1
+release=2
 backup=('etc/dracut.conf')
 source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut-$version.tar.gz")
 
@@ -17,15 +17,15 @@ build() {
 	sed -i 's/-arx/-ar/g' Makefile
 	sed -i 's/realpath -e/realpath/g' dracut.sh
 	sed -i 's/-executable //g' dracut.sh
-	sed -i 's/-executable //g' dracut.sh
-
 	find . -type f -exec sed -i 's/--reflink=auto//g' {} +
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--sysconfdir=/etc \
-		--bashcompletiondir=/usr/share/bash-completion/completions
+		--systemdsystemunitdir=/usr/lib/systemd/system \
+		--bashcompletiondir=/usr/share/bash-completion/completions \
+		--loginstalldir=/var/log/dracut
 	make
 	make DESTDIR="$PKG" install
 }
