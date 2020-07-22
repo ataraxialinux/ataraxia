@@ -11,6 +11,6 @@ source=("https://github.com/NVIDIA/eglexternalplatform/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	install -Dt "$PKG"/usr/include/EGL -m644 interface/*
-	install -Dt "$PKG"/usr/share/pkgconfig -m644 *.pc
+	for i in interface/*; do install -Dm644 $i "$PKG"/usr/include/EGL/$(basename $i); done
+	for i in *.pc; do install -Dm644 $i "$PKG"/usr/share/pkgconfig/$(basename $i); done
 }
