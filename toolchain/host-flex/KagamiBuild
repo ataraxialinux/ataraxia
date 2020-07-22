@@ -8,6 +8,9 @@ source=("https://github.com/westes/flex/releases/download/v$version/flex-$versio
 
 build() {
 	cd "$SRC"/flex-$version
+	patch -Np1 -i "$STUFF"/flex/flex-rh1389575.patch
+
+	autoreconf -i
 	./configure \
 		--prefix="$TOOLS"
 	make
