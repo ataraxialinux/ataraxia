@@ -11,9 +11,13 @@ build() {
 	patch -Np1 -i "$STUFF"/flex/flex-rh1389575.patch
 
 	autoreconf -i
+
+	HELP2MAN=true \
 	./configure \
 		--prefix="$TOOLS"
 	make
+
+	touch doc/flex.1
 	make install
 
 	ln -sf flex "$TOOLS"/bin/lex
