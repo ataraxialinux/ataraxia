@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+if ! type dracut; then
+	exit 1
+fi
+kversion="uncomment-ataraxia"
+[ -n "$ADD" ] && cmdone='--force-add "'${ADD}'"'
+[ -n "$OMIT" ] && cmdtwo='--omit "'${OMIT}'"'
+[ -n "$DRV" ] && cmdthree='--add-drivers "'${DRV}'"'
+[ "$LIVE" = "yes" ] && cmdfour='--no-hostonly'
+dracut $cmdone $cmdtwo $cmdthree $cmdfour --force --zstd -q /boot/initramfs-ataraxia.img $kversion

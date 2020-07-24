@@ -16,7 +16,7 @@ pacman -S base-devel xorriso mtools git pigz python rsync freetype2
 ```
 #### Ataraxia Linux:
 ```
-neko emerge libisoburn python mtools freetype cpio
+neko emerge libisoburn python mtools freetype
 ```
 
 ### Compiling package manager
@@ -58,6 +58,6 @@ See [supported platforms and architecures.](platforms.md)
 ```
 After bootstrap you can build target images
 ```
-./build [image|installer|archive] -a [supported architecture]
+./build [image|installer|live|archive] -a [supported architecture]
 ```
 And magic happens!

@@ -1,12 +1,12 @@
 # Description: A suckless variant of the *nix core utilities
-# URL:         https://core.suckless.org/ubase/
+# URL:         https://core.suckless.org/sbase/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Priority:    required
 # Section:     base
 
 name=sbase
-version=2b8f1ee3a6a4e16d9a83b40b2ce647f1f6cce1f8
-release=2
+version=fdb9084da94067627941f4f7ee414c447866006a
+release=1
 options=('bootstrap')
 source=("https://github.com/michaelforney/sbase/archive/$version.tar.gz")
 
@@ -14,14 +14,47 @@ build() {
 	cd "$SRC"/$name-$version
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	else
 		make CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	fi
 
-	mkdir -p "$PKG"/usr/bin "$PKG"/usr/share/man/man1
-	cp expr fold join pathchk tsort ed unexpand "$PKG"/usr/bin
-	cp xinstall "$PKG"/usr/bin/install
-
-	cp expr.1 fold.1 join.1 pathchk.1 tsort.1 ed.1 unexpand.1 "$PKG"/usr/share/man/man1
-	cp xinstall.1 "$PKG"/usr/share/man/man1/install.1
+	# use better implementations
+	rm -rf \
+		"$PKG"/usr/bin/[ \
+		"$PKG"/usr/bin/cal \
+		"$PKG"/usr/bin/cmp \
+		"$PKG"/usr/bin/dd \
+		"$PKG"/usr/bin/find \
+		"$PKG"/usr/bin/flock \
+		"$PKG"/usr/bin/getconf \
+		"$PKG"/usr/bin/grep \
+		"$PKG"/usr/bin/kill \
+		"$PKG"/usr/bin/ln \
+		"$PKG"/usr/bin/logger \
+		"$PKG"/usr/bin/renice \
+		"$PKG"/usr/bin/rev \
+		"$PKG"/usr/bin/sed \
+		"$PKG"/usr/bin/setsid \
+		"$PKG"/usr/bin/strings \
+		"$PKG"/usr/bin/test \
+		"$PKG"/usr/bin/xargs \
+		"$PKG"/usr/share/man/man1/cal.1 \
+		"$PKG"/usr/share/man/man1/cmp.1 \
+		"$PKG"/usr/share/man/man1/dd.1 \
+		"$PKG"/usr/share/man/man1/find.1 \
+		"$PKG"/usr/share/man/man1/flock.1 \
+		"$PKG"/usr/share/man/man1/grep.1 \
+		"$PKG"/usr/share/man/man1/kill.1 \
+		"$PKG"/usr/share/man/man1/ln.1 \
+		"$PKG"/usr/share/man/man1/logger.1 \
+		"$PKG"/usr/share/man/man1/renice.1 \
+		"$PKG"/usr/share/man/man1/rev.1 \
+		"$PKG"/usr/share/man/man1/sed.1 \
+		"$PKG"/usr/share/man/man1/setsid.1 \
+		"$PKG"/usr/share/man/man1/strings.1 \
+		"$PKG"/usr/share/man/man1/test.1 \
+		"$PKG"/usr/share/man/man1/time.1 \
+		"$PKG"/usr/share/man/man1/xargs.1
 }
