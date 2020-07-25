@@ -4,8 +4,12 @@ msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
 die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 install_liveos() {
-	local pkgs services
-	local basepkg="core linux xorg-server xinit xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware} xf86-input-libinput alsa-utils squashfs-tools grub"
+	local pkgs services desk
+	local basepkg="core linux linux-firmware xorg-server xinit xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware} xf86-input-libinput alsa-utils squashfs-tools grub"
+
+	case $BARCH in
+		x86_64|i686|aarch64) basepkg="$basepkg efibootmgr" ;;
+	esac
 
 	case $DESKTOP in
 		gnome) pkgs="$basepkg gnome" ;;
@@ -17,8 +21,10 @@ install_liveos() {
 		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
 	esac
 
+	msg "Installing packages"
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $pkgs
 
+	msg "Configuring system"
 	chroot "$LIVEOS" /usr/bin/env -i \
 			HOME=/home/root \
 			TERM="$TERM" \
@@ -45,6 +51,59 @@ install_liveos() {
 		gnome) services="dbus elogind networkmanager gdm" ;;
 		xfce|mate|budgie) services="dbus elogind networkmanager lightdm" ;;
 	esac
+
+	pushd "$LIVEOS"
+		for i in $services; do ln -sf /etc/services/$i var/services/$i; done
+
+		case $DESKTOP in
+			gnome)
+				mv etc/gdm/custom.conf etc/gdm/custom.conf.orig
+				cat > etc/gdm/custom.conf <<-EOF
+					[daemon]
+					AutomaticLoginEnable=True
+					AutomaticLogin=anon
+
+					[security]
+
+					[xdmcp]
+
+					[chooser]
+
+					[debug]
+
+				EOF
+				;;
+			xfce|mate|budgie)
+				case $DESKTOP in
+					xfce) desk="xfce" ;;
+					mate) desk="mate" ;;
+					budgie) desk="budgie-desktop" ;;
+				esac
+				mv etc/lightdm/lightdm.conf etc/lightdm/lightdm.conf.orig
+				sed -i 's/#autologin-user=/autologin-user=anon/g' etc/lightdm/lightdm.conf
+				sed -i 's/#autologin-user-timeout=0/autologin-user-timeout=0/g' etc/lightdm/lightdm.conf
+				sed -i "s/#autologin-session=/autologin-session=$desk/g" etc/lightdm/lightdm.conf
+				;;
+		esac
+	popd
+
+	msg "Building squashfs"
+	# Taken from void-mklive
+	ROOTFS_SIZE=$(du -sm "$LIVEOS"|awk '{print $1}')
+	if [ -z "$ROOTFS_FREESIZE" ]; then
+		ROOTFS_FREESIZE="$((ROOTFS_SIZE/6))"
+	fi
+
+	mkdir -p "$TMPBUILD"/LiveOS "$ISODIR"/LiveOS
+	truncate -s "$((ROOTFS_SIZE+ROOTFS_FREESIZE))M" \
+		"$TMPBUILD"/LiveOS/rootfs.img >/dev/null 2>&1
+	mkdir -p "$TMPBUILD-rootfs"
+	mkfs.ext4 -F -m1 "$TMPBUILD"/LiveOS/rootfs.img >/dev/null 2>&1
+	mount -o loop "$TMPBUILD"/LiveOS/rootfs.img "$TMPBUILD-rootfs"
+	cp -a $LIVEOS/* "$TMPBUILD-rootfs"
+	umount -l "$TMPBUILD-rootfs"
+	mksquashfs "$TMPBUILD" "$ISODIR"/LiveOS/squashfs.img -comp zstd -b 128K || exit 1
+	chmod 444 "$ISODIR"/LiveOS/squashfs.img
 }
 
 make_iso_x86() {
@@ -70,7 +129,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -116,7 +175,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live=1
+		KERNEL /seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -133,7 +192,7 @@ make_iso_x86() {
 		-no-emul-boot \
 		-isohybrid-gpt-basdat \
 		-A 'ataraxialinux' -V 'ataraxialinux' \
-		-o "$BUILD"/ataraxialinux-$BARCH.iso \
+		-o "$BUILD"/ataraxialinux-$DESKTOP-$BARCH.iso \
 		"$ISODIR"/
 }
 
@@ -156,7 +215,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -180,7 +239,7 @@ make_iso_arm() {
 		-no-emul-boot \
 		-isohybrid-gpt-basdat \
 		-A 'ataraxialinux' -V 'ataraxialinux' \
-		-o "$BUILD"/ataraxialinux-$BARCH.iso \
+		-o "$BUILD"/ataraxialinux-$DESKTOP-$BARCH.iso \
 		"$ISODIR"/
 }
 
@@ -189,23 +248,24 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1
+			linux	/seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
 			initrd	/seiba/seiba.zst
 		}
 	EOF
 
 	"$BUILD"/tools/bin/grub-mkrescue \
-		--output "$BUILD"/ataraxialinux-$BARCH.iso "$ISODIR"/ \
+		--output "$BUILD"/ataraxialinux-$DESKTOP-$BARCH.iso "$ISODIR"/ \
 		-A 'ataraxialinux' -V 'ataraxialinux'
 }
 
 main() {
 	ISODIR="$BUILD/rootcd"
 	LIVEOS="$BUILD/initramfs"
+	TMPBUILD="$BUILD/tmp"
 	GRUBEFICFG="$BUILD/efi.cfg"
 
-	rm -rf "$ISODIR" "$LIVEOS" "$GRUBEFICFG"
-	mkdir -p "$ISODIR/seiba" "$LIVEOS"
+	rm -rf "$ISODIR" "$LIVEOS" "$TMPBUILD" "$GRUBEFICFG"
+	mkdir -p "$ISODIR/seiba" "$LIVEOS" "$TMPBUILD"
 
 	source "$BUILD/target.config"
 	install_liveos
