@@ -1,16 +1,22 @@
 # Description: Vulkan Installable Client Driver Loader
 # URL:         https://www.khronos.org/vulkan/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja vulkan-headers python-lxml libx11 libxrandr wayland
+# Depends on:  git cmake ninja vulkan-headers python-lxml libx11 libxrandr wayland
 # Section:     libs
 
 name=vulkan-loader
 version=1.2.148
 release=1
 source=("https://github.com/KhronosGroup/Vulkan-Loader/archive/v$version.tar.gz")
+noextract=("v$version.tar.gz")
 
 build() {
+	cd "$SRC"
+	git clone https://github.com/KhronosGroup/Vulkan-Loader.git "$SRC"/Vulkan-Loader-$version
+
 	cd "$SRC"/Vulkan-Loader-$version
+	git checkout tags/v${version} -b branch
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/Vulkan-Loader-$version \
