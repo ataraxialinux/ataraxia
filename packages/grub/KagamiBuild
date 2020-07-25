@@ -8,7 +8,7 @@ name=grub
 version=2.04
 unifontver=13.0.02
 dejavuver=2.37
-release=15
+release=16
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
@@ -47,13 +47,8 @@ build() {
 	export BUILD_LDFLAGS=""
 
 	case $BARCH in
-		x86_64)
-			FLAVOR="efi efi32 pc"
-			EFITGT="x86_64"
-			;;
-		i686)
-			FLAVOR="efi pc"
-			EFITGT="i386"
+		x86_64|i686)
+			FLAVOR="efi pc coreboot"
 			;;
 		aarch64)
 			FLAVOR="efi"
@@ -81,7 +76,6 @@ build() {
 	for f in $FLAVOR; do
 		case "$f" in
 			efi) build_flavor $f --target=$EFITGT --with-platform=efi --disable-efiemu ;;
-			efi32) build_flavor $f --target=i386 --with-platform=efi --disable-efiemu ;;
 			*)   build_flavor $f --with-platform=$f ;;
 		esac
 	done
@@ -90,5 +84,5 @@ build() {
 	rm -rf "$PKG"/usr/lib/grub/*/*.image
 	rm -rf "$PKG"/usr/lib/grub/*/{kernel.exec,gdb_grub,gmodule.pl}
 
-	install -D -m0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
+	install -Dm0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
 }
