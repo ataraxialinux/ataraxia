@@ -6,7 +6,7 @@
 
 name=x264
 version=20191217+2245
-release=1
+release=2
 source=("https://download.videolan.org/x264/snapshots/x264-snapshot-${version/+/-}-stable.tar.bz2")
 
 build() {
@@ -17,12 +17,15 @@ build() {
 			;;
 	esac
 
+	# FIXME: fix opencl build
+
 	./configure $BUILDFLAGS \
 		--host=$XTARGET \
 		--prefix=/usr \
 		--enable-pic \
 		--enable-shared \
-		--disable-cli
+		--disable-cli \
+		--disable-opencl
 	make
 	make DESTDIR="$PKG" install
 }
