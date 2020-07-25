@@ -1,7 +1,50 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 install_liveos() {
-	s
+	local pkgs services
+	local basepkg="core linux xorg-server xinit xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware} xf86-input-libinput alsa-utils squashfs-tools grub"
+
+	case $DESKTOP in
+		gnome) pkgs="$basepkg gnome" ;;
+		xfce) pkgs="$basepkg xfce lightdm-gtk-greeter network-manager-applet" ;;
+		mate) pkgs="$basepkg mate-core lightdm-gtk-greeter network-manager-applet" ;;
+		budgie) pkgs="$basepkg budgie-desktop lightdm-gtk-greeter" ;;
+		suckless) pkgs="$basepkg dwm" ;;
+		sway) pkgs="core linux alsa-utils squashfs-tools grub sway" ;;
+		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
+	esac
+
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $pkgs
+
+	chroot "$LIVEOS" /usr/bin/env -i \
+			HOME=/home/root \
+			TERM="$TERM" \
+			PATH=/usr/bin \
+			DRV="ahci" \
+			ADD="dmsquash-live" \
+			LIVE="yes" \
+			/usr/bin/mkinitrd
+
+	pushd "$LIVEOS"
+		cp boot/vmlinuz-ataraxia "$ISODIR"/seiba/seiba
+		mv boot/initramfs-ataraxia.img "$ISODIR"/seiba/seiba.zst
+	popd
+
+	chroot "$LIVEOS" /usr/bin/env -i \
+			HOME=/home/root \
+			TERM="$TERM" \
+			PATH=/usr/bin \
+			/usr/bin/useradd -m -G users,wheel,audio,video,input anon
+
+	for i in root anon; do yes 'liveUser123' | chroot "$LIVEOS" /usr/bin/passwd $i; done
+
+	case $DESKTOP in
+		gnome) services="dbus elogind networkmanager gdm" ;;
+		xfce|mate|budgie) services="dbus elogind networkmanager lightdm" ;;
+	esac
 }
 
 make_iso_x86() {

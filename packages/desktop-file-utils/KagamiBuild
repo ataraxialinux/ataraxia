@@ -1,18 +1,19 @@
 # Description: Command line utilities for working with desktop entries
 # URL:         https://www.freedesktop.org/wiki/Software/desktop-file-utils
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib
+# Depends on:  meson glib
 # Section:     x11
 
 name=desktop-file-utils
 version=0.26
-release=1
+release=2
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
 }
