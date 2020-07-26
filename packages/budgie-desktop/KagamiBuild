@@ -1,6 +1,6 @@
 # Description: I Tawt I Taw A Purdy Desktop 
 # URL:         https://solus-project.com/
-# Maintainer:  paledega, paledega at yandex dot ru
+# Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  git meson sassc intltool gobject-introspection vala gnome-control-center gnome-menus gnome-session ibus libpeas libwnck mutter network-manager-applet gnome-menus wallpapers cantarell-fonts font-adobe-source-code-pro-fonts adwaita-icon-theme
 # Section:     gnome
 
@@ -11,6 +11,7 @@ source=("https://github.com/solus-project/budgie-desktop/releases/download/v$ver
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/budgie-desktop/9d09a1b15bbf66780cc89eff3c4b84e666b0bfda.patch
 
 	# Don't use systemd session management, it's not supported by Budgie (thanks Arch Linux)
 	sed -i 's/exec gnome-session/exec gnome-session --builtin/' src/session/budgie-desktop.in
@@ -19,7 +20,7 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dwith-desktop-icons=none \
-		-Dpackagekit=false
+		-Dwith-gtk-doc=false
 	ninja
 	DESTDIR="$PKG" ninja install
 }
