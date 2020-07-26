@@ -15,11 +15,11 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -p1 -i "$STUFF"/lua/shared.patch
 	sed "s/%VER%/$majorver/g;s/%REL%/$version/g" "$STUFF"/lua/lua.pc > lua.pc
+	sed -i 's/cp -d/cp/g' Makefile
 	#sed "s/^R= \$V.4/R= \$V.5/" -i Makefile
 	make MYCFLAGS="$CFLAGS -fPIC" CC=${CC:-cc} linux
 	make \
 		TO_LIB="liblua.a liblua.so liblua.so.$majorver liblua.so.$version" \
-		INSTALL_DATA='cp -d' \
 		INSTALL_TOP="$PKG"/usr \
 		INSTALL_MAN="$PKG"/usr/share/man/man1 \
 		install
