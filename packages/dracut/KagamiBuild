@@ -15,6 +15,7 @@ build() {
 	patch -Np1 -i "$STUFF"/dracut/0001-internal-fts.patch
 
 	sed -i 's/-arx/-ar/g' Makefile
+	sed -i 's/-srf/-sf/g' Makefile
 	sed -i 's/realpath -e/realpath/g' dracut.sh
 	sed -i 's/-executable //g' dracut.sh
 	find . -type f -exec sed -i 's/--reflink=auto//g' {} +
@@ -23,9 +24,10 @@ build() {
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--sysconfdir=/etc \
-		--systemdsystemunitdir=/usr/lib/systemd/system \
 		--bashcompletiondir=/usr/share/bash-completion/completions \
 		--loginstalldir=/var/log/dracut
 	make
 	make DESTDIR="$PKG" install
+
+	rm "$PKG"/usr/bin/mkinitrd
 }
