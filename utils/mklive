@@ -32,19 +32,10 @@ install_liveos() {
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $pkgs
 
 	msg "Configuring system"
-	chroot "$LIVEOS" /usr/bin/env -i \
-			HOME=/home/root \
-			TERM="$TERM" \
-			PATH=/usr/bin \
-			DRV="ahci" \
-			ADD="dmsquash-live" \
-			LIVE="yes" \
-			/usr/bin/mkinitrd
-
 	pushd "$LIVEOS"
 		cp boot/vmlinuz-ataraxia "$ISODIR"/seiba/seiba
-		mv boot/initramfs-ataraxia.img "$ISODIR"/seiba/seiba.zst
 	popd
+	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst || true
 
 	chroot "$LIVEOS" /usr/bin/env -i \
 			HOME=/home/root \
@@ -59,40 +50,37 @@ install_liveos() {
 		xfce|mate|budgie) services="dbus elogind networkmanager lightdm" ;;
 	esac
 
-	pushd "$LIVEOS"
-		for i in $services; do ln -sf /etc/services/$i var/services/$i; done
+	for i in $services; do ln -sf /etc/service/$i "$LIVEOS"/var/service/$i; done
 
-		case $DESKTOP in
-			gnome)
-				mv etc/gdm/custom.conf etc/gdm/custom.conf.orig
-				cat > etc/gdm/custom.conf <<-EOF
-					[daemon]
-					AutomaticLoginEnable=True
-					AutomaticLogin=anon
+	case $DESKTOP in
+		gnome)
+			mv "$LIVEOS"/etc/gdm/custom.conf "$LIVEOS"/etc/gdm/custom.conf.orig
+			cat > "$LIVEOS"/etc/gdm/custom.conf <<-EOF
+				[daemon]
+				AutomaticLoginEnable=True
+				AutomaticLogin=anon
 
-					[security]
+				[security]
 
-					[xdmcp]
+				[xdmcp]
 
-					[chooser]
+				[chooser]
 
-					[debug]
-
-				EOF
-				;;
-			xfce|mate|budgie)
-				case $DESKTOP in
-					xfce) desk="xfce" ;;
-					mate) desk="mate" ;;
-					budgie) desk="budgie-desktop" ;;
-				esac
-				mv etc/lightdm/lightdm.conf etc/lightdm/lightdm.conf.orig
-				sed -i 's/#autologin-user=/autologin-user=anon/g' etc/lightdm/lightdm.conf
-				sed -i 's/#autologin-user-timeout=0/autologin-user-timeout=0/g' etc/lightdm/lightdm.conf
-				sed -i "s/#autologin-session=/autologin-session=$desk/g" etc/lightdm/lightdm.conf
-				;;
-		esac
-	popd
+				[debug]
+			EOF
+			;;
+		xfce|mate|budgie)
+			case $DESKTOP in
+				xfce) desk="xfce" ;;
+				mate) desk="mate" ;;
+				budgie) desk="budgie-desktop" ;;
+			esac
+			cp "$LIVEOS"/etc/lightdm/lightdm.conf "$LIVEOS"/etc/lightdm/lightdm.conf.orig
+			sed -i 's/#autologin-user=/autologin-user=anon/g' "$LIVEOS"/etc/lightdm/lightdm.conf
+			sed -i 's/#autologin-user-timeout=0/autologin-user-timeout=0/g' "$LIVEOS"/etc/lightdm/lightdm.conf
+			sed -i "s/#autologin-session=/autologin-session=$desk/g" "$LIVEOS"/etc/lightdm/lightdm.conf
+			;;
+	esac
 
 	msg "Building squashfs"
 	# Taken from void-mklive
