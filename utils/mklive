@@ -11,7 +11,7 @@ install_liveos() {
 		mksh bash slibtool gdbm db expat perl libressl nettle ca-certificates autoconf automake \
 		lzip libarchive lzo kmod libuargp libelf gawk 9base sbase ubase userland toybox apparmor less \
 		mandoc dialog pigz iproute2 kbd make patch tar cpio nano util-linux e2fsprogs btrfs-progs hwids gperf \
-		eudev runit sinit run-parts ifupdown dhcp libssh2 nghttp2 heimdal curl popt rpm neko lynx dracut"
+		eudev runit sinit run-parts ifupdown dhcp libssh2 nghttp2 heimdal curl popt rpm neko lynx"
 	local basepkg="$corepkgs linux linux-firmware xorg-server xinit xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware} xf86-input-libinput alsa-utils squashfs-tools grub"
 
 	case $BARCH in
@@ -83,22 +83,9 @@ install_liveos() {
 	esac
 
 	msg "Building squashfs"
-	# Taken from void-mklive
-	ROOTFS_SIZE=$(du -sm "$LIVEOS"|awk '{print $1}')
-	if [ -z "$ROOTFS_FREESIZE" ]; then
-		ROOTFS_FREESIZE="$((ROOTFS_SIZE/6))"
-	fi
-
-	mkdir -p "$TMPBUILD"/LiveOS "$ISODIR"/LiveOS
-	truncate -s "$((ROOTFS_SIZE+ROOTFS_FREESIZE))M" \
-		"$TMPBUILD"/LiveOS/rootfs.img >/dev/null 2>&1
-	mkdir -p "$TMPBUILD-rootfs"
-	mkfs.ext4 -F -m1 "$TMPBUILD"/LiveOS/rootfs.img >/dev/null 2>&1
-	mount -o loop "$TMPBUILD"/LiveOS/rootfs.img "$TMPBUILD-rootfs"
-	cp -a $LIVEOS/* "$TMPBUILD-rootfs"
-	umount -l "$TMPBUILD-rootfs"
-	mksquashfs "$TMPBUILD" "$ISODIR"/LiveOS/squashfs.img -comp zstd -b 128K || exit 1
-	chmod 444 "$ISODIR"/LiveOS/squashfs.img
+	pushd "$LIVEOS"
+		mksquashfs . "$ISODIR"/seiba/seiba.sfs -comp zstd -b 128K || exit 1
+	popd
 }
 
 make_iso_x86() {
@@ -124,7 +111,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
+			linux	/seiba/seiba rw quiet live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -170,7 +157,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
+		KERNEL /seiba/seiba rw quiet live=1
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -210,7 +197,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
+			linux	/seiba/seiba rw quiet live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -243,7 +230,7 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1 root=live:LABEL=ataraxialinux rd.live.image rd.luks=0 rd.md=0 rd.dm=0
+			linux	/seiba/seiba rw quiet live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
