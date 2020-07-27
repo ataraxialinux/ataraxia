@@ -1,0 +1,466 @@
+From 4c914b392927b55b966e2172d6f235d01c062ae1 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 27 Jul 2020 15:01:39 +0300
+Subject: [PATCH] suckless
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ 50-dracut.install                    |  2 +-
+ 51-dracut-rescue-postinst.sh         |  2 +-
+ 51-dracut-rescue.install             |  2 +-
+ Makefile                             |  6 ++---
+ dracut-init.sh                       | 12 +++++-----
+ dracut.sh                            | 36 ++++++++++++++--------------
+ install/dracut-install.c             |  8 +++----
+ modules.d/04watchdog/module-setup.sh |  4 ++--
+ modules.d/40network/net-lib.sh       |  2 +-
+ modules.d/45ifcfg/write-ifcfg.sh     |  2 +-
+ modules.d/90crypt/cryptroot-ask.sh   |  4 ++--
+ modules.d/95fcoe/fcoe-up.sh          |  2 +-
+ modules.d/95iscsi/module-setup.sh    |  2 +-
+ modules.d/99base/dracut-lib.sh       |  2 +-
+ modules.d/99base/init.sh             |  2 +-
+ test/TEST-12-RAID-DEG/test.sh        |  4 ++--
+ test/TEST-99-RPM/test.sh             |  2 +-
+ 17 files changed, 47 insertions(+), 47 deletions(-)
+
+diff --git a/50-dracut.install b/50-dracut.install
+index 7ea5e17..81bb765 100755
+--- a/50-dracut.install
++++ b/50-dracut.install
+@@ -25,7 +25,7 @@ case "$COMMAND" in
+         if [[ -f ${INITRD_IMAGE_PREGENERATED} ]]; then
+             # we found an initrd at the same place as the kernel
+             # use this and don't generate a new one
+-            cp --reflink=auto "$INITRD_IMAGE_PREGENERATED" "$BOOT_DIR_ABS/$INITRD" \
++            cp  "$INITRD_IMAGE_PREGENERATED" "$BOOT_DIR_ABS/$INITRD" \
+                 && chown root:root "$BOOT_DIR_ABS/$INITRD" \
+                 && chmod 0600 "$BOOT_DIR_ABS/$INITRD" \
+                 && exit 0
+diff --git a/51-dracut-rescue-postinst.sh b/51-dracut-rescue-postinst.sh
+index 67f5b71..8b92e41 100755
+--- a/51-dracut-rescue-postinst.sh
++++ b/51-dracut-rescue-postinst.sh
+@@ -57,7 +57,7 @@ if [[ ! -f $INITRDFILE ]]; then
+ fi
+ 
+ if [[ ! -f $NEW_KERNEL_IMAGE ]]; then
+-    cp --reflink=auto "$KERNEL_IMAGE" "$NEW_KERNEL_IMAGE"
++    cp  "$KERNEL_IMAGE" "$NEW_KERNEL_IMAGE"
+     ((ret+=$?))
+ fi
+ 
+diff --git a/51-dracut-rescue.install b/51-dracut-rescue.install
+index b4ed178..68c8037 100755
+--- a/51-dracut-rescue.install
++++ b/51-dracut-rescue.install
+@@ -87,7 +87,7 @@ case "$COMMAND" in
+ 
+         [[ -d "$BOOT_DIR_ABS" ]] || mkdir -p "$BOOT_DIR_ABS"
+ 
+-        if ! cp --reflink=auto "$KERNEL_IMAGE" "$BOOT_DIR_ABS/$KERNEL"; then
++        if ! cp  "$KERNEL_IMAGE" "$BOOT_DIR_ABS/$KERNEL"; then
+             echo "Can't copy '$KERNEL_IMAGE to '$BOOT_DIR_ABS/$KERNEL'!" >&2
+         fi
+ 
+diff --git a/Makefile b/Makefile
+index da56cac..9e092f9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -139,7 +139,7 @@ install: all
+ 	ln -fs dracut-functions.sh $(DESTDIR)$(pkglibdir)/dracut-functions
+ 	install -m 0755 dracut-logger.sh $(DESTDIR)$(pkglibdir)/dracut-logger.sh
+ 	install -m 0755 dracut-initramfs-restore.sh $(DESTDIR)$(pkglibdir)/dracut-initramfs-restore
+-	cp -arx modules.d $(DESTDIR)$(pkglibdir)
++	cp -ar modules.d $(DESTDIR)$(pkglibdir)
+ ifneq ($(enable_documentation),no)
+ 	for i in $(man1pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man1/$${i##*/}; done
+ 	for i in $(man5pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man5/$${i##*/}; done
+@@ -149,7 +149,7 @@ ifneq ($(enable_documentation),no)
+ endif
+ 	if [ -n "$(systemdsystemunitdir)" ]; then \
+ 		mkdir -p $(DESTDIR)$(systemdsystemunitdir); \
+-		ln -srf $(DESTDIR)$(pkglibdir)/modules.d/98dracut-systemd/dracut-shutdown.service $(DESTDIR)$(systemdsystemunitdir)/dracut-shutdown.service; \
++		ln -sf $(DESTDIR)$(pkglibdir)/modules.d/98dracut-systemd/dracut-shutdown.service $(DESTDIR)$(systemdsystemunitdir)/dracut-shutdown.service; \
+ 		mkdir -p $(DESTDIR)$(systemdsystemunitdir)/sysinit.target.wants; \
+ 		ln -s ../dracut-shutdown.service \
+ 		$(DESTDIR)$(systemdsystemunitdir)/sysinit.target.wants/dracut-shutdown.service; \
+@@ -163,7 +163,7 @@ endif
+ 		    dracut-pre-trigger.service \
+ 		    dracut-pre-udev.service \
+ 		    ; do \
+-			ln -srf $(DESTDIR)$(pkglibdir)/modules.d/98dracut-systemd/$$i $(DESTDIR)$(systemdsystemunitdir); \
++			ln -sf $(DESTDIR)$(pkglibdir)/modules.d/98dracut-systemd/$$i $(DESTDIR)$(systemdsystemunitdir); \
+ 			ln -s ../$$i \
+ 			$(DESTDIR)$(systemdsystemunitdir)/initrd.target.wants/$$i; \
+ 		done \
+diff --git a/dracut-init.sh b/dracut-init.sh
+index a8348b7..6dfd8c3 100644
+--- a/dracut-init.sh
++++ b/dracut-init.sh
+@@ -20,9 +20,9 @@
+ export LC_MESSAGES=C
+ 
+ if [[ "$EUID" = "0" ]] && ! [[ $DRACUT_NO_XATTR ]]; then
+-    export DRACUT_CP="cp --reflink=auto --sparse=auto --preserve=mode,timestamps,xattr,links -dfr"
++    export DRACUT_CP="cp  --sparse=auto --preserve=mode,timestamps,xattr,links -dfr"
+ else
+-    export DRACUT_CP="cp --reflink=auto --sparse=auto --preserve=mode,timestamps,links -dfr"
++    export DRACUT_CP="cp  --sparse=auto --preserve=mode,timestamps,links -dfr"
+ fi
+ 
+ # is_func <command>
+@@ -35,7 +35,7 @@ if ! [[ $dracutbasedir ]]; then
+     dracutbasedir=${BASH_SOURCE[0]%/*}
+     [[ $dracutbasedir = dracut-functions* ]] && dracutbasedir="."
+     [[ $dracutbasedir ]] || dracutbasedir="."
+-    dracutbasedir="$(readlink -f $dracutbasedir)"
++    dracutbasedir="$(realpath $dracutbasedir)"
+ fi
+ 
+ if ! is_func dinfo >/dev/null 2>&1; then
+@@ -322,13 +322,13 @@ mark_hostonly() {
+ rev_lib_symlinks() {
+     [[ ! $1 ]] && return 0
+ 
+-    local fn="$1" orig="$(readlink -f "$1")" links=''
++    local fn="$1" orig="$(realpath "$1")" links=''
+ 
+     [[ ${fn} == *.so.* ]] || return 1
+ 
+     until [[ ${fn##*.} == so ]]; do
+         fn="${fn%.*}"
+-        [[ -L ${fn} && $(readlink -f "${fn}") == ${orig} ]] && links+=" ${fn}"
++        [[ -L ${fn} && $(realpath "${fn}") == ${orig} ]] && links+=" ${fn}"
+     done
+ 
+     echo "${links}"
+@@ -1007,7 +1007,7 @@ else
+     ln_r() {
+         local _source=$1
+         local _dest=$2
+-        [[ -d "${_dest%/*}" ]] && _dest=$(readlink -f "${_dest%/*}")/${_dest##*/}
++        [[ -d "${_dest%/*}" ]] && _dest=$(realpath "${_dest%/*}")/${_dest##*/}
+         ln -sfn -- "$(convert_abs_rel "${_dest}" "${_source}")" "${initdir}/${_dest}"
+     }
+ fi
+diff --git a/dracut.sh b/dracut.sh
+index af346f3..5a360f0 100755
+--- a/dracut.sh
++++ b/dracut.sh
+@@ -32,7 +32,7 @@ if (( BASH_VERSINFO[0] < 4 )); then
+ fi
+ 
+ dracut_args=( "$@" )
+-readonly dracut_cmd="$(readlink -f $0)"
++readonly dracut_cmd="$(realpath $0)"
+ 
+ set -o pipefail
+ 
+@@ -438,7 +438,7 @@ do
+                 echo "Image file '$rebuild_file', for rebuild, does not exist!"
+                 exit 1
+             fi
+-            abs_rebuild_file=$(readlink -f "$rebuild_file") && rebuild_file="$abs_rebuild_file"
++            abs_rebuild_file=$(realpath "$rebuild_file") && rebuild_file="$abs_rebuild_file"
+ 	    shift; continue
+ 	fi
+ 	shift
+@@ -556,8 +556,8 @@ while :; do
+         -q|--quiet)    ((verbosity_mod_l--));;
+         -l|--local)
+                        allowlocal="yes"
+-                       [[ -f "$(readlink -f "${0%/*}")/dracut-init.sh" ]] \
+-                           && dracutbasedir="$(readlink -f "${0%/*}")"
++                       [[ -f "$(realpath "${0%/*}")/dracut-init.sh" ]] \
++                           && dracutbasedir="$(realpath "${0%/*}")"
+                        ;;
+         -H|--hostonly|--host-only)
+                        hostonly_l="yes" ;;
+@@ -715,7 +715,7 @@ DRACUT_PATH=${DRACUT_PATH:-/sbin /bin /usr/sbin /usr/bin}
+ for i in $DRACUT_PATH; do
+     rl=$i
+     if [ -L "$dracutsysrootdir$i" ]; then
+-        rl=$(readlink -f $dracutsysrootdir$i)
++        rl=$(realpath $dracutsysrootdir$i)
+     fi
+     if [[ "$NPATH" != *:$rl* ]] ; then
+         NPATH+=":$rl"
+@@ -942,7 +942,7 @@ case "${drivers_dir}" in
+ 	;;
+ esac
+ 
+-readonly TMPDIR="$(realpath -e "$tmpdir")"
++readonly TMPDIR="$(realpath "$tmpdir")"
+ [ -d "$TMPDIR" ] || {
+     printf "%s\n" "dracut: Invalid tmpdir '$tmpdir'." >&2
+     exit 1
+@@ -1064,7 +1064,7 @@ case $dracutmodules in
+     ""|auto) dracutmodules="all" ;;
+ esac
+ 
+-abs_outfile=$(readlink -f "$outfile") && outfile="$abs_outfile"
++abs_outfile=$(realpath "$outfile") && outfile="$abs_outfile"
+ 
+ 
+ [[ -d $dracutsysrootdir$systemdutildir ]] \
+@@ -1128,7 +1128,7 @@ if [[ ! $print_cmdline ]]; then
+             dfatal "Could not create directory to log installed files to '$loginstall'."
+             exit 1
+         fi
+-        loginstall=$(readlink -f "$loginstall")
++        loginstall=$(realpath "$loginstall")
+     fi
+ 
+     if [[ $uefi = yes ]]; then
+@@ -1275,10 +1275,10 @@ if [[ $hostonly ]] && [[ "$hostonly_default_device" != "no" ]]; then
+         "/boot/zipl" \
+         ;
+     do
+-        mp=$(readlink -f "$dracutsysrootdir$mp")
++        mp=$(realpath "$dracutsysrootdir$mp")
+         mountpoint "$mp" >/dev/null 2>&1 || continue
+         _dev=$(find_block_device "$mp")
+-        _bdev=$(readlink -f "/dev/block/$_dev")
++        _bdev=$(realpath "/dev/block/$_dev")
+         [[ -b $_bdev ]] && _dev=$_bdev
+         [[ "$mp" == "/" ]] && root_devs+=("$_dev")
+         push_host_devs "$_dev"
+@@ -1317,7 +1317,7 @@ if [[ $hostonly ]] && [[ "$hostonly_default_device" != "no" ]]; then
+                     done < $dracutsysrootdir/etc/crypttab
+                 fi
+ 
+-                _dev="$(readlink -f "$dev")"
++                _dev="$(realpath "$dev")"
+                 push_host_devs "$_dev"
+                 swap_devs+=("$_dev")
+                 break
+@@ -1332,7 +1332,7 @@ if [[ $hostonly ]] && [[ "$hostonly_default_device" != "no" ]]; then
+             [[ $_d ]] || continue
+             [[ "$_o" != *x-initrd.mount* ]] && continue
+             _dev=$(expand_persistent_dev "$_d")
+-            _dev="$(readlink -f "$_dev")"
++            _dev="$(realpath "$_dev")"
+             [[ -b $_dev ]] || continue
+ 
+             push_host_devs "$_dev"
+@@ -1351,11 +1351,11 @@ unset rest
+ _get_fs_type() {
+     [[ $1 ]] || return
+     if [[ -b /dev/block/$1 ]]; then
+-        ID_FS_TYPE=$(get_fs_env "/dev/block/$1") && host_fs_types["$(readlink -f "/dev/block/$1")"]="$ID_FS_TYPE"
++        ID_FS_TYPE=$(get_fs_env "/dev/block/$1") && host_fs_types["$(realpath "/dev/block/$1")"]="$ID_FS_TYPE"
+         return 1
+     fi
+     if [[ -b $1 ]]; then
+-        ID_FS_TYPE=$(get_fs_env "$1") && host_fs_types["$(readlink -f "$1")"]="$ID_FS_TYPE"
++        ID_FS_TYPE=$(get_fs_env "$1") && host_fs_types["$(realpath "$1")"]="$ID_FS_TYPE"
+         return 1
+     fi
+     if fstype=$(find_dev_fstype "$1"); then
+@@ -1379,7 +1379,7 @@ for dev in "${!host_fs_types[@]}"; do
+         journaldev=$(fs_get_option $rootopts "logdev")
+     fi
+     if [[ $journaldev ]]; then
+-        dev="$(readlink -f "$dev")"
++        dev="$(realpath "$dev")"
+         push_host_devs "$dev"
+         _get_fs_type "$dev"
+         check_block_and_slaves_all _get_fs_type "$(get_maj_min "$dev")"
+@@ -1931,7 +1931,7 @@ fi
+ if [[ $do_strip = yes ]] && ! [[ $DRACUT_FIPS_MODE ]]; then
+     dinfo "*** Stripping files ***"
+     find "$initdir" -type f \
+-        -executable -not -path '*/lib/modules/*.ko' -print0 \
++        -not -path '*/lib/modules/*.ko' -print0 \
+         | xargs -r -0 $strip_cmd -g -p 2>/dev/null
+ 
+     # strip kernel modules, but do not touch signed modules
+@@ -2054,7 +2054,7 @@ if [[ $uefi = yes ]]; then
+                 exit 1
+             fi
+         else
+-            if cp --reflink=auto "${uefi_outdir}/linux.efi" "$outfile"; then
++            if cp  "${uefi_outdir}/linux.efi" "$outfile"; then
+                 dinfo "*** Creating UEFI image file '$outfile' done ***"
+             fi
+         fi
+@@ -2064,7 +2064,7 @@ if [[ $uefi = yes ]]; then
+         exit 1
+     fi
+ else
+-    if cp --reflink=auto "${DRACUT_TMPDIR}/initramfs.img" "$outfile"; then
++    if cp  "${DRACUT_TMPDIR}/initramfs.img" "$outfile"; then
+         dinfo "*** Creating initramfs image file '$outfile' done ***"
+     else
+         rm -f -- "$outfile"
+diff --git a/install/dracut-install.c b/install/dracut-install.c
+index 1ba7a82..f0ecab8 100644
+--- a/install/dracut-install.c
++++ b/install/dracut-install.c
+@@ -312,10 +312,10 @@ static int cp(const char *src, const char *dst)
+         pid = fork();
+         if (pid == 0) {
+                 if (geteuid() == 0 && no_xattr == false)
+-                        execlp("cp", "cp", "--reflink=auto", "--sparse=auto", "--preserve=mode,xattr,timestamps", "-fL", src, dst,
++                        execlp("cp", "cp", "", "--sparse=auto", "--preserve=mode,xattr,timestamps", "-fL", src, dst,
+                                NULL);
+                 else
+-                        execlp("cp", "cp", "--reflink=auto", "--sparse=auto", "--preserve=mode,timestamps", "-fL", src, dst,
++                        execlp("cp", "cp", "", "--sparse=auto", "--preserve=mode,timestamps", "-fL", src, dst,
+                                NULL);
+                 _exit(EXIT_FAILURE);
+         }
+@@ -324,10 +324,10 @@ static int cp(const char *src, const char *dst)
+                 if (errno != EINTR) {
+                         ret = -1;
+                         if (geteuid() == 0 && no_xattr == false)
+-                                log_error("Failed: cp --reflink=auto --sparse=auto --preserve=mode,xattr,timestamps -fL %s %s", src,
++                                log_error("Failed: cp  --sparse=auto --preserve=mode,xattr,timestamps -fL %s %s", src,
+                                           dst);
+                         else
+-                                log_error("Failed: cp --reflink=auto --sparse=auto --preserve=mode,timestamps -fL %s %s", src,
++                                log_error("Failed: cp  --sparse=auto --preserve=mode,timestamps -fL %s %s", src,
+                                           dst);
+                         break;
+                 }
+diff --git a/modules.d/04watchdog/module-setup.sh b/modules.d/04watchdog/module-setup.sh
+index 7566d65..61c5cb7 100755
+--- a/modules.d/04watchdog/module-setup.sh
++++ b/modules.d/04watchdog/module-setup.sh
+@@ -56,9 +56,9 @@ installkernel() {
+         # however in some cases, we also need to check that if there is
+         # a specific driver for the parent bus/device.  In such cases
+         # we also need to enable driver for parent bus/device.
+-        _wdtppath=$(readlink -f "$_dir/device")
++        _wdtppath=$(realpath "$_dir/device")
+         while [[ -d "$_wdtppath" ]] && [[ "$_wdtppath" != "/sys" ]]; do
+-            _wdtppath=$(readlink -f "$_wdtppath/..")
++            _wdtppath=$(realpath "$_wdtppath/..")
+             [[ -f "$_wdtppath/modalias" ]] || continue
+ 
+             _wdtdrv=$(< "$_wdtppath/modalias")
+diff --git a/modules.d/40network/net-lib.sh b/modules.d/40network/net-lib.sh
+index 16730e5..d4b125d 100755
+--- a/modules.d/40network/net-lib.sh
++++ b/modules.d/40network/net-lib.sh
+@@ -843,7 +843,7 @@ iface_get_subchannels() {
+     _subchannels=$({
+                       for i in /sys/class/net/$_netif/device/cdev[0-9]*; do
+                           [ -e $i ] || continue
+-                          channel=$(readlink -f $i)
++                          channel=$(realpath $i)
+                           printf -- "%s" "${channel##*/},"
+                       done
+                   })
+diff --git a/modules.d/45ifcfg/write-ifcfg.sh b/modules.d/45ifcfg/write-ifcfg.sh
+index 291a74e..3dc7c59 100755
+--- a/modules.d/45ifcfg/write-ifcfg.sh
++++ b/modules.d/45ifcfg/write-ifcfg.sh
+@@ -39,7 +39,7 @@ print_s390() {
+     SUBCHANNELS=$({
+         for i in /sys/class/net/$_netif/device/cdev[0-9]*; do
+             [ -e $i ] || continue
+-            channel=$(readlink -f $i)
++            channel=$(realpath $i)
+             printf '%s' "${channel##*/},"
+         done
+     })
+diff --git a/modules.d/90crypt/cryptroot-ask.sh b/modules.d/90crypt/cryptroot-ask.sh
+index e1f1797..7692ac4 100755
+--- a/modules.d/90crypt/cryptroot-ask.sh
++++ b/modules.d/90crypt/cryptroot-ask.sh
+@@ -54,8 +54,8 @@ if [ -f /etc/crypttab ] && getargbool 1 rd.luks.crypttab -d -n rd_NO_CRYPTTAB; t
+ 
+         # path used in crypttab
+         else
+-            cdev=$(readlink -f $dev)
+-            mdev=$(readlink -f $device)
++            cdev=$(realpath $dev)
++            mdev=$(realpath $device)
+             if [ "$cdev" = "$mdev" ]; then
+                 luksname="$name"
+                 break
+diff --git a/modules.d/95fcoe/fcoe-up.sh b/modules.d/95fcoe/fcoe-up.sh
+index 570cd84..ba5c808 100755
+--- a/modules.d/95fcoe/fcoe-up.sh
++++ b/modules.d/95fcoe/fcoe-up.sh
+@@ -35,7 +35,7 @@ if fcoemon -h|grep syslog|grep -q yes; then
+ fi
+ 
+ 
+-netdriver=$(readlink -f /sys/class/net/$netif/device/driver)
++netdriver=$(realpath /sys/class/net/$netif/device/driver)
+ netdriver=${netdriver##*/}
+ 
+ write_fcoemon_cfg() {
+diff --git a/modules.d/95iscsi/module-setup.sh b/modules.d/95iscsi/module-setup.sh
+index 19a8bdb..26d4f93 100755
+--- a/modules.d/95iscsi/module-setup.sh
++++ b/modules.d/95iscsi/module-setup.sh
+@@ -13,7 +13,7 @@ check() {
+         local _dev=$1
+ 
+         [[ -L "/sys/dev/block/$_dev" ]] || return
+-        cd "$(readlink -f "/sys/dev/block/$_dev")"
++        cd "$(realpath "/sys/dev/block/$_dev")"
+         until [[ -d sys || -d iscsi_session ]]; do
+             cd ..
+         done
+diff --git a/modules.d/99base/dracut-lib.sh b/modules.d/99base/dracut-lib.sh
+index 207a2b5..e2fed6c 100755
+--- a/modules.d/99base/dracut-lib.sh
++++ b/modules.d/99base/dracut-lib.sh
+@@ -1066,7 +1066,7 @@ if ! command -v pidof >/dev/null 2>/dev/null; then
+             if [ -n "$_exe" ]; then
+                 [ "$i" -ef "$_exe" ] || continue
+             else
+-                _rl=$(readlink -f "$i");
++                _rl=$(realpath "$i");
+                 [ "${_rl%/$_cmd}" != "$_rl" ] || continue
+             fi
+             i=${i%/exe}
+diff --git a/modules.d/99base/init.sh b/modules.d/99base/init.sh
+index 1111d09..0c73d6a 100755
+--- a/modules.d/99base/init.sh
++++ b/modules.d/99base/init.sh
+@@ -64,7 +64,7 @@ fi
+ 
+ if ! ismounted /run; then
+     mkdir -m 0755 /newrun
+-    if ! str_starts "$(readlink -f /bin/sh)" "/run/"; then
++    if ! str_starts "$(realpath /bin/sh)" "/run/"; then
+         mount -t tmpfs -o mode=0755,noexec,nosuid,nodev,strictatime tmpfs /newrun >/dev/null
+     else
+         # the initramfs binaries are located in /run, so don't mount it with noexec
+diff --git a/test/TEST-12-RAID-DEG/test.sh b/test/TEST-12-RAID-DEG/test.sh
+index f8dc08d..bca0af6 100755
+--- a/test/TEST-12-RAID-DEG/test.sh
++++ b/test/TEST-12-RAID-DEG/test.sh
+@@ -11,8 +11,8 @@ KVERSION=${KVERSION-$(uname -r)}
+ 
+ client_run() {
+     echo "CLIENT TEST START: $@"
+-    cp --sparse=always --reflink=auto $TESTDIR/disk2.img $TESTDIR/disk2.img.new
+-    cp --sparse=always --reflink=auto $TESTDIR/disk3.img $TESTDIR/disk3.img.new
++    cp --sparse=always  $TESTDIR/disk2.img $TESTDIR/disk2.img.new
++    cp --sparse=always  $TESTDIR/disk3.img $TESTDIR/disk3.img.new
+ 
+     $testdir/run-qemu \
+         -drive format=raw,index=0,media=disk,file=$TESTDIR/marker.img \
+diff --git a/test/TEST-99-RPM/test.sh b/test/TEST-99-RPM/test.sh
+index af64c24..1d51c4c 100755
+--- a/test/TEST-99-RPM/test.sh
++++ b/test/TEST-99-RPM/test.sh
+@@ -26,7 +26,7 @@ test_run() {
+     mount -t devtmpfs devtmpfs "$rootdir/dev"
+ 
+     mkdir -p "$rootdir/$TESTDIR"
+-    cp --reflink=auto -a \
++    cp  -a \
+        "$TESTDIR"/dracut-[0-9]*.$(uname -m).rpm \
+        "$TESTDIR"/dracut-network-[0-9]*.$(uname -m).rpm \
+        "$rootdir/$TESTDIR/"
+-- 
+2.28.0.rc2
+
