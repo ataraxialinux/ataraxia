@@ -27,28 +27,28 @@ build() {
 		< <(awk '/#define.*NSS_V(MAJOR|MINOR|PATCH)/ {print $3}' lib/nss/nss.h)
 
 	cd "$SRC"/$name-$version
-	sed nss/pkg/pkg-config/nss.pc.in \
+	sed -i nss/pkg/pkg-config/nss.pc.in \
 		-e "s,%libdir%,/usr/lib,g" \
 		-e "s,%prefix%,/usr,g" \
 		-e "s,%exec_prefix%,/usr/bin,g" \
 		-e "s,%includedir%,/usr/include/nss,g" \
 		-e "s,%NSPR_VERSION%,$nsprver,g" \
-		-e "s,%NSS_VERSION%,$version,g" |
-	install -Dm644 /dev/stdin "$PKG"/usr/lib/pkgconfig/nss.pc
+		-e "s,%NSS_VERSION%,$version,g"
+	install -Dm644 nss/pkg/pkg-config/nss.pc.in "$PKG"/usr/lib/pkgconfig/nss.pc
 
 	ln -sf nss.pc "$PKG"/usr/lib/pkgconfig/mozilla-nss.pc
 
 	install -D dist/Release/lib/*.so "$PKG"/usr/lib
 
-	sed nss/pkg/pkg-config/nss-config.in \
+	sed -i nss/pkg/pkg-config/nss-config.in \
 		-e "s,@libdir@,/usr/lib,g" \
 		-e "s,@prefix@,/usr/bin,g" \
 		-e "s,@exec_prefix@,/usr/bin,g" \
 		-e "s,@includedir@,/usr/include/nss,g" \
 		-e "s,@MOD_MAJOR_VERSION@,$vmajor,g" \
 		-e "s,@MOD_MINOR_VERSION@,$vminor,g" \
-		-e "s,@MOD_PATCH_VERSION@,$vpatch,g" |
-	install -Dm755 /dev/stdin "$PKG"/usr/bin/nss-config
+		-e "s,@MOD_PATCH_VERSION@,$vpatch,g"
+	install -Dm755 nss/pkg/pkg-config/nss-config.in "$PKG"/usr/bin/nss-config
 
 	install -Dm755 dist/Release/bin/{*util,shlibsign,signtool,signver,ssltap} "$PKG"/usr/bin
 	install -Dm644 dist/public/nss/*.h "$PKG"/usr/include/nss
