@@ -12,7 +12,8 @@ install_liveos() {
 		lzip libarchive lzo kmod libuargp libelf gawk 9base sbase ubase userland toybox apparmor less \
 		mandoc dialog pigz iproute2 kbd make patch tar cpio nano util-linux e2fsprogs btrfs-progs hwids gperf \
 		eudev runit sinit run-parts ifupdown dhcp libssh2 nghttp2 heimdal curl popt rpm neko lynx"
-	local basepkg="$corepkgs linux linux-firmware xorg-server xinit xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware} xf86-input-libinput alsa-utils squashfs-tools grub"
+	local basepkg="$corepkgs linux linux-firmware xorg-server xinit xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware} \
+			xf86-input-libinput alsa-utils squashfs-tools grub parted"
 
 	case $BARCH in
 		x86_64|i686|aarch64) basepkg="$basepkg efibootmgr" ;;
@@ -35,52 +36,28 @@ install_liveos() {
 	pushd "$LIVEOS"
 		cp boot/vmlinuz-ataraxia "$ISODIR"/seiba/seiba
 	popd
-	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst || true
-
-	chroot "$LIVEOS" /usr/bin/env -i \
-			HOME=/home/root \
-			TERM="$TERM" \
-			PATH=/usr/bin \
-			/usr/bin/useradd -m -G users,wheel,audio,video,input anon
-
-	for i in root anon; do yes 'liveUser123' | chroot "$LIVEOS" /usr/bin/passwd $i; done
+	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst
 
 	case $DESKTOP in
-		gnome) services="dbus elogind networkmanager gdm" ;;
-		xfce|mate|budgie) services="dbus elogind networkmanager lightdm" ;;
+		gnome|xfce|mate|budgie) services="dbus elogind networkmanager" ;;
 	esac
 
 	for i in $services; do ln -sf /etc/service/$i "$LIVEOS"/var/service/$i; done
 
-	case $DESKTOP in
-		gnome)
-			mv "$LIVEOS"/etc/gdm/custom.conf "$LIVEOS"/etc/gdm/custom.conf.orig
-			cat > "$LIVEOS"/etc/gdm/custom.conf <<-EOF
-				[daemon]
-				AutomaticLoginEnable=True
-				AutomaticLogin=anon
+	mv "$LIVEOS"/etc/motd "$LIVEOS"/etc/motd.old
 
-				[security]
+	cat > "$LIVEOS"/etc/motd <<-EOF
+		Welcome to Ataraxia Linux live medium!
 
-				[xdmcp]
+		To start install, type "ataraxia-installer" and press ENTER.
 
-				[chooser]
+		If you want to start X edit "~/.xinitrc", type "startx" and press ENTER.
+	EOF
 
-				[debug]
-			EOF
-			;;
-		xfce|mate|budgie)
-			case $DESKTOP in
-				xfce) desk="xfce" ;;
-				mate) desk="mate" ;;
-				budgie) desk="budgie-desktop" ;;
-			esac
-			cp "$LIVEOS"/etc/lightdm/lightdm.conf "$LIVEOS"/etc/lightdm/lightdm.conf.orig
-			sed -i 's/#autologin-user=/autologin-user=anon/g' "$LIVEOS"/etc/lightdm/lightdm.conf
-			sed -i 's/#autologin-user-timeout=0/autologin-user-timeout=0/g' "$LIVEOS"/etc/lightdm/lightdm.conf
-			sed -i "s/#autologin-session=/autologin-session=$desk/g" "$LIVEOS"/etc/lightdm/lightdm.conf
-			;;
-	esac
+	pushd "$LIVEOS/usr/bin"
+		curl -C - -L -O https://github.com/ataraxialinux/installer/blob/20200728.1/usr/bin/ataraxia-installer
+		chmod +x ataraxia-installer
+	popd
 
 	msg "Building squashfs"
 	pushd "$LIVEOS"
