@@ -1,25 +1,20 @@
 # Description: OpenType text shaping engine
 # URL:         https://www.freedesktop.org/wiki/Software/HarfBuzz
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gobject-introspection graphite2 icu freetype
+# Depends on:  meson gobject-introspection graphite2 icu freetype
 # Section:     libs
 
 name=harfbuzz
 version=2.7.0
 release=1
-source=("https://github.com/harfbuzz/harfbuzz/releases/download/$version/$name-$version.tar.xz")
+source=("https://github.com/harfbuzz/harfbuzz/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--with-freetype \
-		--with-glib \
-		--with-gobject \
-		--with-graphite2 \
-		--disable-gtk-doc
-
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgraphite=enabled
+	ninja
+	DESTDIR="$PKG" ninja install
 }
