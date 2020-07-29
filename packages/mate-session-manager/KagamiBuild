@@ -6,7 +6,7 @@
 
 name=mate-session-manager
 version=1.24.0
-release=1
+release=2
 source=("https://pub.mate-desktop.org/releases/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -16,6 +16,8 @@ build() {
 		--libexecdir=/usr/lib \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
+		--with-elogind \
+		--without-systemd \
 		--disable-upower
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
