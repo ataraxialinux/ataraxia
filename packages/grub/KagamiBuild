@@ -8,7 +8,7 @@ name=grub
 version=2.04
 unifontver=13.0.02
 dejavuver=2.37
-release=17
+release=18
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
@@ -65,6 +65,7 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
 	patch -Np1 -i "$STUFF"/grub/locale.patch
+	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
 
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
