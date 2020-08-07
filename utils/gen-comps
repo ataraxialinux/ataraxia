@@ -47,7 +47,12 @@ main() {
 						riscv64|riscv32) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
 					esac
 					;;
-				rust|firefox|cbindgen|thunderbird)
+				rust-bin|firefox|cbindgen|thunderbird)
+					case $barch in
+						x86_64|i686|aarch64|armv7hnl) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
+					esac
+					;;
+				rust)
 					true # avoid rust for a while
 					;;
 				gnome-core|xfce-core|mate-core)

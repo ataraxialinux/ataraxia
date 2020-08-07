@@ -1,0 +1,53 @@
+# Description: Binary Rust language by Samuel Holland
+# URL:         https://www.rust-lang.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libssh2 curl
+# Section:     devel
+
+name=rust-bin
+version=1.43.1
+release=1
+options=('~emptydirs')
+source=("https://portage.smaeul.xyz/distfiles/rust-$version-x86_64-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$version-i686-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$version-aarch64-gentoo-linux-musl.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-$version-armv7a-unknown-linux-musleabihf.tar.xz")
+
+build() {
+	case $BARCH in
+		x86_64)
+			export RTARGET="x86_64-gentoo-linux-musl"
+			;;
+		i686)
+			export RTARGET="i686-gentoo-linux-musl"
+			;;
+		aarch64)
+			export RTARGET="aarch64-gentoo-linux-musl"
+			;;
+		armv7hnl)
+			export RTARGET="armv7a-unknown-linux-musleabihf"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Rust Language"
+			exit 1
+	esac
+
+	mkdir -p "$SRC"/rust
+	pushd "$SRC"/rust-$version-$RTARGET
+		sed -i 's.\\-.-.g' install.sh
+		sed -i 's.\\_._.g' install.sh
+		bash install.sh \
+			--prefix=/usr \
+			--destdir="$PKG" \
+			--disable-ldconfig
+	popd
+
+	cd "$PKG"/usr/lib
+
+	rm -rf rustlib/{components,manifest-rustc,rust-installer-version}
+	ln -sf rustlib/$RTARGET/lib/*.so .
+
+	install -d "$PKG"/usr/share/bash-completion
+	mv "$PKG"/usr/etc/bash_completion.d/ "$PKG"/usr/share/bash-completion/completions/
+	rm -rf "$PKG"/usr/etc
+}
