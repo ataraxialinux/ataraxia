@@ -1,19 +1,21 @@
 # Description: Recipe management application for GNOME
 # URL:         https://wiki.gnome.org/Apps/Recipes
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson itstool libcanberra libsoup gnome-online-accounts gnome-autoar gspell
+# Depends on:  git meson itstool libcanberra libsoup gnome-online-accounts gnome-autoar gspell
 # Section:     gnome
 
 name=gnome-recipes
-version=2.0.2
+version=2.0.4
 release=1
-source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("https://gitlab.gnome.org/GNOME/recipes/-/archive/$version/recipes-$version.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/recipes-$version
+	git submodule update --init
+
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version
+	ataraxia-meson "$SRC"/recipes-$version
 	ninja
 	DESTDIR="$PKG" ninja install
 }
