@@ -23,7 +23,7 @@ Stage 2 is complete!
 ## Stage 3
  - [x] Move to sinit and runit
  - [x] Add more version control software (svn, fossil)
- - [ ] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, vsftpd, s6-dns, cyrus-sasl, openldap, cifs-utils, kubectl, kubeadm, kubelet)
+ - [ ] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, s6-dns, cyrus-sasl, openldap, cifs-utils)
  - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa, wireguard, retroshare, gnunet)
  - [ ] Add container management software (lxc, docker, runc)
  - [ ] Add virtualization management software (libvirt, qemu, virt-manager)
