@@ -1,0 +1,22 @@
+# Description: A suite of DNS client programs and libraries for Unix systems
+# URL:         http://skarnet.org/software/s6-dns/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  skalibs
+# Section:     net
+
+name=s6-dns
+version=2.3.2.0
+release=1
+source=("http://www.skarnet.org/software/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	LDFLAGS='-static' \
+	./configure \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--with-lib="$ROOTFS"/usr/lib \
+		--with-sysdeps="$ROOTFS"/usr/lib/skalibs/sysdeps
+	make
+	make DESTDIR="$PKG" install
+}
