@@ -1,7 +1,7 @@
 # Description: Standalone mail and news reader from mozilla.org
 # URL:         https://www.mozilla.org/thunderbird/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 gtk3 gtk2 rust-bin zip unzip nasm yasm icu libevent nss sqlite startup-notification ffmpeg dbus-glib
+# Depends on:  python cbindgen llvm node zip unzip autoconf2.13 dbus-glib gtk3 gtk2 alsa-lib startup-notification yasm icu libevent nspr nss libwebp libvpx
 # Section:     web
 
 name=thunderbird
@@ -46,6 +46,8 @@ build() {
 	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
 	rm -rf browser/extensions/pocket
 
+	export SHELL=/usr/bin/bash
+
 	cat > mozconfig <<-EOF
 		ac_add_options --prefix=/usr
 		ac_add_options --enable-alsa
@@ -53,35 +55,31 @@ build() {
 		ac_add_options --enable-av1
 		ac_add_options --enable-calendar
 		ac_add_options --enable-dbus
-		ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
 		ac_add_options --enable-ffmpeg
 		ac_add_options --enable-hardening
 		ac_add_options --enable-optimize
 		ac_add_options --enable-release
 		ac_add_options --enable-rust-simd
-		ac_add_options --enable-startup-notification
 		ac_add_options --enable-system-ffi
 		ac_add_options --enable-system-pixman
-		ac_add_options --enable-system-sqlite
 		ac_add_options --enable-update-channel=release
 		ac_add_options --disable-crashreporter
 		ac_add_options --disable-debug-symbols
 		ac_add_options --disable-elf-hack
 		ac_add_options --disable-eme
-		ac_add_options --disable-gconf
 		ac_add_options --disable-gold
 		ac_add_options --disable-jemalloc
 		ac_add_options --disable-necko-wifi
-		ac_add_options --disable-official-branding
 		ac_add_options --disable-profiling
 		ac_add_options --disable-pulseaudio
 		ac_add_options --disable-tests
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
 		ac_add_options --with-branding=comm/mail/branding/nightly
-		ac_add_options --with-system-bz2
+		ac_add_options --with-system-ffi
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent
+		ac_add_options --with-system-libvpx
 		ac_add_options --with-system-nspr
 		ac_add_options --with-system-nss
 		ac_add_options --with-system-pixman
