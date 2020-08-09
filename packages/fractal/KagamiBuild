@@ -1,0 +1,19 @@
+# Description: GTK+ client for Matrix written
+# URL:         https://wiki.gnome.org/Apps/Fractal
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson rust gtk3 gnome-keyring gst-plugins-base gst-plugins-bad gtksourceview4 gspell libhandy
+# Section:     gnome
+
+name=fractal
+version=4.4.0
+release=1
+source=("https://gitlab.gnome.org/GNOME/fractal/-/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	ninja
+	DESTDIR="$PKG" ninja install
+}
