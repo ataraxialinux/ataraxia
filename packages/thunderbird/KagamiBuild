@@ -1,7 +1,7 @@
 # Description: Standalone mail and news reader from mozilla.org
 # URL:         https://www.mozilla.org/thunderbird/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python cbindgen clang node zip unzip autoconf2.13 dbus-glib gtk3 gtk2 alsa-lib startup-notification yasm icu libevent nspr nss libwebp libvpx
+# Depends on:  python cbindgen clang node zip unzip autoconf2.13 dbus-glib gtk3 gtk2 alsa-lib startup-notification nasm yasm icu libevent nspr nss libwebp libvpx
 # Section:     web
 
 name=thunderbird
@@ -11,23 +11,10 @@ options=('~emptydirs')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
 
 build() {
-	case $BARCH in
-		x86_64)
-			export RUST_TARGET="x86_64-gentoo-linux-musl"
-			;;
-		i686)
-			export RUST_TARGET="i686-gentoo-linux-musl"
-			;;
-		aarch64)
-			export RUST_TARGET="aarch64-gentoo-linux-musl"
-			;;
-		armv7hnl)
-			export RUST_TARGET="armv7a-unknown-linux-musleabihf"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
-	esac
+	export CFLAGS=${CFLAGS/-fexcess-precision=fast}
+	export CFLAGS=${CFLAGS/-fstack-clash-protection}
+	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
+	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
 
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
 	if [ "$opt_ccache" = "1" ]; then
@@ -39,7 +26,6 @@ build() {
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
 	patch -Np1 -i "$STUFF"/firefox/fix-tools.patch
 	patch -Np1 -i "$STUFF"/firefox/mallinfo.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-rust-target.patch
 	patch -Np1 -i "$STUFF"/firefox/fix-webrtc-glibcisms.patch
 	patch -Np1 -i "$STUFF"/firefox/sandbox-fork.patch
 

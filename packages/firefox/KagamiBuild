@@ -13,6 +13,11 @@ source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$na
 	"https://raw.githubusercontent.com/ghacksuserjs/ghacks-user.js/$version/user.js")
 
 build() {
+	export CFLAGS=${CFLAGS/-fexcess-precision=fast}
+	export CFLAGS=${CFLAGS/-fstack-clash-protection}
+	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
+	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
+
 	case $BARCH in
 		x86_64)
 			export RUST_TARGET="x86_64-gentoo-linux-musl"
