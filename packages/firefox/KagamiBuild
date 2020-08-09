@@ -18,24 +18,6 @@ build() {
 	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
 	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
 
-	case $BARCH in
-		x86_64)
-			export RUST_TARGET="x86_64-gentoo-linux-musl"
-			;;
-		i686)
-			export RUST_TARGET="i686-gentoo-linux-musl"
-			;;
-		aarch64)
-			export RUST_TARGET="aarch64-gentoo-linux-musl"
-			;;
-		armv7hnl)
-			export RUST_TARGET="armv7a-unknown-linux-musleabihf"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
-	esac
-
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
 	if [ "$opt_ccache" = "1" ]; then
 		unset CC CXX
@@ -46,7 +28,6 @@ build() {
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
 	patch -Np1 -i "$STUFF"/firefox/fix-tools.patch
 	patch -Np1 -i "$STUFF"/firefox/mallinfo.patch
-	patch -Np1 -i "$STUFF"/firefox/fix-rust-target.patch
 	patch -Np1 -i "$STUFF"/firefox/fix-webrtc-glibcisms.patch
 	patch -Np1 -i "$STUFF"/firefox/sandbox-fork.patch
 
