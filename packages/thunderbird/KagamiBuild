@@ -7,7 +7,7 @@
 name=thunderbird
 version=78.1.1
 release=1
-options=('~emptydirs')
+options=('~emptydirs' '~ccache')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
 
 build() {
@@ -15,12 +15,7 @@ build() {
 	export CFLAGS=${CFLAGS/-fstack-clash-protection}
 	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
 	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
-
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
-	if [ "$opt_ccache" = "1" ]; then
-		unset CC CXX
-		export PATH="/usr/lib/ccache/bin:$PATH"
-	fi
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
@@ -64,6 +59,8 @@ build() {
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
 		ac_add_options --with-branding=comm/mail/branding/nightly
+		ac_add_options --with-clang-path=/usr/bin/clang
+		ac_add_options --with-libclang-path=/usr/lib
 		ac_add_options --with-system-ffi
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent

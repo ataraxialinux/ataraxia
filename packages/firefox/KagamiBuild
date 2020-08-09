@@ -1,14 +1,14 @@
 # Description: Standalone web browser from mozilla.org
 # URL:         https://www.mozilla.org/firefox/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python cbindgen clang node zip unzip autoconf2.13 dbus-glib gtk3 gtk2 alsa-lib startup-notification nasm yasm icu libevent nspr nss libwebp libvpx libnotify
+# Depends on:  python cbindgen clang node zip unzip autoconf2.13 dbus-glib gtk3 gtk2 alsa-lib startup-notification nasm yasm icu libevent nspr nss libwebp libvpx
 # Section:     web
 
 name=firefox
 version=78.1.0
 ghacks=78.0
 release=1
-options=('~emptydirs')
+options=('~emptydirs' '~ccache')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz"
 	"https://raw.githubusercontent.com/ghacksuserjs/ghacks-user.js/$version/user.js")
 
@@ -17,12 +17,7 @@ build() {
 	export CFLAGS=${CFLAGS/-fstack-clash-protection}
 	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
 	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
-
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
-	if [ "$opt_ccache" = "1" ]; then
-		unset CC CXX
-		export PATH="/usr/lib/ccache/bin:$PATH"
-	fi
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
@@ -63,6 +58,8 @@ build() {
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
 		ac_add_options --with-branding=browser/branding/unofficial
+		ac_add_options --with-clang-path=/usr/bin/clang
+		ac_add_options --with-libclang-path=/usr/lib
 		ac_add_options --with-system-ffi
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent
