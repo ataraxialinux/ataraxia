@@ -11,10 +11,8 @@ options=('~emptydirs' '~ccache')
 source=("https://archive.mozilla.org/pub/$name/releases/${version}/source/$name-${version}.source.tar.xz")
 
 build() {
-	export CFLAGS=${CFLAGS/-fexcess-precision=fast}
-	export CFLAGS=${CFLAGS/-fstack-clash-protection}
-	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
-	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
+	export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
+	export CXXFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
 
 	cd "$SRC"/$name-$version
@@ -59,8 +57,6 @@ build() {
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
 		ac_add_options --with-branding=comm/mail/branding/nightly
-		ac_add_options --with-clang-path=/usr/bin/clang
-		ac_add_options --with-libclang-path=/usr/lib
 		ac_add_options --with-system-ffi
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent

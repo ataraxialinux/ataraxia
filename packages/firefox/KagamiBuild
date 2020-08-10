@@ -13,10 +13,8 @@ source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$na
 	"https://raw.githubusercontent.com/ghacksuserjs/ghacks-user.js/$version/user.js")
 
 build() {
-	export CFLAGS=${CFLAGS/-fexcess-precision=fast}
-	export CFLAGS=${CFLAGS/-fstack-clash-protection}
-	export CXXFLAGS=${CXXFLAGS/-fexcess-precision=fast}
-	export CXXFLAGS=${CXXFLAGS/-fstack-clash-protection}
+	export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
+	export CXXFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
 
 	cd "$SRC"/$name-$version
@@ -58,8 +56,6 @@ build() {
 		ac_add_options --disable-updater
 		ac_add_options --disable-webrtc
 		ac_add_options --with-branding=browser/branding/unofficial
-		ac_add_options --with-clang-path=/usr/bin/clang
-		ac_add_options --with-libclang-path=/usr/lib
 		ac_add_options --with-system-ffi
 		ac_add_options --with-system-icu
 		ac_add_options --with-system-libevent
