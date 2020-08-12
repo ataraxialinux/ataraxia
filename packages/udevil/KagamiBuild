@@ -1,0 +1,20 @@
+# Description: Mount and unmount without password
+# URL:         https://ignorantguru.github.com/udevil/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool glib eudev
+# Section:     admin
+
+name=udevil
+version=0.4.4
+release=1
+backup=('etc/udevil/udevil.conf'
+	'etc/conf.d/devmon')
+source=("https://github.com/IgnorantGuru/udevil/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
