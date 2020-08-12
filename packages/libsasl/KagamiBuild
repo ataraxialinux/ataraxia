@@ -22,5 +22,11 @@ build() {
 		--enable-login \
 		--disable-auth-sasldb
 	make -j1
-	make DESTDIR="$PKG" install
+	make DESTDIR="$PKG" install-pkgconfigDATA
+
+	for dir in include lib sasldb plugins utils ; do
+		pushd $i
+			make DESTDIR="$PKG" install
+		popd
+	done
 }
