@@ -1,0 +1,26 @@
+# Description: Cyrus Simple Authentication Service Layer 
+# URL:         https://www.cyrusimap.org/sasl/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam gdbm libressl heimdal sqlite
+# Section:     libs
+
+name=libsasl
+version=2.1.17
+release=1
+source=("https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-$version/cyrus-sasl-$version.tar.gz")
+
+build() {
+	cd "$SRC"/cyrus-sasl-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbin=/usr/bin \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info \
+		--with-devrandom=/dev/urandom \
+		--with-dblib=gdbm \
+		--enable-login \
+		--disable-auth-sasldb
+	make -j1
+	make DESTDIR="$PKG" install
+}
