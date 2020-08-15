@@ -1,0 +1,18 @@
+# Description: Terminal emulator that supports tabs and grids
+# URL:         https://github.com/gnome-terminator/terminator
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool pygobject python-configobj python-dbus python-psutil libkeybinder libnotify vte xdg-utils gsettings-desktop-schemas
+# Section:     utils
+
+name=terminator
+version=1.92
+release=1
+source=("https://github.com/gnome-terminator/terminator/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	python3 setup.py build
+	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+
+	rm -f "$PKG"/usr/share/icons/hicolor/icon-theme.cache
+}
