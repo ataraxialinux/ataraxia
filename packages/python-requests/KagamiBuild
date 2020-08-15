@@ -1,0 +1,19 @@
+# Description: Python HTTP for Humans
+# URL:         http://python-requests.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python-setuptools python-chardet python-urlib3
+# Section:     python
+
+name=python-requests
+version=2.24.0
+release=1
+source=("https://github.com/psf/requests/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/requests-$version
+	sed -e '/certifi/d' -e "s/,<.*'/'/" -i setup.py
+	patch -Np1 -i "$STUFF"/python-requests/certs.patch
+
+	python3 setup.py build
+	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+}
