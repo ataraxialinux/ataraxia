@@ -1,0 +1,25 @@
+# Description: CLI tool for managing OCI compliant containers
+# URL:         https://github.com/opencontainers/runc
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  go libseccomp
+# Section:     virt
+
+name=runc
+version=1.0.0+rc92
+release=1
+source=("https://github.com/opencontainers/runc/archive/v${version/+/-}.tar.gz")
+
+build() {
+	export GOPATH="$SRC"
+	export CGO_CFLAGS="$CFLAGS"
+	export CGO_CXXFLAGS="$CXXFLAGS"
+
+	cd "$SRC"
+	mkdir -p src/github.com/opencontainers
+	cp -a $name-${version/+/-} src/github.com/opencontainers/runc
+
+	cd "$SRC"/src/github.com/opencontainers/runc
+	make runc
+
+	install -Dm755 runc "$PKG"/usr/bin/runc
+}

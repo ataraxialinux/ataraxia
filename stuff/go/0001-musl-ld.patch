@@ -1,0 +1,138 @@
+From 1a41545ba3c71956c538412badb4091acf498ab8 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 16 Aug 2020 22:43:00 +0500
+Subject: [PATCH] musl ld
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/cmd/link/internal/amd64/obj.go   | 2 +-
+ src/cmd/link/internal/arm/obj.go     | 2 +-
+ src/cmd/link/internal/arm64/obj.go   | 2 +-
+ src/cmd/link/internal/mips/obj.go    | 2 +-
+ src/cmd/link/internal/mips64/obj.go  | 2 +-
+ src/cmd/link/internal/ppc64/obj.go   | 2 +-
+ src/cmd/link/internal/riscv64/obj.go | 2 +-
+ src/cmd/link/internal/s390x/obj.go   | 2 +-
+ src/cmd/link/internal/x86/obj.go     | 2 +-
+ 9 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/src/cmd/link/internal/amd64/obj.go b/src/cmd/link/internal/amd64/obj.go
+index 705827d..2cdf61c 100644
+--- a/src/cmd/link/internal/amd64/obj.go
++++ b/src/cmd/link/internal/amd64/obj.go
+@@ -64,7 +64,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		PEreloc1:         pereloc1,
+ 		TLSIEtoLE:        tlsIEtoLE,
+ 
+-		Linuxdynld:     "/lib64/ld-linux-x86-64.so.2",
++		Linuxdynld:     "/lib/ld-musl-x86_64.so.1",
+ 		Freebsddynld:   "/libexec/ld-elf.so.1",
+ 		Openbsddynld:   "/usr/libexec/ld.so",
+ 		Netbsddynld:    "/libexec/ld.elf_so",
+diff --git a/src/cmd/link/internal/arm/obj.go b/src/cmd/link/internal/arm/obj.go
+index 47bc053..12ae774 100644
+--- a/src/cmd/link/internal/arm/obj.go
++++ b/src/cmd/link/internal/arm/obj.go
+@@ -59,7 +59,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Machoreloc1:      machoreloc1,
+ 		PEreloc1:         pereloc1,
+ 
+-		Linuxdynld:     "/lib/ld-linux.so.3", // 2 for OABI, 3 for EABI
++		Linuxdynld:     "/lib/ld-musl-armhf.so.1", // 2 for OABI, 3 for EABI
+ 		Freebsddynld:   "/usr/libexec/ld-elf.so.1",
+ 		Openbsddynld:   "/usr/libexec/ld.so",
+ 		Netbsddynld:    "/libexec/ld.elf_so",
+diff --git a/src/cmd/link/internal/arm64/obj.go b/src/cmd/link/internal/arm64/obj.go
+index 20426c5..4e12b85 100644
+--- a/src/cmd/link/internal/arm64/obj.go
++++ b/src/cmd/link/internal/arm64/obj.go
+@@ -58,7 +58,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Machoreloc1:      machoreloc1,
+ 
+ 		Androiddynld: "/system/bin/linker64",
+-		Linuxdynld:   "/lib/ld-linux-aarch64.so.1",
++		Linuxdynld:   "/lib/ld-musl-aarch64.so.1",
+ 
+ 		Freebsddynld:   "/usr/libexec/ld-elf.so.1",
+ 		Openbsddynld:   "/usr/libexec/ld.so",
+diff --git a/src/cmd/link/internal/mips/obj.go b/src/cmd/link/internal/mips/obj.go
+index f95c776..9e1daf5 100644
+--- a/src/cmd/link/internal/mips/obj.go
++++ b/src/cmd/link/internal/mips/obj.go
+@@ -60,7 +60,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Gentext2:         gentext2,
+ 		Machoreloc1:      machoreloc1,
+ 
+-		Linuxdynld: "/lib/ld.so.1",
++		Linuxdynld: "/lib/ld-musl-mips.so.1",
+ 
+ 		Freebsddynld:   "XXX",
+ 		Openbsddynld:   "XXX",
+diff --git a/src/cmd/link/internal/mips64/obj.go b/src/cmd/link/internal/mips64/obj.go
+index 5efa356..36bb2e5 100644
+--- a/src/cmd/link/internal/mips64/obj.go
++++ b/src/cmd/link/internal/mips64/obj.go
+@@ -59,7 +59,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Gentext2:         gentext2,
+ 		Machoreloc1:      machoreloc1,
+ 
+-		Linuxdynld:     "/lib64/ld64.so.1",
++		Linuxdynld:     "/lib/ld-musl-mips64.so.1",
+ 		Freebsddynld:   "XXX",
+ 		Openbsddynld:   "XXX",
+ 		Netbsddynld:    "XXX",
+diff --git a/src/cmd/link/internal/ppc64/obj.go b/src/cmd/link/internal/ppc64/obj.go
+index 3e1d0a1..f6bdc47 100644
+--- a/src/cmd/link/internal/ppc64/obj.go
++++ b/src/cmd/link/internal/ppc64/obj.go
+@@ -63,7 +63,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Xcoffreloc1:      xcoffreloc1,
+ 
+ 		// TODO(austin): ABI v1 uses /usr/lib/ld.so.1,
+-		Linuxdynld: "/lib64/ld64.so.1",
++		Linuxdynld: "/lib/ld-musl-powerpc64.so.1",
+ 
+ 		Freebsddynld:   "XXX",
+ 		Openbsddynld:   "XXX",
+diff --git a/src/cmd/link/internal/riscv64/obj.go b/src/cmd/link/internal/riscv64/obj.go
+index 4fa0ebe..3e9cece 100644
+--- a/src/cmd/link/internal/riscv64/obj.go
++++ b/src/cmd/link/internal/riscv64/obj.go
+@@ -31,7 +31,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Gentext2:         gentext2,
+ 		Machoreloc1:      machoreloc1,
+ 
+-		Linuxdynld: "/lib/ld.so.1",
++		Linuxdynld: "/lib/ld-musl-riscv64.so.1",
+ 
+ 		Freebsddynld:   "XXX",
+ 		Netbsddynld:    "XXX",
+diff --git a/src/cmd/link/internal/s390x/obj.go b/src/cmd/link/internal/s390x/obj.go
+index d4ac5af..4652e31 100644
+--- a/src/cmd/link/internal/s390x/obj.go
++++ b/src/cmd/link/internal/s390x/obj.go
+@@ -57,7 +57,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Gentext2:         gentext2,
+ 		Machoreloc1:      machoreloc1,
+ 
+-		Linuxdynld: "/lib64/ld64.so.1",
++		Linuxdynld: "/lib/ld-musl-s390x.so.1",
+ 
+ 		// not relevant for s390x
+ 		Freebsddynld:   "XXX",
+diff --git a/src/cmd/link/internal/x86/obj.go b/src/cmd/link/internal/x86/obj.go
+index cd33f44..a76cd40 100644
+--- a/src/cmd/link/internal/x86/obj.go
++++ b/src/cmd/link/internal/x86/obj.go
+@@ -58,7 +58,7 @@ func Init() (*sys.Arch, ld.Arch) {
+ 		Machoreloc1:      machoreloc1,
+ 		PEreloc1:         pereloc1,
+ 
+-		Linuxdynld:   "/lib/ld-linux.so.2",
++		Linuxdynld:   "/lib/ld-musl-i386.so.1",
+ 		Freebsddynld: "/usr/libexec/ld-elf.so.1",
+ 		Openbsddynld: "/usr/libexec/ld.so",
+ 		Netbsddynld:  "/usr/libexec/ld.elf_so",
+-- 
+2.18.4
+

@@ -37,15 +37,16 @@ build() {
 
 	pushd "$SRC"/go-${version}
 		patch -Np1 -i "$STUFF"/go/0001-go-enable-PIE-by-default.patch
+		patch -Np1 -i "$STUFF"/go/0001-musl-ld.patch
 	popd
 
 	cd "$SRC"/go-boot-$bootver/src
 	case "$BARCH" in
 		x86_64)
-			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" ./make.bash
+			GOOS="$GOOS" GOARCH="$GOARCH" ./make.bash
 			;;
 		i686)
-			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" GO386="$GO386" ./make.bash
+			GOOS="$GOOS" GOARCH="$GOARCH" GO386="$GO386" ./make.bash
 			;;
 	esac
 
@@ -55,26 +56,22 @@ build() {
 	cd "$SRC"/go-$version/src
 	case "$BARCH" in
 		x86_64)
-			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" ./make.bash
+			GOOS="$GOOS" GOARCH="$GOARCH" ./make.bash
 			;;
 		i686)
-			CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" GO386="$GO386" ./make.bash
+			GOOS="$GOOS" GOARCH="$GOARCH" GO386="$GO386" ./make.bash
 			;;
 	esac
 
 	cd ..
 
-	install -d -m 755 "$PKG"/usr/bin
-	install -d -m 755 "$PKG"/usr/lib/go/pkg/tool
+	install -d "$PKG"/usr/bin "$PKG"/usr/lib/go
+	install -Dm644 VERSION "$PKG"/usr/lib/go/VERSION
 
-	cp -R bin "$PKG"/usr/lib/go/bin
-	cp -R pkg/linux_$GOARCH "$PKG"/usr/lib/go/pkg/
-	cp -R pkg/tool/linux_$GOARCH "$PKG"/usr/lib/go/pkg/tool/
-	cp -R src "$PKG"/usr/lib/go/src
-	ln -sf ../lib/go/bin/go "$PKG"/usr/bin/go
-	ln -sf ../lib/go/bin/gofmt "$PKG"/usr/bin/gofmt
+	cp -a bin pkg src lib misc api test "$PKG"/usr/lib/go
 
-	find "$PKG"/usr/lib/go/src -name "testdata" | sort -u | xargs rm -rf
-	rm -rf "$PKG"/usr/lib/go/pkg/bootstrap
-	rm -rf "$PKG"/usr/lib/go/pkg/tools/*/api
+	ln -sf /usr/lib/go/bin/go "$PKG"/usr/bin/go
+	ln -sf /usr/lib/go/bin/gofmt "$PKG"/usr/bin/gofmt
+
+	rm -rf "$PKG"/usr/lib/go/pkg/bootstrap "$PKG"/usr/lib/go/pkg/tool/*/api
 }
