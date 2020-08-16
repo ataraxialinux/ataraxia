@@ -12,10 +12,20 @@ source=("https://github.com/IgnorantGuru/spacefm/archive/$version.tar.gz")
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/spacefm/gcc10.patch
+	patch -Np1 -i "$STUFF"/spacefm/musl.patch
+
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--with-gtk3
+		--with-gtk3 \
+		--disable-video-thumbnails
 	make
 	make DESTDIR="$PKG" install
 }
