@@ -1,14 +1,15 @@
 # Description: SMB server and client for unix
 # URL:         http://www.samba.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python perl-parse-yapp pam libcap popt libarchive rpcsvc-proto lmdb jansson libtirpc tevent tdb gnutls
+# Depends on:  python perl-parse-yapp pam libcap popt libarchive rpcsvc-proto lmdb jansson libtirpc tevent tdb gnutls libldap
 # Section:     net
 
 name=samba
 version=4.12.6
-release=1
+release=2
 backup=('etc/samba/smb.conf'
 	'etc/logrotate.d/samba'
+	'etc/openldap/schema'
 	'etc/pam.d/samba')
 source=("https://www.samba.org/ftp/samba/stable/$name-$version.tar.gz")
 
@@ -41,7 +42,6 @@ build() {
 		--with-pammodulesdir=/usr/lib/security \
 		--without-ad-dc \
 		--without-ads \
-		--without-ldap \
 		--without-systemd \
 		--enable-fhs \
 		--disable-rpath-install
@@ -49,6 +49,7 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 examples/smb.conf.default "$PKG"/etc/samba/smb.conf
+	install -Dm644 examples/LDAP/samba.schema "$PKG"/etc/openldap/schema
 
 	install -Dm644 "$STUFF"/samba/logrotate "$PKG"/etc/logrotate.d/samba
 	install -Dm644 "$STUFF"/pam.d/samba "$PKG"/etc/pam.d/samba

@@ -1,12 +1,12 @@
 # Description: Message Transfer Agent
 # URL:         https://www.exim.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam pcre gdbm libressl libnsl sqlite libidn
+# Depends on:  pam pcre gdbm libressl libnsl sqlite libidn libldap
 # Section:     mail
 
 name=exim
 version=4.94
-release=1
+release=2
 backup=('etc/exim/aliases'
 	'etc/exim/exim.conf')
 source=("https://ftp.exim.org/pub/exim/exim4/$name-$version.tar.bz2")
@@ -33,6 +33,10 @@ build() {
 		USE_OPENSSL_PC=openssl
 		LOOKUP_SQLITE=2
 		LOOKUP_SQLITE_LIBS=-lsqlite3
+		LOOKUP_LDAP=yes
+		LDAP_LIB_TYPE=OPENLDAP2
+		LOOKUP_INCLUDE += -I/usr/include/ldap
+		LOOKUP_LIBS += -lldap -llber
 		LOOKUP_CDB=2
 		LOOKUP_DBM=2
 		LOOKUP_DNSDB=2

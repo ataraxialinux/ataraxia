@@ -1,17 +1,19 @@
 # Description: Lightweight Directory Access Protocol libs 
 # URL:         https://www.cyrusimap.org/sasl/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  e2fsprogs libressl libsasl
+# Depends on:  e2fsprogs libressl libsasl libltdl
 # Section:     libs
 
 name=libldap
-version=2.4.50
+version=2.4.51
 release=1
-source=("https://github.com/cyrusimap/openldap/releases/download/openldap-$version/openldap-$version.tar.gz")
+source=("ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/openldap-$version.tgz")
 
 build() {
 	cd "$SRC"/openldap-$version
 	patch -Np1 -i "$STUFF"/libldap/consolidated.patch
+
+	export ac_cv_header_db_h=no
 
 	autoconf
 	./configure $BUILDFLAGS \
@@ -29,12 +31,15 @@ build() {
 		--enable-ipv6 \
 		--enable-local \
 		--enable-modules \
-		--enable-overlays=mod \
 		--enable-spasswd \
-		--enable-syslog \
+		--disable-backends \
 		--disable-debug \
-		--disable-ndb \
-		--disable-sql
+		--disable-bdb \
+		--disable-hdb \
+		--disable-mdb \
+		--disable-overlays \
+		--disable-slapd \
+		--disable-syslog
 	make
 
 	for dir in include libraries doc/man/man3 ; do

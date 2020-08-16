@@ -1,12 +1,12 @@
 # Description: SPICE server
 # URL:         https://www.spice-space.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson python-six python-pyparsing spice-protocol pixman opus libjpeg-turbo glib lz4
+# Depends on:  meson python-six python-pyparsing spice-protocol pixman opus libjpeg-turbo glib lz4 libsasl
 # Section:     libs
 
 name=spice
 version=0.14.3
-release=1
+release=2
 source=("https://www.spice-space.org/download/releases/spice-server/$name-$version.tar.bz2")
 
 build() {
@@ -14,8 +14,7 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Dgstreamer=no \
-		-Dsasl=false
+		-Dgstreamer=no
 	ninja
 	DESTDIR="$PKG" ninja install
 }

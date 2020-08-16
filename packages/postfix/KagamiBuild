@@ -1,12 +1,12 @@
 # Description: Fast, easy to administer, secure mail server
 # URL:         http://www.postfix.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl libnsl db sqlite mariadb
+# Depends on:  libressl libnsl db sqlite mariadb libldap
 # Section:     mail
 
 name=postfix
 version=3.5.6
-release=1
+release=2
 backup=('etc/postfix/aliases'
 	'etc/postfix/main.cf'
 	'etc/postfix/master.cf')
@@ -20,8 +20,8 @@ build() {
 		DEBUG='' \
 		pie=yes \
 		shared=yes \
-		CCARGS="-DUSE_TLS -I/usr/include/openssl -DHAS_MYSQL -I/usr/include/mysql -DHAS_SQLITE" \
-		AUXLIBS="-lssl -lcrypto -lmysqlclient -lz -lm -lsqlite3 -lpthread" \
+		CCARGS="-DUSE_TLS -I/usr/include/openssl -DHAS_MYSQL -I/usr/include/mysql -DHAS_SQLITE -DHAS_LDAP -DUSE_SASL_AUTH -DUSE_CYRUS_SASL -I/usr/include/sasl" \
+		AUXLIBS="-lssl -lcrypto -lmysqlclient -lz -lm -lsqlite3 -lldap -llber -lsasl2 -lpthread" \
 		OPT="$CFLAGS" \
 		makefiles
 	make
