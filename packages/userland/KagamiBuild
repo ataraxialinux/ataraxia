@@ -1,15 +1,15 @@
 # Description: OpenBSD userland
-# URL:         https://github.com/ataraxialinux/openbsd-tools
+# URL:         https://github.com/ataraxialinux/userland
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Priority:    required
 # Section:     base
 
-name=openbsd-tools
+name=userland
 version=6.7p8
 comm=c52cc6690301b36ccdc155ffc2c4a8ff29cd92c0
 release=1
 options=('bootstrap')
-source=("https://github.com/ataraxialinux/openbsd-tools/archive/$version.tar.gz"
+source=("https://github.com/ataraxialinux/userland/archive/$version.tar.gz"
 	"https://github.com/Duncaen/lobase/archive/$comm.tar.gz")
 
 build() {
@@ -30,13 +30,6 @@ build() {
 	cd "$SRC"/lobase-$comm
 	./configure $BUILDFLAGS
 	make lib
-
-	for i in find xargs csh; do
-		make -C usr.bin/$i
-		install -Dm755 usr.bin/$i/$i "$PKG"/usr/bin/$i
-		install -Dm755 usr.bin/$i/$i.1 "$PKG"/usr/share/man/man1/$i.1
-	done
-
 	make -C usr.bin/xinstall
 	install -Dm755 usr.bin/xinstall/xinstall "$PKG"/usr/bin/install
 	install -Dm755 usr.bin/xinstall/install.1 "$PKG"/usr/share/man/man1/install.1
