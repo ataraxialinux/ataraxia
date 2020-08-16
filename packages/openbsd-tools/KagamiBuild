@@ -1,0 +1,46 @@
+# Description: OpenBSD userland
+# URL:         https://github.com/ataraxialinux/openbsd-tools
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     base
+
+name=openbsd-tools
+version=6.7p8
+comm=c52cc6690301b36ccdc155ffc2c4a8ff29cd92c0
+release=1
+options=('bootstrap')
+source=("https://github.com/ataraxialinux/openbsd-tools/archive/$version.tar.gz"
+	"https://github.com/Duncaen/lobase/archive/$comm.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -fcommon"
+
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/bin/install "$PKG"/usr/share/man/man1/install.1
+
+	rm "$PKG"/usr/share/man/man7/symlink.7
+
+	cd "$SRC"/lobase-$comm
+	./configure $BUILDFLAGS
+	make lib
+	make -C usr.bin/xinstall
+	make -C bin/csh
+	install -Dm755 usr.bin/xinstall/xinstall "$PKG"/usr/bin/install
+	install -Dm644 usr.bin/xinstall/install.1 "$PKG"/usr/share/man/man1/install.1
+	install -Dm755 bin/csh/csh "$PKG"/usr/bin/csh
+	install -Dm644 bin/csh/csh.1 "$PKG"/usr/share/man/man1/csh.1
+
+	for i in find xargs more; do
+		make -C usr.bin/$i
+		install -Dm755 usr.bin/$i/$i "$PKG"/usr/bin/$i
+		install -Dm644 usr.bin/$i/$i.1 "$PKG"/usr/share/man/man1/$i.1
+	done
+
+}
