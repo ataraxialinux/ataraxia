@@ -14,13 +14,9 @@ build() {
 	cd "$SRC"/$name-$version
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	else
 		make CFLAGS="$CFLAGS" LDFLAGS='-static'
+		make CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	fi
-
-	mkdir -p "$PKG"/usr/bin "$PKG"/usr/share/man/man1 "$PKG"/usr/share/man/man8
-	cp df dd id respawn who watch ctrlaltdel halt killall5 truncate uptime stat pwdx ps "$PKG"/usr/bin
-
-	cp df.1 dd.1 id.1 who.1 respawn.1 watch.1 truncate.1 uptime.1 stat.1 pwdx.1 ps.1 "$PKG"/usr/share/man/man1
-	cp ctrlaltdel.8 halt.8 killall5.8 "$PKG"/usr/share/man/man8
 }
