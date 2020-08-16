@@ -1,0 +1,23 @@
+# Description: Desktop user interface for managing virtual machines
+# URL:         https://virt-manager.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool pygobject python-requests libvirt-python libvirt-glib libosinfo gtk-vnc spice-gtk vte gtksourceview4
+# Section:     virt
+
+name=virt-manager
+version=2.2.1
+release=1
+source=("https://virt-manager.org/download/sources/virt-manager/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	python3 setup.py build
+	python3 setup.py install \
+		--prefix=/usr \
+		--root="$PKG" \
+		--no-update-icon-cache \
+		--no-compile-schemas \
+		--optimize=1
+	python3 -m compileall "$PKG"/usr/share/virt-manager
+	python3 -O -m compileall "$PKG"/usr/share/virt-manager
+}
