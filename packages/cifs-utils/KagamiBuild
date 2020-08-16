@@ -1,7 +1,7 @@
 # Description: CIFS filesystem user-space tools
 # URL:         https://wiki.samba.org/index.php/LinuxCIFS_utils
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam keyutils talloc libcap-ng heimdal
+# Depends on:  pam keyutils libcap-ng
 # Section:     net
 
 name=cifs-utils
@@ -15,7 +15,11 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
+		--disable-cifsupcall \
 		--disable-systemd
 	make
 	make DESTDIR="$PKG" install
+
+	mv "$PKG"/sbin/* "$PKG"/usr/bin/
+	rm -rf "$PKG"/sbin
 }
