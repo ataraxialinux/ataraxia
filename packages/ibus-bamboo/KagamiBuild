@@ -1,0 +1,20 @@
+# Description: A Vietnamese IME for IBus
+# URL:         https://github.com/BambooEngine/ibus-bamboo
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  go ibus
+# Section:     localization
+
+name=ibus-bamboo
+version=0.6.5
+release=1
+source=("https://github.com/BambooEngine/ibus-bamboo/archive/v$version.tar.gz")
+
+build() {
+	export GOPATH="$SRC"
+	export CGO_CFLAGS="$CFLAGS"
+	export CGO_CXXFLAGS="$CXXFLAGS"
+
+	cd "$SRC"/$name-$version
+	make
+	make DESTDIR="$PKG" install
+}
