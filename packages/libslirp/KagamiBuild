@@ -1,0 +1,22 @@
+# Description: General purpose TCP-IP emulator
+# URL:         https://gitlab.freedesktop.org/slirp/libslirp
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson glib
+# Section:     net
+
+name=libslirp
+version=4.3.1
+release=1
+source=("https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-*
+	patch -Np1 -i "$STUFF"/libslirp/version.patch
+	sed -i "s/%SLIRP_VERSION%/$version/g" meson.build
+
+	mkdir -p build
+	cd build
+	ataraxia-meson ..
+	ninja
+	DESTDIR="$PKG" ninja install
+}

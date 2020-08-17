@@ -1,0 +1,19 @@
+# Description: User-mode networking for unprivileged network namespaces
+# URL:         https://github.com/rootless-containers/slirp4netns
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libcap glib libseccomp libslirp
+# Section:     net
+
+name=slirp4netns
+version=1.1.4
+release=1
+source=("https://github.com/rootless-containers/slirp4netns/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

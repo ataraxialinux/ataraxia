@@ -1,0 +1,21 @@
+# Description: Some standard networking plugins, maintained by the CNI team
+# URL:         https://github.com/containernetworking/plugins
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  go
+# Section:     net
+
+name=cni-plugins
+version=0.8.6
+release=1
+source=("https://github.com/containernetworking/plugins/archive/v$version.tar.gz")
+
+build() {
+	export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+
+	cd "$SRC"/plugins-$version
+	./build_linux.sh
+
+	for i in bin/*; do
+		install -Dm755 $i "$PKG"/usr/lib/cni/$(basename $i)
+	done
+}

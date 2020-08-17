@@ -1,0 +1,20 @@
+# Description: FUSE implementation of overlayfs
+# URL:         https://github.com/containers/fuse-overlayfs
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  fuse
+# Section:     otherosfs
+
+name=fuse-overlayfs
+version=1.1.2
+release=1
+source=("https://github.com/containers/fuse-overlayfs/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -fis
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}

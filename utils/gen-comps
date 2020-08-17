@@ -22,12 +22,12 @@ main() {
 		games localization text virt web doc misc hardware; do
 		for a in $(egrep -r "# Section:" $repo | grep -E '(^|\s)'${i}'($|\s)' | awk '{print $1}' | sed -e 's/\/KagamiBuild:#//g' | sed -e "s|${repo%/}/||"); do
 			case $a in
-				fasm)
+				fasm|docker)
 					case $barch in
 						x86_64) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
 					esac
 					;;
-				go|runc|podman|lxd|xf86-video-intel|xf86-video-vmware)
+				go|runc|lxd|cni-plugins|skopeo|ibus-bamboo|k3s|xf86-video-intel|xf86-video-vmware)
 					case $barch in
 						x86_64|i686) [ -z "$(cat $outfile | grep -E '(^|\s)'${a}'($|\s)')" ] && echo "$a" >> "$outfile" ;;
 					esac

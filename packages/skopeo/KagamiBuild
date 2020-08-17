@@ -1,0 +1,20 @@
+# Description: A command line utility for various operations on container images and image repositories
+# URL:         https://github.com/projectatomic/skopeo
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  go lvm2 gpgme btrfs-progs
+# Section:     virt
+
+name=skopeo
+version=1.1.1
+release=1
+source=("https://github.com/containers/skopeo/archive/v$version.tar.gz")
+
+build() {
+	export CGO_CFLAGS="$CFLAGS"
+	export CGO_CXXFLAGS="$CXXFLAGS"
+
+	cd "$SRC"/$name-$version
+	make binary-local
+
+	install -Dm755 skopeo "$PKG"/usr/bin/skopeo
+}

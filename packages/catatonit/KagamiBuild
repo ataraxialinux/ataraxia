@@ -1,0 +1,20 @@
+# Description: A container init that is so simple it's effectively brain-dead
+# URL:         https://github.com/openSUSE/catatonit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     virt
+
+name=catatonit
+version=0.1.5
+release=1
+source=("https://github.com/openSUSE/catatonit/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/__environ/environ/g' catatonit.c
+
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,21 @@
+# Description: Pack, ship and run any application as a lightweight container
+# URL:         https://www.docker.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  runc iproute2 lvm2 btrfs-progs pigz
+# Section:     virt
+
+name=docker
+version=19.03.12
+release=1
+source=("https://download.docker.com/linux/static/stable/x86_64/docker-$version.tgz")
+
+build() {
+	if [ "$BARCH" != "x86_64" ]; then
+		die "Docker is only supported for x86_64"
+	fi
+
+	cd "$SRC"
+	mkdir -p "$PKG"/usr/bin
+	cp -a docker/* "$PKG"/usr/bin/
+	rm "$PKG"/usr/bin/runc
+}

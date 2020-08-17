@@ -15,7 +15,7 @@ source=("https://github.com/ataraxialinux/openbsd-tools/archive/$version.tar.gz"
 build() {
 	export CFLAGS="$CFLAGS -fcommon"
 
-	cd "$SRC"/$name-$version
+	cd "$SRC"/userland-$version
 	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -31,13 +31,16 @@ build() {
 	./configure $BUILDFLAGS
 	make lib
 	make -C usr.bin/xinstall
-	make -C bin/csh
+	make -C sbin/mknod
 	install -Dm755 usr.bin/xinstall/xinstall "$PKG"/usr/bin/install
 	install -Dm644 usr.bin/xinstall/install.1 "$PKG"/usr/share/man/man1/install.1
-	install -Dm755 bin/csh/csh "$PKG"/usr/bin/csh
-	install -Dm644 bin/csh/csh.1 "$PKG"/usr/share/man/man1/csh.1
+	install -Dm755 sbin/mknod/mknod "$PKG"/usr/bin/mknod
+	install -Dm644 sbin/mknod/mknod.8 "$PKG"/usr/share/man/man8/mknod.8
+	install -Dm644 sbin/mknod/mkfifo.1 "$PKG"/usr/share/man/man1/mkfifo.1
 
-	for i in find xargs more; do
+	ln -sf mknod "$PKG"/usr/bin/mkfifo
+
+	for i in find xargs; do
 		make -C usr.bin/$i
 		install -Dm755 usr.bin/$i/$i "$PKG"/usr/bin/$i
 		install -Dm644 usr.bin/$i/$i.1 "$PKG"/usr/share/man/man1/$i.1
