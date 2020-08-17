@@ -1,0 +1,45 @@
+# Description: A C library that implements an SQL database engine with replication enabled
+# URL:         http://www.sqlite.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib readline
+# Section:     database
+
+name=sqlite-replication
+version=3.32.3+replication4
+release=1
+options=('~emptydirs')
+source=("https://github.com/canonical/sqlite/archive/version-$version.tar.gz")
+
+build() {
+	amalgamation="-DSQLITE_ENABLE_FTS4 \
+		-DSQLITE_ENABLE_FTS3_PARENTHESIS \
+		-DSQLITE_ENABLE_FTS3 \
+		-DSQLITE_ENABLE_FTS5 \
+		-DSQLITE_ENABLE_COLUMN_METADATA \
+		-DSQLITE_SECURE_DELETE \
+		-DSQLITE_ENABLE_UNLOCK_NOTIFY \
+		-DSQLITE_ENABLE_RTREE \
+		-DSQLITE_ENABLE_GEOPOLY \
+		-DSQLITE_USE_URI \
+		-DSQLITE_ENABLE_DBSTAT_VTAB \
+		-DSQLITE_MAX_VARIABLE_NUMBER=250000 \
+		-DSQLITE_ENABLE_JSON1"
+
+	cd "$SRC"/sqlite-version-${version/+/-}
+	autoreconf -vif
+
+	CFLAGS="$CFLAGS $amalgamation" \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib/sqlite-replication \
+		--includedir=/usr/include/sqlite-replication \
+		--enable-dynamic-extensions \
+		--enable-fts3 \
+		--enable-readline \
+		--enable-replication \
+		--enable-threadsafe
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/bin
+}

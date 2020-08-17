@@ -1,0 +1,22 @@
+# Description: Distributed SQLite
+# URL:         https://github.com/CanonicalLtd/dqlite
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  sqlite-replication raft libco
+# Section:     libs
+
+name=dqlite
+version=1.5.0
+release=1
+source=("https://github.com/canonical/dqlite/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -i
+
+	PKG_CONFIG_PATH="$ROOTFS/usr/lib/sqlite-replication/pkgconfig:$PKG_CONFIG_PATH" \
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	make LDFLAGS="-Wl,-R$ROOTFS/usr/lib/sqlite-replication"
+	make DESTDIR="$PKG" install
+}

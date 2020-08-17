@@ -1,0 +1,22 @@
+# Description: C implementation of the Raft consensus protocol
+# URL:         https://github.com/canonical/raft
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libuv
+# Section:     libs
+
+name=raft
+version=0.9.24
+release=1
+source=("https://github.com/canonical/raft/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	autoreconf -i
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/bin
+}
