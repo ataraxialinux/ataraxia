@@ -1,7 +1,7 @@
-From 197f182cab069a11198538e7dada3f125d03c119 Mon Sep 17 00:00:00 2001
+From 3740b1fb824ba2a039d815639fcdf12ea96c6e2e Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 17 Aug 2020 19:41:51 +0500
-Subject: [PATCH] musl
+Date: Mon, 17 Aug 2020 19:47:06 +0500
+Subject: [PATCH] fix build on musl systems
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/libcomps/src/comps_log_codes.h b/libcomps/src/comps_log_codes.h
-index 8e0279e..cc8b87d 100644
+index 8e0279e..b6cda17 100644
 --- a/libcomps/src/comps_log_codes.h
 +++ b/libcomps/src/comps_log_codes.h
 @@ -52,25 +52,25 @@ inline void expand0(char *str, const char *fmt, char **args, char out) {
@@ -56,6 +56,29 @@ index 8e0279e..cc8b87d 100644
      expand(str, fmt, args, len, 0);
  }
  
+From a93b3141f9e7081610d46ff6ae4816fc1b6aa9a3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 17 Aug 2020 20:13:15 +0500
+Subject: [PATCH] fix python binding
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ libcomps/src/python/src/pycomps_sequence.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libcomps/src/python/src/pycomps_sequence.c b/libcomps/src/python/src/pycomps_sequence.c
+index 166ae4c..9cab4bc 100644
+--- a/libcomps/src/python/src/pycomps_sequence.c
++++ b/libcomps/src/python/src/pycomps_sequence.c
+@@ -90,7 +90,7 @@ inline PyObject* list_getitem_byid(PyObject *self, PyObject *id) {
+     #undef _seq_
+ }
+ 
+-inline COMPS_Object *list_setitem_convert(PyObject *self, PyObject *item) {
++static inline COMPS_Object *list_setitem_convert(PyObject *self, PyObject *item) {
+     #define _seq_ ((PyCOMPS_Sequence*)self)
+     COMPS_Object *ret = NULL;
+     if (!item)
 -- 
 2.18.4
 
