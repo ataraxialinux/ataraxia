@@ -1,0 +1,29 @@
+# Description: Dzen is a general purpose messaging, notification and menuing program for X11
+# URL:         https://github.com/robm/dzen
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libx11 libxft libxinerama libxpm
+# Section:     x11
+
+name=dzen
+version=488ab66019f475e35e067646621827c18a879ba1
+release=1
+source=("https://github.com/robm/dzen/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -e '/^LIBS/s|$| -lXinerama|' \
+		-e '/^CFLAGS/s|$| -DDZEN_XINERAMA|' \
+		-i config.mk
+	sed -e '/^LIBS/s|$| -lXpm|' \
+		-e '/^CFLAGS/s|$| -DDZEN_XPM|' \
+		-i config.mk
+	sed -e '/^LIBS/s|$| $(shell ${PKG_CONFIG} --libs xft)|' \
+		-e '/^CFLAGS/s|$| -DDZEN_XFT $(shell ${PKG_CONFIG} --cflags xft)|' \
+		-i config.mk
+
+	sed -i 's,/X11R6,,g' config.mk
+	sed -i 's,/usr/local,/usr,g' config.mk
+
+	make
+	make DESTDIR="$PKG" install
+}
