@@ -1,0 +1,31 @@
+# Description: dnf/yum equivalent using C libs
+# URL:         http://www.vmware.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake ninja libsolv libmetalink gpgme curl
+# Section:     utils
+
+name=tdnf
+version=2.1.1
+release=1
+backup=('etc/tdnf/tdnf.conf')
+source=("https://github.com/vmware/tdnf/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	cp lib/libcommon.so lib/libtdnfsolv.so "$PKG"/usr/lib
+
+	for i in dnf {,t}yum; do
+		ln -sf tdnf "$PKG"/usr/bin/$i
+	done
+}
