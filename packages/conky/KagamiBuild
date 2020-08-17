@@ -1,0 +1,43 @@
+# Description: Light-weight system monitor for X
+# URL:         https://github.com/brndnmtthws/conky/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake libxdamage libxinerama libxft libxml2 curl imlib2 librsvg ncurses freetype wireless_tools lua
+# Section:     admin
+
+name=conky
+version=1.11.6
+release=1
+source=("https://github.com/brndnmtthws/conky/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_ARGB=ON \
+		-DBUILD_CURL=ON \
+		-DBUILD_DOCS=OFF \
+		-DBUILD_IMLIB2=ON \
+		-DBUILD_JOURNAL=OFF \
+		-DBUILD_LUA_CAIRO=ON \
+		-DBUILD_LUA_IMLIB2=ON \
+		-DBUILD_LUA_RSVG=ON \
+		-DBUILD_NCURSES=ON \
+		-DBUILD_NVIDIA=OFF \
+		-DBUILD_OLD_CONFIG=ON \
+		-DBUILD_PULSEAUDIO=OFF \
+		-DBUILD_RSS=ON \
+		-DBUILD_WLAN=ON \
+		-DBUILD_X11=ON \
+		-DBUILD_XDAMAGE=ON \
+		-DBUILD_XDBE=ON \
+		-DBUILD_XFT=ON \
+		-DBUILD_XINERAMA=ON \
+		-DBUILD_XSHAPE=ON \
+		-DOWN_WINDOW=ON \
+		-Wno-dev
+	make
+	make DESTDIR="$PKG" install
+}
