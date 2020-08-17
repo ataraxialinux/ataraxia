@@ -1,0 +1,39 @@
+# Description: Daemon based on liblxc offering a REST API to manage containers 
+# URL:         https://linuxcontainers.org/lxd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  go eudev libcap lxc lxcfs libuv rsync squashfs-tools tcl ebtables libseccomp lvm2 btrfs-progs
+# Section:     virt
+
+name=lxd
+version=4.4
+release=1
+source=("https://github.com/lxc/lxd/releases/download/$name-$version/$name-$version.tar.gz")
+
+build() {
+	export CGO_CFLAGS="$CFLAGS"
+	export CGO_CXXFLAGS="$CXXFLAGS"
+	export GOPATH="$SRC/$name-$version/_dist"
+	export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+
+	cd "$SRC"/$name-$version
+	mkdir bin
+	make deps
+
+	export CGO_CFLAGS="${CGO_CFLAGS} -I${GOPATH}/deps/sqlite/ -I${GOPATH}/deps/dqlite/include/ -I${GOPATH}/deps/raft/include/ -I${GOPATH}/deps/libco/"
+	export CGO_LDFLAGS="${CGO_LDFLAGS} -L${GOPATH}/deps/sqlite/.libs/ -L${GOPATH}/deps/dqlite/.libs/ -L${GOPATH}/deps/raft/.libs -L${GOPATH}/deps/libco/"
+	export LD_LIBRARY_PATH="${GOPATH}/deps/sqlite/.libs/:${GOPATH}/deps/dqlite/.libs/:${GOPATH}/deps/raft/.libs:${GOPATH}/deps/libco/:${LD_LIBRARY_PATH}"
+	export CGO_LDFLAGS_ALLOW="-Wl,-wrap,pthread_create"
+
+	go build $GOFLAGS -v -tags "netgo" -o bin/ ./lxd-p2c/...
+	go build $GOFLAGS -v -tags "agent" -o bin/ ./lxd-agent/...
+
+	for tool in fuidshift lxc lxc-to-lxd lxd lxd-benchmark; do
+		go build $GOFLAGS -v -tags "libsqlite3" -o bin/ ./$tool/...
+	done
+
+	for i in fuidshift lxc lxc-to-lxd lxd lxd-agent lxd-benchmark lxd-p2c; do
+		install -Dm755 bin/$i "$PKG"/usr/bin/$i
+	done
+
+	install -dm755 "$PKG"/var/log/lxd
+}
