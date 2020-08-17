@@ -1,18 +1,20 @@
 # Description: Library providing simplified C and Python API to libsolv
 # URL:         https://github.com/rpm-software-management/libdnf
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja check glib gpgme json-c libmodulemd librepo libsolv
+# Depends on:  python cmake ninja check swig glib gpgme json-c libmodulemd librepo libsolv
 # Section:     libs
 
 name=libdnf
 version=0.48.0
-release=2
+release=3
 source=("https://github.com/rpm-software-management/libdnf/archive/$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	sed -i 's|add_subdirectory(docs/libdnf)|# add_subdirectory(docs/libdnf)|' CMakeLists.txt
+	sed -i 's|add_subdirectory(docs/hawkey)|# add_subdirectory(docs/hawkey)|' CMakeLists.txt
 	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' CMakeLists.txt
+	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' python/hawkey/CMakeLists.txt
 
 	cp -p "$ROOTFS"/usr/share/cmake/Modules/FindLibSolv.cmake cmake/modules/
 
@@ -22,7 +24,7 @@ build() {
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DWITH_BINDINGS=OFF \
+		-DPYTHON_DESIRED=3 \
 		-DWITH_GTKDOC=OFF \
 		-DWITH_HTML=OFF \
 		-DWITH_MAN=OFF \
