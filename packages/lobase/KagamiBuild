@@ -17,7 +17,10 @@ build() {
 
 	autoreconf -fi
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lobase \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin
 	make lib
 
 	for i in diff diff3 cmp sdiff fmt indent ln mknod pr sort stty tsort xinstall; do
@@ -42,4 +45,6 @@ build() {
 
 	install -Dm755 usr.bin/xinstall/xinstall "$PKG"/usr/bin/install
 	install -Dm644 usr.bin/xinstall/install.1 "$PKG"/usr/share/man/man1/install.1
+
+	rm "$PKG"/usr/share/man/man7/symlink.7
 }
