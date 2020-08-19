@@ -1,0 +1,454 @@
+.\" alternatives.8
+.\" This man page is copyright 1997 Charles Briscoe-Smith, 2002 Red Hat, Inc.
+.\" This is free documentation; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published
+.\" by the Free Software Foundation; either version 2 of the License, or
+.\" (at your option) any later version. 
+.TH UPDATE-ALTERNATIVES 8 "27 January 2001"
+.SH NAME
+alternatives \- maintain symbolic links determining default commands
+.SH SYNOPSIS
+.B alternatives
+.RI [ options ]
+.B --install
+.I link name path priority
+.RB [ --slave
+.I link name
+.IR path ]...
+.RB [ --initscript
+.IR service ]
+.RB [ --family
+.IR name ]
+.PP
+.B alternatives
+.RI [ options ]
+.B --remove
+.I name path
+.PP
+.B alternatives
+.RI [ options ]
+.B --set
+.I name path
+.PP
+.B alternatives
+.RI [ options ]
+.B --auto
+.I name
+.PP
+.B alternatives
+.RI [ options ]
+.B --display
+.I name
+.PP
+.B alternatives
+.RI [ options ]
+.B --config
+.I name
+.PP
+.B alternatives
+.RI [ options ]
+.B --list
+.PP
+.B alternatives
+.RI [ options ]
+.B --remove-all
+.I name
+.PP
+.B alternatives
+.RI [ options ]
+.B --add-slave
+.I name path slink sname spath
+.PP
+.B alternatives
+.RI [ options ]
+.B --remove-slave 
+.I name path sname
+.SH DESCRIPTION
+.B alternatives
+creates, removes, maintains and displays information about the symbolic
+links comprising the alternatives system. The alternatives system is
+a reimplementation of the Debian alternatives system. It was rewritten
+primarily to remove the dependence on perl; it is intended to be a drop
+in replacement for Debian's \fBupdate-dependencies\fR script. This man
+page is a slightly modified version of the man page from the Debian project.
+.PP
+It is possible for several programs fulfilling the same or similar
+functions to be installed on a single system at the same time.
+For example, many systems have several text editors installed at once.
+This gives choice to the users of a system, allowing each to use a
+different editor, if desired, but makes it difficult for a program
+to make a good choice of editor to invoke if the
+user has not specified a particular preference.
+.PP
+The alternatives system aims to solve this problem.
+A generic name in the filesystem is
+shared by all files providing interchangeable functionality.
+The alternatives system and the system administrator
+together determine which actual file is referenced by this generic name.
+For example, if the text editors
+.BR ed (1)
+and
+.BR nvi (1)
+are both installed on the system, the alternatives system will cause
+the generic name
+.I /usr/bin/editor
+to refer to
+.I /usr/bin/nvi
+by default.  The system administrator can override this and cause
+it
+to refer to
+.I /usr/bin/ed
+instead,
+and the alternatives system will not alter this setting until explicitly
+requested to do so.
+.PP
+The generic name is not a direct symbolic link to the selected alternative.
+Instead, it is a symbolic link to a name in the
+.I alternatives
+.IR directory ,
+which in turn is a symbolic link to the actual file referenced.
+This is done so that the system administrator's changes can be confined
+within the
+.I /etc
+directory: the FHS (q.v.) gives reasons why this is a Good Thing.
+.PP
+When each package
+providing a file with a particular functionality is
+installed, changed or removed,
+.B alternatives
+is called to update information about that file in the alternatives system.
+.B alternatives
+is usually called from the
+.B %post
+or
+.B %pre
+scripts in RPM packages.
+.PP
+It is often useful for a number of alternatives to be synchronised,
+so that they are changed as a group; for example, when several versions
+of the
+.BR vi (1)
+editor are installed, the man page referenced by
+.I /usr/share/man/man1/vi.1
+should correspond to the executable referenced by
+.IR /usr/bin/vi .
+.B alternatives
+handles this by means of
+.I master
+and
+.I slave
+links; when the master is changed, any associated slaves are changed
+too.
+A master link and its associated slaves make up a
+.I link
+.IR group .
+.PP
+Each link group is, at any given time,
+in one of two modes: automatic or manual.
+When a group is in automatic mode, the alternatives system will
+automatically decide, as packages are installed and removed,
+whether and how to update the links.
+In manual mode, the alternatives system will not change the links;
+it will leave all the decisions to the system administrator.
+.PP
+Link groups are in automatic mode when they are first introduced to
+the system.
+If the system administrator makes changes to the system's
+automatic settings,
+this will be noticed the next time
+.B alternatives
+is run on the changed link's group,
+and the group will automatically be switched to manual mode.
+.PP
+Each alternative has a
+.I priority
+associated with it.
+When a link group is in automatic mode,
+the alternatives pointed to by members of the group
+will be those which have the highest priority.
+.PP
+When using the
+.I --config
+option,
+.B alternatives
+will list all of the choices for the link group
+of which given
+.I name
+is the master link.
+You will then be prompted for which of the choices to use
+for the link group. Once you make a change, the link group will no
+longer be in
+.I auto
+mode. You will need to use the
+.I --auto
+option in order to return to the automatic state.
+.SH TERMINOLOGY
+Since the activities of
+.B alternatives
+are quite involved, some specific terms will help to explain its
+operation.
+.TP
+generic name
+A name, like
+.IR /usr/bin/editor ,
+which refers, via the alternatives system, to one of a number of
+files of similar function.
+.TP
+symlink
+Without any further qualification, this means a symbolic link in the
+alternatives directory: one which the system administrator is expected
+to adjust.
+.TP
+alternative
+The name of a specific file in the filesystem, which may be made
+accessible via a generic name using the alternatives system.
+.TP
+alternatives directory
+A directory, by default
+.IR /etc/alternatives ,
+containing the symlinks.
+.TP
+administrative directory
+A directory, by default
+.IR /var/lib/alternatives ,
+containing
+.BR alternatives '
+state information.
+.TP
+link group
+A set of related symlinks, intended to be updated as a group.
+.TP
+master link
+The link in a link group which determines how the other links in the
+group are configured.
+.TP
+slave link
+A link in a link group which is controlled by the setting of
+the master link.
+.TP
+automatic mode
+When a link group is in automatic mode,
+the alternatives system ensures that the links in the group
+point to the highest priority alternatives
+appropriate for the group.
+.TP
+manual mode
+When a link group is in manual mode,
+the alternatives system will not make any changes
+to the system administrator's settings.
+.SH OPTIONS
+Exactly one action must be specified if
+.B alternatives
+is to perform any meaningful task.
+Any number of the common options may be specified together with any action.
+.SS "COMMON OPTIONS"
+.TP
+.B --verbose
+Generate more comments about what
+.B alternatives
+is doing.
+.TP
+.B --quiet
+Don't generate any comments unless errors occur.
+This option is not yet implemented.
+.TP
+.B --test
+Don't actually do anything, just say what would be done.
+This option is not yet implemented.
+.TP
+.B --help
+Give some usage information (and say which version of
+.B alternatives
+this is).
+.TP
+.B --version
+Tell which version of
+.B alternatives
+this is (and give some usage information).
+.TP
+.B --keep-missing
+When switching between alternatives, if the new variant does not provide some files, keep the links pointed to the previous implementation.
+It prevents issues with missing files due to switching between versions.
+.TP
+\fB--altdir\fR \fIdirectory\fR
+Specifies the alternatives directory, when this is to be
+different from the default.
+.TP
+\fB--admindir\fR \fIdirectory\fR
+Specifies the administrative directory, when this is to be
+different from the default.
+.SS ACTIONS
+.\" The names of the arguments should be identical with the ones
+.\" in SYNOPSIS section.
+.TP
+\fB--install\fR \fIlink name path priority\fR [\fB--slave\fR \fIslink sname spath\fR] [\fB--initscript\fR \fIservice\fR]...
+Add a group of alternatives to the system.
+.I name
+is the generic name for the master link,
+.I link
+is the name of its symlink,
+.I path
+is the alternative being introduced for the master link, and
+.I priority
+is the priority of the alternatives group. Higher priorities
+take precendence if no alternative is manually selected.
+.IR sname ,
+.I slink
+and
+.I spath
+are the generic name, symlink name and alternative
+for a slave link, and
+.I service
+is the name of any associated initscript for the alternative.
+.B NOTE:
+.B --initscript and --family
+are a Red Hat Linux specific options.
+Zero or more
+.B --slave
+options, each followed by three arguments,
+may be specified.
+.IP
+If the master symlink specified exists already
+in the alternatives system's records,
+the information supplied will be added as a new
+set of alternatives for the group.
+Otherwise, a new group, set to automatic mode,
+will be added with this information.
+If the group is in automatic mode,
+and the newly added alternatives' priority is higher than
+any other installed alternatives for this group,
+the symlinks will be updated to point to the newly added alternatives.
+
+If
+.B --initscript
+is used, the alternatives system will manage the initscript
+associated with the alternative via
+.B chkconfig,
+registering and unregistering the init script depending on
+which alternative is active.
+
+.B NOTE:
+.B --initscript
+is a Red Hat Linux specific option.
+
+
+.B --family
+can be used to group similar alternatives. If the group is
+in manual mode and the alternative currently used is removed,
+alternatives will try to change links to different one
+with same family and highest priority.
+
+.B NOTE:
+.B --family
+is a Red Hat Linux specific option.
+.TP
+\fB--remove\fR \fIname path\fR
+Remove an alternative and all of its associated slave links.
+.I name
+is a name in the alternatives directory, and
+.I path
+is an absolute filename to which
+.I name
+could be linked.  If
+.I name
+is indeed linked to
+.IR path ,
+.I name
+will be updated to point to another appropriate alternative, or
+removed if there is no such alternative left.
+Associated slave links will be updated or removed, correspondingly.
+If the link is not currently pointing to
+.IR path ,
+no links are changed;
+only the information about the alternative is removed.
+.TP
+\fB--set\fR \fIname path\fR
+The symbolic link and slaves for link group \fIname\fR set to those
+configured for \fIpath\fR, and the link group is set to manual mode.
+This option is not in the original Debian implementation.
+.TP
+\fB--config\fR \fIname\fR
+Present the user with a configuration menu for choosing
+the master link and slaves for link group \fIname\fR. Once
+chosen, the link group is set to manual mode.
+.TP
+\fB--auto\fR \fIname\fR
+Switch the master symlink
+.I name
+to automatic mode.
+In the process, this symlink and its slaves are updated
+to point to the highest priority installed alternatives.
+.TP
+\fB--display\fR \fIname\fR
+Display information about the link group of which
+.I name
+is the master link.
+Information displayed includes the group's mode
+(auto or manual),
+which alternative the symlink currently points to,
+what other alternatives are available
+(and their corresponding slave alternatives),
+and the highest priority alternative currently installed.
+.TP
+\fB--list \fR
+Display information about all link groups.
+.TP
+\fB--remove-all\fR \fIname\fR
+Remove the whole link group \fIname\fR. Use with caution.
+.TP
+\fB--add-slave\fR \fIname\fR \fIpath\fR \fIslink\fR \fIsname\fr \fIspath\fR
+Add a slave link to an alternative identified by \fIname\fR and \fIpath\fR. \fIsname\fR, \fIslink\fR and \fIspath\fR are
+the generic name, symlink name and alternative for the slave.
+.TP
+\fB--remove-slave\fR \fIname\fR \fIpath\fR \fIsname\fR
+Remove slave with generic name \fIsname\fR from alternative identified by \fIname\fR and \fIpath\fR.
+.SH FILES
+.TP
+.I /etc/alternatives/
+The default alternatives directory.
+Can be overridden by the
+.B --altdir
+option.
+.TP
+.I /var/lib/alternatives/
+The default administration directory.
+Can be overridden by the
+.B --admindir
+option.
+.SH "EXIT STATUS"
+.IP 0
+The requested action was successfully performed.
+.IP 2
+Problems were encountered whilst parsing the command line
+or performing the action.
+.SH DIAGNOSTICS
+.B alternatives
+chatters incessantly about its activities on its standard output channel.
+If problems occur,
+.B alternatives
+outputs error messages on its standard error channel and
+returns an exit status of 2.
+These diagnostics should be self-explanatory;
+if you do not find them so, please report this as a bug.
+.SH BUGS
+If you find a bug, please report it using the Red Hat bug tracking system
+at \fBhttp://bugzilla.redhat.com\fR.
+.PP
+If you find any discrepancy between the operation of
+.B alternatives
+and this manual page, it is a bug,
+either in the implementation or the documentation; please report it.
+Any significant differences between this implementation and Debian's is
+also a bug and should be reported, unless otherwise noted in this man page.
+.SH AUTHOR
+alternatives is copyright 2002
+Red Hat, Inc..  It is free software; see the GNU General Public Licence
+version 2 or later for copying conditions.  There is NO warranty.
+.PP
+This manual page is copyright 1997/98 Charles Briscoe-Smith and
+2002 Red Hat, Inc.
+This is free documentation; see the GNU General Public Licence
+version 2 or later for copying conditions.  There is NO WARRANTY.
+.SH "SEE ALSO"
+.BR ln (1),
+FHS, the Filesystem Hierarchy Standard.
