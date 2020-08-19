@@ -1,16 +1,16 @@
 # Description: Filesystem layout and configuration files
 # URL:         https://ataraxialinux.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Provides:    system-release
 # Priority:    required
 # Section:     base
 
 name=base-files
-version=0.14
+version=0.15
 release=1
 options=('bootstrap')
 backup=('etc/csh.cshrc'
 	'etc/csh.login'
-	'etc/doas.conf'
 	'etc/fstab'
 	'etc/group'
 	'etc/gshadow'
@@ -44,9 +44,7 @@ build() {
 
 	ln -sf ../proc/mounts etc/mtab
 
-	touch etc/ataraxia-release
-
-	for f in doas.conf fstab group host.conf hosts issue issue.net \
+	for f in fstab group host.conf hosts issue issue.net \
 		motd passwd profile resolv.conf securetty shells csh.cshrc csh.login; do
 		install -m644 "$STUFF"/base-files/$f etc/
 	done
@@ -95,18 +93,24 @@ build() {
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
 
-	cat > "$PKG"/etc/os-release <<- EOF
+	cat > "$PKG"/usr/lib/os-release <<- EOF
 		NAME="Ataraxia Linux"
-		VERSION="current"
-		ID="ataraxialinux ataraxia januslinux janus"
-		ID_LIKE="ataraxia"
-		VERSION_ID="current"
-		PRETTY_NAME="Ataraxia Linux"
+		VERSION="1.0 (Akari Akaza)"
+		ID="ataraxia"
+		ID_LIKE="ataraxialinux ataraxia januslinux janus"
+		VERSION_ID="1.0"
+		PRETTY_NAME="Ataraxia Linux 1.0 (Akari Akaza)"
 		HOME_URL="https://ataraxialinux.github.io/"
 		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
 	EOF
 
+	cat > "$PKG"/etc/ataraxia-release <<- EOF
+		Ataraxia Linux release 1.0 (Akari Akaza)
+	EOF
+
+	ln -sf ../usr/lib/os-release "$PKG"/etc/os-release
+	ln -sf ataraxia-release "$PKG"/etc/system-release
+
 	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -Dm0755 "$STUFF"/base-files/espdiff "$PKG"/usr/games/espdiff
 	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
 }
