@@ -1,0 +1,21 @@
+# Description: C library for manipulating POSIX tar files
+# URL:         https://repo.or.cz/w/libtar.git
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+# Section:     libs
+
+name=libtar
+version=1.2.20
+release=1
+source=("https://github.com/tklauser/libtar/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" install
+}
