@@ -24,8 +24,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/unistd.h>
 #include <unistd.h>
+#include <limits.h>
 
 #define FLAGS_TEST (1 << 0)
 #define FLAGS_VERBOSE (1 << 1)
