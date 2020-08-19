@@ -1,0 +1,37 @@
+# Description: A web proxy with advanced filtering capabilities.
+# URL:         https://www.privoxy.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib pcre
+# Section:     net
+
+name=privoxy
+version=3.0.28
+release=1
+backup=('etc/privoxy/config'
+	'etc/privoxy/trust'
+	'etc/privoxy/match-all.action'
+	'etc/privoxy/default.action'
+	'etc/privoxy/default.filter'
+	'etc/privoxy/user.action'
+	'etc/privoxy/user.filter')
+source=("https://downloads.sourceforge.net/ijbswa/$name-$version-stable-src.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version-stable
+	patch -Np1 -i "$STUFF"/privoxy/0001-allow-build-as-root.patch
+
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc/privoxy \
+		--enable-compression
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/var
+
+	install -d "$PKG"/etc/privoxy/
+	install -m644 config trust *.{action,filter} "$PKG"/etc/privoxy
+	install -Dm755 "$STUFF"/svc/privoxy "$PKG"/etc/service/privoxy/run
+}

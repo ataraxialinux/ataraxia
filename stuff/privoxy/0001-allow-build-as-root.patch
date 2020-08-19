@@ -1,0 +1,115 @@
+From 1d77224f9483a1effe6ab7e080012e7313b9b2cb Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 19 Aug 2020 20:00:33 +0500
+Subject: [PATCH] allow build as root
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ GNUmakefile.in | 74 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 37 insertions(+), 37 deletions(-)
+
+diff --git a/GNUmakefile.in b/GNUmakefile.in
+index 9c496f3..e88f1f2 100644
+--- a/GNUmakefile.in
++++ b/GNUmakefile.in
+@@ -529,8 +529,8 @@ man: dok-release
+ 	mkdir -p doc/source/temp && cd doc/source/temp && $(RM) * ;\
+ 	$(NSGMLS) ../privoxy-man-page.sgml  | sgmlspl ../../../utils/docbook2man/docbook2man-spec.pl &&\
+ 	perl -pi.bak -e 's/ <URL:.*>//; s/\[ /\[/g' $(MAN_PAGE) ;\
+-	perl -pi.bak -e "s/\[ /\[/g;s/á/\\\\['a]/g;s/é/\\\\['e]/g" $(MAN_PAGE); \
+-	perl -pi.bak -e "s/ö/\\\\[:o]/g" $(MAN_PAGE); \
++	perl -pi.bak -e "s/\[ /\[/g;s/\E1/\\\\['a]/g;s/\E9/\\\\['e]/g" $(MAN_PAGE); \
++	perl -pi.bak -e "s/\F6/\\\\[:o]/g" $(MAN_PAGE); \
+ 	perl -pi.bak -e 's/([ {])-([a-z])/$$1\\-$$2/g' $(MAN_PAGE); \
+ 	perl -pi.bak -e 's/ --([a-z])/ \\-\\-$$1/g' $(MAN_PAGE); \
+ 	perl -pi.bak -e 's/\\fB--/\\fB\\-\\-/g' $(MAN_PAGE); \
+@@ -833,9 +833,9 @@ install-strip:
+ PROGRAM_V = Privoxy $(VERSION) $(CODE_STATUS)
+ install: CONF_DEST LOG_DEST PID_DEST check_doc GROUP_T
+ 	@# Quick test for valid USER.
+-	@if [ -n "$(USER)" ]; then \
+-		$(ID) $(USER) >/dev/null || exit 1;\
+-	fi
++#	@if [ -n "$(USER)" ]; then \
++#		$(ID) $(USER) >/dev/null || exit 1;\
++#	fi
+ 	@# Test for valid group. FIXME. USER does not have to belong to GROUP
+ 	@# for file ownership purposes.
+ # 	if [ -n "$(GROUP_T)" ] && [ -n "$(USER)" ] && ! $(GROUPS) $(USER) | $(GREP) "\<$(GROUP_T)\>" >/dev/null; then \
+@@ -909,41 +909,41 @@ install: CONF_DEST LOG_DEST PID_DEST check_doc GROUP_T
+ 		$(INSTALL) $(INSTALL_T) $$i $(DESTDIR)$(CONF_DEST)/templates ;\
+ 	done
+ 
+-	@# FIXME: group/user validation is overly convoluted.
+-	@# If superuser install ... we require a minimum of group ownership
+-	@# of those files the daemon writes to, to be non-root owned.
+-	@if [ "`$(ID) |sed 's/(.*//' |sed 's/.*=//'`" = "0" ] ;then\
+-		if [ x$(USER) = x ] || [ $(USER) = root ]; then \
+-			if [ x$(GROUP) = x ] || [ $(GROUP) = root ]; then \
+-				if [ "`$(ID) privoxy`" ] && \
+-					$(GROUPS) privoxy | $(SED) 's/^.*://' |$(GREP) "\<privoxy\>" >/dev/null; then \
+-					$(ECHO) "Warning: Setting group owner to privoxy";\
+-					GROUP_T=privoxy ;\
+-				else \
+-					$(ECHO)  "******************************************************************" ;\
+-					$(ECHO)  " WARNING! WARNING! installing config files as root!" ;\
+-					$(ECHO)  " It is strongly recommended to run $(PROGRAM) as a non-root user," ;\
+-					$(ECHO)  " and to install the config files as that user and/or group!" ;\
+-					$(ECHO)  " Please read INSTALL, and create a privoxy user and group!" ;\
+-					$(ECHO)  "*******************************************************************" ;\
+-					exit 1 ;\
+-				fi ;\
+-			else \
+-				GROUP_T=$(GROUP) ;\
+-			fi ;\
+-			INSTALL_CONF="$(INSTALL_R) -g $$GROUP_T " ;\
+-		else \
+-			$(ECHO) "Superuser install, installing config files as $(USER):$(GROUP_T)" ;\
+-			INSTALL_CONF="$(INSTALL_R) -o $(USER) -g $(GROUP_T)" ;\
+-			GROUP_T=$(GROUP_T) ;\
+-		fi ;\
+-	else \
+-		if [ ! "`id $(USER)`" = "`id`" ] ;then \
++#	@# FIXME: group/user validation is overly convoluted.
++#	@# If superuser install ... we require a minimum of group ownership
++#	@# of those files the daemon writes to, to be non-root owned.
++#	@if [ "`$(ID) |sed 's/(.*//' |sed 's/.*=//'`" = "0" ] ;then\
++#		if [ x$(USER) = x ] || [ $(USER) = root ]; then \
++#			if [ x$(GROUP) = x ] || [ $(GROUP) = root ]; then \
++#				if [ "`$(ID) privoxy`" ] && \
++#					$(GROUPS) privoxy | $(SED) 's/^.*://' |$(GREP) "\<privoxy\>" >/dev/null; then \
++#					$(ECHO) "Warning: Setting group owner to privoxy";\
++#					GROUP_T=privoxy ;\
++#				else \
++#					$(ECHO)  "******************************************************************" ;\
++#					$(ECHO)  " WARNING! WARNING! installing config files as root!" ;\
++#					$(ECHO)  " It is strongly recommended to run $(PROGRAM) as a non-root user," ;\
++#					$(ECHO)  " and to install the config files as that user and/or group!" ;\
++#					$(ECHO)  " Please read INSTALL, and create a privoxy user and group!" ;\
++#					$(ECHO)  "*******************************************************************" ;\
++#					exit 1 ;\
++#				fi ;\
++#			else \
++#				GROUP_T=$(GROUP) ;\
++#			fi ;\
++#			INSTALL_CONF="$(INSTALL_R) -g $$GROUP_T " ;\
++#		else \
++#			$(ECHO) "Superuser install, installing config files as $(USER):$(GROUP_T)" ;\
++#			INSTALL_CONF="$(INSTALL_R) -o $(USER) -g $(GROUP_T)" ;\
++#			GROUP_T=$(GROUP_T) ;\
++#		fi ;\
++#	else \
++#		if [ ! "`id $(USER)`" = "`id`" ] ;then \
+ 			$(ECHO) "** WARNING ** current install user different from configured user!!" ;\
+ 			$(ECHO) "Edit may fail." ;\
+-		fi ;\
++#		fi ;\
+ 		INSTALL_CONF="$(INSTALL_R)" ;\
+-	fi ;\
++#	fi ;\
+ 	$(ECHO) Installing configuration files to $(DESTDIR)$(CONF_DEST);\
+ 	for i in $(CONFIGS); do \
+ 		if [ "$$i" = "default.action" ] || [ "$$i" = "default.filter" ] ; then \
+-- 
+2.18.4
+
