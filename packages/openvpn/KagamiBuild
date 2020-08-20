@@ -1,0 +1,25 @@
+# Description: An easy-to-use, robust and highly configurable VPN
+# URL:         https://openvpn.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pam libressl iproute2 lzo easy-rsa
+# Section:     net
+
+name=openvpn
+version=2.4.9
+release=1
+source=("https://swupdate.openvpn.org/community/releases/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc/openvpn \
+		--enable-crypto \
+		--enable-iproute2 \
+		--enable-plugins \
+		--enable-x509-alt-username \
+		--disable-systemd
+	make
+	make DESTDIR="$PKG" install
+}
