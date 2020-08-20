@@ -1,0 +1,90 @@
+# Description: System and service manager
+# URL:         https://www.github.com/systemd/systemd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson pam audit libcap shadow xz lz4 libressl libidn2 kmod libelf gperf hwids util-linux
+# Dep x86_64:  gnu-efi
+# Dep i686:    gnu-efi
+# Dep aarch64: gnu-efi
+# Provides:    elogind timedatex sinit eudev
+# Obsoletes:   elogind timedatex sinit eudev
+# Priority:    required
+# Section:     base
+
+name=systemd
+version=246.2
+release=1
+options=('bootstrap')
+source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz"
+	"0001-Allow-building-on-musl-libc.patch"
+	"0002-non-GNU-userland-fixes.patch")
+
+build() {
+	cd "$SRC"/$name-stable-$version
+	patch -Np1 -i "$SRC"/0001-Allow-building-on-musl-libc.patch
+	patch -Np1 -i "$SRC"/0002-non-GNU-userland-fixes.patch
+
+	sed '177,$ d' -i src/resolve/meson.build
+	sed -i 's/GROUP="render", //' rules.d/50-udev-default.rules.in
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-stable-$version \
+		-Dapparmor=false \
+		-Daudit=true \
+		-Dbacklight=true \
+		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
+		-Ddefault-dnssec=no \
+		-Ddefault-hierarchy=unified \
+		-Ddefault-kill-user-processes=false \
+		-Ddefault-locale="C.UTF-8" \
+		-Ddns-over-tls=openssl \
+		-Ddns-servers="1.1.1.1 1.0.0.1 9.9.9.9 8.8.8.8 8.8.4.4 2606:4700:4700::1111 2620:fe::10 2001:4860:4860::8888" \
+		-Delfutils=true \
+		-Dfallback-hostname="ataraxia" \
+		-Dfirstboot=true \
+		-Dgcrypt=false \
+		-Dgnutls=false \
+		-Dgshadow=false \
+		-Dhibernate=false \
+		-Dhomed=false \
+		-Dhtml=false \
+		-Dima=false \
+		-Dimportd=false \
+		-Dkmod-path=/usr/bin/kmod \
+		-Dldconfig=false \
+		-Dlibcurl=false \
+		-Dlibidn2=true \
+		-Dlocaled=true \
+		-Dlz4=true \
+		-Dman=false \
+		-Dmicrohttpd=false \
+		-Dmyhostname=false \
+		-Dnologin-path=/usr/bin/nologin \
+		-Dnss-myhostname=false \
+		-Dnss-mymachines=false \
+		-Dnss-resolve=false \
+		-Dnss-systemd=false \
+		-Dntp-servers="0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org" \
+		-Dp11kit=false \
+		-Dpcre2=false \
+		-Dportabled=false \
+		-Dpstore=false \
+		-Dqrencode=false \
+		-Drandomseed=true \
+		-Dresolve=true \
+		-Dselinux=false \
+		-Dsmack=false \
+		-Dsysusers=true \
+		-Dsysvinit-path= \
+		-Dsysvrcnd-path= \
+		-Dtime-epoch=0 \
+		-Dtimesyncd=true \
+		-Duserdb=false \
+		-Dutmp=false \
+		-Dvalgrind=false \
+		-Dxkbcommon=false
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
+}
