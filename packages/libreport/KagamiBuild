@@ -1,0 +1,26 @@
+# Description: Generic library for reporting various problems
+# URL:         https://abrt.readthedocs.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python intltool dbus json-c curl libxml2 libtar libproxy satyr newt gtk3 augeas
+# Section:     libs
+
+name=libreport
+version=2.14.0
+release=1
+source=("https://github.com/abrt/libreport/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libreport/0001-allow-building-without-systemd-journald.patch
+	patch -Np1 -i "$STUFF"/libreport/0002-build-without-docs.patch
+	sed -i 's|stdout = outstream|// stdout = outstream|' src/plugins/reporter-print.c
+
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--without-bugzilla
+	make
+	make DESTDIR="$PKG" install
+}
