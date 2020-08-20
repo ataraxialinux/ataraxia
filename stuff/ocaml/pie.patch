@@ -1,18 +1,31 @@
-diff -ruN ocaml-4.10.0-orig/asmcomp/emitaux.ml ocaml-4.10.0/asmcomp/emitaux.ml
---- ocaml-4.10.0-orig/asmcomp/emitaux.ml	2020-02-21 22:50:54.000000000 +0900
-+++ ocaml-4.10.0/asmcomp/emitaux.ml	2020-02-29 20:28:13.606122284 +0900
-@@ -213,6 +213,7 @@
-     | None -> a.efa_word 0
-     end
-   in
+From b3b1829a5b016e5663444577f9fc0ca28991b2b0 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 20 Aug 2020 17:49:46 +0500
+Subject: [PATCH 2/2] pie
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ asmcomp/emitaux.ml | 1 +
+ runtime/power.S    | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/asmcomp/emitaux.ml b/asmcomp/emitaux.ml
+index 9a1e621..2a8b4df 100644
+--- a/asmcomp/emitaux.ml
++++ b/asmcomp/emitaux.ml
+@@ -268,6 +268,7 @@ let emit_frames a =
+     match rdbg with
+     | [] -> assert false
+     | d :: rest -> emit rs d rest in
 +  a.efa_align Arch.size_addr;
    a.efa_word (List.length !frame_descriptors);
    List.iter emit_frame !frame_descriptors;
    Label_table.iter emit_debuginfo debuginfos;
-diff -ruN ocaml-4.10.0-orig/runtime/power.S ocaml-4.10.0/runtime/power.S
---- ocaml-4.10.0-orig/runtime/power.S	2020-02-21 22:50:54.000000000 +0900
-+++ ocaml-4.10.0/runtime/power.S	2020-02-29 20:28:31.293700907 +0900
-@@ -654,6 +654,7 @@
+diff --git a/runtime/power.S b/runtime/power.S
+index 1933a10..921e921 100644
+--- a/runtime/power.S
++++ b/runtime/power.S
+@@ -651,6 +651,7 @@ caml_system__code_end:
  
          .section ".data"
          .globl  caml_system__frametable
@@ -20,3 +33,6 @@ diff -ruN ocaml-4.10.0-orig/runtime/power.S ocaml-4.10.0/runtime/power.S
          .type   caml_system__frametable, @object
  caml_system__frametable:
          datag   1               /* one descriptor */
+-- 
+2.18.4
+
