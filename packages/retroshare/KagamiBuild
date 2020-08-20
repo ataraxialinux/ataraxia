@@ -1,0 +1,25 @@
+# Description: P2P private sharing application
+# URL:         http://retroshare.cc/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libupnp qt5 libxss tor libsecret libmicrohttpd
+# Section:     web
+
+name=retroshare
+version=0.6.5
+release=1
+source=("https://github.com/RetroShare/RetroShare/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/RetroShare-$version
+	qmake \
+		CONFIG=-debug \
+		CONFIG=+release \
+		CONFIG=+retroshare_gui \
+		CONFIG=+rs_autologin \
+		CONFIG=+libresapihttpserver \
+		QMAKE_CFLAGS_RELEASE="$CFLAGS" \
+		QMAKE_CXXFLAGS_RELEASE="$CXXFLAGS" \
+		RetroShare.pro
+	make || make # :^)
+	make INSTALL_ROOT="$PKG" install
+}
