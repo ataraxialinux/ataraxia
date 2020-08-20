@@ -12,11 +12,13 @@ name=systemd
 version=246.2
 release=1
 options=('bootstrap')
-backup=('etc/systemd/journald.conf'
+backup=('etc/pam.d/systemd-user'
+	'etc/systemd/journald.conf'
 	'etc/systemd/logind.conf'
 	'etc/systemd/networkd.conf'
 	'etc/systemd/sleep.conf'
 	'etc/systemd/system.conf'
+	'etc/systemd/resolved.conf'
 	'etc/systemd/timesyncd.conf'
 	'etc/systemd/user.conf'
 	'etc/udev/udev.conf')
@@ -24,7 +26,8 @@ source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz"
 	"0001-Allow-building-on-musl-libc.patch"
 	"0002-non-GNU-userland-fixes.patch"
 	"0003-stateless-etc-machine-id.patch"
-	"0004-better-firstboot.patch")
+	"0004-better-firstboot.patch"
+	"system-user")
 
 build() {
 	cd "$SRC"/$name-stable-$version
@@ -109,6 +112,8 @@ build() {
 		# spoof mac address
 		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
 	EOF
+
+	install -Dm644 "$SRC"/systemd-user "$PKG"/etc/pam.d/systemd-user
 
 	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
