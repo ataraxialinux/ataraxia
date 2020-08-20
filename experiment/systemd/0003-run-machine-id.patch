@@ -1,0 +1,344 @@
+diff -ruN systemd-stable-246.2/man/systemd-machine-id-commit.service.xml sysd/man/systemd-machine-id-commit.service.xml
+--- systemd-stable-246.2/man/systemd-machine-id-commit.service.xml	2020-08-17 19:33:43.000000000 +0300
++++ sysd/man/systemd-machine-id-commit.service.xml	2020-08-20 19:50:29.436684474 +0300
+@@ -33,29 +33,29 @@
+ 
+     <para><filename>systemd-machine-id-commit.service</filename> is an
+     early boot service responsible for committing transient
+-    <filename>/etc/machine-id</filename> files to a writable disk file
++    <filename>/run/machine-id</filename> files to a writable disk file
+     system. See
+     <citerefentry><refentrytitle>machine-id</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+     for more information about machine IDs.</para>
+ 
+     <para>This service is started after
+     <filename>local-fs.target</filename> in case
+-    <filename>/etc/machine-id</filename> is a mount point of its own
++    <filename>/run/machine-id</filename> is a mount point of its own
+     (usually from a memory file system such as
+     <literal>tmpfs</literal>) and /etc is writable. The service will
+     invoke <command>systemd-machine-id-setup --commit</command>, which
+     writes the current transient machine ID to disk and unmount the
+-    <filename>/etc/machine-id</filename> file in a race-free manner to
++    <filename>/run/machine-id</filename> file in a race-free manner to
+     ensure that file is always valid and accessible for other
+     processes. See
+     <citerefentry><refentrytitle>systemd-machine-id-setup</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+     for details.</para>
+ 
+     <para>The main use case of this service are systems where
+-    <filename>/etc/machine-id</filename> is read-only and initially
++    <filename>/run/machine-id</filename> is read-only and initially
+     not initialized. In this case, the system manager will generate a
+     transient machine ID file on a memory file system, and mount it
+-    over <filename>/etc/machine-id</filename>, during the early boot
++    over <filename>/run/machine-id</filename>, during the early boot
+     phase. This service is then invoked in a later boot phase, as soon
+     as <filename>/etc</filename> has been remounted writable and the
+     ID may thus be committed to disk to make it permanent.</para>
+diff -ruN systemd-stable-246.2/src/core/machine-id-setup.c sysd/src/core/machine-id-setup.c
+--- systemd-stable-246.2/src/core/machine-id-setup.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/core/machine-id-setup.c	2020-08-20 19:50:05.357216591 +0300
+@@ -91,7 +91,7 @@
+         bool writable;
+         int r;
+ 
+-        etc_machine_id = prefix_roota(root, "/etc/machine-id");
++        etc_machine_id = prefix_roota(root, "/run/machine-id");
+ 
+         RUN_WITH_UMASK(0000) {
+                 /* We create this 0444, to indicate that this isn't really
+@@ -108,11 +108,11 @@
+                         if (fd < 0) {
+                                 if (old_errno == EROFS && errno == ENOENT)
+                                         return log_error_errno(errno,
+-                                                  "System cannot boot: Missing /etc/machine-id and /etc is mounted read-only.\n"
++                                                  "System cannot boot: Missing /run/machine-id and /etc is mounted read-only.\n"
+                                                   "Booting up is supported only when:\n"
+-                                                  "1) /etc/machine-id exists and is populated.\n"
+-                                                  "2) /etc/machine-id exists and is empty.\n"
+-                                                  "3) /etc/machine-id is missing and /etc is writable.\n");
++                                                  "1) /run/machine-id exists and is populated.\n"
++                                                  "2) /run/machine-id exists and is empty.\n"
++                                                  "3) /run/machine-id is missing and /etc is writable.\n");
+                                 else
+                                         return log_error_errno(errno, "Cannot open %s: %m", etc_machine_id);
+                         }
+@@ -184,11 +184,11 @@
+         sd_id128_t id;
+         int r;
+ 
+-        /* Replaces a tmpfs bind mount of /etc/machine-id by a proper file, atomically. For this, the umount is removed
++        /* Replaces a tmpfs bind mount of /run/machine-id by a proper file, atomically. For this, the umount is removed
+          * in a mount namespace, a new file is created at the right place. Afterwards the mount is also removed in the
+          * original mount namespace, thus revealing the file that was just created. */
+ 
+-        etc_machine_id = prefix_roota(root, "/etc/machine-id");
++        etc_machine_id = prefix_roota(root, "/run/machine-id");
+ 
+         r = path_is_mount_point(etc_machine_id, NULL, 0);
+         if (r < 0)
+diff -ruN systemd-stable-246.2/src/core/main.c sysd/src/core/main.c
+--- systemd-stable-246.2/src/core/main.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/core/main.c	2020-08-20 19:50:05.357216591 +0300
+@@ -2003,12 +2003,12 @@
+                         log_info("Running in initial RAM disk.");
+                 } else {
+                         /* Let's check whether we are in first boot, i.e. whether /etc is still unpopulated. We use
+-                         * /etc/machine-id as flag file, for this: if it exists we assume /etc is populated, if it
++                         * /run/machine-id as flag file, for this: if it exists we assume /etc is populated, if it
+                          * doesn't it's unpopulated. This allows container managers and installers to provision a
+                          * couple of files already. If the container manager wants to provision the machine ID itself
+                          * it should pass $container_uuid to PID 1. */
+ 
+-                        *ret_first_boot = access("/etc/machine-id", F_OK) < 0;
++                        *ret_first_boot = access("/run/machine-id", F_OK) < 0;
+                         if (*ret_first_boot)
+                                 log_info("Running with unpopulated /etc.");
+                 }
+diff -ruN systemd-stable-246.2/src/firstboot/firstboot.c sysd/src/firstboot/firstboot.c
+--- systemd-stable-246.2/src/firstboot/firstboot.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/firstboot/firstboot.c	2020-08-20 19:50:05.373216237 +0300
+@@ -537,7 +537,7 @@
+         char id[SD_ID128_STRING_MAX];
+         int r;
+ 
+-        etc_machine_id = prefix_roota(arg_root, "/etc/machine-id");
++        etc_machine_id = prefix_roota(arg_root, "/run/machine-id");
+         if (laccess(etc_machine_id, F_OK) >= 0 && !arg_force)
+                 return 0;
+ 
+diff -ruN systemd-stable-246.2/src/journal/test-journal.c sysd/src/journal/test-journal.c
+--- systemd-stable-246.2/src/journal/test-journal.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/journal/test-journal.c	2020-08-20 19:50:05.413215353 +0300
+@@ -246,8 +246,8 @@
+         test_setup_logging(LOG_INFO);
+ 
+         /* journal_file_open requires a valid machine id */
+-        if (access("/etc/machine-id", F_OK) != 0)
+-                return log_tests_skipped("/etc/machine-id not found");
++        if (access("/run/machine-id", F_OK) != 0)
++                return log_tests_skipped("/run/machine-id not found");
+ 
+         test_non_empty();
+         test_empty();
+diff -ruN systemd-stable-246.2/src/journal/test-journal-interleaving.c sysd/src/journal/test-journal-interleaving.c
+--- systemd-stable-246.2/src/journal/test-journal-interleaving.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/journal/test-journal-interleaving.c	2020-08-20 19:50:05.413215353 +0300
+@@ -282,8 +282,8 @@
+         test_setup_logging(LOG_DEBUG);
+ 
+         /* journal_file_open requires a valid machine id */
+-        if (access("/etc/machine-id", F_OK) != 0)
+-                return log_tests_skipped("/etc/machine-id not found");
++        if (access("/run/machine-id", F_OK) != 0)
++                return log_tests_skipped("/run/machine-id not found");
+ 
+         arg_keep = argc > 1;
+ 
+diff -ruN systemd-stable-246.2/src/journal/test-journal-stream.c sysd/src/journal/test-journal-stream.c
+--- systemd-stable-246.2/src/journal/test-journal-stream.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/journal/test-journal-stream.c	2020-08-20 19:50:05.413215353 +0300
+@@ -176,8 +176,8 @@
+ int main(int argc, char *argv[]) {
+ 
+         /* journal_file_open requires a valid machine id */
+-        if (access("/etc/machine-id", F_OK) != 0)
+-                return log_tests_skipped("/etc/machine-id not found");
++        if (access("/run/machine-id", F_OK) != 0)
++                return log_tests_skipped("/run/machine-id not found");
+ 
+         test_setup_logging(LOG_DEBUG);
+ 
+diff -ruN systemd-stable-246.2/src/journal/test-journal-verify.c sysd/src/journal/test-journal-verify.c
+--- systemd-stable-246.2/src/journal/test-journal-verify.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/journal/test-journal-verify.c	2020-08-20 19:50:05.413215353 +0300
+@@ -64,8 +64,8 @@
+         uint64_t p;
+ 
+         /* journal_file_open requires a valid machine id */
+-        if (access("/etc/machine-id", F_OK) != 0)
+-                return log_tests_skipped("/etc/machine-id not found");
++        if (access("/run/machine-id", F_OK) != 0)
++                return log_tests_skipped("/run/machine-id not found");
+ 
+         test_setup_logging(LOG_DEBUG);
+ 
+diff -ruN systemd-stable-246.2/src/libsystemd/sd-id128/sd-id128.c sysd/src/libsystemd/sd-id128/sd-id128.c
+--- systemd-stable-246.2/src/libsystemd/sd-id128/sd-id128.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/libsystemd/sd-id128/sd-id128.c	2020-08-20 19:50:05.437214822 +0300
+@@ -88,7 +88,7 @@
+         assert_return(ret, -EINVAL);
+ 
+         if (sd_id128_is_null(saved_machine_id)) {
+-                r = id128_read("/etc/machine-id", ID128_PLAIN, &saved_machine_id);
++                r = id128_read("/run/machine-id", ID128_PLAIN, &saved_machine_id);
+                 if (r < 0)
+                         return r;
+ 
+diff -ruN systemd-stable-246.2/src/machine-id-setup/machine-id-setup-main.c sysd/src/machine-id-setup/machine-id-setup-main.c
+--- systemd-stable-246.2/src/machine-id-setup/machine-id-setup-main.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/machine-id-setup/machine-id-setup-main.c	2020-08-20 19:50:05.453214468 +0300
+@@ -29,7 +29,7 @@
+                 return log_oom();
+ 
+         printf("%s [OPTIONS...]\n\n"
+-               "Initialize /etc/machine-id from a random source.\n\n"
++               "Initialize /run/machine-id from a random source.\n\n"
+                "  -h --help             Show this help\n"
+                "     --version          Show package version\n"
+                "     --root=ROOT        Filesystem root\n"
+@@ -123,7 +123,7 @@
+                 if (r < 0)
+                         return r;
+ 
+-                etc_machine_id = prefix_roota(arg_root, "/etc/machine-id");
++                etc_machine_id = prefix_roota(arg_root, "/run/machine-id");
+                 r = id128_read(etc_machine_id, ID128_PLAIN, &id);
+                 if (r < 0)
+                         return log_error_errno(r, "Failed to read machine ID back: %m");
+diff -ruN systemd-stable-246.2/src/nspawn/nspawn.c sysd/src/nspawn/nspawn.c
+--- systemd-stable-246.2/src/nspawn/nspawn.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/nspawn/nspawn.c	2020-08-20 19:50:05.485213761 +0300
+@@ -2550,12 +2550,12 @@
+ 
+         /* If the UUID in the container is already set, then that's what counts, and we use. If it isn't set, and the
+          * caller passed --uuid=, then we'll pass it in the $container_uuid env var to PID 1 of the container. The
+-         * assumption is that PID 1 will then write it to /etc/machine-id to make it persistent. If --uuid= is not
+-         * passed we generate a random UUID, and pass it via $container_uuid. In effect this means that /etc/machine-id
++         * assumption is that PID 1 will then write it to /run/machine-id to make it persistent. If --uuid= is not
++         * passed we generate a random UUID, and pass it via $container_uuid. In effect this means that /run/machine-id
+          * in the container and our idea of the container UUID will always be in sync (at least if PID 1 in the
+          * container behaves nicely). */
+ 
+-        etc_machine_id = prefix_roota(directory, "/etc/machine-id");
++        etc_machine_id = prefix_roota(directory, "/run/machine-id");
+ 
+         r = id128_read(etc_machine_id, ID128_PLAIN, &id);
+         if (r < 0) {
+diff -ruN systemd-stable-246.2/src/partition/repart.c sysd/src/partition/repart.c
+--- systemd-stable-246.2/src/partition/repart.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/partition/repart.c	2020-08-20 19:50:05.489213672 +0300
+@@ -2211,7 +2211,7 @@
+          * time. Or in other words:
+          *
+          * With:
+-         *     SEED := /etc/machine-id
++         *     SEED := /run/machine-id
+          *
+          * If first partition instance of type TYPE_UUID:
+          *     PARTITION_UUID := HMAC-SHA256(SEED, TYPE_UUID)
+@@ -2610,7 +2610,7 @@
+         if (!arg_randomize) {
+                 _cleanup_close_ int fd = -1;
+ 
+-                fd = chase_symlinks_and_open("/etc/machine-id", root, CHASE_PREFIX_ROOT, O_RDONLY|O_CLOEXEC, NULL);
++                fd = chase_symlinks_and_open("/run/machine-id", root, CHASE_PREFIX_ROOT, O_RDONLY|O_CLOEXEC, NULL);
+                 if (fd == -ENOENT)
+                         log_info("No machine ID set, using randomized partition UUIDs.");
+                 else if (fd < 0)
+diff -ruN systemd-stable-246.2/src/shared/dissect-image.c sysd/src/shared/dissect-image.c
+--- systemd-stable-246.2/src/shared/dissect-image.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/shared/dissect-image.c	2020-08-20 19:50:05.525212877 +0300
+@@ -673,7 +673,7 @@
+                                          * ID. Why? Unlike the other partitions /var is inherently
+                                          * installation specific, hence we need to be careful not to mount it
+                                          * in the wrong installation. By hashing the partition UUID from
+-                                         * /etc/machine-id we can securely bind the partition to the
++                                         * /run/machine-id we can securely bind the partition to the
+                                          * installation. */
+ 
+                                         r = sd_id128_get_machine_app_specific(GPT_VAR, &var_uuid);
+@@ -1676,7 +1676,7 @@
+ 
+         static const char *const paths[_META_MAX] = {
+                 [META_HOSTNAME]     = "/etc/hostname\0",
+-                [META_MACHINE_ID]   = "/etc/machine-id\0",
++                [META_MACHINE_ID]   = "/run/machine-id\0",
+                 [META_MACHINE_INFO] = "/etc/machine-info\0",
+                 [META_OS_RELEASE]   = "/etc/os-release\0"
+                                       "/usr/lib/os-release\0",
+@@ -1765,15 +1765,15 @@
+ 
+                         r = read_line(f, LONG_LINE_MAX, &line);
+                         if (r < 0)
+-                                log_debug_errno(r, "Failed to read /etc/machine-id: %m");
++                                log_debug_errno(r, "Failed to read /run/machine-id: %m");
+                         else if (r == 33) {
+                                 r = sd_id128_from_string(line, &machine_id);
+                                 if (r < 0)
+-                                        log_debug_errno(r, "Image contains invalid /etc/machine-id: %s", line);
++                                        log_debug_errno(r, "Image contains invalid /run/machine-id: %s", line);
+                         } else if (r == 0)
+-                                log_debug("/etc/machine-id file is empty.");
++                                log_debug("/run/machine-id file is empty.");
+                         else
+-                                log_debug("/etc/machine-id has unexpected length %i.", r);
++                                log_debug("/run/machine-id has unexpected length %i.", r);
+ 
+                         break;
+                 }
+diff -ruN systemd-stable-246.2/src/shared/machine-image.c sysd/src/shared/machine-image.c
+--- systemd-stable-246.2/src/shared/machine-image.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/shared/machine-image.c	2020-08-20 19:50:05.541212522 +0300
+@@ -1123,9 +1123,9 @@
+ 
+                 path = mfree(path);
+ 
+-                r = chase_symlinks("/etc/machine-id", i->path, CHASE_PREFIX_ROOT|CHASE_TRAIL_SLASH, &path, NULL);
++                r = chase_symlinks("/run/machine-id", i->path, CHASE_PREFIX_ROOT|CHASE_TRAIL_SLASH, &path, NULL);
+                 if (r < 0 && r != -ENOENT)
+-                        log_debug_errno(r, "Failed to chase /etc/machine-id in image %s: %m", i->name);
++                        log_debug_errno(r, "Failed to chase /run/machine-id in image %s: %m", i->name);
+                 else if (r >= 0) {
+                         _cleanup_close_ int fd = -1;
+ 
+diff -ruN systemd-stable-246.2/src/test/test-fs-util.c sysd/src/test/test-fs-util.c
+--- systemd-stable-246.2/src/test/test-fs-util.c	2020-08-17 19:33:43.000000000 +0300
++++ sysd/src/test/test-fs-util.c	2020-08-20 19:50:05.569211903 +0300
+@@ -211,7 +211,7 @@
+         assert_se(streq(result, "/test-chase.fsldajfl"));
+         result = mfree(result);
+ 
+-        r = chase_symlinks("/etc/machine-id/foo", NULL, 0, &result, NULL);
++        r = chase_symlinks("/run/machine-id/foo", NULL, 0, &result, NULL);
+         assert_se(r == -ENOTDIR);
+         result = mfree(result);
+ 
+diff: systemd-stable-246.2/test/testdata: recursive directory loop
+diff -ruN systemd-stable-246.2/test/test-execute/exec-specifier.service sysd/test/test-execute/exec-specifier.service
+--- systemd-stable-246.2/test/test-execute/exec-specifier.service	2020-08-17 19:33:43.000000000 +0300
++++ sysd/test/test-execute/exec-specifier.service	2020-08-20 19:50:29.456684032 +0300
+@@ -25,7 +25,7 @@
+ ExecStart=sh -c 'test %G = $$(id -g)'
+ ExecStart=test %h = /root
+ ExecStart=sh -c 'test %s = /bin/sh'
+-ExecStart=sh -c 'test %m = $$(cat /etc/machine-id)'
++ExecStart=sh -c 'test %m = $$(cat /run/machine-id)'
+ ExecStart=sh -c 'test %b = $$(cat /proc/sys/kernel/random/boot_id | sed -e 's/-//g')'
+ ExecStart=sh -c 'test %H = $$(uname -n)'
+ ExecStart=sh -c 'test %v = $$(uname -r)'
+diff -ruN systemd-stable-246.2/test/test-execute/exec-specifier@.service sysd/test/test-execute/exec-specifier@.service
+--- systemd-stable-246.2/test/test-execute/exec-specifier@.service	2020-08-17 19:33:43.000000000 +0300
++++ sysd/test/test-execute/exec-specifier@.service	2020-08-20 19:50:29.456684032 +0300
+@@ -23,7 +23,7 @@
+ ExecStart=sh -c 'test %G = $$(id -g)'
+ ExecStart=test %h = /root
+ ExecStart=sh -c 'test %s = /bin/sh'
+-ExecStart=sh -c 'test %m = $$(cat /etc/machine-id)'
++ExecStart=sh -c 'test %m = $$(cat /run/machine-id)'
+ ExecStart=sh -c 'test %b = $$(cat /proc/sys/kernel/random/boot_id | sed -e 's/-//g')'
+ ExecStart=sh -c 'test %H = $$(uname -n)'
+ ExecStart=sh -c 'test %v = $$(uname -r)'
+diff -ruN systemd-stable-246.2/units/systemd-machine-id-commit.service sysd/units/systemd-machine-id-commit.service
+--- systemd-stable-246.2/units/systemd-machine-id-commit.service	2020-08-17 19:33:43.000000000 +0300
++++ sysd/units/systemd-machine-id-commit.service	2020-08-20 19:50:29.484683413 +0300
+@@ -15,7 +15,7 @@
+ Before=sysinit.target shutdown.target
+ After=local-fs.target
+ ConditionPathIsReadWrite=/etc
+-ConditionPathIsMountPoint=/etc/machine-id
++ConditionPathIsMountPoint=/run/machine-id
+ 
+ [Service]
+ Type=oneshot
