@@ -24,7 +24,7 @@ Stage 2 is complete!
  - [x] Move to sinit and runit
  - [x] Add more version control software (svn, fossil)
  - [x] Add server software (apache, nginx, lighttpd, mariadb, postgresql, dovecot, postfix, exim, bind, nsd, php, s6-dns, cyrus-sasl, openldap, cifs-utils)
- - [ ] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa, wireguard, retroshare, gnunet)
+ - [x] Add proxy and VPN software (squid, privoxy, polipo, tinyproxy, openvpn, easy-rsa, wireguard, retroshare)
  - [x] Add container management software (lxc, podman, runc)
  - [x] Add virtualization management software (libvirt, qemu, virt-manager)
  - [x] Add GNOME apps
