@@ -1,0 +1,127 @@
+# Description: Filesystem layout and configuration files
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Provides:    system-release
+# Priority:    required
+# Section:     base
+
+name=base-files
+version=0.15
+release=1
+options=('bootstrap')
+backup=('etc/csh.cshrc'
+	'etc/csh.login'
+	'etc/fstab'
+	'etc/group'
+	'etc/gshadow'
+	'etc/host.conf'
+	'etc/hosts'
+	'etc/issue'
+	'etc/issue.net'
+	'etc/motd'
+	'etc/passwd'
+	'etc/profile'
+	'etc/resolv.conf'
+	'etc/securetty'
+	'etc/shadow'
+	'etc/shells'
+	'etc/network/interfaces')
+source=("group"
+	"gshadow"
+	"passwd"
+	"shadow")
+
+build() {
+	cd "$PKG"
+
+	for d in boot dev etc/{skel,profile.d,modprobe.d,sysctl.d,service} home media/{cdrom,flash,usbdisk,floppy,zip} mnt usr var/service opt srv/http run; do
+		install -d -m755 $d
+	done
+
+	install -d -m555 proc
+	install -d -m555 sys
+	install -d -m0750 home/root
+	install -d -m1777 tmp
+	install -d -m555 -g 11 srv/ftp
+
+	ln -sf home/root root
+
+	ln -sf ../proc/mounts etc/mtab
+
+	for f in fstab host.conf hosts issue issue.net \
+		motd profile resolv.conf securetty shells \
+		csh.cshrc csh.login; do
+		install -m644 "$STUFF"/base-files/$f etc/
+	done
+
+	for f in group passwd; do
+		install -m644 "$SRC"/$f etc/
+	done
+
+	for f in gshadow shadow; do
+		install -m600 "$SRC"/$f etc/
+	done
+
+	install -m600 "$STUFF"/base-files/crypttab etc/
+
+	mkdir -p \
+		etc/network/if-down.d \
+		etc/network/if-post-down.d \
+		etc/network/if-post-up.d \
+		etc/network/if-pre-down.d \
+		etc/network/if-pre-up.d \
+		etc/network/if-up.d
+
+	cat >  etc/network/interfaces <<- EOF
+		auto lo
+		iface lo inet loopback
+	EOF
+
+	for d in cache local opt log/old lib/misc empty spool/cron/crontabs mail; do
+		install -d -m755 var/$d
+	done
+
+	install -d -m1777 var/{tmp,spool/mail}
+
+	install -d -m775 -g 50 var/games
+	ln -sf ../mail var/spool/mail
+	ln -sf ../run var/run
+	ln -sf ../run/lock var/lock
+
+	for d in bin games include lib/{modules,firmware} share/misc src; do
+		install -d -m755 usr/$d
+	done
+
+	ln -sf usr/bin bin
+	ln -sf usr/bin sbin
+	ln -sf bin usr/sbin
+	ln -sf usr/lib lib
+
+	for d in bin etc games include lib man sbin share src; do
+		install -d -m755 usr/local/$d
+	done
+
+	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
+	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/etc/sysctl.d/10-default.conf
+
+	cat > "$PKG"/usr/lib/os-release <<- EOF
+		NAME="Ataraxia Linux"
+		VERSION="1.0 (Misaka)"
+		ID="ataraxia"
+		ID_LIKE="ataraxialinux ataraxia januslinux janus"
+		VERSION_ID="1.0"
+		PRETTY_NAME="Ataraxia Linux 1.0 (Misaka)"
+		HOME_URL="https://ataraxialinux.github.io/"
+		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
+	EOF
+
+	cat > "$PKG"/etc/ataraxia-release <<- EOF
+		Ataraxia Linux release 1.0 (Misaka)
+	EOF
+
+	ln -sf ../usr/lib/os-release "$PKG"/etc/os-release
+	ln -sf ataraxia-release "$PKG"/etc/system-release
+
+	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
+	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+}
