@@ -1,6 +1,34 @@
-diff -ruN systemd-stable-246.2/man/systemd-machine-id-commit.service.xml sysd/man/systemd-machine-id-commit.service.xml
---- systemd-stable-246.2/man/systemd-machine-id-commit.service.xml	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/man/systemd-machine-id-commit.service.xml	2020-08-20 19:50:29.436684474 +0300
+From 5c4a43bfa24a8db591feb21ddbbdee03355940e2 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 20 Aug 2020 22:45:48 +0500
+Subject: [PATCH 1/2] stateless /etc/machine-id
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ man/systemd-machine-id-commit.service.xml    | 10 +++++-----
+ src/core/machine-id-setup.c                  | 14 +++++++-------
+ src/core/main.c                              |  4 ++--
+ src/firstboot/firstboot.c                    |  2 +-
+ src/journal/test-journal-interleaving.c      |  4 ++--
+ src/journal/test-journal-stream.c            |  4 ++--
+ src/journal/test-journal-verify.c            |  4 ++--
+ src/journal/test-journal.c                   |  4 ++--
+ src/libsystemd/sd-id128/sd-id128.c           |  2 +-
+ src/machine-id-setup/machine-id-setup-main.c |  4 ++--
+ src/nspawn/nspawn.c                          |  6 +++---
+ src/partition/repart.c                       |  4 ++--
+ src/shared/dissect-image.c                   | 12 ++++++------
+ src/shared/machine-image.c                   |  4 ++--
+ src/test/test-fs-util.c                      |  2 +-
+ test/test-execute/exec-specifier.service     |  2 +-
+ test/test-execute/exec-specifier@.service    |  2 +-
+ units/systemd-machine-id-commit.service      |  2 +-
+ 18 files changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/man/systemd-machine-id-commit.service.xml b/man/systemd-machine-id-commit.service.xml
+index 781a984..df80c61 100644
+--- a/man/systemd-machine-id-commit.service.xml
++++ b/man/systemd-machine-id-commit.service.xml
 @@ -33,29 +33,29 @@
  
      <para><filename>systemd-machine-id-commit.service</filename> is an
@@ -36,10 +64,11 @@ diff -ruN systemd-stable-246.2/man/systemd-machine-id-commit.service.xml sysd/ma
      phase. This service is then invoked in a later boot phase, as soon
      as <filename>/etc</filename> has been remounted writable and the
      ID may thus be committed to disk to make it permanent.</para>
-diff -ruN systemd-stable-246.2/src/core/machine-id-setup.c sysd/src/core/machine-id-setup.c
---- systemd-stable-246.2/src/core/machine-id-setup.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/core/machine-id-setup.c	2020-08-20 19:50:05.357216591 +0300
-@@ -91,7 +91,7 @@
+diff --git a/src/core/machine-id-setup.c b/src/core/machine-id-setup.c
+index f76b82a..bb0ec57 100644
+--- a/src/core/machine-id-setup.c
++++ b/src/core/machine-id-setup.c
+@@ -91,7 +91,7 @@ int machine_id_setup(const char *root, sd_id128_t machine_id, sd_id128_t *ret) {
          bool writable;
          int r;
  
@@ -48,7 +77,7 @@ diff -ruN systemd-stable-246.2/src/core/machine-id-setup.c sysd/src/core/machine
  
          RUN_WITH_UMASK(0000) {
                  /* We create this 0444, to indicate that this isn't really
-@@ -108,11 +108,11 @@
+@@ -108,11 +108,11 @@ int machine_id_setup(const char *root, sd_id128_t machine_id, sd_id128_t *ret) {
                          if (fd < 0) {
                                  if (old_errno == EROFS && errno == ENOENT)
                                          return log_error_errno(errno,
@@ -64,7 +93,7 @@ diff -ruN systemd-stable-246.2/src/core/machine-id-setup.c sysd/src/core/machine
                                  else
                                          return log_error_errno(errno, "Cannot open %s: %m", etc_machine_id);
                          }
-@@ -184,11 +184,11 @@
+@@ -184,11 +184,11 @@ int machine_id_commit(const char *root) {
          sd_id128_t id;
          int r;
  
@@ -78,10 +107,11 @@ diff -ruN systemd-stable-246.2/src/core/machine-id-setup.c sysd/src/core/machine
  
          r = path_is_mount_point(etc_machine_id, NULL, 0);
          if (r < 0)
-diff -ruN systemd-stable-246.2/src/core/main.c sysd/src/core/main.c
---- systemd-stable-246.2/src/core/main.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/core/main.c	2020-08-20 19:50:05.357216591 +0300
-@@ -2003,12 +2003,12 @@
+diff --git a/src/core/main.c b/src/core/main.c
+index 4a37697..a7a3be2 100644
+--- a/src/core/main.c
++++ b/src/core/main.c
+@@ -2003,12 +2003,12 @@ static void log_execution_mode(bool *ret_first_boot) {
                          log_info("Running in initial RAM disk.");
                  } else {
                          /* Let's check whether we are in first boot, i.e. whether /etc is still unpopulated. We use
@@ -96,10 +126,11 @@ diff -ruN systemd-stable-246.2/src/core/main.c sysd/src/core/main.c
                          if (*ret_first_boot)
                                  log_info("Running with unpopulated /etc.");
                  }
-diff -ruN systemd-stable-246.2/src/firstboot/firstboot.c sysd/src/firstboot/firstboot.c
---- systemd-stable-246.2/src/firstboot/firstboot.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/firstboot/firstboot.c	2020-08-20 19:50:05.373216237 +0300
-@@ -537,7 +537,7 @@
+diff --git a/src/firstboot/firstboot.c b/src/firstboot/firstboot.c
+index a3f4425..83e4522 100644
+--- a/src/firstboot/firstboot.c
++++ b/src/firstboot/firstboot.c
+@@ -537,7 +537,7 @@ static int process_machine_id(void) {
          char id[SD_ID128_STRING_MAX];
          int r;
  
@@ -108,24 +139,11 @@ diff -ruN systemd-stable-246.2/src/firstboot/firstboot.c sysd/src/firstboot/firs
          if (laccess(etc_machine_id, F_OK) >= 0 && !arg_force)
                  return 0;
  
-diff -ruN systemd-stable-246.2/src/journal/test-journal.c sysd/src/journal/test-journal.c
---- systemd-stable-246.2/src/journal/test-journal.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/journal/test-journal.c	2020-08-20 19:50:05.413215353 +0300
-@@ -246,8 +246,8 @@
-         test_setup_logging(LOG_INFO);
- 
-         /* journal_file_open requires a valid machine id */
--        if (access("/etc/machine-id", F_OK) != 0)
--                return log_tests_skipped("/etc/machine-id not found");
-+        if (access("/run/machine-id", F_OK) != 0)
-+                return log_tests_skipped("/run/machine-id not found");
- 
-         test_non_empty();
-         test_empty();
-diff -ruN systemd-stable-246.2/src/journal/test-journal-interleaving.c sysd/src/journal/test-journal-interleaving.c
---- systemd-stable-246.2/src/journal/test-journal-interleaving.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/journal/test-journal-interleaving.c	2020-08-20 19:50:05.413215353 +0300
-@@ -282,8 +282,8 @@
+diff --git a/src/journal/test-journal-interleaving.c b/src/journal/test-journal-interleaving.c
+index c0bda68..ae986dd 100644
+--- a/src/journal/test-journal-interleaving.c
++++ b/src/journal/test-journal-interleaving.c
+@@ -282,8 +282,8 @@ int main(int argc, char *argv[]) {
          test_setup_logging(LOG_DEBUG);
  
          /* journal_file_open requires a valid machine id */
@@ -136,10 +154,11 @@ diff -ruN systemd-stable-246.2/src/journal/test-journal-interleaving.c sysd/src/
  
          arg_keep = argc > 1;
  
-diff -ruN systemd-stable-246.2/src/journal/test-journal-stream.c sysd/src/journal/test-journal-stream.c
---- systemd-stable-246.2/src/journal/test-journal-stream.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/journal/test-journal-stream.c	2020-08-20 19:50:05.413215353 +0300
-@@ -176,8 +176,8 @@
+diff --git a/src/journal/test-journal-stream.c b/src/journal/test-journal-stream.c
+index 50aab11..559feae 100644
+--- a/src/journal/test-journal-stream.c
++++ b/src/journal/test-journal-stream.c
+@@ -176,8 +176,8 @@ static void run_test(void) {
  int main(int argc, char *argv[]) {
  
          /* journal_file_open requires a valid machine id */
@@ -150,10 +169,11 @@ diff -ruN systemd-stable-246.2/src/journal/test-journal-stream.c sysd/src/journa
  
          test_setup_logging(LOG_DEBUG);
  
-diff -ruN systemd-stable-246.2/src/journal/test-journal-verify.c sysd/src/journal/test-journal-verify.c
---- systemd-stable-246.2/src/journal/test-journal-verify.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/journal/test-journal-verify.c	2020-08-20 19:50:05.413215353 +0300
-@@ -64,8 +64,8 @@
+diff --git a/src/journal/test-journal-verify.c b/src/journal/test-journal-verify.c
+index 2893a7c..4a48090 100644
+--- a/src/journal/test-journal-verify.c
++++ b/src/journal/test-journal-verify.c
+@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
          uint64_t p;
  
          /* journal_file_open requires a valid machine id */
@@ -164,10 +184,26 @@ diff -ruN systemd-stable-246.2/src/journal/test-journal-verify.c sysd/src/journa
  
          test_setup_logging(LOG_DEBUG);
  
-diff -ruN systemd-stable-246.2/src/libsystemd/sd-id128/sd-id128.c sysd/src/libsystemd/sd-id128/sd-id128.c
---- systemd-stable-246.2/src/libsystemd/sd-id128/sd-id128.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/libsystemd/sd-id128/sd-id128.c	2020-08-20 19:50:05.437214822 +0300
-@@ -88,7 +88,7 @@
+diff --git a/src/journal/test-journal.c b/src/journal/test-journal.c
+index 5850bb8..3691150 100644
+--- a/src/journal/test-journal.c
++++ b/src/journal/test-journal.c
+@@ -246,8 +246,8 @@ int main(int argc, char *argv[]) {
+         test_setup_logging(LOG_INFO);
+ 
+         /* journal_file_open requires a valid machine id */
+-        if (access("/etc/machine-id", F_OK) != 0)
+-                return log_tests_skipped("/etc/machine-id not found");
++        if (access("/run/machine-id", F_OK) != 0)
++                return log_tests_skipped("/run/machine-id not found");
+ 
+         test_non_empty();
+         test_empty();
+diff --git a/src/libsystemd/sd-id128/sd-id128.c b/src/libsystemd/sd-id128/sd-id128.c
+index 9b38ef0..54c4188 100644
+--- a/src/libsystemd/sd-id128/sd-id128.c
++++ b/src/libsystemd/sd-id128/sd-id128.c
+@@ -88,7 +88,7 @@ _public_ int sd_id128_get_machine(sd_id128_t *ret) {
          assert_return(ret, -EINVAL);
  
          if (sd_id128_is_null(saved_machine_id)) {
@@ -176,10 +212,11 @@ diff -ruN systemd-stable-246.2/src/libsystemd/sd-id128/sd-id128.c sysd/src/libsy
                  if (r < 0)
                          return r;
  
-diff -ruN systemd-stable-246.2/src/machine-id-setup/machine-id-setup-main.c sysd/src/machine-id-setup/machine-id-setup-main.c
---- systemd-stable-246.2/src/machine-id-setup/machine-id-setup-main.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/machine-id-setup/machine-id-setup-main.c	2020-08-20 19:50:05.453214468 +0300
-@@ -29,7 +29,7 @@
+diff --git a/src/machine-id-setup/machine-id-setup-main.c b/src/machine-id-setup/machine-id-setup-main.c
+index 872b00c..f7a8c78 100644
+--- a/src/machine-id-setup/machine-id-setup-main.c
++++ b/src/machine-id-setup/machine-id-setup-main.c
+@@ -29,7 +29,7 @@ static int help(void) {
                  return log_oom();
  
          printf("%s [OPTIONS...]\n\n"
@@ -188,7 +225,7 @@ diff -ruN systemd-stable-246.2/src/machine-id-setup/machine-id-setup-main.c sysd
                 "  -h --help             Show this help\n"
                 "     --version          Show package version\n"
                 "     --root=ROOT        Filesystem root\n"
-@@ -123,7 +123,7 @@
+@@ -123,7 +123,7 @@ static int run(int argc, char *argv[]) {
                  if (r < 0)
                          return r;
  
@@ -197,10 +234,11 @@ diff -ruN systemd-stable-246.2/src/machine-id-setup/machine-id-setup-main.c sysd
                  r = id128_read(etc_machine_id, ID128_PLAIN, &id);
                  if (r < 0)
                          return log_error_errno(r, "Failed to read machine ID back: %m");
-diff -ruN systemd-stable-246.2/src/nspawn/nspawn.c sysd/src/nspawn/nspawn.c
---- systemd-stable-246.2/src/nspawn/nspawn.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/nspawn/nspawn.c	2020-08-20 19:50:05.485213761 +0300
-@@ -2550,12 +2550,12 @@
+diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
+index eb7c332..0a7456f 100644
+--- a/src/nspawn/nspawn.c
++++ b/src/nspawn/nspawn.c
+@@ -2550,12 +2550,12 @@ static int setup_machine_id(const char *directory) {
  
          /* If the UUID in the container is already set, then that's what counts, and we use. If it isn't set, and the
           * caller passed --uuid=, then we'll pass it in the $container_uuid env var to PID 1 of the container. The
@@ -216,10 +254,11 @@ diff -ruN systemd-stable-246.2/src/nspawn/nspawn.c sysd/src/nspawn/nspawn.c
  
          r = id128_read(etc_machine_id, ID128_PLAIN, &id);
          if (r < 0) {
-diff -ruN systemd-stable-246.2/src/partition/repart.c sysd/src/partition/repart.c
---- systemd-stable-246.2/src/partition/repart.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/partition/repart.c	2020-08-20 19:50:05.489213672 +0300
-@@ -2211,7 +2211,7 @@
+diff --git a/src/partition/repart.c b/src/partition/repart.c
+index 2e5f5d1..55306c8 100644
+--- a/src/partition/repart.c
++++ b/src/partition/repart.c
+@@ -2211,7 +2211,7 @@ static int partition_acquire_uuid(Context *context, Partition *p, sd_id128_t *re
           * time. Or in other words:
           *
           * With:
@@ -228,7 +267,7 @@ diff -ruN systemd-stable-246.2/src/partition/repart.c sysd/src/partition/repart.
           *
           * If first partition instance of type TYPE_UUID:
           *     PARTITION_UUID := HMAC-SHA256(SEED, TYPE_UUID)
-@@ -2610,7 +2610,7 @@
+@@ -2610,7 +2610,7 @@ static int context_read_seed(Context *context, const char *root) {
          if (!arg_randomize) {
                  _cleanup_close_ int fd = -1;
  
@@ -237,10 +276,11 @@ diff -ruN systemd-stable-246.2/src/partition/repart.c sysd/src/partition/repart.
                  if (fd == -ENOENT)
                          log_info("No machine ID set, using randomized partition UUIDs.");
                  else if (fd < 0)
-diff -ruN systemd-stable-246.2/src/shared/dissect-image.c sysd/src/shared/dissect-image.c
---- systemd-stable-246.2/src/shared/dissect-image.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/shared/dissect-image.c	2020-08-20 19:50:05.525212877 +0300
-@@ -673,7 +673,7 @@
+diff --git a/src/shared/dissect-image.c b/src/shared/dissect-image.c
+index 24be6de..bac03f1 100644
+--- a/src/shared/dissect-image.c
++++ b/src/shared/dissect-image.c
+@@ -673,7 +673,7 @@ int dissect_image(
                                           * ID. Why? Unlike the other partitions /var is inherently
                                           * installation specific, hence we need to be careful not to mount it
                                           * in the wrong installation. By hashing the partition UUID from
@@ -249,7 +289,7 @@ diff -ruN systemd-stable-246.2/src/shared/dissect-image.c sysd/src/shared/dissec
                                           * installation. */
  
                                          r = sd_id128_get_machine_app_specific(GPT_VAR, &var_uuid);
-@@ -1676,7 +1676,7 @@
+@@ -1676,7 +1676,7 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
  
          static const char *const paths[_META_MAX] = {
                  [META_HOSTNAME]     = "/etc/hostname\0",
@@ -258,7 +298,7 @@ diff -ruN systemd-stable-246.2/src/shared/dissect-image.c sysd/src/shared/dissec
                  [META_MACHINE_INFO] = "/etc/machine-info\0",
                  [META_OS_RELEASE]   = "/etc/os-release\0"
                                        "/usr/lib/os-release\0",
-@@ -1765,15 +1765,15 @@
+@@ -1765,15 +1765,15 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
  
                          r = read_line(f, LONG_LINE_MAX, &line);
                          if (r < 0)
@@ -278,10 +318,11 @@ diff -ruN systemd-stable-246.2/src/shared/dissect-image.c sysd/src/shared/dissec
  
                          break;
                  }
-diff -ruN systemd-stable-246.2/src/shared/machine-image.c sysd/src/shared/machine-image.c
---- systemd-stable-246.2/src/shared/machine-image.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/shared/machine-image.c	2020-08-20 19:50:05.541212522 +0300
-@@ -1123,9 +1123,9 @@
+diff --git a/src/shared/machine-image.c b/src/shared/machine-image.c
+index 1b7cfb5..e2898c7 100644
+--- a/src/shared/machine-image.c
++++ b/src/shared/machine-image.c
+@@ -1123,9 +1123,9 @@ int image_read_metadata(Image *i) {
  
                  path = mfree(path);
  
@@ -293,10 +334,11 @@ diff -ruN systemd-stable-246.2/src/shared/machine-image.c sysd/src/shared/machin
                  else if (r >= 0) {
                          _cleanup_close_ int fd = -1;
  
-diff -ruN systemd-stable-246.2/src/test/test-fs-util.c sysd/src/test/test-fs-util.c
---- systemd-stable-246.2/src/test/test-fs-util.c	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/src/test/test-fs-util.c	2020-08-20 19:50:05.569211903 +0300
-@@ -211,7 +211,7 @@
+diff --git a/src/test/test-fs-util.c b/src/test/test-fs-util.c
+index 1ea845d..e419a0b 100644
+--- a/src/test/test-fs-util.c
++++ b/src/test/test-fs-util.c
+@@ -211,7 +211,7 @@ static void test_chase_symlinks(void) {
          assert_se(streq(result, "/test-chase.fsldajfl"));
          result = mfree(result);
  
@@ -305,11 +347,11 @@ diff -ruN systemd-stable-246.2/src/test/test-fs-util.c sysd/src/test/test-fs-uti
          assert_se(r == -ENOTDIR);
          result = mfree(result);
  
-diff: systemd-stable-246.2/test/testdata: recursive directory loop
-diff -ruN systemd-stable-246.2/test/test-execute/exec-specifier.service sysd/test/test-execute/exec-specifier.service
---- systemd-stable-246.2/test/test-execute/exec-specifier.service	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/test/test-execute/exec-specifier.service	2020-08-20 19:50:29.456684032 +0300
-@@ -25,7 +25,7 @@
+diff --git a/test/test-execute/exec-specifier.service b/test/test-execute/exec-specifier.service
+index a58abc6..39c9e46 100644
+--- a/test/test-execute/exec-specifier.service
++++ b/test/test-execute/exec-specifier.service
+@@ -25,7 +25,7 @@ ExecStart=sh -c 'test %g = $$(id -gn)'
  ExecStart=sh -c 'test %G = $$(id -g)'
  ExecStart=test %h = /root
  ExecStart=sh -c 'test %s = /bin/sh'
@@ -318,10 +360,11 @@ diff -ruN systemd-stable-246.2/test/test-execute/exec-specifier.service sysd/tes
  ExecStart=sh -c 'test %b = $$(cat /proc/sys/kernel/random/boot_id | sed -e 's/-//g')'
  ExecStart=sh -c 'test %H = $$(uname -n)'
  ExecStart=sh -c 'test %v = $$(uname -r)'
-diff -ruN systemd-stable-246.2/test/test-execute/exec-specifier@.service sysd/test/test-execute/exec-specifier@.service
---- systemd-stable-246.2/test/test-execute/exec-specifier@.service	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/test/test-execute/exec-specifier@.service	2020-08-20 19:50:29.456684032 +0300
-@@ -23,7 +23,7 @@
+diff --git a/test/test-execute/exec-specifier@.service b/test/test-execute/exec-specifier@.service
+index faecbf3..ad94121 100644
+--- a/test/test-execute/exec-specifier@.service
++++ b/test/test-execute/exec-specifier@.service
+@@ -23,7 +23,7 @@ ExecStart=sh -c 'test %g = $$(id -gn)'
  ExecStart=sh -c 'test %G = $$(id -g)'
  ExecStart=test %h = /root
  ExecStart=sh -c 'test %s = /bin/sh'
@@ -330,10 +373,11 @@ diff -ruN systemd-stable-246.2/test/test-execute/exec-specifier@.service sysd/te
  ExecStart=sh -c 'test %b = $$(cat /proc/sys/kernel/random/boot_id | sed -e 's/-//g')'
  ExecStart=sh -c 'test %H = $$(uname -n)'
  ExecStart=sh -c 'test %v = $$(uname -r)'
-diff -ruN systemd-stable-246.2/units/systemd-machine-id-commit.service sysd/units/systemd-machine-id-commit.service
---- systemd-stable-246.2/units/systemd-machine-id-commit.service	2020-08-17 19:33:43.000000000 +0300
-+++ sysd/units/systemd-machine-id-commit.service	2020-08-20 19:50:29.484683413 +0300
-@@ -15,7 +15,7 @@
+diff --git a/units/systemd-machine-id-commit.service b/units/systemd-machine-id-commit.service
+index e3acb0f..0828ec2 100644
+--- a/units/systemd-machine-id-commit.service
++++ b/units/systemd-machine-id-commit.service
+@@ -15,7 +15,7 @@ Conflicts=shutdown.target
  Before=sysinit.target shutdown.target
  After=local-fs.target
  ConditionPathIsReadWrite=/etc
@@ -342,3 +386,6 @@ diff -ruN systemd-stable-246.2/units/systemd-machine-id-commit.service sysd/unit
  
  [Service]
  Type=oneshot
+-- 
+2.18.4
+

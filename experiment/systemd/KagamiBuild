@@ -23,13 +23,15 @@ backup=('etc/systemd/journald.conf'
 source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz"
 	"0001-Allow-building-on-musl-libc.patch"
 	"0002-non-GNU-userland-fixes.patch"
-	"0003-run-machine-id.patch")
+	"0003-stateless-etc-machine-id.patch"
+	"0004-better-firstboot.patch")
 
 build() {
 	cd "$SRC"/$name-stable-$version
 	patch -Np1 -i "$SRC"/0001-Allow-building-on-musl-libc.patch
 	patch -Np1 -i "$SRC"/0002-non-GNU-userland-fixes.patch
-	patch -Np1 -i "$SRC"/0003-run-machine-id.patch
+	patch -Np1 -i "$SRC"/0003-stateless-etc-machine-id.patch
+	patch -Np1 -i "$SRC"/0004-better-firstboot.patch
 
 	sed '177,$ d' -i src/resolve/meson.build
 	sed -i 's/GROUP="render", //' rules.d/50-udev-default.rules.in
