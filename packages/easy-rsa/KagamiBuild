@@ -1,0 +1,23 @@
+# Description: Simple shell based CA utility
+# URL:         https://github.com/OpenVPN/easy-rsa
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
+# Section:     security
+
+name=easy-rsa
+version=3.0.7
+release=1
+backup=('etc/easy-rsa/openssl-easyrsa.cnf'
+	'etc/easy-rsa/vars')
+source=("https://github.com/OpenVPN/easy-rsa/releases/download/v$version/EasyRSA-$version.tgz")
+
+build() {
+	cd "$SRC"/EasyRSA-$version
+	install -Dm755 easyrsa "$PKG"/usr/bin/easyrsa
+	install -Dm644 openssl-easyrsa.cnf "$PKG"/etc/easy-rsa/openssl-easyrsa.cnf
+	install -Dm644 vars.example "$PKG"/etc/easy-rsa/vars
+
+	for i in x509-types/*; do
+		install -Dm644 $i "$PKG"/etc/easy-rsa/x509-types/$(basename $i)
+	done
+}
