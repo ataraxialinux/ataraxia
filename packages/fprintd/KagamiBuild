@@ -1,0 +1,24 @@
+# Description: D-Bus service to access fingerprint readers
+# URL:         https://www.freedesktop.org/wiki/Software/fprint/fprintd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson pam_wrapper pycairo python-dbusmock dbus-glib libfprint polkit
+# Section:     security
+
+name=fprintd
+version=1.90.1
+release=1
+source=("https://gitlab.freedesktop.org/libfprint/fprintd/-/archive/$version/$name-v$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version*
+	patch -Np1 -i "$STUFF"/fprintd/0001-add-missing-locale.h.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson .. \
+		-Dgtk_doc=false \
+		-Dman=false \
+		-Dpam_modules_dir=/usr/lib/security
+	ninja
+	DESTDIR="$PKG" ninja install
+}
