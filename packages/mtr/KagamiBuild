@@ -1,0 +1,20 @@
+# Description: Combines the functionality of traceroute and ping into one tool
+# URL:         https://www.bitwizard.nl/mtr/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses gtk2 libcap
+# Section:     net
+
+name=mtr
+version=0.93
+release=1
+source=("https://github.com/traviscross/mtr/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}

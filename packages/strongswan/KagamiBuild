@@ -1,0 +1,82 @@
+# Description: Open source IPsec implementation
+# URL:         https://www.strongswan.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python curl gmp iproute2 iptables libcap libgcrypt libldap pam sqlite
+# Section:     net
+
+name=strongswan
+version=5.9.0
+release=1
+backup=('etc/ipsec.conf'
+	'etc/ipsec.secrets'
+	'etc/swanctl/swanctl.conf'
+	'etc/strongswan.conf')
+source=("https://download.strongswan.org/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-ipsecdir=/usr/lib/strongswan \
+		--with-capabilities=libcap \
+		--enable-aesni \
+		--enable-agent \
+		--enable-attr-sql \
+		--enable-bypass-lan \
+		--enable-chapoly \
+		--enable-cmd \
+		--enable-connmark \
+		--enable-curl \
+		--enable-dhcp \
+		--enable-dnscert \
+		--enable-eap-aka \
+		--enable-eap-aka-3gpp2 \
+		--enable-eap-dynamic \
+		--enable-eap-gtc \
+		--enable-eap-identity \
+		--enable-eap-md5 \
+		--enable-eap-mschapv2 \
+		--enable-eap-peap \
+		--enable-eap-radius \
+		--enable-eap-sim \
+		--enable-eap-simaka-pseudonym \
+		--enable-eap-simaka-reauth \
+		--enable-eap-sim-file \
+		--enable-eap-tls \
+		--enable-eap-ttls \
+		--enable-ext-auth \
+		--enable-farp \
+		--enable-forecast \
+		--enable-gcrypt \
+		--enable-ha \
+		--enable-integrity-test \
+		--enable-ldap \
+		--enable-mgf1 \
+		--enable-newhope \
+		--enable-ntru \
+		--enable-pkcs11 \
+		--enable-python-eggs \
+		--enable-radattr \
+		--enable-sha3 \
+		--enable-sql \
+		--enable-sqlite \
+		--enable-swanctl \
+		--enable-unity \
+		--enable-vici \
+		--enable-xauth-eap \
+		--enable-xauth-noauth \
+		--enable-xauth-pam \
+		--disable-bliss \
+		--disable-mysql \
+		--disable-nm \
+		--disable-openssl \
+		--disable-ruby-gems \
+		--disable-systemd
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/strongswan "$PKG"/etc/service/strongswan/run
+}

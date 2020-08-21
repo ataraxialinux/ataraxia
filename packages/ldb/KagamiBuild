@@ -1,0 +1,26 @@
+# Description: Schema-less, ldap like, API and databas
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python tdb tevent lmdb popt talloc libtirpc cmocka
+# Section:     database
+
+name=ldb
+version=2.1.4
+release=1
+source=("https://samba.org/ftp/ldb/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/ldb/disable-compile-error-test.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--builtin-libraries=replace \
+		--bundled-libraries=NONE \
+		--with-modulesdir=/usr/lib/ldb/modules \
+		--with-privatelibdir=/usr/lib/ldb \
+		--disable-rpath \
+		--disable-rpath-install
+	make
+	make DESTDIR="$PKG" install
+}

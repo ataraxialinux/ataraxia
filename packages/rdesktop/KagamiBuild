@@ -1,0 +1,30 @@
+# Description: An open source client for Windows Remote Desktop Services
+# URL:         https://www.rdesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gnutls alsa-lib libsamplerate libxrandr libxcursor xorg-apps
+# Section:     x11
+
+name=rdesktop
+version=1.9.0
+release=1
+source=("https://github.com/rdesktop/rdesktop/archive/v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./bootstrap
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-ipv6 \
+		--disable-credssp \
+		--disable-smartcard
+	make
+	make DESTDIR="$PKG" install
+}
