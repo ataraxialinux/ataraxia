@@ -1,0 +1,23 @@
+# Description: Library for fingerprint readers
+# URL:         https://fprint.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection libgusb nss pixman
+# Section:     libs
+
+name=libfprint
+version=1.90.2
+release=1
+source=("https://gitlab.freedesktop.org/libfprint/libfprint/-/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-v$version-*
+	patch -Np1 -i "$STUFF"/libfprint/fix-stderr.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson .. \
+		-Ddoc=false \
+		-Dudev_rules_dir=/usr/lib/udev/rules.d
+	ninja
+	DESTDIR="$PKG" ninja install
+}
