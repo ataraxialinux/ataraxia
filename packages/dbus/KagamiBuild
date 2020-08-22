@@ -6,13 +6,11 @@
 
 name=dbus
 version=1.12.20
-release=4
+release=5
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/dbus/0001-dbus-don-t-fingerprint-us.patch
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib/dbus-1.0 \
@@ -37,6 +35,8 @@ build() {
 
 	install -Dm755 "$STUFF"/svc/dbus "$PKG"/etc/service/dbus/run
 
-	echo "0" > "$PKG"/etc/machine-id
-	ln -sf /etc/machine-id "$PKG"/var/lib/dbus/machine-id
+	# compat
+	mkdir -p "$PKG"/var/lib/dbus
+	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
+	ln -sf ../run/machine-id "$PKG"/etc/machine-id
 }
