@@ -1,0 +1,31 @@
+# Description: Lightweight NTP client and server
+# URL:         https://chrony.tuxfamily.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline libcap nettle
+# Section:     admin
+
+name=chrony
+version=3.5.1
+release=1
+backup=('etc/chrony.conf')
+source=("https://download.tuxfamily.org/chrony/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure \
+		--prefix=/usr \ \
+		--with-hwclockfile=/var/lib/hwclock/adjtime \
+		--with-sendmail=/usr/bin/sendmail \
+		--with-user=chrony \
+		--without-editline \
+		--without-nss
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/chronyd "$PKG"/etc/service/chronyd/run
+	install -Dm644 examples/chrony.conf.example3 "$PKG"/etc/chrony.conf
+	install -Dm644 examples/chrony.logrotate "$PKG"/etc/logrotate.d/chrony
+
+	mv "$PKG"/usr/sbin/chronyd "$PKG"/usr/bin
+	rmdir "$PKG"{/usr/sbin,/var/lib/chrony,/var/lib}
+}
