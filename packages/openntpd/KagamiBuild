@@ -1,0 +1,28 @@
+# Description: Free, easy to use implementation of the Network Time Protocol
+# URL:         http://www.openntpd.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libressl
+# Section:     admin
+
+name=openntpd
+version=6.2p3
+release=1
+source=("https://cloudflare.cdn.openbsd.org/pub/OpenBSD/OpenNTPD/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -fcommon"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-privsep-user=ntpd
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/ntpd "$PKG"/etc/service/ntpd/run
+
+	rm -rf "$PKG"/var/run
+}

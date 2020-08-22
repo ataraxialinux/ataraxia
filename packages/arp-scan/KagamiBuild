@@ -1,0 +1,19 @@
+# Description: Scanning and fingerprinting tool
+# URL:         http://www.nta-monitor.com/tools/arp-scan/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libpcap perl
+# Section:     net
+
+name=arp-scan
+version=1.9.7
+release=1
+source=("https://github.com/royhills/arp-scan/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -i
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,39 @@
+# Description: A daemon for delivering ACPI power management events with netlink support
+# URL:         https://sourceforge.net/projects/acpid2/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  dbus
+# Section:     admin
+
+name=acpid
+version=2.0.32
+release=1
+source=("https://sourceforge.net/projects/acpid2/files/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/acpid "$PKG"/etc/service/acpid/run
+	install -m755 -d "$PKG"/etc/acpi/events
+
+	cat > "$PKG"/etc/acpi/events/lid <<-EOF
+		event=button/lid
+		action=/etc/acpi/lid.sh
+	EOF
+	cat > "$PKG"/etc/acpi/lid.sh <<-EOF
+		#!/usr/bin/sh
+		grep -q open /proc/acpi/button/lid/LID/state && exit 0
+		dbus-send \
+			--system \
+			--print-reply \
+			--dest=org.freedesktop.login1 \
+			/org/freedesktop/login1 \
+			org.freedesktop.login1.Manager.Suspend boolean:false
+	EOF
+
+	chmod +x "$PKG"/etc/acpi/lid.sh
+}

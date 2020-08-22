@@ -1,0 +1,22 @@
+# Description: High performance Linux network sniffer for packet inspection
+# URL:         http://netsniff-ng.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib ncurses libcli libnet libnetfilter_conntrack libpcap libnl libsodium
+# Section:     security
+
+name=netsniff-ng
+version=0.6.7
+release=1
+source=("http://pub.netsniff-ng.org/netsniff-ng/$name-$version.tar.gz")
+
+build() {
+	mkdir -p "$PKG"/usr/bin
+
+	cd "$SRC"/$name-$version
+	sed -i 's/--mode=644/-m644/g' Cmds
+
+	./configure \
+		--prefix=/usr
+	make CFLAGS="$CFLAGS -fcommon"
+	make DESTDIR="$PKG" SBINDIR=/usr/bin install
+}

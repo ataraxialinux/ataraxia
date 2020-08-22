@@ -1,0 +1,19 @@
+# Description: A library which provides API for commonly used low-level net functions
+# URL:         https://github.com/libnet/libnet
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     net
+
+name=libnet
+version=1.2
+release=1
+source=("https://github.com/libnet/libnet/releases/download/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libnet/fix-types.patch 
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

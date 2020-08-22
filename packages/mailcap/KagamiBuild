@@ -1,0 +1,17 @@
+# Description: Helper application and MIME type associations for file types
+# URL:         https://pagure.io/mailcap
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     misc
+
+name=mailcap
+version=2.1.49
+release=1
+options=('etc/mailcap'
+	'etc/mime.types')
+source=("https://pagure.io/releases/mailcap/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make
+	make DESTDIR="$PKG" sysconfdir=/etc install
+}

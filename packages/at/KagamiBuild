@@ -1,0 +1,38 @@
+# Description: AT and batch delayed command scheduling utility and daemon
+# URL:         http://blog.calhariz.com/tag/at
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  flex pam
+# Section:     admin
+
+name=at
+version=3.2.1
+release=1
+options=('~makeflags')
+backup=('etc/at.deny'
+	'var/spool/atd/.SEQ')
+source=("http://software.calhariz.com/at/${name}_${version}.orig.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	# this is stupid
+	sed -i 's|#error      "No mail command specified."|// #error      "No mail command specified."|g' atd.c
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--with-atspool=/var/spool/atd \
+		--with-jobdir=/var/spool/atd
+	make -j1
+	make IROOT="$PKG" install
+
+	install -Dm755 "$STUFF"/svc/atd "$PKG"/etc/service/atd/run
+	install -Dm644 "$STUFF"/pam.d/atd "$PKG"/etc/pam.d/atd
+}

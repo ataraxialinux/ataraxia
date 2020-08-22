@@ -1,0 +1,19 @@
+# Description: Python utilities for manipulating kickstart files
+# URL:         http://fedoraproject.org/wiki/pykickstart
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python-setuptools python-coverage python-nose python-ordered-set python-requests
+# Section:     admin
+
+name=pykickstart
+version=3.27
+release=1
+source=("https://github.com/pykickstart/pykickstart/releases/download/r$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/$(MAKE) -C po/# $(MAKE) -C po/g' Makefile
+	sed -i 's/$(MAKE) -C po install/# $(MAKE) -C po install/g' Makefile
+
+	make
+	make DESTDIR="$PKG" install
+}
