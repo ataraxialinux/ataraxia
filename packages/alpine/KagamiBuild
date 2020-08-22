@@ -7,14 +7,10 @@
 name=alpine
 version=2.23.2
 release=1
-source=("http://alpine.x10host.com/alpine/release/src/$name-$version.tar.xz")
+source=("https://github.com/protonesso/alpine/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/alpine/uclibc-musl.patch
-	patch -Np1 -i "$STUFF"/alpine/alpine-2.22-fno-common.patch
-	autoreconf -fi
-
 	LIBS="-lcrypto" \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
