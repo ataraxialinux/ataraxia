@@ -1,0 +1,29 @@
+# Description: Library for passing menus over DBus
+# URL:         https://launchpad.net/libdbusmenu
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection vala gtk3
+# Section:     libs
+
+name=libdbusmenu
+version=16.04.0
+release=1
+options=('~emptydirs')
+source=("https://launchpad.net/libdbusmenu/${version%.?}/$version/+download/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libdbusmenu/0001-disable-gtk2.patch
+
+	sed -i 's/-Werror//' libdbusmenu-*/Makefile.{am,in}
+
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-gtk=3 \
+		--disable-dumper \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+}
