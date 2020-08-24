@@ -39,9 +39,5 @@ build() {
 	rm -rf "$PKG"/usr/etc
 
 	mv "$PKG"/usr/bin/rustc "$PKG"/usr/bin/rustc.real
-	cat > "$PKG"/usr/bin/rustc <<-EOF
-		#!/usr/bin/sh
-		/usr/bin/rustc.real -C target-feature=-crt-static $@
-	EOF
-	chmod +x "$PKG"/usr/bin/rustc
+	install -Dm755 "$STUFF"/rust/rustc.wrapper "$PKG"/usr/bin/rustc
 }
