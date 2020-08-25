@@ -1,19 +1,20 @@
 # Description: A C wrapper library for GnuPG
 # URL:         http://www.gnupg.org/related_software/gpgme/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python gnupg
+# Depends on:  gnupg
 # Section:     utils
 
 name=gpgme
 version=1.14.0
-release=2
+release=4
 options=('~emptydirs')
 source=("https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--enable-languages=cpp
 	make
 	make DESTDIR="$PKG" install
 }

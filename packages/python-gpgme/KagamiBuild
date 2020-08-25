@@ -1,0 +1,23 @@
+# Description: A C wrapper library for GnuPG (python-bindings)
+# URL:         http://www.gnupg.org/related_software/gpgme/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python gpgme
+# Section:     python
+
+name=python-gpgme
+version=1.14.0
+release=1
+options=('~emptydirs')
+source=("https://gnupg.org/ftp/gcrypt/gpgme/gpgme-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/gpgme-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-languages=cpp,python
+	make
+
+	cd lang/python
+	python3 setup.py build
+	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+}

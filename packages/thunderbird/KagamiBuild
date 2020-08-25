@@ -14,6 +14,7 @@ build() {
 	export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
 	export CXXFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
+	export SHELL=/usr/bin/bash
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/firefox/fix-fortify-system-wrappers.patch
@@ -24,8 +25,6 @@ build() {
 
 	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
 	rm -rf browser/extensions/pocket
-
-	export SHELL=/usr/bin/bash
 
 	cat > mozconfig <<-EOF
 		ac_add_options --prefix=/usr
