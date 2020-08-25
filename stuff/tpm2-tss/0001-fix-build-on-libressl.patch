@@ -1,0 +1,80 @@
+From 70c1100fbd08fb48fd67de430d9dbc5e9d7fe24e Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 25 Aug 2020 18:01:23 +0500
+Subject: [PATCH] fix build on libressl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/tss2-esys/esys_crypto_ossl.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/src/tss2-esys/esys_crypto_ossl.c b/src/tss2-esys/esys_crypto_ossl.c
+index 2eb0dfc..3ef2767 100644
+--- a/src/tss2-esys/esys_crypto_ossl.c
++++ b/src/tss2-esys/esys_crypto_ossl.c
+@@ -12,6 +12,7 @@
+ #include <openssl/aes.h>
+ #include <openssl/rsa.h>
+ #include <openssl/engine.h>
++#include <openssl/rand.h>
+ #include <stdio.h>
+ 
+ #include "tss2_esys.h"
+@@ -25,7 +26,7 @@
+ #include "util/log.h"
+ #include "util/aux_util.h"
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
++#if !defined(LIBRESSL_VERSION_NUMBER)
+ #define EC_POINT_set_affine_coordinates_tss(group, tpm_pub_key, bn_x, bn_y, dmy) \
+         EC_POINT_set_affine_coordinates(group, tpm_pub_key, bn_x, bn_y, dmy)
+ 
+@@ -525,17 +526,19 @@ iesys_cryptossl_random2b(TPM2B_NONCE * nonce, size_t num_bytes)
+         nonce->size = num_bytes;
+     }
+ 
+-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
++#if !defined(LIBRESSL_VERSION_NUMBER)
+     RAND_set_rand_method(RAND_OpenSSL());
+ #else
+     RAND_set_rand_method(RAND_SSLeay());
+ #endif
++#if !defined(LIBRESSL_VERSION_NUMBER)
+     if (1 != RAND_bytes(&nonce->buffer[0], nonce->size)) {
+         RAND_set_rand_method(rand_save);
+         return_error(TSS2_ESYS_RC_GENERAL_FAILURE,
+                      "Failure in random number generator.");
+     }
+     RAND_set_rand_method(rand_save);
++#endif
+     return TSS2_RC_SUCCESS;
+ }
+ 
+@@ -563,7 +566,7 @@ iesys_cryptossl_pk_encrypt(TPM2B_PUBLIC * pub_tpm_key,
+                            size_t * out_size, const char *label)
+ {
+     const RAND_METHOD *rand_save = RAND_get_rand_method();
+-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
++#if !defined(LIBRESSL_VERSION_NUMBER)
+     RAND_set_rand_method(RAND_OpenSSL());
+ #else
+     RAND_set_rand_method(RAND_SSLeay());
+@@ -754,6 +757,7 @@ tpm_pub_to_ossl_pub(EC_GROUP *group, TPM2B_PUBLIC *key, EC_POINT **tpm_pub_key)
+                    "Create point.", cleanup);
+     }
+ 
++#if !defined(LIBRESSL_VERSION_NUMBER)
+     if (1 != EC_POINT_set_affine_coordinates_tss(group,
+                                                  *tpm_pub_key, bn_x,
+                                                  bn_y, NULL)) {
+@@ -766,6 +770,7 @@ tpm_pub_to_ossl_pub(EC_GROUP *group, TPM2B_PUBLIC *key, EC_POINT **tpm_pub_key)
+         goto_error(r, TSS2_ESYS_RC_GENERAL_FAILURE,
+                    "The TPM point is not on the curve", cleanup);
+     }
++#endif
+ 
+  cleanup:
+     OSSL_FREE(bn_x, BN);
+-- 
+2.18.4
+

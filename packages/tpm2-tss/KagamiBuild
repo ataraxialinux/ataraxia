@@ -1,22 +1,24 @@
 # Description: Implementation of the TCG Trusted Platform Module 2.0 Software Stack (TSS2)
 # URL:         https://github.com/tpm2-software/tpm2-tss
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libgcrypt
+# Depends on:  curl json-c
 # Section:     libs
 
 name=tpm2-tss
 version=3.0.0
-release=1
+release=2
 source=("https://github.com/tpm2-software/tpm2-tss/releases/download/$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/tpm2-tss/0001-fix-build-on-libressl.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-runstatedir=/run \
-		--with-crypto=gcrypt \
+		--with-crypto=ossl \
 		--with-udevrulesdir=/usr/lib/udev/rules.d \
 		--with-udevrulesprefix=60- \
 		--disable-defaultflags \
