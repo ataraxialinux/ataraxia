@@ -45,6 +45,7 @@ Sub-arguments supported by "build script":
  -j <number of core>		- Specify number of cores/threads for build
  -g <Options for gcc>		- Specify options for GCC
  -l <Linux kernel package>	- Specify your custom Linux kernel package
+ -d <desktop environment>       - Specify your desktop environment (gnome, sway, xfce, mate, budgie)
 ```
 We have seperated the build process into seperate "stages":
 ```

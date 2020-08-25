@@ -11,7 +11,7 @@ install_liveos() {
 		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base sbase ubase lobase less \
 		mandoc gzip ncompress iproute2 kbd make patch tar cpio nano procps-ng util-linux e2fsprogs btrfs-progs \
 		hwids gperf eudev runit sinit run-parts ifupdown dhcp libssh2 nghttp2 heimdal curl popt rpm neko linux \
-		linux-firmware parted squashfs-tools alsa-utils dnf"
+		linux-firmware parted squashfs-tools alsa-utils dnf earlyoom"
 
 	if [ "$DESKTOP" != "sway" ]; then
 		packages="$packages xorg-server xinit xf86-input-libinput xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware}"
@@ -23,9 +23,9 @@ install_liveos() {
 
 	case $DESKTOP in
 		gnome) packages="$packages gnome" ;;
-		xfce) packages="$packages xfce lightdm-gtk-greeter network-manager-applet" ;;
-		mate) packages="$packages mate-core gvfs lightdm-gtk-greeter network-manager-applet" ;;
-		budgie) packages="$packages budgie-desktop gvfs nautilus gnome-terminal lightdm-gtk-greeter" ;;
+		xfce) packages="$packages xfce lightdm network-manager-applet" ;;
+		mate) packages="$packages mate-core gvfs lightdm network-manager-applet" ;;
+		budgie) packages="$packages budgie-desktop gvfs nautilus gnome-terminal lightdm" ;;
 		sway) packages="$packages sway networkmanager" ;;
 		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
 	esac
@@ -44,7 +44,7 @@ install_liveos() {
 	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst
 
 	case $DESKTOP in
-		gnome|xfce|mate|budgie|sway) services="dbus elogind networkmanager" ;;
+		gnome|xfce|mate|budgie|sway) services="dbus elogind networkmanager earlyoom" ;;
 	esac
 
 	for i in $services; do ln -sf /etc/service/$i "$LIVEOS"/var/service/$i; done
@@ -60,7 +60,7 @@ install_liveos() {
 	EOF
 
 	pushd "$LIVEOS/usr/bin"
-		curl -C - -L -O https://raw.githubusercontent.com/ataraxialinux/installer/20200728.2/usr/bin/ataraxia-installer
+		curl -C - -L -O https://raw.githubusercontent.com/ataraxialinux/installer/20200825/usr/bin/ataraxia-installer
 		chmod +x ataraxia-installer
 	popd
 
