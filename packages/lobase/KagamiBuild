@@ -1,54 +1,99 @@
 # Description: Port of the OpenBSD userland to Linux
-# URL:         https://github.com/Duncaen/lobase
+# URL:         https://github.com/ataraxialinux/lobase
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Priority:    required
 # Section:     base
 
 name=lobase
-version=c52cc6690301b36ccdc155ffc2c4a8ff29cd92c0
+version=34ff81a6ab32abde44d98dd34e7f60defbcaaed7
 release=1
-options=('bootstrap')
-source=("https://github.com/Duncaen/lobase/archive/$version.tar.gz")
+options=('bootstrap' '~makeflags')
+source=("https://github.com/ataraxialinux/lobase/archive/$version.tar.gz")
 
 build() {
 	export CFLAGS="$CFLAGS -fcommon"
 
 	cd "$SRC"/$name-$version
+	sed -i 's/sbin/bin/g' bin/chmod/Makefile
+	sed -i 's/pax//g' bin/Makefile
+	sed -i 's/compress//g' usr.bin/Makefile
+	sed -i 's/grep//g' usr.bin/Makefile
 
 	autoreconf -fi
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
 		--libexecdir=/usr/lib/lobase
-	make lib
+	make -j1
+	make DESTDIR="$PKG" install
 
-	for i in diff diff3 cmp sdiff fmt indent ln mknod pr sort stty tsort xinstall; do
-		case $i in
-			diff3)
-				make -C usr.bin/$i
-				make -C usr.bin/$i DESTDIR="$PKG" install
-				;;
-			mknod)
-				make -C sbin/$i
-				install -Dm755 sbin/$i/$i "$PKG"/usr/bin/$i
-				install -Dm644 sbin/$i/$i.8 "$PKG"/usr/share/man/man8/$i.8
-				install -Dm644 sbin/$i/mkfifo.1 "$PKG"/usr/share/man/man1/mkfifo.1
-				ln -sf mknod "$PKG"/usr/bin/mkfifo
-				;;
-			ln|stty)
-				make -C bin/$i
-				install -Dm755 bin/$i/$i "$PKG"/usr/bin/$i
-				install -Dm644 bin/$i/$i.1 "$PKG"/usr/share/man/man1/$i.1
-				;;
-			xinstall)
-				make -C usr.bin/$i
-				install -Dm755 usr.bin/$i/$i "$PKG"/usr/bin/install
-				install -Dm644 usr.bin/$i/install.1 "$PKG"/usr/share/man/man1/install.1
-				;;
-			*)
-				make -C usr.bin/$i
-				install -Dm755 usr.bin/$i/$i "$PKG"/usr/bin/$i
-				install -Dm644 usr.bin/$i/$i.1 "$PKG"/usr/share/man/man1/$i.1
-				;;
-		esac
-	done
+	mv "$PKG"/spellprog "$PKG"/usr/lib/lobase/spellprog
+
+	# better implementations
+	rm \
+		"$PKG"/usr/bin/awk \
+		"$PKG"/usr/bin/cal \
+		"$PKG"/usr/bin/col \
+		"$PKG"/usr/bin/colrm \
+		"$PKG"/usr/bin/column \
+		"$PKG"/usr/bin/domainname \
+		"$PKG"/usr/bin/eject \
+		"$PKG"/usr/bin/find \
+		"$PKG"/usr/bin/getconf \
+		"$PKG"/usr/bin/getent \
+		"$PKG"/usr/bin/getopt \
+		"$PKG"/usr/bin/hexdump \
+		"$PKG"/usr/bin/hostname \
+		"$PKG"/usr/bin/kill \
+		"$PKG"/usr/bin/logger \
+		"$PKG"/usr/bin/look \
+		"$PKG"/usr/bin/nologin \
+		"$PKG"/usr/bin/patch \
+		"$PKG"/usr/bin/renice \
+		"$PKG"/usr/bin/rev \
+		"$PKG"/usr/bin/sed \
+		"$PKG"/usr/bin/sh \
+		"$PKG"/usr/bin/ul \
+		"$PKG"/usr/bin/whereis \
+		"$PKG"/usr/bin/whois \
+		"$PKG"/usr/bin/xargs \
+		"$PKG"/usr/share/man/man1/awk.1 \
+		"$PKG"/usr/share/man/man1/cal.1 \
+		"$PKG"/usr/share/man/man1/col.1 \
+		"$PKG"/usr/share/man/man1/colrm.1 \
+		"$PKG"/usr/share/man/man1/column.1 \
+		"$PKG"/usr/share/man/man1/domainname.1 \
+		"$PKG"/usr/share/man/man1/find.1 \
+		"$PKG"/usr/share/man/man1/getent.1 \
+		"$PKG"/usr/share/man/man1/getopt.1 \
+		"$PKG"/usr/share/man/man1/hexdump.1 \
+		"$PKG"/usr/share/man/man1/hostname.1 \
+		"$PKG"/usr/share/man/man1/kill.1 \
+		"$PKG"/usr/share/man/man1/logger.1 \
+		"$PKG"/usr/share/man/man1/look.1 \
+		"$PKG"/usr/share/man/man1/patch.1 \
+		"$PKG"/usr/share/man/man1/rev.1 \
+		"$PKG"/usr/share/man/man1/sed.1 \
+		"$PKG"/usr/share/man/man1/time.1 \
+		"$PKG"/usr/share/man/man1/ul.1 \
+		"$PKG"/usr/share/man/man1/whereis.1 \
+		"$PKG"/usr/share/man/man1/whois.1 \
+		"$PKG"/usr/share/man/man1/xargs.1 \
+		"$PKG"/usr/share/man/man3/basename.3 \
+		"$PKG"/usr/share/man/man3/btree.3 \
+		"$PKG"/usr/share/man/man3/dbopen.3 \
+		"$PKG"/usr/share/man/man3/dirname.3 \
+		"$PKG"/usr/share/man/man3/fts.3 \
+		"$PKG"/usr/share/man/man3/getopt.3 \
+		"$PKG"/usr/share/man/man3/getopt_long.3 \
+		"$PKG"/usr/share/man/man3/glob.3 \
+		"$PKG"/usr/share/man/man3/hash.3 \
+		"$PKG"/usr/share/man/man3/malloc.3 \
+		"$PKG"/usr/share/man/man3/random.3 \
+		"$PKG"/usr/share/man/man3/recno.3 \
+		"$PKG"/usr/share/man/man3/regex.3 \
+		"$PKG"/usr/share/man/man3/strtod.3 \
+		"$PKG"/usr/share/man/man7/symlink.7 \
+		"$PKG"/usr/share/man/man8/nologin.8
 }
