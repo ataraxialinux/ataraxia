@@ -13,70 +13,16 @@ source=("https://github.com/michaelforney/sbase/archive/$version.tar.gz")
 build() {
 	cd "$SRC"/$name-$version
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static'
-		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS='-static' install
 	else
 		make CFLAGS="$CFLAGS" LDFLAGS='-static'
-		make CFLAGS="$CFLAGS" LDFLAGS='-static' PREFIX=/usr MANPREFIX='/usr/share/man' DESTDIR="$PKG" install
 	fi
 
-	install -Dm644 "$STUFF"/sbase/csplit.1 "$PKG"/usr/share/man/man1/csplit.1
+	mkdir -p "$PKG"/usr/bin
 	install -Dm644 "$STUFF"/sbase/realpath.1 "$PKG"/usr/share/man/man1/realpath.1
-	${CROSS_COMPILE}cc $CFLAGS -static  "$STUFF"/sbase/csplit.c -o "$PKG"/usr/bin/csplit
 	${CROSS_COMPILE}cc $CFLAGS -static  "$STUFF"/sbase/realpath.c -o "$PKG"/usr/bin/realpath
 	${CROSS_COMPILE}c++ $CXXFLAGS -static  "$STUFF"/sbase/nproc.cc -o "$PKG"/usr/bin/nproc
 
-	# bad quality
-	rm -rf \
-		"$PKG"/usr/bin/install \
-		"$PKG"/usr/bin/ln \
-		"$PKG"/usr/bin/mkfifo \
-		"$PKG"/usr/bin/mknod \
-		"$PKG"/usr/bin/sort \
-		"$PKG"/usr/bin/tsort \
-		"$PKG"/usr/share/man/man1/install.1 \
-		"$PKG"/usr/share/man/man1/ln.1 \
-		"$PKG"/usr/share/man/man1/mkfifo.1 \
-		"$PKG"/usr/share/man/man1/mknod.1 \
-		"$PKG"/usr/share/man/man1/sort.1 \
-		"$PKG"/usr/share/man/man1/tsort.1
-
-	# already has
-	rm -rf \
-		"$PKG"/usr/bin/cal \
-		"$PKG"/usr/bin/cmp \
-		"$PKG"/usr/bin/cron \
-		"$PKG"/usr/bin/dd \
-		"$PKG"/usr/bin/find \
-		"$PKG"/usr/bin/flock \
-		"$PKG"/usr/bin/getconf \
-		"$PKG"/usr/bin/grep \
-		"$PKG"/usr/bin/hostname \
-		"$PKG"/usr/bin/kill \
-		"$PKG"/usr/bin/logger \
-		"$PKG"/usr/bin/renice \
-		"$PKG"/usr/bin/rev \
-		"$PKG"/usr/bin/sed \
-		"$PKG"/usr/bin/setsid \
-		"$PKG"/usr/bin/strings \
-		"$PKG"/usr/bin/tar \
-		"$PKG"/usr/bin/xargs \
-		"$PKG"/usr/share/man/man1/cal.1 \
-		"$PKG"/usr/share/man/man1/cmp.1 \
-		"$PKG"/usr/share/man/man1/cron.1 \
-		"$PKG"/usr/share/man/man1/dd.1 \
-		"$PKG"/usr/share/man/man1/find.1 \
-		"$PKG"/usr/share/man/man1/flock.1 \
-		"$PKG"/usr/share/man/man1/grep.1 \
-		"$PKG"/usr/share/man/man1/hostname.1 \
-		"$PKG"/usr/share/man/man1/kill.1 \
-		"$PKG"/usr/share/man/man1/logger.1 \
-		"$PKG"/usr/share/man/man1/renice.1 \
-		"$PKG"/usr/share/man/man1/rev.1 \
-		"$PKG"/usr/share/man/man1/sed.1 \
-		"$PKG"/usr/share/man/man1/setsid.1 \
-		"$PKG"/usr/share/man/man1/strings.1 \
-		"$PKG"/usr/share/man/man1/tar.1 \
-		"$PKG"/usr/share/man/man1/time.1 \
-		"$PKG"/usr/share/man/man1/xargs.1
+	cp pathchk seq unlink "$PKG"/usr/bin/
+	cp pathchk.1 seq.1 unlink.1 "$PKG"/usr/share/man/man1/
 }
