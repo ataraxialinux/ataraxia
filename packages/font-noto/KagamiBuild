@@ -1,0 +1,22 @@
+# Description: Google Noto TTF fonts
+# URL:         https://www.google.com/get/noto/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     fonts
+
+name=font-noto
+version=31de21ec51b4b54309bd48b9e4b3693fdfe47bcc
+release=1
+source=("https://github.com/googlefonts/noto-fonts/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/noto-fonts-$version
+	install -d -m755 "$PKG"/usr/share/fonts/noto
+
+	for i in unhinted/Noto*/*.tt[fc] hinted/Noto*/*.tt[fc]; do
+		install -Dm644 $i "$PKG"/usr/share/fonts/noto/$(basename $i)
+	done
+
+	for i in {66,46}-noto-{mono,sans,serif}.conf; do
+		install -Dm644 "$STUFF"/font-noto/$i "$pkgdir"/etc/fonts/conf.d/$i
+	done
+}

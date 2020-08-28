@@ -1,0 +1,20 @@
+# Description: Google Noto CJK fonts
+# URL:         https://www.google.com/get/noto/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     fonts
+
+name=font-noto-cjk
+version=cf29231ab8029678af4bbc1a9480e2b296a5b2d3
+release=1
+source=("https://github.com/googlefonts/noto-cjk/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/noto-cjk-$version
+	install -d -m755 "$PKG"/usr/share/fonts/noto-cjk
+
+	for i in *.ttc; do
+		install -Dm644 $i "$PKG"/usr/share/fonts/noto-cjk/$(basename $i)
+	done
+
+	install -Dm644 "$STUFF"/font-noto/70-noto-cjk.conf "$pkgdir"/etc/fonts/conf.d/70-noto-cjk.conf
+}
