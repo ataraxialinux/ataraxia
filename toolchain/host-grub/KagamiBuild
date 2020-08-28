@@ -3,12 +3,10 @@ fakepath="$topdir/../../packages/${name/host-}"
 realpath="$(realpath $fakepath)"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 unifontver="$(grep ^unifontver $realpath/KagamiBuild | sed -e 's/unifontver=//g')"
-dejavuver="$(grep ^dejavuver $realpath/KagamiBuild | sed -e 's/dejavuver=//g')"
 release=1
 options=('bootstrap')
 source=("https://ftp.gnu.org/gnu/grub/grub-$version.tar.xz"
-	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
-	"https://downloads.sourceforge.net/project/dejavu/dejavu/$dejavuver/dejavu-fonts-ttf-$dejavuver.tar.bz2")
+	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
 noextract=("unifont-$unifontver.pcf.gz")
 
 build_flavor() {
@@ -65,7 +63,6 @@ build() {
 	sed 's| GNU/Linux||' -i util/grub.d/10_linux.in
 
 	gzip -cd "$SRC"/unifont-$unifontver.pcf.gz > unifont.pcf
-	ln -sf "$SRC"/dejavu-fonts-ttf-$version/ttf/DejaVuSans.ttf DejaVuSans.ttf
 
 	./autogen.sh
 	for f in $FLAVOR; do
