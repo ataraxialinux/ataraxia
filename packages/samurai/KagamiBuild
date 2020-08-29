@@ -1,0 +1,20 @@
+# Description: ninja-compatible build tool written in C
+# URL:         https://github.com/michaelforney/samurai
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
+# Section:     devel
+
+name=samurai
+version=1.1
+release=1
+options=('bootstrap')
+source=("https://github.com/michaelforney/samurai/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	make
+	make PREFIX=/usr DESTDIR="$PKG" install
+
+	ln -sf samu "$PKG"/usr/bin/ninja
+	ln -sf samu.1 "$PKG"/usr/share/man/man1/ninja.1
+}

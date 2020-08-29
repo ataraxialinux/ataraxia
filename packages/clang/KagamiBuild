@@ -1,18 +1,15 @@
 # Description: C language family frontend for LLVM
 # URL:         https://clang.llvm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja llvm compiler-rt
+# Depends on:  cmake samurai llvm compiler-rt
 # Section:     devel
 
 name=clang
 version=10.0.1
-release=1
+release=2
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz")
-#source=("https://releases.llvm.org/$version/cfe-$version.src.tar.xz"
-#	"https://releases.llvm.org/$version/clang-tools-extra-$version.src.tar.xz"
-#	"https://releases.llvm.org/$version/llvm-$version.src.tar.xz")
 
 build() {
 	cd "$SRC"/llvm-$version.src
@@ -24,17 +21,14 @@ build() {
 		cp "$STUFF"/config.guess $a
 	done
 
-	builddir="clang-$version.src"
-	#builddir="cfe-$version.src"
-
-	cd "$SRC"/$builddir
+	cd "$SRC"/clang-$version.src
 	patch -Np1 -i "$STUFF"/clang/0001-add-musl-triplets.patch
 
 	mv "$SRC"/clang-tools-extra-$version.src tools/extra
 
 	mkdir build
 	cd build
-	cmake "$SRC"/$builddir \
+	cmake "$SRC"/clang-$version.src \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DPYTHON_EXECUTABLE=/usr/bin/python \
@@ -47,8 +41,8 @@ build() {
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_MAIN_SRC_DIR="$SRC"/llvm-$version.src \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 
 	install -m 644 lib/libclang.a "$PKG"/usr/lib
 

@@ -1,12 +1,12 @@
 # Description: A full-featured C++ implementation of the I2P router
 # URL:         https://i2pd.website/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja boost
+# Depends on:  cmake samurai boost
 # Section:     net
 
 name=i2pd
 version=2.33.0
-release=1
+release=2
 backup=('etc/i2pd/i2pd.conf'
 	'etc/i2pd/tunnels.conf')
 source=("https://github.com/PurpleI2P/i2pd/archive/$version.tar.gz")
@@ -25,8 +25,8 @@ build() {
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DBUILD_SHARED_LIBS=yes $ARCHOPT \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 
 	cd "$SRC"/$name-$version
 	install -Dm644 contrib/i2pd.conf "$PKG"/etc/i2pd/i2pd.conf

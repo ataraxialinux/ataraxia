@@ -1,12 +1,12 @@
 # Description: Fork of Vim aiming to improve user experience, plugins, and GUIs
 # URL:         https://neovim.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja luajit libtermkey libuv libvterm msgpack unibilium unzip
+# Depends on:  cmake samurai luajit libtermkey libuv libvterm msgpack unibilium unzip
 # Section:     editors
 
 name=neovim
 version=0.4.4
-release=1
+release=2
 source=("https://github.com/neovim/neovim/archive/v$version.tar.gz")
 
 build() {
@@ -24,7 +24,7 @@ build() {
 	cd .deps
 	cmake "$SRC"/$name-$version/third-party \
 		-Wno-dev -G Ninja
-	ninja luarocks lpeg mpack luv
+	samu luarocks lpeg mpack luv
 
 	cd "$SRC"/$name-$version
 	mkdir build
@@ -34,8 +34,8 @@ build() {
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 
 	install -Dm644 "$SRC"/$name-$version/runtime/nvim.desktop "$PKG"/usr/share/applications/nvim.desktop
 	install -Dm644 "$SRC"/$name-$version/runtime/nvim.png "$PKG"/usr/share/pixmaps/nvim.png
