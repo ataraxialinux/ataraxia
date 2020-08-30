@@ -5,6 +5,8 @@
 # Dep x86_64:  gnu-efi
 # Dep i686:    gnu-efi
 # Dep aarch64: gnu-efi
+# Dep armv7hl: gnu-efi
+# Dep armv6hl: gnu-efi
 # Priority:    required
 # Section:     base
 
@@ -22,19 +24,14 @@ backup=('etc/pam.d/systemd-user'
 	'etc/systemd/timesyncd.conf'
 	'etc/systemd/user.conf'
 	'etc/udev/udev.conf')
-source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz"
-	"0001-Allow-building-on-musl-libc.patch"
-	"0002-non-GNU-userland-fixes.patch"
-	"0003-stateless-etc-machine-id.patch"
-	"0004-better-firstboot.patch"
-	"systemd-user")
+source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz")
 
 build() {
 	cd "$SRC"/$name-stable-$version
-	patch -Np1 -i "$SRC"/0001-Allow-building-on-musl-libc.patch
-	patch -Np1 -i "$SRC"/0002-non-GNU-userland-fixes.patch
-	patch -Np1 -i "$SRC"/0003-stateless-etc-machine-id.patch
-	patch -Np1 -i "$SRC"/0004-better-firstboot.patch
+	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
+	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
+	patch -Np1 -i "$STUFF"/systemd/0003-stateless-etc-machine-id.patch
+	patch -Np1 -i "$STUFF"/systemd/0004-better-firstboot.patch
 
 	sed '177,$ d' -i src/resolve/meson.build
 	sed -i 's/GROUP="render", //' rules.d/50-udev-default.rules.in
@@ -110,7 +107,7 @@ build() {
 		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
 	EOF
 
-	install -Dm644 "$SRC"/systemd-user "$PKG"/etc/pam.d/systemd-user
+	install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
 
 	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d

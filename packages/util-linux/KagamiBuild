@@ -1,7 +1,7 @@
 # Description: Miscellaneous system utilities for Linux 
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib readline pam libcap-ng
+# Depends on:  zlib readline pam libcap-ng systemd
 # Priority:    required
 # Section:     base
 
@@ -11,7 +11,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=3
+release=4
 backup=('etc/pam.d/chfn'
 	'etc/pam.d/chsh'
 	'etc/pam.d/login'
@@ -23,15 +23,6 @@ options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
 build() {
-	case $BARCH in
-		aarch64|armv7hnl|armv6hl)
-			export EXTRATTY="ttyAMA0"
-			;;
-		s390x)
-			export EXTRATTY="ttysclp0"
-			;;
-	esac
-
 	cd "$SRC"/$name-$version
 	ADJTIME_PATH=/var/lib/hwclock/adjtime \
 	./configure $BUILDFLAGS \
@@ -43,8 +34,6 @@ build() {
 		--with-btrfs \
 		--with-readline \
 		--without-python \
-		--without-systemd \
-		--without-systemdsystemunitdir \
 		--enable-chfn-chsh \
 		--enable-fs-paths-default=/usr/bin \
 		--enable-kill \
@@ -86,13 +75,4 @@ build() {
 		usr/share/man/man8/ctrlaltdel.8 \
 		usr/share/man/man1/hexdump.1 \
 		usr/share/bash-completion/completions/hexdump
-
-	mkdir -p "$PKG"/var/service
-	for i in tty{1,2,3,4,5,6,S0,AMA0,USB0,sclp0}; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-		touch "$PKG"/etc/service/$i/.NOLOG
-	done
-	for i in tty1 $EXTRATTY; do
-		ln -sf /etc/service/$i "$PKG"/var/service/$i
-	done
 }

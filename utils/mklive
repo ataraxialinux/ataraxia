@@ -170,6 +170,10 @@ make_iso_arm() {
 			format="arm64-efi"
 			efi="bootaa64.efi"
 			;;
+		armv7hl|armv6hl)
+			format="arm-efi"
+			efi="bootarm.efi"
+			;;
 	esac
 
 	cat > "$GRUBEFICFG" <<- EOF
@@ -203,7 +207,7 @@ make_iso_arm() {
 		-no-emul-boot \
 		-isohybrid-gpt-basdat \
 		-A 'ataraxialinux' -V 'ataraxialinux' \
-		-o "$BUILD"/ataraxialinux-$DESKTOP-$BARCH.iso \
+		-o "$BUILD"/ataraxialinux-$BARCH.iso \
 		"$ISODIR"/
 }
 
@@ -238,7 +242,7 @@ main() {
 		x86_64|i686)
 			make_iso_x86
 			;;
-		aarch64)
+		aarch64|armv7hl|armv6hl)
 			make_iso_arm
 			;;
 		ppc64le|ppc64|ppc)

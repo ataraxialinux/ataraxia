@@ -1,21 +1,22 @@
 # Description: Library for building UEFI Applications using GNU toolchain
 # URL:         http://sourceforge.net/projects/gnu-efi/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Priority:    required
 # Section:     hardware
 
 name=gnu-efi
 version=3.0.12
 release=1
-options=('~strip' '~makeflags')
+options=('~strip' '~makeflags' 'bootstrap')
 source=("http://download.sourceforge.net/$name/$name-$version.tar.bz2")
 
 build() {
 	case $BARCH in
-		x86_64|i686)
+		x86_64|i686|aarch64|armv7hl|armv6hl)
 			true
 			;;
 		*)
-			die "gnu-efi is supported on x86 only"
+			die "gnu-efi is supported on x86 and ARM64 only"
 			;;
 	esac
 

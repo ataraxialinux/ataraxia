@@ -106,7 +106,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
-		armv7hnl)
+		armv7hl)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
@@ -205,7 +205,7 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	case $BARCH in
-		x86_64|i686|aarch64|ppc64le|ppc64|ppc)
+		x86_64|i686|aarch64|armv7hl|armv6hl|ppc64le|ppc64|ppc)
 				EXTRAPKG="grub"
 				;;
 	esac
@@ -272,6 +272,12 @@ build_toolchain() {
 }
 
 build_target() {
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
 	msg "Building target system for '${BARCH}' platform"
 
 	if [ -z "$LINUX" ]; then
@@ -283,11 +289,30 @@ build_target() {
 		pcre libcap-ng audit cracklib pam libpwquality attr acl libcap shadow grep sed psmisc \
 		mksh bash slibtool inetutils net-tools gdbm db sqlite expat libffi python perl libressl nettle ca-certificates \
 		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase \
-		less mandoc dialog gzip ncompress iproute2 kbd samurai python-setuptools meson make patch tar cpio nano \
-		procps-ng util-linux e2fsprogs btrfs-progs dosfstools hwids gperf eudev runit sinit run-parts ifupdown dhcp libssh2 \
-		nghttp2 heimdal curl popt rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget libevent links $LINUX"
+		less mandoc dialog gzip ncompress iproute2 kbd samurai python-setuptools meson make patch tar cpio nano $EXTRAPKG \
+		libblkid gperf systemd dbus util-linux procps-ng e2fsprogs btrfs-progs dosfstools hwids run-parts dhcp libssh2 nghttp2 \
+		heimdal curl popt rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget libevent links $LINUX"
 
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $packages
+	for i in $packages; do
+		case $i in
+			libblkid)
+				if [ ! -f "$BUILD/.blkid" ]; then
+					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd libblkid
+					rm -rf "$BUILD"/packages/libblkd-*.rpm
+					touch "$BUILD"/.blkid
+				fi
+				;;
+			util-linux)
+				if [ -n "$($TOOLS/bin/rpm -q --root=$ROOTFS libblkid)" ]; then
+					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" libblkid
+				fi
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd util-linux
+				;;
+			*)
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $i
+				;;
+		esac
+	done
 }
 
 genrepo() {

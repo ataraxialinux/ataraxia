@@ -1,0 +1,40 @@
+# Description: Miscellaneous system utilities for Linux (bootstrap libraries for systemd)
+# URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     base
+
+name=libblkid
+version=2.36
+case $version in
+	*.*.*) _v=${version%.*};;
+	*.*) _v=$version;;
+esac
+release=1
+options=('bootstrap')
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
+
+build() {
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
+		die "Cannot use this package out of bootstrap environment"
+	fi
+
+	cd "$SRC"/$name-$version
+	ADJTIME_PATH=/var/lib/hwclock/adjtime \
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin \
+		--localstatedir=/var \\
+		--without-python \
+		--without-systemd \
+		--without-systemdsystemunitdir \
+		--enable-libblkid \
+		--enable-libfdisk \
+		--enable-libmount \
+		--enable-libsmartcols \
+		--enable-libuuid \
+		--disable-all-programs
+	make
+	make DESTDIR="$PKG" install
+}
