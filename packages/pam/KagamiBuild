@@ -1,0 +1,45 @@
+# Description: Pluggable Authentication Modules
+# URL:         http://linux-pam.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cracklib audit
+# Section:     security
+
+name=pam
+version=1.4.0
+release=3
+options=('~emptydirs' 'bootstrap')
+backup=('etc/security/access.conf'
+	'etc/security/group.conf'
+	'etc/security/limits.conf'
+	'etc/security/namespace.conf'
+	'etc/security/namespace.init'
+	'etc/security/pam_env.conf'
+	'etc/security/time.conf'
+	'etc/environment')
+source=("https://github.com/linux-pam/linux-pam/releases/download/v$version/Linux-PAM-$version.tar.xz")
+
+build() {
+	cd "$SRC"/Linux-PAM-$version
+	patch -Np1 -i "$STUFF"/pam/0001-fix-build-on-musl.patch
+
+	export ac_cv_search_crypt=no
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--sbindir=/usr/bin \
+		--disable-db \
+		--disable-nls \
+		--disable-regenerate-docu \
+		--disable-selinux
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/lib/security/*.a "$PKG"/var/run
+
+	chmod 4755 "$PKG"/usr/bin/unix_chkpwd
+
+	for pam in system-auth system-local-login system-login system-remote-login system-services other; do
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
+	done
+}
