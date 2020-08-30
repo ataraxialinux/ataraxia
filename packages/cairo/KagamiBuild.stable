@@ -5,16 +5,19 @@
 # Section:     libs
 
 name=cairo
-version=1.17.2+f93fc72c03e
+version=1.17.2
 release=1
-source=("http://anduin.linuxfromscratch.org/BLFS/cairo/$name-$version.tar.xz")
+case $version in
+	*.[0-9]*[13579].*) url="https://www.cairographics.org/snapshots" ;;
+	*) url="https://www.cairographics.org/releases" ;;
+esac
+source=("$url/$name-$version.tar.xz")
 
 build() {
 	export CFLAGS=${CFLAGS/-Wl,--gc-sections}
 	export CXXFLAGS=${CXXFLAGS/-Wl,--gc-sections}
 
 	cd "$SRC"/$name-$version
-	autoreconf -fiv
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--enable-ps \
