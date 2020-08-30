@@ -6,11 +6,15 @@
 
 name=libmtp
 version=1.1.17
+altver=$(sed 's|\.|-|g' <<< $version)
 release=1
-source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+source=("https://github.com/libmtp/libmtp/archive/$name-$altver.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/$name-$name-$altver
+	touch config.rpath
+
+	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-udev=/usr/lib/udev
