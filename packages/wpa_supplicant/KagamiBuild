@@ -22,4 +22,10 @@ build() {
 	make PREFIX=/usr BINDIR=/usr/bin
 	make PREFIX=/usr BINDIR=/usr/bin DESTDIR="$PKG" install
 	install -Dm644 "$STUFF"/wpa_supplicant/wpa_supplicant.conf "$PKG"/etc/wpa_supplicant/wpa_supplicant.conf
+
+	for i in systemd/*.service; do
+		install -Dm644 $i "$PKG"/usr/lib/systemd/system/$(basename $i)
+	done
+	install -Dm644 dbus/fi.w1.wpa_supplicant1.service "$PKG"/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service
+	install -Dm644 dbus/dbus-wpa_supplicant.conf "$PKG"/usr/share/dbus-1/system.d/wpa_supplicant.conf
 }
