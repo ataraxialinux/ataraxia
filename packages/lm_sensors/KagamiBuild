@@ -15,5 +15,7 @@ build() {
 	make PREFIX=/usr SBINDIR=/usr/bin MANDIR=/usr/share/man
 	make PREFIX=/usr SBINDIR=/usr/bin MANDIR=/usr/share/man DESTDIR="$PKG" install
 
-	install -Dm644 prog/init/*.service "$PKG"/usr/lib/systemd/system/
+	for i in prog/init/*.service; do
+		install -Dm644 $i "$PKG"/usr/lib/systemd/system/$(basename $i)
+	done
 }
