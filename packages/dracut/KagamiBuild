@@ -13,8 +13,7 @@ source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut-$ver
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/dracut/0001-internal-fts.patch
-	patch -Np1 -i "$STUFF"/dracut/0001-suckless.patch
-	patch -Np1 -i "$STUFF"/dracut/0001-suckless-cp.patch
+	patch -Np1 -i "$STUFF"/dracut/0001-POSIX-userland.patch
 
 	./configure \
 		--prefix=/usr \
@@ -25,8 +24,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	rm "$PKG"/usr/bin/mkinitrd
-
-	echo 'omit_dracutmodules+="i18n"' >> "$PKG"/etc/dracut.conf
-	echo 'compress="zstd"' >> "$PKG"/etc/dracut.conf
+	rm -rf "$PKG"/usr/bin/mkinitrd "$PKG"/usr/lib/dracut/modules.d/95terminfo
 }
