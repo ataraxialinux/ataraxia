@@ -45,17 +45,17 @@ build() {
 		--enable-pkgconfig \
 		--enable-udev_rules \
 		--enable-udev_sync \
+		--enable-udev-systemd-background-jobs \
 		--disable-readline
 
 	sed -i 's/ -p//g' make.tmpl libdm/make.tmpl
 
 	make SHELL=/usr/bin/bash
 	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install
+	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install_systemd_units
 
 	install -d "$PKG"/etc/lvm/{archive,backup}
 
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
-
-	install -Dm755 "$STUFF"/svc/dmeventd "$PKG"/etc/service/dmeventd/run
 }
