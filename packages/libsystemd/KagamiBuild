@@ -1,7 +1,7 @@
 # Description: System and service manager
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson zlib bzip2 xz lz4 pam audit acl libcap shadow libressl kbd kmod libelf gperf hwids cryptsetup libseccomp
+# Depends on:  meson zlib bzip2 xz lz4 pam audit acl libcap shadow libressl kbd kmod libelf gperf hwids libblkid libseccomp
 # Dep x86_64:  gnu-efi
 # Dep i686:    gnu-efi
 # Dep aarch64: gnu-efi
@@ -10,24 +10,19 @@
 # Priority:    required
 # Section:     base
 
-name=systemd
+name=libsystemd
 version=246.3
 release=1
 options=('bootstrap')
-backup=('etc/pam.d/systemd-user'
-	'etc/systemd/journald.conf'
-	'etc/systemd/logind.conf'
-	'etc/systemd/networkd.conf'
-	'etc/systemd/sleep.conf'
-	'etc/systemd/system.conf'
-	'etc/systemd/resolved.conf'
-	'etc/systemd/timesyncd.conf'
-	'etc/systemd/user.conf'
-	'etc/udev/udev.conf')
 source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz")
 
 build() {
-	cd "$SRC"/$name-stable-$version
+
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
+		die "Cannot use this package out of bootstrap environment"
+	fi
+
+	cd "$SRC"/systemd-stable-$version
 	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
 	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
 	patch -Np1 -i "$STUFF"/systemd/0003-stateless-etc-machine-id.patch
@@ -38,7 +33,7 @@ build() {
 
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-stable-$version \
+	ataraxia-meson "$SRC"/systemd-stable-$version \
 		-Db_lto=false \
 		-Dapparmor=false \
 		-Daudit=true \
@@ -89,37 +84,19 @@ build() {
 	samu
 	DESTDIR="$PKG" samu install
 
-	if [ -d "$PKG/usr/sbin" ]; then
-		mv "$PKG"/usr/sbin/* "$PKG"/usr/bin
-		rm -rf "$PKG"/usr/sbin
-	fi
-
-	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
-	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
-
-	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf}
-	sed -i -e '/^C \/etc\/nsswitch\.conf/d' \
-		-e '/^C \/etc\/issue/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
-
-	cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules <<-EOF
-		# set bfq by default
-		ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
-		ACTION=="add|change", KERNEL=="nvme[0-9]", ATTR{queue/scheduler}="bfq"
-		ACTION=="add|change", KERNEL=="mmcblk[0-9]", ATTR{queue/scheduler}="bfq"
-	EOF
-
-	cat > "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules <<-EOF
-		# spoof mac address
-		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
-	EOF
-
-	install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
-
-	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
-	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
-
-	# compat
-	mkdir -p "$PKG"/var/lib/dbus
-	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
-	ln -sf ../run/machine-id "$PKG"/etc/machine-id
+	rm -rf \
+		"$PKG"/etc \
+		"$PKG"/usr/bin \
+		"$PKG"/usr/sbin \
+		"$PKG"/usr/lib/binfmt.d \
+		"$PKG"/usr/lib/environment.d \
+		"$PKG"/usr/lib/kernel \
+		"$PKG"/usr/lib/rpm \
+		"$PKG"/usr/lib/security \
+		"$PKG"/usr/lib/systemd \
+		"$PKG"/usr/lib/sysusers.d \
+		"$PKG"/usr/lib/tmpfiles.d \
+		"$PKG"/usr/lib/udev \
+		"$PKG"/usr/share \
+		"$PKG"/var
 }

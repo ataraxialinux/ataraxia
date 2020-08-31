@@ -284,29 +284,51 @@ build_target() {
 		LINUX="linux"
 	fi
 
-	packages="netbase tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
+	packages="base-files linux-headers musl netbase tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
 		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache pkgconf \
 		pcre libcap-ng audit cracklib pam libpwquality attr acl libcap shadow grep sed psmisc \
 		mksh bash slibtool inetutils net-tools gdbm db sqlite expat libffi libressl nettle python perl ca-certificates \
 		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase less mandoc \
 		dialog gzip ncompress iproute2 kbd samurai python-setuptools meson make patch tar cpio nano $EXTRAPKG libseccomp \
-		libblkid gperf systemd dbus util-linux procps-ng e2fsprogs btrfs-progs dosfstools hwids run-parts dhcp libssh2 nghttp2 \
-		heimdal curl popt rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget libevent links $LINUX"
+		gperf libblkid libsystemd util-linux libaio lvm2 popt json-c argon2 cryptsetup systemd dbus procps-ng \
+		e2fsprogs btrfs-progs dosfstools hwids run-parts dhcp libssh2 nghttp2 heimdal curl rpm neko libnl wireless_tools \
+		wpa_supplicant gptfdisk wget libevent links $LINUX"
 
 	for i in $packages; do
 		case $i in
 			libblkid)
 				if [ ! -f "$BUILD/.blkid" ]; then
 					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd libblkid
-					rm -rf "$BUILD"/packages/libblkd-*.rpm
-					touch "$BUILD"/.blkid
+					rm -rf "$BUILD"/packages/libblkid-*.rpm
+					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
+				fi
+				;;
+			libsystemd)
+				if [ ! -f "$BUILD/.libsystemd" ]; then
+					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd libsystemd
+					rm -rf "$BUILD"/packages/libsystemd-*.rpm
+					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
 				fi
 				;;
 			util-linux)
-				if [ -n "$($TOOLS/bin/rpm -q --root=$ROOTFS libblkid)" ]; then
-					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" libblkid || true
+				pushd "$REPO/util-linux"
+					neko bi -c "$BUILD"/target.config -w util-linux
+				popd
+				if [ -f "$BUILD/.rmblkid" ]; then
+					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -d libblkid
+					rm "$BUILD"/.rmblkid
 				fi
 				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd util-linux
+				;;
+			systemd)
+				pushd "$REPO/systemd"
+					neko bi -c "$BUILD"/target.config -w systemd
+				popd
+				if [ -f "$BUILD/.rmsystemd" ]; then
+					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -d libsystemd
+					rm "$BUILD"/.rmsystemd
+				fi
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd systemd
 				;;
 			*)
 				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $i

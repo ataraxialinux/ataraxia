@@ -11,21 +11,21 @@ case $version in
 esac
 release=1
 options=('bootstrap')
-source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
+source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/util-linux-$version.tar.xz")
 
 build() {
 	if [ "$USEBOOTSTRAP" != "yes" ]; then
 		die "Cannot use this package out of bootstrap environment"
 	fi
 
-	cd "$SRC"/$name-$version
+	cd "$SRC"/util-linux-$version
 	ADJTIME_PATH=/var/lib/hwclock/adjtime \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--bindir=/usr/bin \
 		--sbindir=/usr/bin \
-		--localstatedir=/var \\
+		--localstatedir=/var \
 		--without-python \
 		--without-systemd \
 		--without-systemdsystemunitdir \
@@ -37,4 +37,6 @@ build() {
 		--disable-all-programs
 	make
 	make DESTDIR="$PKG" install
+
+	rm -rf "$PKG"/usr/sbin
 }

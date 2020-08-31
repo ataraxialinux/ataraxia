@@ -1,12 +1,14 @@
 # Description: Logical Volume Manager 2 utilities
 # URL:         https://sourceware.org/lvm2/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  systemd libaio
+# Depends on:  libaio systemd
+# Priority:    required
 # Section:     admin
 
 name=lvm2
 version=2.03.10
 release=1
+options=('bootstrap')
 backup=('etc/lvm/lvm.conf'
 	'etc/lvm/lvmlocal.conf')
 source=("http://sourceware.org/pub/lvm2/LVM2.${version}.tgz")
@@ -34,6 +36,7 @@ build() {
 		--with-default-locking-dir=/run/lock/lvm \
 		--with-default-pid-dir=/run \
 		--with-default-run-dir=/run/lvm \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--with-cache=internal \
 		--with-thin=internal \
 		--enable-cmdlib \
