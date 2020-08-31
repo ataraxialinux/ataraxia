@@ -23,6 +23,7 @@ build() {
 		--libexec=/usr/lib/libvirt \
 		--sbindir=/usr/bin \
 		--with-runstatedir=/run \
+		--with-init-script=systemd \
 		--with-qemu-group=kvm \
 		--without-hal \
 		--without-netcf \
@@ -32,12 +33,8 @@ build() {
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
-	make DESTDIR="$PKG" install
+	make DESTDIR="$PKG" SYSTEMD_UNIT_DIR=/usr/lib/systemd/system install
 
-	for i in libvirtd virtlockd; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
-	done
 	for i in  /var/lib/libvirt/uml /var/lib/libvirt/qemu/nvram /var/lib/libvirt/qemu/channel/target \
 		/var/lib/libvirt/network /var/lib/libvirt/lxc /var/lib/libvirt/lockd/files /var/lib/libvirt/libxl \
 		/var/lib/libvirt/images /var/lib/libvirt/filesystems /var/lib/libvirt/dnsmasq /var/libvirt/boot /var/cache/libvirt/qemu; do

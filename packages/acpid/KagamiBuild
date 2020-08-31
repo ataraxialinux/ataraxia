@@ -17,7 +17,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm755 "$STUFF"/svc/acpid "$PKG"/etc/service/acpid/run
+	install -Dm644 "$STUFF"/svc/acpid.service "$PKG"/usr/lib/systemd/system/acpid.service
+	install -Dm644 "$STUFF"/svc/acpid.socket "$PKG"/usr/lib/systemd/system/acpid.socket
+
 	install -m755 -d "$PKG"/etc/acpi/events
 
 	cat > "$PKG"/etc/acpi/events/lid <<-EOF

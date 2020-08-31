@@ -20,6 +20,10 @@ build() {
 	samu
 	DESTDIR="$PKG" samu install
 
+	for i in vncserver-system.service vncserver-user.service xvnc.service xvnc.socket; do
+		install -Dm644 "$STUFF"/svc/$i "$PKG"/usr/lib/systemd/system/$i
+	done
+
 	cd "$SRC"/$name-$version/unix/xserver
 	cp -a "$SRC"/xorg-server-$xserverver/* .
 	patch -Np1 -i "$SRC"/$name-$version/unix/xserver120.patch

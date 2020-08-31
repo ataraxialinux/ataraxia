@@ -15,6 +15,7 @@ build() {
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--with-udevdir=/usr/lib/udev \
 		--with-udev-rules
 	make
@@ -22,6 +23,8 @@ build() {
 
 	find "$PKG" -name '*.py' -exec python3 -mpy_compile {} +
 	find "$PKG" -name '*.py' -exec python3 -O -mpy_compile {} +
+
+	sed -i "s|cups.socket|org.cups.cupsd.socket|g" "$PKG"/usr/lib/systemd/system/configure-printer@.service
 
 	install -dm755 "$PKG"/usr/share/dbus-1/system.d
 	mv "$PKG"/etc/dbus-1/system.d/* "$PKG"/usr/share/dbus-1/system.d

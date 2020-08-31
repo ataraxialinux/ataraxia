@@ -1,0 +1,15 @@
+[Unit]
+Description=IP sets for iptables
+Before=iptables.service
+Before=ip6tables.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/ipset -f /etc/ipset.conf restore
+ExecReload=/usr/bin/ipset -f /etc/ipset.conf restore
+ExecStop=/usr/bin/ipset destroy
+Environment=IPSET_SAVE_ON_STOP=no IPSET_SAVE_ON_RESTART=no
+
+[Install]
+WantedBy=basic.target

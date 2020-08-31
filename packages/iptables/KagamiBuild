@@ -35,9 +35,7 @@ build() {
 	mkdir -p "$PKG"/etc/iptables
 	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
 
-	for i in iptables ip6tables; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
-	done
 	install -Dm775 "$STUFF"/iptables/flush "$PKG"/usr/lib/iptables-flush
+	install -Dm644 "$STUFF"/svc/iptables.service "$PKG"/usr/lib/systemd/system/iptables.service
+	install -Dm644 "$STUFF"/svc/ip6tables.service "$PKG"/usr/lib/systemd/system/ip6tables.service
 }

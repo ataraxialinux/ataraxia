@@ -12,6 +12,7 @@ source=("https://download.tuxfamily.org/chrony/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	sed 's|/usr/sbin|/usr/bin|g' -i examples/*.service
 	./configure \
 		--prefix=/usr \ \
 		--with-hwclockfile=/var/lib/hwclock/adjtime \
@@ -22,9 +23,10 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm755 "$STUFF"/svc/chronyd "$PKG"/etc/service/chronyd/run
 	install -Dm644 examples/chrony.conf.example3 "$PKG"/etc/chrony.conf
 	install -Dm644 examples/chrony.logrotate "$PKG"/etc/logrotate.d/chrony
+	install -Dm644 examples/chrony-wait.service "$PKG"/usr/lib/systemd/system/chrony-wait.service
+	install -Dm644 examples/chronyd.service "$PKG"/usr/lib/systemd/system/chronyd.service
 
 	mv "$PKG"/usr/sbin/chronyd "$PKG"/usr/bin
 	rmdir "$PKG"{/usr/sbin,/var/lib/chrony,/var/lib}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Squid caching proxy
+Documentation=man:squid(8)
+After=network.target network-online.target nss-lookup.target
+
+[Service]
+Type=notify
+LimitNOFILE=16384
+PIDFile=/run/squid.pid
+ExecStart=/usr/sbin/squid --foreground
+ExecReload=/usr/bin/kill -HUP $MAINPID
+KillMode=mixed
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

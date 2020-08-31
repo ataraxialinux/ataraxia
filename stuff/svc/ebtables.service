@@ -1,0 +1,14 @@
+[Unit]
+Description=Ethernet bridge table
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/ebtables-restore < /etc/ebtables.conf
+ExecStop=/usr/bin/ebtables-save > /etc/ebtables.conf
+ExecStopPost=/usr/bin/ebtables -F
+
+[Install]
+WantedBy=multi-user.target

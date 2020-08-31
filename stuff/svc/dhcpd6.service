@@ -1,0 +1,14 @@
+[Unit]
+Description=DHCPv6 Server Daemon
+Documentation=man:dhcpd(8) man:dhcpd.conf(5)
+Wants=network-online.target
+After=network-online.target
+After=time-sync.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/dhcpd -f -6 -cf /etc/dhcpd6.conf -user dhcpd -group dhcpd --no-pid
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target
