@@ -1,6 +1,6 @@
-From 7a9e7696588f16f862bbeb14886252be4ef784db Mon Sep 17 00:00:00 2001
+From c0db623879272fa829f95e20d0557a374746b4eb Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 31 Aug 2020 17:02:00 +0900
+Date: Mon, 31 Aug 2020 17:42:24 +0900
 Subject: [PATCH] POSIX userland
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -9,9 +9,9 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  51-dracut-rescue-postinst.sh         |  2 +-
  51-dracut-rescue.install             |  2 +-
  Makefile                             |  2 +-
- dracut-init.sh                       | 28 ++++++++++--------------
- dracut.conf                          |  4 ++++
- dracut.sh                            | 32 ++++++++++++++--------------
+ dracut-init.sh                       | 28 +++++++++--------------
+ dracut.conf                          |  3 +++
+ dracut.sh                            | 34 ++++++++++++++--------------
  install/dracut-install.c             |  4 ++--
  modules.d/04watchdog/module-setup.sh |  4 ++--
  modules.d/30convertfs/convertfs.sh   |  4 ++--
@@ -25,7 +25,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  modules.d/99base/module-setup.sh     |  2 +-
  test/TEST-12-RAID-DEG/test.sh        |  4 ++--
  test/TEST-99-RPM/test.sh             |  2 +-
- 20 files changed, 53 insertions(+), 55 deletions(-)
+ 20 files changed, 53 insertions(+), 56 deletions(-)
 
 diff --git a/50-dracut.install b/50-dracut.install
 index 7ea5e17..3112d9e 100755
@@ -80,7 +80,7 @@ index 22b584f..7e78bde 100644
  			$(DESTDIR)$(systemdsystemunitdir)/initrd.target.wants/$$i; \
  		done \
 diff --git a/dracut-init.sh b/dracut-init.sh
-index a8348b7..583ac76 100644
+index a8348b7..c07b8ce 100644
 --- a/dracut-init.sh
 +++ b/dracut-init.sh
 @@ -20,9 +20,9 @@
@@ -146,19 +146,18 @@ index a8348b7..583ac76 100644
  is_qemu_virtualized() {
      # 0 if a virt environment was detected
 diff --git a/dracut.conf b/dracut.conf
-index d6317a0..f492e1c 100644
+index d6317a0..c5b49be 100644
 --- a/dracut.conf
 +++ b/dracut.conf
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,6 @@
  # PUT YOUR CONFIG IN separate files
  # in /etc/dracut.conf.d named "<name>.conf"
  # SEE man dracut.conf(5) for options
-+add_dracutmodules+="mksh"
-+omit_dracutmodules+="bash i18n"
++omit_dracutmodules+="i18n"
 +i18n_install_all="no"
 +compress="zstd"
 diff --git a/dracut.sh b/dracut.sh
-index af346f3..d8ddcb5 100755
+index af346f3..c2e9ad0 100755
 --- a/dracut.sh
 +++ b/dracut.sh
 @@ -32,7 +32,7 @@ if (( BASH_VERSINFO[0] < 4 )); then
@@ -199,6 +198,15 @@ index af346f3..d8ddcb5 100755
      fi
      if [[ "$NPATH" != *:$rl* ]] ; then
          NPATH+=":$rl"
+@@ -942,7 +942,7 @@ case "${drivers_dir}" in
+ 	;;
+ esac
+ 
+-readonly TMPDIR="$(realpath -e "$tmpdir")"
++readonly TMPDIR="$(realpath "$tmpdir")"
+ [ -d "$TMPDIR" ] || {
+     printf "%s\n" "dracut: Invalid tmpdir '$tmpdir'." >&2
+     exit 1
 @@ -1064,7 +1064,7 @@ case $dracutmodules in
      ""|auto) dracutmodules="all" ;;
  esac
@@ -474,32 +482,6 @@ index af64c24..c827acb 100755
         "$TESTDIR"/dracut-[0-9]*.$(uname -m).rpm \
         "$TESTDIR"/dracut-network-[0-9]*.$(uname -m).rpm \
         "$rootdir/$TESTDIR/"
--- 
-2.18.4
-
-From a2d718e91c978f020496d2b018940a71ed97aac0 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 31 Aug 2020 17:05:54 +0900
-Subject: [PATCH] freebsd realpath
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- dracut.sh | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/dracut.sh b/dracut.sh
-index d8ddcb5..c2e9ad0 100755
---- a/dracut.sh
-+++ b/dracut.sh
-@@ -942,7 +942,7 @@ case "${drivers_dir}" in
- 	;;
- esac
- 
--readonly TMPDIR="$(realpath -e "$tmpdir")"
-+readonly TMPDIR="$(realpath "$tmpdir")"
- [ -d "$TMPDIR" ] || {
-     printf "%s\n" "dracut: Invalid tmpdir '$tmpdir'." >&2
-     exit 1
 -- 
 2.18.4
 
