@@ -18,17 +18,14 @@ build() {
 		--libexecdir=/usr/lib/iwd \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
+		--with-systemd-modloaddir=/usr/lib/modules-load.d \
+		--with-systemd-networkdir=/usr/lib/systemd/network \
+		--with-systemd-unitdir=/usr/lib/systemd/system \
 		--enable-sim-hardcoded \
+		--enable-systemd-service \
 		--enable-tools \
 		--enable-wired \
-		--disable-docs \
-		--disable-systemd-service
+		--disable-doc
 	make
 	make DESTDIR="$PKG" install
-
-	mkdir -p "$PKG"/var/lib/iwd "$PKG"/var/lib/ead
-
-	for i in iwd ead; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-	done
 }

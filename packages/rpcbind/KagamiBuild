@@ -1,7 +1,7 @@
 # Description: portmap replacement which supports RPC over various protocols
 # URL:         http://rpcbind.sourceforge.net
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libtirpc
+# Depends on:  libtirpc systemd
 # Section:     misc
 
 name=rpcbind
@@ -21,11 +21,9 @@ build() {
 		--sbindir=/usr/bin \
 		--with-statedir=/var/lib/rpcbind \
 		--with-rpcuser=root \
-		--without-systemdsystemunitdir \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--enable-rmtcalls \
 		--enable-warmstarts
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm755 "$STUFF"/svc/rpcbind "$PKG"/etc/service/rpcbind/run
 }

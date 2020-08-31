@@ -1,7 +1,7 @@
 # Description: Firewall daemon with D-Bus interface
 # URL:         https://firewalld.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  intltool iptables ipset dconf glib nftables python-decorator pygobject python-slip libnotify
+# Depends on:  intltool systemd iptables ipset dconf glib nftables python-decorator pygobject python-slip libnotify
 # Section:     net
 
 name=firewalld
@@ -17,10 +17,11 @@ build() {
 		--sbindir=/usr/bin \
 		--localstatedir=/var \
 		--sysconfdir=/etc \
+		--with-systemd-unitdir=/usr/lib/systemd/system \
 		--without-ebtables \
+		--enable-systemd \
 		--disable-docs \
-		--disable-schemas-compile \
-		--disable-systemd
+		--disable-schemas-compile
 	make
 	make DESTDIR="$PKG" install
 
@@ -28,6 +29,4 @@ build() {
 	python3 -O -m compileall -d /usr/lib "$PKG"/usr/lib
 
 	rm -rf "$PKG"/etc/sysconfig "$PKG"/etc/rc.d
-
-	install -Dm755 "$STUFF"/svc/firewalld "$PKG"/etc/service/firewalld/run
 }

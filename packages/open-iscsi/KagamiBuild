@@ -11,7 +11,7 @@ backup=('etc/iscsi/iscsid.conf')
 source=("https://github.com/open-iscsi/open-iscsi/archive/$version.tar.gz")
 
 build() {
-	export CFLAGS="-D_LINUX_IF_ETHER_H -Wno-error=format -Wno-error=cpp -DNO_SYSTEMD $CFLAGS"
+	export CFLAGS="-D_LINUX_IF_ETHER_H -Wno-error=format -Wno-error=cpp $CFLAGS"
 
 	cd "$SRC"/$name-$version
 	patch -Np0 -i "$STUFF"/open-iscsi/musl.patch
@@ -28,8 +28,12 @@ build() {
 	# no werror
 	sed -i 's/-Werror//g' libopeniscsiusr/Makefile usr/Makefile
 
-	make user LIB_DIR=/usr/lib NO_SYSTEMD=1
+	make user LIB_DIR=/usr/lib
 	make DESTDIR="$PKG" LIB_DIR=/usr/lib install
+
+	for i in iscsi.service iscsid.{service,socket} iscsiuio.{service,socket}; do
+		install -Dm644 $i "$PKG"/usr/lib/systemd/system/$i
+	done
 
 	mv "$PKG"/sbin "$PKG"/usr/bin
 }

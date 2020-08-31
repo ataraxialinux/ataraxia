@@ -17,6 +17,7 @@ build() {
 	cd $SRC/$name-$version
 	patch -Np1 -i "$STUFF"/9base/0001-fix.patch
 
+	sed -i "s/@strip/@${CROSS_COMPILE}strip/g" std.mk sam/Makefile
 	sed -i 's|PREFIX      = /usr/local/plan9|PREFIX      = /|' config.mk
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then

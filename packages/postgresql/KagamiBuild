@@ -1,7 +1,7 @@
 # Description: A sophisticated Object-Relational DBMS
 # URL:         http://www.postgresql.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python perl readline pam libressl heimdal icu libxml2 libldap
+# Depends on:  python perl readline pam libressl systemd heimdal icu libxml2 libldap
 # Section:     database
 
 name=postgresql
@@ -18,8 +18,8 @@ build() {
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--with-openssl \
+		--with-systemd \
 		--without-llvm \
-		--without-systemd \
 		--without-tcl \
 		--enable-thread-safety \
 		--disable-nls \
@@ -27,6 +27,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm755 "$STUFF"/svc/postgresql "$PKG"/etc/service/postgresql/run
 	install -Dm644 "$STUFF"/pam.d/postgresql "$PKG"/etc/pam.d/postgresql
 }

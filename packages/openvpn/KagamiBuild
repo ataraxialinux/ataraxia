@@ -1,7 +1,7 @@
 # Description: An easy-to-use, robust and highly configurable VPN
 # URL:         https://openvpn.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam libressl iproute2 lzo easy-rsa
+# Depends on:  pam libressl iproute2 lzo easy-rsa systemd
 # Section:     net
 
 name=openvpn
@@ -11,6 +11,8 @@ source=("https://swupdate.openvpn.org/community/releases/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	SYSTEMD_UNIT_DIR=/usr/lib/systemd/system \
+	TMPFILES_DIR=/usr/lib/tmpfiles.d \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
@@ -18,8 +20,8 @@ build() {
 		--enable-crypto \
 		--enable-iproute2 \
 		--enable-plugins \
-		--enable-x509-alt-username \
-		--disable-systemd
+		--enable-systemd \
+		--enable-x509-alt-username
 	make
 	make DESTDIR="$PKG" install
 }

@@ -22,10 +22,10 @@ build() {
 
 	sed -i 's/sbin/bin/g' "$PKG"/etc/fail2ban/action.d/sendmail*.conf
 
+	install -Dm644 build/fail2ban.service "$PKG"/usr/lib/systemd/system/fail2ban.service
+	install -Dm644 files/fail2ban-tmpfiles.conf "$PKG"/usr/lib/tmpfiles.d/fail2ban.conf
 	install -Dm644 files/fail2ban-logrotate "$PKG"/etc/logrotate.d/fail2ban
 	install -Dm644 files/bash-completion "$PKG"/usr/share/bash-completion/completions/fail2ban
-
-	install -Dm755 "$STUFF"/svc/fail2ban "$PKG"/etc/service/fail2ban/run
 
 	rm -rf "$PKG"/run
 }

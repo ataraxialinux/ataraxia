@@ -1,6 +1,7 @@
 # Description: A tool for managing/monitoring Linux md device arrays, also known as Software RAID
 # URL:         http://neil.brown.name/blog/mdadm
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  systemd
 # Section:     admin
 
 name=mdadm
@@ -16,8 +17,8 @@ build() {
 
 	mkdir -p "$PKG"/usr/bin
 
-	make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev all
-	make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev DESTDIR="$PKG" install
+	make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system all
+	make CXFLAGS="$CFLAGS" PREFIX=/usr BINDIR=/usr/bin UDEVDIR=/usr/lib/udev SYSTEMD_DIR=/usr/lib/systemd/system DESTDIR="$PKG" install
 
 	install -D -m644 "$STUFF"/mdadm/mdadm.conf "$PKG"/etc/mdadm/mdadm.conf
 }

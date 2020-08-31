@@ -15,22 +15,22 @@ build() {
 
 	sed -i 's,ln -r -s,ln -s,g' modules/*/Makefile*
 
-	#SYSTEMD
-	# --enable-zram
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--without-systemdsystemunitdir \
+		--with-modprobedir=/usr/lib/modprobe.d \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--with-tmpfilesdir=/usr/lib/tmpfiles.d \
 		--with-udevdir=/usr/lib/udev \
 		--enable-bcache \
 		--enable-fhs-media \
 		--enable-lvm2 \
 		--enable-lvmcache \
 		--enable-vdo \
+		--enable-zram \
 		--disable-man \
 		--disable-static
 	make

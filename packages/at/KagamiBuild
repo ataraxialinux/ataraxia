@@ -1,7 +1,7 @@
 # Description: AT and batch delayed command scheduling utility and daemon
 # URL:         http://blog.calhariz.com/tag/at
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  flex pam
+# Depends on:  systemd flex pam
 # Section:     admin
 
 name=at
@@ -29,10 +29,10 @@ build() {
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--with-atspool=/var/spool/atd \
-		--with-jobdir=/var/spool/atd
+		--with-jobdir=/var/spool/atd \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system
 	make -j1
 	make IROOT="$PKG" install
 
-	install -Dm755 "$STUFF"/svc/atd "$PKG"/etc/service/atd/run
 	install -Dm644 "$STUFF"/pam.d/atd "$PKG"/etc/pam.d/atd
 }

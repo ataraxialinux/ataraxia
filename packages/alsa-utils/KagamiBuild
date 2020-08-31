@@ -1,7 +1,7 @@
 # Description: An alternative implementation of Linux sound support
 # URL:         http://www.alsa-project.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  alsa-lib ncurses
+# Depends on:  alsa-lib ncurses systemd
 # Section:     sound
 
 name=alsa-utils
@@ -19,6 +19,7 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--with-udev-rules-dir=/usr/lib/udev/rules.d \
 		--disable-alsaconf \
 		--disable-alsatest \
@@ -26,11 +27,6 @@ build() {
 		--disable-xmlto
 	make
 	make DESTDIR="$PKG" install
-
-	for i in alsa; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/finish
-	done
 
 	install -d "$PKG"/var/lib/alsa
 }
