@@ -936,4 +936,12 @@ build() {
 
 	install -Dm755 "$STUFF"/linux/mkinitrd "$PKG"/usr/bin/mkinitrd
 	sed -i "s/uncomment/$version/g" "$PKG"/usr/bin/mkinitrd
+
+	[ -f "$topdir/trigger" ] && rm -rf "$topdir"/trigger
+	cat > "$topdir"/trigger <<-EOF
+		%transfiletriggerin -- /usr/lib/modules/${kver}-ataraxia
+		if [ -f "/boot/initramfs-ataraxia.img" ]; then
+			/usr/bin/mkinitrd
+		fi
+	EOF
 }
