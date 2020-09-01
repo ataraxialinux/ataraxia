@@ -118,6 +118,13 @@ build() {
 	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				install -Dm644 "$STUFF"/systemd/ataraxia.conf "$pkgdir"/usr/share/systemd/bootctl/ataraxia.conf
+				install -Dm644 "$STUFF"/systemd/loader.conf "$pkgdir"/usr/share/systemd/bootctl/loader.conf
+				;;
+	esac
+
 	# compat
 	mkdir -p "$PKG"/var/lib/dbus
 	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
