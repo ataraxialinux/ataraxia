@@ -1,7 +1,7 @@
 # Description: Suite of VNC servers and clients. Based on the VNC 4 branch of TightVNC
 # URL:         http://www.tigervnc.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai pam fltk gnutls libgcrypt libjpeg-turbo pixman xorgproto libxdamage libxfont2 libxtst libdrm xkeyboard-config xorg-fonts
+# Depends on:  cmake samurai pam fltk gnutls libgcrypt libjpeg-turbo pixman xorgproto libxdamage libxfont2 libxtst libdrm xkeyboard-config xorg-fonts dbus
 # Section:     utils
 
 name=tigervnc
@@ -27,6 +27,7 @@ build() {
 	cd "$SRC"/$name-$version/unix/xserver
 	cp -a "$SRC"/xorg-server-$xserverver/* .
 	patch -Np1 -i "$SRC"/$name-$version/unix/xserver120.patch
+	patch -Np1 -i "$STUFF"/tigervnc/u_xorg-server-1.20.7-ddxInputThreadInit.patch
 
 	autoreconf -fiv
 	CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t -I/usr/include/libdrm" \
