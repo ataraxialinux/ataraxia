@@ -39,7 +39,7 @@ install_liveos() {
 	esac
 
 	msg "Installing packages"
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -wd $core
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -wdst $core
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $packages
 
 	msg "Configuring system"
@@ -47,13 +47,6 @@ install_liveos() {
 		cp boot/vmlinuz-ataraxia "$ISODIR"/seiba/seiba
 	popd
 	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst
-
-	case $DESKTOP in
-		gnome|xfce|mate|budgie|sway) services="NetworkManager earlyoom" ;;
-	esac
-
-	for i in $services; do systemctl -q --root "$LIVEOS" enable $i; done
-
 	mv "$LIVEOS"/etc/motd "$LIVEOS"/etc/motd.old
 
 	cat > "$LIVEOS"/etc/motd <<-EOF
