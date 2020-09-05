@@ -49,10 +49,10 @@ install_liveos() {
 	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst
 
 	case $DESKTOP in
-		gnome|xfce|mate|budgie|sway) services="dbus elogind networkmanager earlyoom" ;;
+		gnome|xfce|mate|budgie|sway) services="NetworkManager earlyoom" ;;
 	esac
 
-	for i in $services; do ln -sf /etc/service/$i "$LIVEOS"/var/service/$i; done
+	for i in $services; do systemctl -q --root "$LIVEOS" enable $i; done
 
 	mv "$LIVEOS"/etc/motd "$LIVEOS"/etc/motd.old
 
