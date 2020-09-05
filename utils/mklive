@@ -17,7 +17,8 @@ install_liveos() {
 		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase less \
 		mandoc gzip ncompress iproute2 kbd samurai python-setuptools meson make patch tar cpio nano $EXTRAPKG libseccomp procps-ng gperf \
 		util-linux libaio lvm2 popt json-c argon2 cryptsetup systemd dbus e2fsprogs btrfs-progs hwids run-parts libssh2 nghttp2 \
-		heimdal curl popt rpm neko linux linux-firmware parted squashfs-tools alsa-utils dnf earlyoom"
+		heimdal curl popt rpm neko linux"
+	#linux-firmware parted squashfs-tools alsa-utils dnf earlyoom
 
 	if [ "$DESKTOP" != "sway" ]; then
 		packages="$packages xorg-server xinit xf86-input-libinput xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware}"
@@ -36,9 +37,9 @@ install_liveos() {
 		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
 	esac
 
-	if [ "$BARCH" = "x86_64" ]; then
-		packages="$packages firefox"
-	fi
+	#if [ "$BARCH" = "x86_64" ]; then
+	#	packages="$packages firefox"
+	#fi
 
 	msg "Installing packages"
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $packages
