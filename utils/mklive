@@ -10,7 +10,7 @@ install_liveos() {
 				;;
 	esac
 
-	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
+	core="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
 		zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
 		ccache pkgconf pcre libcap-ng audit cracklib pam libpwquality attr acl libcap shadow grep sed \
 		psmisc mksh bash slibtool inetutils net-tools gdbm db sqlite expat libffi libressl nettle python perl ca-certificates \
@@ -18,7 +18,8 @@ install_liveos() {
 		mandoc gzip ncompress iproute2 kbd samurai python-setuptools meson make patch tar cpio nano $EXTRAPKG libseccomp procps-ng gperf \
 		util-linux libaio lvm2 popt json-c argon2 cryptsetup systemd dbus e2fsprogs btrfs-progs hwids run-parts libssh2 nghttp2 \
 		heimdal curl popt rpm neko linux"
-	#linux-firmware parted squashfs-tools alsa-utils dnf earlyoom
+
+	packages="linux-firmware parted squashfs-tools alsa-utils dnf earlyoom"
 
 	if [ "$DESKTOP" != "sway" ]; then
 		packages="$packages xorg-server xinit xf86-input-libinput xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware}"
@@ -37,11 +38,8 @@ install_liveos() {
 		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
 	esac
 
-	#if [ "$BARCH" = "x86_64" ]; then
-	#	packages="$packages firefox"
-	#fi
-
 	msg "Installing packages"
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -wd $core
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $packages
 
 	msg "Configuring system"
