@@ -1,44 +1,101 @@
---- ./third_party/lss/linux_syscall_support.h.orig
-+++ ./third_party/lss/linux_syscall_support.h
-@@ -139,11 +139,13 @@
-  */
- #pragma push_macro("stat64")
- #pragma push_macro("fstat64")
-+#pragma push_macro("fstatat64")
- #pragma push_macro("lstat64")
- #pragma push_macro("pread64")
- #pragma push_macro("pwrite64")
- #undef stat64
- #undef fstat64
-+#undef fstatat64
- #undef lstat64
- #undef pread64
- #undef pwrite64
-@@ -1244,6 +1246,12 @@
- #ifndef __NR_fallocate
- #define __NR_fallocate          285
+From 1229b85e05668218e21e138d4a9a9db6d54e0f98 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 7 Sep 2020 00:30:54 +0900
+Subject: [PATCH 1/3] musl fixes
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ base/logging.cc                                           | 3 +--
+ .../metrics/chrome_browser_main_extra_parts_metrics.cc    | 4 +++-
+ mojo/public/cpp/platform/named_platform_channel_posix.cc  | 1 +
+ net/dns/dns_config_service_posix.cc                       | 2 +-
+ sandbox/linux/seccomp-bpf/trap.cc                         | 2 +-
+ sandbox/linux/suid/process_util.h                         | 8 ++++++++
+ third_party/blink/renderer/platform/wtf/stack_util.cc     | 4 ++--
+ third_party/ots/include/opentype-sanitiser.h              | 1 +
+ 8 files changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/base/logging.cc b/base/logging.cc
+index 11229fe95..c29c4c177 100644
+--- a/base/logging.cc
++++ b/base/logging.cc
+@@ -536,8 +536,7 @@ LogMessage::LogMessage(const char* file, int line, const char* condition)
+ 
+ LogMessage::~LogMessage() {
+   size_t stack_start = stream_.tellp();
+-#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__) && \
+-    !defined(OS_AIX)
++#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(__GLIBC__)
+   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
+     // Include a stack trace on a fatal, unless a debugger is attached.
+     base::debug::StackTrace stack_trace;
+diff --git a/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc b/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
+index b57a994cf..dbb117fc1 100644
+--- a/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
++++ b/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
+@@ -49,7 +49,9 @@
+ #endif  // defined(OS_ANDROID) && defined(__arm__)
+ 
+ #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
++#if defined(__GLIBC__)
+ #include <gnu/libc-version.h>
++#endif
+ 
+ #include "base/linux_util.h"
+ #include "base/strings/string_split.h"
+@@ -264,7 +266,7 @@ void RecordLinuxDistro() {
+ #endif  // defined(OS_LINUX) && !defined(OS_CHROMEOS)
+ 
+ void RecordLinuxGlibcVersion() {
+-#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
++#if defined(__GLIBC__) && !defined(OS_CHROMEOS)
+   base::Version version(gnu_get_libc_version());
+ 
+   UMALinuxGlibcVersion glibc_version_result = UMA_LINUX_GLIBC_NOT_PARSEABLE;
+diff --git a/mojo/public/cpp/platform/named_platform_channel_posix.cc b/mojo/public/cpp/platform/named_platform_channel_posix.cc
+index 9082ac4da..cbedae6c3 100644
+--- a/mojo/public/cpp/platform/named_platform_channel_posix.cc
++++ b/mojo/public/cpp/platform/named_platform_channel_posix.cc
+@@ -5,6 +5,7 @@
+ #include "mojo/public/cpp/platform/named_platform_channel.h"
+ 
+ #include <errno.h>
++#include <string.h>
+ #include <sys/socket.h>
+ #include <sys/un.h>
+ #include <unistd.h>
+diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
+index 5a4aead0a..3eb9fc96f 100644
+--- a/net/dns/dns_config_service_posix.cc
++++ b/net/dns/dns_config_service_posix.cc
+@@ -151,7 +151,7 @@ ConfigParsePosixResult ReadDnsConfig(DnsConfig* dns_config) {
+ #if !defined(OS_ANDROID)
+   ConfigParsePosixResult result;
+ // TODO(fuchsia): Use res_ninit() when it's implemented on Fuchsia.
+-#if defined(OS_OPENBSD) || defined(OS_FUCHSIA)
++#if defined(OS_OPENBSD) || defined(OS_FUCHSIA) || defined(_GNU_SOURCE)
+   // Note: res_ninit in glibc always returns 0 and sets RES_INIT.
+   // res_init behaves the same way.
+   memset(&_res, 0, sizeof(_res));
+diff --git a/sandbox/linux/seccomp-bpf/trap.cc b/sandbox/linux/seccomp-bpf/trap.cc
+index f5b86a73a..2762d602d 100644
+--- a/sandbox/linux/seccomp-bpf/trap.cc
++++ b/sandbox/linux/seccomp-bpf/trap.cc
+@@ -174,7 +174,7 @@ void Trap::SigSys(int nr, LinuxSigInfo* info, ucontext_t* ctx) {
+   // If the version of glibc doesn't include this information in
+   // siginfo_t (older than 2.17), we need to explicitly copy it
+   // into an arch_sigsys structure.
+-  memcpy(&sigsys, &info->_sifields, sizeof(sigsys));
++  memcpy(&sigsys, &info->__sifields, sizeof(sigsys));
  #endif
-+
-+#undef __NR_pread
-+#define __NR_pread __NR_pread64
-+#undef __NR_pwrite
-+#define __NR_pwrite __NR_pwrite64
-+
- /* End of x86-64 definitions                                                 */
- #elif defined(__mips__)
- #if _MIPS_SIM == _MIPS_SIM_ABI32
-@@ -4520,6 +4528,7 @@
-  * corresponding #pragma push_macro near the top of this file. */
- #pragma pop_macro("stat64")
- #pragma pop_macro("fstat64")
-+#pragma pop_macro("fstatat64")
- #pragma pop_macro("lstat64")
- #pragma pop_macro("pread64")
- #pragma pop_macro("pwrite64")
---- ./sandbox/linux/suid/process_util.h.orig
-+++ ./sandbox/linux/suid/process_util.h
-@@ -11,6 +11,14 @@
- #include <stdbool.h>
+ 
+ #if defined(__mips__)
+diff --git a/sandbox/linux/suid/process_util.h b/sandbox/linux/suid/process_util.h
+index 10071d3e0..af02d360d 100644
+--- a/sandbox/linux/suid/process_util.h
++++ b/sandbox/linux/suid/process_util.h
+@@ -12,6 +12,14 @@
+ #include <stdint.h>
  #include <sys/types.h>
  
 +// Some additional functions
@@ -52,75 +109,11 @@
  // This adjusts /proc/process/oom_score_adj so the Linux OOM killer
  // will prefer certain process types over others. The range for the
  // adjustment is [-1000, 1000], with [0, 1000] being user accessible.
---- ./sandbox/linux/seccomp-bpf/trap.cc.orig	2020-04-12 08:26:40.184159217 -0400
-+++ ./sandbox/linux/seccomp-bpf/trap.cc	2020-04-12 08:46:16.737191222 -0400
-@@ -174,7 +174,7 @@
-   // If the version of glibc doesn't include this information in
-   // siginfo_t (older than 2.17), we need to explicitly copy it
-   // into an arch_sigsys structure.
--  memcpy(&sigsys, &info->_sifields, sizeof(sigsys));
-+  memcpy(&sigsys, &info->__sifields, sizeof(sigsys));
- #endif
- 
- #if defined(__mips__)
---- ./third_party/ffmpeg/libavutil/cpu.c.orig
-+++ ./third_party/ffmpeg/libavutil/cpu.c
-@@ -38,7 +38,6 @@
- #include <sys/param.h>
- #endif
- #include <sys/types.h>
--#include <sys/sysctl.h>
- #endif
- #if HAVE_UNISTD_H
- #include <unistd.h>
-diff --git a/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc b/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
---- chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
-+++ chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
-@@ -39,7 +39,9 @@
- #endif  // defined(OS_ANDROID) && defined(__arm__)
- 
- #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
-+#if defined(__GLIBC__)
- #include <gnu/libc-version.h>
-+#endif
- 
- #include "base/linux_util.h"
- #include "base/strings/string_split.h"
-@@ -295,7 +297,7 @@ void RecordLinuxDistro() {
- #endif  // defined(OS_LINUX) && !defined(OS_CHROMEOS)
- 
- void RecordLinuxGlibcVersion() {
--#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
-+#if defined(__GLIBC__) && !defined(OS_CHROMEOS)
-   base::Version version(gnu_get_libc_version());
- 
-   UMALinuxGlibcVersion glibc_version_result = UMA_LINUX_GLIBC_NOT_PARSEABLE;
-diff --git a/third_party/ots/include/opentype-sanitiser.h b/third_party/ots/include/opentype-sanitiser.h
---- third_party/ots/include/opentype-sanitiser.h
-+++ third_party/ots/include/opentype-sanitiser.h
-@@ -20,6 +20,7 @@ typedef unsigned __int64 uint64_t;
- #define htonl(x) _byteswap_ulong (x)
- #define htons(x) _byteswap_ushort (x)
- #else
-+#include <sys/types.h>
- #include <arpa/inet.h>
- #include <stdint.h>
- #endif
---- ./base/logging.cc.orig
-+++ ./base/logging.cc
-@@ -545,8 +545,7 @@
- 
- LogMessage::~LogMessage() {
-   size_t stack_start = stream_.tellp();
--#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__) && \
--    !defined(OS_AIX)
-+#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(__GLIBC__)
-   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
-     // Include a stack trace on a fatal, unless a debugger is attached.
-     base::debug::StackTrace trace;
---- ./third_party/blink/renderer/platform/wtf/stack_util.cc.orig
-+++ ./third_party/blink/renderer/platform/wtf/stack_util.cc
-@@ -28,7 +28,7 @@
+diff --git a/third_party/blink/renderer/platform/wtf/stack_util.cc b/third_party/blink/renderer/platform/wtf/stack_util.cc
+index ab1dff416..b0763b0bd 100644
+--- a/third_party/blink/renderer/platform/wtf/stack_util.cc
++++ b/third_party/blink/renderer/platform/wtf/stack_util.cc
+@@ -29,7 +29,7 @@ size_t GetUnderestimatedStackSize() {
  // FIXME: On Mac OSX and Linux, this method cannot estimate stack size
  // correctly for the main thread.
  
@@ -128,8 +121,8 @@ diff --git a/third_party/ots/include/opentype-sanitiser.h b/third_party/ots/incl
 +#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_FREEBSD) || \
      defined(OS_FUCHSIA)
    // pthread_getattr_np() can fail if the thread is not invoked by
-   // pthread_create() (e.g., the main thread of webkit_unit_tests).
-@@ -96,7 +96,7 @@
+   // pthread_create() (e.g., the main thread of blink_unittests).
+@@ -97,7 +97,7 @@ return Threading::ThreadStackSize();
  }
  
  void* GetStackStart() {
@@ -138,56 +131,18 @@ diff --git a/third_party/ots/include/opentype-sanitiser.h b/third_party/ots/incl
      defined(OS_FUCHSIA)
    pthread_attr_t attr;
    int error;
---- ./net/dns/dns_config_service_posix.cc.orig
-+++ ./net/dns/dns_config_service_posix.cc
-@@ -122,7 +122,7 @@
-   ConfigParsePosixResult result;
-   config->unhandled_options = false;
- // TODO(fuchsia): Use res_ninit() when it's implemented on Fuchsia.
--#if defined(OS_OPENBSD) || defined(OS_FUCHSIA)
-+#if defined(OS_OPENBSD) || defined(OS_FUCHSIA) || defined(_GNU_SOURCE)
-   // Note: res_ninit in glibc always returns 0 and sets RES_INIT.
-   // res_init behaves the same way.
-   memset(&_res, 0, sizeof(_res));
---- third_party/swiftshader/third_party/llvm-subzero/lib/Support/Unix/Signals.inc.orig	2019-06-18 11:51:17.000000000 -0400
-+++ third_party/swiftshader/third_party/llvm-subzero/lib/Support/Unix/Signals.inc	2019-07-03 12:32:50.938758186 -0400
-@@ -25,7 +25,7 @@
- #include "llvm/Support/raw_ostream.h"
- #include <algorithm>
- #include <string>
--#if HAVE_EXECINFO_H
-+#if HAVE_EXECINFO_H && defined(__GLIBC__)
- # include <execinfo.h>         // For backtrace().
- #endif
- #if HAVE_SIGNAL_H
-@@ -52,6 +52,7 @@
- #include <unwind.h>
+diff --git a/third_party/ots/include/opentype-sanitiser.h b/third_party/ots/include/opentype-sanitiser.h
+index 08f23befd..021a7cbc5 100644
+--- a/third_party/ots/include/opentype-sanitiser.h
++++ b/third_party/ots/include/opentype-sanitiser.h
+@@ -20,6 +20,7 @@ typedef unsigned __int64 uint64_t;
+ #define ots_htonl(x) _byteswap_ulong (x)
+ #define ots_htons(x) _byteswap_ushort (x)
  #else
- #undef HAVE__UNWIND_BACKTRACE
-+#undef HAVE_BACKTRACE
- #endif
- #endif
- 
---- third_party/nasm/nasmlib/realpath.c.orig	2019-07-03 12:23:05.021949895 -0400
-+++ third_party/nasm/nasmlib/realpath.c	2019-07-03 12:24:24.246862665 -0400
-@@ -49,7 +49,7 @@
- 
- #include "nasmlib.h"
- 
--#ifdef HAVE_CANONICALIZE_FILE_NAME
-+#if defined(__GLIBC__)
- 
- /*
-  * GNU-specific, but avoids the realpath(..., NULL)
-diff --git a/mojo/public/cpp/platform/named_platform_channel_posix.cc ./mojo/public/cpp/platform/named_platform_channel_posix.cc
-index 9082ac4..cbedae6 100644
---- a/mojo/public/cpp/platform/named_platform_channel_posix.cc
-+++ ./mojo/public/cpp/platform/named_platform_channel_posix.cc
-@@ -5,6 +5,7 @@
- #include "mojo/public/cpp/platform/named_platform_channel.h"
- 
- #include <errno.h>
-+#include <string.h>
- #include <sys/socket.h>
- #include <sys/un.h>
- #include <unistd.h>
++#include <sys/types.h>
+ #include <arpa/inet.h>
+ #include <stdint.h>
+ #define ots_ntohl(x) ntohl (x)
+-- 
+2.18.4
+

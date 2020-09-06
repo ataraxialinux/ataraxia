@@ -1,23 +1,27 @@
 # Description: A web browser built for speed, simplicity, and security
 # URL:         https://www.chromium.org/Home/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  clang gperf python python2 gn samurai node mesa xdg-utils gtk3 nss alsa-lib libxss libgcrypt dbus pciutils desktop-file-utils hicolor-icon-theme ffmpeg flac icu libjpeg-turbo libpng opus snappy minizip
+# Depends on:  clang gperf python python2 samurai node mesa xdg-utils gtk3 nss alsa-lib libxss libgcrypt dbus pciutils desktop-file-utils hicolor-icon-theme ffmpeg flac icu libjpeg-turbo libpng opus snappy minizip
 # Section:     web
 
 name=chromium
 version=86.0.4240.8
-gccrel=6
 release=1
-source=("https://commondatastorage.googleapis.com/chromium-browser-official/$name-$version.tar.xz"
-	"https://github.com/stha09/chromium-patches/releases/download/chromium-${version%%.*}-patchset-$gccrel/chromium-${version%%.*}-patchset-$gccrel.tar.xz")
+source=("https://commondatastorage.googleapis.com/chromium-browser-official/$name-$version.tar.xz")
 
 build() {
+	if [ "$opt_ccache" = "1" ]; then
+		export CC="/usr/lib/ccache/bin/clang"
+		export CXX="/usr/lib/ccache/bin/clang++"
+	else
+		export CC=clang
+		export CXX=clang++
+	fi
+
 	msg "Preparing chromium"
-	export CFLAGS="-D__DATE__=  -D__TIME__=  -D__TIMESTAMP__= -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -Wno-builtin-macro-redefined -Wno-unknown-warning-option -pipe"
-	export CXXFLAGS="-D__DATE__=  -D__TIME__=  -D__TIMESTAMP__= -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -Wno-builtin-macro-redefined -Wno-unknown-warning-option -pipe"
+	export CFLAGS="-I$STUFF/include -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__= -g0 -Os -Wno-builtin-macro-redefined -Wno-unknown-warning-option -pipe"
+	export CXXFLAGS="-I$STUFF/include -D__DATE__=  -D__TIME__=  -D__TIMESTAMP__= -g0 -Os -Wno-builtin-macro-redefined -Wno-unknown-warning-option -pipe"
 	export CCACHE_SLOPPINESS=time_macros
-	export CC=clang
-	export CXX=clang++
 	export AR=ar
 	export NM=nm
 
@@ -25,13 +29,13 @@ build() {
 	flags=('custom_toolchain="//build/toolchain/linux/unbundle:default"'
 		'host_toolchain="//build/toolchain/linux/unbundle:default"'
 		'clang_use_chrome_plugins=false'
-		'is_official_build=true' # implies is_cfi=true on x86_64
+		'is_official_build=true'
 		'treat_warnings_as_errors=false'
 		'fieldtrial_testing_like_official_build=true'
 		'ffmpeg_branding="Chrome"'
 		'proprietary_codecs=true'
 		'rtc_use_pipewire=false'
-		'link_pulseaudio=true'
+		'link_pulseaudio=false'
 		'use_gnome_keyring=false'
 		'use_sysroot=false'
 		'use_custom_libcxx=false'
@@ -52,31 +56,26 @@ build() {
 		third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
 		third_party/libxml/chromium/*.cc
 
-	# GCC
-	patch -Np1 -i "$SRC"/chromium-${version%%.*}-patchset-$gccrel/patches/chromium-85-NearbyShareEncryptedMetadataKey-include.patch
-	patch -Np1 -i "$SRC"/chromium-${version%%.*}-patchset-$gccrel/patches/chromium-85-sim_hash-include.patch
-
 	# musl compat
-	patch -Np1 -i "$STUFF"/chromium/default-pthread-stacksize.patch
+	patch -Np0 -i "$STUFF"/chromium/default-pthread-stacksize.patch
 	patch -Np1 -i "$STUFF"/chromium/musl-fixes.patch
-	patch -Np1 -i "$STUFF"/chromium/musl-fixes-breakpad.patch
-	patch -Np1 -i "$STUFF"/chromium/musl-hacks.patch
-	patch -Np1 -i "$STUFF"/chromium/musl-libc++.patch
+	patch -Np0 -i "$STUFF"/chromium/musl-fixes-breakpad.patch
+	patch -Np0 -i "$STUFF"/chromium/musl-hacks.patch
+	patch -Np0 -i "$STUFF"/chromium/musl-libc++.patch
 	patch -Np1 -i "$STUFF"/chromium/musl-sandbox.patch
-	patch -Np1 -i "$STUFF"/chromium/no-execinfo.patch
-	patch -Np1 -i "$STUFF"/chromium/no-mallinfo.patch
+	patch -Np0 -i "$STUFF"/chromium/no-execinfo.patch
+	patch -Np0 -i "$STUFF"/chromium/no-mallinfo.patch
 	patch -Np1 -i "$STUFF"/chromium/resolver.patch
-	patch -Np1 -i "$STUFF"/chromium/swiftshader.patch
-	patch -Np1 -i "$STUFF"/chromium/create-extra-view-redefinition.patch
-	patch -Np1 -i "$STUFF"/chromium/chromium-use-alpine-target.patch
-	patch -Np1 -i "$STUFF"/chromium/media-base.patch
-	patch -Np1 -i "$STUFF"/chromium/musl-crashpad.patch
-	patch -Np1 -i "$STUFF"/chromium/musl-v8-monotonic-pthread-cont_timedwait.patch
-	patch -Np1 -i "$STUFF"/chromium/nasm.patch
+	patch -Np0 -i "$STUFF"/chromium/swiftshader.patch
+	patch -Np0 -i "$STUFF"/chromium/create-extra-view-redefinition.patch
+	patch -Np1 -i "$STUFF"/chromium/chromium-musl-target.patch
+	patch -Np0 -i "$STUFF"/chromium/media-base.patch
+	patch -Np0 -i "$STUFF"/chromium/musl-crashpad.patch
+	patch -Np0 -i "$STUFF"/chromium/musl-v8-monotonic-pthread-cont_timedwait.patch
+	patch -Np0 -i "$STUFF"/chromium/nasm.patch
 
 	# other fixes
-	patch -Np1 -i "$STUFF"/chromium/media-Set-allocation-limit-compatible-with-FFmpeg-4.3.patch
-	patch -Np1 -i "$STUFF"/chromium/chromium-skia-harmony.patch
+	patch -Np0 -i "$STUFF"/chromium/chromium-skia-harmony.patch
 
 	# Python 3
 	sed -i '1s|python$|&2|' third_party/dom_distiller_js/protoc_plugins/*.py
@@ -104,7 +103,10 @@ build() {
 	third_party/libaddressinput/chromium/tools/update-strings.py
 
 	msg "Building Chromium"
-	gn gen out/Release --args="${flags[*]}" --script-executable=/usr/bin/python2
+	python2 tools/gn/bootstrap/bootstrap.py -s -v --no-clean 1 --skip-generate-buildfiles
+	out/Release/gn gen out/Release --args="${flags[*]}" --script-executable=/usr/bin/python2
+
+	msg "Welcome to hell >:3"
 	samu -C out/Release chrome chrome_sandbox chromedriver
 
 	msg "Installing Chromium"
