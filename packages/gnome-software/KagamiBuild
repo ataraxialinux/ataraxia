@@ -1,26 +1,15 @@
 # Description: GNOME Software Center
 # URL:         https://wiki.gnome.org/Apps/Software
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson appstream-glib gnome-desktop gnome-online-accounts gspell libxmlb ostree flatpak
-# Dep x86_64:  fwupd
-# Dep i686:    fwupd
+# Depends on:  meson appstream-glib gnome-desktop gnome-online-accounts gspell libxmlb rpm-ostree flatpak
 # Section:     gnome
 
 name=gnome-software
 version=3.36.1
-release=3
+release=4
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
-	case $BARCH in
-		x86_64|i686)
-			fwupd="true"
-			;;
-		*)
-			fwupd="false"
-			;;
-	esac
-
 	cd "$SRC"/$name-$version
 	sed -i "s|subdir('po')|# subdir('po')|" meson.build
 
@@ -29,11 +18,12 @@ build() {
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dexternal_appstream=true \
 		-Ddefault_featured_apps=true \
-		-Dfwupd=$fwupd \
+		-Dfwupd=false \
 		-Dgtk_doc=false \
 		-Dmalcontent=false \
 		-Dman=false \
 		-Dpackagekit=false \
+		-Drpm_ostree=true \
 		-Dtests=false \
 		-Dvalgrind=false
 	samu

@@ -1,0 +1,58 @@
+From e6eff6cd5dc51ab586ce440b9ca8ee08c7d979aa Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 31 Aug 2020 00:32:56 +0900
+Subject: [PATCH] I use our own strndupa implementation on musl libc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/libpriv/rpmostree-core.c   | 11 +++++++++++
+ src/libpriv/rpmostree-origin.c | 11 +++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/src/libpriv/rpmostree-core.c b/src/libpriv/rpmostree-core.c
+index 7591a862..462d2039 100644
+--- a/src/libpriv/rpmostree-core.c
++++ b/src/libpriv/rpmostree-core.c
+@@ -43,6 +43,17 @@
+ #include "rpmostree-output.h"
+ #include "rpmostree-rust.h"
+ 
++#ifndef __GLIBC__
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
++
+ #define RPMOSTREE_MESSAGE_COMMIT_STATS SD_ID128_MAKE(e6,37,2e,38,41,21,42,a9,bc,13,b6,32,b3,f8,93,44)
+ #define RPMOSTREE_MESSAGE_SELINUX_RELABEL SD_ID128_MAKE(5a,e0,56,34,f2,d7,49,3b,b1,58,79,b7,0c,02,e6,5d)
+ #define RPMOSTREE_MESSAGE_PKG_REPOS SD_ID128_MAKE(0e,ea,67,9b,bf,a3,4d,43,80,2d,ec,99,b2,74,eb,e7)
+diff --git a/src/libpriv/rpmostree-origin.c b/src/libpriv/rpmostree-origin.c
+index 26c2e42b..f42269e8 100644
+--- a/src/libpriv/rpmostree-origin.c
++++ b/src/libpriv/rpmostree-origin.c
+@@ -28,6 +28,17 @@
+ #include "rpmostree-util.h"
+ #include "rpmostree-rpm-util.h"
+ 
++#ifndef __GLIBC__
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
++
+ struct RpmOstreeOrigin {
+   guint refcount;
+ 
+-- 
+2.18.4
+

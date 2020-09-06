@@ -1,0 +1,27 @@
+# Description: Hybrid image/package system
+# URL:         https://github.com/projectatomic/rpm-ostree
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  rust cmake samurai check swig ostree bubblewrap polkit json-glib libarchive gpgme json-c libmodulemd librepo libsolv curl
+# Section:     admin
+
+name=rpm-ostree
+version=2020.4
+release=1
+source=("https://github.com/coreos/rpm-ostree/releases/download/v$version/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/rpm-ostree/0001-I-use-our-own-strndupa-implementation-on-musl-libc.patch
+
+	sed -i 's|add_subdirectory(docs/libdnf)|# add_subdirectory(docs/libdnf)|' libdnf/CMakeLists.txt
+	sed -i 's|add_subdirectory(docs/hawkey)|# add_subdirectory(docs/hawkey)|' libdnf/CMakeLists.txt
+	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' libdnf/CMakeLists.txt
+	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' libdnf/python/hawkey/CMakeLists.txt
+
+	cp -p "$ROOTFS"/usr/share/cmake/Modules/FindLibSolv.cmake libdnf/cmake/modules/
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
