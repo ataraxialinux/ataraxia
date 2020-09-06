@@ -1,0 +1,22 @@
+# Description: An IRC connection manager for Telepathy
+# URL:         https://telepathy.freedesktop.org
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python telepathy-glib
+# Section:     gnome
+
+name=telepathy-idle
+version=0.2.0
+release=1
+source=("https://telepathy.freedesktop.org/releases/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/telepathy-idle/0001-tools-Fix-errors-running-glib-ginterface-gen-under-P.patch
+	patch -Np1 -i "$STUFF"/telepathy-idle/0002-tools-Remove-outdated-is-unicode-checks.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/telepathy
+	make
+	make DESTDIR="$PKG" install
+}
