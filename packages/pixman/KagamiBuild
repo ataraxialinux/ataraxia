@@ -6,7 +6,7 @@
 
 name=pixman
 version=0.40.0
-release=1
+release=2
 source=("https://www.cairographics.org/releases/$name-$version.tar.gz")
 
 build() {
@@ -14,13 +14,9 @@ build() {
 	mkdir -p build
 	cd build
 
+	LDFLAGS="-Wl,-z,stack-size=2097152" \
 	ataraxia-meson "$SRC"/$name-$version \
-		-Darm-simd=disabled \
-		-Dgtk=disabled \
-		-Diwmmxt=disabled \
-		-Dneon=disabled \
-		-Dopenmp=disabled \
-		-Dvmx=disabled
+		-Dgtk=disabled
 	samu
 	DESTDIR="$PKG" samu install
 }
