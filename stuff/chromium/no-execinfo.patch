@@ -1,0 +1,54 @@
+--- ./base/debug/stack_trace_posix.cc
++++ ./base/debug/stack_trace_posix.cc
+@@ -27,7 +27,7 @@
+ #if !defined(USE_SYMBOLIZE)
+ #include <cxxabi.h>
+ #endif
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__) && !defined(_AIX)
+ #include <execinfo.h>
+ #endif
+ 
+@@ -88,7 +88,7 @@
+   // Note: code in this function is NOT async-signal safe (std::string uses
+   // malloc internally).
+ 
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__) && !defined(_AIX)
+   std::string::size_type search_from = 0;
+   while (search_from < text->size()) {
+     // Look for the start of a mangled symbol, from search_from.
+@@ -135,7 +135,7 @@
+   virtual ~BacktraceOutputHandler() = default;
+ };
+ 
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__) && !defined(_AIX)
+ void OutputPointer(void* pointer, BacktraceOutputHandler* handler) {
+   // This should be more than enough to store a 64-bit number in hex:
+   // 16 hex digits + 1 for null-terminator.
+@@ -834,7 +834,7 @@
+   // NOTE: This code MUST be async-signal safe (it's used by in-process
+   // stack dumping signal handler). NO malloc or stdio is allowed here.
+ 
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__) && !defined(_AIX)
+   // Though the backtrace API man page does not list any possible negative
+   // return values, we take no chance.
+   return base::saturated_cast<size_t>(backtrace(trace, count));
+@@ -847,13 +847,13 @@
+ // NOTE: This code MUST be async-signal safe (it's used by in-process
+ // stack dumping signal handler). NO malloc or stdio is allowed here.
+ 
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__) && !defined(_AIX)
+   PrintBacktraceOutputHandler handler;
+   ProcessBacktrace(trace_, count_, prefix_string, &handler);
+ #endif
+ }
+ 
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__) && !defined(_AIX)
+ void StackTrace::OutputToStreamWithPrefix(std::ostream* os,
+                                           const char* prefix_string) const {
+   StreamBacktraceOutputHandler handler(os);

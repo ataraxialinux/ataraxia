@@ -1,0 +1,148 @@
+# Description: A web browser built for speed, simplicity, and security
+# URL:         https://www.chromium.org/Home/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  clang gperf python python2 gn samurai node mesa xdg-utils gtk3 nss alsa-lib libxss libgcrypt dbus pciutils desktop-file-utils hicolor-icon-theme ffmpeg flac icu libjpeg-turbo libpng opus snappy minizip
+# Section:     web
+
+name=chromium
+version=86.0.4240.8
+gccrel=6
+release=1
+source=("https://commondatastorage.googleapis.com/chromium-browser-official/$name-$version.tar.xz"
+	"https://github.com/stha09/chromium-patches/releases/download/chromium-${version%%.*}-patchset-$gccrel/chromium-${version%%.*}-patchset-$gccrel.tar.xz")
+
+build() {
+	msg "Preparing chromium"
+	export CFLAGS="-D__DATE__=  -D__TIME__=  -D__TIMESTAMP__= -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -Wno-builtin-macro-redefined -Wno-unknown-warning-option -pipe"
+	export CXXFLAGS="-D__DATE__=  -D__TIME__=  -D__TIMESTAMP__= -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -Wno-builtin-macro-redefined -Wno-unknown-warning-option -pipe"
+	export CCACHE_SLOPPINESS=time_macros
+	export CC=clang
+	export CXX=clang++
+	export AR=ar
+	export NM=nm
+
+	systemuse="ffmpeg flac fontconfig freetype harfbuzz-ng libdrm libevent libjpeg libpng libwebp libxml libxslt opus snappy"
+	flags=('custom_toolchain="//build/toolchain/linux/unbundle:default"'
+		'host_toolchain="//build/toolchain/linux/unbundle:default"'
+		'clang_use_chrome_plugins=false'
+		'is_official_build=true' # implies is_cfi=true on x86_64
+		'treat_warnings_as_errors=false'
+		'fieldtrial_testing_like_official_build=true'
+		'ffmpeg_branding="Chrome"'
+		'proprietary_codecs=true'
+		'rtc_use_pipewire=false'
+		'link_pulseaudio=true'
+		'use_gnome_keyring=false'
+		'use_sysroot=false'
+		'use_custom_libcxx=false'
+		'enable_hangout_services_extension=true'
+		'enable_widevine=true'
+		'use_vaapi=true'
+		'enable_nacl=false'
+		'icu_use_data_file=false'
+		'symbol_level=0')
+
+	cd "$SRC"/$name-$version
+	# Allow building against system libraries in official builds
+	sed -i 's/OFFICIAL_BUILD/GOOGLE_CHROME_BUILD/' tools/generate_shim_headers/generate_shim_headers.py
+
+	# https://crbug.com/893950
+	sed -i -e 's/\<xmlMalloc\>/malloc/' -e 's/\<xmlFree\>/free/' \
+		third_party/blink/renderer/core/xml/*.cc \
+		third_party/blink/renderer/core/xml/parser/xml_document_parser.cc \
+		third_party/libxml/chromium/*.cc
+
+	# GCC
+	patch -Np1 -i "$SRC"/chromium-${version%%.*}-patchset-$gccrel/patches/chromium-85-NearbyShareEncryptedMetadataKey-include.patch
+	patch -Np1 -i "$SRC"/chromium-${version%%.*}-patchset-$gccrel/patches/chromium-85-sim_hash-include.patch
+
+	# musl compat
+	patch -Np1 -i "$STUFF"/chromium/default-pthread-stacksize.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-fixes.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-fixes-breakpad.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-hacks.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-libc++.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-sandbox.patch
+	patch -Np1 -i "$STUFF"/chromium/no-execinfo.patch
+	patch -Np1 -i "$STUFF"/chromium/no-mallinfo.patch
+	patch -Np1 -i "$STUFF"/chromium/resolver.patch
+	patch -Np1 -i "$STUFF"/chromium/swiftshader.patch
+	patch -Np1 -i "$STUFF"/chromium/create-extra-view-redefinition.patch
+	patch -Np1 -i "$STUFF"/chromium/chromium-use-alpine-target.patch
+	patch -Np1 -i "$STUFF"/chromium/media-base.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-crashpad.patch
+	patch -Np1 -i "$STUFF"/chromium/musl-v8-monotonic-pthread-cont_timedwait.patch
+	patch -Np1 -i "$STUFF"/chromium/nasm.patch
+
+	# other fixes
+	patch -Np1 -i "$STUFF"/chromium/media-Set-allocation-limit-compatible-with-FFmpeg-4.3.patch
+	patch -Np1 -i "$STUFF"/chromium/chromium-skia-harmony.patch
+
+	# Python 3
+	sed -i '1s|python$|&2|' third_party/dom_distiller_js/protoc_plugins/*.py
+
+	# Node.js
+	mkdir -p third_party/node/linux/node-linux-x64/bin
+	ln -sf /usr/bin/node third_party/node/linux/node-linux-x64/bin/
+
+	# Vendor
+	sed 's|//third_party/usb_ids/usb.ids|/usr/share/hwdata/usb.ids|g' \
+		-i services/device/public/cpp/usb/BUILD.gn
+	for _lib in $systemuse libjpeg_turbo; do
+		msg "Removing buildscripts for system provided $_lib"
+		find -type f -path "*third_party/$_lib/*" \
+			\! -path "*third_party/$_lib/chromium/*" \
+			\! -path "*third_party/$_lib/google/*" \
+			\! -path './base/third_party/icu/*' \
+			\! -path './third_party/libxml/*' \
+			\! -path './third_party/pdfium/third_party/freetype/include/pstables.h' \
+			\! -path './third_party/harfbuzz-ng/utils/hb_scoped.h' \
+			\! -regex '.*\.\(gn\|gni\|isolate\|py\)' \
+			-delete
+	done
+	python2 build/linux/unbundle/replace_gn_files.py --system-libraries $systemuse
+	third_party/libaddressinput/chromium/tools/update-strings.py
+
+	msg "Building Chromium"
+	gn gen out/Release --args="${flags[*]}" --script-executable=/usr/bin/python2
+	samu -C out/Release chrome chrome_sandbox chromedriver
+
+	msg "Installing Chromium"
+	install -Dm755 out/Release/chrome "$PKG"/usr/lib/chromium/chromium
+	install -Dm4755 out/Release/chrome_sandbox "$PKG"/usr/lib/chromium/chrome-sandbox
+
+	ln -sf /usr/lib/chromium/chromedriver "$PKG"/usr/bin/chromedriver
+
+	for i in chrome_100_percent.pak chrome_200_percent.pak resources.pak v8_context_snapshot.bin \
+		libEGL.so libGLESv2.so chromedriver icudtl.dat; do
+		cp out/Release/$i "$PKG"/usr/lib/chromium/$i
+	done
+
+	for i in out/Release/swiftshader/*.so; do
+		install -Dm755 $i "$PKG"/usr/lib/chromium/swiftshader/$(basename $i)
+	done
+
+	for size in 24 48 64 128 256; do
+		install -Dm644 "chrome/app/theme/chromium/product_logo_$size.png" "$PKG"/usr/share/icons/hicolor/${size}x${size}/apps/chromium.png
+	done
+	for size in 16 32; do
+		install -Dm644 "chrome/app/theme/default_100_percent/chromium/product_logo_$size.png" "$PKG"/usr/share/icons/hicolor/${size}x${size}/apps/chromium.png
+	done
+
+	install -Dm644 chrome/installer/linux/common/desktop.template "$PKG"/usr/share/applications/chromium.desktop
+	install -Dm644 chrome/app/resources/manpage.1.in "$PKG"/usr/share/man/man1/chromium.1
+	install -Dm644 chrome/installer/linux/common/chromium-browser/chromium-browser.appdata.xml "$PKG"/usr/share/metainfo/chromium.appdata.xml
+
+	sed -i \
+		-e 's/@@MENUNAME@@/Chromium/g' \
+		-e 's/@@PACKAGE@@/chromium/g' \
+		-e 's/@@USR_BIN_SYMLINK_NAME@@/chromium/g' \
+		"$PKG"/usr/share/applications/chromium.desktop \
+		"$PKG"/usr/share/man/man1/chromium.1
+	sed -ni \
+		-e 's/chromium-browser\.desktop/chromium.desktop/' \
+		-e '/<update_contact>/d' \
+		-e '/<p>/N;/<p>\n.*\(We invite\|Chromium supports Vorbis\)/,/<\/p>/d' \
+		-e '/^<?xml/,$p' \
+		"$PKG"/usr/share/metainfo/chromium.appdata.xml
+}

@@ -1,0 +1,19 @@
+# Description: Meta-build system that generates build files for Ninja
+# URL:         https://gn.googlesource.com/gn/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  git python samurai
+# Section:     devel
+
+name=gn
+version=32c8eaf95838a8c72b093dfbefa0cf593b234dd5
+release=1
+source=("https://gn.googlesource.com/gn.git")
+
+build() {
+	cd "$SRC"/gn.git
+	git checkout $version
+
+	./build/gen.py
+	samu -C out
+	install -Dm755 out/gn "$PKG"/usr/bin/gn
+}
