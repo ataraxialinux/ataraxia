@@ -1,0 +1,22 @@
+# Description: Telepathy framework logging daemon
+# URL:         http://telepathy.freedesktop.org/wiki/Logger
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection libxslt telepathy-glib libxml2 dconf
+# Section:     gnome
+
+name=telepathy-logger
+version=0.8.2
+release=1
+source=("https://telepathy.freedesktop.org/releases/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/telepathy-logger/0001-tools-Fix-the-build-with-Python-3.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/telepathy \
+		--disable-schemas-compile
+	make
+	make DESTDIR="$PKG" install
+}
