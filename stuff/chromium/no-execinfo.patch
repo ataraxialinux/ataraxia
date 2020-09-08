@@ -1,5 +1,19 @@
---- ./base/debug/stack_trace_posix.cc
-+++ ./base/debug/stack_trace_posix.cc
+From 2845101667945c2c25975993edf8b52b73469772 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 8 Sep 2020 22:51:35 +0900
+Subject: [PATCH] no execinfo
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ base/debug/stack_trace_posix.cc                  | 16 ++++++++--------
+ components/crash/core/common/objc_zombie.mm      |  4 ++++
+ .../accessibility/browser_accessibility_cocoa.mm |  2 ++
+ 3 files changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/base/debug/stack_trace_posix.cc b/base/debug/stack_trace_posix.cc
+index e009de3ab..42f18407a 100644
+--- a/base/debug/stack_trace_posix.cc
++++ b/base/debug/stack_trace_posix.cc
 @@ -27,7 +27,7 @@
  #if !defined(USE_SYMBOLIZE)
  #include <cxxabi.h>
@@ -9,7 +23,7 @@
  #include <execinfo.h>
  #endif
  
-@@ -88,7 +88,7 @@
+@@ -88,7 +88,7 @@ void DemangleSymbols(std::string* text) {
    // Note: code in this function is NOT async-signal safe (std::string uses
    // malloc internally).
  
@@ -18,7 +32,16 @@
    std::string::size_type search_from = 0;
    while (search_from < text->size()) {
      // Look for the start of a mangled symbol, from search_from.
-@@ -135,7 +135,7 @@
+@@ -123,7 +123,7 @@ void DemangleSymbols(std::string* text) {
+       search_from = mangled_start + 2;
+     }
+   }
+-#endif  // !defined(__UCLIBC__) && !defined(_AIX)
++#endif  // defined(__GLIBC__) && !defined(_AIX)
+ }
+ #endif  // !defined(USE_SYMBOLIZE)
+ 
+@@ -135,7 +135,7 @@ class BacktraceOutputHandler {
    virtual ~BacktraceOutputHandler() = default;
  };
  
@@ -27,7 +50,16 @@
  void OutputPointer(void* pointer, BacktraceOutputHandler* handler) {
    // This should be more than enough to store a 64-bit number in hex:
    // 16 hex digits + 1 for null-terminator.
-@@ -834,7 +834,7 @@
+@@ -218,7 +218,7 @@ void ProcessBacktrace(void* const* trace,
+   }
+ #endif  // defined(USE_SYMBOLIZE)
+ }
+-#endif  // !defined(__UCLIBC__) && !defined(_AIX)
++#endif  // defined(__GLIBC__) && !defined(_AIX)
+ 
+ void PrintToStderr(const char* output) {
+   // NOTE: This code MUST be async-signal safe (it's used by in-process
+@@ -834,7 +834,7 @@ size_t CollectStackTrace(void** trace, size_t count) {
    // NOTE: This code MUST be async-signal safe (it's used by in-process
    // stack dumping signal handler). NO malloc or stdio is allowed here.
  
@@ -36,7 +68,7 @@
    // Though the backtrace API man page does not list any possible negative
    // return values, we take no chance.
    return base::saturated_cast<size_t>(backtrace(trace, count));
-@@ -847,13 +847,13 @@
+@@ -847,13 +847,13 @@ void StackTrace::PrintWithPrefix(const char* prefix_string) const {
  // NOTE: This code MUST be async-signal safe (it's used by in-process
  // stack dumping signal handler). NO malloc or stdio is allowed here.
  
@@ -52,3 +84,45 @@
  void StackTrace::OutputToStreamWithPrefix(std::ostream* os,
                                            const char* prefix_string) const {
    StreamBacktraceOutputHandler handler(os);
+diff --git a/components/crash/core/common/objc_zombie.mm b/components/crash/core/common/objc_zombie.mm
+index 9f4104949..989dbc27b 100644
+--- a/components/crash/core/common/objc_zombie.mm
++++ b/components/crash/core/common/objc_zombie.mm
+@@ -7,7 +7,9 @@
+ #include <AvailabilityMacros.h>
+ #include <string.h>
+ 
++#if defined(__GLIBC__)
+ #include <execinfo.h>
++#endif
+ #import <objc/runtime.h>
+ 
+ #include <algorithm>
+@@ -152,8 +154,10 @@ void ZombieDealloc(id self, SEL _cmd) {
+   // The new record to swap into |g_zombies|.  If |g_zombieCount| is
+   // zero, then |self| will be freed immediately.
+   ZombieRecord zombieToFree = {self, wasa};
++#if defined(__GLIBC__)
+   zombieToFree.traceDepth =
+       std::max(backtrace(zombieToFree.trace, kBacktraceDepth), 0);
++#endif
+ 
+   // Don't involve the lock when creating zombies without a treadmill.
+   if (g_zombieCount > 0) {
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index d203e3a6a..0a98d85f7 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -4,7 +4,9 @@
+ 
+ #import "content/browser/accessibility/browser_accessibility_cocoa.h"
+ 
++#if defined(__GLIBC__)
+ #include <execinfo.h>
++#endif
+ #include <stddef.h>
+ #include <stdint.h>
+ #include <string.h>
+-- 
+2.18.4
+
