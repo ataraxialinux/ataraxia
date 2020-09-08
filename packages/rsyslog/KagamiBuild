@@ -1,7 +1,7 @@
 # Description: An enhanced multi-threaded syslogd
 # URL:         https://www.rsyslog.com/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libfastjson libestr librelp liblogging util-linux curl elogind
+# Depends on:  zlib libfastjson libestr librelp liblogging util-linux curl
 # Section:     admin
 
 name=rsyslog
@@ -17,6 +17,7 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--enable-imfile \
 		--enable-imjournal \
 		--enable-impstats \
@@ -34,9 +35,6 @@ build() {
 		--disable-pgsql
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm755 "$STUFF"/svc/rsyslogd "$PKG"/etc/service/rsyslogd/run
-	touch "$PKG"/etc/service/rsyslogd/.NOLOG
 
 	install -Dm0644 "$STUFF"/rsyslog/rsyslog.conf "$PKG"/etc/rsyslog.conf
 	mkdir -p "$PKG"/var/spool/rsyslog

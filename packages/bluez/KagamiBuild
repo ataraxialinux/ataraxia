@@ -21,17 +21,14 @@ build() {
 		--localstatedir=/var \
 		--mandir=/usr/share/man \
 		--with-dbusconfdir=/usr/share \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--with-systemduserunitdir=/usr/lib/systemd/user \
 		--enable-experimental \
 		--enable-deprecated \
 		--enable-library \
-		--enable-mesh \
-		--disable-systemd
+		--enable-mesh
 	make
 	make DESTDIR="$PKG" install
 
 	install -Dm644 src/main.conf "$PKG"/etc/bluetooth/main.conf
-
-	for i in bluetooth bluetooth-mesh; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-	done
 }

@@ -4,18 +4,17 @@ generate_initramfs() {
 	packages="base-files netbase musl zlib xz bzip2 file ncurses readline pcre libcap-ng \
 		audit cracklib pam libpwquality attr acl libcap shadow grep sed psmisc mksh bash \
 		inetutils net-tools expat libressl nettle ca-certificates lzip lz4 zstd libarchive lzo \
-		kmod gawk findutils 9base lobase sbase ubase less sinit dialog gzip iproute2 kbd tar nano \
-		procps-ng util-linux e2fsprogs btrfs-progs dosfstools hwids eudev runit run-parts ifupdown \
-		dhcp libnl wireless_tools wpa_supplicant popt gptfdisk wget libevent links linux"
+		kmod gawk findutils 9base lobase sbase ubase less sinit dialog gzip libmnl libnftnl libnfnetlink \
+		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd tar nano libseccomp procps-ng util-linux \
+		libaio lvm2 popt json-c argon2 cryptsetup systemd dbus e2fsprogs btrfs-progs dosfstools hwids run-parts \
+		wireless_tools wpa_supplicant gptfdisk wget libevent links linux"
 
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wd $packages
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wdt $packages
 
 	pushd "$INITRAMFS"
-		rm -rf usr/lib/modules/*/kernel/drivers/{bluetooth,devfreq,gpio,gpu,hwmon,i2c,isdn,leds,mfd,nfc,ssb,video,md,input/{touchscreen,misc,gameport,joystick,tablet},thermal,w1,partport,memstick,hid,usb/{chipidea,dwc3,serial,image,misc},misc,power}
-		rm -rf usr/lib/modules/*/kernel/net/{appletalk,bpfiler,bridge,ceph,mpls,nfs,openvswitch,phonet,psample,rds,rfkill,sched,xfrm,netfilter,bluetooth,nfc,nsh}
 		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/pkgconfig usr/include
 		rm -rf usr/share/cracklib usr/share/dict usr/share/misc usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
-		rm -rf etc/selinux/targeted var/lib/selinux/targeted
+		rm -rf usr/lib/systemd/system/systemd-firstboot.service usr/lib/systemd/system/systemd-sysusers.service usr/lib/systemd/system/systemd-timesyncd.service
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
@@ -25,8 +24,14 @@ generate_initramfs() {
 			rm -rf usr/bin/$bins
 		done
 
-		sed -i 's/agetty/agetty --autologin root/g' etc/service/tty1/run
-		ln -sf usr/bin/init init
+		mkdir -p etc/systemd/system/getty@tty1.service.d/
+		cat > etc/systemd/system/getty@tty1.service.d/override.conf <<-EOF
+			[Service]
+			ExecStart=
+			ExecStart=-/usr/bin/agetty --autologin root %I $TERM
+		EOF
+
+		ln -sf usr/lib/systemd/systemd init
 
 		cp "$TOOLS"/$XTARGET/lib/libgcc_s.so.1 usr/lib/
 		cp "$TOOLS"/$XTARGET/lib/libstdc++.so.6 usr/lib/
@@ -63,7 +68,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw loglevel=4 live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -109,7 +114,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live=1
+		KERNEL /seiba/seiba rw loglevel=4 live=1
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -140,6 +145,10 @@ make_iso_arm() {
 			format="arm64-efi"
 			efi="bootaa64.efi"
 			;;
+		armv7hl|armv6hl)
+			format="arm-efi"
+			efi="bootarm.efi"
+			;;
 	esac
 
 	cat > "$GRUBEFICFG" <<- EOF
@@ -149,7 +158,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw loglevel=4 live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -182,7 +191,7 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1
+			linux	/seiba/seiba root=/dev/ram0 rw loglevel=4 live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -207,7 +216,7 @@ main() {
 		x86_64|i686)
 			make_iso_x86
 			;;
-		aarch64)
+		aarch64|armv7hl|armv6hl)
 			make_iso_arm
 			;;
 		ppc64le|ppc64|ppc)

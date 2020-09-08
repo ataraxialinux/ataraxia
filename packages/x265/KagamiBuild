@@ -1,12 +1,12 @@
 # Description: Open Source H265/HEVC video encoder
 # URL:         https://bitbucket.org/multicoreware/x265
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja nasm
+# Depends on:  cmake samurai nasm
 # Section:     video
 
 name=x265
 version=3.4
-release=1
+release=2
 source=("https://bitbucket.org/multicoreware/x265_git/get/$version.tar.gz")
 
 build() {
@@ -42,7 +42,7 @@ build() {
 		-DENABLE_CLI=FALSE \
 		-DENABLE_SHARED=FALSE \
 		$FLAGS -Wno-dev -G Ninja
-	ninja
+	samu
 
 	cd ../build-10
 	cmake ../source \
@@ -52,7 +52,7 @@ build() {
 		-DENABLE_CLI=FALSE \
 		-DENABLE_SHARED=FALSE \
 		$FLAGS -Wno-dev -G Ninja
-	ninja
+	samu
 
 	cd ../build-8
 	ln -sf ../build-10/libx265.a libx265_main10.a
@@ -67,6 +67,6 @@ build() {
 		-DLINKED_10BIT=TRUE \
 		-DLINKED_12BIT=TRUE \
 		$FLAGS -Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 }

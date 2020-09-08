@@ -1,7 +1,7 @@
 # Description: A program that allows you to encrypt arbitrary TCP connections inside SSL
 # URL:         https://www.stunnel.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl libnsl
+# Depends on:  libressl libnsl systemd
 # Section:     net
 
 name=stunnel
@@ -18,8 +18,10 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--enable-ipv6 \
-		--disable-libwrap \
-		--disable-systemd
+		--enable-systemd \
+		--disable-libwrap
 	make
 	make DESTDIR="$PKG" install
+
+	install tools/stunnel.service "$PKG"/usr/lib/systemd/system/stunnel.service
 }

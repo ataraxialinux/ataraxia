@@ -1,0 +1,22 @@
+[Unit]
+Description=Light Display Manager
+Documentation=man:lightdm(1)
+After=getty@tty1.service
+Conflicts=plymouth-quit.service
+After=plymouth-quit.service
+After=rc-local.service plymouth-start.service systemd-user-sessions.service livesys-late.service
+Requires=dbus.service
+Wants=dbus.socket user.slice
+After=dbus.socket user.slice
+OnFailure=plymouth-quit.service
+
+[Service]
+Type=dbus
+ExecStart=/usr/bin/lightdm
+Restart=always
+IgnoreSIGPIPE=no
+BusName=org.freedesktop.DisplayManager
+LimitMEMLOCK=16777216
+
+[Install]
+Alias=display-manager.service

@@ -1,7 +1,7 @@
 # Description: SMB server and client for unix
 # URL:         http://www.samba.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python perl-parse-yapp pam libcap popt libarchive rpcsvc-proto lmdb jansson libtirpc tevent tdb gnutls libldap
+# Depends on:  python perl-parse-yapp pam libcap popt libarchive systemd rpcsvc-proto lmdb jansson libtirpc tevent tdb gnutls libldap
 # Section:     net
 
 name=samba
@@ -40,9 +40,11 @@ build() {
 		--with-acl-support \
 		--with-pam \
 		--with-pammodulesdir=/usr/lib/security \
+		--with-systemd \
+		--systemd-install-services \
+		--with-systemddir=/usr/lib/systemd/system \
 		--without-ad-dc \
 		--without-ads \
-		--without-systemd \
 		--enable-fhs \
 		--disable-rpath-install
 	make
@@ -53,8 +55,4 @@ build() {
 
 	install -Dm644 "$STUFF"/samba/logrotate "$PKG"/etc/logrotate.d/samba
 	install -Dm644 "$STUFF"/pam.d/samba "$PKG"/etc/pam.d/samba
-
-	for i in smbd nmbd; do
-		install -Dm0755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
-	done
 }

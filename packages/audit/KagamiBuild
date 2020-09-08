@@ -24,6 +24,9 @@ build() {
 	patch -Np0 -i "$STUFF"/audit/fix.patch
 	patch -Np1 -i "$STUFF"/audit/audit-3.0-no-common.patch
 
+	sed 's|/var/run/auditd.pid|/run/auditd.pid|' -i init.d/auditd.service
+	sed 's|/sbin|/usr/bin|' -i init.d/auditd.service
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib/audit \
@@ -32,6 +35,7 @@ build() {
 		--without-python \
 		--without-python3 \
 		--enable-shared=audit \
+		--enable-systemd \
 		--disable-gssapi-krb5 \
 		--disable-zos-remote
 
@@ -51,6 +55,4 @@ build() {
 
 	rm -rf "$PKG"/etc/rc.d
 	rm -rf "$PKG"/etc/sysconfig
-
-	install -Dm755 "$STUFF"/svc/auditd "$PKG"/etc/service/auditd/run
 }

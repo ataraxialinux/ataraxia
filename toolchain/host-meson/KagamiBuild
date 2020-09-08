@@ -1,0 +1,54 @@
+name=host-meson
+fakepath="$topdir/../../packages/${name/host-}"
+realpath="$(realpath $fakepath)"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://github.com/mesonbuild/meson/releases/download/$version/meson-$version.tar.gz")
+
+build() {
+	case $BARCH in
+		x86_64)   cpu="x86_64" ;;
+		i686)     cpu="x86" cpuextra="i686" ;;
+		aarch64)  cpu="aarch64" ;;
+		armv7hl) cpu="arm" cpuextra="armv7hl" ;;
+		armv6hl)  cpu="arm" cpuextra="armv6hl" ;;
+		ppc64le)  cpu="ppc64" cpuextra="ppc64le" ;;
+		ppc64)    cpu="ppc64" ;;
+		ppc)      cpu="ppc" ;;
+		s390x)    cpu="s390x" ;;
+		riscv64)  cpu="riscv64" ;;
+		riscv32)  cpu="riscv32" ;;
+	esac
+
+	[ -z "$cpuextra" ] && cpuextra="$cpu"
+
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl|ppc64le|riscv64|riscv32) endian="little" ;;
+		ppc64|ppc|s390x) endian="big" ;;
+	esac
+
+	cd "$SRC"/meson-$version
+	python setup.py build
+	python setup.py install --prefix="$TOOLS" --optimize=1
+
+	cat > "$TOOLS"/meson.script <<-EOF
+		[host_machine]
+		system = 'linux'
+		cpu_family = '$cpu'
+		cpu = '$cpuextra'
+		endian = '$endian'
+
+		[binaries]
+		c = '$TOOLS/bin/$XTARGET-gcc'
+		cpp = '$TOOLS/bin/$XTARGET-g++'
+		ar = '$TOOLS/bin/$XTARGET-ar'
+		ld = '$TOOLS/bin/$XTARGET-ld'
+		strip = '$TOOLS/bin/$XTARGET-strip'
+		objcopy = '$TOOLS/bin/$XTARGET-objcopy'
+		pkgconfig = '$TOOLS/bin/$XTARGET-pkg-config'
+	EOF
+
+	cp "$STUFF"/meson/cross-script "$TOOLS"/bin/ataraxia-meson
+	sed -i "s|crossfile|$TOOLS/meson.script|" "$TOOLS"/bin/ataraxia-meson
+}

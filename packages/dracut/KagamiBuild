@@ -1,7 +1,7 @@
 # Description: Generic, modular, cross-distribution initramfs generation tool
 # URL:         https://dracut.wiki.kernel.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  sbase ubase procps-ng util-linux eudev mksh bash kbd kmod gzip zstd cpio
+# Depends on:  lobase sbase ubase procps-ng util-linux mksh bash kbd kmod gzip zstd cpio
 # Section:     admin
 
 name=dracut
@@ -13,8 +13,9 @@ source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut-$ver
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/dracut/0001-internal-fts.patch
-	patch -Np1 -i "$STUFF"/dracut/0001-suckless.patch
-	patch -Np1 -i "$STUFF"/dracut/0001-suckless-cp.patch
+	patch -Np1 -i "$STUFF"/dracut/0001-POSIX-userland.patch
+
+	sed -i 's/cp -arx/cp -a/g' Makefile
 
 	./configure \
 		--prefix=/usr \
@@ -25,8 +26,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	rm "$PKG"/usr/bin/mkinitrd
-
-	echo 'omit_dracutmodules+="i18n"' >> "$PKG"/etc/dracut.conf
-	echo 'compress="zstd"' >> "$PKG"/etc/dracut.conf
+	rm -rf "$PKG"/usr/bin/mkinitrd "$PKG"/usr/lib/dracut/modules.d/95terminfo
 }

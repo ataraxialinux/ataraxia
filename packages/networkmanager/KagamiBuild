@@ -1,7 +1,7 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson eudev dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dhcp ifupdown
+# Depends on:  meson dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dhcp
 # Section:     net
 
 name=networkmanager
@@ -29,7 +29,6 @@ build() {
 		-Ddnsmasq=/usr/bin/dnsmasq \
 		-Ddocs=false \
 		-Debpf=true \
-		-Difupdown=true \
 		-Diptables=/usr/bin/iptables \
 		-Diwd=true \
 		-Dmodify_system=true \
@@ -40,18 +39,15 @@ build() {
 		-Dqt=false \
 		-Dselinux=false \
 		-Dsession_tracking_consolekit=false \
-		-Dsession_tracking=elogind \
-		-Dsuspend_resume=elogind \
-		-Dsystemd_journal=false \
-		-Dsystemdsystemunitdir=no \
+		-Dsession_tracking=systemd \
+		-Dsuspend_resume=systemd \
+		-Dsystemdsystemunitdir=/usr/lib/systemd/system \
 		-Dteamdctl=true \
 		-Dtests=no \
 		-Dudev_dir=/usr/lib/udev \
 		-Dvapi=true
-	ninja
-	DESTDIR="$PKG" ninja install
-
-	install -Dm755 "$STUFF"/svc/networkmanager "$PKG"/etc/service/networkmanager/run
+	samu
+	DESTDIR="$PKG" samu install
 
 	cat > "$PKG"/etc/NetworkManager/NetworkManager.conf <<-EOF
 		[main]

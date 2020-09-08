@@ -4,21 +4,30 @@ msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
 die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 install_liveos() {
-	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
+	core="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
 		zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
 		ccache pkgconf pcre libcap-ng audit cracklib pam libpwquality attr acl libcap shadow grep sed \
-		psmisc mksh bash slibtool inetutils net-tools gdbm db expat perl libressl nettle ca-certificates \
+		psmisc mksh bash slibtool inetutils net-tools gdbm db sqlite expat libffi libressl nettle python perl ca-certificates \
 		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase less \
-		mandoc gzip ncompress iproute2 kbd make patch tar cpio nano procps-ng util-linux e2fsprogs btrfs-progs \
-		hwids gperf eudev runit sinit run-parts ifupdown dhcp libssh2 nghttp2 heimdal curl popt rpm neko linux \
-		linux-firmware parted squashfs-tools alsa-utils dnf earlyoom"
+		mandoc gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
+		samurai python-setuptools meson make patch tar cpio nano $EXTRAPKG libseccomp procps-ng gperf util-linux \
+		libaio lvm2 popt json-c argon2 cryptsetup systemd dbus e2fsprogs btrfs-progs hwids run-parts libssh2 nghttp2 \
+		heimdal curl popt rpm neko linux"
+
+	packages="linux-firmware parted squashfs-tools alsa-utils dnf earlyoom"
 
 	if [ "$DESKTOP" != "sway" ]; then
 		packages="$packages xorg-server xinit xf86-input-libinput xf86-video-{fbdev,vesa,ati,amdgpu,intel,nouveau,vmware}"
 	fi
 
 	case $BARCH in
-		x86_64|i686|aarch64) packages="$packages grub efibootmgr" ;;
+		x86_64|i686|aarch64|armv7hl|armv6hl) packages="$packages grub efibootmgr" ;;
 	esac
 
 	case $DESKTOP in
@@ -30,11 +39,8 @@ install_liveos() {
 		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
 	esac
 
-	if [ "$BARCH" = "x86_64" ]; then
-		packages="$packages firefox"
-	fi
-
 	msg "Installing packages"
+	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -wdst $core
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $packages
 
 	msg "Configuring system"
@@ -42,13 +48,6 @@ install_liveos() {
 		cp boot/vmlinuz-ataraxia "$ISODIR"/seiba/seiba
 	popd
 	cp "$BUILD"/initrd "$ISODIR"/seiba/seiba.zst
-
-	case $DESKTOP in
-		gnome|xfce|mate|budgie|sway) services="dbus elogind networkmanager earlyoom" ;;
-	esac
-
-	for i in $services; do ln -sf /etc/service/$i "$LIVEOS"/var/service/$i; done
-
 	mv "$LIVEOS"/etc/motd "$LIVEOS"/etc/motd.old
 
 	cat > "$LIVEOS"/etc/motd <<-EOF
@@ -93,7 +92,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw loglevel=4 live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -139,7 +138,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live=1
+		KERNEL /seiba/seiba rw loglevel=4 live=1
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -170,6 +169,10 @@ make_iso_arm() {
 			format="arm64-efi"
 			efi="bootaa64.efi"
 			;;
+		armv7hl|armv6hl)
+			format="arm-efi"
+			efi="bootarm.efi"
+			;;
 	esac
 
 	cat > "$GRUBEFICFG" <<- EOF
@@ -179,7 +182,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw loglevel=4 live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -203,7 +206,7 @@ make_iso_arm() {
 		-no-emul-boot \
 		-isohybrid-gpt-basdat \
 		-A 'ataraxialinux' -V 'ataraxialinux' \
-		-o "$BUILD"/ataraxialinux-$DESKTOP-$BARCH.iso \
+		-o "$BUILD"/ataraxialinux-$BARCH.iso \
 		"$ISODIR"/
 }
 
@@ -212,7 +215,7 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw loglevel=4 live=1
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -238,7 +241,7 @@ main() {
 		x86_64|i686)
 			make_iso_x86
 			;;
-		aarch64)
+		aarch64|armv7hl|armv6hl)
 			make_iso_arm
 			;;
 		ppc64le|ppc64|ppc)

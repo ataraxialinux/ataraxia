@@ -1,7 +1,7 @@
 # Description: Daemon based on liblxc offering a REST API to manage containers 
 # URL:         https://linuxcontainers.org/lxd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  go eudev libcap lxc lxcfs libuv rsync squashfs-tools tcl ebtables libseccomp lvm2 btrfs-progs dqlite
+# Depends on:  go systemd libcap lxc lxcfs libuv rsync squashfs-tools tcl ebtables libseccomp lvm2 btrfs-progs dqlite
 # Section:     virt
 
 name=lxd
@@ -34,6 +34,9 @@ build() {
 	for i in fuidshift lxc lxc-to-lxd lxd lxd-agent lxd-benchmark lxd-p2c; do
 		install -Dm755 bin/$i "$PKG"/usr/bin/$i
 	done
+
+	install -Dm644 "$STUFF"/svc/lxd.service "$PKG"/usr/lib/systemd/system/lxd.service
+	install	-Dm644 "$STUFF"/svc/lxd.socket "$PKG"/usr/lib/systemd/system/lxd.socket
 
 	install -dm755 "$PKG"/var/log/lxd
 }

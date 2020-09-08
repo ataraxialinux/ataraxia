@@ -11,14 +11,16 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gnome-settings-daemon/0001-Allow-building-on-POSIX-userland.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dalsa=true \
 		-Dgudev=true \
-		-Dsystemd=false \
+		-Dsystemd=true \
 		-Dudev_dir=/usr/lib/udev \
 		-Dwayland=true
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 }

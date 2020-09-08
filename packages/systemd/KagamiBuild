@@ -1,0 +1,132 @@
+# Description: System and service manager
+# URL:         https://www.github.com/systemd/systemd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson zlib bzip2 xz lz4 pam audit acl libcap shadow libressl kbd kmod libelf iptables gperf hwids cryptsetup libseccomp
+# Dep x86_64:  gnu-efi
+# Dep i686:    gnu-efi
+# Dep aarch64: gnu-efi
+# Dep armv7hl: gnu-efi
+# Dep armv6hl: gnu-efi
+# Priority:    required
+# Section:     base
+
+name=systemd
+version=246.4
+release=1
+options=('bootstrap')
+backup=('etc/pam.d/systemd-user'
+	'etc/systemd/coredump.conf'
+	'etc/systemd/journald.conf'
+	'etc/systemd/logind.conf'
+	'etc/systemd/networkd.conf'
+	'etc/systemd/sleep.conf'
+	'etc/systemd/system.conf'
+	'etc/systemd/resolved.conf'
+	'etc/systemd/timesyncd.conf'
+	'etc/systemd/user.conf'
+	'etc/udev/udev.conf')
+source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz")
+
+build() {
+	cd "$SRC"/$name-stable-$version
+	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
+	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
+	patch -Np1 -i "$STUFF"/systemd/0003-stateless-etc-machine-id.patch
+	patch -Np1 -i "$STUFF"/systemd/0004-better-firstboot.patch
+
+	sed '177,$ d' -i src/resolve/meson.build
+	sed -i 's/GROUP="render", //' rules.d/50-udev-default.rules.in
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-stable-$version \
+		-Db_lto=false \
+		-Dapparmor=false \
+		-Daudit=true \
+		-Dbacklight=true \
+		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
+		-Ddefault-dnssec=no \
+		-Ddefault-hierarchy=unified \
+		-Ddefault-kill-user-processes=false \
+		-Ddefault-locale="C.UTF-8" \
+		-Ddns-over-tls=openssl \
+		-Ddns-servers="1.1.1.1 1.0.0.1 9.9.9.9 8.8.8.8 8.8.4.4 2606:4700:4700::1111 2620:fe::10 2001:4860:4860::8888" \
+		-Delfutils=true \
+		-Dfallback-hostname="ataraxia" \
+		-Dgcrypt=false \
+		-Dgnutls=false \
+		-Dgshadow=false \
+		-Dhibernate=false \
+		-Dhomed=false \
+		-Dhtml=false \
+		-Dima=false \
+		-Dkmod-path=/usr/bin/kmod \
+		-Dldconfig=false \
+		-Dlibcurl=false \
+		-Dlibidn2=false \
+		-Dlz4=true \
+		-Dman=false \
+		-Dmicrohttpd=false \
+		-Dmyhostname=false \
+		-Dnologin-path=/usr/bin/nologin \
+		-Dnss-myhostname=false \
+		-Dnss-mymachines=false \
+		-Dnss-resolve=false \
+		-Dnss-systemd=false \
+		-Dntp-servers="0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org" \
+		-Dp11kit=false \
+		-Dpcre2=false \
+		-Dqrencode=false \
+		-Dselinux=false \
+		-Dsmack=false \
+		-Dsysvinit-path= \
+		-Dsysvrcnd-path= \
+		-Dtime-epoch=0 \
+		-Duserdb=false \
+		-Dutmp=false \
+		-Dvalgrind=false \
+		-Dxkbcommon=false
+	samu
+	DESTDIR="$PKG" samu install
+
+	if [ -d "$PKG/usr/sbin" ]; then
+		mv "$PKG"/usr/sbin/* "$PKG"/usr/bin
+		rm -rf "$PKG"/usr/sbin
+	fi
+
+	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
+	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
+
+	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf}
+	sed -i -e '/^C \/etc\/nsswitch\.conf/d' \
+		-e '/^C \/etc\/issue/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
+
+	cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules <<-EOF
+		# set bfq by default
+		ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
+		ACTION=="add|change", KERNEL=="nvme[0-9]", ATTR{queue/scheduler}="bfq"
+		ACTION=="add|change", KERNEL=="mmcblk[0-9]", ATTR{queue/scheduler}="bfq"
+	EOF
+
+	cat > "$PKG"/usr/lib/udev/rules.d/75-mac-spoof.rules <<-EOF
+		# spoof mac address
+		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
+	EOF
+
+	install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
+
+	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
+	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
+
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				install -Dm644 "$STUFF"/systemd/ataraxia.conf "$pkgdir"/usr/share/systemd/bootctl/ataraxia.conf
+				install -Dm644 "$STUFF"/systemd/loader.conf "$pkgdir"/usr/share/systemd/bootctl/loader.conf
+				;;
+	esac
+
+	# compat
+	mkdir -p "$PKG"/var/lib/dbus
+	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
+	ln -sf ../run/machine-id "$PKG"/etc/machine-id
+}

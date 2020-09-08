@@ -7,7 +7,6 @@
 name=dhcp
 version=4.4.2
 release=3
-options=('bootstrap')
 backup=('etc/dhclient.conf'
 	'etc/dhcpd.conf'
 	'etc/dhcpd6.conf')
@@ -40,14 +39,8 @@ build() {
 		--with-cli6-lease-file=/var/lib/dhclient/dhclient6.leases \
 		--enable-binary-leases \
 		--enable-paranoia
-
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE -j1
-		$ORIGMAKE DESTDIR="$PKG" install
-	else
-		make -j1
-		make DESTDIR="$PKG" install
-	fi
+	make -j1
+	make DESTDIR="$PKG" install
 
 	mkdir -p "$PKG"/var/lib/dhcpd "$PKG"/var/lib/dhclient
 
@@ -59,7 +52,8 @@ build() {
 
 	install -Dm755 client/scripts/linux "$PKG"/usr/bin/dhclient-script
 
-	for i in dhcp{,6}; do
-		install -Dm755 "$STUFF"/svc/$i "$PKG"/etc/service/$i/run
+	for i in dhcpd{,6} dhcrelay; do
+		install -Dm644 "$STUFF"/svc/$i.service "$PKG"/usr/lib/systemd/system/$i.service
 	done
+	install -Dm644 "$STUFF"/svc/dhclient.service "$PKG"/usr/lib/systemd/system/dhclient@.service
 }

@@ -1,13 +1,13 @@
 # Description: Suite of VNC servers and clients. Based on the VNC 4 branch of TightVNC
 # URL:         http://www.tigervnc.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja pam fltk gnutls libgcrypt libjpeg-turbo pixman xorgproto libxdamage libxfont2 libxtst libdrm xkeyboard-config xorg-fonts
+# Depends on:  cmake samurai pam fltk gnutls libgcrypt libjpeg-turbo pixman xorgproto libxdamage libxfont2 libxtst libdrm xkeyboard-config xorg-fonts dbus
 # Section:     utils
 
 name=tigervnc
 version=1.10.1
-xserverver=1.20.6
-release=1
+xserverver=1.20.9
+release=2
 source=("https://github.com/TigerVNC/tigervnc/archive/v$version/$name-$version.tar.gz"
 	"https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-$xserverver.tar.bz2")
 
@@ -17,12 +17,17 @@ build() {
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
+
+	for i in vncserver-system.service vncserver-user.service xvnc.service xvnc.socket; do
+		install -Dm644 "$STUFF"/svc/$i "$PKG"/usr/lib/systemd/system/$i
+	done
 
 	cd "$SRC"/$name-$version/unix/xserver
 	cp -a "$SRC"/xorg-server-$xserverver/* .
 	patch -Np1 -i "$SRC"/$name-$version/unix/xserver120.patch
+	patch -Np1 -i "$STUFF"/tigervnc/u_xorg-server-1.20.7-ddxInputThreadInit.patch
 
 	autoreconf -fiv
 	CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t -I/usr/include/libdrm" \

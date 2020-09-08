@@ -1,12 +1,12 @@
 # Description: Free implementation of the Remote Desktop Protocol
 # URL:         http://www.freerdp.com/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja alsa-utils eudev libusb dbus-glib libx11 libxcursor libxdamage libxext libxfixes libxi libxrender libxinerama libxv libxrandr libxtst libxkbcommon libxkbfile ffmpeg gst-plugins-base libjpeg-turbo heimdal
+# Depends on:  cmake samurai alsa-utils systemd libusb dbus-glib libx11 libxcursor libxdamage libxext libxfixes libxi libxrender libxinerama libxv libxrandr libxtst libxkbcommon libxkbfile ffmpeg gst-plugins-base libjpeg-turbo heimdal
 # Section:     libs
 
 name=freerdp
 version=2.2.0
-release=1
+release=2
 source=("https://github.com/FreeRDP/FreeRDP/archive/${version/r/-r}.tar.gz")
 
 build() {
@@ -14,13 +14,13 @@ build() {
 		x86_64|i686)
 			archconf="-DWITH_SSE2=ON"
 			;;
-		armv7hnl)
+		armv7hl)
 			archconf="-DARM_FP_ABI=hard"
 			;;
 	esac
 
 	case $BARCH in
-		armv7hnl)
+		armv7hl)
 			archconf="$archconf -DWITH_NEON=ON"
 			;;
 	esac
@@ -46,12 +46,12 @@ build() {
 		-DWITH_PULSE=OFF \
 		-DWITH_SERVER=ON \
 		-DWITH_PCSC=OFF \
-		-DWITH_LIBSYSTEMD=OFF \
+		-DWITH_LIBSYSTEMD=ON \
 		-DWITH_X11=ON \
 		-DWITH_XINERAMA=ON \
 		-DWITH_XV=ON \
 		-DWITH_WAYLAND=ON \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 }

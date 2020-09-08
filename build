@@ -106,7 +106,7 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="aarch64-linux-musl"
 			;;
-		armv7hnl)
+		armv7hl)
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="arm-linux-musleabihf"
 			;;
@@ -205,14 +205,14 @@ build_toolchain() {
 	chmod +x "$TOOLS"/bin/ldconfig
 
 	case $BARCH in
-		x86_64|i686|aarch64|ppc64le|ppc64|ppc)
+		x86_64|i686|aarch64|armv7hl|armv6hl|ppc64le|ppc64|ppc)
 				EXTRAPKG="grub"
 				;;
 	esac
 
 	for toolchain in rpm base-files gettext-tiny m4 bison flex bc kmod heimdal gperf \
-			linux-headers binutils gcc-static musl gcc $EXTRAPKG slibtool \
-			autoconf automake cracklib pkgconf; do
+			python samurai meson linux-headers binutils gcc-static musl gcc $EXTRAPKG \
+			slibtool autoconf automake cracklib pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
 				neko em -c "$BUILD"/host.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
@@ -272,6 +272,12 @@ build_toolchain() {
 }
 
 build_target() {
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
 	msg "Building target system for '${BARCH}' platform"
 
 	if [ -z "$LINUX" ]; then
@@ -281,13 +287,54 @@ build_target() {
 	packages="netbase tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
 		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc ccache pkgconf \
 		pcre libcap-ng audit cracklib pam libpwquality attr acl libcap shadow grep sed psmisc \
-		mksh bash slibtool inetutils net-tools gdbm db expat perl libressl nettle ca-certificates \
-		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase \
-		less mandoc dialog gzip ncompress iproute2 kbd make patch tar cpio nano procps-ng util-linux \
-		e2fsprogs btrfs-progs dosfstools hwids gperf eudev runit sinit run-parts ifupdown dhcp libssh2 \
-		nghttp2 heimdal curl popt rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget libevent links $LINUX"
+		mksh bash slibtool inetutils net-tools gdbm db sqlite expat libffi libressl nettle python perl ca-certificates \
+		autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase less mandoc \
+		dialog gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
+		samurai python-setuptools meson make patch tar cpio nano $EXTRAPKG libseccomp gperf libblkid libsystemd util-linux \
+		libaio lvm2 popt json-c argon2 cryptsetup systemd dbus procps-ng e2fsprogs btrfs-progs dosfstools hwids run-parts \
+		libssh2 nghttp2 heimdal curl rpm neko libnl wireless_tools wpa_supplicant gptfdisk wget libevent links $LINUX"
 
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd $packages
+	for i in $packages; do
+		case $i in
+			libblkid)
+				if [ ! -f "$BUILD/.blkid" ]; then
+					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt libblkid
+					rm -rf "$BUILD"/packages/libblkid-*.rpm
+					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
+				fi
+				;;
+			libsystemd)
+				if [ ! -f "$BUILD/.libsystemd" ]; then
+					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt libsystemd
+					rm -rf "$BUILD"/packages/libsystemd-*.rpm
+					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
+				fi
+				;;
+			util-linux)
+				pushd "$REPO/util-linux"
+					neko bi -c "$BUILD"/target.config -w util-linux
+				popd
+				if [ -f "$BUILD/.rmblkid" ]; then
+					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libblkid
+					rm "$BUILD"/.rmblkid
+				fi
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt util-linux
+				;;
+			systemd)
+				pushd "$REPO/systemd"
+					neko bi -c "$BUILD"/target.config -w systemd
+				popd
+				if [ -f "$BUILD/.rmsystemd" ]; then
+					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libsystemd
+					rm "$BUILD"/.rmsystemd
+				fi
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt systemd
+				;;
+			*)
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt $i
+				;;
+		esac
+	done
 }
 
 genrepo() {
@@ -295,6 +342,10 @@ genrepo() {
 	local d
 	local i
 	local e
+
+	if [ -f "$1/.ignoreit" ]; then
+		return 0
+	fi
 
 	source $1/KagamiBuild
 	local summary="$(npk-parse $1/KagamiBuild "# Description:")"
@@ -450,6 +501,9 @@ case $1 in
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
+					if [ -f "$packages/.ignoreit" ]; then
+						break
+					fi
 					if [ "$packages" = "repo" ]; then
 						true
 					elif [ "$packages" = "libhandy" ]; then

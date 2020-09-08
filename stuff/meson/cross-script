@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE
+
+exec meson setup \
+	--prefix        /usr \
+	--libdir        lib \
+	--libexecdir    lib \
+	--sbindir       bin \
+	--wrap-mode     nodownload \
+	--cross-file	crossfile \
+	-Dbuildtype=plain \
+	-Db_lto=true \
+	-Db_pie=true \
+	"$@"

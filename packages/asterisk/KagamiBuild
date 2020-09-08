@@ -5,7 +5,7 @@
 # Section:     comm
 
 name=asterisk
-version=17.6.0
+version=17.7.0
 release=2
 backup=('etc/asterisk/acl.conf'
 	'etc/asterisk/adsi.conf'
@@ -103,8 +103,9 @@ build() {
 
 	install -d "$PKG"/var/lib/asterisk
 
-	install -Dm755 "$STUFF"/svc/asterisk "$PKG"/etc/service/asterisk/run
-	install -Dm755 "$STUFF"/svc/asterisk-finish "$PKG"/etc/service/asterisk/finish
+	for i in contrib/systemd/asterisk.service contrib/systemd/*.socket; do
+		install -Dm644 $i "$PKG"/usr/lib/systemd/system/$(basename $i)
+	done
 	
 	install -Dm644 "$STUFF"/asterisk/logrotate "$PKG"/etc/logrotate.d/asterisk
 }

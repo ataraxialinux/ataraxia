@@ -1,0 +1,16 @@
+[Unit]
+Description=Redis Sentinel
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/redis-sentinel /etc/redis-sentinel.conf --supervised systemd
+Type=notify
+User=redis
+Group=redis
+RuntimeDirectory=redis
+RuntimeDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

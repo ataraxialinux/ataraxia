@@ -1,0 +1,20 @@
+# Description: A log viewer for the systemd journal
+# URL:         https://wiki.gnome.org/Apps/Logs
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson yelp-tools appstream-glib gtk3 systemd
+# Section:     gnome
+
+name=gnome-logs
+version=3.36.0
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dman=false
+	samu
+	DESTDIR="$PKG" samu install
+}

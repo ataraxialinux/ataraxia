@@ -1,7 +1,7 @@
 # Description: Control and monitor S.M.A.R.T. enabled ATA and SCSI Hard Drives
 # URL:         http://smartmontools.sourceforge.net
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libcap-ng
+# Depends on:  libcap-ng systemd
 # Section:     admin
 
 name=smartmontools
@@ -18,10 +18,9 @@ build() {
 		--sysconfdir=/etc \
 		--with-drivedbdir \
 		--with-libcap-ng \
-		--without-initscriptdir \
-		--without-libsystemd
+		--with-libsystemd \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--without-initscriptdir
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm755 "$STUFF"/svc/smartd "$PKG"/etc/service/smartd/run
 }

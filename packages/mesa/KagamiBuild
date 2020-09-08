@@ -5,7 +5,7 @@
 # Section:     x11
 
 name=mesa
-version=20.1.6
+version=20.1.7
 release=1
 source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
 
@@ -29,7 +29,7 @@ build() {
 			vulkan="amd,freedreno"
 			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
 			;;
-		armv7hnl|armv6hl)
+		armv7hl|armv6hl)
 			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro"
 			dri="nouveau"
 			vulkan="freedreno"
@@ -68,8 +68,8 @@ build() {
 		-Dshared-llvm=true \
 		-Dvalgrind=false \
 		-Dvulkan-drivers="$vulkan"
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 
 	ln -sf libGLX_mesa.so.0 "$PKG"/usr/lib/libGLX_indirect.so.0
 }

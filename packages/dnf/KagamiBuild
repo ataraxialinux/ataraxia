@@ -1,12 +1,12 @@
 # Description: Package manager forked from Yum, using libsolv as a dependency resolver
 # URL:         https://github.com/rpm-software-management/dnf/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python-rpm cmake ninja bash-completion libdnf libcomps python-gpgme
+# Depends on:  cmake samurai bash-completion libdnf libcomps python-gpgme python-rpm
 # Section:     admin
 
 name=dnf
 version=4.2.23
-release=2
+release=3
 backup=('etc/dnf/automatic.conf'
 	'etc/dnf/dnf.conf'
 	'etc/dnf/aliases.d/zypper.conf'
@@ -28,8 +28,8 @@ build() {
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DPYTHON_DESIRED=3 \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 
 	for i in dnf dnf-automatic; do
 		ln -sf $i-3 "$PKG"/usr/bin/$i

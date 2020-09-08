@@ -1,7 +1,7 @@
 # Description: Anonymizing overlay network
 # URL:         https://www.torproject.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib libressl libevent
+# Depends on:  zlib libressl libevent libseccomp systemd
 # Section:     net
 
 name=tor
@@ -17,12 +17,12 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--enable-pic \
-		--disable-seccomp
+		--enable-systemd
 	make
 	make DESTDIR="$PKG" install
 
 	mv "$PKG"/etc/tor/torrc.sample "$PKG"/etc/tor/torrc
 
-	install -Dm755 "$STUFF"/svc/tor "$PKG"/etc/service/tor/run
-	touch "$PKG"/etc/service/tor/.NOLOG
+	install -Dm644 "$STUFF"/svc/tor.service "$PKG"/usr/lib/systemd/system/tor.service
+	install -Dm644 "$STUFF"/svc/tor_at.service "$PKG"/usr/lib/systemd/system/tor@.service
 }

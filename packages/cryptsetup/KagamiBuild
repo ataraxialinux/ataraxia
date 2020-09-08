@@ -1,13 +1,14 @@
 # Description: Userspace setup tool for transparent encryption of block devices using dm-crypt
 # URL:         https://gitlab.com/cryptsetup/cryptsetup/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl util-linux lvm2 popt json-c argon2
+# Depends on:  libressl util-linux lvm2 popt json-c argon2 libpwquality
+# Priority:    required
 # Section:     security
 
 name=cryptsetup
-version=2.3.3
+version=2.3.4
 release=2
-options=('~emptydirs')
+options=('~emptydirs' 'bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/cryptsetup/v${version%.*}/${name}-${version}.tar.xz")
 
 build() {
@@ -17,6 +18,7 @@ build() {
 		--sbindir=/usr/bin \
 		--with-crypto_backend=openssl \
 		--enable-libargon2 \
+		--enable-pwquality \
 		--disable-static
 	make
 	make DESTDIR="$PKG" install

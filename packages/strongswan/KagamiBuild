@@ -1,7 +1,7 @@
 # Description: Open source IPsec implementation
 # URL:         https://www.strongswan.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python curl gmp iproute2 iptables libcap libgcrypt libldap pam sqlite
+# Depends on:  python curl gmp iproute2 iptables libcap libgcrypt libldap pam sqlite systemd
 # Section:     net
 
 name=strongswan
@@ -20,8 +20,10 @@ build() {
 		--libexecdir=/usr/lib \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
+		--with-piddir=/run \
 		--with-ipsecdir=/usr/lib/strongswan \
 		--with-capabilities=libcap \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--enable-aesni \
 		--enable-agent \
 		--enable-attr-sql \
@@ -63,6 +65,7 @@ build() {
 		--enable-sha3 \
 		--enable-sql \
 		--enable-sqlite \
+		--enable-systemd \
 		--enable-swanctl \
 		--enable-unity \
 		--enable-vici \
@@ -73,10 +76,7 @@ build() {
 		--disable-mysql \
 		--disable-nm \
 		--disable-openssl \
-		--disable-ruby-gems \
-		--disable-systemd
+		--disable-ruby-gems
 	make
 	make DESTDIR="$PKG" install
-
-	install -Dm755 "$STUFF"/svc/strongswan "$PKG"/etc/service/strongswan/run
 }

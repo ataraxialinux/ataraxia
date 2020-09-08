@@ -1,12 +1,14 @@
 # Description: Freedesktop.org message bus system
 # URL:         https://freedesktop.org/wiki/Software/dbus
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  expat elogind libx11 audit
-# Section:     admin
+# Depends on:  expat systemd audit
+# Priority:    required
+# Section:     base
 
 name=dbus
 version=1.12.20
 release=5
+options=('bootstrap')
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -19,24 +21,26 @@ build() {
 		--with-console-auth-dir=/run/console \
 		--with-system-pid-file=/run/dbus/pid \
 		--with-system-socket=/run/dbus/system_bus_socket \
-		--without-systemdsystemunitdir \
-		--without-systemduserunitdir \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--with-systemduserunitdir=/usr/lib/systemd/user \
+		--with-xml=expat \
+		--without-x \
 		--enable-inotify \
 		--enable-systemd \
 		--enable-user-session \
-		--enable-x11-autolaunch \
 		--disable-doxygen-docs \
-		--disable-static \
-		--disable-xml-docs
-	make
-	make DESTDIR="$PKG" install
+		--disable-xml-docs \
+		--disable-static
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
+
+	chown root:81 "$PKG"/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+	chmod 4750 "$PKG"/usr/lib/dbus-1.0/dbus-daemon-launch-helper
 
 	rm -rf "$PKG"/var/run
-
-	install -Dm755 "$STUFF"/svc/dbus "$PKG"/etc/service/dbus/run
-
-	# compat
-	mkdir -p "$PKG"/var/lib/dbus
-	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
-	ln -sf ../run/machine-id "$PKG"/etc/machine-id
 }

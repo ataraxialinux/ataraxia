@@ -1,12 +1,14 @@
 # Description: Logical Volume Manager 2 utilities
 # URL:         https://sourceware.org/lvm2/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  eudev libaio
+# Depends on:  libaio systemd
+# Priority:    required
 # Section:     admin
 
 name=lvm2
 version=2.03.10
 release=1
+options=('bootstrap')
 backup=('etc/lvm/lvm.conf'
 	'etc/lvm/lvmlocal.conf')
 source=("http://sourceware.org/pub/lvm2/LVM2.${version}.tgz")
@@ -34,6 +36,7 @@ build() {
 		--with-default-locking-dir=/run/lock/lvm \
 		--with-default-pid-dir=/run \
 		--with-default-run-dir=/run/lvm \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--with-cache=internal \
 		--with-thin=internal \
 		--enable-cmdlib \
@@ -42,18 +45,16 @@ build() {
 		--enable-pkgconfig \
 		--enable-udev_rules \
 		--enable-udev_sync \
-		--disable-readline \
-		--disable-udev-systemd-background-jobs
+		--disable-readline
 
 	sed -i 's/ -p//g' make.tmpl libdm/make.tmpl
 
 	make SHELL=/usr/bin/bash
 	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install
+	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install_systemd_units
 
 	install -d "$PKG"/etc/lvm/{archive,backup}
 
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
-
-	install -Dm755 "$STUFF"/svc/dmeventd "$PKG"/etc/service/dmeventd/run
 }

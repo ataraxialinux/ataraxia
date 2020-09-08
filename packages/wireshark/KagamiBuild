@@ -1,12 +1,12 @@
 # Description: Network traffic and protocol analyzer/sniffer
 # URL:         https://www.wireshark.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake ninja pcre libpcap glib libgcrypt qt5 heimdal
+# Depends on:  cmake samurai pcre libpcap glib libgcrypt qt5 heimdal systemd
 # Section:     net
 
 name=wireshark
 version=3.2.6
-release=1
+release=2
 options=('~emptydirs')
 source=("https://www.wireshark.org/download/src/all-versions/$name-$version.tar.xz")
 
@@ -22,7 +22,8 @@ build() {
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_RPATH= \
 		-DCMAKE_SKIP_RPATH=ON \
+		-DBUILD_sdjournal=ON \
 		-Wno-dev -G Ninja
-	ninja
-	DESTDIR="$PKG" ninja install
+	samu
+	DESTDIR="$PKG" samu install
 }

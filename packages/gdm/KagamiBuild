@@ -32,14 +32,12 @@ build() {
 		--with-dbus-sys=/usr/share/dbus-1/system.d \
 		--with-default-pam-config=ataraxia \
 		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
-		--with-initial-vt=7 \
 		--with-run-dir=/run \
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
 		--without-plymouth \
-		--without-systemdsystemunitdir \
 		--enable-gdm-xsession \
 		--enable-ipv6 \
-		--disable-schemas-compile \
-		--disable-systemd-journal
+		--disable-schemas-compile
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
@@ -47,6 +45,4 @@ build() {
 
 	rm -rf "$PKG"/run
 	chown -R 120:120 "$PKG"/var/lib/gdm
-
-	install -Dm755 "$STUFF"/svc/gdm "$PKG"/etc/service/gdm/run
 }
