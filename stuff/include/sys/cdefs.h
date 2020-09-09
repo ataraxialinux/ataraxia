@@ -276,12 +276,6 @@
 #define	_Atomic(T)		struct { T volatile __val; }
 #endif
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
-#define	_Noreturn		[[noreturn]]
-#else
-#define	_Noreturn		__dead2
-#endif
-
 #if !__has_extension(c_static_assert)
 #if (defined(__cplusplus) && __cplusplus >= 201103L) || \
     __has_extension(cxx_static_assert)

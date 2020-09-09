@@ -1,7 +1,7 @@
 # Description: A web browser built for speed, simplicity, and security
 # URL:         https://www.chromium.org/Home/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  clang gperf python python2 samurai node mesa xdg-utils gtk3 nss alsa-lib libxss libgcrypt dbus pciutils desktop-file-utils hicolor-icon-theme ffmpeg flac icu libjpeg-turbo libpng opus snappy minizip
+# Depends on:  clang gperf python python2 samurai node mesa xdg-utils gtk3 nss alsa-lib libxss libgcrypt dbus pciutils desktop-file-utils hicolor-icon-theme ffmpeg flac icu libjpeg-turbo libpng opus snappy minizip font-opensans
 # Section:     web
 
 name=chromium
@@ -47,6 +47,9 @@ build() {
 		'enable_nacl=false'
 		'icu_use_data_file=false'
 		'enable_js_type_check=false'
+		'is_debug=false'
+		'use_allocator_shim=false'
+		'use_allocator="none"'
 		'symbol_level=0')
 
 	cd "$SRC"/$name-$version
@@ -113,19 +116,24 @@ build() {
 	samu -C out/Release chrome chrome_sandbox chromedriver
 
 	msg "Installing Chromium"
+	mkdir -p "$PKG"/usr/bin
 	install -Dm755 out/Release/chrome "$PKG"/usr/lib/chromium/chromium
 	install -Dm4755 out/Release/chrome_sandbox "$PKG"/usr/lib/chromium/chrome-sandbox
 
 	ln -sf /usr/lib/chromium/chromedriver "$PKG"/usr/bin/chromedriver
+	ln -sf /usr/lib/chromium/chromium "$PKG"/usr/bin/chromium
+	ln -sf /usr/lib/chromium/chromium "$PKG"/usr/bin/chrome
 
 	for i in chrome_100_percent.pak chrome_200_percent.pak resources.pak v8_context_snapshot.bin \
-		libEGL.so libGLESv2.so chromedriver icudtl.dat; do
+		libEGL.so libGLESv2.so chromedriver; do
 		cp out/Release/$i "$PKG"/usr/lib/chromium/$i
 	done
 
 	for i in out/Release/swiftshader/*.so; do
 		install -Dm755 $i "$PKG"/usr/lib/chromium/swiftshader/$(basename $i)
 	done
+
+	install -Dm644 out/Release/locales/en-US.pak "$PKG"/usr/lib/chromium/locales/en-US.pak
 
 	for size in 24 48 64 128 256; do
 		install -Dm644 "chrome/app/theme/chromium/product_logo_$size.png" "$PKG"/usr/share/icons/hicolor/${size}x${size}/apps/chromium.png

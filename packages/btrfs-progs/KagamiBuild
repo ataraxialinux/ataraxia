@@ -7,12 +7,16 @@
 
 name=btrfs-progs
 version=5.7
-release=1
+release=2
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/kernel/people/kdave/$name/$name-v$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-v$version
+	sed -i 's|UDEVDIR="$(${PKG_CONFIG} udev --variable=udevdir)"|UDEVDIR=/usr/lib/udev|' configure.ac
+	sed -i 's|UDEVDIR=|UDEVDIR=/usr/lib/udev|' configure.ac
+
+	./autogen.sh
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-backtrace \
