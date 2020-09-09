@@ -116,13 +116,16 @@ build() {
 	samu -C out/Release chrome chrome_sandbox chromedriver
 
 	msg "Installing Chromium"
+	mkdir -p "$PKG"/usr/bin
 	install -Dm755 out/Release/chrome "$PKG"/usr/lib/chromium/chromium
 	install -Dm4755 out/Release/chrome_sandbox "$PKG"/usr/lib/chromium/chrome-sandbox
 
 	ln -sf /usr/lib/chromium/chromedriver "$PKG"/usr/bin/chromedriver
+	ln -sf /usr/lib/chromium/chromium "$PKG"/usr/bin/chromium
+	ln -sf /usr/lib/chromium/chromium "$PKG"/usr/bin/chrome
 
 	for i in chrome_100_percent.pak chrome_200_percent.pak resources.pak v8_context_snapshot.bin \
-		libEGL.so libGLESv2.so chromedriver icudtl.dat; do
+		libEGL.so libGLESv2.so chromedriver; do
 		cp out/Release/$i "$PKG"/usr/lib/chromium/$i
 	done
 
