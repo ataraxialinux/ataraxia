@@ -6,7 +6,7 @@
 
 name=asterisk
 version=17.7.0
-release=2
+release=3
 backup=('etc/asterisk/acl.conf'
 	'etc/asterisk/adsi.conf'
 	'etc/asterisk/agents.conf'
@@ -106,6 +106,6 @@ build() {
 	for i in contrib/systemd/asterisk.service contrib/systemd/*.socket; do
 		install -Dm644 $i "$PKG"/usr/lib/systemd/system/$(basename $i)
 	done
-	
+	install -Dm644 "$STUFF"/tmpfiles.d/asterisk.conf "$PKG"/usr/lib/tmpfiles.d/asterisk.conf
 	install -Dm644 "$STUFF"/asterisk/logrotate "$PKG"/etc/logrotate.d/asterisk
 }

@@ -6,7 +6,7 @@
 
 name=libvirt
 version=6.7.0
-release=2
+release=3
 source=("https://libvirt.org/sources/$name-$version.tar.xz")
 
 build() {
@@ -34,6 +34,8 @@ build() {
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" SYSTEMD_UNIT_DIR=/usr/lib/systemd/system install
+
+	install -Dm644 "$STUFF"/tmpfiles.d/libvirt.conf "$PKG"/usr/lib/tmpfiles.d/libvirt.conf
 
 	for i in  /var/lib/libvirt/uml /var/lib/libvirt/qemu/nvram /var/lib/libvirt/qemu/channel/target \
 		/var/lib/libvirt/network /var/lib/libvirt/lxc /var/lib/libvirt/lockd/files /var/lib/libvirt/libxl \
