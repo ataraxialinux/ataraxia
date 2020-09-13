@@ -298,14 +298,14 @@ build_target() {
 		case $i in
 			libblkid)
 				if [ ! -f "$BUILD/.blkid" ]; then
-					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt libblkid
+					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts libblkid
 					rm -rf "$BUILD"/packages/libblkid-*.rpm
 					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
 				fi
 				;;
 			libsystemd)
 				if [ ! -f "$BUILD/.libsystemd" ]; then
-					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt libsystemd
+					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts libsystemd
 					rm -rf "$BUILD"/packages/libsystemd-*.rpm
 					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
 				fi
@@ -318,7 +318,7 @@ build_target() {
 					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libblkid
 					rm "$BUILD"/.rmblkid
 				fi
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt util-linux
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts util-linux
 				;;
 			systemd)
 				pushd "$REPO/systemd"
@@ -328,10 +328,10 @@ build_target() {
 					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libsystemd
 					rm "$BUILD"/.rmsystemd
 				fi
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt systemd
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts systemd
 				;;
 			*)
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndt $i
+				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts $i
 				;;
 		esac
 	done
