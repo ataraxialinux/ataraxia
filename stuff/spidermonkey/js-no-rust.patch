@@ -1,0 +1,50 @@
+diff -ruN firefox-78.2.0-orig/js/moz.configure firefox-78.2.0/js/moz.configure
+--- firefox-78.2.0-orig/js/moz.configure	2020-08-18 03:33:37.000000000 +0900
++++ firefox-78.2.0/js/moz.configure	2020-09-15 00:41:24.031202748 +0900
+@@ -35,10 +35,6 @@
+ 
+ include('../build/moz.configure/nspr.configure',
+         when='--enable-compile-environment')
+-include('../build/moz.configure/rust.configure',
+-        when='--enable-compile-environment')
+-include('../build/moz.configure/bindgen.configure',
+-        when='--enable-compile-environment')
+ 
+ @depends('JS_STANDALONE')
+ def js_standalone(value):
+@@ -469,10 +465,11 @@
+ 
+ @depends('--enable-rust-simd', target)
+ def rust_simd(value, target):
++    return False
+     # As of 2019-09-17, the simd-accel feature of encoding_rs has not
+     # been properly set up outside aarch64, armv7, x86 and x86_64.
+-    if target.cpu in ('aarch64', 'arm', 'x86', 'x86_64') and value:
+-        return True
++    #if target.cpu in ('aarch64', 'arm', 'x86', 'x86_64') and value:
++    #    return True
+ 
+ set_config('MOZ_RUST_SIMD', rust_simd)
+ set_define('MOZ_RUST_SIMD', rust_simd)
+diff -ruN firefox-78.2.0-orig/python/mozbuild/mozbuild/frontend/data.py firefox-78.2.0/python/mozbuild/mozbuild/frontend/data.py
+--- firefox-78.2.0-orig/python/mozbuild/mozbuild/frontend/data.py	Tue Aug 18 03:34:22 2020
++++ firefox-78.2.0/python/mozbuild/mozbuild/frontend/data.py	Tue Sep 15 00:59:25 2020
+@@ -559,13 +559,14 @@
+ 
+ 
+ def cargo_output_directory(context, target_var):
++    return target_var
+     # cargo creates several directories and places its build artifacts
+     # in those directories.  The directory structure depends not only
+     # on the target, but also what sort of build we are doing.
+-    rust_build_kind = 'release'
+-    if context.config.substs.get('MOZ_DEBUG_RUST'):
+-        rust_build_kind = 'debug'
+-    return mozpath.join(context.config.substs[target_var], rust_build_kind)
++    #rust_build_kind = 'release'
++    #if context.config.substs.get('MOZ_DEBUG_RUST'):
++    #    rust_build_kind = 'debug'
++    #return mozpath.join(context.config.substs[target_var], rust_build_kind)
+ 
+ 
+ # Rust programs aren't really Linkable, since Cargo handles all the details

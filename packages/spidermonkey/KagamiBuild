@@ -1,20 +1,20 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python2 yasm zlib readline libffi nspr icu
+# Depends on:  autoconf2.13 python rust yasm zlib libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
-version=68.12.0
+version=78.2.0
 release=1
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
 	export SHELL=/usr/bin/bash
-	export PYTHON=/usr/bin/python2
+	export PYTHON=/usr/bin/python3
 
 	cd "$SRC"/firefox-${version}
-	sed '21,+4d' -i js/moz.configure
+	#patch -Np1 -i "$STUFF"/spidermonkey/js-no-rust.patch
 
 	cd "$SRC"
 	mkdir build
@@ -30,14 +30,13 @@ build() {
 		--enable-ctypes \
 		--enable-hardening \
 		--enable-optimize \
-		--enable-readline \
 		--enable-release \
 		--enable-shared-js \
 		--enable-system-ffi \
-		--enable-unaligned-private-values \
 		--disable-debug \
 		--disable-debug-symbols \
 		--disable-jemalloc \
+		--disable-js-shell \
 		--disable-strip \
 		--disable-tests \
 		--host=$XTARGET \
