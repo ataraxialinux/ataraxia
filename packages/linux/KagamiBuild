@@ -5,13 +5,13 @@
 # Section:     kernel
 
 name=linux
-version=5.8.9
+version=5.8.10
 uksmver=5.8
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-release=2
+release=1
 options=('~strip' 'bootstrap' '~ccache')
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://raw.githubusercontent.com/dolohow/uksm/master/v5.x/uksm-$uksmver.patch")
@@ -880,9 +880,9 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$SRC"/uksm-$uksmver.patch
 	patch -Np1 -i "$STUFF"/linux/0001-futex-patches.patch
-	#patch -Np1 -i "$STUFF"/linux/0001-bfq-reverts.patch
-	#patch -Np1 -i "$STUFF"/linux/0001-bfq.patch
-	#patch -Np1 -i "$STUFF"/linux/0002-blk.patch
+	patch -Np1 -i "$STUFF"/linux/0001-bfq-reverts.patch
+	patch -Np1 -i "$STUFF"/linux/0001-bfq.patch
+	patch -Np1 -i "$STUFF"/linux/0002-blk.patch
 	patch -Np1 -i "$STUFF"/linux/0008-add-zstd-kernel-compression.patch
 	patch -Np1 -i "$STUFF"/linux/0009-add-zstd-compressed-modules.patch
 	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
