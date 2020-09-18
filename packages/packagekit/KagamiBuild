@@ -1,0 +1,29 @@
+# Description: A system designed to make installation and updates of packages easier
+# URL:         https://www.freedesktop.org/software/PackageKit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson intltool gobject-introspection vala bash-completion polkit sqlite libdnf gtk3 gst-plugins-base
+# Section:     admin
+
+name=packagekit
+version=1.2.1
+release=1
+source=("https://www.freedesktop.org/software/PackageKit/releases/PackageKit-$version.tar.xz")
+
+build() {
+	cd "$SRC"/PackageKit-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/PackageKit-$version \
+		-Dcron=false \
+		-Ddbus_sys=/usr/share/dbus-1/system.d \
+		-Dgtk_doc=false \
+		-Doffline_update=true \
+		-Dpackaging_backend=dnf \
+		-Dsystemd=true
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+
+	rm -rf "$PKG"/etc/sysconfig
+}
