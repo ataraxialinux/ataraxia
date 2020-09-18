@@ -1,7 +1,7 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python rust yasm zlib libffi nspr icu
+# Depends on:  autoconf2.13 python yasm zlib libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
@@ -14,7 +14,7 @@ build() {
 	export PYTHON=/usr/bin/python3
 
 	cd "$SRC"/firefox-${version}
-	#patch -Np1 -i "$STUFF"/spidermonkey/js-no-rust.patch
+	patch -Np1 -i "$STUFF"/spidermonkey/js-no-rust.patch
 
 	cd "$SRC"
 	mkdir build
@@ -41,6 +41,8 @@ build() {
 		--disable-tests \
 		--host=$XTARGET \
 		--target=$XTARGET
+
+	sed -i 's|$(MAKE) -C shell install|# $(MAKE) -C shell install|g' js/src/Makefile
 	make
 	make DESTDIR="$PKG" install
 
