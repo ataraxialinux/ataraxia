@@ -1,7 +1,7 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python rust yasm zlib libffi nspr icu
+# Depends on:  python yasm zlib libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
@@ -10,24 +10,12 @@ release=1
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
-	case $BARCH in
-		x86_64)
-			export RUST_TARGET="x86_64-gentoo-linux-musl"
-			;;
-		i686)
-			export RUST_TARGET="i686-gentoo-linux-musl"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
-	esac
-
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
+	export AUTOCONF=/usr/bin/autoconf
 
 	cd "$SRC"/firefox-${version}
-	#patch -Np1 -i "$STUFF"/spidermonkey/js-no-rust.patch
-	patch -Np1 -i "$STUFF"/spidermonkey/fix-rust-target.patch
+	patch -Np1 -i "$STUFF"/spidermonkey/js-no-rust.patch
 
 	cd "$SRC"
 	mkdir build
