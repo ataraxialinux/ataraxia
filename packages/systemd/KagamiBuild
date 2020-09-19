@@ -1,7 +1,7 @@
 # Description: System and service manager
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson zlib bzip2 xz lz4 pam audit acl libcap shadow libressl kbd kmod libelf iptables gperf hwids cryptsetup libseccomp
+# Depends on:  meson zlib bzip2 xz lz4 pam acl libcap shadow libressl kbd kmod libelf iptables gperf hwids cryptsetup
 # Dep x86_64:  gnu-efi
 # Dep i686:    gnu-efi
 # Dep aarch64: gnu-efi
@@ -12,7 +12,7 @@
 
 name=systemd
 version=246.5
-release=2
+release=3
 options=('bootstrap')
 backup=('etc/pam.d/systemd-user'
 	'etc/systemd/coredump.conf'
@@ -42,7 +42,7 @@ build() {
 	ataraxia-meson "$SRC"/$name-stable-$version \
 		-Db_lto=false \
 		-Dapparmor=false \
-		-Daudit=true \
+		-Daudit=false \
 		-Dbacklight=true \
 		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
 		-Ddefault-dnssec=no \
@@ -77,6 +77,7 @@ build() {
 		-Dp11kit=false \
 		-Dpcre2=false \
 		-Dqrencode=false \
+		-Dseccomp=false \
 		-Dselinux=false \
 		-Dsmack=false \
 		-Dsysusers=false \
