@@ -1,0 +1,66 @@
+# Description: A Japanese Input Method Editor (IME) designed for multi-platform
+# URL:         https://github.com/google/mozc
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gyp samurai ibus curl jsoncpp
+# Section:     localization
+
+name=mozc
+version=afb03ddfe72dde4cf2409863a3bfea160f7a66d8
+dictver=a4a66772e33746b91e99caceecced9a28507e925
+protobufver=92a7e778e7394386f413cec28d67a07630f784b1
+release=1
+source=("https://github.com/google/mozc/archive/$version.tar.gz"
+	"https://github.com/hiroyuki-komatsu/japanese-usage-dictionary/archive/$dictver.tar.gz"
+	"https://github.com/protocolbuffers/protobuf/archive/$protobufver.tar.gz")
+noextract=("$gypver.tar.gz")
+
+build() {
+	local targets=(server/server.gyp:mozc_server unix/ibus/ibus.gyp:ibus_mozc renderer/renderer.gyp:mozc_renderer)
+
+	export CFLAGS="$CFLAGS -fvisibility=hidden"
+	export CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+
+	cd "$SRC"
+	mv japanese-usage-dictionary-$dictver japanese_usage_dictionary
+	mv protobuf-$protobufver protobuf
+
+	for dep in protobuf japanese_usage_dictionary; do
+		cp -a $dep $name-$version/src/third_party/
+	done
+
+	cd "$SRC"/$name-$version/src
+	patch -Np1 -i "$STUFF"/mozc/new-era.patch
+	patch -Np1 -i "$STUFF"/mozc/python3.patch
+	patch -Np1 -i "$STUFF"/mozc/gcc.patch
+	sed -i 's|PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_RECURSIVE|' base/mutex.cc
+
+	python3 build_mozc.py gyp \
+		--gypdir="/usr/bin" \
+		--server_dir="/usr/lib/mozc" \
+		--verbose \
+		--noqt \
+		-- \
+		-Dcompiler_host=gcc \
+		-Dcompiler_target=gcc \
+		-Duse_fcitx=NO \
+		-Duse_fcitx5=NO \
+		-Duse_ibus=1 \
+		-Duse_libjsoncpp=1 \
+		-Duse_libzinnia=0 \
+		-Denable_gtk_renderer=1 \
+		-Dserver_dir="/usr/lib/mozc" \
+		-Ddocument_dir="/usr/lib/mozc/documents" \
+		-Dibus_mozc_icon_path="/usr/share/ibus-mozc/product_icon.png" \
+		-Dibus_mozc_path="/usr/lib/ibus/ibus-engine-mozc"
+
+	python3 build_mozc.py build -c "Release" -v "${targets[@]}"
+
+	install -Dm755 out_linux/Release/mozc_server "$PKG"/usr/lib/mozc/mozc_server
+	install -Dm755 out_linux/Release/mozc_renderer "$PKG"/usr/lib/mozc/mozc_renderer
+	install -Dm755 out_linux/Release/ibus_mozc "$PKG"/usr/lib/ibus-mozc/ibus-engine-mozc
+	install -Dm644 out_linux/Release/gen/unix/ibus/mozc.xml "$PKG"/usr/share/ibus/component/mozc.xml
+
+	for i in data/images/unix/ime_product_icon_opensource-32.png data/images/unix/ui-*.png; do
+		install -Dm644 $i "$PKG"/usr/share/ibus-mozc/$(basename $i)
+	done
+}

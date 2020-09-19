@@ -1,0 +1,1195 @@
+diff -pruN mozc-2.23.2815.102.orig/base/gen_character_set.py mozc-2.23.2815.102/base/gen_character_set.py
+--- mozc-2.23.2815.102.orig/base/gen_character_set.py	2019-08-02 14:22:24.490255547 +0900
++++ mozc-2.23.2815.102/base/gen_character_set.py	2019-08-01 21:53:12.997788806 +0900
+@@ -250,7 +250,7 @@ def GenerateCategoryBitmap(category_list
+   # (at most) four code points.
+   bit_list = []
+   for _, group in itertools.groupby(enumerate(category_list),
+-                                    lambda (codepoint, _): codepoint / 4):
++                                    lambda codepoint: int(codepoint[0] / 4)):
+     # Fill bits from LSB to MSB for each group.
+     bits = 0
+     for index, (_, category) in enumerate(group):
+@@ -263,7 +263,7 @@ def GenerateCategoryBitmap(category_list
+ 
+   # Output the content. Each line would have (at most) 16 bytes.
+   for _, group in itertools.groupby(enumerate(bit_list),
+-                                    lambda (index, _): index / 16):
++                                    lambda index: int(index[0] / 16)):
+     line = ['    \"']
+     for _, bits in group:
+       line.append('\\x%02X' % bits)
+@@ -386,7 +386,7 @@ def GenerateGetCharacterSet(category_lis
+   # Bitmap lookup.
+   # TODO(hidehiko): the bitmap has two huge 0-bits ranges. Reduce them.
+   category_map = [
+-      (bits, category) for category, bits in CATEGORY_BITMAP.iteritems()]
++      (bits, category) for category, bits in CATEGORY_BITMAP.items()]
+   category_map.sort()
+ 
+   lines.extend([
+@@ -451,7 +451,7 @@ def main():
+                                      options.jisx0213file)
+   category_list = [
+       categorizer.GetCategory(codepoint)
+-      for codepoint in xrange(categorizer.MaxCodePoint() + 1)]
++      for codepoint in range(categorizer.MaxCodePoint() + 1)]
+   generated_character_set_header = GenerateCharacterSetHeader(category_list)
+ 
+   # Write the result.
+diff -pruN mozc-2.23.2815.102.orig/base/gen_config_file_stream_data.py mozc-2.23.2815.102/base/gen_config_file_stream_data.py
+--- mozc-2.23.2815.102.orig/base/gen_config_file_stream_data.py	2019-08-02 14:22:24.490255547 +0900
++++ mozc-2.23.2815.102/base/gen_config_file_stream_data.py	2019-08-01 21:53:12.998788807 +0900
+@@ -58,7 +58,7 @@ def GenerateFileData(path):
+   result = []
+   result.append(' { "%s",  "' % os.path.basename(path))
+   with open(path, 'rb') as stream:
+-    result.extend(r'\x%02X' % ord(byte) for byte in stream.read())
++    result.extend(r'\x%02X' % byte for byte in stream.read())
+   result.append('",  %d }' % os.path.getsize(path))
+ 
+   return ''.join(result)
+@@ -93,8 +93,8 @@ def OutputConfigFileStreamData(path_list
+ def main():
+   (options, args) = ParseOptions()
+   if not options.output:
+-    print >>sys.stderr, (
+-        'usage: gen_config_file_stream_data.py --output=filepath input ...')
++    print(
++        'usage: gen_config_file_stream_data.py --output=filepath input ...', file=sys.stderr)
+     sys.exit(2)
+ 
+   with open(options.output, 'w') as output:
+diff -pruN mozc-2.23.2815.102.orig/build_mozc.py mozc-2.23.2815.102/build_mozc.py
+--- mozc-2.23.2815.102.orig/build_mozc.py	2019-08-02 14:22:24.491255546 +0900
++++ mozc-2.23.2815.102/build_mozc.py	2019-08-01 21:53:12.998788807 +0900
+@@ -943,7 +943,7 @@ def RunTests(target_platform, configurat
+       logging.info('running %s...', binary)
+       try:
+         test_function(binary, gtest_report_dir, options)
+-      except RunOrDieError, e:
++      except RunOrDieError as e:
+         logging.error(e)
+         failed_tests.append(binary)
+   else:
+@@ -1082,7 +1082,7 @@ def RunTestsMain(options, args):
+   # and '-c' and 'Release' are build options.
+   targets = []
+   build_options = []
+-  for i in xrange(len(args)):
++  for i in range(len(args)):
+     if args[i].startswith('-'):
+       # starting with build options
+       build_options = args[i:]
+@@ -1099,7 +1099,7 @@ def RunTestsMain(options, args):
+ 
+   # configuration flags are shared among runtests options and
+   # build options.
+-  if 'jobs' in vars(options).keys():
++  if 'jobs' in list(vars(options).keys()):
+     build_options.extend(['-j', options.jobs])
+   if options.configuration:
+     build_options.extend(['-c', options.configuration])
+@@ -1190,14 +1190,14 @@ def CleanMain(options, unused_args):
+ 
+ def ShowHelpAndExit():
+   """Shows the help message."""
+-  print 'Usage: build_mozc.py COMMAND [ARGS]'
+-  print 'Commands: '
+-  print '  gyp          Generate project files.'
+-  print '  build        Build the specified target.'
+-  print '  runtests     Build all tests and run them.'
+-  print '  clean        Clean all the build files and directories.'
+-  print ''
+-  print 'See also the comment in the script for typical usage.'
++  print('Usage: build_mozc.py COMMAND [ARGS]')
++  print('Commands: ')
++  print('  gyp          Generate project files.')
++  print('  build        Build the specified target.')
++  print('  runtests     Build all tests and run them.')
++  print('  clean        Clean all the build files and directories.')
++  print('')
++  print('See also the comment in the script for typical usage.')
+   sys.exit(1)
+ 
+ 
+diff -pruN mozc-2.23.2815.102.orig/build_tools/android_util.py mozc-2.23.2815.102/build_tools/android_util.py
+--- mozc-2.23.2815.102.orig/build_tools/android_util.py	2019-08-02 14:22:24.491255546 +0900
++++ mozc-2.23.2815.102/build_tools/android_util.py	2019-08-01 21:53:12.999788807 +0900
+@@ -548,7 +548,7 @@ def GetAvailableEmulatorPorts(android_ho
+   (devices_result, _) = process.communicate()
+   used_ports = set(int(port) for port
+                    in re.findall(r'emulator-(\d+)', devices_result))
+-  return [port for port in xrange(5554, 5586, 2) if port not in used_ports]
++  return [port for port in range(5554, 5586, 2) if port not in used_ports]
+ 
+ 
+ def SetUpTestingSdkHomeDirectory(dest_android_sdk_home,
+@@ -575,7 +575,7 @@ def SetUpTestingSdkHomeDirectory(dest_an
+           'create', 'avd',
+           '--force',
+           '--sdcard', '512M',]
+-  for key, value in options.iteritems():
++  for key, value in options.items():
+     args.extend([key, value])
+   env = {'ANDROID_SDK_HOME': os.path.abspath(dest_android_sdk_home)}
+   logging.info('Creating AVD: %s', args)
+@@ -615,7 +615,7 @@ def GetAvdProperties(android_sdk_home, a
+ def main():
+   for arg in sys.argv[1:]:
+     for item in sorted(GetApkProperties(arg).items()):
+-      print '%s: %s' % item
++      print('%s: %s' % item)
+ 
+ 
+ if __name__ == '__main__':
+diff -pruN mozc-2.23.2815.102.orig/build_tools/code_generator_util.py mozc-2.23.2815.102/build_tools/code_generator_util.py
+--- mozc-2.23.2815.102.orig/build_tools/code_generator_util.py	2019-08-02 14:22:24.491255546 +0900
++++ mozc-2.23.2815.102/build_tools/code_generator_util.py	2019-08-01 21:53:12.999788807 +0900
+@@ -46,14 +46,14 @@ def ToCppStringLiteral(s):
+     return '"%s"' % s.replace('\\', r'\\').replace('"', r'\"')
+   else:
+     # One or more characters are non-ascii.
+-    return '"%s"' % ''.join(r'\x%02X' % ord(c) for c in s)
++    return '"%s"' % ''.join(r'\x%02X' % c for c in s.encode())
+ 
+ 
+ def FormatWithCppEscape(format_text, *args):
+   """Returns a string filling format with args."""
+   literal_list = []
+   for arg in args:
+-    if isinstance(arg, (types.StringType, types.NoneType)):
++    if isinstance(arg, (bytes, type(None))):
+       arg = ToCppStringLiteral(arg)
+     literal_list.append(arg)
+ 
+@@ -95,7 +95,7 @@ def WriteCppDataArray(data, variable_nam
+   if target_compiler and target_compiler.startswith('msvs'):
+     stream.write('const uint64 k%s_data_wordtype[] = {\n' % variable_name)
+ 
+-    for word_index in xrange(0, len(data), 8):
++    for word_index in range(0, len(data), 8):
+       word_chunk = data[word_index:word_index + 8].ljust(8, '\x00')
+       stream.write('0x%016X, ' % struct.unpack('<Q', word_chunk))
+       if (word_index / 8) % 4 == 3:
+@@ -108,17 +108,17 @@ def WriteCppDataArray(data, variable_nam
+         'reinterpret_cast<const char *>(k%s_data_wordtype);\n' % (
+             variable_name, variable_name))
+   else:
+-    stream.write('const char k%s_data[] =\n' % variable_name)
++    stream.write(('const char k%s_data[] =\n' % variable_name).encode())
+     # Output 16bytes per line.
+     chunk_size = 16
+-    for index in xrange(0, len(data), chunk_size):
++    for index in range(0, len(data), chunk_size):
+       chunk = data[index:index + chunk_size]
+-      stream.write('"')
+-      stream.writelines(r'\x%02X' % ord(c) for c in chunk)
+-      stream.write('"\n')
+-    stream.write(';\n')
++      stream.write('"'.encode())
++      stream.writelines(br'\x%02X' % c for c in chunk)
++      stream.write('"\n'.encode())
++    stream.write(';\n'.encode())
+ 
+-  stream.write('const size_t k%s_size = %d;\n' % (variable_name, len(data)))
++  stream.write(('const size_t k%s_size = %d;\n' % (variable_name, len(data))).encode())
+ 
+ 
+ def ToJavaStringLiteral(codepoint_list):
+@@ -129,7 +129,7 @@ def ToJavaStringLiteral(codepoint_list):
+     return 'null'
+   result = r'"'
+   for codepoint in codepoint_list:
+-    utf16_string = unichr(codepoint).encode('utf-16be')
++    utf16_string = chr(codepoint).encode('utf-16be')
+     if len(utf16_string) == 2:
+       (u0, l0) = utf16_string
+       result += r'\u%02X%02X' % (ord(u0), ord(l0))
+@@ -172,5 +172,5 @@ def SplitChunk(iterable, n):
+   grouper extends the last chunk to make it an n-element chunk by adding
+   appropriate value, but this returns truncated chunk.
+   """
+-  for index in xrange(0, len(iterable), n):
++  for index in range(0, len(iterable), n):
+     yield iterable[index:index + n]
+diff -pruN mozc-2.23.2815.102.orig/build_tools/embed_file.py mozc-2.23.2815.102/build_tools/embed_file.py
+--- mozc-2.23.2815.102.orig/build_tools/embed_file.py	2019-08-02 14:22:24.491255546 +0900
++++ mozc-2.23.2815.102/build_tools/embed_file.py	2019-08-01 21:53:12.999788807 +0900
+@@ -46,33 +46,33 @@ def _ParseOption():
+ 
+ def _FormatAsUint64LittleEndian(s):
+   """Formats a string as uint64 value in little endian order."""
+-  for _ in xrange(len(s), 8):
+-    s += '\0'
++  for _ in range(len(s), 8):
++    s += '\0'.encode()
+   s = s[::-1]  # Reverse the string
+-  return '0x%s' % binascii.b2a_hex(s)
++  return '0x%s' % binascii.b2a_hex(s).decode()
+ 
+ 
+ def main():
+   opts = _ParseOption()
+   with open(opts.input, 'rb') as infile:
+     with open(opts.output, 'wb') as outfile:
+-      outfile.write(
++      outfile.write((
+           '#ifdef MOZC_EMBEDDED_FILE_%(name)s\n'
+           '#error "%(name)s was already included or defined elsewhere"\n'
+           '#else\n'
+           '#define MOZC_EMBEDDED_FILE_%(name)s\n'
+           'const uint64 %(name)s_data[] = {\n'
+-          % {'name': opts.name})
++          % {'name': opts.name}).encode())
+ 
+       while True:
+         chunk = infile.read(8)
+         if not chunk:
+           break
+-        outfile.write('  ')
+-        outfile.write(_FormatAsUint64LittleEndian(chunk))
+-        outfile.write(',\n')
++        outfile.write('  '.encode())
++        outfile.write(_FormatAsUint64LittleEndian(chunk).encode())
++        outfile.write(',\n'.encode())
+ 
+-      outfile.write(
++      outfile.write((
+           '};\n'
+           'const EmbeddedFile %(name)s = {\n'
+           '  %(name)s_data,\n'
+@@ -80,7 +80,7 @@ def main():
+           '};\n'
+           '#endif  // MOZC_EMBEDDED_FILE_%(name)s\n'
+           % {'name': opts.name,
+-             'size': os.stat(opts.input).st_size})
++             'size': os.stat(opts.input).st_size}).encode())
+ 
+ 
+ if __name__ == '__main__':
+diff -pruN mozc-2.23.2815.102.orig/build_tools/redirect.py mozc-2.23.2815.102/build_tools/redirect.py
+--- mozc-2.23.2815.102.orig/build_tools/redirect.py	2019-08-02 14:22:24.492255546 +0900
++++ mozc-2.23.2815.102/build_tools/redirect.py	2019-08-01 21:53:12.999788807 +0900
+@@ -58,9 +58,9 @@ def main():
+     process = subprocess.Popen(sys.argv, stdout=subprocess.PIPE,
+                                universal_newlines=True)
+   except:
+-    print '=========='
+-    print ' ERROR: %s' % ' '.join(sys.argv)
+-    print '=========='
++    print('==========')
++    print(' ERROR: %s' % ' '.join(sys.argv))
++    print('==========')
+     raise
+   (stdout_content, _) = process.communicate()
+   # Write the stdout content to the output file.
+diff -pruN mozc-2.23.2815.102.orig/build_tools/serialized_string_array_builder.py mozc-2.23.2815.102/build_tools/serialized_string_array_builder.py
+--- mozc-2.23.2815.102.orig/build_tools/serialized_string_array_builder.py	2019-08-02 14:22:24.492255546 +0900
++++ mozc-2.23.2815.102/build_tools/serialized_string_array_builder.py	2019-08-01 21:53:13.000788808 +0900
+@@ -33,7 +33,7 @@
+ import struct
+ 
+ 
+-def SerializeToFile(strings, filename):
++def SerializeToFile(strings_, filename):
+   """Builds a binary image of strings.
+ 
+   For file format, see base/serialized_string_array.h.
+@@ -42,12 +42,13 @@ def SerializeToFile(strings, filename):
+     strings: A list of strings to be serialized.
+     filename: Output binary file.
+   """
+-  array_size = len(strings)
++  array_size = len(strings_)
+ 
+   # Precompute offsets and lengths.
+   offsets = []
+   lengths = []
+   offset = 4 + 8 * array_size  # The start offset of strings chunk
++  strings = list(map(lambda s: s.encode(), strings_))
+   for s in strings:
+     offsets.append(offset)
+     lengths.append(len(s))
+@@ -58,11 +59,11 @@ def SerializeToFile(strings, filename):
+     f.write(struct.pack('<I', array_size))
+ 
+     # Offset and length array of (4 + 4) * array_size bytes.
+-    for i in xrange(array_size):
++    for i in range(array_size):
+       f.write(struct.pack('<I', offsets[i]))
+       f.write(struct.pack('<I', lengths[i]))
+ 
+     # Strings chunk.
+-    for i in xrange(array_size):
++    for i in range(array_size):
+       f.write(strings[i])
+-      f.write('\0')
++      f.write('\0'.encode())
+diff -pruN mozc-2.23.2815.102.orig/build_tools/test_tools/test_launcher.py mozc-2.23.2815.102/build_tools/test_tools/test_launcher.py
+--- mozc-2.23.2815.102.orig/build_tools/test_tools/test_launcher.py	2019-08-02 14:22:24.492255546 +0900
++++ mozc-2.23.2815.102/build_tools/test_tools/test_launcher.py	2019-08-01 21:53:13.000788808 +0900
+@@ -101,11 +101,11 @@ class PathDeleter(object):
+       time.sleep(1)
+       try:
+         shutil.rmtree(self._path)
+-      except OSError, e:
++      except OSError as e:
+         logging.error('Failed to remove %s. error: %s', self._path, e)
+ 
+ 
+-def _ExecuteTest((command, gtest_report_dir)):
++def _ExecuteTest(xxx_todo_changeme):
+   """Executes tests with specified Test command.
+ 
+   Args:
+@@ -122,6 +122,7 @@ def _ExecuteTest((command, gtest_report_
+   module, which is used in multiprocessing module.
+   (http://docs.python.org/library/pickle.html)
+   """
++  (command, gtest_report_dir) = xxx_todo_changeme
+   binary = command[0]
+   binary_filename = os.path.basename(binary)
+   tmp_dir = tempfile.mkdtemp()
+diff -pruN mozc-2.23.2815.102.orig/build_tools/util.py mozc-2.23.2815.102/build_tools/util.py
+--- mozc-2.23.2815.102.orig/build_tools/util.py	2019-08-02 14:22:24.492255546 +0900
++++ mozc-2.23.2815.102/build_tools/util.py	2019-08-01 21:53:13.000788808 +0900
+@@ -73,11 +73,11 @@ def GetNumberOfProcessors():
+   return 1
+ 
+ 
+-class RunOrDieError(StandardError):
++class RunOrDieError(Exception):
+   """The exception class for RunOrDie."""
+ 
+   def __init__(self, message):
+-    StandardError.__init__(self, message)
++    Exception.__init__(self, message)
+ 
+ 
+ def RunOrDie(argv):
+@@ -105,7 +105,7 @@ def RemoveFile(file_name):
+     return  # Do nothing if not exist.
+   if IsWindows():
+     # Read-only files cannot be deleted on Windows.
+-    os.chmod(file_name, 0700)
++    os.chmod(file_name, 0o700)
+   logging.debug('Removing file: %s', file_name)
+   os.unlink(file_name)
+ 
+diff -pruN mozc-2.23.2815.102.orig/composer/internal/gen_typing_model.py mozc-2.23.2815.102/composer/internal/gen_typing_model.py
+--- mozc-2.23.2815.102.orig/composer/internal/gen_typing_model.py	2019-08-02 14:22:24.492255546 +0900
++++ mozc-2.23.2815.102/composer/internal/gen_typing_model.py	2019-08-01 21:53:13.001788809 +0900
+@@ -60,8 +60,8 @@ import optparse
+ import struct
+ 
+ UNDEFINED_COST = -1
+-MAX_UINT16 = struct.unpack('H', '\xFF\xFF')[0]
+-MAX_UINT8 = struct.unpack('B', '\xFF')[0]
++MAX_UINT16 = struct.unpack('H', b'\xFF\xFF')[0]
++MAX_UINT8 = struct.unpack('B', b'\xFF')[0]
+ 
+ 
+ def ParseArgs():
+@@ -113,7 +113,7 @@ def GetMappingTable(values, mapping_tabl
+   sorted_values = list(sorted(set(values)))
+   mapping_table = sorted_values[0]
+   mapping_table_size_without_special_value = mapping_table_size - 1
+-  span = len(sorted_values) / (mapping_table_size_without_special_value - 1)
++  span = int(len(sorted_values) / (mapping_table_size_without_special_value - 1))
+   mapping_table = [sorted_values[i * span]
+                    for i
+                    in range(0, mapping_table_size_without_special_value - 1)]
+@@ -150,7 +150,7 @@ def GetNearestMappingTableIndex(mapping_
+ 
+ def GetValueTable(unique_characters, mapping_table, dictionary):
+   result = []
+-  for key, value in dictionary.iteritems():
++  for key, value in dictionary.items():
+     index = GetIndexFromKey(unique_characters, key)
+     while len(result) <= index:
+       result.append(len(mapping_table) - 1)
+@@ -160,20 +160,20 @@ def GetValueTable(unique_characters, map
+ 
+ 
+ def WriteResult(romaji_transition_cost, output_path):
+-  unique_characters = GetUniqueCharacters(romaji_transition_cost.keys())
+-  mapping_table = GetMappingTable(romaji_transition_cost.values(),
++  unique_characters = GetUniqueCharacters(list(romaji_transition_cost.keys()))
++  mapping_table = GetMappingTable(list(romaji_transition_cost.values()),
+                                   MAX_UINT8 + 1)
+   value_list = GetValueTable(unique_characters, mapping_table,
+                              romaji_transition_cost)
+   with open(output_path, 'wb') as f:
+     f.write(struct.pack('<I', len(unique_characters)))
+-    f.write(''.join(unique_characters))
++    f.write(''.join(unique_characters).encode())
+     offset = 4 + len(unique_characters)
+ 
+     # Add padding to place value list size at 4-byte boundary.
+     if offset % 4:
+       padding_size = 4 - offset % 4
+-      f.write('\x00' * padding_size)
++      f.write(('\x00' * padding_size).encode())
+       offset += padding_size
+ 
+     f.write(struct.pack('<I', len(value_list)))
+@@ -184,7 +184,7 @@ def WriteResult(romaji_transition_cost,
+     # Add padding to place mapping_table at 4-byte boundary.
+     if offset % 4:
+       padding_size = 4 - offset % 4
+-      f.write('\x00' * padding_size)
++      f.write(('\x00' * padding_size).encode())
+       offset += padding_size
+ 
+     for v in mapping_table:
+diff -pruN mozc-2.23.2815.102.orig/converter/gen_boundary_data.py mozc-2.23.2815.102/converter/gen_boundary_data.py
+--- mozc-2.23.2815.102.orig/converter/gen_boundary_data.py	2019-08-02 14:22:24.493255546 +0900
++++ mozc-2.23.2815.102/converter/gen_boundary_data.py	2019-08-01 21:53:13.001788809 +0900
+@@ -84,7 +84,7 @@ def LoadPatterns(file):
+     elif label == 'SUFFIX':
+       suffix.append([re.compile(PatternToRegexp(feature)), cost])
+     else:
+-      print 'format error %s' % (line)
++      print('format error %s' % (line))
+       sys.exit(0)
+   return (prefix, suffix)
+ 
+@@ -141,7 +141,7 @@ def main():
+       f.write(struct.pack('<H', GetCost(prefix, feature)))
+       f.write(struct.pack('<H', GetCost(suffix, feature)))
+ 
+-    for _ in xrange(num_special_pos):
++    for _ in range(num_special_pos):
+       f.write(struct.pack('<H', 0))
+       f.write(struct.pack('<H', 0))
+ 
+diff -pruN mozc-2.23.2815.102.orig/converter/gen_segmenter_code.py mozc-2.23.2815.102/converter/gen_segmenter_code.py
+--- mozc-2.23.2815.102.orig/converter/gen_segmenter_code.py	2019-08-02 14:22:24.493255546 +0900
++++ mozc-2.23.2815.102/converter/gen_segmenter_code.py	2019-08-01 21:53:13.002788809 +0900
+@@ -79,7 +79,7 @@ def GetRange(pos, pattern, name):
+   pat = re.compile(PatternToRegexp(pattern))
+   min = -1;
+   max = -1;
+-  keys = pos.keys()
++  keys = list(pos.keys())
+   keys.sort()
+ 
+   range = []
+@@ -107,7 +107,7 @@ def GetRange(pos, pattern, name):
+       tmp.append("(%s >= %s && %s <= %s)" % (name, r[0], name, r[1]))
+ 
+   if len(tmp) == 0:
+-    print "FATAL: No rule fiind %s" % (pattern)
++    print("FATAL: No rule fiind %s" % (pattern))
+     sys.exit(-1)
+ 
+   return " || ".join(tmp)
+@@ -115,7 +115,7 @@ def GetRange(pos, pattern, name):
+ def main():
+   pos = ReadPOSID(sys.argv[1], sys.argv[2])
+ 
+-  print HEADER % (len(pos.keys()), len(pos.keys()))
++  print(HEADER % (len(pos.keys()), len(pos.keys())))
+ 
+   for line in open(sys.argv[3], "r"):
+     if len(line) <= 1 or line[0] == '#':
+@@ -124,10 +124,10 @@ def main():
+     result = result.lower()
+     lcond = GetRange(pos, l, "rid") or "true";
+     rcond = GetRange(pos, r, "lid") or "true";
+-    print "  // %s %s %s" % (l, r, result)
+-    print "  if ((%s) && (%s)) { return %s; }" % (lcond, rcond, result)
++    print("  // %s %s %s" % (l, r, result))
++    print("  if ((%s) && (%s)) { return %s; }" % (lcond, rcond, result))
+ 
+-  print FOOTER
++  print(FOOTER)
+ 
+ if __name__ == "__main__":
+   main()
+diff -pruN mozc-2.23.2815.102.orig/data_manager/gen_connection_data.py mozc-2.23.2815.102/data_manager/gen_connection_data.py
+--- mozc-2.23.2815.102.orig/data_manager/gen_connection_data.py	2019-08-02 14:22:24.493255546 +0900
++++ mozc-2.23.2815.102/data_manager/gen_connection_data.py	2019-08-01 21:53:13.002788809 +0900
+@@ -32,7 +32,7 @@
+ 
+ __author__ = "hidehiko"
+ 
+-import cStringIO as StringIO
++import io as BytesIO
+ import itertools
+ import logging
+ import optparse
+@@ -45,7 +45,7 @@ from build_tools import code_generator_u
+ INVALID_COST = 30000
+ INVALID_1BYTE_COST = 255
+ RESOLUTION_FOR_1BYTE = 64
+-FILE_MAGIC = '\xAB\xCD'
++FILE_MAGIC = b'\xAB\xCD'
+ 
+ FALSE_VALUES = ['f', 'false', '0']
+ TRUE_VALUES = ['t', 'true', '1']
+@@ -79,28 +79,28 @@ def ParseConnectionFile(text_connection_
+   # The result is a square matrix.
+   mat_size = pos_size + special_pos_size
+ 
+-  matrix = [[0] * mat_size for _ in xrange(mat_size)]
++  matrix = [[0] * mat_size for _ in range(mat_size)]
+   with open(text_connection_file) as stream:
+     stream = code_generator_util.SkipLineComment(stream)
+     # The first line contains the matrix column/row size.
+-    size = stream.next().rstrip()
++    size = next(stream).rstrip()
+     assert (int(size) == pos_size), '%s != %d' % (size, pos_size)
+ 
+     for array_index, cost in enumerate(stream):
+       cost = int(cost.rstrip())
+-      rid = array_index / pos_size
++      rid = int(array_index / pos_size)
+       lid = array_index % pos_size
+       if rid == 0 and lid == 0:
+         cost = 0
+       matrix[rid][lid] = cost
+ 
+   # Fill INVALID_COST in matrix elements for special POS.
+-  for rid in xrange(pos_size, mat_size):
+-    for lid in xrange(1, mat_size):  # Skip EOS
++  for rid in range(pos_size, mat_size):
++    for lid in range(1, mat_size):  # Skip EOS
+       matrix[rid][lid] = INVALID_COST
+ 
+-  for lid in xrange(pos_size, mat_size):
+-    for rid in xrange(1, mat_size):  # Skip BOS
++  for lid in range(pos_size, mat_size):
++    for rid in range(1, mat_size):  # Skip BOS
+       matrix[rid][lid] = INVALID_COST
+ 
+   return matrix
+@@ -116,7 +116,7 @@ def CreateModeValueList(matrix):
+         # Heuristically, we do not compress INVALID_COST.
+         continue
+       m[cost] = m.get(cost, 0) + 1
+-    mode_value = max(m.iteritems(), key=lambda (_, count): count)[0]
++    mode_value = max(iter(m.items()), key=lambda _: _[1])[0]
+     result.append(mode_value)
+   return result
+ 
+@@ -126,8 +126,8 @@ def CompressMatrixByModeValue(matrix, mo
+   # list, and fill None into the matrix if it equals to the corresponding
+   # mode value.
+   assert len(matrix) == len(mode_value_list)
+-  for row, mode_value in itertools.izip(matrix, mode_value_list):
+-    for index in xrange(len(row)):
++  for row, mode_value in zip(matrix, mode_value_list):
++    for index in range(len(row)):
+       if row[index] == mode_value:
+         row[index] = None
+ 
+@@ -179,7 +179,7 @@ def BuildBinaryData(matrix, mode_value_l
+     resolution = RESOLUTION_FOR_1BYTE
+   else:
+     resolution = 1
+-  stream = StringIO.StringIO()
++  stream = BytesIO.BytesIO()
+ 
+   # Output header.
+   stream.write(FILE_MAGIC)
+@@ -194,7 +194,7 @@ def BuildBinaryData(matrix, mode_value_l
+ 
+   # 4 bytes alignment.
+   if len(mode_value_list) % 2:
+-    stream.write('\x00\x00')
++    stream.write('\x00\x00'.encode())
+ 
+   # Process each row:
+   for row in matrix:
+@@ -237,7 +237,7 @@ def BuildBinaryData(matrix, mode_value_l
+       values_size = len(values) * 2
+ 
+     # Output the bits for a row.
+-    stream.write(struct.pack('<HH', len(compact_bits) / 8, values_size))
++    stream.write(struct.pack('<HH', int(len(compact_bits) / 8), values_size))
+     OutputBitList(chunk_bits, stream)
+     OutputBitList(compact_bits, stream)
+     if use_1byte_cost:
+diff -pruN mozc-2.23.2815.102.orig/dictionary/gen_pos_map.py mozc-2.23.2815.102/dictionary/gen_pos_map.py
+--- mozc-2.23.2815.102.orig/dictionary/gen_pos_map.py	2019-08-02 14:22:24.493255546 +0900
++++ mozc-2.23.2815.102/dictionary/gen_pos_map.py	2019-08-01 21:53:13.002788809 +0900
+@@ -78,7 +78,7 @@ def GeneratePosMap(third_party_pos_map_f
+       result[third_party_pos_name] = mozc_pos
+ 
+   # Create mozc_pos to mozc_pos map.
+-  for key, value in user_pos_map.iteritems():
++  for key, value in user_pos_map.items():
+     if key in result:
+       assert (result[key] == value)
+       continue
+diff -pruN mozc-2.23.2815.102.orig/dictionary/gen_pos_rewrite_rule.py mozc-2.23.2815.102/dictionary/gen_pos_rewrite_rule.py
+--- mozc-2.23.2815.102.orig/dictionary/gen_pos_rewrite_rule.py	2019-08-02 14:22:24.494255545 +0900
++++ mozc-2.23.2815.102/dictionary/gen_pos_rewrite_rule.py	2019-08-01 21:53:13.003788810 +0900
+@@ -112,7 +112,7 @@ def main():
+     ids.append(id)
+ 
+   with open(opts.output, 'wb') as f:
+-    f.write(''.join(chr(id) for id in ids))
++    f.write((''.join(chr(id) for id in ids)).encode())
+ 
+ 
+ if __name__ == '__main__':
+diff -pruN mozc-2.23.2815.102.orig/dictionary/gen_user_pos_data.py mozc-2.23.2815.102/dictionary/gen_user_pos_data.py
+--- mozc-2.23.2815.102.orig/dictionary/gen_user_pos_data.py	2019-08-02 14:22:24.494255545 +0900
++++ mozc-2.23.2815.102/dictionary/gen_user_pos_data.py	2019-08-01 21:53:13.003788810 +0900
+@@ -64,7 +64,7 @@ def OutputUserPosData(user_pos_data, out
+         f.write(struct.pack('<H', conjugation_id))
+ 
+   serialized_string_array_builder.SerializeToFile(
+-      sorted(string_index.iterkeys()), output_string_array)
++      sorted(string_index.keys()), output_string_array)
+ 
+ 
+ def ParseOptions():
+diff -pruN mozc-2.23.2815.102.orig/dictionary/gen_zip_code_seed.py mozc-2.23.2815.102/dictionary/gen_zip_code_seed.py
+--- mozc-2.23.2815.102.orig/dictionary/gen_zip_code_seed.py	2019-08-02 14:22:24.494255545 +0900
++++ mozc-2.23.2815.102/dictionary/gen_zip_code_seed.py	2019-08-01 21:53:13.003788810 +0900
+@@ -83,7 +83,7 @@ class ZipEntry(object):
+     address = unicodedata.normalize('NFKC', self.address)
+     line = '\t'.join([zip_code, '0', '0', str(ZIP_CODE_COST),
+                       address, ZIP_CODE_LABEL])
+-    print line.encode('utf-8')
++    print(line)
+ 
+ 
+ def ProcessZipCodeCSV(file_name):
+diff -pruN mozc-2.23.2815.102.orig/dictionary/zip_code_util.py mozc-2.23.2815.102/dictionary/zip_code_util.py
+--- mozc-2.23.2815.102.orig/dictionary/zip_code_util.py	2018-01-26 18:48:12.000000000 +0900
++++ mozc-2.23.2815.102/dictionary/zip_code_util.py	2019-08-02 14:22:32.959252641 +0900
+@@ -38,7 +38,7 @@ def ReadCSV(file_name):
+   # Do not use csv reader module because it does not support unicode
+   return [GetCells(line) for line in codecs.open(file_name,
+                                                  'r',
+-                                                 'shift_jis',
++                                                 'cp932',
+                                                  errors='replace')]
+ 
+ 
+diff -pruN mozc-2.23.2815.102.orig/gui/character_pad/data/gen_cp932_map.py mozc-2.23.2815.102/gui/character_pad/data/gen_cp932_map.py
+--- mozc-2.23.2815.102.orig/gui/character_pad/data/gen_cp932_map.py	2019-08-02 14:22:24.494255545 +0900
++++ mozc-2.23.2815.102/gui/character_pad/data/gen_cp932_map.py	2019-08-01 21:53:13.003788810 +0900
+@@ -44,7 +44,7 @@ def main():
+   for line in fh.readlines():
+     if line[0] is '#':
+       continue
+-    array = string.split(line)
++    array = line.split()
+     sjis = array[0]
+     ucs2 = array[1]
+     if eval(sjis) < 32 or not IsValidUnicode(ucs2):
+@@ -53,17 +53,17 @@ def main():
+ 
+   keys = sorted(result.keys())
+ 
+-  print "struct CP932MapData {"
+-  print "  unsigned int ucs4;"
+-  print "  unsigned short int sjis;"
+-  print "};"
+-  print ""
+-  print "static const size_t kCP932MapDataSize = %d;" % (len(keys))
+-  print "static const CP932MapData kCP932MapData[] = {"
++  print("struct CP932MapData {")
++  print("  unsigned int ucs4;")
++  print("  unsigned short int sjis;")
++  print("};")
++  print("")
++  print("static const size_t kCP932MapDataSize = %d;" % (len(keys)))
++  print("static const CP932MapData kCP932MapData[] = {")
+   for n in keys:
+-    print "  { %s, %s }," % (n ,result[n])
+-  print "  { 0, 0 }";
+-  print "};"
++    print("  { %s, %s }," % (n ,result[n]))
++  print("  { 0, 0 }");
++  print("};")
+ 
+ if __name__ == "__main__":
+   main()
+diff -pruN mozc-2.23.2815.102.orig/gui/character_pad/data/gen_local_character_map.py mozc-2.23.2815.102/gui/character_pad/data/gen_local_character_map.py
+--- mozc-2.23.2815.102.orig/gui/character_pad/data/gen_local_character_map.py	2019-08-02 14:22:24.494255545 +0900
++++ mozc-2.23.2815.102/gui/character_pad/data/gen_local_character_map.py	2019-08-01 21:53:13.003788810 +0900
+@@ -45,7 +45,7 @@ def LoadJISX0201(filename):
+   for line in fh.readlines():
+     if line[0] is '#':
+       continue
+-    array = string.split(line)
++    array = line.split()
+     jis = array[0].replace('0x', '')
+     ucs2 = array[1].replace('0x', '')
+     if len(jis) == 2:
+@@ -106,13 +106,13 @@ def LoadCP932(filename):
+ def Output(arg):
+   name = arg[0]
+   result = arg[1]
+-  print "static const size_t k%sMapSize = %d;" % (name, len(result))
+-  print "static const mozc::gui::CharacterPalette::LocalCharacterMap k%sMap[] = {" % (name)
++  print("static const size_t k%sMapSize = %d;" % (name, len(result)))
++  print("static const mozc::gui::CharacterPalette::LocalCharacterMap k%sMap[] = {" % (name))
+   for n in result:
+-    print "  { 0x%s, 0x%s }," % (n[0] ,n[1])
+-  print "  { 0, 0 }";
+-  print "};"
+-  print ""
++    print("  { 0x%s, 0x%s }," % (n[0] ,n[1]))
++  print("  { 0, 0 }");
++  print("};")
++  print("")
+ 
+ if __name__ == "__main__":
+   Output(LoadJISX0201(sys.argv[1]))
+diff -pruN mozc-2.23.2815.102.orig/gui/character_pad/data/gen_unicode_blocks.py mozc-2.23.2815.102/gui/character_pad/data/gen_unicode_blocks.py
+--- mozc-2.23.2815.102.orig/gui/character_pad/data/gen_unicode_blocks.py	2019-08-02 14:22:24.494255545 +0900
++++ mozc-2.23.2815.102/gui/character_pad/data/gen_unicode_blocks.py	2019-08-01 21:53:13.004788811 +0900
+@@ -36,7 +36,7 @@ import re
+ re = re.compile('^(.....?)\.\.(.....?); (.+)')
+ 
+ def main():
+-  print "static const mozc::gui::CharacterPalette::UnicodeBlock kUnicodeBlockTable[] = {"
++  print("static const mozc::gui::CharacterPalette::UnicodeBlock kUnicodeBlockTable[] = {")
+   fh = open(sys.argv[1])
+   for line in fh.readlines():
+     if line[0] is '#':
+@@ -47,11 +47,11 @@ def main():
+       end   = int(m.group(2), 16)
+       name = m.group(3)
+       if start <= 0x2FFFF and end <= 0x2FFFF:
+-        print "  { \"%s\", { %d, %d } }," % (name, start, end)
++        print("  { \"%s\", { %d, %d } }," % (name, start, end))
+ 
+-  print "  { NULL, { 0, 0 } }"
+-  print "};"
+-  print ""
++  print("  { NULL, { 0, 0 } }")
++  print("};")
++  print("")
+ 
+ if __name__ == "__main__":
+   main()
+diff -pruN mozc-2.23.2815.102.orig/gui/character_pad/data/gen_unicode_data.py mozc-2.23.2815.102/gui/character_pad/data/gen_unicode_data.py
+--- mozc-2.23.2815.102.orig/gui/character_pad/data/gen_unicode_data.py	2019-08-02 14:22:24.495255545 +0900
++++ mozc-2.23.2815.102/gui/character_pad/data/gen_unicode_data.py	2019-08-01 21:53:13.004788811 +0900
+@@ -47,17 +47,17 @@ def main():
+     if code < 0x2FFFF:
+       results.append("  { %d, \"%s\" }," % (code, desc))
+ 
+-  print "struct UnicodeData {";
+-  print "  char32 ucs4;";
+-  print "  const char *description;";
+-  print "};";
+-  print ""
+-  print "static const size_t kUnicodeDataSize = %d;" % (len(results))
+-  print "static const UnicodeData kUnicodeData[] = {";
++  print("struct UnicodeData {");
++  print("  char32 ucs4;");
++  print("  const char *description;");
++  print("};");
++  print("")
++  print("static const size_t kUnicodeDataSize = %d;" % (len(results)))
++  print("static const UnicodeData kUnicodeData[] = {");
+   for line in results:
+-    print line;
+-  print "  { 0, NULL }";
+-  print "};";
++    print(line);
++  print("  { 0, NULL }");
++  print("};");
+ 
+ if __name__ == "__main__":
+   main()
+diff -pruN mozc-2.23.2815.102.orig/gui/character_pad/data/gen_unihan_data.py mozc-2.23.2815.102/gui/character_pad/data/gen_unihan_data.py
+--- mozc-2.23.2815.102.orig/gui/character_pad/data/gen_unihan_data.py	2019-08-02 14:22:24.495255545 +0900
++++ mozc-2.23.2815.102/gui/character_pad/data/gen_unihan_data.py	2019-08-01 21:53:13.004788811 +0900
+@@ -43,12 +43,12 @@ def Escape(n):
+ 
+ def GetCode(n):
+   if n is not "NULL":
+-    n = string.replace(n, '0-', 'JIS X 0208: 0x')
+-    n = string.replace(n, '1-', 'JIS X 0212: 0x')
+-    n = string.replace(n, '3-', 'JIS X 0213: 0x')
+-    n = string.replace(n, '4-', 'JIS X 0213: 0x')
+-    n = string.replace(n, 'A-', 'Vendors Ideographs: 0x')
+-    n = string.replace(n, '3A', 'JIS X 0213 2000: 0x')
++    n = n.replace('0-', 'JIS X 0208: 0x')
++    n = n.replace('1-', 'JIS X 0212: 0x')
++    n = n.replace('3-', 'JIS X 0213: 0x')
++    n = n.replace('4-', 'JIS X 0213: 0x')
++    n = n.replace('A-', 'Vendors Ideographs: 0x')
++    n = n.replace('3A', 'JIS X 0213 2000: 0x')
+     return "\"%s\"" % n
+   else:
+     return "NULL"
+@@ -59,7 +59,7 @@ def GetRadical(n):
+     m = pat.match(n)
+     if m:
+       result = rs[m.group(1)]
+-      return  "\"%s\"" % (result.encode('string_escape'))
++      return  "\"%s\"" % (''.join(r'\x%02x' % c for c in result.encode()))
+     else:
+       return "NULL"
+   else:
+@@ -89,20 +89,20 @@ def main():
+ 
+   keys = sorted(dic.keys())
+ 
+-  print "struct UnihanData {";
+-  print "  unsigned int ucs4;";
++  print("struct UnihanData {");
++  print("  unsigned int ucs4;");
+ # Since the total strokes defined in Unihan data is Chinese-based
+ # number, we can't use it.
+-#  print "  unsigned char total_strokes;";
+-  print "  const char *japanese_kun;";
+-  print "  const char *japanese_on;";
++#  print("  unsigned char total_strokes;");
++  print("  const char *japanese_kun;");
++  print("  const char *japanese_on;");
+ # Since the radical information defined in Unihan data is Chinese-based
+ # number, we can't use it.
+-#  print "  const char *radical;";
+-  print "  const char *IRG_jsource;";
+-  print "};"
+-  print "static const size_t kUnihanDataSize = %d;" % (len(keys))
+-  print "static const UnihanData kUnihanData[] = {"
++#  print("  const char *radical;");
++  print("  const char *IRG_jsource;");
++  print("};")
++  print("static const size_t kUnihanDataSize = %d;" % (len(keys)))
++  print("static const UnihanData kUnihanData[] = {")
+ 
+   for key in keys:
+     total_strokes = dic[key].get("kTotalStrokes", "0")
+@@ -110,10 +110,10 @@ def main():
+     on =  Escape(dic[key].get("kJapaneseOn", "NULL"))
+     rad = GetRadical(dic[key].get("kRSUnicode", "NULL"))
+     code = GetCode(dic[key].get("kIRG_JSource", "NULL"))
+-#    print " { 0x%s, %s, %s, %s, %s, %s }," % (key, total_strokes, kun, on, rad, code)
+-    print " { 0x%s, %s, %s, %s }," % (key, kun, on, code)
++#    print(" { 0x%s, %s, %s, %s, %s, %s }," % (key, total_strokes, kun, on, rad, code))
++    print(" { 0x%s, %s, %s, %s }," % (key, kun, on, code))
+ 
+-  print "};"
++  print("};")
+ 
+ if __name__ == "__main__":
+   main()
+diff -pruN mozc-2.23.2815.102.orig/prediction/gen_zero_query_data.py mozc-2.23.2815.102/prediction/gen_zero_query_data.py
+--- mozc-2.23.2815.102.orig/prediction/gen_zero_query_data.py	2019-08-02 14:22:24.495255545 +0900
++++ mozc-2.23.2815.102/prediction/gen_zero_query_data.py	2019-08-01 21:53:13.005788811 +0900
+@@ -66,7 +66,7 @@ def ParseCodePoint(s):
+ 
+ def NormalizeString(string):
+   return unicodedata.normalize(
+-      'NFKC', string.decode('utf-8')).encode('utf-8').replace('~', '〜')
++      'NFKC', string).replace('~', '〜')
+ 
+ 
+ def RemoveTrailingNumber(string):
+@@ -84,7 +84,7 @@ def GetReadingsFromDescription(descripti
+   #  - ビル・建物
+   # \xE3\x83\xBB : "・"
+   return [RemoveTrailingNumber(token) for token
+-          in re.split(r'(?:\(|\)|/|\xE3\x83\xBB)+', normalized)]
++          in re.split(r'(?:\(|\)|/|・)+', normalized)]
+ 
+ 
+ def ReadEmojiTsv(stream):
+@@ -119,7 +119,7 @@ def ReadEmojiTsv(stream):
+ 
+     reading_list = []
+     # \xe3\x80\x80 is a full-width space
+-    for reading in re.split(r'(?: |\xe3\x80\x80)+', NormalizeString(readings)):
++    for reading in re.split(r'(?: |　)+', NormalizeString(readings)):
+       if not reading:
+         continue
+       reading_list.append(reading)
+@@ -147,7 +147,7 @@ def ReadEmojiTsv(stream):
+                               emoji, emoji_type, android_pua))
+ 
+   # Sort emoji for each reading.
+-  for key in zero_query_dict.keys():
++  for key in list(zero_query_dict.keys()):
+     zero_query_dict[key].sort(key=lambda e: (e.value, e.emoji_android_pua))
+ 
+   return zero_query_dict
+@@ -188,7 +188,7 @@ def ReadEmoticonTsv(stream):
+     readings = columns[2]
+ 
+     # \xe3\x80\x80 is a full-width space
+-    for reading in re.split(r'(?: |\xe3\x80\x80)+', readings.strip()):
++    for reading in re.split(r'(?: |　)+', readings.strip()):
+       if not reading:
+         continue
+       zero_query_dict[reading].append(
+@@ -210,7 +210,7 @@ def ReadSymbolTsv(stream):
+     symbol = columns[1]
+     readings = columns[2]
+ 
+-    symbol_unicode = symbol.decode('utf-8')
++    symbol_unicode = symbol #.decode('utf-8')
+     if len(symbol_unicode) != 1:
+       continue
+ 
+@@ -222,7 +222,7 @@ def ReadSymbolTsv(stream):
+       continue
+ 
+     # \xe3\x80\x80 is a full-width space
+-    for reading in re.split(r'(?: |\xe3\x80\x80)+', readings.strip()):
++    for reading in re.split(r'(?: |　)+', readings.strip()):
+       if not reading:
+         continue
+       zero_query_dict[reading].append(
+@@ -254,10 +254,10 @@ def IsValidKeyForZeroQuery(key):
+ def MergeZeroQueryData(rule_dict, symbol_dict, emoji_dict, emoticon_dict):
+   """Returnes merged zero query data."""
+   merged = defaultdict(list)
+-  for key in rule_dict.keys():
++  for key in list(rule_dict.keys()):
+     merged[key].extend(rule_dict[key])
+ 
+-  for key in emoji_dict.keys():
++  for key in list(emoji_dict.keys()):
+     if not IsValidKeyForZeroQuery(key):
+       continue
+     # Skips aggressive emoji candidates.
+@@ -266,14 +266,14 @@ def MergeZeroQueryData(rule_dict, symbol
+       continue
+     merged[key].extend(emoji_dict[key])
+ 
+-  for key in emoticon_dict.keys():
++  for key in list(emoticon_dict.keys()):
+     if not IsValidKeyForZeroQuery(key):
+       continue
+     # Merges only up to 3 emoticons.
+     # Example: "にこにこ" have many candidates.
+     merged[key].extend(emoticon_dict[key][:3])
+ 
+-  for key in symbol_dict.keys():
++  for key in list(symbol_dict.keys()):
+     if not IsValidKeyForZeroQuery(key):
+       continue
+     # Skip aggressive emoji candidates.
+diff -pruN mozc-2.23.2815.102.orig/prediction/gen_zero_query_util.py mozc-2.23.2815.102/prediction/gen_zero_query_util.py
+--- mozc-2.23.2815.102.orig/prediction/gen_zero_query_util.py	2019-08-02 14:22:24.495255545 +0900
++++ mozc-2.23.2815.102/prediction/gen_zero_query_util.py	2019-08-01 21:53:13.005788811 +0900
+@@ -69,7 +69,7 @@ def WriteZeroQueryData(zero_query_dict,
+                        output_string_array):
+   # Collect all the strings and assing index in ascending order
+   string_index = {}
+-  for key, entry_list in zero_query_dict.iteritems():
++  for key, entry_list in list(zero_query_dict.items()):
+     string_index[key] = 0
+     for entry in entry_list:
+       string_index[entry.value] = 0
+@@ -78,7 +78,7 @@ def WriteZeroQueryData(zero_query_dict,
+     string_index[s] = i
+ 
+   with open(output_token_array, 'wb') as f:
+-    for key in sorted(zero_query_dict):
++    for key in sorted(zero_query_dict, key=lambda x: x.encode()):
+       for entry in zero_query_dict[key]:
+         f.write(struct.pack('<I', string_index[key]))
+         f.write(struct.pack('<I', string_index[entry.value]))
+diff -pruN mozc-2.23.2815.102.orig/rewriter/gen_counter_suffix_array.py mozc-2.23.2815.102/rewriter/gen_counter_suffix_array.py
+--- mozc-2.23.2815.102.orig/rewriter/gen_counter_suffix_array.py	2019-08-02 14:22:24.496255545 +0900
++++ mozc-2.23.2815.102/rewriter/gen_counter_suffix_array.py	2019-08-01 21:53:13.005788811 +0900
+@@ -63,7 +63,7 @@ def ReadCounterSuffixes(dictionary_files
+       for x, lid, rid, y, value in stream:
+         if (lid == rid) and (lid in ids) and (rid in ids):
+           suffixes.add(value)
+-  return sorted(s.encode('utf-8') for s in suffixes)
++  return sorted(s for s in suffixes)
+ 
+ 
+ def ParseOptions():
+diff -pruN mozc-2.23.2815.102.orig/rewriter/gen_emoji_rewriter_data.py mozc-2.23.2815.102/rewriter/gen_emoji_rewriter_data.py
+--- mozc-2.23.2815.102.orig/rewriter/gen_emoji_rewriter_data.py	2019-08-02 14:22:24.496255545 +0900
++++ mozc-2.23.2815.102/rewriter/gen_emoji_rewriter_data.py	2019-08-01 21:53:13.005788811 +0900
+@@ -79,14 +79,13 @@ def ParseCodePoint(s):
+   return int(s, 16)
+ 
+ 
+-_FULLWIDTH_RE = re.compile(ur'[！-～]')   # U+FF01 - U+FF5E
++_FULLWIDTH_RE = re.compile(r'[！-～]')   # U+FF01 - U+FF5E
+ 
+ 
+ def NormalizeString(string):
+   """Normalize full width ascii characters to half width characters."""
+-  offset = ord(u'Ａ') - ord(u'A')
+-  return _FULLWIDTH_RE.sub(lambda x: unichr(ord(x.group(0)) - offset),
+-                           unicode(string, 'utf-8')).encode('utf-8')
++  offset = ord('Ａ') - ord('A')
++  return _FULLWIDTH_RE.sub(lambda x: chr(ord(x.group(0)) - offset), string)
+ 
+ 
+ def ReadEmojiTsv(stream):
+@@ -159,7 +158,7 @@ def ReadEmojiTsv(stream):
+ def OutputData(emoji_data_list, token_dict,
+                token_array_file, string_array_file):
+   """Output token and string arrays to files."""
+-  sorted_token_dict = sorted(token_dict.iteritems())
++  sorted_token_dict = sorted(token_dict.items())
+ 
+   strings = {}
+   for reading, _ in sorted_token_dict:
+@@ -171,7 +170,7 @@ def OutputData(emoji_data_list, token_di
+     strings[docomo_description] = 0
+     strings[softbank_description] = 0
+     strings[kddi_description] = 0
+-  sorted_strings = sorted(strings.iterkeys())
++  sorted_strings = sorted(strings.keys())
+   for index, s in enumerate(sorted_strings):
+     strings[s] = index
+ 
+diff -pruN mozc-2.23.2815.102.orig/rewriter/gen_reading_correction_data.py mozc-2.23.2815.102/rewriter/gen_reading_correction_data.py
+--- mozc-2.23.2815.102.orig/rewriter/gen_reading_correction_data.py	2019-08-02 14:22:24.496255545 +0900
++++ mozc-2.23.2815.102/rewriter/gen_reading_correction_data.py	2019-08-01 21:53:13.005788811 +0900
+@@ -60,6 +60,9 @@ def ParseOptions():
+   return parser.parse_args()[0]
+ 
+ 
++def cmp(a, b):
++  return (a > b) - (a < b)
++
+ def WriteData(input_path, output_value_array_path, output_error_array_path,
+               output_correction_array_path):
+   outputs = []
+@@ -73,7 +76,7 @@ def WriteData(input_path, output_value_a
+ 
+   # In order to lookup the entries via |error| with binary search,
+   # sort outputs here.
+-  outputs.sort(lambda x, y: cmp(x[1], y[1]) or cmp(x[0], y[0]))
++  outputs.sort(key=lambda z: cmp(z[0][1], z[1][1]) or cmp(z[0][0], z[1][0]))
+ 
+   serialized_string_array_builder.SerializeToFile(
+       [value for (value, _, _) in outputs], output_value_array_path)
+diff -pruN mozc-2.23.2815.102.orig/rewriter/gen_single_kanji_rewriter_data.py mozc-2.23.2815.102/rewriter/gen_single_kanji_rewriter_data.py
+--- mozc-2.23.2815.102.orig/rewriter/gen_single_kanji_rewriter_data.py	2019-08-02 14:22:24.496255545 +0900
++++ mozc-2.23.2815.102/rewriter/gen_single_kanji_rewriter_data.py	2019-08-01 21:53:13.006788812 +0900
+@@ -46,13 +46,16 @@ from build_tools import code_generator_u
+ from build_tools import serialized_string_array_builder
+ 
+ 
++def cmp(a, b):
++  return (a > b) - (a < b)
++
+ def ReadSingleKanji(stream):
+   """Parses single kanji dictionary data from stream."""
+   stream = code_generator_util.SkipLineComment(stream)
+   stream = code_generator_util.ParseColumnStream(stream, num_column=2)
+   outputs = list(stream)
+   # For binary search by |key|, sort outputs here.
+-  outputs.sort(lambda x, y: cmp(x[0], y[0]))
++  outputs.sort(key=lambda z: cmp(z[0][0], z[1][0]))
+ 
+   return outputs
+ 
+@@ -72,7 +75,7 @@ def ReadVariant(stream):
+       variant_items.append([target, original, len(variant_types) - 1])
+ 
+   # For binary search by |target|, sort variant items here.
+-  variant_items.sort(lambda x, y: cmp(x[0], y[0]))
++  variant_items = sorted(variant_items, key=lambda z: z[0].encode())
+ 
+   return (variant_types, variant_items)
+ 
+diff -pruN mozc-2.23.2815.102.orig/unix/ibus/gen_mozc_xml.py mozc-2.23.2815.102/unix/ibus/gen_mozc_xml.py
+--- mozc-2.23.2815.102.orig/unix/ibus/gen_mozc_xml.py	2019-08-02 14:22:24.496255545 +0900
++++ mozc-2.23.2815.102/unix/ibus/gen_mozc_xml.py	2019-08-01 21:53:13.006788812 +0900
+@@ -74,7 +74,7 @@ CPP_FOOTER = """}  // namespace
+ 
+ 
+ def OutputXmlElement(param_dict, element_name, value):
+-  print '  <%s>%s</%s>' % (element_name, (value % param_dict), element_name)
++  print('  <%s>%s</%s>' % (element_name, (value % param_dict), element_name))
+ 
+ 
+ def OutputXml(param_dict, component, engine_common, engines, setup_arg):
+@@ -90,26 +90,26 @@ def OutputXml(param_dict, component, eng
+     engines: A dictionary from a property name to a list of property values of
+         engines. For example, {'name': ['mozc-jp', 'mozc', 'mozc-dv']}.
+   """
+-  print '<component>'
++  print('<component>')
+   for key in component:
+     OutputXmlElement(param_dict, key, component[key])
+-  print '<engines>'
++  print('<engines>')
+   for i in range(len(engines['name'])):
+-    print '<engine>'
++    print('<engine>')
+     for key in engine_common:
+       OutputXmlElement(param_dict, key, engine_common[key])
+     if setup_arg:
+       OutputXmlElement(param_dict, 'setup', ' '.join(setup_arg))
+     for key in engines:
+       OutputXmlElement(param_dict, key, engines[key][i])
+-    print '</engine>'
+-  print '</engines>'
+-  print '</component>'
++    print('</engine>')
++  print('</engines>')
++  print('</component>')
+ 
+ 
+ def OutputCppVariable(param_dict, prefix, variable_name, value):
+-  print 'const char k%s%s[] = "%s";' % (prefix, variable_name.capitalize(),
+-                                        (value % param_dict))
++  print('const char k%s%s[] = "%s";' % (prefix, variable_name.capitalize(),
++                                        (value % param_dict)))
+ 
+ 
+ def OutputCpp(param_dict, component, engine_common, engines):
+@@ -122,18 +122,18 @@ def OutputCpp(param_dict, component, eng
+     engines: ditto.
+   """
+   guard_name = 'MOZC_UNIX_IBUS_MAIN_H_'
+-  print CPP_HEADER % (guard_name, guard_name)
++  print(CPP_HEADER % (guard_name, guard_name))
+   for key in component:
+     OutputCppVariable(param_dict, 'Component', key, component[key])
+   for key in engine_common:
+     OutputCppVariable(param_dict, 'Engine', key, engine_common[key])
+   for key in engines:
+-    print 'const char* kEngine%sArray[] = {' % key.capitalize()
++    print('const char* kEngine%sArray[] = {' % key.capitalize())
+     for i in range(len(engines[key])):
+-      print '"%s",' % (engines[key][i] % param_dict)
+-    print '};'
+-  print 'const size_t kEngineArrayLen = %s;' % len(engines['name'])
+-  print CPP_FOOTER % guard_name
++      print('"%s",' % (engines[key][i] % param_dict))
++    print('};')
++  print('const size_t kEngineArrayLen = %s;' % len(engines['name']))
++  print(CPP_FOOTER % guard_name)
+ 
+ 
+ def CheckIBusVersion(options, minimum_version):
+diff -pruN mozc-2.23.2815.102.orig/usage_stats/gen_stats_list.py mozc-2.23.2815.102/usage_stats/gen_stats_list.py
+--- mozc-2.23.2815.102.orig/usage_stats/gen_stats_list.py	2019-08-02 14:22:24.496255545 +0900
++++ mozc-2.23.2815.102/usage_stats/gen_stats_list.py	2019-08-01 21:53:13.006788812 +0900
+@@ -47,13 +47,13 @@ def GetStatsNameList(filename):
+ 
+ def main():
+   stats_list = GetStatsNameList(sys.argv[1])
+-  print '// This header file is generated by gen_stats_list.py'
++  print('// This header file is generated by gen_stats_list.py')
+   for stats in stats_list:
+-    print 'const char k%s[] = "%s";' % (stats, stats)
+-  print 'const char *kStatsList[] = {'
++    print('const char k%s[] = "%s";' % (stats, stats))
++  print('const char *kStatsList[] = {')
+   for stats in stats_list:
+-    print '  k%s,' % (stats)
+-  print '};'
++    print('  k%s,' % (stats))
++  print('};')
+ 
+ 
+ if __name__ == '__main__':
