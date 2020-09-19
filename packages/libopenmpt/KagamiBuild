@@ -1,0 +1,18 @@
+# Description: A cross-platform C++ and C library to decode tracked music files (modules) into a raw PCM audio stream
+# URL:         http://lib.openmpt.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libvorbis mpg123 portaudio libsndfile pulseaudio
+# Section:     audio
+
+name=libopenmpt
+version=0.5.2
+release=1
+source=("https://lib.openmpt.org/files/libopenmpt/src/$name-${version}+release.autotools.tar.gz")
+
+build() {
+	cd "$SRC"/$name-${version}+release.autotools
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
