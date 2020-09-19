@@ -1,0 +1,21 @@
+# Description: Access, organize, and share your photos on GNOME
+# URL:         https://wiki.gnome.org/Apps/Photos
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson yelp-tools exempi gegl geocode-glib gexiv2 gfbgraph grilo-plugins gtk3 lcms libdazzle libexif libraw tracker-miners
+# Section:     gnome
+
+name=gnome-photos
+version=3.34.2
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/gnome-photos/0001-better-privacy.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
+}

@@ -1,0 +1,631 @@
+From 84a0b2e4e80ce6a91dde8ce194a886121f36b6fa Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 19 Sep 2020 19:17:17 +0900
+Subject: [PATCH] better privacy
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build        |   2 -
+ src/application.js |  28 +------
+ src/documents.js   | 179 +---------------------------------------
+ src/meson.build    |   4 +-
+ src/miners.js      |  12 ---
+ src/sharing.js     | 201 ---------------------------------------------
+ 6 files changed, 4 insertions(+), 422 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 7a6d1ad0..30ea472e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -75,9 +75,7 @@ documents_deps = [
+ ]
+ 
+ # we just check their existence for gir
+-dependency('libgdata')
+ dependency('goa-1.0')
+-dependency('zapojit-0.0')
+ 
+ # Although GTK+ 3.10 includes hi-dpi functionality, it does not require a cairo with
+ # cairo_surface_set_device_scale(), which we also need if we're to support hi-dpi,
+diff --git a/src/application.js b/src/application.js
+index eadcd43f..1d934b7d 100644
+--- a/src/application.js
++++ b/src/application.js
+@@ -192,23 +192,11 @@ var Application = GObject.registerClass({
+     _createMiners(callback) {
+         let count = 3;
+ 
+-        this.gdataMiner = new Miners.GDataMiner(() => {
+-            count--;
+-            if (count == 0)
+-                callback();
+-        });
+-
+         this.owncloudMiner = new Miners.OwncloudMiner(() => {
+             count--;
+             if (count == 0)
+                 callback();
+         });
+-
+-        this.zpjMiner = new Miners.ZpjMiner(() => {
+-            count--;
+-            if (count == 0)
+-                callback();
+-        });
+     }
+ 
+     _refreshMinerNow(miner) {
+@@ -248,12 +236,7 @@ var Application = GObject.registerClass({
+ 
+     _refreshMiners() {
+         if (sourceManager.hasProviderType('google')) {
+-            try {
+-                // startup a refresh of the gdocs cache
+-                this._refreshMinerNow(this.gdataMiner);
+-            } catch (e) {
+-                logError(e, 'Unable to start GData miner');
+-            }
++            logError(e, 'Unable to start GData miner');
+         }
+ 
+         if (sourceManager.hasProviderType('owncloud')) {
+@@ -266,12 +249,7 @@ var Application = GObject.registerClass({
+         }
+ 
+         if (sourceManager.hasProviderType('windows_live')) {
+-            try {
+-                // startup a refresh of the skydrive cache
+-                this._refreshMinerNow(this.zpjMiner);
+-            } catch (e) {
+-                logError(e, 'Unable to start Zpj miner');
+-            }
++            logError(e, 'Unable to start Zpj miner');
+         }
+     }
+ 
+@@ -300,9 +278,7 @@ var Application = GObject.registerClass({
+         });
+         this.minersRunning = [];
+ 
+-        this.gdataMiner = null;
+         this.owncloudMiner = null;
+-        this.zpjMiner = null;
+     }
+ 
+     _themeChanged(gtkSettings) {
+diff --git a/src/documents.js b/src/documents.js
+index 752b5714..dda386ce 100644
+--- a/src/documents.js
++++ b/src/documents.js
+@@ -27,11 +27,9 @@ const Gio = imports.gi.Gio;
+ const Gd = imports.gi.Gd;
+ const GdPrivate = imports.gi.GdPrivate;
+ const Gdk = imports.gi.Gdk;
+-const GData = imports.gi.GData;
+ const GLib = imports.gi.GLib;
+ const GnomeDesktop = imports.gi.GnomeDesktop;
+ const Gtk = imports.gi.Gtk;
+-const Zpj = imports.gi.Zpj;
+ const _ = imports.gettext.gettext;
+ 
+ const Mainloop = imports.mainloop;
+@@ -355,7 +353,6 @@ const DocCommon = class DocCommon {
+         if (!useCache) {
+             Utils.debug('Downloading ' + this.constructor.name + ' ' + this.id + ' to ' + this.uriToLoad +
+                         ': bypass cache ');
+-            this.downloadImpl(localFile, cancellable, callback);
+             return;
+         }
+ 
+@@ -372,7 +369,6 @@ const DocCommon = class DocCommon {
+                 } catch (e) {
+                     Utils.debug('Downloading ' + this.constructor.name + ' ' + this.id + ' to ' + this.uriToLoad +
+                                 ': cache miss');
+-                    this.downloadImpl(localFile, cancellable, callback);
+                     return;
+                 }
+ 
+@@ -384,14 +380,9 @@ const DocCommon = class DocCommon {
+ 
+                 Utils.debug('Downloading ' + this.constructor.name + ' ' + this.id + ' to ' + this.uriToLoad +
+                             ': cache stale (' + this.mtime + ' > ' + cacheMtime + ')');
+-                this.downloadImpl(localFile, cancellable, callback);
+             });
+     }
+ 
+-    downloadImpl(localFile, cancellable, callback) {
+-        throw(new Error('DocCommon implementations must override downloadImpl'));
+-    }
+-
+     load(passwd, cancellable, callback) {
+         Utils.debug('Loading ' + this.constructor.name + ' ' + this.id);
+ 
+@@ -863,10 +854,6 @@ var LocalDocument = class LocalDocument extends DocCommon {
+         this.typeDescription = description;
+     }
+ 
+-    downloadImpl(localFile, cancellable, callback) {
+-        throw(new Error('LocalDocuments need not be downloaded'));
+-    }
+-
+     load(passwd, cancellable, callback) {
+         Utils.debug('Loading ' + this.constructor.name + ' ' + this.id);
+ 
+@@ -940,86 +927,6 @@ const GoogleDocument = class GoogleDocument extends DocCommon {
+         this.sourceName = _("Google");
+     }
+ 
+-    createGDataEntry(cancellable, callback) {
+-        let source = Application.sourceManager.getItemById(this.resourceUrn);
+-
+-        let authorizer = new GData.GoaAuthorizer({ goa_object: source.object });
+-        let service = new GData.DocumentsService({ authorizer: authorizer });
+-        let gdata_id = this.identifier.substring(GOOGLE_PREFIX.length);
+-
+-        service.query_single_entry_async
+-            (GData.DocumentsService.get_primary_authorization_domain(),
+-             gdata_id, null,
+-             GData.DocumentsText,
+-             cancellable,
+-             (object, res) => {
+-                 let entry = null;
+-                 let exception = null;
+-
+-                 try {
+-                     entry = object.query_single_entry_finish(res);
+-                 } catch (e) {
+-                     exception = e;
+-                 }
+-
+-                 callback(entry, service, exception);
+-             });
+-    }
+-
+-    downloadImpl(localFile, cancellable, callback) {
+-        this.createGDataEntry(cancellable, (entry, service, error) => {
+-            if (error) {
+-                callback(false, error);
+-                return;
+-            }
+-
+-            Utils.debug('Created GDataEntry for ' + this.id);
+-
+-            let inputStream;
+-
+-            try {
+-                inputStream = entry.download(service, 'pdf', cancellable);
+-            } catch(e) {
+-                callback(false, e);
+-                return;
+-            }
+-
+-            Utils.replaceFile(localFile, inputStream, cancellable, (error) => {
+-                callback(false, error);
+-            });
+-        });
+-    }
+-
+-    createThumbnail(callback) {
+-        this.createGDataEntry(null, (entry, service, exception) => {
+-            if (exception) {
+-                callback(false);
+-                return;
+-            }
+-
+-            let uri = entry.get_thumbnail_uri();
+-            if (!uri) {
+-                callback(false);
+-                return;
+-            }
+-
+-            let authorizationDomain = GData.DocumentsService.get_primary_authorization_domain();
+-            let inputStream = new GData.DownloadStream({ service: service,
+-                                                         authorization_domain: authorizationDomain,
+-                                                         download_uri: uri });
+-
+-            let path = GnomeDesktop.desktop_thumbnail_path_for_uri (this.uri,
+-                                                                    GnomeDesktop.DesktopThumbnailSize.NORMAL);
+-            let dirPath = GLib.path_get_dirname(path);
+-            GLib.mkdir_with_parents(dirPath, 448);
+-
+-            let downloadFile = Gio.File.new_for_path(path);
+-            Utils.replaceFile(downloadFile, inputStream, null, (error) => {
+-                callback(!!error);
+-            });
+-        });
+-    }
+-
+     updateTypeDescription() {
+         let description;
+ 
+@@ -1128,24 +1035,6 @@ const OwncloudDocument = class OwncloudDocument extends DocCommon {
+         this.typeDescription = description;
+     }
+ 
+-    downloadImpl(localFile, cancellable, callback) {
+-        let remoteFile = Gio.File.new_for_uri(this.uri);
+-        remoteFile.read_async(GLib.PRIORITY_DEFAULT, cancellable, (object, res) => {
+-            let inputStream;
+-
+-            try {
+-                inputStream = object.read_finish(res);
+-            } catch (e) {
+-                callback(false, e);
+-                return;
+-            }
+-
+-            Utils.replaceFile(localFile, inputStream, cancellable, (error) => {
+-                callback(false, error);
+-            });
+-        });
+-    }
+-
+     canEdit() {
+         return false;
+     }
+@@ -1195,54 +1084,6 @@ const SkydriveDocument = class SkydriveDocument extends DocCommon {
+         this.uriToLoad = localFile.get_uri();
+     }
+ 
+-    _createZpjEntry(cancellable, callback) {
+-        let source = Application.sourceManager.getItemById(this.resourceUrn);
+-
+-        let authorizer = new Zpj.GoaAuthorizer({ goa_object: source.object });
+-        let service = new Zpj.Skydrive({ authorizer: authorizer });
+-        let zpj_id = this.identifier.substring(SKYDRIVE_PREFIX.length);
+-
+-        service.query_info_from_id_async
+-            (zpj_id, cancellable, (object, res) => {
+-                let entry = null;
+-                let exception = null;
+-
+-                try {
+-                    entry = object.query_info_from_id_finish(res);
+-                } catch (e) {
+-                    exception = e;
+-                }
+-
+-                callback(entry, service, exception);
+-            });
+-    }
+-
+-    downloadImpl(localFile, cancellable, callback) {
+-        this._createZpjEntry(cancellable, (entry, service, error) => {
+-            if (error) {
+-                callback(false, error);
+-                return;
+-            }
+-
+-            Utils.debug('Created ZpjEntry for ' + this.id);
+-
+-            service.download_file_to_stream_async(entry, cancellable, (object, res) => {
+-                let inputStream;
+-
+-                try {
+-                    inputStream = object.download_file_to_stream_finish(res);
+-                } catch (e) {
+-                    callback(false, e);
+-                    return;
+-                }
+-
+-                Utils.replaceFile(localFile, inputStream, cancellable, (error) => {
+-                    callback(false, error);
+-                });
+-            });
+-        });
+-    }
+-
+     updateTypeDescription() {
+         let description;
+ 
+@@ -1419,25 +1260,7 @@ var DocumentManager = class DocumentManager extends Manager.BaseManager {
+ 
+     _humanizeError(error) {
+         let message = error.message;
+-        if (error.domain == GData.ServiceError) {
+-            switch (error.code) {
+-            case GData.ServiceError.NETWORK_ERROR:
+-                message = _("Please check the network connection.");
+-                break;
+-            case GData.ServiceError.PROXY_ERROR:
+-                message = _("Please check the network proxy settings.");
+-                break;
+-            case GData.ServiceError.AUTHENTICATION_REQUIRED:
+-                message = _("Unable to sign in to the document service.");
+-                break;
+-            case GData.ServiceError.NOT_FOUND:
+-                message = _("Unable to locate this document.");
+-                break;
+-            default:
+-                message = _("Hmm, something is fishy (%d).").format(error.code);
+-                break;
+-            }
+-        } else if (error.domain == Gio.IOErrorEnum) {
++        if (error.domain == Gio.IOErrorEnum) {
+             switch (error.code) {
+             case Gio.IOErrorEnum.NOT_SUPPORTED:
+                 message = _("LibreOffice support is not available. Please contact your system administrator.");
+diff --git a/src/meson.build b/src/meson.build
+index 317e0320..8fe89d38 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -139,13 +139,11 @@ libgdprivate = shared_library(
+ )
+ 
+ gir_incs = [
+-  'GData-0.0',
+   'GnomeDesktop-3.0',
+   'Goa-1.0',
+   'Gtk-3.0',
+   'EvinceDocument-3.0',
+-  'EvinceView-3.0',
+-  'Zpj-0.0'
++  'EvinceView-3.0'
+ ]
+ 
+ gnome.generate_gir(
+diff --git a/src/miners.js b/src/miners.js
+index 323d3ab6..3732f2b7 100644
+--- a/src/miners.js
++++ b/src/miners.js
+@@ -40,20 +40,8 @@ function _makeMinerProxy(iface, path, callback) {
+     return miner;
+ }
+ 
+-function GDataMiner(callback) {
+-    return _makeMinerProxy('org.gnome.OnlineMiners.GData',
+-                           '/org/gnome/OnlineMiners/GData',
+-                           callback);
+-}
+-
+ function OwncloudMiner(callback) {
+     return _makeMinerProxy('org.gnome.OnlineMiners.Owncloud',
+                            '/org/gnome/OnlineMiners/Owncloud',
+                            callback);
+ }
+-
+-function ZpjMiner(callback) {
+-    return _makeMinerProxy('org.gnome.OnlineMiners.Zpj',
+-                           '/org/gnome/OnlineMiners/Zpj',
+-                           callback);
+-}
+diff --git a/src/sharing.js b/src/sharing.js
+index a46a7bed..a1c942c0 100644
+--- a/src/sharing.js
++++ b/src/sharing.js
+@@ -40,7 +40,6 @@
+  */
+ 
+ const Gd = imports.gi.Gd;
+-const GData = imports.gi.GData;
+ const GObject = imports.gi.GObject;
+ const Gtk = imports.gi.Gtk;
+ const _ = imports.gettext.gettext;
+@@ -72,21 +71,10 @@ var SharingDialog = GObject.registerClass(class SharingDialog extends Gtk.Dialog
+         this._doc = Application.documentManager.getItemById(urn);
+ 
+         let source = Application.sourceManager.getItemById(this._doc.resourceUrn);
+-        let authorizer = new GData.GoaAuthorizer({ goa_object: source.object });
+-        this._service = new GData.DocumentsService({ authorizer: authorizer });
+ 
+         this._entry = null;
+         this._feed = null;
+ 
+-        this._doc.createGDataEntry(null, (entry, service, exception) => {
+-            if (exception) {
+-                logError(exception, 'Error getting GData Entry');
+-                return;
+-            }
+-            this._entry = entry;
+-            this._refreshEntryACL();
+-        });
+-
+         this._docShare = DocumentShareState.UNKNOWN;
+         this._pubEdit = false;
+         this._changePermissionVisible = false;
+@@ -378,27 +366,6 @@ var SharingDialog = GObject.registerClass(class SharingDialog extends Gtk.Dialog
+         let pubEdit = false;
+         let docShare = DocumentShareState.PRIVATE;
+ 
+-        entries.forEach((entry) => {
+-            let [type, value] = entry.get_scope();
+-            let role = entry.get_role();
+-
+-            if (value != null) {
+-                values.push({ name: value, role: this._getUserRoleString(role) });
+-
+-                if ((accountNames.indexOf(value) != -1) &&
+-                    (role == GData.DOCUMENTS_ACCESS_ROLE_WRITER || role == GData.DOCUMENTS_ACCESS_ROLE_OWNER))
+-                    allowChanges = true;
+-            } else {
+-                if (role != GData.ACCESS_ROLE_NONE)
+-                    docShare = DocumentShareState.PUBLIC;
+-                if (role == GData.DOCUMENTS_ACCESS_ROLE_WRITER)
+-                    pubEdit = true;
+-            }
+-
+-            if (role == GData.DOCUMENTS_ACCESS_ROLE_OWNER)
+-                ownerId = value;
+-        });
+-
+         this._ensureTreeview();
+ 
+         // Set values in the treemodel
+@@ -427,174 +394,6 @@ var SharingDialog = GObject.registerClass(class SharingDialog extends Gtk.Dialog
+         }
+     }
+ 
+-    // Get the role for the new contact from the combobox
+-    _getNewContactRule() {
+-        let activeItem = this._comboBoxText.get_active();
+-        let role;
+-
+-        if (activeItem == 0)
+-            role = GData.DOCUMENTS_ACCESS_ROLE_WRITER;
+-        else if (activeItem == 1)
+-            role = GData.DOCUMENTS_ACCESS_ROLE_READER;
+-
+-        return new GData.AccessRule({ role: role,
+-                                      scope_type: GData.ACCESS_SCOPE_USER,
+-                                      scope_value: this._contactEntry.get_text() });
+-    }
+-
+-    // Send the new contact and its permissions to Google Docs
+-    _onAddClicked() {
+-        let accessRule = this._getNewContactRule();
+-        let aclLink = this._entry.look_up_link(GData.LINK_ACCESS_CONTROL_LIST);
+-
+-        this._contactEntry.set_sensitive(false);
+-
+-        this._service.insert_entry_async(
+-            GData.DocumentsService.get_primary_authorization_domain(),
+-            aclLink.get_uri(), accessRule, null, (service, res) => {
+-                this._contactEntry.set_sensitive(true);
+-                this._contactEntry.set_text('');
+-
+-                try {
+-                    this._service.insert_entry_finish(res);
+-                    this._refreshEntryACL();
+-                } catch(e) {
+-                    logError(e, 'Error inserting new ACL rule');
+-                    this._showErrorDialog(_("The document was not updated"));
+-                }
+-            });
+-    }
+-
+-    // Get the scope from the radiobuttons
+-    _getNewScopeType() {
+-        let scope = GData.ACCESS_SCOPE_USER;
+-        if (this._publicRadio.get_active())
+-            scope = GData.ACCESS_SCOPE_DEFAULT;
+-
+-        return scope;
+-    }
+-
+-    // Get the role from the checkbox
+-    _getNewRole() {
+-        let role = GData.DOCUMENTS_ACCESS_ROLE_READER;
+-        if (this._pubEditCheck.get_active())
+-            role = GData.DOCUMENTS_ACCESS_ROLE_WRITER;
+-
+-        return role;
+-    }
+-
+-    _insertNewPermission(scopeType, role) {
+-        let aclLink = this._entry.look_up_link(GData.LINK_ACCESS_CONTROL_LIST);
+-        let accessRule = new GData.AccessRule({ scope_type: scopeType,
+-                                                role: role });
+-
+-        this._service.insert_entry_async(
+-            GData.DocumentsService.get_primary_authorization_domain(),
+-            aclLink.get_uri(), accessRule, null, (service, res) => {
+-                try {
+-                    service.insert_entry_finish(res);
+-                    this._refreshEntryACL();
+-                } catch(e) {
+-                    logError(e, 'Error inserting new ACL scope for document');
+-                    this._showErrorDialog(_("The document was not updated"));
+-                }
+-
+-                this._permissionChangeFinished();
+-            });
+-    }
+-
+-    _sendNewDocumentRule() {
+-        let newScopeType = this._getNewScopeType();
+-        let newRole = this._getNewRole();
+-        let entries = this._feed.get_entries();
+-        let updateType = DocumentUpdateType.NONE;
+-        let idx = 0;
+-
+-        for (idx = 0; idx < entries.length; idx++) {
+-            let entry = entries[idx];
+-            let [type, value] = entry.get_scope();
+-            let role = entry.get_role();
+-
+-            if (type != GData.ACCESS_SCOPE_DEFAULT)
+-                continue;
+-
+-            if (newScopeType == GData.ACCESS_SCOPE_USER)
+-                updateType = DocumentUpdateType.DELETE_PUBLIC;
+-            else if ((role != newRole) && (role != GData.ACCESS_ROLE_NONE))
+-                updateType = DocumentUpdateType.CHANGE_PUBLIC;
+-            else if (role == GData.ACCESS_ROLE_NONE)
+-                updateType = DocumentUpdateType.DELETE_SHARE_LINK;
+-
+-            break;
+-        }
+-
+-        if ((updateType == DocumentUpdateType.NONE) && (idx == entries.length)
+-            && (newScopeType == GData.ACCESS_SCOPE_DEFAULT))
+-            updateType = DocumentUpdateType.ADD_PUBLIC;
+-
+-        if (updateType == DocumentUpdateType.NONE) {
+-            this._permissionChangeFinished();
+-            return;
+-        }
+-
+-        if (updateType == DocumentUpdateType.ADD_PUBLIC) {
+-            // If we are making the doc public, send a new permission
+-            this._insertNewPermission(newScopeType, newRole);
+-        } else if (updateType == DocumentUpdateType.CHANGE_PUBLIC) {
+-            // If we are changing the role, update the entry
+-            let accessRule = entries[idx];
+-            accessRule.set_role(newRole);
+-
+-            this._service.update_entry_async(
+-                GData.DocumentsService.get_primary_authorization_domain(),
+-                accessRule, null, (service, res) => {
+-                    try {
+-                        service.update_entry_finish(res);
+-                        this._refreshEntryACL();
+-                    } catch(e) {
+-                        logError(e, 'Error updating ACL scope for document');
+-                        this._showErrorDialog(_("The document was not updated"));
+-                    }
+-
+-                    this._permissionChangeFinished();
+-                });
+-        } else if (updateType == DocumentUpdateType.DELETE_PUBLIC) {
+-            // If we are changing the permission to private, delete the public entry.
+-            let accessRule = entries[idx];
+-
+-            this._service.delete_entry_async(
+-                GData.DocumentsService.get_primary_authorization_domain(),
+-                accessRule, null, (service, res) => {
+-                    try {
+-                        service.delete_entry_finish(res);
+-                        this._refreshEntryACL();
+-                    } catch(e) {
+-                        logError(e, 'Error deleting ACL scope for document');
+-                        this._showErrorDialog(_("The document was not updated"));
+-                    }
+-
+-                    this._permissionChangeFinished();
+-                });
+-        } else if (updateType == DocumentUpdateType.DELETE_SHARE_LINK) {
+-            // Workaround if the doc is shared with link: step 1 delete shared with link permission.
+-            let accessRule = entries[idx];
+-
+-            this._service.delete_entry_async(
+-                GData.DocumentsService.get_primary_authorization_domain(),
+-                accessRule, null, (service, res) => {
+-                    try {
+-                        service.delete_entry_finish(res);
+-
+-                        // Workaround if the doc is shared with link: step 2 add the new public permisssion.
+-                        this._insertNewPermission(newScopeType, newRole);
+-                    } catch(e) {
+-                        logError(e, 'Error deleting ACL scope for document');
+-                        this._showErrorDialog(_("The document was not updated"));
+-                    }
+-                });
+-        }
+-    }
+-
+     _isValidEmail() {
+         let emailString = this._contactEntry.get_text();
+         // Use Ross Kendell's RegEx to check for valid email address
+-- 
+2.28.0
+
