@@ -1,7 +1,7 @@
 # Description: A system designed to make installation and updates of packages easier
 # URL:         https://www.freedesktop.org/software/PackageKit/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson intltool gobject-introspection vala bash-completion polkit sqlite libdnf gtk3 gst-plugins-base
+# Depends on:  meson intltool gobject-introspection vala bash-completion polkit sqlite libzypp gtk3 gst-plugins-base
 # Section:     admin
 
 name=packagekit
@@ -11,6 +11,8 @@ source=("https://www.freedesktop.org/software/PackageKit/releases/PackageKit-$ve
 
 build() {
 	cd "$SRC"/PackageKit-$version
+	patch -Np1 -i "$STUFF"/packagekit/0001-adopt-for-Ataraxia-Linux.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/PackageKit-$version \
@@ -18,7 +20,7 @@ build() {
 		-Ddbus_sys=/usr/share/dbus-1/system.d \
 		-Dgtk_doc=false \
 		-Doffline_update=true \
-		-Dpackaging_backend=dnf \
+		-Dpackaging_backend=zypp \
 		-Dsystemd=true
 	ninja
 	DESTDIR="$PKG" ninja install

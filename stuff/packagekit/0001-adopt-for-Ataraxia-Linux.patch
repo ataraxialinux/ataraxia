@@ -1,0 +1,183 @@
+From 40fe823229042bbcab8601d9f10684059635c6f8 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 25 Jun 2020 10:08:16 +0900
+Subject: [PATCH] adopt for Ataraxia Linux
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ backends/zypp/pk-backend-zypp.cpp | 108 ++++++++++++++++++++++--------
+ meson.build                       |   2 +-
+ 2 files changed, 80 insertions(+), 30 deletions(-)
+
+diff --git a/backends/zypp/pk-backend-zypp.cpp b/backends/zypp/pk-backend-zypp.cpp
+index 62b78ec..2496196 100644
+--- a/backends/zypp/pk-backend-zypp.cpp
++++ b/backends/zypp/pk-backend-zypp.cpp
+@@ -778,48 +778,90 @@ get_enum_group (const string &group_)
+ {
+ 	string group(str::toLower(group_));
+ 
+-	if (group.find ("amusements") != string::npos) {
+-		return PK_GROUP_ENUM_GAMES;
+-	} else if (group.find ("development") != string::npos) {
+-		return PK_GROUP_ENUM_PROGRAMMING;
+-	} else if (group.find ("hardware") != string::npos) {
++	if (group.find ("base") != string::npos) {
+ 		return PK_GROUP_ENUM_SYSTEM;
+-	} else if (group.find ("archiving") != string::npos
+-		  || group.find("clustering") != string::npos
+-		  || group.find("system/monitoring") != string::npos
+-		  || group.find("databases") != string::npos
+-		  || group.find("system/management") != string::npos) {
++	} else if (group.find ("metapackages") != string::npos) {
++		return PK_GROUP_ENUM_COLLECTIONS;
++	} else if  (group.find ("kernel") != string::npos) {
++		return PK_GROUP_ENUM_SYSTEM;
++	} else if (group.find ("security") != string::npos) {
++		return PK_GROUP_ENUM_SECURITY;
++	} else if (group.find ("libs") != string::npos) {
++		return PK_GROUP_ENUM_SYSTEM;
++	} else if (group.find ("admin") != string::npos) {
+ 		return PK_GROUP_ENUM_ADMIN_TOOLS;
++	} else if (group.find ("utils") != string::npos) {
++		return PK_GROUP_ENUM_ACCESSORIES;
++	} else if (group.find ("shells") != string::npos) {
++		return PK_GROUP_ENUM_ACCESSORIES;
++	} else if (group.find ("editors") != string::npos) {
++		return PK_GROUP_ENUM_ACCESSORIES;
++	} else if (group.find ("net") != string::npos) {
++		return PK_GROUP_ENUM_NETWORK;
++	} else if (group.find ("httpd") != string::npos) {
++		return PK_GROUP_ENUM_SERVERS;
++	} else if (group.find ("database") != string::npos) {
++		return PK_GROUP_ENUM_SERVERS;
++	} else if (group.find ("mail") != string::npos) {
++		return PK_GROUP_ENUM_INTERNET;
++	} else if (group.find ("comm") != string::npos) {
++		return PK_GROUP_ENUM_COMMUNICATION;
++	} else if (group.find ("devel") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("interpreters") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("lua") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("perl") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("ruby") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("python") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("node") != string::npos) {
++		return PK_GROUP_ENUM_PROGRAMMING;
++	} else if (group.find ("otherosfs") != string::npos) {
++		return PK_GROUP_ENUM_SYSTEM;
++	} else if (group.find ("fonts") != string::npos) {
++		return PK_GROUP_ENUM_FONTS;
++	} else if (group.find ("audio") != string::npos) {
++		return PK_GROUP_ENUM_MULTIMEDIA;
++	} else if (group.find ("video") != string::npos) {
++		return PK_GROUP_ENUM_MULTIMEDIA;
+ 	} else if (group.find ("graphics") != string::npos) {
+ 		return PK_GROUP_ENUM_GRAPHICS;
+-	} else if (group.find ("multimedia") != string::npos) {
++	} else if (group.find ("sound") != string::npos) {
+ 		return PK_GROUP_ENUM_MULTIMEDIA;
+-	} else if (group.find ("network") != string::npos) {
+-		return PK_GROUP_ENUM_NETWORK;
+-	} else if (group.find ("office") != string::npos
+-		  || group.find("text") != string::npos
+-		  || group.find("editors") != string::npos) {
+-		return PK_GROUP_ENUM_OFFICE;
+-	} else if (group.find ("publishing") != string::npos) {
+-		return PK_GROUP_ENUM_PUBLISHING;
+-	} else if (group.find ("security") != string::npos) {
+-		return PK_GROUP_ENUM_SECURITY;
+-	} else if (group.find ("telephony") != string::npos) {
+-		return PK_GROUP_ENUM_COMMUNICATION;
++	} else if (group.find ("x11") != string::npos) {
++		return PK_GROUP_ENUM_DESKTOP_OTHER;
+ 	} else if (group.find ("gnome") != string::npos) {
+ 		return PK_GROUP_ENUM_DESKTOP_GNOME;
+ 	} else if (group.find ("kde") != string::npos) {
+ 		return PK_GROUP_ENUM_DESKTOP_KDE;
+ 	} else if (group.find ("xfce") != string::npos) {
+ 		return PK_GROUP_ENUM_DESKTOP_XFCE;
+-	} else if (group.find ("gui/other") != string::npos) {
+-		return PK_GROUP_ENUM_DESKTOP_OTHER;
++	} else if (group.find ("mate") != string::npos) {
++		return PK_GROUP_ENUM_DESKTOP_GNOME;
++	} else if (group.find ("cinnamon") != string::npos) {
++		return PK_GROUP_ENUM_DESKTOP_GNOME;
++	} else if (group.find ("games") != string::npos) {
++		return PK_GROUP_ENUM_GAMES;
+ 	} else if (group.find ("localization") != string::npos) {
+ 		return PK_GROUP_ENUM_LOCALIZATION;
+-	} else if (group.find ("system") != string::npos) {
++	} else if (group.find ("text") != string::npos) {
++		return PK_GROUP_ENUM_PUBLISHING;
++	} else if (group.find ("virt") != string::npos) {
++		return PK_GROUP_ENUM_VIRTUALIZATION;
++	} else if (group.find ("office") != string::npos) {
++		return PK_GROUP_ENUM_OFFICE;
++	} else if (group.find ("web") != string::npos) {
++		return PK_GROUP_ENUM_INTERNET;
++	} else if (group.find ("doc") != string::npos) {
++		return PK_GROUP_ENUM_DOCUMENTATION;
++	} else if (group.find ("misc") != string::npos) {
++		return PK_GROUP_ENUM_OTHER;
++	} else if (group.find ("hardware") != string::npos) {
+ 		return PK_GROUP_ENUM_SYSTEM;
+-	} else if (group.find ("scientific") != string::npos) {
+-		return PK_GROUP_ENUM_EDUCATION;
+ 	}
+ 
+ 	return PK_GROUP_ENUM_UNKNOWN;
+@@ -1943,23 +1985,31 @@ PkBitfield
+ pk_backend_get_groups (PkBackend *backend)
+ {
+ 	return pk_bitfield_from_enums (
++		PK_GROUP_ENUM_ACCESSORIES,
+ 		PK_GROUP_ENUM_ADMIN_TOOLS,
++		PK_GROUP_ENUM_COLLECTIONS,
+ 		PK_GROUP_ENUM_COMMUNICATION,
+ 		PK_GROUP_ENUM_DESKTOP_GNOME,
+ 		PK_GROUP_ENUM_DESKTOP_KDE,
+ 		PK_GROUP_ENUM_DESKTOP_OTHER,
+ 		PK_GROUP_ENUM_DESKTOP_XFCE,
+-		PK_GROUP_ENUM_EDUCATION,
++		PK_GROUP_ENUM_DOCUMENTATION,
++		PK_GROUP_ENUM_FONTS,
+ 		PK_GROUP_ENUM_GAMES,
+ 		PK_GROUP_ENUM_GRAPHICS,
++		PK_GROUP_ENUM_INTERNET,
+ 		PK_GROUP_ENUM_LOCALIZATION,
+ 		PK_GROUP_ENUM_MULTIMEDIA,
+ 		PK_GROUP_ENUM_NETWORK,
+ 		PK_GROUP_ENUM_OFFICE,
++		PK_GROUP_ENUM_OTHER,
+ 		PK_GROUP_ENUM_PROGRAMMING,
+ 		PK_GROUP_ENUM_PUBLISHING,
+ 		PK_GROUP_ENUM_SECURITY,
++		PK_GROUP_ENUM_SERVERS,
+ 		PK_GROUP_ENUM_SYSTEM,
++		PK_GROUP_ENUM_UNKNOWN,
++		PK_GROUP_ENUM_VIRTUALIZATION,
+ 		-1);
+ }
+ 
+diff --git a/meson.build b/meson.build
+index 38b1837..56ca3e2 100644
+--- a/meson.build
++++ b/meson.build
+@@ -38,7 +38,7 @@ endif
+ 
+ elogind = []
+ if get_option('elogind')
+-  elogind = dependency('elogind', version: '>=229.4')
++  elogind = dependency('libsystemd', version: '>=229.4')
+   add_project_arguments ('-DHAVE_SYSTEMD_SD_LOGIN_H=1', language: 'c')
+ endif
+ 
+-- 
+2.27.0
+
