@@ -1,0 +1,35 @@
+From cde7c85fe1a035f4ed8db751a8677ebf3181cdbb Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 20 Sep 2020 01:28:05 +0900
+Subject: [PATCH] openbsd fix build
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build                           | 2 +-
+ src/tracker-extract/calculate-hash.sh | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 66197aa..83cb39d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -108,7 +108,7 @@ if get_option('man')
+   xsltproc = find_program('xsltproc')
+ endif
+ 
+-sha256sum = find_program('sha256sum')
++sha256 = find_program('sha256')
+ 
+ add_project_arguments('-Wformat', '-Wformat-security', language: 'c')
+ 
+diff --git a/src/tracker-extract/calculate-hash.sh b/src/tracker-extract/calculate-hash.sh
+index 223d9b0..d2de834 100755
+--- a/src/tracker-extract/calculate-hash.sh
++++ b/src/tracker-extract/calculate-hash.sh
+@@ -1,2 +1,2 @@
+ #!/bin/sh
+-cat $@ | sha256sum | cut -f 1 -d ' '
++cat $@ | sha256 | cut -f 1 -d ' '
+-- 
+2.28.0
+
