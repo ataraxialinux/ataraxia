@@ -1,7 +1,7 @@
 # Description: User Interface Builder for GTK+ applications
 # URL:         https://glade.gnome.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  intltool itstool pygobject webkitgtk libxml2
+# Depends on:  meson itstool pygobject webkitgtk gjs libxml2
 # Section:     gnome
 
 name=glade
@@ -11,17 +11,9 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
-	printf "all:\n\ttrue\n\ninstall:\n\ttrue\n\n" > help/Makefile.in
-
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--enable-compile-warnings=no \
-		--enable-gladeui \
-		--disable-gtk-doc \
-		--disable-man-pages
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
