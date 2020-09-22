@@ -5,11 +5,12 @@
 # Section:     localization
 
 name=mozc
-version=3.13.0
+version=2.23.2815.102
+commit=afb03ddfe72dde4cf2409863a3bfea160f7a66d8
 dictver=a4a66772e33746b91e99caceecced9a28507e925
 protobufver=92a7e778e7394386f413cec28d67a07630f784b1
 release=1
-source=("https://github.com/google/mozc/archive/$version.tar.gz"
+source=("https://github.com/google/mozc/archive/$commit.tar.gz"
 	"https://github.com/hiroyuki-komatsu/japanese-usage-dictionary/archive/$dictver.tar.gz"
 	"https://github.com/protocolbuffers/protobuf/archive/$protobufver.tar.gz")
 noextract=("$gypver.tar.gz")
@@ -25,10 +26,10 @@ build() {
 	mv protobuf-$protobufver protobuf
 
 	for dep in protobuf japanese_usage_dictionary; do
-		cp -a $dep $name-$version/src/third_party/
+		cp -a $dep $name-$commit/src/third_party/
 	done
 
-	cd "$SRC"/$name-$version/src
+	cd "$SRC"/$name-$commit/src
 	patch -Np1 -i "$STUFF"/mozc/new-era.patch
 	patch -Np1 -i "$STUFF"/mozc/python3.patch
 	patch -Np1 -i "$STUFF"/mozc/gcc.patch
