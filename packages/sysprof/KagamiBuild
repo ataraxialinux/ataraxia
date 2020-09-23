@@ -10,9 +10,11 @@ release=1
 source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
+	CFLAGS+=" -ffat-lto-objects"
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/sysprof/reallocarray.patch
-	CFLAGS+=" -ffat-lto-objects"
+	patch -Np1 -i "$STUFF"/sysprof/0001-add-TEMP_FAILURE_RETRY-for-musl.patch
 
 	mkdir -p build
 	cd build
