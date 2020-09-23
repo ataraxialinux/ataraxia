@@ -1,7 +1,7 @@
 # Description: Display manager and login screen
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam accountsservice gtk3 iso-codes itstool libcanberra dconf
+# Depends on:  meson pam accountsservice gtk3 iso-codes itstool libcanberra dconf
 # Section:     gnome
 
 name=gdm
@@ -21,27 +21,23 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/gdm/0001-add-support-Ataraxia-Linux-PAM.patch
-	autoreconf -vif
 
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--sbindir=/usr/bin \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--with-dbus-sys=/usr/share/dbus-1/system.d \
-		--with-default-pam-config=ataraxia \
-		--with-default-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
-		--with-run-dir=/run \
-		--with-systemdsystemunitdir=/usr/lib/systemd/system \
-		--without-plymouth \
-		--enable-gdm-xsession \
-		--enable-ipv6 \
-		--disable-schemas-compile
-
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddbus-sys=/usr/share/dbus-1/system.d \
+		-Ddefault-pam-config=ataraxia \
+		-Ddefault-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
+		-Dipv6=true \
+		-Dplymouth=disabled \
+		-Dprofiling=true \
+		-Drun-dir=/run/gdm \
+		-Dselinux=disabled \
+		-Dsystemdsystemunitdir=/usr/lib/systemd/system \
+		-Dsystemduserunitdir==/usr/lib/systemd/user \
+		-Dudev-dir=/usr/lib/udev/rules.d
+	samu
+	DESTDIR="$PKG" samu install
 
 	rm -rf "$PKG"/run
 	chown -R 120:120 "$PKG"/var/lib/gdm
