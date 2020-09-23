@@ -1,0 +1,33 @@
+From 511e25104e3d5a4619d0c8e54abda6d580055ba4 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 23 Sep 2020 22:46:07 +0900
+Subject: [PATCH] add TEMP_FAILURE_RETRY for musl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/libsysprof-capture/sysprof-collector.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/libsysprof-capture/sysprof-collector.c b/src/libsysprof-capture/sysprof-collector.c
+index 803aa02..f4f2364 100644
+--- a/src/libsysprof-capture/sysprof-collector.c
++++ b/src/libsysprof-capture/sysprof-collector.c
+@@ -91,6 +91,15 @@
+ #define MSG_CMSG_CLOEXEC 0
+ #endif
+ 
++#ifndef TEMP_FAILURE_RETRY
++# define TEMP_FAILURE_RETRY(expression) \
++  (__extension__                                                              \
++    ({ long int __result;                                                     \
++       do __result = (long int) (expression);                                 \
++       while (__result == -1L && errno == EINTR);                             \
++       __result; }))
++#endif
++
+ typedef struct
+ {
+   MappedRingBuffer *buffer;
+-- 
+2.28.0
+

@@ -1,22 +1,21 @@
 # Description: Library full of GTK+ widgets for mobile phones
 # URL:         https://source.puri.sm/Librem5/libhandy
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson vala gtk3 glade
+# Depends on:  meson vala gtk3
 # Section:     x11
 
-name=libhandy
-version=1.0.0
+name=libhandy0
+version=0.0.13
 release=1
-source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("https://source.puri.sm/Librem5/libhandy/-/archive/v${version}/libhandy-v${version}.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/libhandy/glade.patch
-
+	cd "$SRC"/libhandy-v${version}
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/$name-$version \
+	ataraxia-meson "$SRC"/libhandy-v${version} \
 		-Dexamples=false \
+		-Dglade_catalog=disabled \
 		-Dgtk_doc=false
 	samu
 	DESTDIR="$PKG" samu install

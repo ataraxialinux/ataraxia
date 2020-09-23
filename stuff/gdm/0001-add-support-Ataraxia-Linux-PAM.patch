@@ -1,19 +1,20 @@
-From 9594de0c9290aff1814efdd1cbd6f1c1e8f3b25b Mon Sep 17 00:00:00 2001
-From: root <root@localhost.localdomain>
-Date: Wed, 10 Jun 2020 08:24:11 +0900
-Subject: [PATCH] add support for Ataraxia Linux
+From 7b29dbd4f4f280dced03799c4948097a60078c66 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 23 Sep 2020 23:16:35 +0900
+Subject: [PATCH] add support for Ataraxia Linux PAM
 
-Signed-off-by: root <root@localhost.localdomain>
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- configure.ac                                 |  7 ++++++-
- data/Makefile.am                             | 12 ++++++++++++
+ data/meson.build                             |  8 ++++++++
  data/pam-ataraxia/gdm-autologin.pam          | 13 +++++++++++++
  data/pam-ataraxia/gdm-fingerprint.pam        | 13 +++++++++++++
  data/pam-ataraxia/gdm-launch-environment.pam | 13 +++++++++++++
  data/pam-ataraxia/gdm-password.pam           | 11 +++++++++++
  data/pam-ataraxia/gdm-pin.pam                | 13 +++++++++++++
  data/pam-ataraxia/gdm-smartcard.pam          | 13 +++++++++++++
- 8 files changed, 94 insertions(+), 1 deletion(-)
+ meson.build                                  |  1 +
+ meson_options.txt                            |  2 +-
+ 9 files changed, 86 insertions(+), 1 deletion(-)
  create mode 100644 data/pam-ataraxia/gdm-autologin.pam
  create mode 100644 data/pam-ataraxia/gdm-fingerprint.pam
  create mode 100644 data/pam-ataraxia/gdm-launch-environment.pam
@@ -21,67 +22,25 @@ Signed-off-by: root <root@localhost.localdomain>
  create mode 100644 data/pam-ataraxia/gdm-pin.pam
  create mode 100644 data/pam-ataraxia/gdm-smartcard.pam
 
-diff --git a/configure.ac b/configure.ac
-index 39fc45f..c56fa90 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -206,13 +206,17 @@ if test x$with_default_pam_config = x; then
- 	AC_CHECK_FILE(/etc/exherbo-release,with_default_pam_config="exherbo")
- 	AC_CHECK_FILE(/etc/arch-release,with_default_pam_config="arch")
- 	AC_CHECK_FILE(/etc/lfs-release,with_default_pam_config="lfs")
-+	AC_CHECK_FILE(/etc/ataraxia-release,with_default_pam_config="ataraxia")
-+	AC_CHECK_FILE(/etc/ataraxialinux-release,with_default_pam_config="ataraxia")
-+	AC_CHECK_FILE(/etc/janus-release,with_default_pam_config="ataraxia")
-+	AC_CHECK_FILE(/etc/januslinux-release,with_default_pam_config="ataraxia")
- 	dnl If not autodetected, default to none
- 	if test x$with_default_pam_config = x; then
- 	  with_default_pam_config=none
- 	fi
- fi
- case x$with_default_pam_config in
--     xredhat|xopenembedded|xexherbo|xlfs|xarch|xnone) ;;
-+     xredhat|xopenembedded|xexherbo|xlfs|xarch|xataraxia|xnone) ;;
-      *)
-        AC_MSG_ERROR([Invalid --with-default-pam-config ${with_default_pam_config}])
-        exit 1
-@@ -223,6 +227,7 @@ AM_CONDITIONAL(ENABLE_OPENEMBEDDED_PAM_CONFIG, test x$with_default_pam_config =
- AM_CONDITIONAL(ENABLE_EXHERBO_PAM_CONFIG, test x$with_default_pam_config = xexherbo)
- AM_CONDITIONAL(ENABLE_LFS_PAM_CONFIG, test x$with_default_pam_config = xlfs)
- AM_CONDITIONAL(ENABLE_ARCH_PAM_CONFIG, test x$with_default_pam_config = xarch)
-+AM_CONDITIONAL(ENABLE_ATARAXIA_PAM_CONFIG, test x$with_default_pam_config = xataraxia)
- 
- AC_CHECK_HEADERS([security/pam_modules.h security/pam_modutil.h security/pam_ext.h],
-                  [have_pam=yes],
-diff --git a/data/Makefile.am b/data/Makefile.am
-index bda9160..5dad142 100644
---- a/data/Makefile.am
-+++ b/data/Makefile.am
-@@ -136,6 +136,15 @@ pam_arch_files = pam-arch/gdm-autologin.pam	\
- 	$(NULL)
- EXTRA_DIST += $(pam_arch_files)
- 
-+pam_ataraxia_files = pam-arch/gdm-autologin.pam	\
-+	pam-ataraxia/gdm-launch-environment.pam	\
-+	pam-ataraxia/gdm-fingerprint.pam		\
-+	pam-ataraxia/gdm-smartcard.pam		\
-+	pam-ataraxia/gdm-password.pam		\
-+	pam-ataraxia/gdm-pin.pam			\
-+	$(NULL)
-+EXTRA_DIST += $(pam_ataraxia_files)
-+
- if ENABLE_REDHAT_PAM_CONFIG
- pam_files = $(pam_redhat_files)
- endif
-@@ -151,6 +160,9 @@ endif
- if ENABLE_ARCH_PAM_CONFIG
- pam_files = $(pam_arch_files)
- endif
-+if ENABLE_ATARAXIA_PAM_CONFIG
-+pam_files = $(pam_ataraxia_files)
-+endif
- 
- if INSTALL_UDEV_RULES
- udevrulesdir = $(UDEV_DIR)/rules.d
+diff --git a/data/meson.build b/data/meson.build
+index 05a2011..9b749a3 100644
+--- a/data/meson.build
++++ b/data/meson.build
+@@ -137,6 +137,14 @@ pam_data_files_map = {
+     'gdm-password',
+     'gdm-pin',
+   ],
++  'ataraxia': [
++    'gdm-autologin',
++    'gdm-launch-environment',
++    'gdm-fingerprint',
++    'gdm-smartcard',
++    'gdm-password',
++    'gdm-pin',
++  ],
+   'none': [],
+   # We should no longer have 'autodetect' at this point
+ }
 diff --git a/data/pam-ataraxia/gdm-autologin.pam b/data/pam-ataraxia/gdm-autologin.pam
 new file mode 100644
 index 0000000..99b1420
@@ -122,7 +81,7 @@ index 0000000..7490ec5
 +session  include   system-local-login
 diff --git a/data/pam-ataraxia/gdm-launch-environment.pam b/data/pam-ataraxia/gdm-launch-environment.pam
 new file mode 100644
-index 0000000..af54575
+index 0000000..a4dfec5
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-launch-environment.pam
 @@ -0,0 +1,13 @@
@@ -194,6 +153,31 @@ index 0000000..63569a6
 +
 +session  optional  pam_keyinit.so force revoke
 +session  include   system-local-login
+diff --git a/meson.build b/meson.build
+index 7e336bf..4dd78e7 100644
+--- a/meson.build
++++ b/meson.build
+@@ -172,6 +172,7 @@ if default_pam_config == 'autodetect'
+     '/etc/exherbo-release': 'exherbo',
+     '/etc/arch-release': 'arch',
+     '/etc/lfs-release': 'lfs',
++    '/etc/ataraxia-release': 'ataraxia',
+   }
+ 
+   foreach _file, _pam_conf : pam_autodetect_map
+diff --git a/meson_options.txt b/meson_options.txt
+index 49550bc..9304372 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -2,7 +2,7 @@ option('at-spi-registryd-dir', type: 'string', value: '', description: 'Specify
+ option('check-accelerated-dir', type: 'string', value: '', description: 'Specify the directory of gnome-session-check-accelerated.')
+ option('custom-conf', type: 'string', value: '', description: 'Filename to give to custom configuration file.')
+ option('dbus-sys', type: 'string', value: '', description: 'Where D-Bus systemd directory is.')
+-option('default-pam-config', type: 'combo', choices: [ 'autodetect', 'redhat', 'openembedded', 'exherbo', 'lfs', 'arch', 'none'], value: 'autodetect', description: '')
++option('default-pam-config', type: 'combo', choices: [ 'autodetect', 'redhat', 'openembedded', 'exherbo', 'lfs', 'arch', 'ataraxia', 'none'], value: 'autodetect', description: '')
+ option('default-path', type: 'string', value: '/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin', description: 'Path GDM will use as the user\'s default PATH.')
+ option('defaults-conf', type: 'string', value: '', description: 'Filename to give to defaults file.')
+ option('dmconfdir', type: 'string', value: '', description: 'Directory where sessions are stored.')
 -- 
-2.27.0
+2.28.0
 
