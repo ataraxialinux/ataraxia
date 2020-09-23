@@ -10,6 +10,8 @@ release=1
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
+	export LDFLAGS="-Wl,-z,stack-size=1048576"
+
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
 
@@ -29,7 +31,7 @@ build() {
 		--with-system-zlib \
 		--enable-ctypes \
 		--enable-hardening \
-		--enable-optimize \
+		--enable-optimize="$CFLAGS -O2" \
 		--enable-release \
 		--enable-shared-js \
 		--enable-system-ffi \
