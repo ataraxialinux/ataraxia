@@ -1,12 +1,12 @@
 # Description: Network connection manager and user applications
 # URL:         https://wiki.gnome.org/Projects/NetworkManager
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala iwd dhcp
+# Depends on:  meson dbus-glib libndp libpsl libteam modemmanager curl gobject-introspection iptables jansson newt nss polkit pygobject vala iwd wpa_supplicant dhcp
 # Section:     net
 
 name=networkmanager
 version=1.26.2
-release=2
+release=3
 backup=('etc/NetworkManager/NetworkManager.conf')
 source=("http://ftp.gnome.org/pub/gnome/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
@@ -55,7 +55,7 @@ build() {
 		auth-polkit=true
 
 		[device]
-		wifi.backend=iwd
+		wifi.backend=wpa_supplicant
 	EOF
 
 	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
