@@ -1,0 +1,34 @@
+# Description: Embeddable Javascript engine
+# URL:         http://duktape.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  setconf
+# Section:     libs
+
+name=duktape
+version=2.5.0
+release=1
+source=("https://github.com/svaarala/duktape/releases/download/v$version/$name-$version.tar.xz")
+
+build() {
+	install -d "$PKG"/usr/lib/pkgconfig "$PKG"/usr/include
+
+	cat > $PKG/usr/lib/pkgconfig/duktape.pc <<-EOF
+		prefix=/usr
+		exec_prefix=${prefix}
+		libdir=${exec_prefix}/lib
+		includedir=${prefix}/include
+
+		Name: duktape
+		Description: Embeddable Javascript engine
+		Version: $version
+		Libs: -L${libdir} -lduktape
+		Cflags: -I${includedir}
+	EOF
+
+	cd "$SRC"/$name-$version
+	mv Makefile.sharedlibrary Makefile
+	sed 's/-Wall -Wextra/$(CFLAGS)/g' -i Makefile
+	setconf Makefile INSTALL_PREFIX="$PKG"/usr
+	CFLAGS="$CFLAGS -D DUK_USE_FASTINT -w" make
+	make install
+}
