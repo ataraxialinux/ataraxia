@@ -1,22 +1,32 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  autoconf2.13 python yasm zlib libffi nspr icu
+# Depends on:  rust autoconf2.13 python yasm zlib readline libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
 version=78.3.0
-release=1
+release=2
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
-	export LDFLAGS="-Wl,-z,stack-size=1048576"
+	case $BARCH in
+		x86_64)
+			export RTARGET="x86_64-gentoo-linux-musl"
+			;;
+		i686)
+			export RTARGET="i686-gentoo-linux-musl"
+			;;
+		aarch64)
+			export RTARGET="aarch64-gentoo-linux-musl"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Rust Language"
+			exit 1
+	esac
 
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
-
-	cd "$SRC"/firefox-${version}
-	patch -Np1 -i "$STUFF"/spidermonkey/js-no-rust.patch
 
 	cd "$SRC"
 	mkdir build
@@ -32,17 +42,17 @@ build() {
 		--enable-ctypes \
 		--enable-hardening \
 		--enable-optimize \
+		--enable-readline \
 		--enable-release \
 		--enable-shared-js \
 		--enable-system-ffi \
 		--disable-debug \
 		--disable-debug-symbols \
 		--disable-jemalloc \
-		--disable-js-shell \
 		--disable-strip \
 		--disable-tests \
-		--host=$XTARGET \
-		--target=$XTARGET
+		--host=$RTARGET \
+		--target=$RTARGET
 
 	sed -i 's|$(MAKE) -C shell install|# $(MAKE) -C shell install|g' js/src/Makefile
 	make
