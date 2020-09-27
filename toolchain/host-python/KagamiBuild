@@ -2,6 +2,7 @@ name=host-python
 fakepath="$topdir/../../packages/${name/host-}"
 realpath="$(realpath $fakepath)"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+pybasever=${version%.*}
 release=1
 options=('bootstrap')
 source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.xz")
@@ -9,11 +10,13 @@ source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.
 build() {
 	cd "$SRC"/Python-$version
 	./configure \
-		--prefix="$TOOLS"
+		--prefix=/usr \
+		--bindir=/bin
 	make
-	make install
+	make DESTDIR="$PKG" install
 
 	ln -sf python3 "$TOOLS"/bin/python
+	ln -sf python3-config "$TOOLS"/bin/python-config
 	ln -sf idle3 "$TOOLS"/bin/idle
 	ln -sf pydoc3 "$TOOLS"/bin/pydoc
 }
