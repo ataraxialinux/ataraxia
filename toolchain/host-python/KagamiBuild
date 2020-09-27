@@ -9,10 +9,9 @@ source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.
 build() {
 	cd "$SRC"/Python-$version
 	./configure \
-		--prefix=/usr \
-		--bindir=/bin
+		--prefix="$TOOLS"
 	make
-	make DESTDIR="$PKG" install
+	make install
 
 	ln -sf python3 "$TOOLS"/bin/python
 	ln -sf python3-config "$TOOLS"/bin/python-config
