@@ -132,8 +132,12 @@ build() {
 	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
 	ln -sf ../run/machine-id "$PKG"/etc/machine-id
 
-	# tty
-	mkdir -p "$PKG"/etc/systemd/system/getty.target.wants "$PKG"/etc/systemd/system/multi-user.target.wants
-	ln -sf /usr/lib/systemd/system/getty@.service "$PKG"/etc/systemd/system/getty.target.wants/getty@tty1.service
-	ln -sf /usr/lib/systemd/system/remote-fs.target "$PKG"/etc/systemd/system/multi-user.target.wants/remote-fs.targe
+	case $BARCH in
+		aarch64|armv7hl|armv6hl)
+			systemctl -q --root "$PKG" enable getty@tty1.service getty@ttyAMA0.service remote-fs.target
+			;;
+		*)
+			systemctl -q --root "$PKG" enable getty@tty1.service remote-fs.target
+			;;
+	esac
 }
