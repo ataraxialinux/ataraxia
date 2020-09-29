@@ -1,22 +1,33 @@
+From 07f779dbf54315b013300a34ea6fdfedbadd1fd3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 29 Sep 2020 19:02:13 +0300
+Subject: [PATCH] elf-tls switch
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build       | 3 ++-
+ meson_options.txt | 6 ++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
 diff --git a/meson.build b/meson.build
-index d228de0..63818c5 100644
+index 5779f68..2310eb0 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -392,7 +392,8 @@ if with_egl and not (with_platform_drm or with_platform_surfaceless or with_plat
- endif
+@@ -424,7 +424,8 @@ endif
  
  # Android uses emutls for versions <= P/28. For USE_ELF_TLS we need ELF TLS.
--if not ['windows', 'freebsd'].contains(host_machine.system()) and (not with_platform_android or get_option('platform-sdk-version') >= 29)
+ use_elf_tls = false
+-if not ['windows', 'freebsd', 'openbsd'].contains(host_machine.system()) and (not with_platform_android or get_option('platform-sdk-version') >= 29)
 +with_use_elf_tls = get_option('use-elf-tls')
-+if with_use_elf_tls and not ['windows', 'freebsd'].contains(host_machine.system()) and (not with_platform_android or get_option('platform-sdk-version') >= 29)
++if with_use_elf_tls and not ['windows', 'freebsd', 'openbsd'].contains(host_machine.system()) and (not with_platform_android or get_option('platform-sdk-version') >= 29)
    pre_args += '-DUSE_ELF_TLS'
+   use_elf_tls = true
  endif
- 
 diff --git a/meson_options.txt b/meson_options.txt
-index ab43150..435a6e9 100644
+index 2d39d13..d6b6729 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
-@@ -387,3 +387,9 @@ option(
+@@ -400,3 +400,9 @@ option(
    value : 'auto',
    description : 'Use ZSTD instead of ZLIB in some cases.'
  )
@@ -26,3 +37,6 @@ index ab43150..435a6e9 100644
 +  value : false,
 +  description : 'Build support for initial-exec TLS model'
 +)
+-- 
+2.26.2
+
