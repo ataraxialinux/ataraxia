@@ -1,10 +1,10 @@
-# Description: GNOME Software Center
+# Description: RPM Ostree plugin for GNOME Software Center
 # URL:         https://wiki.gnome.org/Apps/Software
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gnome-software packagekit appdata
+# Depends on:  gnome-software rpm-ostree libdnf appdata
 # Section:     gnome
 
-name=gnome-software-packagekit
+name=gnome-software-rpm-ostree
 version=3.38.0
 release=1
 source=("http://ftp.gnome.org/pub/gnome/sources/gnome-software/${version%.*}/gnome-software-$version.tar.xz")
@@ -24,12 +24,13 @@ build() {
 		-Dgtk_doc=false \
 		-Dmalcontent=false \
 		-Dman=false \
-		-Dpackagekit=true \
+		-Dpackagekit=false \
+		-Drpm-ostree=true \
 		-Dtests=false \
 		-Dvalgrind=false
 	samu
 
-	for i in plugins/packagekit/*.so; do
+	for i in plugins/rpm-ostree/*.so; do
 		install -Dm755 $i "$PKG"/$plugindir/$(basename $i)
 	done
 }
