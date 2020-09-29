@@ -13,22 +13,20 @@ options=('bootstrap')
 source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.xz")
 
 build() {
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		#export ac_cv_have_long_long_format=yes
-		#export ac_cv_file__dev_ptmx=yes
-		#export ac_cv_file__dev_ptc=yes
-		#export ac_cv_working_tzset=yes
-		#export ac_cv_prog_HAS_HG=/usr/bin/false
-		die "not supported"
-	fi
-
 	cd "$SRC"/Python-${version}
-	#patch -Np1 -i "$STUFF"/python/0030-Fix-cross-compiling-the-uuid-module.patch
+	patch -Np1 -i "$STUFF"/python/0030-Fix-cross-compiling-the-uuid-module.patch
+	patch -Np1 -i "$STUFF"/python/0001-distutils-sysconfig-append-STAGING_LIBDIR-python-sys.patch
+	patch -Np1 -i "$STUFF"/python/12-distutils-prefix-is-inside-staging-area.patch
+	patch -Np1 -i "$STUFF"/python/0001-Don-t-search-system-for-headers-libraries.patch
+	patch -Np0 -i "$STUFF"/python/cross.patch
 
 	rm -r Modules/expat \
 		Modules/_ctypes/darwin* \
 		Modules/_ctypes/libffi*
 
+	ac_cv_file__dev_ptmx=yes \
+	ac_cv_file__dev_ptc=no \
+	ac_cv_working_tzset=yes \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-computed-gotos \
@@ -43,6 +41,14 @@ build() {
 
 	sed -i 's/^all:.*$/all: build_all/' Makefile
 	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000" DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s/$XTARGET-//g" \
+			"$PKG"/usr/lib/python${version%.*}/_sysconfigdata_*_*.py \
+			"$PKG"/usr/lib/python${version%.*}/config-${version%.*}*/Makefile
+		sed -i -e "s,$ROOTFS,,g" \
+			"$PKG"/usr/bin/python${version%.*}-config
+	fi
 
 	ln -sf python3 "$PKG"/usr/bin/python
 	ln -sf python3-config "$PKG"/usr/bin/python-config
