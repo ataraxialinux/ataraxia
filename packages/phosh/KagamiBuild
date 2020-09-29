@@ -1,16 +1,18 @@
 # Description: A pure Wayland shell prototype for GNOME on mobile devices
 # URL:         https://source.puri.sm/Librem5/phosh
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson vala ctags libhandy phoc
+# Depends on:  git meson vala lobase libhandy phoc feedbackd
 # Section:     gnome
 
 name=phosh
 version=0.4.4
-release=1
+release=2
 source=("https://source.puri.sm/Librem5/phosh/-/archive/v$version/$name-v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-v$version
+	git clone https://gitlab.gnome.org/GNOME/libgnome-volume-control.git subprojects/gvc --depth 1
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-v$version

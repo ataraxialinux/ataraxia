@@ -1,0 +1,20 @@
+# Description:A daemon to provide haptic feedback on events
+# URL:         https://source.puri.sm/Librem5/feedbackd
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala dconf gsound json-glib libgudev
+# Section:     gnome
+
+name=feedbackd
+version=0.0.0+git20200726
+release=1
+source=("https://source.puri.sm/Librem5/feedbackd/-/archive/v$version/$name-v$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-v$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-v$version \
+		-Dexamples=false
+	samu
+	DESTDIR="$PKG" samu install
+}
