@@ -10,6 +10,9 @@ If you want to get help or advice, please, check out our [IRC](irc://irc.freenod
 Also, you can help us with finances. Check out our [Patreon page](https://www.patreon.com/ataraxialinux)
 and Ethereum wallet: 0xE72931051e4aDB1c79bbAcad1E1427B2D4eD0D01
 
+[GitLab repository](https://gitlab.com/ataraxialinux/ataraxia)
+[GitHub repository](https://github.com/ataraxialinux/ataraxia)
+
 ## Documentation
 * [About the build system](docs/aboutbuildsystem.md)
 * [Bootstrapping](docs/bootstrapping.md)
