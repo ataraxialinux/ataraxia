@@ -1,7 +1,7 @@
 # Description: Library that eases the development of GtkSourceView-based text editors and IDEs
 # URL:         https://wiki.gnome.org/Projects/Tepl
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gobject-introspection vala amtk gtksourceview4 uchardet
+# Depends on:  meson gobject-introspection vala amtk gtksourceview4 uchardet
 # Section:     gnome
 
 name=tepl
@@ -11,11 +11,9 @@ source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$versi
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-gvfs-metadata
-
-	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
