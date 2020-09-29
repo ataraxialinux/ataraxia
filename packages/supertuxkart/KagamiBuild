@@ -1,23 +1,26 @@
 # Description: The best game ever created, change my mind
 # URL:         https://supertuxkart.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai mesa imagemagick openal libvorbis curl libxrandr glu libxkbcommon sqlite libjpeg-turbo libraqm
+# Depends on:  cmake samurai mesa imagemagick openal libvorbis curl libxrandr glu libxkbcommon sqlite libjpeg-turbo libraqm glew
 # Section:     games
 
 name=supertuxkart
 version=1.2
-release=1
-source=("https://downloads.sourceforge.net/$name/$name-$version-src.tar.xz")
+release=2
+source=("https://github.com/supertuxkart/stk-code/releases/download/$version/SuperTuxKart-$version-src.tar.xz")
 
 build() {
-	cd "$SRC"/$name-$version-src
+	cd "$SRC"/SuperTuxKart-$version-src
+	patch -Np1 -i "$STUFF"/supertuxkart/fe82f77786d24b812b8d226195fdb196d8ecb35f.patch
+
 	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version \
+	cmake "$SRC"/SuperTuxKart-$version-src \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_BINDIR=/usr/games \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_RECORDER=0 \
 		-Wno-dev -G Ninja
 	samu
 	DESTDIR="$PKG" samu install
