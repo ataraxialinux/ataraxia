@@ -1,13 +1,13 @@
-# Description: Shared compilation cache
-# URL:         https://github.com/mozilla/sccache
+# Description: GTK+ client for Matrix written
+# URL:         https://wiki.gnome.org/Apps/Fractal
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  rust libressl
-# Section:     devel
+# Depends on:  meson rust gtk3 gnome-keyring gst-plugins-base gst-plugins-bad gst-editing-services gtksourceview4 gspell libhandy0
+# Section:     gnome
 
-name=sccache
-version=0.2.13
+name=fractal
+version=4.4.0
 release=1
-source=("https://github.com/mozilla/sccache/archive/$version.tar.gz")
+source=("https://gitlab.gnome.org/GNOME/fractal/-/archive/$version/$name-$version.tar.gz")
 
 clear_vendor_checksums() {
 	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
@@ -18,6 +18,7 @@ build() {
 	# RUST HACK
 	cargo vendor
 
+	sed -i 's|cargo build|cargo build --locked|' scripts/cargo.sh
 	sed -i "s|(3, 0, _) => ('3', '0', 'x')|(3, 2, _) => ('3', '2', 'x')|" vendor/openssl-sys/build/main.rs
 	clear_vendor_checksums openssl-sys
 
@@ -32,6 +33,9 @@ build() {
 		directory = './vendor'
 	EOF
 
-	cargo build --release --frozen --locked
-	install -Dm755 target/release/sccache "$PKG"/usr/bin/sccache
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
