@@ -9,8 +9,28 @@ version=0.2.13
 release=1
 source=("https://github.com/mozilla/sccache/archive/$version.tar.gz")
 
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
+}
+
 build() {
 	cd "$SRC"/$name-$version
-	cargo build --release
+	cargo vendor
+
+	sed -i "s|(3, 0, _) => ('3', '0', 'x')|(3, 2, _) => ('3', '2', 'x')|" vendor/openssl-sys/build/main.rs
+	clear_vendor_checksums openssl-sys
+
+	mkdir .cargo
+	cat > .cargo/config <<-EOF
+		#from librsvg
+		[source.crates-io]
+		registry = 'https://github.com/rust-lang/crates.io-index'
+		replace-with = 'vendored-sources'
+
+		[source.vendored-sources]
+		directory = './vendor'
+	EOF
+
+	cargo build --release --frozen --locked
 	install -Dm755 target/release/sccache "$PKG"/usr/bin/sccache
 }
