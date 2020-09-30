@@ -1,12 +1,12 @@
 # Description: RPM Package Manager
 # URL:         http://www.rpm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib file acl libcap db libelf popt libarchive systemd
+# Depends on:  zlib file acl libcap db sqlite libelf popt libarchive systemd
 # Priority:    required
 # Section:     admin
 
 name=rpm
-version=4.16
+version=4.16.0
 _pkgver_major="${version%%.*}"
 _pkgver_major_rem="${version#*.}"
 _pkgver_minor="${_pkgver_major_rem%%.*}"
@@ -20,6 +20,7 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/rpm/0001-Fix-build-with-musl-C-library.patch
+	sed -i -e "/_db_backend/ s/ bdb/ sqlite/g" macros.in
 
 	autoreconf -fi
 	./configure $BUILDFLAGS \
@@ -29,10 +30,10 @@ build() {
 		--with-acl \
 		--with-cap \
 		--with-crypto=openssl \
-		--with-external-db \
 		--without-hackingdocs \
 		--without-lua \
 		--without-selinux \
+		--enable-sqlite \
 		--enable-zstd \
 		--disable-nls \
 		--disable-python \

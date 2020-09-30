@@ -13,6 +13,7 @@ source=("http://ftp.rpm.org/releases/rpm-$_base_pkgver/rpm-$version.tar.bz2")
 build() {
 	cd "$SRC"/rpm-$version
 	patch -Np1 -i "$STUFF"/rpm/0001-Fix-build-with-musl-C-library.patch
+	sed -i -e "/_db_backend/ s/ bdb/ sqlite/g" macros.in
 
 	autoreconf -fi
 	./configure \
@@ -21,9 +22,10 @@ build() {
 		--with-acl \
 		--with-cap \
 		--with-crypto=openssl \
-		--with-external-db \
 		--without-lua \
+		--enable-sqlite \
 		--enable-zstd \
+		--disable-bdb \
 		--disable-inhibit-plugin \
 		--disable-nls \
 		PYTHON=python3
