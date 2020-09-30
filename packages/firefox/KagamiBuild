@@ -6,10 +6,8 @@
 
 name=firefox
 version=78.3.0
-ghacks=78.0
-release=1
-source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz"
-	"https://raw.githubusercontent.com/ghacksuserjs/ghacks-user.js/$ghacks/user.js")
+release=2
+source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 clear_vendor_checksums() {
 	sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/$1/.cargo-checksum.json
@@ -107,9 +105,6 @@ build() {
 
 	./mach build
 	DESTDIR="$PKG" ./mach install
-
-	install -Dm644 "$SRC"/user.js "$PKG"/usr/lib/firefox/browser/defaults/preferences/vendor.js
-	install -Dm644 "$STUFF"/firefox/policies.json "$PKG"/usr/lib/firefox/distribution/policies.json
 
 	for i in 16 22 24 32 48 64 128 256; do
 		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
