@@ -1,7 +1,7 @@
 # Description: C toolkit to manipulate virtual machines
 # URL:         http://www.libvirt.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python-docutils bash-completion readline libcap-ng dbus util-linux curl lvm2 rpcsvc-proto dnsmasq iproute2 qemu libpciaccess yajl fuse2 gnutls parted libxml2 numactl polkit libtirpc libnl libgcrypt dbus libpcap iptables dmidecode open-iscsi libiscsi
+# Depends on:  meson python-docutils bash-completion readline libcap-ng dbus util-linux curl lvm2 rpcsvc-proto dnsmasq iproute2 qemu libpciaccess yajl fuse2 gnutls parted libxml2 numactl polkit libtirpc libnl libgcrypt dbus libpcap iptables dmidecode open-iscsi libiscsi
 # Section:     virt
 
 name=libvirt
@@ -10,30 +10,20 @@ release=1
 source=("https://libvirt.org/sources/$name-$version.tar.xz")
 
 build() {
-	export ac_cv_path_QEMU_BRIDGE_HELPER="/usr/lib/qemu/qemu-bridge-helper"
-
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/libvirt/musl-fix-includes.patch
 	patch -Np1 -i "$STUFF"/libvirt/stderr-fix.patch
 
 	mkdir build
 	cd build
-	../configure $BUILDFLAGS \
-		--prefix=/usr \
-		--libexec=/usr/lib/libvirt \
-		--sbindir=/usr/bin \
-		--with-runstatedir=/run \
-		--with-init-script=systemd \
-		--with-qemu-group=kvm \
-		--without-hal \
-		--without-netcf \
-		--without-sanlock \
-		--disable-nls \
-		--disable-werror
-
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" SYSTEMD_UNIT_DIR=/usr/lib/systemd/system install
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dinit_script=systemd \
+		-Dnetcf=false \
+		-Dqemu_group=kvm \
+		-Dsanlock=false \
+		-Drunstatedir=/run
+	samu
+	DESTDIR="$PKG" samu install
 
 	install -Dm644 "$STUFF"/tmpfiles.d/libvirt.conf "$PKG"/usr/lib/tmpfiles.d/libvirt.conf
 
