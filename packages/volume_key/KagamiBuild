@@ -6,15 +6,17 @@
 
 name=volume_key
 version=0.3.12
-release=2
+release=3
 source=("https://github.com/felixonmars/volume_key/archive/$name-$version.tar.gz")
 
 build() {
+	export CFLAGS+=" $(python3-config --includes)"
+
 	cd "$SRC"/$name-$name-$version
+	find . -name ".pyc" -delete
 	autoreconf -fiv
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--without-python
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 }
