@@ -348,6 +348,9 @@ genrepo() {
 	if [ -f "$1/.ignoreit" ]; then
 		return 0
 	fi
+	if [ ! -d "$1" ]; then
+		return 0
+	fi
 
 	source $1/KagamiBuild
 	local summary="$(npk-parse $1/KagamiBuild "# Description:")"
@@ -503,9 +506,7 @@ case $1 in
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
-					if [ "$packages" = "repo" ]; then
-						true
-					elif [ "$packages" = "libblkid" ]; then
+					if [ "$packages" = "libblkid" ]; then
 						true
 					elif [ "$packages" = "libsystemd" ]; then
 						true
