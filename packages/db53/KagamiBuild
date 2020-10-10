@@ -1,16 +1,28 @@
 # Description: The Berkeley DB embedded database system
 # URL:         http://www.oracle.com/technology/software/products/berkeley-db/index.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# obsoletes:   db
 # Priority:    required
 # Section:     database
 
-name=db
-version=6.2.32
+name=db53
+version=5.3.28
 release=1
-source=("http://download.oracle.com/berkeley-db/$name-$version.tar.gz")
+source=("http://download.oracle.com/berkeley-db/db-$version.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version/build_unix
+	cd "$SRC"/db-$version
+	sed -i 's/\(__atomic_compare_exchange\)/\1_db/' src/dbinc/atomic.h
+
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	cd build_unix
 	../dist/configure $BUILDFLAGS \
 		--prefix=/usr \
 		--enable-compat185 \
