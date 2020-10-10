@@ -6,11 +6,13 @@
 
 name=itstool
 version=2.0.6
-release=2
+release=3
 source=("http://files.itstool.org/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/itstool/itstool-2.0.5-fix-crash-wrong-encoding.patch
+
 	PYTHON=/usr/bin/python3 \
 	./configure $BUILDFLAGS \
 		--prefix=/usr
