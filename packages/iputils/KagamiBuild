@@ -1,0 +1,28 @@
+# Description: Network monitoring tools, including ping
+# URL:         https://github.com/iputils/iputils
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson systemd libcap
+# Priority:    required
+# Section:     net
+
+name=iputils
+version=s20200821
+release=1
+options=('bootstrap')
+source=("https://github.com/iputils/iputils/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-DBUILD_MANS=false \
+		-DBUILD_RARPD=true \
+		-DBUILD_TFTPD=true \
+		-DBUILD_TRACEROUTE6=true \
+		-Dsystemdunitdir=/usr/lib/systemd/system \
+		-DUSE_GETTEXT=false \
+		-DUSE_IDN=false
+	samu
+	DESTDIR="$PKG" samu install
+}
