@@ -11,7 +11,6 @@ options=('bootstrap' '~emptydirs')
 source=("https://www.iana.org/time-zones/repository/releases/tzdata${version}.tar.gz")
 
 build() {
-	set -x
 	HOSTCC=${HOSTCC:-cc}
 
 	cd "$SRC"
@@ -23,7 +22,7 @@ build() {
 	mkdir -p $ZONEINFO/{posix,right}
 
 	for tz in etcetera southamerica northamerica europe africa antarctica  \
-		asia australasia backward pacificnew systemv; do
+		asia australasia backward; do
 		./zic -L /dev/null -d $ZONEINFO ${tz}
 		./zic -L /dev/null -d $ZONEINFO/posix ${tz}
 		./zic -L leapseconds -d $ZONEINFO/right ${tz}
