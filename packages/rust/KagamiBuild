@@ -4,31 +4,43 @@
 # Section:     devel
 
 name=rust
-version=1.46.0
+version=1.49.0+nightly
 release=1
 options=('~emptydirs')
-source=("https://portage.smaeul.xyz/distfiles/rust-$version-x86_64-gentoo-linux-musl.tar.xz"
-	"https://portage.smaeul.xyz/distfiles/rust-$version-i686-gentoo-linux-musl.tar.xz"
-	"https://portage.smaeul.xyz/distfiles/rust-$version-aarch64-gentoo-linux-musl.tar.xz")
+source=("https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-x86_64-unknown-linux-musl.tar.xz"
+	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-aarch64-unknown-linux-musl.tar.xz"
+	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-armv7-unknown-linux-musleabihf.tar.xz"
+	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-arm-unknown-linux-musleabihf.tar.xz"
+	"https://portage.smaeul.xyz/distfiles/rust-1.46.0-i686-gentoo-linux-musl.tar.xz")
 
 build() {
 	case $BARCH in
 		x86_64)
-			export RTARGET="x86_64-gentoo-linux-musl"
+			export RTARGET="x86_64-unknown-linux-musl"
+			export ver=nightly
 			;;
 		i686)
 			export RTARGET="i686-gentoo-linux-musl"
+			export ver=1.46.0
 			;;
 		aarch64)
-			export RTARGET="aarch64-gentoo-linux-musl"
+			export RTARGET="aarch64-unknown-linux-musl"
+			export ver=nightly
+			;;
+		armv7hl)
+			export RTARGET="armv7-unknown-linux-musleabihf"
+			export ver=nightly
+			;;
+		armv6hl)
+			export RTARGET="arm-unknown-linux-musleabihf"
+			export ver=nightly
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Rust Language"
 			exit 1
 	esac
 
-	mkdir -p "$SRC"/rust
-	pushd "$SRC"/rust-$version-$RTARGET
+	pushd "$SRC"/rust-$ver-$RTARGET
 		sed -i 's.\\-.-.g' install.sh
 		sed -i 's.\\_._.g' install.sh
 		bash install.sh \
