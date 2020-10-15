@@ -1,0 +1,296 @@
+From 3137e870aa91d967b602e532e08aeead2bd64735 Mon Sep 17 00:00:00 2001
+From: Piotr Gorski <lucjan.lucjanov@gmail.com>
+Date: Thu, 2 Jul 2020 19:16:43 +0200
+Subject: [PATCH 1/6] block, Kconfig.iosched: set default value of IOSCHED_BFQ
+ to yes
+
+Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
+---
+ block/Kconfig.iosched | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index 2f2158e05..e58b2953a 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -5,13 +5,11 @@ menu "IO Schedulers"
+ 
+ config MQ_IOSCHED_DEADLINE
+ 	tristate "MQ deadline I/O scheduler"
+-	default y
+ 	help
+ 	  MQ version of the deadline IO scheduler.
+ 
+ config MQ_IOSCHED_KYBER
+ 	tristate "Kyber I/O scheduler"
+-	default y
+ 	help
+ 	  The Kyber I/O scheduler is a low-overhead scheduler suitable for
+ 	  multiqueue and other fast devices. Given target latencies for reads and
+@@ -20,6 +18,7 @@ config MQ_IOSCHED_KYBER
+ 
+ config IOSCHED_BFQ
+ 	tristate "BFQ I/O scheduler"
++	default y
+ 	help
+ 	BFQ I/O scheduler for BLK-MQ. BFQ distributes the bandwidth of
+ 	of the device among all processes according to their weights,
+-- 
+2.29.0.rc0
+
+
+From 2dd334cbf17b04c825bef6c3d89f7b1bd7157940 Mon Sep 17 00:00:00 2001
+From: Piotr Gorski <lucjan.lucjanov@gmail.com>
+Date: Thu, 2 Jul 2020 19:26:24 +0200
+Subject: [PATCH 2/6] block: Fix depends for BLK_DEV_ZONED
+
+Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
+---
+ block/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/block/Kconfig b/block/Kconfig
+index bbad5e8bb..1178237ce 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -83,7 +83,7 @@ config BLK_DEV_INTEGRITY_T10
+ 
+ config BLK_DEV_ZONED
+ 	bool "Zoned block device support"
+-	select MQ_IOSCHED_DEADLINE
++	select IOSCHED_BFQ
+ 	help
+ 	Block layer zoned block device support. This option enables
+ 	support for ZAC/ZBC/ZNS host-managed and host-aware zoned block
+-- 
+2.29.0.rc0
+
+
+From 2787f15180119e8e8cd0ae099fd6c39fbac756ea Mon Sep 17 00:00:00 2001
+From: Piotr Gorski <lucjan.lucjanov@gmail.com>
+Date: Mon, 25 Nov 2019 13:45:35 +0100
+Subject: [PATCH 3/6] block: set rq_affinity = 2 for full multithreading I/O
+ requests
+
+Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
+---
+ include/linux/blkdev.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 868e11fac..e31743454 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -619,7 +619,8 @@ struct request_queue {
+ #define QUEUE_FLAG_RQ_ALLOC_TIME 27	/* record rq->alloc_time_ns */
+ 
+ #define QUEUE_FLAG_MQ_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
+-				 (1 << QUEUE_FLAG_SAME_COMP))
++				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
++				 (1 << QUEUE_FLAG_SAME_FORCE))
+ 
+ void blk_queue_flag_set(unsigned int flag, struct request_queue *q);
+ void blk_queue_flag_clear(unsigned int flag, struct request_queue *q);
+-- 
+2.29.0.rc0
+
+
+From 67e6c86929edf2cbb537d3125cfddb92e67f5789 Mon Sep 17 00:00:00 2001
+From: Piotr Gorski <lucjan.lucjanov@gmail.com>
+Date: Fri, 3 Jul 2020 12:58:15 +0200
+Subject: [PATCH 4/6] block: Add CONFIG to rename the mq-deadline scheduler
+
+Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
+---
+ block/Kconfig.iosched | 9 +++++++++
+ block/elevator.c      | 4 ++++
+ block/mq-deadline.c   | 4 ++++
+ 3 files changed, 17 insertions(+)
+
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index e58b2953a..9e5a3c5c6 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -8,6 +8,15 @@ config MQ_IOSCHED_DEADLINE
+ 	help
+ 	  MQ version of the deadline IO scheduler.
+ 
++config MQ_IOSCHED_DEADLINE_NODEFAULT
++	bool "Rename mq-deadline scheduler to mq-deadline-nodefault"
++	depends on MQ_IOSCHED_DEADLINE
++	default n
++	help
++	  This renames the mq-deadline scheduler to "mq-deadline-nodefault" and
++	  also drops its alias of "deadline". This can prevent existing
++	  userspace from forcing this scheduler over the kernel's choice.
++
+ config MQ_IOSCHED_KYBER
+ 	tristate "Kyber I/O scheduler"
+ 	help
+diff --git a/block/elevator.c b/block/elevator.c
+index 45efe944c..eacf7d559 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -631,7 +631,11 @@ static struct elevator_type *elevator_get_default(struct request_queue *q)
+ 	if (q->nr_hw_queues != 1)
+ 		return NULL;
+ 
++#if defined(CONFIG_MQ_IOSCHED_DEADLINE_NODEFAULT)
++	return elevator_get(q, "mq-deadline-nodefault", false);
++#else
+ 	return elevator_get(q, "mq-deadline", false);
++#endif
+ }
+ 
+ /*
+diff --git a/block/mq-deadline.c b/block/mq-deadline.c
+index bf2004423..005efab6f 100644
+--- a/block/mq-deadline.c
++++ b/block/mq-deadline.c
+@@ -792,8 +792,12 @@ static struct elevator_type mq_deadline = {
+ 	.queue_debugfs_attrs = deadline_queue_debugfs_attrs,
+ #endif
+ 	.elevator_attrs = deadline_attrs,
++#ifdef CONFIG_MQ_IOSCHED_DEADLINE_NODEFAULT
++	.elevator_name = "mq-deadline-nodefault",
++#else
+ 	.elevator_name = "mq-deadline",
+ 	.elevator_alias = "deadline",
++#endif
+ 	.elevator_features = ELEVATOR_F_ZBD_SEQ_WRITE,
+ 	.elevator_owner = THIS_MODULE,
+ };
+-- 
+2.29.0.rc0
+
+
+From 833fa53dfe1a73e0b4cc4914dbd9264d7d121cff Mon Sep 17 00:00:00 2001
+From: Alexandre Frade <kernel@xanmod.org>
+Date: Sat, 22 Aug 2020 03:15:34 +0000
+Subject: [PATCH 5/6] block, bfq: Disable low_latency when blk_iolatency is
+ enabled
+
+To prevent system freezing under heavy I/O workload throttling.
+
+Signed-off-by: Alexandre Frade <kernel@xanmod.org>
+---
+ block/bfq-iosched.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/block/bfq-iosched.c b/block/bfq-iosched.c
+index 418ea9673..a7d635c35 100644
+--- a/block/bfq-iosched.c
++++ b/block/bfq-iosched.c
+@@ -6501,7 +6501,7 @@ static int bfq_init_queue(struct request_queue *q, struct elevator_type *e)
+ 	bfqd->bfq_large_burst_thresh = 8;
+ 	bfqd->bfq_burst_interval = msecs_to_jiffies(180);
+ 
+-	bfqd->low_latency = true;
++	bfqd->low_latency = IS_ENABLED(CONFIG_BLK_CGROUP_IOLATENCY) ? false : true;
+ 
+ 	/*
+ 	 * Trade-off between responsiveness and fairness.
+-- 
+2.29.0.rc0
+
+
+From 23f2e578d759e6e3a43c2316ab3dee876fc2d48e Mon Sep 17 00:00:00 2001
+From: Pradeep P V K <ppvk () codeaurora ! org>
+Date: Wed, 16 Sep 2020 08:35:31 +0000
+Subject: [PATCH 6/6] block: Fix use-after-free issue while accessing
+ ioscheduler lock
+
+Observes below crash while accessing (use-after-free) lock member
+of bfq data.
+
+context#1			context#2
+				process_one_work()
+kthread()			blk_mq_run_work_fn()
+worker_thread()			 ->__blk_mq_run_hw_queue()
+process_one_work()		  ->blk_mq_sched_dispatch_requests()
+__blk_release_queue()		    ->blk_mq_do_dispatch_sched()
+->__elevator_exit()
+  ->blk_mq_exit_sched()
+    ->exit_sched()
+      ->kfree()
+				       ->bfq_dispatch_request()
+				         ->spin_unlock_irq(&bfqd->lock)
+
+This is because of the kblockd delayed work that might got scheduled
+around blk_release_queue() and accessed use-after-free member of
+bfq_data.
+
+240.212359:   <2> Unable to handle kernel paging request at
+virtual address ffffffee2e33ad70
+...
+240.212637:   <2> Workqueue: kblockd blk_mq_run_work_fn
+240.212649:   <2> pstate: 00c00085 (nzcv daIf +PAN +UAO)
+240.212666:   <2> pc : queued_spin_lock_slowpath+0x10c/0x2e0
+240.212677:   <2> lr : queued_spin_lock_slowpath+0x84/0x2e0
+...
+Call trace:
+240.212865:   <2>  queued_spin_lock_slowpath+0x10c/0x2e0
+240.212876:   <2>  do_raw_spin_lock+0xf0/0xf4
+240.212890:   <2>  _raw_spin_lock_irq+0x74/0x94
+240.212906:   <2>  bfq_dispatch_request+0x4c/0xd60
+240.212918:   <2>  blk_mq_do_dispatch_sched+0xe0/0x1f0
+240.212927:   <2>  blk_mq_sched_dispatch_requests+0x130/0x194
+240.212940:   <2>  __blk_mq_run_hw_queue+0x100/0x158
+240.212950:   <2>  blk_mq_run_work_fn+0x1c/0x28
+240.212963:   <2>  process_one_work+0x280/0x460
+240.212973:   <2>  worker_thread+0x27c/0x4dc
+240.212986:   <2>  kthread+0x160/0x170
+
+Fix this by cancelling the delayed work if any before elevator exits.
+
+Changes since V2:
+- Retained the code logic and Reviewed-by signoff from V1 Patch
+  as per Ming comments.
+- Moved the new local variables into queue_is_mq() branch.
+- Removed 'cancel_delayed_work_sync' from blk_mq_hw_sysfs_release()
+
+Changes since V1:
+- Moved the logic into blk_cleanup_queue() as per Ming comments.
+
+Signed-off-by: Pradeep P V K <ppvk@codeaurora.org>
+Reviewed-by: Ming Lei <ming.lei@redhat.com>
+---
+ block/blk-mq-sysfs.c | 1 -
+ block/blk-sysfs.c    | 8 ++++++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
+index 062229395..24bc9cca9 100644
+--- a/block/blk-mq-sysfs.c
++++ b/block/blk-mq-sysfs.c
+@@ -36,7 +36,6 @@ static void blk_mq_hw_sysfs_release(struct kobject *kobj)
+ 	struct blk_mq_hw_ctx *hctx = container_of(kobj, struct blk_mq_hw_ctx,
+ 						  kobj);
+ 
+-	cancel_delayed_work_sync(&hctx->run_work);
+ 
+ 	if (hctx->flags & BLK_MQ_F_BLOCKING)
+ 		cleanup_srcu_struct(hctx->srcu);
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 7dda709f3..36827b727 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -934,9 +934,13 @@ static void blk_release_queue(struct kobject *kobj)
+ 
+ 	blk_free_queue_stats(q->stats);
+ 
+-	if (queue_is_mq(q))
++	if (queue_is_mq(q)) {
++		struct blk_mq_hw_ctx *hctx;
++		int i;
+ 		cancel_delayed_work_sync(&q->requeue_work);
+-
++		queue_for_each_hw_ctx(q, hctx, i)
++			cancel_delayed_work_sync(&hctx->run_work);
++	}
+ 	blk_exit_queue(q);
+ 
+ 	blk_queue_free_zone_bitmaps(q);
+-- 
+2.29.0.rc0
+
