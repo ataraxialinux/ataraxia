@@ -56,8 +56,10 @@ build() {
 	patch -Np1 -i "$STUFF"/linux/0001-futex-patches.patch
 	patch -Np1 -i "$STUFF"/linux/0001-block-patches.patch
 	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
-	patch -Np1 -i "$STUFF"/linux/0014-Swap-sucks.patch
 	patch -Np1 -i "$STUFF"/linux/0110-Initialize-ata-before-graphics.patch
+
+	# Swap sucks
+	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
 
 	case $BARCH in
 		riscv64|riscv32)
