@@ -2,7 +2,6 @@
 # URL:         https://www.isc.org/software/dhcp
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  run-parts
-# Priority:    required
 # Section:     net
 
 name=dhcp
@@ -11,7 +10,6 @@ release=4
 backup=('etc/dhclient.conf'
 	'etc/dhcpd.conf'
 	'etc/dhcpd6.conf')
-options=('bootstrap')
 source=("http://ftp.isc.org/isc/dhcp/$version/$name-$version.tar.gz")
 
 build() {
@@ -41,13 +39,8 @@ build() {
 		--with-cli6-lease-file=/var/lib/dhclient/dhclient6.leases \
 		--enable-binary-leases \
 		--enable-paranoia
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE -j1
-		$ORIGMAKE DESTDIR="$PKG" install
-	else
-		make -j1
-		make DESTDIR="$PKG" install
-	fi
+	make -j1
+	make DESTDIR="$PKG" install
 
 	mkdir -p "$PKG"/var/lib/dhcpd "$PKG"/var/lib/dhclient
 
