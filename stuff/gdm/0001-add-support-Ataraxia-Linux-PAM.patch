@@ -1,32 +1,30 @@
-From 7b29dbd4f4f280dced03799c4948097a60078c66 Mon Sep 17 00:00:00 2001
+From 7cc5a32ab88bc1b46b6d01f3aca6838410223d16 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Wed, 23 Sep 2020 23:16:35 +0900
+Date: Sat, 17 Oct 2020 10:14:56 +0300
 Subject: [PATCH] add support for Ataraxia Linux PAM
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- data/meson.build                             |  8 ++++++++
+ data/meson.build                             |  7 +++++++
  data/pam-ataraxia/gdm-autologin.pam          | 13 +++++++++++++
- data/pam-ataraxia/gdm-fingerprint.pam        | 13 +++++++++++++
+ data/pam-ataraxia/gdm-fingerprint.pam        | 17 +++++++++++++++++
  data/pam-ataraxia/gdm-launch-environment.pam | 13 +++++++++++++
- data/pam-ataraxia/gdm-password.pam           | 11 +++++++++++
- data/pam-ataraxia/gdm-pin.pam                | 13 +++++++++++++
- data/pam-ataraxia/gdm-smartcard.pam          | 13 +++++++++++++
+ data/pam-ataraxia/gdm-password.pam           | 10 ++++++++++
+ data/pam-ataraxia/gdm-smartcard.pam          | 17 +++++++++++++++++
  meson.build                                  |  1 +
  meson_options.txt                            |  2 +-
- 9 files changed, 86 insertions(+), 1 deletion(-)
+ 8 files changed, 79 insertions(+), 1 deletion(-)
  create mode 100644 data/pam-ataraxia/gdm-autologin.pam
  create mode 100644 data/pam-ataraxia/gdm-fingerprint.pam
  create mode 100644 data/pam-ataraxia/gdm-launch-environment.pam
  create mode 100644 data/pam-ataraxia/gdm-password.pam
- create mode 100644 data/pam-ataraxia/gdm-pin.pam
  create mode 100644 data/pam-ataraxia/gdm-smartcard.pam
 
 diff --git a/data/meson.build b/data/meson.build
-index 05a2011..9b749a3 100644
+index 05a2011..d8da396 100644
 --- a/data/meson.build
 +++ b/data/meson.build
-@@ -137,6 +137,14 @@ pam_data_files_map = {
+@@ -137,6 +137,13 @@ pam_data_files_map = {
      'gdm-password',
      'gdm-pin',
    ],
@@ -36,125 +34,112 @@ index 05a2011..9b749a3 100644
 +    'gdm-fingerprint',
 +    'gdm-smartcard',
 +    'gdm-password',
-+    'gdm-pin',
 +  ],
    'none': [],
    # We should no longer have 'autodetect' at this point
  }
 diff --git a/data/pam-ataraxia/gdm-autologin.pam b/data/pam-ataraxia/gdm-autologin.pam
 new file mode 100644
-index 0000000..99b1420
+index 0000000..8475d3f
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-autologin.pam
 @@ -0,0 +1,13 @@
-+auth     requisite pam_nologin.so
-+auth     required  pam_env.so
-+auth     optional  pam_gdm.so
-+auth     optional  pam_gnome_keyring.so
-+auth     optional  pam_permit.so
++auth       required                    pam_shells.so
++auth       requisite                   pam_nologin.so
++auth       optional                    pam_permit.so
++auth       required                    pam_env.so
++auth       [success=ok default=1]      pam_gdm.so
++auth       optional                    pam_gnome_keyring.so
 +
-+account  include   system-local-login
++account    include                     system-local-login
 +
-+password include   system-local-login
++password   required                    pam_deny.so
 +
-+session  optional  pam_keyinit.so force revoke
-+session  include   system-local-login
-+session  optional  pam_gnome_keyring.so auto_start
++session    include                     system-local-login
++session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-fingerprint.pam b/data/pam-ataraxia/gdm-fingerprint.pam
 new file mode 100644
-index 0000000..7490ec5
+index 0000000..1987dcd
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-fingerprint.pam
-@@ -0,0 +1,13 @@
-+auth     required  pam_shells.so
-+auth     requisite pam_nologin.so
-+auth     required  pam_env.so
-+auth     required  pam_fprintd.so
-+auth     optional  pam_permit.so
+@@ -0,0 +1,17 @@
++auth       required                    pam_shells.so
++auth       requisite                   pam_nologin.so
++auth       required                    pam_faillock.so      preauth
++auth       [success=1 default=ignore]  pam_fprintd.so
++auth       [default=die]               pam_faillock.so      authfail
++auth       optional                    pam_permit.so
++auth       required                    pam_env.so
++auth       required                    pam_faillock.so      authsucc
++auth       [success=ok default=1]      pam_gdm.so
++auth       optional                    pam_gnome_keyring.so
 +
-+account  include   system-local-login
++account    include                     system-local-login
 +
-+password required  pam_fprintd.so
-+password optional  pam_permit.so
++password   required                    pam_deny.so
 +
-+session  optional  pam_keyinit.so force revoke
-+session  include   system-local-login
++session    include                     system-local-login
++session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-launch-environment.pam b/data/pam-ataraxia/gdm-launch-environment.pam
 new file mode 100644
-index 0000000..a4dfec5
+index 0000000..6143232
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-launch-environment.pam
 @@ -0,0 +1,13 @@
-+auth     required  pam_succeed_if.so audit quiet_success user = gdm
-+auth     required  pam_env.so
-+auth     optional  pam_permit.so
++auth       required                    pam_succeed_if.so    audit quiet_success user = gdm
++auth       optional                    pam_permit.so
++auth       required                    pam_env.so
 +
-+account  required  pam_succeed_if.so audit quiet_success user = gdm
-+account  include   system-local-login
++account    required                    pam_succeed_if.so    audit quiet_success user = gdm
++account    optional                    pam_permit.so
 +
-+password required  pam_deny.so
++password   required                    pam_deny.so
 +
-+session  required  pam_succeed_if.so audit quiet_success user = gdm
-+session  optional  pam_keyinit.so force revoke
-+-session optional  pam_systemd.so
-+session  optional  pam_permit.so
++-session   optional                    pam_systemd.so
++session    optional                    pam_keyinit.so       force revoke
++session    required                    pam_succeed_if.so    audit quiet_success user = gdm
++session    required                    pam_permit.so
 diff --git a/data/pam-ataraxia/gdm-password.pam b/data/pam-ataraxia/gdm-password.pam
 new file mode 100644
-index 0000000..8d34794
+index 0000000..577e3bf
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-password.pam
-@@ -0,0 +1,11 @@
-+auth     include   system-local-login
-+auth     optional  pam_gnome_keyring.so
+@@ -0,0 +1,10 @@
++auth       include                     system-local-login
++auth       optional                    pam_gnome_keyring.so
 +
-+account  include   system-local-login
++account    include                     system-local-login
 +
-+password include   system-local-login
-+password optional  pam_gnome_keyring.so use_authtok
++password   include                     system-local-login
++password   optional                    pam_gnome_keyring.so use_authtok
 +
-+session  optional  pam_keyinit.so force revoke
-+session  include   system-local-login
-+session  optional  pam_gnome_keyring.so auto_start
-diff --git a/data/pam-ataraxia/gdm-pin.pam b/data/pam-ataraxia/gdm-pin.pam
-new file mode 100644
-index 0000000..135e205
---- /dev/null
-+++ b/data/pam-ataraxia/gdm-pin.pam
-@@ -0,0 +1,13 @@
-+auth     requisite pam_pin.so
-+auth     include   system-local-login
-+auth     optional  pam_gnome_keyring.so
-+
-+account  include   system-local-login
-+
-+password include   system-local-login
-+password optional  pam_pin.so
-+password optional  pam_gnome_keyring.so use_authtok
-+
-+session  optional  pam_keyinit.so force revoke
-+session  include   system-local-login
-+session  optional  pam_gnome_keyring.so auto_start
++session    include                     system-local-login
++session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-smartcard.pam b/data/pam-ataraxia/gdm-smartcard.pam
 new file mode 100644
-index 0000000..63569a6
+index 0000000..5fb45b3
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-smartcard.pam
-@@ -0,0 +1,13 @@
-+auth     required  pam_shells.so
-+auth     requisite pam_nologin.so
-+auth     required  pam_env.so
-+auth     required  pam_pkcs11.so wait_for_card card_only
-+auth     optional  pam_permit.so
+@@ -0,0 +1,17 @@
++auth       required                    pam_shells.so
++auth       requisite                   pam_nologin.so
++auth       required                    pam_faillock.so      preauth
++auth       [success=1 default=ignore]  pam_pkcs11.so        wait_for_card card_only
++auth       [default=die]               pam_faillock.so      authfail
++auth       optional                    pam_permit.so
++auth       required                    pam_env.so
++auth       required                    pam_faillock.so      authsucc
++auth       [success=ok default=1]      pam_gdm.so
++auth       optional                    pam_gnome_keyring.so
 +
-+account  include   system-local-login
++account    include                     system-local-login
 +
-+password required  pam_pkcs11.so
-+password optional  pam_permit.so
++password   required                    pam_deny.so
 +
-+session  optional  pam_keyinit.so force revoke
-+session  include   system-local-login
++session    include                     system-local-login
++session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/meson.build b/meson.build
-index 7e336bf..4dd78e7 100644
+index 1979cfe..908e612 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -172,6 +172,7 @@ if default_pam_config == 'autodetect'
@@ -179,5 +164,5 @@ index 49550bc..9304372 100644
  option('defaults-conf', type: 'string', value: '', description: 'Filename to give to defaults file.')
  option('dmconfdir', type: 'string', value: '', description: 'Directory where sessions are stored.')
 -- 
-2.28.0
+2.26.2
 
