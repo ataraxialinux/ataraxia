@@ -141,3 +141,8 @@ satyr
 squid
 xorg-server
 ```
+
+# Ruby
+```
+asciidoctor
+weechat```
