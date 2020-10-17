@@ -1,0 +1,28 @@
+# Description: Power management tool for the MATE desktop
+# URL:         https://mate-desktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python itstool mate-panel dbus-glib libcanberra libnotify upower
+# Section:     mate
+
+name=mate-power-manager
+version=1.24.1
+release=1
+source=("https://pub.mate-desktop.org/releases/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np0 -i "$STUFF"/mate-power-manager/musl.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/mate-power-manager \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--without-keyring \
+		--enable-applets
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
