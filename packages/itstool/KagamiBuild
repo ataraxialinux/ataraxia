@@ -6,12 +6,13 @@
 
 name=itstool
 version=2.0.6
-release=4
+release=5
 source=("http://files.itstool.org/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/itstool/fix-segfault.patch
+	patch -Np1 -i "$STUFF"/itstool/patch-itstool.in
+	patch -Np1 -i "$STUFF"/itstool/patch-PR18
 
 	PYTHON=/usr/bin/python3 \
 	./configure $BUILDFLAGS \
