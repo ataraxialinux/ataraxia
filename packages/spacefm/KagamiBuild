@@ -1,32 +1,19 @@
 # Description: Multi-panel tabbed file manager
 # URL:         https://ignorantguru.github.io/spacefm
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  intltool gtk3 startup-notification
+# Depends on:  meson intltool gtk3 startup-notification
 # Section:     utils
 
 name=spacefm
-version=1.0.6
+version=2.0.0
 release=1
-source=("https://github.com/IgnorantGuru/spacefm/archive/$version.tar.gz")
+source=("https://github.com/thermitegod/spacefm/archive/v$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/spacefm/gcc10.patch
-	patch -Np1 -i "$STUFF"/spacefm/musl.patch
-
-	for a in $(find . -name config.sub); do
-		cp "$STUFF"/config.sub $a
-	done
-
-	for a in $(find . -name config.guess); do
-		cp "$STUFF"/config.guess $a
-	done
-
-	autoreconf -vif
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--with-gtk3 \
-		--disable-video-thumbnails
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
