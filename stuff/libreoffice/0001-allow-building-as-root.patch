@@ -1,0 +1,31 @@
+From 46bf4376240429505d33ed6cf89c2dd402d4af7c Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 18 Oct 2020 17:21:04 +0300
+Subject: [PATCH] allow building as root
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ Makefile.in | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index 6af416b8a..d5c059f50 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -59,12 +59,7 @@ else # MAKE_RESTARTS
+ .DEFAULT_GOAL := build
+ 
+ check-if-root:
+-	@if test ! `uname` = 'Haiku' -a `id -u` = 0 && ! grep -q 'lxc\|docker' /proc/self/cgroup && ! grep -q 'libpod_parent' /proc/self/cgroup; then \
+-		echo; \
+-		echo 'Building LibreOffice as root is a very bad idea, use a regular user.'; \
+-		echo; \
+-		exit 1; \
+-	fi
++	@echo "Building LibreOffice as root"
+ 
+ gb_Side ?= host
+ 
+-- 
+2.26.2
+

@@ -1,0 +1,90 @@
+# Description: A full office productivity suite
+# URL:         https://www.libreoffice.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  coreutils python-lxml perl-archive-zip unzip zip wget lobase apr boost clucene cups dbus-glib libjpeg-turbo glm glu gpgme gst-plugins-base gtk3 libatomic_ops lcms2 libxslt neon nss poppler redland dconf hyphen hunspell postgresql libldap
+# Section:     office
+
+name=libreoffice
+version=7.0.2.2
+case $version in
+	*.*.*.*) _v=${version%.*};;
+	*.*.*) _v=${version};;
+esac
+release=1
+source=("https://download.documentfoundation.org/libreoffice/src/${_v}/$name-$version.tar.xz"
+	"https://download.documentfoundation.org/libreoffice/src/${_v}/libreoffice-dictionaries-$version.tar.xz"
+	"https://download.documentfoundation.org/libreoffice/src/${_v}/libreoffice-help-$version.tar.xz"
+	"https://download.documentfoundation.org/libreoffice/src/${_v}/libreoffice-translations-$version.tar.xz"
+	"https://github.com/ataraxialinux/storage/raw/master/skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz"
+	"https://github.com/ataraxialinux/storage/raw/master/Firebird-3.0.0.32483-0.tar.bz2")
+noextract=("libreoffice-dictionaries-$version.tar.xz"
+	"libreoffice-help-$version.tar.xz"
+	"libreoffice-translations-$version.tar.xz"
+	"skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz"
+	"Firebird-3.0.0.32483-0.tar.bz2")
+
+build() {
+	export PATH="/opt/coreutils/bin:$PATH"
+
+	cd "$SRC"/$name-$version
+
+	install -dm755 external/tarballs
+	ln -sf "$SRC"/libreoffice-dictionaries-$version.tar.xz external/tarballs/
+	ln -sf "$SRC"/libreoffice-help-$version.tar.xz external/tarballs/
+	ln -sf "$SRC"/libreoffice-translations-$version.tar.xz external/tarballs/
+	ln -sf "$SRC"/skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz external/tarballs/
+	ln -sf "$SRC"/Firebird-3.0.0.32483-0.tar.bz2 external/tarballs/
+
+	patch -Np1 -i "$STUFF"/libreoffice/linux-musl.patch
+	patch -Np1 -i "$STUFF"/libreoffice/fix-execinfo.patch
+	patch -Np1 -i "$STUFF"/libreoffice/disable-liborcus-unittest.patch
+	patch -Np1 -i "$STUFF"/libreoffice/musl-stacksize.patch
+	patch -Np1 -i "$STUFF"/libreoffice/musl-libintl.patch
+	patch -Np1 -i "$STUFF"/libreoffice/0001-allow-building-as-root.patch
+
+	NOCONFIGURE=1 ./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-vendor="Ataraxia Linux" \
+		--with-lang="en-US" \
+		--with-help \
+		--with-myspell-dicts \
+		--without-java \
+		--without-system-dicts \
+		--with-external-dict-dir=/usr/share/hunspell \
+		--with-external-hyph-dir=/usr/share/hyphen \
+		--with-system-apr \
+		--with-system-boost \
+		--with-system-clucene \
+		--with-system-curl \
+		--with-system-epoxy \
+		--with-system-expat \
+		--with-system-glm \
+		--with-system-gpgmepp \
+		--with-system-graphite \
+		--with-system-harfbuzz \
+		--with-system-icu \
+		--with-system-jpeg \
+		--with-system-lcms2 \
+		--with-system-libatomic_ops \
+		--with-system-libpng \
+		--with-system-libxml \
+		--with-system-neon \
+		--with-system-nss \
+		--with-system-openldap \
+		--with-system-openssl \
+		--with-system-poppler \
+		--with-system-postgresql \
+		--with-system-redland \
+		--with-system-zlib \
+		--enable-dconf \
+		--enable-gtk3 \
+		--enable-python=system \
+		--enable-release-build \
+		--disable-kf5 \
+		--disable-qt5 \
+		--disable-odk
+	make build-nocheck
+	make DESTDIR="$PKG" distro-pack-install
+}
