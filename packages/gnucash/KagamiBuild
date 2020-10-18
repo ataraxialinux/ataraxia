@@ -1,0 +1,31 @@
+# Description: Personal and small-business financial-accounting application
+# URL:         https://gnucash.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake swig gtest boost guile libxslt libsecret dconf webkitgtk libdbi-drivers
+# Section:     office
+
+name=gnucash
+version=4.2
+release=1
+options=('~emptydirs')
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -e 's|-Werror||g' -i CMakeLists.txt
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWITH_AQBANKING=OFF \
+		-DWITH_OFX=OFF \
+		-DWITH_PYTHON=ON \
+		-DWITH_SQL=ON \
+		-DCOMPILE_GSCHEMAS=OFF \
+		-Wno-dev
+	make
+	make DESTDIR="$PKG" install
+}
