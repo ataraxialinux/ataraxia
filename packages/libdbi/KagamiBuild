@@ -1,0 +1,25 @@
+# Description: Database independant abstraction layer for C
+# URL:         http://libdbi.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     database
+
+name=libdbi
+version=0.9.0
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
