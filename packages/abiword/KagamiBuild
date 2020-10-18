@@ -1,0 +1,29 @@
+# Description: Fully-featured word processor
+# URL:         https://www.abisource.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  autoconf-archive gobject-introspection boost curl fribidi goffice wv enchant libical evolution-data-server libchamplain
+# Section:     office
+
+name=abiword
+version=3.0.4
+release=1
+source=("https://www.abisource.com/downloads/abiword/$version/source/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/abiword/python-override.patch
+	patch -Np1 -i "$STUFF"/abiword/enchant-2.1.patch
+	sed -i 's/enchant >=/enchant-2 >=/' configure.ac
+
+	libtoolize --force
+	autoreconf -fi
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-introspection \
+		--enable-plugins
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
