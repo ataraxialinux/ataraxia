@@ -1,0 +1,21 @@
+# Description: An extensible I/O abstraction library for dealing with structured file formats
+# URL:         https://gitlab.gnome.org/GNOME/libgsf.git
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gobject-introspection gdk-pixbuf libxml2
+# Section:     libs
+
+name=libgsf
+version=1.14.47
+release=1
+source=("http://ftp.gnome.org/pub/gnome/sources/$name/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--enable-introspection
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
