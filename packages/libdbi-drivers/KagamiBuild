@@ -1,0 +1,31 @@
+# Description: Database drivers for libdbi (SQLite)
+# URL:         http://libdbi-drivers.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libdbi sqlite
+# Section:     database
+
+name=libdbi-drivers
+version=0.9.0
+release=1
+source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-sqlite3 \
+		--without-mysql \
+		--without-pgsql
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
