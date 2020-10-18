@@ -1,7 +1,7 @@
 # Description: A full office productivity suite
 # URL:         https://www.libreoffice.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  coreutils python-lxml perl-archive-zip unzip zip wget lobase apr boost clucene cups dbus-glib libjpeg-turbo glm glu gpgme gst-plugins-base gtk3 libatomic_ops lcms2 libxslt neon nss poppler redland dconf hyphen hunspell postgresql libldap
+# Depends on:  coreutils clang python-lxml perl-archive-zip unzip zip wget lobase apr boost clucene cups dbus-glib libjpeg-turbo glm glu gpgme gst-plugins-base gtk3 libatomic_ops lcms2 libxslt neon nss poppler redland dconf hyphen hunspell postgresql libldap
 # Section:     office
 
 name=libreoffice
@@ -24,6 +24,12 @@ noextract=("libreoffice-dictionaries-$version.tar.xz"
 	"Firebird-3.0.0.32483-0.tar.bz2")
 
 build() {
+	unset CFLAGS CXXFLAGS
+	if [ "$bootstrap" != "yes" ]; then
+		if [ "$opt_ccache" != "0" ]; then
+			export PATH="/usr/lib/ccache/bin:$PATH"
+		fi
+	fi
 	export PATH="/opt/coreutils/bin:$PATH"
 
 	cd "$SRC"/$name-$version
