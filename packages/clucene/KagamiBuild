@@ -1,0 +1,26 @@
+# Description: C++ port of the high-performance text search engine Lucene
+# URL:         http://clucene.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai boost
+# Section:     libs
+
+name=clucene
+version=2.3.3.4
+release=1
+source=("https://downloads.sourceforge.net/clucene/clucene-core-$version.tar.gz")
+
+build() {
+	cd "$SRC"/clucene-core-$version
+	patch -Np1 -i "$STUFF"/clucene/clucene-2.3.3.4-contribs_lib-1.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/clucene-core-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_CONTRIBS_LIB=ON \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
