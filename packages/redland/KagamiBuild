@@ -1,0 +1,28 @@
+# Description: Library that provides a high-level interface to RDF data
+# URL:         http://librdf.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libltdl rasqal sqlite
+# Section:     libs
+
+name=redland
+version=1.0.17
+release=1
+source=("http://download.librdf.org/source/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--without-bdb \
+		--enable-release
+	make
+	make DESTDIR="$PKG" install
+}
