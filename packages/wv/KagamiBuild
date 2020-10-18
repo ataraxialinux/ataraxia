@@ -1,0 +1,31 @@
+# Description: MSWord library can load and parse Word 2000, 97, 95 and 6 file formats
+# URL:         https://sourceforge.net/projects/wvware
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libpng libgsf
+# Section:     libs
+
+name=wv
+version=1.2.9
+release=1
+source=("https://www.abisource.com/downloads/wv/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	cp "$STUFF"/slibtool/install-sh .
+	chmod +x install-sh
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
