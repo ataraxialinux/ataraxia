@@ -1,0 +1,26 @@
+# Description: C++ mathematics library for 3D software based on the OpenGL Shading Language (GLSL) specification
+# URL:         http://glm.g-truc.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=glm
+version=0.9.9.8
+release=1
+source=("https://github.com/g-truc/glm/archive/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p "$PKG"/usr/include
+	cp -r glm "$PKG"/usr/include/
+
+	mkdir -p "$PKG"/usr/lib/pkgconfig
+	cat > "$PKG"/usr/lib/pkgconfig/glm.pc <<-EOF
+		prefix=/usr
+		includedir=/usr/include
+
+		Name: GLM
+		Description: OpenGL Mathematics
+		Version: $version
+		Cflags: -I/usr/include
+	EOF
+}
