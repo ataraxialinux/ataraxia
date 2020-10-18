@@ -1,0 +1,24 @@
+# Description: Google Test - C++ testing utility
+# URL:         https://github.com/google/googletest
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai python
+# Section:     devel
+
+name=gtest
+version=1.10.0
+release=1
+source=("https://github.com/google/googletest/archive/release-$version.tar.gz")
+
+build() {
+	cd "$SRC"/googletest-release-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/googletest-release-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
