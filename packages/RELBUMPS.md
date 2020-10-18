@@ -94,7 +94,7 @@ weechat
 
 # Boost
 ```
-boost
+clucene
 exempi
 highlight
 i2pd
