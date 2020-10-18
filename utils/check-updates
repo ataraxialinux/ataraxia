@@ -16,6 +16,11 @@ check_updates() {
 	fi
 
 	mypkg="$1"
+
+	if [ ! -f "$mypkg/KagamiBuild" ]; then
+		return 0
+	fi
+
 	source "$mypkg/KagamiBuild"
 
 	myhomepage="$(grep "^# URL[[:blank:]]*:" $mypkg/KagamiBuild | sed 's/^# URL[[:blank:]]*:[[:blank:]]*//' | tr ' ' '\n' | awk '!a[$0]++')"
