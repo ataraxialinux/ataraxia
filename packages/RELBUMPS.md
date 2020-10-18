@@ -3,6 +3,7 @@ This document tells what packages should be relbumped after other package update
 
 ## Python
 ```
+abiword
 boost
 brotli
 bullet
