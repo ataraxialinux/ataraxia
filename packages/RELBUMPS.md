@@ -16,14 +16,17 @@ firewalld
 gdb
 gnome-builder
 gnome-music
+gnucash
 gpgme
 gyp
+ktoblzcheck
 ldb
 libblockdev
 libbytesize
 libcomps
 libdnf
 libproxy
+libreoffice
 librepo
 libreport
 libsolv
