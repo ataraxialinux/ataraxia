@@ -6,12 +6,16 @@
 
 name=loopcube
 version=0.3
-commit=dd572592ebade1eabd702c4c1d960acda1e71b27
+commit=4dc5d59f1ff9ddf6d7899c555db46c15ad4196c0
 release=1
 source=("https://github.com/nek0bit/LoopCube/archive/$commit.tar.gz")
 
 build() {
 	cd "$SRC"/LoopCube-$commit
+	patch -Np1 -i "$STUFF"/loopcube/0001-fix-this-stuff.patch
+	patch -Np1 -i "$STUFF"/loopcube/0001-like-pro.patch
+	patch -Np1 -i "$STUFF"/loopcube/0001-omfg.patch
+
 	make DATA_LOCATION=/usr/share/loopcube release
 	make DATA_LOCATION="$PKG"/usr/share/loopcube PREFIX="$PKG"/usr/games install
 }

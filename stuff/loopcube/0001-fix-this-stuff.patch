@@ -1,0 +1,40 @@
+From b1289af9bb5f33070b7466bf8b4db8799efc3d7d Mon Sep 17 00:00:00 2001
+From: root <root@localhost.localdomain>
+Date: Sun, 18 Oct 2020 21:45:57 +0000
+Subject: [PATCH] fix this stuff
+
+Signed-off-by: root <root@localhost.localdomain>
+---
+ Makefile | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 899fda1..aed2da0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ CXX = g++
+-CXXFLAGS = -Wall -Wextra -pipe -pedantic
+-LDFLAGS = -lm -lSDL2 -lSDL2_image -lSDL2_ttf
++CXXFLAGS = -Wall -Wextra -pipe -pedantic $(shell pkg-config --cflags sdl2 SDL2_image SDL2_ttf)
++LDFLAGS = $(shell pkg-config --libs sdl2 SDL2_image SDL2_ttf)
+ SRC_DIR = ./src
+ OBJ_DIR = ./obj
+ TARGET = loopcube
+@@ -16,11 +16,10 @@ endif
+ all: release
+ 
+ obj/%.o: %.cpp %.hpp
+-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -c $< -o $@ 
++	$(CXX) $(CXXFLAGS) -c $< -o $@
+ 
+ $(TARGET): $(OBJ)
+-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(TARGET) $^
+-
++	$(CXX) -o $(TARGET) $^ $(LDFLAGS)
+ 
+ debug: CXXFLAGS += -g
+ debug: setup
+-- 
+2.28.0
+
