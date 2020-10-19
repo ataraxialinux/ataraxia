@@ -115,6 +115,7 @@ evolution-data-server
 firefox
 harfbuzz
 libical
+libreoffice
 node
 php
 postgresql

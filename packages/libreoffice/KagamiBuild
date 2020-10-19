@@ -13,12 +13,10 @@ esac
 release=1
 source=("https://download.documentfoundation.org/libreoffice/src/${_v}/$name-$version.tar.xz"
 	"https://download.documentfoundation.org/libreoffice/src/${_v}/libreoffice-dictionaries-$version.tar.xz"
-	"https://download.documentfoundation.org/libreoffice/src/${_v}/libreoffice-help-$version.tar.xz"
 	"https://download.documentfoundation.org/libreoffice/src/${_v}/libreoffice-translations-$version.tar.xz"
 	"https://github.com/ataraxialinux/storage/raw/master/skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz"
 	"https://github.com/ataraxialinux/storage/raw/master/Firebird-3.0.0.32483-0.tar.bz2")
 noextract=("libreoffice-dictionaries-$version.tar.xz"
-	"libreoffice-help-$version.tar.xz"
 	"libreoffice-translations-$version.tar.xz"
 	"skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz"
 	"Firebird-3.0.0.32483-0.tar.bz2")
@@ -36,7 +34,6 @@ build() {
 
 	install -dm755 external/tarballs
 	ln -sf "$SRC"/libreoffice-dictionaries-$version.tar.xz external/tarballs/
-	ln -sf "$SRC"/libreoffice-help-$version.tar.xz external/tarballs/
 	ln -sf "$SRC"/libreoffice-translations-$version.tar.xz external/tarballs/
 	ln -sf "$SRC"/skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz external/tarballs/
 	ln -sf "$SRC"/Firebird-3.0.0.32483-0.tar.bz2 external/tarballs/
@@ -53,9 +50,9 @@ build() {
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--with-vendor="Ataraxia Linux" \
-		--with-lang="" \
-		--with-help \
+		--with-lang="en-US" \
 		--with-myspell-dicts \
+		--without-help \
 		--without-java \
 		--without-system-dicts \
 		--with-external-dict-dir=/usr/share/hunspell \
