@@ -2,39 +2,23 @@
 # URL:         http://www.cmake.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  libarchive curl libuv rhash jsoncpp
-# Priority:    required
 # Section:     devel
 
 name=cmake
 version=3.18.4
 release=1
-options=('bootstrap')
 source=("https://www.cmake.org/files/v${version%.*}/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
 
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE
-
-		./bootstrap \
-			--prefix=/usr \
-			--mandir=/share/man \
-			--docdir=/share/doc/cmake \
-			--system-libs \
-			--parallel=$(expr $(nproc) + 1) \
-			-- \
-			-DCMAKE_C_COMPILER="$XTARGET-cc" \
-			-DCMAKE_CXX_COMPILER="$XTARGET-c++"
-	else
-		./bootstrap \
-			--prefix=/usr \
-			--mandir=/share/man \
-			--docdir=/share/doc/cmake \
-			--system-libs \
-			--parallel=$(expr $(nproc) + 1)
-	fi
+	./bootstrap \
+		--prefix=/usr \
+		--mandir=/share/man \
+		--docdir=/share/doc/cmake \
+		--system-libs \
+		--parallel=$(expr $(nproc) + 1)
 	make
 	make DESTDIR="$PKG" install
 }
