@@ -341,9 +341,7 @@ build_target() {
 
 genrepo() {
 	unset name version release options backup source noextract depends
-	local d
-	local i
-	local e
+	local d i e url
 
 	if [ -f "$1/.ignoreit" ]; then
 		return 0
@@ -361,10 +359,16 @@ genrepo() {
 	e="$(echo $maintainer | awk '{print $NF}')"
 
 	for i in ${source[*]}; do
-		if [ -n "$d" ]; then
-			d="$d $i"
+		if echo $i | grep -q '::archive='; then
+			url="$(echo $i | sed -e 's/::archive=/ /g' | awk '{print $1}')"
 		else
-			d="$i"
+			url="$i"
+		fi
+
+		if [ -n "$d" ]; then
+			d="$d $url"
+		else
+			d="$url"
 		fi
 	done
 

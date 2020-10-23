@@ -7,19 +7,13 @@
 name=vulkan-loader
 version=1.2.157
 release=1
-source=("https://github.com/KhronosGroup/Vulkan-Loader/archive/v$version.tar.gz")
-noextract=("v$version.tar.gz")
+source=("git://github.com/KhronosGroup/Vulkan-Loader.git::checkout=v$version")
 
 build() {
-	cd "$SRC"
-	git clone https://github.com/KhronosGroup/Vulkan-Loader.git "$SRC"/Vulkan-Loader-$version
-
-	cd "$SRC"/Vulkan-Loader-$version
-	git checkout tags/v${version} -b branch
-
+	cd "$SRC"/Vulkan-Loader.git
 	mkdir -p build
 	cd build
-	cmake "$SRC"/Vulkan-Loader-$version \
+	cmake "$SRC"/Vulkan-Loader.git \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
