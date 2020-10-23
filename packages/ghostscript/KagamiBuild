@@ -7,12 +7,14 @@
 name=ghostscript
 version=9.53.3
 oldver="$(echo $version | tr -d '.')"
-release=1
+release=2
 source=("https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs$oldver/$name-${version}.tar.xz"
 	"https://downloads.sourceforge.net/gs-fonts/ghostscript-fonts-std-8.11.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/ghostscript/ghostscript-gpl-9.53.3-freetype-2.10.3.patch
+
 	rm -rf freetype jpeg lcms2mt libpng openjpeg tiff zlib cups/libs
 
 	./configure $BUILDFLAGS \
