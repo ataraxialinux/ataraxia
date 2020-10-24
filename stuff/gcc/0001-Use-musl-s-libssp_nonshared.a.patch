@@ -1,27 +1,31 @@
-From 1fd7f54f3aaf134a21dc5bd6b406b5506880cbd3 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 7 May 2020 17:15:31 +0300
-Subject: [PATCH 01/11] Use musl's libssp_nonshared.a
+From 740342a0e4b0b3af498964440918abba1a27ba33 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
+Date: Fri, 21 Aug 2020 07:03:00 +0000
+Subject: [PATCH 22/30] Alpine musl package provides libssp_nonshared.a. We
+ link to it unconditionally, as otherwise we get link failures if some objects
+ are -fstack-protector built and final link happens with -fno-stack-protector.
+ This seems to be the common case when bootstrapping gcc, the piepatches do
+ not seem to fully fix the crosstoolchain and  bootstrap sequence wrt.
+ stack-protector flag usage.
 
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- gcc/gcc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ gcc/gcc.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/gcc/gcc.c b/gcc/gcc.c
-index 9f790db0d..e6887590a 100644
+index daeb4d0c8ea..6920bec0fa0 100644
 --- a/gcc/gcc.c
 +++ b/gcc/gcc.c
-@@ -877,7 +877,8 @@ proper position among the other output files.  */
+@@ -894,8 +894,7 @@ proper position among the other output files.  */
+ 
  #ifndef LINK_SSP_SPEC
  #ifdef TARGET_LIBC_PROVIDES_SSP
- #define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
+-#define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
 -		       "|fstack-protector-strong|fstack-protector-explicit:}"
-+		       "|fstack-protector-strong|fstack-protector-explicit" \
-+		       ":-lssp_nonshared}"
++#define LINK_SSP_SPEC "-lssp_nonshared"
  #else
  #define LINK_SSP_SPEC "%{fstack-protector|fstack-protector-all" \
  		       "|fstack-protector-strong|fstack-protector-explicit" \
 -- 
-2.26.2
+2.27.0
 
