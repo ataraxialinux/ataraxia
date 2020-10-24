@@ -5,11 +5,13 @@
 
 name=alsa-lib
 version=1.2.4
-release=1
+release=2
 source=("https://github.com/alsa-project/alsa-lib/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/alsa-lib/ad8c8e5503980295dd8e5e54a6285d2d7e32eb1e.patch
+
 	autoreconf -vfi
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
