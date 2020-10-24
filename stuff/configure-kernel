@@ -73,6 +73,7 @@ main() {
 			;;
 		ppc64le) defconfig="powernv_defconfig" ;;
 		ppc64) defconfig="g5_defconfig" ;;
+		ppc) defconfig="pmac32_defconfig" ;;
 		s390x) defconfig="defconfig" ;;
 		riscv64) defconfig="defconfig" ;;
 		riscv32) defconfig="rv32_defconfig" ;;
@@ -84,7 +85,7 @@ main() {
 		i686) karch="i386" ;;
 		aarch64) karch="arm64" ;;
 		armv7hl|armv6hl) karch="arm" ;;
-		ppc64le|ppc64) karch="powerpc" ;;
+		ppc64le|ppc64|ppc) karch="powerpc" ;;
 		s390x) karch="s390" ;;
 		riscv64|riscv32) karch="riscv" ;;
 		*) echo "Architecture is not set or is not supported by Ataraxia Linux"; exit 1 ;;
@@ -362,7 +363,7 @@ main() {
 
 	# IEEE 1394 support (x86 and ppc)
 	case $arch in
-		x86_64|i686|ppc64le|ppc64)
+		x86_64|i686|ppc64le|ppc64|ppc)
 			yconfig MACINTOSH_DRIVERS
 			mconfig FIREWIRE FIREWIRE_OHCI FIREWIRE_SBP2 FIREWIRE_NET FIREWIRE_NOSY
 			;;
@@ -559,6 +560,10 @@ main() {
 		ppc64le|ppc64)
 			yconfig IBM_EMAC
 			mconfig IBMVETH EHEA IBMVNIC GELIC_NET GELIC_WIRELESS SPIDER_NET
+			;;
+		ppc)
+			yconfig NET_VENDOR_APPLE
+			mconfig MACE BMAC MACMACE
 			;;
 	esac
 
