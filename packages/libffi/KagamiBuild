@@ -12,6 +12,11 @@ source=("https://github.com/libffi/libffi/releases/download/v${version/+/-}/libf
 
 build() {
 	cd "$SRC"/$name-${version/+/-}
+	patch -Np1 -i "$STUFF"/libffi/0001-powerpc-fix-build-failure-on-power7-and-older-532.patch
+	patch -Np1 -i "$STUFF"/libffi/0001-Address-platforms-with-no-__int128.patch
+	patch -Np1 -i "$STUFF"/libffi/0001-Address-platforms-with-no-__int128-part2.patch
+	patch -Np1 -i "$STUFF"/libffi/0001-ffi_powerpc.h-fix-build-failure-with-powerpc7.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--enable-pax_emutramp \
