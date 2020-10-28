@@ -7,13 +7,16 @@
 
 name=lvm2
 version=2.03.10
-release=1
+release=2
 options=('bootstrap')
 backup=('etc/lvm/lvm.conf'
 	'etc/lvm/lvmlocal.conf')
 source=("http://sourceware.org/pub/lvm2/LVM2.${version}.tgz")
 
 build() {
+	export CFLAGS="${CFLAGS/-Os/-O1}"
+	export CXXFLAGS="${CXXFLAGS/-Os/-O1}"
+
 	cd "$SRC"/LVM2.${version}
 	patch -Np1 -i "$STUFF"/lvm2/fix-stdio-usage.patch
 	patch -Np1 -i "$STUFF"/lvm2/mallinfo.patch

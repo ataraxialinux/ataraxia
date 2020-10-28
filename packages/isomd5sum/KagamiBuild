@@ -1,0 +1,16 @@
+# Description: Utilities for working with md5sum implanted in ISO images
+# URL:         https://github.com/rhinstaller/isomd5sum
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     utils
+
+name=isomd5sum
+version=1.2.3
+release=1
+source=("https://github.com/rhinstaller/isomd5sum/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/lib64/lib/g' Makefile
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,15 @@
+name=host-isomd5sum
+fakepath="$topdir/../../packages/${name/host-}"
+realpath="$(realpath $fakepath)"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://github.com/rhinstaller/isomd5sum/archive/$version.tar.gz::archive=isomd5sum-$version.tar.gz")
+
+build() {
+	cd "$SRC"/isomd5sum-$version
+	sed -i 's/lib64/lib/g' Makefile
+	sed -i "s|$(DESTDIR)/usr|$TOOLS|g" Makefile
+	make
+	make install
+}

@@ -164,14 +164,15 @@ setup_environment() {
 
 	export MKOPTS="-j$JOBS"
 
-	case $BARCH in
-		x86_64|i686)
-			ARCHFLAGS="-fcf-protection=full"
-			;;
-	esac
-
 	if [ -z "$CFLAGS" ]; then
-		export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -fno-asynchronous-unwind-tables -fdata-sections -ffunction-sections -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe $ARCHFLAGS"
+		case $BARCH in
+			x86_64|i686)
+				export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fomit-frame-pointer -fstack-protector-strong -fstack-clash-protection -fcf-protection=full -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe"
+				;;
+			*)
+				export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fomit-frame-pointer -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe"
+				;;
+		esac
 	fi
 	if [ -z "$CXXFLAGS" ]; then
 		export CXXFLAGS="$CFLAGS"
@@ -202,7 +203,7 @@ build_toolchain() {
 
 	case $BARCH in
 		x86_64|i686|aarch64|armv7hl|armv6hl|ppc64le|ppc64)
-				EXTRAPKG="grub"
+				EXTRAPKG="grub isomd5sum"
 				;;
 	esac
 
