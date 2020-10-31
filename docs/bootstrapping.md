@@ -15,7 +15,7 @@ pacman -S base-devel xorriso mtools git pigz python rsync freetype2
 ```
 #### Ataraxia Linux:
 ```
-neko emerge libisoburn python mtools freetype
+neko emerge libisoburn python mtools freetype isomd5sum
 ```
 
 ### Compiling package manager
