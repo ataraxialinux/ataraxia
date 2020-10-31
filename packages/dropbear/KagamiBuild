@@ -6,7 +6,8 @@
 
 name=dropbear
 version=2020.81
-release=1
+release=2
+options=('bootstrap')
 source=("https://matt.ucc.asn.au/$name/releases/$name-$version.tar.bz2")
 
 build() {
@@ -17,8 +18,6 @@ build() {
 		--sbindir=/usr/bin
 	make PROGRAMS='dbclient dropbear dropbearconvert dropbearkey'
 	make DESTDIR="$PKG" install
-
-	mkdir -p "$PKG"/var/log/dropbear
 
 	install -Dm644 "$STUFF"/svc/dropbear.service "$PKG"/usr/lib/systemd/system/dropbear.service
 }

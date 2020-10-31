@@ -8,7 +8,7 @@ generate_initramfs() {
 		libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd tar nano libseccomp \
 		procps-ng util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
 		e2fsprogs btrfs-progs dosfstools run-parts wireless_tools wpa_supplicant gptfdisk \
-		wget libevent links linux"
+		wget libevent links dropbear linux"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$INITRAMFS" -wdt $packages
 
@@ -40,6 +40,8 @@ generate_initramfs() {
 			ExecStart=
 			ExecStart=-/usr/bin/agetty --autologin root %I $TERM
 		EOF
+
+		systemctl -q --root "$INITRAMFS" enable dropbear.service
 
 		ln -sf usr/lib/systemd/systemd init
 
