@@ -6,7 +6,7 @@
 
 name=ostree
 version=2020.7
-release=1
+release=2
 source=("https://github.com/ostreedev/ostree/releases/download/v$version/libostree-$version.tar.xz")
 
 build() {
@@ -31,4 +31,6 @@ build() {
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
 	make DESTDIR="$PKG" install
+
+	install -dm775 "$PKG"/usr/lib/dracut/modules.d
 }
