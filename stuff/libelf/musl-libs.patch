@@ -1,12 +1,21 @@
-Collection of fixes needed to compile libelf and other libraries
-provided by elfutils for musl targets
+From b3eb5d441374428dc90160266b76c800d5b55e08 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 1 Nov 2020 11:29:19 +0300
+Subject: [PATCH] musl libs
 
-error is glibc specific API, so this patch will mostly not accepted
-upstream given that elfutils has been closely tied to glibc
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/error.h                    | 27 +++++++++++++++++++++++++++
+ lib/fixedsizehash.h            |  1 -
+ lib/libeu.h                    |  1 +
+ libdwfl/dwfl_error.c           |  9 +++++++++
+ libdwfl/linux-kernel-modules.c |  1 +
+ 5 files changed, 38 insertions(+), 1 deletion(-)
+ create mode 100644 lib/error.h
 
-Signed-off-by: Khem Raj <raj.khem@gmail.com>
-Upstream-Status: Inappropriate [workaround for musl]
-
+diff --git a/lib/error.h b/lib/error.h
+new file mode 100644
+index 0000000..ef06827
 --- /dev/null
 +++ b/lib/error.h
 @@ -0,0 +1,27 @@
@@ -37,6 +46,8 @@ Upstream-Status: Inappropriate [workaround for musl]
 +}
 +
 +#endif	/* _ERROR_H_ */
+diff --git a/lib/fixedsizehash.h b/lib/fixedsizehash.h
+index dac2a5f..43016fc 100644
 --- a/lib/fixedsizehash.h
 +++ b/lib/fixedsizehash.h
 @@ -30,7 +30,6 @@
@@ -47,6 +58,8 @@ Upstream-Status: Inappropriate [workaround for musl]
  
  #include <system.h>
  
+diff --git a/lib/libeu.h b/lib/libeu.h
+index ecb4d01..edc85e3 100644
 --- a/lib/libeu.h
 +++ b/lib/libeu.h
 @@ -29,6 +29,7 @@
@@ -57,6 +70,8 @@ Upstream-Status: Inappropriate [workaround for musl]
  #include <stddef.h>
  #include <stdint.h>
  
+diff --git a/libdwfl/dwfl_error.c b/libdwfl/dwfl_error.c
+index 7bcf61c..11dcc8b 100644
 --- a/libdwfl/dwfl_error.c
 +++ b/libdwfl/dwfl_error.c
 @@ -154,7 +154,16 @@ dwfl_errmsg (int error)
@@ -76,6 +91,8 @@ Upstream-Status: Inappropriate [workaround for musl]
      case OTHER_ERROR (LIBELF):
        return elf_errmsg (error & 0xffff);
      case OTHER_ERROR (LIBDW):
+diff --git a/libdwfl/linux-kernel-modules.c b/libdwfl/linux-kernel-modules.c
+index 6edb27f..f331e3c 100644
 --- a/libdwfl/linux-kernel-modules.c
 +++ b/libdwfl/linux-kernel-modules.c
 @@ -50,6 +50,7 @@
@@ -86,26 +103,6 @@ Upstream-Status: Inappropriate [workaround for musl]
  
  /* If fts.h is included before config.h, its indirect inclusions may not
     give us the right LFS aliases of these functions, so map them manually.  */
---- a/libelf/elf.h
-+++ b/libelf/elf.h
-@@ -21,7 +21,9 @@
- 
- #include <features.h>
- 
--__BEGIN_DECLS
-+#ifdef __cplusplus
-+extern "C" {
-+#endif
- 
- /* Standard ELF types.  */
- 
-@@ -3937,6 +3939,7 @@ enum
- #define R_METAG_TLS_LE_HI16	60
- #define R_METAG_TLS_LE_LO16	61
- 
--__END_DECLS
--
-+#ifdef __cplusplus
-+}
-+#endif
- #endif	/* elf.h */
+-- 
+2.28.0
+
