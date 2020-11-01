@@ -1,6 +1,6 @@
-From c0db623879272fa829f95e20d0557a374746b4eb Mon Sep 17 00:00:00 2001
+From 18e75d64a93bafbe66f4d039c237f152219c838a Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 31 Aug 2020 17:42:24 +0900
+Date: Sun, 1 Nov 2020 22:39:31 +0300
 Subject: [PATCH] POSIX userland
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -9,10 +9,10 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  51-dracut-rescue-postinst.sh         |  2 +-
  51-dracut-rescue.install             |  2 +-
  Makefile                             |  2 +-
- dracut-init.sh                       | 28 +++++++++--------------
+ dracut-init.sh                       | 28 +++++++++-------------
  dracut.conf                          |  3 +++
- dracut.sh                            | 34 ++++++++++++++--------------
- install/dracut-install.c             |  4 ++--
+ dracut.sh                            | 36 ++++++++++++++--------------
+ install/dracut-install.c             |  8 +++----
  modules.d/04watchdog/module-setup.sh |  4 ++--
  modules.d/30convertfs/convertfs.sh   |  4 ++--
  modules.d/40network/net-lib.sh       |  2 +-
@@ -25,7 +25,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  modules.d/99base/module-setup.sh     |  2 +-
  test/TEST-12-RAID-DEG/test.sh        |  4 ++--
  test/TEST-99-RPM/test.sh             |  2 +-
- 20 files changed, 53 insertions(+), 56 deletions(-)
+ 20 files changed, 56 insertions(+), 59 deletions(-)
 
 diff --git a/50-dracut.install b/50-dracut.install
 index 7ea5e17..3112d9e 100755
@@ -157,7 +157,7 @@ index d6317a0..c5b49be 100644
 +i18n_install_all="no"
 +compress="zstd"
 diff --git a/dracut.sh b/dracut.sh
-index af346f3..c2e9ad0 100755
+index af346f3..2a49f54 100755
 --- a/dracut.sh
 +++ b/dracut.sh
 @@ -32,7 +32,7 @@ if (( BASH_VERSINFO[0] < 4 )); then
@@ -279,6 +279,15 @@ index af346f3..c2e9ad0 100755
          push_host_devs "$dev"
          _get_fs_type "$dev"
          check_block_and_slaves_all _get_fs_type "$(get_maj_min "$dev")"
+@@ -1868,7 +1868,7 @@ if dracut_module_included "squash"; then
+         fi
+ 
+         if [[ -L $_sqsh_file ]]; then
+-          cp --preserve=all -P $_sqsh_file $_init_file
++          cp -P $_sqsh_file $_init_file
+           _sqsh_file=$(realpath $_sqsh_file 2>/dev/null)
+           if [[ -e $_sqsh_file ]] && [[ "$_sqsh_file" == "$squash_dir"* ]]; then
+             # Relative symlink
 @@ -2054,7 +2054,7 @@ if [[ $uefi = yes ]]; then
                  exit 1
              fi
@@ -298,9 +307,22 @@ index af346f3..c2e9ad0 100755
      else
          rm -f -- "$outfile"
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 3d64ed7..e58e410 100644
+index 3d64ed7..d67f206 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
+@@ -312,10 +312,10 @@ static int cp(const char *src, const char *dst)
+         pid = fork();
+         if (pid == 0) {
+                 if (geteuid() == 0 && no_xattr == false)
+-                        execlp("cp", "cp", "--reflink=auto", "--sparse=auto", "--preserve=mode,xattr,timestamps", "-fL", src, dst,
++                        execlp("cp", "cp", "-fL", src, dst,
+                                NULL);
+                 else
+-                        execlp("cp", "cp", "--reflink=auto", "--sparse=auto", "--preserve=mode,timestamps", "-fL", src, dst,
++                        execlp("cp", "cp", "-fL", src, dst,
+                                NULL);
+                 _exit(EXIT_FAILURE);
+         }
 @@ -324,10 +324,10 @@ static int cp(const char *src, const char *dst)
                  if (errno != EINTR) {
                          ret = -1;
@@ -483,5 +505,40 @@ index af64c24..c827acb 100755
         "$TESTDIR"/dracut-network-[0-9]*.$(uname -m).rpm \
         "$rootdir/$TESTDIR/"
 -- 
-2.18.4
+2.28.0
+
+From 540f3d0f5f4a31db852edd7894c03513846ab933 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 1 Nov 2020 22:41:34 +0300
+Subject: [PATCH] touch
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ dracut.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/dracut.sh b/dracut.sh
+index 2a49f54..f4be267 100755
+--- a/dracut.sh
++++ b/dracut.sh
+@@ -1965,7 +1965,7 @@ fi
+ 
+ if [[ $DRACUT_REPRODUCIBLE ]]; then
+     find "$initdir" -newer "$dracutbasedir/dracut-functions.sh" -print0 \
+-        | xargs -r -0 touch -h -m -c -r "$dracutbasedir/dracut-functions.sh"
++        | xargs -r -0 touch -m -c -r "$dracutbasedir/dracut-functions.sh"
+ 
+     if [[ "$(cpio --help)" == *--reproducible* ]]; then
+         CPIO_REPRODUCIBLE=1
+@@ -1981,7 +1981,7 @@ if [[ $create_early_cpio = yes ]]; then
+ 
+     if [[ $DRACUT_REPRODUCIBLE ]]; then
+         find "$early_cpio_dir/d" -newer "$dracutbasedir/dracut-functions.sh" -print0 \
+-            | xargs -r -0 touch -h -m -c -r "$dracutbasedir/dracut-functions.sh"
++            | xargs -r -0 touch -m -c -r "$dracutbasedir/dracut-functions.sh"
+     fi
+ 
+     # The microcode blob is _before_ the initramfs blob, not after
+-- 
+2.28.0
 
