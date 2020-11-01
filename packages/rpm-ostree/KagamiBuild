@@ -9,6 +9,10 @@ version=2020.6
 release=1
 source=("https://github.com/coreos/rpm-ostree/releases/download/v$version/$name-$version.tar.xz")
 
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' rust/vendor/$1/.cargo-checksum.json
+}
+
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/rpm-ostree/0001-I-use-our-own-strndupa-implementation-on-musl-libc.patch
@@ -19,6 +23,9 @@ build() {
 	sed -i 's|add_subdirectory(tests)|# add_subdirectory(tests)|' libdnf/python/hawkey/CMakeLists.txt
 
 	cp -p "$ROOTFS"/usr/share/cmake/Modules/FindLibSolv.cmake libdnf/cmake/modules/
+
+	sed -i "s|(3, 0, _) => ('3', '0', 'x')|(3, 2, _) => ('3', '2', 'x')|" rust/vendor/openssl-sys/build/main.rs
+	clear_vendor_checksums openssl-sys
 
 	NOCONFIGURE=1 ./autogen.sh
 	./configure $BUILDFLAGS \
