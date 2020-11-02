@@ -7,7 +7,7 @@
 
 name=dbus
 version=1.12.20
-release=7
+release=8
 options=('bootstrap')
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
@@ -41,5 +41,12 @@ build() {
 	chown root:81 "$PKG"/usr/lib/dbus-1.0/dbus-daemon-launch-helper
 	chmod 4750 "$PKG"/usr/lib/dbus-1.0/dbus-daemon-launch-helper
 
-	rm -rf "$PKG"/var/run
+	pushd "$PKG"
+		mkdir -p usr/share/factory
+		mv etc usr/share/factory
+
+		install -Dm644 "$STUFF"/stateless.d/dbus.conf usr/lib/tmpfiles.d/stateless-dbus.conf
+	popd
+
+	rm -rf "$PKG"/var
 }

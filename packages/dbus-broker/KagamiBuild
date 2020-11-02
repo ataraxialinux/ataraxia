@@ -7,7 +7,7 @@
 
 name=dbus-broker
 version=24
-release=1
+release=2
 options=('bootstrap')
 source=("https://github.com/bus1/dbus-broker/releases/download/v$version/$name-$version.tar.xz")
 
@@ -27,6 +27,5 @@ build() {
 	samu
 	DESTDIR="$PKG" samu install
 
-	systemctl -q --root "$PKG" enable dbus-broker
-	systemctl -q --root "$PKG" --global enable dbus-broker
+	install -Dm644 "$STUFF"/stateless.d/dbus-broker.conf usr/lib/tmpfiles.d/stateless-dbus-broker.conf
 }

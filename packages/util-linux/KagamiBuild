@@ -11,14 +11,7 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=4
-backup=('etc/pam.d/chfn'
-	'etc/pam.d/chsh'
-	'etc/pam.d/login'
-	'etc/pam.d/runuser'
-	'etc/pam.d/runuser-l'
-	'etc/pam.d/su'
-	'etc/pam.d/su-l')
+release=5
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
@@ -54,18 +47,18 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/etc/pam.d/chfn
-	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/etc/pam.d/chsh
-	install -Dm644 "$STUFF"/pam.d/login "$PKG"/etc/pam.d/login
-	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser
-	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
-	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
-	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
+	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/usr/share/factory/etc/pam.d/chfn
+	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/usr/share/factory/etc/pam.d/chsh
+	install -Dm644 "$STUFF"/pam.d/login "$PKG"/usr/share/factory/etc/pam.d/login
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/usr/share/factory/etc/pam.d/runuser
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/usr/share/factory/etc/pam.d/runuser-l
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/usr/share/factory/etc/pam.d/su
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/usr/share/factory/etc/pam.d/su-l
+	install -Dm644 "$STUFF"/stateless.d/util-linux.conf usr/lib/tmpfiles.d/stateless-util-linux.conf
 
 	chmod 4755 "$PKG"/usr/bin/{newgrp,ch{sh,fn}}
 
 	cd "$PKG"
-	mkdir -p var/lib/hwclock
 
 	mv usr/sbin/* usr/bin
 	rmdir usr/sbin

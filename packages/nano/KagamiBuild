@@ -6,9 +6,8 @@
 
 name=nano
 version=5.3
-release=1
+release=2
 options=('bootstrap')
-backup=('etc/nanorc')
 source=("https://www.nano-editor.org/dist/v5/$name-$version.tar.xz")
 
 build() {
@@ -23,7 +22,9 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm644 doc/sample.nanorc "$PKG"/etc/nanorc
+	install -Dm644 doc/sample.nanorc "$PKG"/usr/share/factory/etc/nanorc
 
-	echo 'include /usr/share/nano/*.nanorc' >> "$PKG"/etc/nanorc
+	echo 'include /usr/share/nano/*.nanorc' >> "$PKG"/usr/share/factory/etc/nanorc
+
+	install -Dm644 "$STUFF"/stateless.d/nano.conf usr/lib/tmpfiles.d/stateless-nano.conf
 }

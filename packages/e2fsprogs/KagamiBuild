@@ -7,9 +7,8 @@
 
 name=e2fsprogs
 version=1.45.6
-release=2
+release=3
 options=('bootstrap')
-backup=('etc/mke2fs.conf')
 source=("https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v$version/$name-$version.tar.xz")
 
 build() {
@@ -39,4 +38,12 @@ build() {
 	sed -i -e 's/^AWK=.*/AWK=awk/' "$PKG"/usr/bin/mk_cmds
 	sed -i -e 's#^SS_DIR=.*#SS_DIR="/share/ss"#' "$PKG"/usr/bin/mk_cmds
 	sed -i -e 's#^ET_DIR=.*#ET_DIR="/share/et"#' "$PKG"/usr/bin/compile_et
+
+
+	pushd "$PKG"
+		mkdir -p usr/share/factory
+		mv etc usr/share/factory
+
+		install -Dm644 "$STUFF"/stateless.d/e2fsprogs.conf usr/lib/tmpfiles.d/stateless-e2fsprogs.conf
+	popd
 }
