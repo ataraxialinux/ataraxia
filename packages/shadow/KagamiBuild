@@ -41,22 +41,15 @@ build() {
 
 	mv "$PKG"/usr/bin/{newgrp,sg}
 
-	pushd "$PKG"
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/shadow.conf usr/lib/tmpfiles.d/stateless-shadow.conf
-	popd
-
 	for pam in passwd chgpasswd chpasswd newusers; do
-		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/usr/share/factory/etc/pam.d/$pam
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
 	done
 
 	for pam in chage groupadd groupdel groupmod shadow useradd usermod userdel; do
-		install -Dm644 "$STUFF"/pam.d/shadow "$PKG"/usr/share/factory/etc/pam.d/$pam
+		install -Dm644 "$STUFF"/pam.d/shadow "$PKG"/etc/pam.d/$pam
 	done
 
-	install -Dm644 usr/share/factory/etc/pam.d/groupmems "$PKG"/usr/share/factory/etc/pam.d/groupmems
+	install -Dm644 etc/pam.d/groupmems "$PKG"/etc/pam.d/groupmems
 
 	# conflicts with util-linux
 	for i in login su chsh chfn sg nologin vipw vigr; do
@@ -79,4 +72,11 @@ build() {
 		"$PKG"/usr/share/man/{fi,ko/man8} \
 		"$PKG"/usr/share/man/man1/groups.1 \
 		"$PKG"/usr/bin/groups
+
+	pushd "$PKG"
+		mkdir -p usr/share/factory
+		mv etc usr/share/factory
+
+		install -Dm644 "$STUFF"/stateless.d/shadow.conf usr/lib/tmpfiles.d/stateless-shadow.conf
+	popd
 }
