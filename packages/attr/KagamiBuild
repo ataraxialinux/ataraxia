@@ -20,4 +20,11 @@ build() {
 		--sysconfdir=/etc
 	make
 	make DESTDIR="$PKG" install
+
+	pushd "$PKG"
+		mkdir -p usr/share/factory
+		mv etc usr/share/factory
+
+		install -Dm644 "$STUFF"/stateless.d/attr.conf usr/lib/tmpfiles.d/stateless-attr.conf
+	popd
 }
