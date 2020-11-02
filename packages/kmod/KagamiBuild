@@ -7,7 +7,7 @@
 
 name=kmod
 version=27
-release=2
+release=3
 options=('bootstrap')
 source=("https://www.kernel.org/pub/linux/utils/kernel/$name/$name-$version.tar.xz")
 
@@ -32,8 +32,5 @@ build() {
 	done
 
 	install -Dm644 "$STUFF"/kmod/depmod-search.conf "$PKG"/usr/lib/depmod.d/search.conf
-
-	# compat
-	mkdir -p "$PKG"/etc/depmod.d
-	ln -sf /usr/lib/depmod.d/search.conf "$PKG"/etc/depmod.d/search.conf
+	install -Dm644 "$STUFF"/stateless.d/kmod.conf "$PKG"/usr/lib/tmpfiles.d/stateless-kmod.conf
 }
