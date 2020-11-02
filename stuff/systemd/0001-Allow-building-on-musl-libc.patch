@@ -1,10 +1,7 @@
-From f30dd7b0cb9c798d8f50b8b13582ddae44df55e6 Mon Sep 17 00:00:00 2001
+From 39393ae920aef05f0e040ebb00103e174393425d Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 20 Aug 2020 18:31:20 +0300
+Date: Mon, 2 Nov 2020 22:10:13 +0300
 Subject: [PATCH 1/2] Allow building on musl libc
-
-Most work is done by OpenEmbedded
-Some fixes by protonesso (aka Ishimoto Shinobu) for Ataraxia Linux
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -19,7 +16,9 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/basic/glob-util.c                      |  12 +
  src/basic/linux/if_ether.h                 |   3 +-
  src/basic/log.c                            |   1 +
- src/basic/meson.build                      |   5 +
+ src/basic/meson.build                      |   7 +
+ src/basic/missing_gshadow.c                | 178 ++++++++++++++
+ src/basic/missing_gshadow.h                |  31 +++
  src/basic/missing_prctl.h                  |   2 +
  src/basic/missing_stdlib.h                 |  12 +
  src/basic/missing_type.h                   |  30 +++
@@ -38,6 +37,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/basic/sort-util.h                      |  15 +-
  src/basic/stdio-util.h                     |   2 +-
  src/basic/time-util.c                      |   1 +
+ src/basic/user-util.h                      |   2 +-
  src/basic/util.c                           |   2 +-
  src/binfmt/binfmt.c                        |   6 +-
  src/boot/bless-boot.c                      |   1 +
@@ -104,7 +104,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/shared/ethtool-util.h                  |   1 +
  src/shared/format-table.c                  |  36 ++-
  src/shared/group-record-nss.c              |  20 ++
- src/shared/group-record-nss.h              |   4 +
+ src/shared/group-record-nss.h              |   6 +-
  src/shared/journal-importer.c              |   1 +
  src/shared/logs-show.c                     |   1 +
  src/shared/pager.c                         |   1 +
@@ -126,15 +126,17 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/udev/udevadm-trigger.c                 |   2 +-
  src/udev/udevd.c                           |   2 +-
  src/vconsole/vconsole-setup.c              |   2 +-
- 118 files changed, 676 insertions(+), 96 deletions(-)
+ 121 files changed, 889 insertions(+), 98 deletions(-)
+ create mode 100644 src/basic/missing_gshadow.c
+ create mode 100644 src/basic/missing_gshadow.h
  create mode 100644 src/basic/parse-printf-format.c
  create mode 100644 src/basic/parse-printf-format.h
 
 diff --git a/meson.build b/meson.build
-index dbbddb6..bea9935 100644
+index cfb9ffd..12054ed 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -527,6 +527,7 @@ foreach ident : [
+@@ -528,6 +528,7 @@ foreach ident : [
                                   #include <unistd.h>
                                   #include <signal.h>
                                   #include <sys/wait.h>'''],
@@ -142,7 +144,7 @@ index dbbddb6..bea9935 100644
  ]
  
          have = cc.has_function(ident[0], prefix : ident[1], args : '-D_GNU_SOURCE')
-@@ -638,6 +639,7 @@ endif
+@@ -639,6 +640,7 @@ endif
  foreach header : ['crypt.h',
                    'linux/memfd.h',
                    'linux/vm_sockets.h',
@@ -151,7 +153,7 @@ index dbbddb6..bea9935 100644
                    'valgrind/memcheck.h',
                    'valgrind/valgrind.h',
 diff --git a/src/backlight/backlight.c b/src/backlight/backlight.c
-index 3a64436..73946a8 100644
+index 388bd03..2c9db66 100644
 --- a/src/backlight/backlight.c
 +++ b/src/backlight/backlight.c
 @@ -17,6 +17,7 @@
@@ -381,10 +383,19 @@ index c6fe203..b7ef932 100644
  #define SNDBUF_SIZE (8*1024*1024)
  
 diff --git a/src/basic/meson.build b/src/basic/meson.build
-index 90924d6..261d169 100644
+index 90924d6..bde1f6c 100644
 --- a/src/basic/meson.build
 +++ b/src/basic/meson.build
-@@ -317,6 +317,11 @@ foreach item : [['af',     af_list_txt,     'af',         ''],
+@@ -130,6 +130,8 @@ basic_sources = files('''
+         missing_drm.h
+         missing_fcntl.h
+         missing_fs.h
++        missing_gshadow.c
++        missing_gshadow.h
+         missing_input.h
+         missing_keyctl.h
+         missing_magic.h
+@@ -317,6 +319,11 @@ foreach item : [['af',     af_list_txt,     'af',         ''],
  endforeach
  
  basic_sources += generated_gperf_headers
@@ -396,6 +407,227 @@ index 90924d6..261d169 100644
  basic_gcrypt_sources = files(
          'gcrypt-util.c',
          'gcrypt-util.h')
+diff --git a/src/basic/missing_gshadow.c b/src/basic/missing_gshadow.c
+new file mode 100644
+index 0000000..39b2307
+--- /dev/null
++++ b/src/basic/missing_gshadow.c
+@@ -0,0 +1,178 @@
++#include "missing_gshadow.h"
++
++#define BUFLEN_SPWD 1024
++#define BUFLEN		1024
++#define _S(x)	x ? x : ""
++
++struct sgrp *fgetsgent(FILE *stream) {
++	static size_t buffer_size;
++	static struct sgrp resbuf;
++	fpos_t pos;
++	struct sgrp *result;
++	int save;
++	static char *buffer;
++
++	if (fgetpos(stream, &pos) != 0) {
++		return NULL;
++	}
++
++	if (!buffer) {
++		buffer_size = BUFLEN_SPWD;
++		buffer = malloc(buffer_size);
++	}
++
++	while (!buffer) {
++		char *new_buf;
++		buffer_size += BUFLEN_SPWD;
++		new_buf = realloc(buffer, buffer_size);
++
++		if (!new_buf) {
++			save = errno;
++			free(buffer);
++			errno = save;
++		}
++
++		buffer = new_buf;
++
++		if (fsetpos(stream, &pos) != 0) {
++			buffer = NULL;
++		}
++	}
++
++	if (!buffer) {
++		result = NULL;
++	}
++
++	save = errno;
++	errno = save;
++
++	return result;
++}
++
++struct sgrp *getsgent(void) {
++	static size_t buffer_size;
++	static union {
++		struct sgrp l;
++		void *ptr;
++	} resbuf;
++	struct sgrp *result;
++	int save = errno;
++
++	result = NULL;
++	errno = save;
++
++	return result;
++}
++
++struct sgrp *getsgnam(const char *name) {
++	static size_t buffer_size;
++	static struct sgrp resbuf;
++	struct sgrp *result;
++	static char *buffer;
++
++	if (!buffer) {
++		buffer_size = BUFLEN;
++		buffer = (char *)malloc(buffer_size);
++	}
++
++	while (!buffer) {
++		char *new_buf;
++		buffer_size += 2;
++		new_buf = (char *)realloc(buffer, buffer_size);
++
++		if (!new_buf) {
++			free(buffer);
++			errno = ENOMEM;
++		}
++
++		buffer = new_buf;
++	}
++
++	if (!buffer) {
++		result = NULL;
++	}
++
++	return result;
++}
++
++int putsgent(const struct sgrp *g, FILE *stream) {
++	int e = 0;
++
++	if (!g->sg_namp) {
++		errno = EINVAL;
++		return -1;
++	}
++
++	if (fprintf(stream, "%s:%s:", g->sg_namp, _S (g->sg_passwd)) < 0) {
++		++e;
++	}
++
++	bool first = true;
++	char **sp = g->sg_adm;
++	if (sp) {
++		while (*sp) {
++			if (fprintf(stream, "%s%s", first ? "" : ",", *sp++) < 0) {
++				++e;
++				break;
++			}
++			first = false;
++		}
++	}
++
++	if (putc(':', stream) == EOF) {
++		++e;
++	}
++
++	first = true;
++	sp = g->sg_mem;
++	if (sp) {
++		while (*sp) {
++			if (fprintf(stream, "%s%s", first ? "" : ",", *sp++) < 0)
++				++e;
++				break;
++		}
++		first = false;
++	}
++
++	if (putc(':', stream) == EOF) {
++		++e;
++	}
++
++	return e ? -1 : 0;
++}
++
++struct sgrp *sgetsgent(const char *string) {
++	static char *buffer;
++	static size_t buffer_size;
++	static struct sgrp resbuf;
++	struct sgrp *result;
++	int save;
++
++	if (!buffer) {
++		buffer_size = BUFLEN_SPWD;
++		buffer = malloc(buffer_size);
++	}
++
++	while (!buffer) {
++		char *new_buf;
++		buffer_size += BUFLEN_SPWD;
++		new_buf = realloc(buffer, buffer_size);
++
++		if (!new_buf) {
++			save = errno;
++			free(buffer);
++			errno = save;
++		}
++
++		buffer = new_buf;
++	}
++
++	if (!buffer) {
++		result = NULL;
++	}
++
++	save = errno;
++	errno = save;
++
++	return result;
++}
+diff --git a/src/basic/missing_gshadow.h b/src/basic/missing_gshadow.h
+new file mode 100644
+index 0000000..1137a49
+--- /dev/null
++++ b/src/basic/missing_gshadow.h
+@@ -0,0 +1,31 @@
++#ifndef _GSHADOW_H
++#define _GSHADOW_H
++
++#include <stdbool.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <errno.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/* Structure of the group file.  */
++struct sgrp {
++	char *sg_namp; /* Group name */	
++	char *sg_passwd; /* Encrypted password */
++	char **sg_adm; /* Group administrator list */
++	char **sg_mem; /* Group member list */
++};
++
++struct sgrp *getsgent(void);
++struct sgrp *getsgnam(const char *__name);
++struct sgrp *sgetsgent(const char *__string);
++struct sgrp *fgetsgent(FILE *__stream);
++int putsgent(const struct sgrp *__g, FILE *__stream);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
 diff --git a/src/basic/missing_prctl.h b/src/basic/missing_prctl.h
 index f80cd17..47e4893 100644
 --- a/src/basic/missing_prctl.h
@@ -982,7 +1214,7 @@ index 8043a97..fbd39c8 100644
                  return r;
  
 diff --git a/src/basic/socket-util.c b/src/basic/socket-util.c
-index fb12659..b6837cc 100644
+index f0d6447..5f7cf92 100644
 --- a/src/basic/socket-util.c
 +++ b/src/basic/socket-util.c
 @@ -37,6 +37,9 @@
@@ -1056,6 +1288,19 @@ index 15cc1b8..02bb3f0 100644
  
  static clockid_t map_clock_id(clockid_t c) {
  
+diff --git a/src/basic/user-util.h b/src/basic/user-util.h
+index 7c142dd..b4e632d 100644
+--- a/src/basic/user-util.h
++++ b/src/basic/user-util.h
+@@ -3,7 +3,7 @@
+ 
+ #include <grp.h>
+ #if ENABLE_GSHADOW
+-#include <gshadow.h>
++#include "missing_gshadow.h"
+ #endif
+ #include <pwd.h>
+ #include <shadow.h>
 diff --git a/src/basic/util.c b/src/basic/util.c
 index 2b3b391..aff8d0f 100644
 --- a/src/basic/util.c
@@ -1149,7 +1394,7 @@ index 951450e..50d134e 100644
  int bus_property_get_triggered_unit(
                  sd_bus *bus,
 diff --git a/src/core/execute.c b/src/core/execute.c
-index 2a4840a..ce6e6be 100644
+index 7b3de25..a14b210 100644
 --- a/src/core/execute.c
 +++ b/src/core/execute.c
 @@ -89,6 +89,7 @@
@@ -1160,7 +1405,7 @@ index 2a4840a..ce6e6be 100644
  
  #define IDLE_TIMEOUT_USEC (5*USEC_PER_SEC)
  #define IDLE_TIMEOUT2_USEC (1*USEC_PER_SEC)
-@@ -4685,9 +4686,9 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
+@@ -4715,9 +4716,9 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
          for (i = 0; i < RLIM_NLIMITS; i++)
                  if (c->rlimit[i]) {
                          fprintf(f, "%sLimit%s: " RLIM_FMT "\n",
@@ -1186,10 +1431,10 @@ index 1286743..f4e64fa 100644
  #if HAVE_KMOD
  #include "module-util.h"
 diff --git a/src/core/main.c b/src/core/main.c
-index 4a37697..08f771c 100644
+index 9a834a8..9151295 100644
 --- a/src/core/main.c
 +++ b/src/core/main.c
-@@ -1382,7 +1382,7 @@ static int bump_unix_max_dgram_qlen(void) {
+@@ -1384,7 +1384,7 @@ static int bump_unix_max_dgram_qlen(void) {
          if (v >= DEFAULT_UNIX_MAX_DGRAM_QLEN)
                  return 0;
  
@@ -1198,7 +1443,7 @@ index 4a37697..08f771c 100644
          if (r < 0)
                  return log_full_errno(IN_SET(r, -EROFS, -EPERM, -EACCES) ? LOG_DEBUG : LOG_WARNING, r,
                                        "Failed to bump AF_UNIX datagram queue length, ignoring: %m");
-@@ -1668,7 +1668,7 @@ static void initialize_core_pattern(bool skip_setup) {
+@@ -1670,7 +1670,7 @@ static void initialize_core_pattern(bool skip_setup) {
          if (getpid_cached() != 1)
                  return;
  
@@ -1208,7 +1453,7 @@ index 4a37697..08f771c 100644
                  log_warning_errno(r, "Failed to write '%s' to /proc/sys/kernel/core_pattern, ignoring: %m", arg_early_core_pattern);
  }
 diff --git a/src/core/service.c b/src/core/service.c
-index 00e6194..1ecab28 100644
+index 402b521..430e99d 100644
 --- a/src/core/service.c
 +++ b/src/core/service.c
 @@ -41,6 +41,7 @@
@@ -1416,7 +1661,7 @@ index 6abac88..c74c9cd 100644
  static int node_vtable_get_userdata(
                  sd_bus *bus,
 diff --git a/src/libsystemd/sd-bus/bus-socket.c b/src/libsystemd/sd-bus/bus-socket.c
-index fc7e8e8..7af4dd2 100644
+index de36a1f..0f1ba6e 100644
 --- a/src/libsystemd/sd-bus/bus-socket.c
 +++ b/src/libsystemd/sd-bus/bus-socket.c
 @@ -28,6 +28,7 @@
@@ -1428,7 +1673,7 @@ index fc7e8e8..7af4dd2 100644
  #define SNDBUF_SIZE (8*1024*1024)
  
 diff --git a/src/libsystemd/sd-bus/sd-bus.c b/src/libsystemd/sd-bus/sd-bus.c
-index 9de5e45..fe86c93 100644
+index 39e23d9..6312bb6 100644
 --- a/src/libsystemd/sd-bus/sd-bus.c
 +++ b/src/libsystemd/sd-bus/sd-bus.c
 @@ -41,6 +41,7 @@
@@ -1557,7 +1802,7 @@ index 75a4830..82d08c7 100644
  
          return 0;
 diff --git a/src/login/logind.h b/src/login/logind.h
-index e64ecce..ab32864 100644
+index 272fcfe..445495a 100644
 --- a/src/login/logind.h
 +++ b/src/login/logind.h
 @@ -1,6 +1,7 @@
@@ -1566,8 +1811,8 @@ index e64ecce..ab32864 100644
  
 +#include <sys/stat.h>
  #include <stdbool.h>
+ #include <sys/stat.h>
  
- #include "sd-bus.h"
 diff --git a/src/login/pam_systemd.c b/src/login/pam_systemd.c
 index 16f4289..6c5e438 100644
 --- a/src/login/pam_systemd.c
@@ -1639,7 +1884,7 @@ index 7024066..0f4b574 100644
  
  #include "bridge.h"
 diff --git a/src/network/netdev/macsec.c b/src/network/netdev/macsec.c
-index 2ffa5ec..9ece09d 100644
+index de21ece..c1f1c57 100644
 --- a/src/network/netdev/macsec.c
 +++ b/src/network/netdev/macsec.c
 @@ -1,5 +1,6 @@
@@ -1697,7 +1942,7 @@ index ecf9bce..1da52bb 100644
  #include "parse-util.h"
  #include "string-table.h"
 diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
-index 722e0d2..972ccd2 100644
+index ba03d36..71e9367 100644
 --- a/src/network/networkd-dhcp4.c
 +++ b/src/network/networkd-dhcp4.c
 @@ -1,9 +1,9 @@
@@ -1712,7 +1957,7 @@ index 722e0d2..972ccd2 100644
  #include "escape.h"
  #include "alloc-util.h"
 diff --git a/src/network/networkd-dhcp6.c b/src/network/networkd-dhcp6.c
-index d671284..2db516b 100644
+index 675f19c..59699e8 100644
 --- a/src/network/networkd-dhcp6.c
 +++ b/src/network/networkd-dhcp6.c
 @@ -3,9 +3,9 @@
@@ -1727,7 +1972,7 @@ index d671284..2db516b 100644
  #include "sd-dhcp6-client.h"
  
 diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
-index 0057d18..e68724a 100644
+index ea3ff55..f2e8a67 100644
 --- a/src/network/networkd-link.c
 +++ b/src/network/networkd-link.c
 @@ -1,8 +1,8 @@
@@ -1741,7 +1986,7 @@ index 0057d18..e68724a 100644
  #include <unistd.h>
  
 diff --git a/src/network/networkd-network.c b/src/network/networkd-network.c
-index d34155b..af778c0 100644
+index 97f5551..acdd3e1 100644
 --- a/src/network/networkd-network.c
 +++ b/src/network/networkd-network.c
 @@ -1,5 +1,6 @@
@@ -1786,10 +2031,10 @@ index d341fa2..91646bc 100644
  Settings *settings_new(void) {
          Settings *s;
 diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
-index eb7c332..d5cd147 100644
+index 8a1f74b..af40d26 100644
 --- a/src/nspawn/nspawn.c
 +++ b/src/nspawn/nspawn.c
-@@ -2493,7 +2493,7 @@ static int reset_audit_loginuid(void) {
+@@ -2494,7 +2494,7 @@ static int reset_audit_loginuid(void) {
          if (streq(p, "4294967295"))
                  return 0;
  
@@ -1798,7 +2043,7 @@ index eb7c332..d5cd147 100644
          if (r < 0) {
                  log_error_errno(r,
                                  "Failed to reset audit login UID. This probably means that your kernel is too\n"
-@@ -3726,13 +3726,13 @@ static int setup_uid_map(pid_t pid) {
+@@ -3727,13 +3727,13 @@ static int setup_uid_map(pid_t pid) {
  
          xsprintf(uid_map, "/proc/" PID_FMT "/uid_map", pid);
          xsprintf(line, UID_FMT " " UID_FMT " " UID_FMT "\n", 0, arg_uid_shift, arg_uid_range);
@@ -1814,7 +2059,7 @@ index eb7c332..d5cd147 100644
          if (r < 0)
                  return log_error_errno(r, "Failed to write GID map: %m");
  
-@@ -4890,6 +4890,7 @@ static int cant_be_in_netns(void) {
+@@ -4891,6 +4891,7 @@ static int cant_be_in_netns(void) {
          if (fd < 0)
                  return log_error_errno(errno, "Failed to allocate udev control socket: %m");
  
@@ -1822,7 +2067,7 @@ index eb7c332..d5cd147 100644
          if (connect(fd, &sa.un, SOCKADDR_UN_LEN(sa.un)) < 0) {
  
                  if (errno == ENOENT || ERRNO_IS_DISCONNECT(errno))
-@@ -4898,6 +4899,7 @@ static int cant_be_in_netns(void) {
+@@ -4899,6 +4900,7 @@ static int cant_be_in_netns(void) {
  
                  return log_error_errno(errno, "Failed to connect socket to udev control socket: %m");
          }
@@ -1843,10 +2088,10 @@ index 5db0dce..681f867 100644
  NSS_GETHOSTBYNAME_PROTOTYPES(mymachines);
  NSS_GETPW_PROTOTYPES(mymachines);
 diff --git a/src/partition/makefs.c b/src/partition/makefs.c
-index 97f50c9..a62880c 100644
+index 33ede22..be664aa 100644
 --- a/src/partition/makefs.c
 +++ b/src/partition/makefs.c
-@@ -15,6 +15,10 @@
+@@ -16,6 +16,10 @@
  #include "signal-util.h"
  #include "string-util.h"
  
@@ -1870,7 +2115,7 @@ index 3a1367e..f29336c 100644
  static const char profile_dirs[] = CONF_PATHS_NULSTR("systemd/portable/profile");
  
 diff --git a/src/resolve/resolvectl.c b/src/resolve/resolvectl.c
-index 3072b98..c46ae37 100644
+index 8378ff5..6adeafa 100644
 --- a/src/resolve/resolvectl.c
 +++ b/src/resolve/resolvectl.c
 @@ -36,6 +36,7 @@
@@ -2008,7 +2253,7 @@ index b812665..8e68f7f 100644
  int dns_label_unescape(const char **name, char *dest, size_t sz, DNSLabelFlags flags) {
          const char *n;
 diff --git a/src/shared/ethtool-util.c b/src/shared/ethtool-util.c
-index 3bb12f9..1f78c4c 100644
+index 14e91e3..714da7d 100644
 --- a/src/shared/ethtool-util.c
 +++ b/src/shared/ethtool-util.c
 @@ -1,5 +1,6 @@
@@ -2107,7 +2352,7 @@ index 87ef5c3..834b47b 100644
  
          if (t->display_map)
 diff --git a/src/shared/group-record-nss.c b/src/shared/group-record-nss.c
-index 5c4fae8..b8eda9e 100644
+index b018a46..5a85e0c 100644
 --- a/src/shared/group-record-nss.c
 +++ b/src/shared/group-record-nss.c
 @@ -19,8 +19,10 @@ int nss_group_to_group_record(
@@ -2127,7 +2372,7 @@ index 5c4fae8..b8eda9e 100644
  
 +#if ENABLE_GSHADOW
          if (sgrp) {
-                 if (hashed_password_valid(sgrp->sg_passwd)) {
+                 if (looks_like_hashed_password(sgrp->sg_passwd)) {
                          g->hashed_password = strv_new(sgrp->sg_passwd);
 @@ -51,6 +54,7 @@ int nss_group_to_group_record(
                  if (!g->administrators)
@@ -2212,15 +2457,16 @@ index 5c4fae8..b8eda9e 100644
                  return r;
  
 diff --git a/src/shared/group-record-nss.h b/src/shared/group-record-nss.h
-index 077c22d..2372b0c 100644
+index 077c22d..7424cea 100644
 --- a/src/shared/group-record-nss.h
 +++ b/src/shared/group-record-nss.h
 @@ -2,7 +2,11 @@
  #pragma once
  
  #include <grp.h>
+-#include <gshadow.h>
 +#if ENABLE_GSHADOW
- #include <gshadow.h>
++#include "missing_gshadow.h"
 +#else
 +struct sgrp;
 +#endif
@@ -2320,10 +2566,10 @@ index 9412086..db1f053 100644
                                  return r;
  
 diff --git a/src/sleep/sleep.c b/src/sleep/sleep.c
-index 7029352..9c03977 100644
+index 600e9c2..82ec0b5 100644
 --- a/src/sleep/sleep.c
 +++ b/src/sleep/sleep.c
-@@ -48,7 +48,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
+@@ -49,7 +49,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
          assert(hibernate_location->swap);
  
          xsprintf(resume_str, "%u:%u", major(hibernate_location->devno), minor(hibernate_location->devno));
@@ -2332,7 +2578,7 @@ index 7029352..9c03977 100644
          if (r < 0)
                  return log_debug_errno(r, "Failed to write partition device to /sys/power/resume for '%s': '%s': %m",
                                         hibernate_location->swap->device, resume_str);
-@@ -75,7 +75,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
+@@ -76,7 +76,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
          }
  
          xsprintf(offset_str, "%" PRIu64, hibernate_location->offset);
@@ -2341,7 +2587,7 @@ index 7029352..9c03977 100644
          if (r < 0)
                  return log_debug_errno(r, "Failed to write swap file offset to /sys/power/resume_offset for '%s': '%s': %m",
                                         hibernate_location->swap->device, offset_str);
-@@ -92,7 +92,7 @@ static int write_mode(char **modes) {
+@@ -93,7 +93,7 @@ static int write_mode(char **modes) {
          STRV_FOREACH(mode, modes) {
                  int k;
  
@@ -2350,7 +2596,7 @@ index 7029352..9c03977 100644
                  if (k >= 0)
                          return 0;
  
-@@ -114,7 +114,7 @@ static int write_state(FILE **f, char **states) {
+@@ -115,7 +115,7 @@ static int write_state(FILE **f, char **states) {
          STRV_FOREACH(state, states) {
                  int k;
  
@@ -2360,7 +2606,7 @@ index 7029352..9c03977 100644
                          return 0;
                  log_debug_errno(k, "Failed to write '%s' to /sys/power/state: %m", *state);
 diff --git a/src/socket-proxy/socket-proxyd.c b/src/socket-proxy/socket-proxyd.c
-index b461aea..9941695 100644
+index bf47436..3af492d 100644
 --- a/src/socket-proxy/socket-proxyd.c
 +++ b/src/socket-proxy/socket-proxyd.c
 @@ -26,6 +26,7 @@
@@ -2490,7 +2736,7 @@ index b9d63d6..cb4bf21 100644
          info(uid_t);
          info(gid_t);
 diff --git a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
-index 2404e36..da43d2a 100644
+index 2db3773..865f736 100644
 --- a/src/tmpfiles/tmpfiles.c
 +++ b/src/tmpfiles/tmpfiles.c
 @@ -59,6 +59,12 @@
@@ -2506,7 +2752,7 @@ index 2404e36..da43d2a 100644
  /* This reads all files listed in /etc/tmpfiles.d/?*.conf and creates
   * them in the file system. This is intended to be used to create
   * properly owned directories beneath /tmp, /var/tmp, /run, which are
-@@ -1867,7 +1873,9 @@ finish:
+@@ -1870,7 +1876,9 @@ finish:
  
  static int glob_item(Item *i, action_t action) {
          _cleanup_globfree_ glob_t g = {
@@ -2516,7 +2762,7 @@ index 2404e36..da43d2a 100644
          };
          int r = 0, k;
          char **fn;
-@@ -1887,7 +1895,9 @@ static int glob_item(Item *i, action_t action) {
+@@ -1890,7 +1898,9 @@ static int glob_item(Item *i, action_t action) {
  
  static int glob_item_recursively(Item *i, fdaction_t action) {
          _cleanup_globfree_ glob_t g = {
@@ -2527,7 +2773,7 @@ index 2404e36..da43d2a 100644
          int r = 0, k;
          char **fn;
 diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
-index 72ef0c5..34ab9ee 100644
+index 03fd429..2662dc4 100644
 --- a/src/udev/net/link-config.c
 +++ b/src/udev/net/link-config.c
 @@ -1,5 +1,6 @@
@@ -2561,7 +2807,7 @@ index 6c020ac..10723ec 100644
  _printf_(2,3)
  static void path_prepend(char **path, const char *fmt, ...) {
 diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
-index e1c2baf..62d4086 100644
+index f276964..ad1b44a 100644
 --- a/src/udev/udev-event.c
 +++ b/src/udev/udev-event.c
 @@ -34,6 +34,7 @@
@@ -2573,7 +2819,7 @@ index e1c2baf..62d4086 100644
  typedef struct Spawn {
          sd_device *device;
 diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
-index c36f032..3697081 100644
+index 9d6dc42..9018398 100644
 --- a/src/udev/udev-rules.c
 +++ b/src/udev/udev-rules.c
 @@ -30,6 +30,7 @@
@@ -2598,7 +2844,7 @@ index 39113d2..6c012d7 100644
                          bool ignore = IN_SET(r, -ENOENT, -EACCES, -ENODEV, -EROFS);
  
 diff --git a/src/udev/udevd.c b/src/udev/udevd.c
-index f3236de..a3ace8b 100644
+index 0551d27..2e5ae8a 100644
 --- a/src/udev/udevd.c
 +++ b/src/udev/udevd.c
 @@ -1153,7 +1153,7 @@ static int synthesize_change_one(sd_device *dev, const char *syspath) {
