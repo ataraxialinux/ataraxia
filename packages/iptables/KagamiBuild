@@ -31,11 +31,17 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	mkdir -p "$PKG"/usr/share/factory/etc/iptables
-	touch "$PKG"/usr/share/factory/etc/iptables/iptables.rules "$PKG"/usr/share/factory/etc/iptables/ip6tables.rules
+	mkdir -p "$PKG"/etc/iptables
+	touch "$PKG"/etc/iptables/iptables.rules "$PKG"/etc/iptables/ip6tables.rules
 
 	install -Dm775 "$STUFF"/iptables/flush "$PKG"/usr/lib/iptables-flush
 	install -Dm644 "$STUFF"/svc/iptables.service "$PKG"/usr/lib/systemd/system/iptables.service
 	install -Dm644 "$STUFF"/svc/ip6tables.service "$PKG"/usr/lib/systemd/system/ip6tables.service
-	install -Dm644 "$STUFF"/stateless.d/iptables.conf "$PKG"/usr/lib/tmpfiles.d/stateless-iptables.conf
+
+	pushd "$PKG"
+		mkdir -p usr/share/factory
+		mv etc usr/share/factory
+
+		install -Dm644 "$STUFF"/stateless.d/iptables.conf "$PKG"/usr/lib/tmpfiles.d/stateless-iptables.conf
+	popd
 }
