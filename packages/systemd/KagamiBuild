@@ -96,7 +96,7 @@ build() {
 		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
 	EOF
 
-	#install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
+	install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
 	case $BARCH in
@@ -116,7 +116,6 @@ build() {
 	esac
 
 	pushd "$PKG"
-		mv usr/share/factory/etc/pam.d/* etc/pam.d/
 		rm -rf usr/share/factory/etc
 		mv etc usr/share/factory
 
