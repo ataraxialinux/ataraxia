@@ -79,7 +79,6 @@ build() {
 	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
 	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
 
-	#rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf,pam.d/{system-auth,other}}
 	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf}
 	sed -i -e '/^C \/etc\/nsswitch\.conf/d' \
 		-e '/^C \/etc\/issue/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
@@ -116,8 +115,8 @@ build() {
 	esac
 
 	pushd "$PKG"
-		rm -rf usr/share/factory/etc
-		mv etc usr/share/factory
+		mv etc/* usr/share/factory/etc
+		rm -rf etc
 
 		install -Dm644 "$STUFF"/stateless.d/systemd.conf usr/lib/tmpfiles.d/stateless-systemd.conf
 
