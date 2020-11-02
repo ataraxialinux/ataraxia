@@ -14,17 +14,6 @@ name=systemd
 version=246.6
 release=6
 options=('bootstrap')
-backup=('etc/pam.d/systemd-user'
-	'etc/systemd/coredump.conf'
-	'etc/systemd/journald.conf'
-	'etc/systemd/logind.conf'
-	'etc/systemd/networkd.conf'
-	'etc/systemd/sleep.conf'
-	'etc/systemd/system.conf'
-	'etc/systemd/resolved.conf'
-	'etc/systemd/timesyncd.conf'
-	'etc/systemd/user.conf'
-	'etc/udev/udev.conf')
 source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -35,7 +24,6 @@ build() {
 	patch -Np1 -i "$STUFF"/systemd/0004-better-firstboot.patch
 
 	sed '177,$ d' -i src/resolve/meson.build
-	sed -i 's/GROUP="render", //' rules.d/50-udev-default.rules.in
 
 	mkdir -p build
 	cd build
@@ -99,7 +87,7 @@ build() {
 	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
 	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
 
-	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf}
+	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf,pam.d/{system-auth,other}}
 	sed -i -e '/^C \/etc\/nsswitch\.conf/d' \
 		-e '/^C \/etc\/issue/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
 
@@ -116,8 +104,6 @@ build() {
 	EOF
 
 	install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
-
-	install -d -o root -g 190 -m 2755 "$PKG"/var/log/journal
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
 	case $BARCH in
@@ -127,11 +113,6 @@ build() {
 				;;
 	esac
 
-	# compat
-	mkdir -p "$PKG"/var/lib/dbus
-	ln -sf ../../../run/machine-id "$PKG"/var/lib/dbus/machine-id
-	ln -sf ../run/machine-id "$PKG"/etc/machine-id
-
 	case $BARCH in
 		aarch64|armv7hl|armv6hl)
 			systemctl -q --root "$PKG" enable getty@tty1.service getty@ttyAMA0.service remote-fs.target
@@ -140,4 +121,19 @@ build() {
 			systemctl -q --root "$PKG" enable getty@tty1.service remote-fs.target
 			;;
 	esac
+
+	pushd "$PKG"
+		rm -rf usr/share/factory/etc
+		mv etc usr/share/factory
+
+		install -Dm644 "$STUFF"/stateless.d/systemd.conf usr/lib/tmpfiles.d/stateless-systemd.conf
+
+		case $BARCH in
+			aarch64|armv7hl|armv6hl)
+				echo 'L! /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service' >> usr/lib/tmpfiles.d/stateless-systemd.conf
+				;;
+		esac
+
+		rm -rf "$PKG"/var
+	popd
 }
