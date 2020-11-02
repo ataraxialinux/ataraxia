@@ -6,15 +6,17 @@
 
 name=netbase
 version=6.2
-release=1
+release=2
 options=('bootstrap')
 source=("http://deb.debian.org/debian/pool/main/n/$name/${name}_${version}.tar.xz")
 
 build() {
-	install -d "$PKG"/etc
+	install -d "$PKG"/usr/share/factory/etc
 
 	cd "$SRC"/$name-$version
-	install -o root -g root -m 0644 etc/protocols "$PKG"/etc/protocols
-	install -o root -g root -m 0644 etc/rpc "$PKG"/etc/rpc
-	install -o root -g root -m 0644 etc/services "$PKG"/etc/services
+	install -o root -g root -m 0644 etc/protocols "$PKG"/usr/share/factory/etc/protocols
+	install -o root -g root -m 0644 etc/rpc "$PKG"/usr/share/factory/etc/rpc
+	install -o root -g root -m 0644 etc/services "$PKG"/usr/share/factory/etc/services
+
+	install -Dm644 "$STUFF"/stateless.d/netbase.conf "$PKG"/usr/lib/tmpfiles.d/stateless-netbase.conf
 }
