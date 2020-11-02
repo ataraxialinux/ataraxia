@@ -1,7 +1,7 @@
-From c5b5c998c602d46bbc1fb45cbb1aed2de85bf243 Mon Sep 17 00:00:00 2001
+From ffabc5807b4ed933784ff07060764d0b111462f4 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 20 Aug 2020 18:47:11 +0300
-Subject: [PATCH] non-GNU-userland-fixes
+Date: Mon, 2 Nov 2020 23:26:03 +0300
+Subject: [PATCH 2/5] non-GNU-userland-fixes
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -11,10 +11,10 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  3 files changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index dbbddb6..49e4486 100644
+index 12054ed..c8805aa 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -600,10 +600,6 @@ endforeach
+@@ -602,10 +602,6 @@ endforeach
  
  conf.set_quoted('TELINIT', get_option('telinit-path'))
  
@@ -26,7 +26,7 @@ index dbbddb6..49e4486 100644
  
  gperf = find_program('gperf')
 diff --git a/tools/meson-make-symlink.sh b/tools/meson-make-symlink.sh
-index cdd5214..e817754 100755
+index cdd5214..9ab07d5 100755
 --- a/tools/meson-make-symlink.sh
 +++ b/tools/meson-make-symlink.sh
 @@ -4,9 +4,9 @@ set -eu
@@ -40,7 +40,7 @@ index cdd5214..e817754 100755
 +    ln -fs -- "$1" "${DESTDIR:-}$2"
  else
 -    ln -vfs -T --relative -- "${DESTDIR:-}$1" "${DESTDIR:-}$2"
-+    ln -fs -- "${DESTDIR:-}$1" "${DESTDIR:-}$2"
++    ln -fs -- "$1" "${DESTDIR:-}$2"
  fi
 diff --git a/units/meson-add-wants.sh b/units/meson-add-wants.sh
 index a483d75..ac53755 100755
@@ -66,30 +66,6 @@ index a483d75..ac53755 100755
  
 -ln -vfs --relative "$unitpath" "$dir"
 +ln -fs "$unitpath" "$dir"
--- 
-2.28.0
-
-From 6fb6e09211dad3364501f05f922de8f32db21c07 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 20 Aug 2020 18:51:22 +0300
-Subject: [PATCH] fix
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- tools/meson-make-symlink.sh | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/meson-make-symlink.sh b/tools/meson-make-symlink.sh
-index e817754..9ab07d5 100755
---- a/tools/meson-make-symlink.sh
-+++ b/tools/meson-make-symlink.sh
-@@ -8,5 +8,5 @@ mkdir -p "$(dirname "${DESTDIR:-}$2")"
- if [ "$(dirname $1)" = . -o "$(dirname $1)" = .. ]; then
-     ln -fs -- "$1" "${DESTDIR:-}$2"
- else
--    ln -fs -- "${DESTDIR:-}$1" "${DESTDIR:-}$2"
-+    ln -fs -- "$1" "${DESTDIR:-}$2"
- fi
 -- 
 2.28.0
 

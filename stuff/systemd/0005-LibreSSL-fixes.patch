@@ -1,0 +1,79 @@
+From d2748d3010deef95fd293b72049b836aa9fce5d1 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 2 Nov 2020 23:30:15 +0300
+Subject: [PATCH 5/5] LibreSSL fixes
+
+rebase of https://github.com/xhebox/noname-linux/blob/master/ports/systemd/libressl.patch
+
+by xhebox: https://github.com/xhebox https://github.com/xhebox/noname-linux
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/home/homed-manager.c    | 10 +++++-----
+ src/home/user-record-sign.c |  8 +++++---
+ 2 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/src/home/homed-manager.c b/src/home/homed-manager.c
+index 62ded25..7b755e0 100644
+--- a/src/home/homed-manager.c
++++ b/src/home/homed-manager.c
+@@ -1322,19 +1322,19 @@ static int manager_generate_key_pair(Manager *m) {
+                 m->private_key = NULL;
+         }
+ 
+-        ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
++        ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_DSA2, NULL);
+         if (!ctx)
+-                return log_error_errno(SYNTHETIC_ERRNO(EIO), "Failed to allocate Ed25519 key generation context.");
++                return log_error_errno(SYNTHETIC_ERRNO(EIO), "Failed to allocate DSA2 key generation context.");
+ 
+         if (EVP_PKEY_keygen_init(ctx) <= 0)
+-                return log_error_errno(SYNTHETIC_ERRNO(EIO), "Failed to initialize Ed25519 key generation context.");
++                return log_error_errno(SYNTHETIC_ERRNO(EIO), "Failed to initialize DSA2 key generation context.");
+ 
+         log_info("Generating key pair for signing local user identity records.");
+ 
+         if (EVP_PKEY_keygen(ctx, &m->private_key) <= 0)
+-                return log_error_errno(SYNTHETIC_ERRNO(EIO), "Failed to generate Ed25519 key pair");
++                return log_error_errno(SYNTHETIC_ERRNO(EIO), "Failed to generate DSA2 key pair");
+ 
+-        log_info("Successfully created Ed25519 key pair.");
++        log_info("Successfully created DSA2 key pair.");
+ 
+         (void) mkdir_p("/var/lib/systemd/home", 0755);
+ 
+diff --git a/src/home/user-record-sign.c b/src/home/user-record-sign.c
+index 91f8639..af20419 100644
+--- a/src/home/user-record-sign.c
++++ b/src/home/user-record-sign.c
+@@ -53,14 +53,16 @@ int user_record_sign(UserRecord *ur, EVP_PKEY *private_key, UserRecord **ret) {
+                 return -EIO;
+ 
+         /* Request signature size */
+-        if (EVP_DigestSign(md_ctx, NULL, &signature_size, (uint8_t*) text, strlen(text)) <= 0)
++        if (EVP_DigestSignUpdate(md_ctx, NULL, &signature_size) <= 0)
+                 return -EIO;
+ 
+         signature = malloc(signature_size);
+         if (!signature)
+                 return -ENOMEM;
+ 
+-        if (EVP_DigestSign(md_ctx, signature, &signature_size, (uint8_t*) text, strlen(text)) <= 0)
++        if (EVP_DigestSignUpdate(md_ctx, signature, &signature_size) <= 0)
++                return -EIO;
++        if (EVP_DigestSignFinal(md_ctx, (uint8_t*) text, strlen(text)) <= 0)
+                 return -EIO;
+ 
+         mf = open_memstream_unlocked(&key, &key_size);
+@@ -148,7 +150,7 @@ int user_record_verify(UserRecord *ur, EVP_PKEY *public_key) {
+                 if (EVP_DigestVerifyInit(md_ctx, NULL, NULL, NULL, public_key) <= 0)
+                         return -EIO;
+ 
+-                if (EVP_DigestVerify(md_ctx, signature, signature_size, (uint8_t*) text, strlen(text)) <= 0) {
++                if (EVP_DigestVerifyUpdate(md_ctx, signature, signature_size) <= 0 || EVP_DigestVerifyFinal(md_ctx, (uint8_t*) text, strlen(text)) <= 0) {
+                         n_bad ++;
+                         continue;
+                 }
+-- 
+2.28.0
+
