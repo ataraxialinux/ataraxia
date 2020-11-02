@@ -2,11 +2,6 @@
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  meson zlib bzip2 xz lz4 pam acl libcap shadow libressl kbd kmod libelf iptables gperf hwids cryptsetup libseccomp
-# Dep x86_64:  gnu-efi
-# Dep i686:    gnu-efi
-# Dep aarch64: gnu-efi
-# Dep armv7hl: gnu-efi
-# Dep armv6hl: gnu-efi
 # Priority:    required
 # Section:     base
 
@@ -17,15 +12,6 @@ options=('bootstrap')
 source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
-	case $BARCH in
-		x86_64|i686|aarch64|armv7hl|armv6hl)
-			local gnuefi="true"
-			;;
-		*)
-			local gnuefi="false"
-			;;
-	esac
-
 	cd "$SRC"/$name-stable-$version
 	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
 	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
@@ -37,7 +23,7 @@ build() {
 
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/systemd-stable-$version \
+	ataraxia-meson "$SRC"/systemd-stable-$version $extraopts \
 		-Dapparmor=false \
 		-Daudit=false \
 		-Db_lto=false \
@@ -52,7 +38,6 @@ build() {
 		-Delfutils=true \
 		-Dfallback-hostname="ataraxia" \
 		-Dgcrypt=false \
-		-Dgnu-efi=$gnuefi \
 		-Dgnutls=false \
 		-Dgshadow=false \
 		-Dhibernate=false \

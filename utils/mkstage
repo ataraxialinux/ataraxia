@@ -5,12 +5,6 @@ main() {
 		LINUX="linux"
 	fi
 
-	case $BARCH in
-		x86_64|i686|aarch64|armv7hl|armv6hl)
-				EXTRAPKG="gnu-efi"
-				;;
-	esac
-
 	STAGE="$BUILD/stage"
 
 	rm -rf "$STAGE"
@@ -22,10 +16,9 @@ main() {
 		mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle python perl \
 		ca-certificates autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils \
 		9base lobase sbase ubase less mandoc gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack \
-		libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make patch tar cpio nano \
-		$EXTRAPKG iputils procps-ng gperf libseccomp util-linux libaio lvm2 popt json-c argon2 cryptsetup \
-		hwids systemd dbus-broker dbus e2fsprogs btrfs-progs run-parts libssh2 nghttp2 heimdal curl rpm neko \
-		$LINUX"
+		libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make patch tar cpio nano iputils procps-ng \
+		gperf libseccomp util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus e2fsprogs \
+		btrfs-progs run-parts libssh2 nghttp2 heimdal curl rpm neko $LINUX"
 
 	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$STAGE" -wdt $packages
 
