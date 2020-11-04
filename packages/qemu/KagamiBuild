@@ -6,7 +6,7 @@
 
 name=qemu
 version=5.1.0
-release=2
+release=3
 source=("http://download.qemu-project.org/$name-$version.tar.bz2")
 
 build() {
@@ -48,6 +48,6 @@ build() {
 
 	mkdir -p "$PKG"/usr/lib/udev/rules.d
 cat > "$PKG"/usr/lib/udev/rules.d/65-kvm.rules << "EOF"
-KERNEL=="kvm", GROUP="kvm", MODE="0660"
+KERNEL=="vhost-net", GROUP="kvm", MODE="0660", TAG+="uaccess", OPTIONS+="static_node=vhost-net"
 EOF
 }
