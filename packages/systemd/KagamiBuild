@@ -6,7 +6,7 @@
 
 name=systemd
 version=246.6
-release=7
+release=8
 options=('bootstrap')
 backup=('etc/systemd/coredump.conf'
 	'etc/systemd/journald.conf'
@@ -29,6 +29,7 @@ build() {
 	patch -Np1 -i "$STUFF"/systemd/0005-LibreSSL-fixes.patch
 	patch -Np1 -i "$STUFF"/systemd/0006-remove-nsswitch.conf.patch
 	patch -Np1 -i "$STUFF"/systemd/0007-Use-home-root.patch
+	patch -Np1 -i "$STUFF"/systemd/0008-better-pam-handle.patch
 
 	sed '177,$ d' -i src/resolve/meson.build
 
@@ -104,6 +105,11 @@ build() {
 	EOF
 
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
+
+	#install -Dm644 "$STUFF"/systemd/issue "$PKG"/usr/share/factory/etc/issue
+	#install -Dm644 "$STUFF"/pam.d/other "$PKG"/usr/share/factory/etc/pam.d/other
+	#install -Dm644 "$STUFF"/pam.d/system-auth "$PKG"/usr/share/factory/etc/pam.d/system-auth
+	#install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
 
 	case $BARCH in
 		x86_64|i686|aarch64|armv7hl|armv6hl)
