@@ -14,8 +14,7 @@ generate_initramfs() {
 
 	pushd "$INITRAMFS"
 		rm -rf usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
-		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal
-		rm -rf usr/share/bash-completion usr/lib/systemd/system/systemd-firstboot.service
+		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
 		rm -rf usr/lib/modules/*/kernel/drivers/gpu usr/lib/modules/*/kernel/drivers/gpu
 		rm -rf usr/lib/modules/*/kernel/drivers/input usr/lib/modules/*/kernel/drivers/hid
 		rm -rf usr/lib/modules/*/kernel/drivers/hwmon usr/lib/modules/*/kernel/drivers/nfs
@@ -42,6 +41,7 @@ generate_initramfs() {
 		EOF
 
 		systemctl -q --root "$INITRAMFS" enable dropbear.service
+		systemd-firstboot --root="$INITRAMFS" --keymap=us --timezone=America/New_York --hostname=live
 
 		ln -sf usr/lib/systemd/systemd init
 
