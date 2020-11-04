@@ -7,8 +7,9 @@
 
 name=libpwquality
 version=1.4.4
-release=2
+release=3
 options=('bootstrap')
+backup=('etc/security/pwquality.conf')
 source=("https://github.com/libpwquality/libpwquality/releases/download/$name-$version/$name-$version.tar.bz2")
 
 build() {
@@ -26,14 +27,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	pushd "$PKG"
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/libpwquality.conf usr/lib/tmpfiles.d/stateless-libpwquality.conf
-	popd
-
-	install -m755 -d "$PKG"/usr/share/factory/etc/security/pwquality.conf.d
+	install -m755 -d "$PKG"/etc/security/pwquality.conf.d
 
 	rm -rf "$PKG"/usr/lib/security/*.a
 }

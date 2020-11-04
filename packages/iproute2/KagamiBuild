@@ -7,8 +7,14 @@
 
 name=iproute2
 version=5.9.0
-release=2
+release=3
 options=('bootstrap')
+backup=('etc/iproute2/ematch_map'
+	'etc/iproute2/rt_dsfield'
+	'etc/iproute2/rt_protos'
+	'etc/iproute2/rt_realms'
+	'etc/iproute2/rt_scopes'
+	'etc/iproute2/rt_tables')
 source=("https://www.kernel.org/pub/linux/utils/net/$name/$name-$version.tar.xz")
 
 build() {
@@ -25,12 +31,4 @@ build() {
 	./configure $BUILDFLAGS
 	make
 	make DESTDIR="$PKG" SBINDIR="/usr/bin" install
-
-	pushd "$PKG"
-		rm -rf var
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/iproute2.conf usr/lib/tmpfiles.d/stateless-iproute2.conf
-	popd
 }

@@ -11,8 +11,9 @@ _patchlevel=${version##*.}
 _bash_patchlevel="00$_patchlevel"
 _myver=${version%.*}
 _patchbase=${_myver/./}
-release=4
+release=5
 options=('~emptydirs' 'bootstrap')
+backup=('etc/inputrc')
 source=("https://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
 
 _i=1
@@ -42,6 +43,5 @@ build() {
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw"
 	make SHLIB_LIBS="-L$ROOTFS/usr/lib -lncursesw" DESTDIR="$PKG" install
 
-	install -Dm644 "$STUFF"/readline/inputrc "$PKG"/usr/share/factory/etc/inputrc
-	install -Dm644 "$STUFF"/stateless.d/readline.conf "$PKG"/usr/lib/tmpfiles.d/stateless-readline.conf
+	install -Dm644 "$STUFF"/readline/inputrc "$PKG"/etc/inputrc
 }

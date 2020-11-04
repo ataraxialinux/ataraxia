@@ -7,8 +7,18 @@
 
 name=systemd
 version=246.6
-release=6
+release=7
 options=('bootstrap')
+backup=('etc/systemd/coredump.conf'
+	'etc/systemd/journald.conf'
+	'etc/systemd/logind.conf'
+	'etc/systemd/networkd.conf'
+	'etc/systemd/sleep.conf'
+	'etc/systemd/system.conf'
+	'etc/systemd/resolved.conf'
+	'etc/systemd/timesyncd.conf'
+	'etc/systemd/user.conf'
+	'etc/udev/udev.conf')
 source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -80,10 +90,6 @@ build() {
 	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
 	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
 
-	rm "$PKG"/usr/share/factory/etc/{issue,nsswitch.conf}
-	sed -i -e '/^C \/etc\/nsswitch\.conf/d' \
-		-e '/^C \/etc\/issue/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
-
 	cat > "$PKG"/usr/lib/udev/rules.d/60-block.rules <<-EOF
 		# set bfq by default
 		ACTION=="add|change", KERNEL=="sd[a-z]", ATTR{queue/scheduler}="bfq"
@@ -96,7 +102,6 @@ build() {
 		ACTION=="add", SUBSYSTEM=="net", ATTR{address}=="XX:XX:XX:XX:XX:XX", RUN+="/usr/bin/ip link set dev $name address YY:YY:YY:YY:YY:YY"
 	EOF
 
-	install -Dm644 "$STUFF"/pam.d/systemd-user "$PKG"/etc/pam.d/systemd-user
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
 	case $BARCH in
@@ -115,18 +120,5 @@ build() {
 			;;
 	esac
 
-	pushd "$PKG"
-		rm -rf usr/share/factory/etc
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/systemd.conf usr/lib/tmpfiles.d/stateless-systemd.conf
-
-		case $BARCH in
-			aarch64|armv7hl|armv6hl)
-				echo 'L! /etc/systemd/system/getty.target.wants/getty@ttyAMA0.service' >> usr/lib/tmpfiles.d/stateless-systemd.conf
-				;;
-		esac
-
-		rm -rf "$PKG"/var
-	popd
+	rm "$PKG"/usr/share/factory/etc/nsswitch.conf "$PKG"/var
 }

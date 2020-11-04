@@ -6,9 +6,9 @@
 
 name=attr
 version=2.4.48
-release=1
-backup=('etc/xattr.conf')
+release=2
 options=('bootstrap')
+backup=('etc/xattr.conf')
 source=("https://download.savannah.gnu.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -20,11 +20,4 @@ build() {
 		--sysconfdir=/etc
 	make
 	make DESTDIR="$PKG" install
-
-	pushd "$PKG"
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/attr.conf usr/lib/tmpfiles.d/stateless-attr.conf
-	popd
 }

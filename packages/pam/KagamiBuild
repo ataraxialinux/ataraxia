@@ -6,8 +6,20 @@
 
 name=pam
 version=1.4.0
-release=7
+release=8
 options=('~emptydirs' 'bootstrap')
+backup=('etc/pam.d/system-local-login'
+	'etc/pam.d/system-login'
+	'etc/pam.d/system-remote-login'
+	'etc/pam.d/system-services'
+	'etc/security/access.conf'
+	'etc/security/group.conf'
+	'etc/security/limits.conf'
+	'etc/security/namespace.conf'
+	'etc/security/namespace.init'
+	'etc/security/pam_env.conf'
+	'etc/security/time.conf'
+	'etc/environment')
 source=("https://github.com/linux-pam/linux-pam/releases/download/v$version/Linux-PAM-$version.tar.xz")
 
 build() {
@@ -32,14 +44,7 @@ build() {
 
 	chmod 4755 "$PKG"/usr/bin/unix_chkpwd
 
-	pushd "$PKG"
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/pam.conf usr/lib/tmpfiles.d/stateless-pam.conf
-	popd
-
-	for pam in system-auth system-local-login system-login system-remote-login system-services other; do
-		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/usr/share/factory/etc/pam.d/$pam
+	for pam in system-local-login system-login system-remote-login system-services; do
+		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
 	done
 }

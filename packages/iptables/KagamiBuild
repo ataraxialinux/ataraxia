@@ -7,8 +7,11 @@
 
 name=iptables
 version=1.8.6
-release=2
+release=3
 options=('bootstrap')
+backup=('etc/ethertypes'
+	'etc/iptables/iptables.rules'
+	'etc/iptables/ip6tables.rules')
 source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
 
 build() {
@@ -37,11 +40,4 @@ build() {
 	install -Dm775 "$STUFF"/iptables/flush "$PKG"/usr/lib/iptables-flush
 	install -Dm644 "$STUFF"/svc/iptables.service "$PKG"/usr/lib/systemd/system/iptables.service
 	install -Dm644 "$STUFF"/svc/ip6tables.service "$PKG"/usr/lib/systemd/system/ip6tables.service
-
-	pushd "$PKG"
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/iptables.conf "$PKG"/usr/lib/tmpfiles.d/stateless-iptables.conf
-	popd
 }

@@ -7,8 +7,10 @@
 
 name=lvm2
 version=2.03.10
-release=3
+release=4
 options=('bootstrap')
+backup=('etc/lvm/lvm.conf'
+	'etc/lvm/lvmlocal.conf')
 source=("http://sourceware.org/pub/lvm2/LVM2.${version}.tgz")
 
 build() {
@@ -58,11 +60,4 @@ build() {
 
 	sed -i 's,use_lvmetad = 1,use_lvmetad = 0,' "$PKG"/etc/lvm/lvm.conf
 	sed -i 's,use_mlockall = 0,use_mlockall = 1,' "$PKG"/etc/lvm/lvm.conf
-
-	pushd "$PKG"
-		mkdir -p usr/share/factory
-		mv etc usr/share/factory
-
-		install -Dm644 "$STUFF"/stateless.d/lvm2.conf usr/lib/tmpfiles.d/stateless-lvm2.conf
-	popd
 }
