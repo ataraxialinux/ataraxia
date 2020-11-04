@@ -1,14 +1,105 @@
-From 67e1419dd96da490fad081a5686305d724533faa Mon Sep 17 00:00:00 2001
+From 7835565c05cfc50a88f6cdb306b49639a7ec0ca0 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Wed, 4 Nov 2020 19:24:48 +0300
-Subject: [PATCH] Use /home/root
+Date: Wed, 4 Nov 2020 20:54:41 +0300
+Subject: [PATCH 1/2] Use /home/root
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- sysusers.d/basic.conf.in | 2 +-
- tmpfiles.d/home.conf     | 2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ src/basic/user-util.c     | 2 +-
+ src/core/namespace.c      | 4 ----
+ src/firstboot/firstboot.c | 2 +-
+ src/shared/user-record.c  | 2 +-
+ src/shared/userdb.c       | 2 +-
+ sysusers.d/basic.conf.in  | 2 +-
+ tmpfiles.d/home.conf      | 1 +
+ 7 files changed, 6 insertions(+), 9 deletions(-)
 
+diff --git a/src/basic/user-util.c b/src/basic/user-util.c
+index 0e96a75..d1b147c 100644
+--- a/src/basic/user-util.c
++++ b/src/basic/user-util.c
+@@ -173,7 +173,7 @@ static int synthesize_user_creds(
+                         *gid = 0;
+ 
+                 if (home)
+-                        *home = "/root";
++                        *home = "/home/root";
+ 
+                 if (shell)
+                         *shell = "/bin/sh";
+diff --git a/src/core/namespace.c b/src/core/namespace.c
+index d30c810..7ee86ad 100644
+--- a/src/core/namespace.c
++++ b/src/core/namespace.c
+@@ -126,21 +126,18 @@ static const MountEntry protect_kernel_logs_table[] = {
+ static const MountEntry protect_home_read_only_table[] = {
+         { "/home",               READONLY,     true  },
+         { "/run/user",           READONLY,     true  },
+-        { "/root",               READONLY,     true  },
+ };
+ 
+ /* ProtectHome=tmpfs table */
+ static const MountEntry protect_home_tmpfs_table[] = {
+         { "/home",               TMPFS,        true, .read_only = true, .options_const = "mode=0755" TMPFS_LIMITS_EMPTY_OR_ALMOST, .flags = MS_NODEV|MS_STRICTATIME },
+         { "/run/user",           TMPFS,        true, .read_only = true, .options_const = "mode=0755" TMPFS_LIMITS_EMPTY_OR_ALMOST, .flags = MS_NODEV|MS_STRICTATIME },
+-        { "/root",               TMPFS,        true, .read_only = true, .options_const = "mode=0700" TMPFS_LIMITS_EMPTY_OR_ALMOST, .flags = MS_NODEV|MS_STRICTATIME },
+ };
+ 
+ /* ProtectHome=yes table */
+ static const MountEntry protect_home_yes_table[] = {
+         { "/home",               INACCESSIBLE, true  },
+         { "/run/user",           INACCESSIBLE, true  },
+-        { "/root",               INACCESSIBLE, true  },
+ };
+ 
+ /* ProtectSystem=yes table */
+@@ -189,7 +186,6 @@ static const MountEntry protect_system_strict_table[] = {
+         { "/dev",                READWRITE_IMPLICIT, false },      /* PrivateDevices= */
+         { "/home",               READWRITE_IMPLICIT, true  },      /* ProtectHome= */
+         { "/run/user",           READWRITE_IMPLICIT, true  },      /* ProtectHome= */
+-        { "/root",               READWRITE_IMPLICIT, true  },      /* ProtectHome= */
+ };
+ 
+ static const char * const mount_mode_table[_MOUNT_MODE_MAX] = {
+diff --git a/src/firstboot/firstboot.c b/src/firstboot/firstboot.c
+index c9fc8dd..4da886a 100644
+--- a/src/firstboot/firstboot.c
++++ b/src/firstboot/firstboot.c
+@@ -696,7 +696,7 @@ static int write_root_passwd(const char *passwd_path, const char *password, cons
+                         .pw_uid = 0,
+                         .pw_gid = 0,
+                         .pw_gecos = (char *) "Super User",
+-                        .pw_dir = (char *) "/root",
++                        .pw_dir = (char *) "/home/root",
+                         .pw_shell = (char *) (shell ?: "/bin/sh"),
+                 };
+ 
+diff --git a/src/shared/user-record.c b/src/shared/user-record.c
+index 2c0de38..a03adfc 100644
+--- a/src/shared/user-record.c
++++ b/src/shared/user-record.c
+@@ -1606,7 +1606,7 @@ const char* user_record_home_directory(UserRecord *h) {
+ 
+         /* The root user is special, hence be special about it */
+         if (streq_ptr(h->user_name, "root"))
+-                return "/root";
++                return "/home/root";
+ 
+         return "/";
+ }
+diff --git a/src/shared/userdb.c b/src/shared/userdb.c
+index 9412086..0c83a3b 100644
+--- a/src/shared/userdb.c
++++ b/src/shared/userdb.c
+@@ -581,7 +581,7 @@ static int synthetic_root_user_build(UserRecord **ret) {
+                         JSON_BUILD_OBJECT(JSON_BUILD_PAIR("userName", JSON_BUILD_STRING("root")),
+                                           JSON_BUILD_PAIR("uid", JSON_BUILD_UNSIGNED(0)),
+                                           JSON_BUILD_PAIR("gid", JSON_BUILD_UNSIGNED(0)),
+-                                          JSON_BUILD_PAIR("homeDirectory", JSON_BUILD_STRING("/root")),
++                                          JSON_BUILD_PAIR("homeDirectory", JSON_BUILD_STRING("/home/root")),
+                                           JSON_BUILD_PAIR("disposition", JSON_BUILD_STRING("intrinsic"))));
+ }
+ 
 diff --git a/sysusers.d/basic.conf.in b/sysusers.d/basic.conf.in
 index 8e358c0..4735821 100644
 --- a/sysusers.d/basic.conf.in
@@ -23,15 +114,36 @@ index 8e358c0..4735821 100644
  # The nobody user for NFS file systems
  u @NOBODY_USER_NAME@  65534 "Nobody"     -
 diff --git a/tmpfiles.d/home.conf b/tmpfiles.d/home.conf
-index 9f25b83..b935d26 100644
+index 9f25b83..53220df 100644
 --- a/tmpfiles.d/home.conf
 +++ b/tmpfiles.d/home.conf
-@@ -9,3 +9,5 @@
+@@ -9,3 +9,4 @@
+ 
+ Q /home 0755 - - -
+ q /srv 0755 - - -
++L /root - - - - /home/root
+-- 
+2.28.0
+
+From 20ceebb291e49ab99847960ec12113e166815d2b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 4 Nov 2020 21:06:08 +0300
+Subject: [PATCH] home.conf
+
+---
+ tmpfiles.d/home.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tmpfiles.d/home.conf b/tmpfiles.d/home.conf
+index 53220df..1092f7f 100644
+--- a/tmpfiles.d/home.conf
++++ b/tmpfiles.d/home.conf
+@@ -9,4 +9,5 @@
  
  Q /home 0755 - - -
  q /srv 0755 - - -
 +d! /home/root 0750 - - -
-+L! /root - - - - /home/root
+ L /root - - - - /home/root
 -- 
 2.28.0
 
