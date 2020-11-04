@@ -6,7 +6,7 @@
 
 name=kismet
 version=2020+09+R4
-release=1
+release=2
 backup=('etc/kismet.conf'
 	'etc/kismet_drone.conf')
 source=("https://www.kismetwireless.net/code/$name-${version/+/-}.tar.xz")
@@ -28,4 +28,6 @@ build() {
 		--disable-python-tools
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/sysusers.d/kismet.conf "$PKG"/usr/lib/sysusers.d/kismet.conf
 }

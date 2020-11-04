@@ -6,17 +6,19 @@
 
 name=darkstat
 version=3.0.719
-release=2
+release=3
 source=("https://unix4lyfe.org/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sbindir=/usr/bin
+		--sbindir=/usr/bin \
+		--with-privdrop-user=darkstat
 	make
 	make DESTDIR="$PKG" install
 
 	install -Dm644 "$STUFF"/svc/darkstat.service "$PKG"/usr/lib/systemd/system/darkstat.service
-	install -Dm644 "$STUFF"/tmpfiles.d/darkstat.conf "$PKG"/usr/lib/tmpfiles.d/darkstats.conf
+	install -Dm644 "$STUFF"/tmpfiles.d/darkstat.conf "$PKG"/usr/lib/tmpfiles.d/darkstat.conf
+	install -Dm644 "$STUFF"/sysusers.d/darkstat.conf "$PKG"/usr/lib/sysusers.d/darkstat.conf
 }

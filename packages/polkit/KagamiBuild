@@ -6,7 +6,7 @@
 
 name=polkit
 version=0.118
-release=2
+release=3
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
 
 build() {
@@ -33,4 +33,5 @@ build() {
 	make dbusconfdir=/usr/share/dbus-1/system.d rulesdir=/usr/share/polkit-1/rules.d DESTDIR="$PKG" install
 
 	install -d -o root -g 102 -m 750 "$PKG"/{etc,usr/share}/polkit-1/rules.d
+	install -Dm644 "$STUFF"/sysusers.d/polkit.conf "$PKG"/usr/lib/sysusers.d/polkit.conf
 }

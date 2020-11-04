@@ -6,7 +6,7 @@
 
 name=libvirt
 version=6.9.0
-release=1
+release=3
 source=("https://libvirt.org/sources/$name-$version.tar.xz")
 
 build() {
@@ -35,7 +35,8 @@ build() {
 
 	sed -i 's|<uuid>.*</uuid>|<uuid></uuid>|' "$PKG"/etc/libvirt/qemu/networks/default.xml
 
-	install -d -o root -g polkitd -m 750 "$PKG"/usr/share/polkit-1/rules.d
+	install	-Dm644 "$STUFF"/sysusers.d/libvirt.conf "$PKG"/usr/lib/sysusers.d/libvirt.conf
+	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
 	chmod 600 "$PKG"/etc/libvirt/nwfilter/*.xml "$PKG/etc/libvirt/qemu/networks/default.xml"
 
@@ -45,5 +46,5 @@ build() {
 		"$PKG"/var/cache/libvirt/qemu \
 		"$PKG"/etc/logrotate.d/libvirtd.libxl
 
- 	rm -f "$PKG"/etc/libvirt/qemu/networks/autostart/default.xml
+	rm -f "$PKG"/etc/libvirt/qemu/networks/autostart/default.xml
 }

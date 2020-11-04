@@ -6,7 +6,7 @@
 
 name=openntpd
 version=6.2p3
-release=1
+release=2
 source=("https://cloudflare.cdn.openbsd.org/pub/OpenBSD/OpenNTPD/$name-$version.tar.gz")
 
 build() {
@@ -23,6 +23,7 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 "$STUFF"/svc/ntpd.service "$PKG"/usr/lib/systemd/system/ntpd.service
+	install -Dm644 "$STUFF"/sysusers.d/openntpd.conf "$PKG"/usr/lib/sysusers.d/openntpd.conf
 
 	rm -rf "$PKG"/var/run
 }

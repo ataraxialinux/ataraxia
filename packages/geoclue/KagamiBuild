@@ -6,7 +6,7 @@
 
 name=geoclue
 version=2.5.6
-release=1
+release=2
 source=("https://gitlab.freedesktop.org/geoclue/$name/-/archive/$version/$name-$version.tar.bz2")
 
 build() {
@@ -15,9 +15,13 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Ddbus-sys-dir=/usr/share/dbus-1/system.d \
+		-Ddbus-srv-user=geoclue \
 		-Dgtk-doc=false \
 		-Dnmea-source=false \
 		-Dsystemd-system-unit-dir=/usr/lib/systemd/system
 	samu
 	DESTDIR="$PKG" samu install
+
+	install -Dm644 "$STUFF"/tmpfiles.d/geoclue.conf "$PKG"/usr/lib/tmpfiles.d/geoclue.conf
+	install	-Dm644 "$STUFF"/sysusers.d/geoclue.conf "$PKG"/usr/lib/sysusers.d/geoclue.conf
 }
