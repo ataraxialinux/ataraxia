@@ -582,6 +582,9 @@ case $1 in
 		for i in packages sources; do
 			mount --bind "$BUILD/$i" "$rootdir/var/cache/$i"
 		done
+
+		[ ! -L "$rootdir/etc/mtab" ] && ln -sf ../proc/self/mounts "$rootdir"/etc/mtab
+
 		$HELPER chroot "$rootdir" /usr/bin/env -i \
 			HOME=/home/root \
 			TERM="$TERM" \
