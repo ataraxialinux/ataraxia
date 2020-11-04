@@ -12,6 +12,11 @@ backup=('etc/mke2fs.conf')
 source=("https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v$version/$name-$version.tar.xz")
 
 build() {
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
+		[ -z "$XTARGET" ] && XTARGET="$(cc -dumpmachine)"
+		export BUILDFLAGS="--build=$XTARGET --host=$XTARGET"
+	fi
+
 	cd "$SRC"/$name-$version
 	sed -i '/init\.d/s|^|#|' misc/Makefile.in
 
