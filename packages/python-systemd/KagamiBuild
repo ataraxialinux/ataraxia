@@ -1,0 +1,18 @@
+# Description: Python module wrapping systemd functionality
+# URL:         https://github.com/systemd/python-systemd/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python systemd
+# Section:     python
+
+name=python-systemd
+version=234
+release=1
+source=("https://github.com/systemd/python-systemd/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/python-systemd/0001-fix-build-on-musl-libc.patch
+
+	make PYTHON=python3 build
+	make PYTHON=python3 DESTDIR="$PKG" install
+}

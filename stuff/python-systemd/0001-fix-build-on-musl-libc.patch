@@ -1,0 +1,61 @@
+From 31d23568a03533f423343a80ab7b80d75164c838 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 7 Nov 2020 19:17:56 +0300
+Subject: [PATCH] fix build on musl libc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ systemd/util.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/systemd/util.c b/systemd/util.c
+index e02c825..d6df961 100644
+--- a/systemd/util.c
++++ b/systemd/util.c
+@@ -34,6 +34,18 @@
+ 
+ #include "util.h"
+ 
++#ifndef __GLIBC__
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
++
++
+ int safe_atou(const char *s, unsigned *ret_u) {
+         char *x = NULL;
+         unsigned long l;
+-- 
+2.28.0
+
+From a42ad195369a5ebfa57955ce87b542ca4d9caeee Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 7 Nov 2020 19:20:47 +0300
+Subject: [PATCH] include endian.h
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ systemd/util.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/systemd/util.c b/systemd/util.c
+index d6df961..babfe70 100644
+--- a/systemd/util.c
++++ b/systemd/util.c
+@@ -31,6 +31,7 @@
+ #include <fcntl.h>
+ #include <unistd.h>
+ #include <net/if.h>
++#include <endian.h>
+ 
+ #include "util.h"
+ 
+-- 
+2.28.0
+
