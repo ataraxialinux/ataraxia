@@ -1,6 +1,6 @@
-From 7cc5a32ab88bc1b46b6d01f3aca6838410223d16 Mon Sep 17 00:00:00 2001
+From 872cf642485c37ddfddefc836add60b6a616ef76 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sat, 17 Oct 2020 10:14:56 +0300
+Date: Sun, 8 Nov 2020 02:50:01 +0300
 Subject: [PATCH] add support for Ataraxia Linux PAM
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -8,12 +8,12 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  data/meson.build                             |  7 +++++++
  data/pam-ataraxia/gdm-autologin.pam          | 13 +++++++++++++
  data/pam-ataraxia/gdm-fingerprint.pam        | 17 +++++++++++++++++
- data/pam-ataraxia/gdm-launch-environment.pam | 13 +++++++++++++
+ data/pam-ataraxia/gdm-launch-environment.pam | 10 ++++++++++
  data/pam-ataraxia/gdm-password.pam           | 10 ++++++++++
  data/pam-ataraxia/gdm-smartcard.pam          | 17 +++++++++++++++++
  meson.build                                  |  1 +
  meson_options.txt                            |  2 +-
- 8 files changed, 79 insertions(+), 1 deletion(-)
+ 8 files changed, 76 insertions(+), 1 deletion(-)
  create mode 100644 data/pam-ataraxia/gdm-autologin.pam
  create mode 100644 data/pam-ataraxia/gdm-fingerprint.pam
  create mode 100644 data/pam-ataraxia/gdm-launch-environment.pam
@@ -59,7 +59,7 @@ index 0000000..8475d3f
 +session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-fingerprint.pam b/data/pam-ataraxia/gdm-fingerprint.pam
 new file mode 100644
-index 0000000..1987dcd
+index 0000000..2413398
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-fingerprint.pam
 @@ -0,0 +1,17 @@
@@ -82,22 +82,19 @@ index 0000000..1987dcd
 +session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-launch-environment.pam b/data/pam-ataraxia/gdm-launch-environment.pam
 new file mode 100644
-index 0000000..6143232
+index 0000000..f4fd9fe
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-launch-environment.pam
-@@ -0,0 +1,13 @@
-+auth       required                    pam_succeed_if.so    audit quiet_success user = gdm
-+auth       optional                    pam_permit.so
+@@ -0,0 +1,10 @@
 +auth       required                    pam_env.so
++auth       optional                    pam_permit.so
 +
-+account    required                    pam_succeed_if.so    audit quiet_success user = gdm
 +account    optional                    pam_permit.so
 +
 +password   required                    pam_deny.so
 +
 +-session   optional                    pam_systemd.so
 +session    optional                    pam_keyinit.so       force revoke
-+session    required                    pam_succeed_if.so    audit quiet_success user = gdm
 +session    required                    pam_permit.so
 diff --git a/data/pam-ataraxia/gdm-password.pam b/data/pam-ataraxia/gdm-password.pam
 new file mode 100644
@@ -117,7 +114,7 @@ index 0000000..577e3bf
 +session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/data/pam-ataraxia/gdm-smartcard.pam b/data/pam-ataraxia/gdm-smartcard.pam
 new file mode 100644
-index 0000000..5fb45b3
+index 0000000..004ba61
 --- /dev/null
 +++ b/data/pam-ataraxia/gdm-smartcard.pam
 @@ -0,0 +1,17 @@
@@ -139,7 +136,7 @@ index 0000000..5fb45b3
 +session    include                     system-local-login
 +session    optional                    pam_gnome_keyring.so auto_start
 diff --git a/meson.build b/meson.build
-index 1979cfe..908e612 100644
+index 4ee762d..9bf929f 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -172,6 +172,7 @@ if default_pam_config == 'autodetect'
@@ -164,5 +161,5 @@ index 49550bc..9304372 100644
  option('defaults-conf', type: 'string', value: '', description: 'Filename to give to defaults file.')
  option('dmconfdir', type: 'string', value: '', description: 'Directory where sessions are stored.')
 -- 
-2.26.2
+2.28.0
 
