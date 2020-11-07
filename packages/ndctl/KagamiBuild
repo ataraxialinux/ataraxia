@@ -1,0 +1,24 @@
+# Description: Utility library for managing the libnvdimm sub-system in the Linux kernel
+# URL:         https://github.com/pmem/ndctl
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  json-c keyutils kmod systemd bash-completion
+# Section:     libs
+
+name=ndctl
+version=70.1
+release=1
+source=("https://github.com/pmem/ndctl/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|^modprobedir =.*|modprobedir = /usr/lib/modprobe.d/|' Makefile.am
+
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-asciidoctor \
+		--disable-docs
+	make
+	make DESTDIR="$PKG" install
+}
