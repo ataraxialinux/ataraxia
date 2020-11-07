@@ -1,0 +1,58 @@
+From 8d491c87d5ddd7926e9f1334ef94b8f6fb61fe1d Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 7 Nov 2020 19:42:37 +0300
+Subject: [PATCH] fix build on musl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ pipewire-pulseaudio/src/stream.c                 | 11 +++++++++++
+ src/modules/module-protocol-pulse/pulse-server.c | 11 +++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/pipewire-pulseaudio/src/stream.c b/pipewire-pulseaudio/src/stream.c
+index 18fff46..94242cb 100644
+--- a/pipewire-pulseaudio/src/stream.c
++++ b/pipewire-pulseaudio/src/stream.c
+@@ -40,6 +40,17 @@
+ #define MAX_BUFFER_SAMPLES	(8*1024u)
+ #define MAX_SIZE		(4*1024*1024u)
+ 
++#ifndef __GLIBC__
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
++
+ static void dump_buffer_attr(pa_stream *s, pa_buffer_attr *attr)
+ {
+ 	char b[1024];
+diff --git a/src/modules/module-protocol-pulse/pulse-server.c b/src/modules/module-protocol-pulse/pulse-server.c
+index 59c0e09..3b5935d 100644
+--- a/src/modules/module-protocol-pulse/pulse-server.c
++++ b/src/modules/module-protocol-pulse/pulse-server.c
+@@ -67,6 +67,17 @@
+ 
+ #define NAME	"pulse-server"
+ 
++#ifndef __GLIBC__
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
++
+ static bool debug_messages = false;
+ 
+ struct impl;
+-- 
+2.28.0
+
