@@ -1,12 +1,12 @@
 # Description: Server and user space API to deal with multimedia pipelines
 # URL:         https://pipewire.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  systemd bluez ffmpeg gst-plugins-base libva sbc sdl2 v4l-utils vulkan-loader pulseaudio
+# Depends on:  systemd bluez ffmpeg gst-plugins-base libva sbc sdl2 v4l-utils vulkan-loader
 # Section:     libs
 
 name=pipewire
 version=0.3.15
-release=1
+release=2
 source=("https://github.com/PipeWire/pipewire/archive/$version/$name-$version.tar.gz")
 
 build() {
@@ -14,8 +14,8 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
+		-Dpipewire-pulseaudio=false \
 		-Dtests=false \
-		-Dsystemd=true \
 		-Dudevrulesdir=/usr/lib/udev/rules.d
 	samu
 	DESTDIR="$PKG" samu install
