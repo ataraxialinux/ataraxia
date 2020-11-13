@@ -6,14 +6,15 @@
 
 name=dracut
 version=050
-release=6
+release=7
 backup=('etc/dracut.conf')
 source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/dracut/0001-internal-fts.patch
-	patch -Np1 -i "$STUFF"/dracut/0001-POSIX-userland.patch
+	patch -Np1 -i "$STUFF"/dracut/0002-POSIX-fixes.patch
+	patch -Np1 -i "$STUFF"/dracut/0003-no-machine-id.patch
 
 	sed -i 's/cp -arx/cp -a/g' Makefile
 

@@ -1,7 +1,7 @@
-From 18e75d64a93bafbe66f4d039c237f152219c838a Mon Sep 17 00:00:00 2001
+From bacbed8c9a42f6f8d13b33534400217be9644e76 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sun, 1 Nov 2020 22:39:31 +0300
-Subject: [PATCH] POSIX userland
+Date: Fri, 13 Nov 2020 23:13:53 +0300
+Subject: [PATCH 2/3] POSIX fixes
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -9,23 +9,23 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  51-dracut-rescue-postinst.sh         |  2 +-
  51-dracut-rescue.install             |  2 +-
  Makefile                             |  2 +-
- dracut-init.sh                       | 28 +++++++++-------------
+ dracut-init.sh                       | 28 ++++++++-----------
  dracut.conf                          |  3 +++
- dracut.sh                            | 36 ++++++++++++++--------------
- install/dracut-install.c             |  8 +++----
- modules.d/04watchdog/module-setup.sh |  4 ++--
- modules.d/30convertfs/convertfs.sh   |  4 ++--
+ dracut.sh                            | 40 ++++++++++++++--------------
+ install/dracut-install.c             |  8 +++---
+ modules.d/04watchdog/module-setup.sh |  4 +--
+ modules.d/30convertfs/convertfs.sh   |  4 +--
  modules.d/40network/net-lib.sh       |  2 +-
  modules.d/45ifcfg/write-ifcfg.sh     |  2 +-
- modules.d/90crypt/cryptroot-ask.sh   |  4 ++--
+ modules.d/90crypt/cryptroot-ask.sh   |  4 +--
  modules.d/95fcoe/fcoe-up.sh          |  2 +-
  modules.d/95iscsi/module-setup.sh    |  2 +-
  modules.d/99base/dracut-lib.sh       |  2 +-
  modules.d/99base/init.sh             |  2 +-
  modules.d/99base/module-setup.sh     |  2 +-
- test/TEST-12-RAID-DEG/test.sh        |  4 ++--
+ test/TEST-12-RAID-DEG/test.sh        |  4 +--
  test/TEST-99-RPM/test.sh             |  2 +-
- 20 files changed, 56 insertions(+), 59 deletions(-)
+ 20 files changed, 58 insertions(+), 61 deletions(-)
 
 diff --git a/50-dracut.install b/50-dracut.install
 index 7ea5e17..3112d9e 100755
@@ -67,10 +67,10 @@ index b4ed178..d3747ec 100755
          fi
  
 diff --git a/Makefile b/Makefile
-index 22b584f..7e78bde 100644
+index da56cac..aab30cf 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -160,7 +160,7 @@ endif
+@@ -163,7 +163,7 @@ endif
  		    dracut-pre-trigger.service \
  		    dracut-pre-udev.service \
  		    ; do \
@@ -157,7 +157,7 @@ index d6317a0..c5b49be 100644
 +i18n_install_all="no"
 +compress="zstd"
 diff --git a/dracut.sh b/dracut.sh
-index af346f3..2a49f54 100755
+index af346f3..f4be267 100755
 --- a/dracut.sh
 +++ b/dracut.sh
 @@ -32,7 +32,7 @@ if (( BASH_VERSINFO[0] < 4 )); then
@@ -288,6 +288,24 @@ index af346f3..2a49f54 100755
            _sqsh_file=$(realpath $_sqsh_file 2>/dev/null)
            if [[ -e $_sqsh_file ]] && [[ "$_sqsh_file" == "$squash_dir"* ]]; then
              # Relative symlink
+@@ -1965,7 +1965,7 @@ fi
+ 
+ if [[ $DRACUT_REPRODUCIBLE ]]; then
+     find "$initdir" -newer "$dracutbasedir/dracut-functions.sh" -print0 \
+-        | xargs -r -0 touch -h -m -c -r "$dracutbasedir/dracut-functions.sh"
++        | xargs -r -0 touch -m -c -r "$dracutbasedir/dracut-functions.sh"
+ 
+     if [[ "$(cpio --help)" == *--reproducible* ]]; then
+         CPIO_REPRODUCIBLE=1
+@@ -1981,7 +1981,7 @@ if [[ $create_early_cpio = yes ]]; then
+ 
+     if [[ $DRACUT_REPRODUCIBLE ]]; then
+         find "$early_cpio_dir/d" -newer "$dracutbasedir/dracut-functions.sh" -print0 \
+-            | xargs -r -0 touch -h -m -c -r "$dracutbasedir/dracut-functions.sh"
++            | xargs -r -0 touch -m -c -r "$dracutbasedir/dracut-functions.sh"
+     fi
+ 
+     # The microcode blob is _before_ the initramfs blob, not after
 @@ -2054,7 +2054,7 @@ if [[ $uefi = yes ]]; then
                  exit 1
              fi
@@ -307,7 +325,7 @@ index af346f3..2a49f54 100755
      else
          rm -f -- "$outfile"
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 3d64ed7..d67f206 100644
+index 1ba7a82..ca56ea4 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
 @@ -312,10 +312,10 @@ static int cp(const char *src, const char *dst)
@@ -504,41 +522,6 @@ index af64c24..c827acb 100755
         "$TESTDIR"/dracut-[0-9]*.$(uname -m).rpm \
         "$TESTDIR"/dracut-network-[0-9]*.$(uname -m).rpm \
         "$rootdir/$TESTDIR/"
--- 
-2.28.0
-
-From 540f3d0f5f4a31db852edd7894c03513846ab933 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sun, 1 Nov 2020 22:41:34 +0300
-Subject: [PATCH] touch
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- dracut.sh | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/dracut.sh b/dracut.sh
-index 2a49f54..f4be267 100755
---- a/dracut.sh
-+++ b/dracut.sh
-@@ -1965,7 +1965,7 @@ fi
- 
- if [[ $DRACUT_REPRODUCIBLE ]]; then
-     find "$initdir" -newer "$dracutbasedir/dracut-functions.sh" -print0 \
--        | xargs -r -0 touch -h -m -c -r "$dracutbasedir/dracut-functions.sh"
-+        | xargs -r -0 touch -m -c -r "$dracutbasedir/dracut-functions.sh"
- 
-     if [[ "$(cpio --help)" == *--reproducible* ]]; then
-         CPIO_REPRODUCIBLE=1
-@@ -1981,7 +1981,7 @@ if [[ $create_early_cpio = yes ]]; then
- 
-     if [[ $DRACUT_REPRODUCIBLE ]]; then
-         find "$early_cpio_dir/d" -newer "$dracutbasedir/dracut-functions.sh" -print0 \
--            | xargs -r -0 touch -h -m -c -r "$dracutbasedir/dracut-functions.sh"
-+            | xargs -r -0 touch -m -c -r "$dracutbasedir/dracut-functions.sh"
-     fi
- 
-     # The microcode blob is _before_ the initramfs blob, not after
 -- 
 2.28.0
 
