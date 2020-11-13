@@ -26,7 +26,6 @@ libbytesize
 libcomps
 libdnf
 libproxy
-libpwquality
 libreoffice
 librepo
 libreport
