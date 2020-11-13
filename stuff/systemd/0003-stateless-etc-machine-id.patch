@@ -1,7 +1,7 @@
-From 5c4a43bfa24a8db591feb21ddbbdee03355940e2 Mon Sep 17 00:00:00 2001
+From 839382be7bedf8036a70d74a3cd16e6c0073a46c Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 20 Aug 2020 22:45:48 +0500
-Subject: [PATCH 1/2] stateless /etc/machine-id
+Date: Fri, 13 Nov 2020 23:09:20 +0300
+Subject: [PATCH 3/7] stateless /etc/machine-id
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -65,7 +65,7 @@ index 781a984..df80c61 100644
      as <filename>/etc</filename> has been remounted writable and the
      ID may thus be committed to disk to make it permanent.</para>
 diff --git a/src/core/machine-id-setup.c b/src/core/machine-id-setup.c
-index f76b82a..bb0ec57 100644
+index 90f03db..e7ab477 100644
 --- a/src/core/machine-id-setup.c
 +++ b/src/core/machine-id-setup.c
 @@ -91,7 +91,7 @@ int machine_id_setup(const char *root, sd_id128_t machine_id, sd_id128_t *ret) {
@@ -108,10 +108,10 @@ index f76b82a..bb0ec57 100644
          r = path_is_mount_point(etc_machine_id, NULL, 0);
          if (r < 0)
 diff --git a/src/core/main.c b/src/core/main.c
-index 4a37697..a7a3be2 100644
+index 9151295..d708529 100644
 --- a/src/core/main.c
 +++ b/src/core/main.c
-@@ -2003,12 +2003,12 @@ static void log_execution_mode(bool *ret_first_boot) {
+@@ -2005,12 +2005,12 @@ static void log_execution_mode(bool *ret_first_boot) {
                          log_info("Running in initial RAM disk.");
                  } else {
                          /* Let's check whether we are in first boot, i.e. whether /etc is still unpopulated. We use
@@ -127,10 +127,10 @@ index 4a37697..a7a3be2 100644
                                  log_info("Running with unpopulated /etc.");
                  }
 diff --git a/src/firstboot/firstboot.c b/src/firstboot/firstboot.c
-index a3f4425..83e4522 100644
+index c9fc8dd..80d5bc4 100644
 --- a/src/firstboot/firstboot.c
 +++ b/src/firstboot/firstboot.c
-@@ -537,7 +537,7 @@ static int process_machine_id(void) {
+@@ -538,7 +538,7 @@ static int process_machine_id(void) {
          char id[SD_ID128_STRING_MAX];
          int r;
  
@@ -235,10 +235,10 @@ index 872b00c..f7a8c78 100644
                  if (r < 0)
                          return log_error_errno(r, "Failed to read machine ID back: %m");
 diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
-index eb7c332..0a7456f 100644
+index 6fd4f5d..c7d1b30 100644
 --- a/src/nspawn/nspawn.c
 +++ b/src/nspawn/nspawn.c
-@@ -2550,12 +2550,12 @@ static int setup_machine_id(const char *directory) {
+@@ -2551,12 +2551,12 @@ static int setup_machine_id(const char *directory) {
  
          /* If the UUID in the container is already set, then that's what counts, and we use. If it isn't set, and the
           * caller passed --uuid=, then we'll pass it in the $container_uuid env var to PID 1 of the container. The
@@ -255,7 +255,7 @@ index eb7c332..0a7456f 100644
          r = id128_read(etc_machine_id, ID128_PLAIN, &id);
          if (r < 0) {
 diff --git a/src/partition/repart.c b/src/partition/repart.c
-index 2e5f5d1..55306c8 100644
+index c94b493..99f877f 100644
 --- a/src/partition/repart.c
 +++ b/src/partition/repart.c
 @@ -2211,7 +2211,7 @@ static int partition_acquire_uuid(Context *context, Partition *p, sd_id128_t *re
@@ -277,7 +277,7 @@ index 2e5f5d1..55306c8 100644
                          log_info("No machine ID set, using randomized partition UUIDs.");
                  else if (fd < 0)
 diff --git a/src/shared/dissect-image.c b/src/shared/dissect-image.c
-index 24be6de..bac03f1 100644
+index 6ac36e1..2c19945 100644
 --- a/src/shared/dissect-image.c
 +++ b/src/shared/dissect-image.c
 @@ -673,7 +673,7 @@ int dissect_image(
@@ -289,7 +289,7 @@ index 24be6de..bac03f1 100644
                                           * installation. */
  
                                          r = sd_id128_get_machine_app_specific(GPT_VAR, &var_uuid);
-@@ -1676,7 +1676,7 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
+@@ -1675,7 +1675,7 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
  
          static const char *const paths[_META_MAX] = {
                  [META_HOSTNAME]     = "/etc/hostname\0",
@@ -298,7 +298,7 @@ index 24be6de..bac03f1 100644
                  [META_MACHINE_INFO] = "/etc/machine-info\0",
                  [META_OS_RELEASE]   = "/etc/os-release\0"
                                        "/usr/lib/os-release\0",
-@@ -1765,15 +1765,15 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
+@@ -1764,15 +1764,15 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
  
                          r = read_line(f, LONG_LINE_MAX, &line);
                          if (r < 0)
@@ -335,7 +335,7 @@ index 1b7cfb5..e2898c7 100644
                          _cleanup_close_ int fd = -1;
  
 diff --git a/src/test/test-fs-util.c b/src/test/test-fs-util.c
-index 1ea845d..e419a0b 100644
+index f2df2e3..d7245ad 100644
 --- a/src/test/test-fs-util.c
 +++ b/src/test/test-fs-util.c
 @@ -211,7 +211,7 @@ static void test_chase_symlinks(void) {
@@ -387,5 +387,5 @@ index e3acb0f..0828ec2 100644
  [Service]
  Type=oneshot
 -- 
-2.18.4
+2.28.0
 

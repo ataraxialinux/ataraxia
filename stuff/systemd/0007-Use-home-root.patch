@@ -1,7 +1,7 @@
-From 7835565c05cfc50a88f6cdb306b49639a7ec0ca0 Mon Sep 17 00:00:00 2001
+From ff19f8c7c748652ec101a7aabaf3fbb0dd44256a Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Wed, 4 Nov 2020 20:54:41 +0300
-Subject: [PATCH 1/2] Use /home/root
+Date: Fri, 13 Nov 2020 23:11:11 +0300
+Subject: [PATCH 7/7] Use /home/root
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -11,11 +11,11 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/shared/user-record.c  | 2 +-
  src/shared/userdb.c       | 2 +-
  sysusers.d/basic.conf.in  | 2 +-
- tmpfiles.d/home.conf      | 1 +
- 7 files changed, 6 insertions(+), 9 deletions(-)
+ tmpfiles.d/home.conf      | 2 ++
+ 7 files changed, 7 insertions(+), 9 deletions(-)
 
 diff --git a/src/basic/user-util.c b/src/basic/user-util.c
-index 0e96a75..d1b147c 100644
+index 0074869..ef78469 100644
 --- a/src/basic/user-util.c
 +++ b/src/basic/user-util.c
 @@ -173,7 +173,7 @@ static int synthesize_user_creds(
@@ -62,7 +62,7 @@ index d30c810..7ee86ad 100644
  
  static const char * const mount_mode_table[_MOUNT_MODE_MAX] = {
 diff --git a/src/firstboot/firstboot.c b/src/firstboot/firstboot.c
-index c9fc8dd..4da886a 100644
+index 80d5bc4..e0b00d0 100644
 --- a/src/firstboot/firstboot.c
 +++ b/src/firstboot/firstboot.c
 @@ -696,7 +696,7 @@ static int write_root_passwd(const char *passwd_path, const char *password, cons
@@ -88,7 +88,7 @@ index 2c0de38..a03adfc 100644
          return "/";
  }
 diff --git a/src/shared/userdb.c b/src/shared/userdb.c
-index 9412086..0c83a3b 100644
+index db1f053..08f92a1 100644
 --- a/src/shared/userdb.c
 +++ b/src/shared/userdb.c
 @@ -581,7 +581,7 @@ static int synthetic_root_user_build(UserRecord **ret) {
@@ -114,36 +114,15 @@ index 8e358c0..4735821 100644
  # The nobody user for NFS file systems
  u @NOBODY_USER_NAME@  65534 "Nobody"     -
 diff --git a/tmpfiles.d/home.conf b/tmpfiles.d/home.conf
-index 9f25b83..53220df 100644
+index 9f25b83..b935d26 100644
 --- a/tmpfiles.d/home.conf
 +++ b/tmpfiles.d/home.conf
-@@ -9,3 +9,4 @@
- 
- Q /home 0755 - - -
- q /srv 0755 - - -
-+L /root - - - - /home/root
--- 
-2.28.0
-
-From 20ceebb291e49ab99847960ec12113e166815d2b Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Wed, 4 Nov 2020 21:06:08 +0300
-Subject: [PATCH] home.conf
-
----
- tmpfiles.d/home.conf | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/tmpfiles.d/home.conf b/tmpfiles.d/home.conf
-index 53220df..1092f7f 100644
---- a/tmpfiles.d/home.conf
-+++ b/tmpfiles.d/home.conf
-@@ -9,4 +9,5 @@
+@@ -9,3 +9,5 @@
  
  Q /home 0755 - - -
  q /srv 0755 - - -
 +d! /home/root 0750 - - -
- L /root - - - - /home/root
++L! /root - - - - /home/root
 -- 
 2.28.0
 
