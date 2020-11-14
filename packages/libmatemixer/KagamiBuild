@@ -1,12 +1,12 @@
 # Description: Mixer library for MATE Desktop
 # URL:         http://mate-desktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib alsa-lib
+# Depends on:  glib alsa-lib pulseaudio
 # Section:     mate
 
 name=libmatemixer
 version=1.24.1
-release=1
+release=3
 source=("https://pub.mate-desktop.org/releases/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -15,8 +15,7 @@ build() {
 		--prefix=/usr \
         	--sysconfdir=/etc \
         	--localstatedir=/var \
-        	--enable-alsa \
-        	--disable-pulseaudio
+        	--enable-alsa
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
