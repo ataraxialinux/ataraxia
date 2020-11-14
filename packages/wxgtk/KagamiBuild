@@ -1,0 +1,35 @@
+# Description: GTK+ implementation of wxWidgets API for GUI
+# URL:         https://wxwidgets.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  webkitgtk glu libnotify libsm libxxf86vm
+# Section:     libs
+
+name=wxgtk
+version=3.0.5.1
+release=1
+options=('~emptydirs')
+source=("https://github.com/wxWidgets/wxWidgets/releases/download/v$version/wxWidgets-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/wxWidgets-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libdir=/usr/lib \
+		--with-gtk=3 \
+		--with-libjpeg=sys \
+		--with-libpng=sys \
+		--with-libtiff=sys \
+		--with-libxpm=sys \
+		--with-opengl \
+		--with-sdl \
+		--enable-aui \
+		--enable-graphics_ctx \
+		--enable-mediactrl \
+		--enable-shared \
+		--enable-sound \
+		--enable-unicode \
+		--enable-webview \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+}

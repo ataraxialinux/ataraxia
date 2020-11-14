@@ -1,12 +1,12 @@
 # Description: The MATE Settings daemon
 # URL:         http://mate-desktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python mate-desktop libmatekbd libmatemixer dbus-glib libcanberra libnotify polkit nss
+# Depends on:  python mate-desktop libmatekbd libmatemixer dbus-glib libcanberra libnotify polkit nss pipewire
 # Section:     mate
 
 name=mate-settings-daemon
 version=1.24.1
-release=2
+release=3
 source=("https://pub.mate-desktop.org/releases/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -15,8 +15,7 @@ build() {
 		--prefix=/usr \
 		--libexecdir=/usr/lib/mate-settings-daemon \
 		--sysconfdir=/etc \
-		--enable-polkit \
-		--disable-pulse
+		--enable-polkit
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make

@@ -1,12 +1,12 @@
 # Description: Server and user space API to deal with multimedia pipelines
 # URL:         https://pipewire.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  systemd bluez ffmpeg gst-plugins-base libva sbc sdl2 v4l-utils vulkan-loader pulseaudio
+# Depends on:  systemd bluez ffmpeg gst-plugins-base libva sbc sdl2 v4l-utils vulkan-loader pulsejack-headers
 # Section:     libs
 
 name=pipewire
 version=0.3.15
-release=1
+release=2
 source=("https://github.com/PipeWire/pipewire/archive/$version/$name-$version.tar.gz")
 
 build() {
@@ -16,9 +16,22 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
+		-Dlibjack-path=/usr/lib \
+		-Dlibpulse-path=/usr/lib \
+		-Dpipewire-jack=false \
+		-Dpipewire-pulseaudio=false \
 		-Dtests=false \
 		-Dsystemd=true \
 		-Dudevrulesdir=/usr/lib/udev/rules.d
 	samu
 	DESTDIR="$PKG" samu install
+
+	mkdir -p "$PKG"/usr/lib/systemd/user/pipewire.socket.d
+
+	cat > "$PKG"/usr/lib/systemd/user/pipewire.socket.d/listen-pulse.conf <<-EOF
+		[Socket]
+		ListenStream=%t/pulse/native
+	EOF
+
+	touch "$PKG"/usr/lib/systemd/user/pulseaudio.{service,socket}
 }
