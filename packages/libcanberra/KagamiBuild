@@ -1,12 +1,12 @@
 # Description: A small and lightweight implementation of the XDG Sound Theme Specification
 # URL:         http://0pointer.de/lennart/projects/libcanberra
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libvorbis alsa-lib gstreamer gtk3 pipewire libltdl
+# Depends on:  libvorbis alsa-lib gstreamer gtk3 libltdl
 # Section:     audio
 
 name=libcanberra
 version=0.30
-release=3
+release=2
 options=('~emptydirs')
 source=("http://0pointer.de/lennart/projects/$name/$name-$version.tar.xz")
 
@@ -23,7 +23,8 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-systemdsystemunitdir=/usr/lib/systemd/system \
-		--disable-oss
+		--disable-oss \
+		--disable-pulse
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make

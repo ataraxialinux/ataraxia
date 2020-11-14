@@ -1,12 +1,12 @@
 # Description: A free, open source, and cross-platform media player
 # URL:         https://mpv.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python ffmpeg lua52 libbluray libdvdnav libdvdread mesa lcms2 libjpeg-turbo openal sdl2 libx11 libxss libxext libxinerama libxrandr libxdamage libxv libxkbcommon wayland-protocols vulkan-loader libplacebo pipewire
+# Depends on:  python ffmpeg lua52 libbluray libdvdnav libdvdread mesa lcms2 libjpeg-turbo openal sdl2 libx11 libxss libxext libxinerama libxrandr libxdamage libxv libxkbcommon wayland-protocols vulkan-loader libplacebo
 # Section:     video
 
 name=mpv
 version=0.32.0
-release=5
+release=4
 source=("https://github.com/mpv-player/mpv/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -35,7 +35,6 @@ build() {
 		--enable-libmpv-shared \
 		--enable-libplacebo \
 		--enable-openal \
-		--enable-pulse \
 		--enable-sdl2 \
 		--enable-shaderc \
 		--enable-vulkan \
@@ -46,7 +45,8 @@ build() {
 		--disable-html-build \
 		--disable-manpage-build \
 		--disable-optimize \
-		--disable-pdf-build
+		--disable-pdf-build \
+		--disable-pulse
 	./waf build -j$(nproc)
 	./waf install --destdir="$PKG"
 }
