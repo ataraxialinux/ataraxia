@@ -1,0 +1,19 @@
+# Description: FASTCgi is a language independent, high performant extension to CGI
+# URL:         http://www.fastcgi.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     devel
+
+name=fcgi
+version=2.4.2
+release=1
+options=('~makeflags')
+source=("https://github.com/FastCGI-Archives/fcgi2/archive/$version.tar.gz::archive=fcgi2-$version.tar.gz")
+
+build() {
+	cd "$SRC"/fcgi2-$version
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}

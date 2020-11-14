@@ -136,8 +136,10 @@ chrony
 claws-mail
 dnsmasq
 epiphany
+filezilla
 gnutls
 libarchive
+libfilezilla
 libreport
 libzip
 qemu

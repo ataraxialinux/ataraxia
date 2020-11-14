@@ -1,0 +1,26 @@
+# Description: A simple server for running CGI applications over FastCGI
+# URL:         https://www.nginx.com/resources/wiki/start/topics/examples/fcgiwrap/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  systemd fcgi
+# Section:     net
+
+name=fcgiwrap
+version=1.1.0
+release=1
+source=("https://github.com/gnosek/fcgiwrap/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -Wno-error"
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/fcgiwrap/branch.patch
+
+	autoreconf -i
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/bin \
+		--mandir=/share/man \
+		--with-systemd
+	make
+	make DESTDIR="$PKG" install
+}

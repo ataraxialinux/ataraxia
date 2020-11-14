@@ -1,0 +1,21 @@
+# Description: Fast and reliable FTP, FTPS and SFTP client
+# URL:         https://filezilla-project.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  wxgtk gnutls libfilezilla libidn sqlite pugixml
+# Section:     net
+
+name=filezilla
+version=3.51.0
+release=1
+source=("https://download.filezilla-project.org/client/FileZilla_${version}_src.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-wx-config=/usr/bin/wx-config-gtk3 \
+		--disable-autoupdatecheck \
+		--disable-manualupdatecheck
+	make
+	make DESTDIR="$PKG" install
+}
