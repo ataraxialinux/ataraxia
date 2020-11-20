@@ -19,6 +19,7 @@ gnome-music
 gnucash
 gpgme
 gyp
+iotop
 ktoblzcheck
 ldb
 libblockdev

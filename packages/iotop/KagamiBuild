@@ -1,0 +1,17 @@
+# Description: View I/O usage of processes
+# URL:         http://guichaz.free.fr/iotop/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python
+# Section:     admin
+
+name=iotop
+version=0.6
+release=1
+source=("http://guichaz.free.fr/iotop/files/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i '7,13d' setup.py
+	python3 setup.py build
+	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+}
