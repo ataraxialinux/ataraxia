@@ -1,0 +1,38 @@
+# Description: Access and modify virtual machine disk images
+# URL:         http://libguestfs.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gperf python gobject-introspection vala bash-completion cpio iproute2 iputils lvm2 mdadm btrfs-progs dosfstools gptfdisk procps-ng psmisc rsync openssh lsof lzop pciutils squashfs-tools strace mtools augeas libvirt fuse2
+# Section:     virt
+
+name=libguestfs
+version=1.42.0
+release=1
+backup=('etc/libguestfs-tools.conf'
+	'etc/xdg/virt-builder/repos.d/libguestfs.conf'
+	'etc/xdg/virt-builder/repos.d/libguestfs.gpg'
+	'etc/xdg/virt-builder/repos.d/opensuse.conf'
+	'etc/xdg/virt-builder/repos.d/opensuse.gpg')
+source=("http://download.libguestfs.org/${version%.*}-stable/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-extra-packages="openssh qemu-headless" \
+		--without-java \
+		--disable-golang \
+		--disable-haskell \
+		--disable-ocaml \
+		--disable-php \
+		--disable-rust \
+		--disable-static
+	make
+	make DESTDIR="$PKG" install
+
+	rm -f "$PKG"/usr/bin/virt-list-{filesystems,partitions}
+	rm -f "$PKG"/usr/bin/virt-tar
+	rm -f "$PKG"/usr/share/man/man1/virt-list-{filesystems,partitions}.1*
+	rm -f "$PKG"/usr/share/man/man1/virt-tar.1*
+}

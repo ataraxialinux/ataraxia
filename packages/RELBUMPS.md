@@ -26,6 +26,7 @@ libblockdev
 libbytesize
 libcomps
 libdnf
+libguestfs
 libproxy
 libreoffice
 librepo
