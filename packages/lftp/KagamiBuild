@@ -1,0 +1,19 @@
+# Description: Sophisticated command line based FTP client
+# URL:         https://lftp.yar.ru/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  readline expat gnutls
+# Section:     net
+
+name=lftp
+version=4.9.2
+release=1
+backup=('etc/lftp.conf')
+source=("https://lftp.yar.ru/ftp/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
