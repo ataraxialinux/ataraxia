@@ -1,0 +1,21 @@
+# Description: GTK+ download manager featuring download classification and HTML import
+# URL:         https://ugetdm.com/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool libnotify curl gstreamer
+# Section:     web
+
+name=uget
+version=2.2.3
+release=1
+source=("https://downloads.sourceforge.net/urlget/$name-$version-1.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/uget/uget-2.2.3-gcc10-fno-common.patch
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--localstatedir=/var
+	make
+	make DESTDIR="$PKG" install
+}
