@@ -1,0 +1,20 @@
+# Description: A Markdown implementation written in C
+# URL:         https://www.pell.portland.or.us/~orc/Code/discount/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=discount
+version=2.2.7
+release=1
+source=(""https://github.com/Orc/discount/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-fenced-code \
+		--enable-all-features \
+		--shared
+	make -j1
+	make DESTDIR="$PKG" install.everything
+}
