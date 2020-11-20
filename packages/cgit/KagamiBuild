@@ -1,0 +1,19 @@
+# Description: A web interface for git written in plain C
+# URL:         https://git.zx2c4.com/cgit/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  curl luajit
+# Section:     net
+
+name=cgit
+version=1.2.3
+release=1
+source=("https://git.zx2c4.com/cgit/snapshot/$name-$version.tar.xz")
+
+build() {
+	local mk="NO_ICONV=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_SVN_TESTS=YesPlease NO_REGEX=NeedsStartEnd"
+
+	cd "$SRC"/$name-$version
+	make get-git
+	make $mk all
+	make $mk CGIT_SCRIPT_PATH=/usr/share/webapps/cgit DESTDIR="$PKG" prefix=/usr install
+}
