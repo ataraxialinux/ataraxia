@@ -1,0 +1,28 @@
+# Description: Data logging and graphing application
+# URL:         https://www.rrdtool.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool systemd libxml2 pango font-dejavu
+# Section:     admin
+
+name=rrdtool
+version=1.7.2
+release=1
+options=('~emptydirs' '~makeflags')
+source=("https://oss.oetiker.ch/rrdtool/pub/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--localstatedir=/var \
+		--disable-docs \
+		--disable-libwrap \
+		--disable-lua \
+		--disable-perl \
+		--disable-python \
+		--disable-rpath \
+		--disable-ruby \
+		--disable-tcl
+	make
+	make DESTDIR="$PKG" install
+}
