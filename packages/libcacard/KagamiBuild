@@ -1,18 +1,19 @@
 # Description: Common Access Card library thar provides emulation of smart cards
 # URL:         https://www.spice-space.org/page/Libcacard
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  glib nss
+# Depends on:  meson glib nss
 # Section:     security
 
 name=libcacard
 version=2.8.0
-release=1
+release=2
 source=("https://www.spice-space.org/download/libcacard/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
