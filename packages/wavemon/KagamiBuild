@@ -1,0 +1,32 @@
+# Description: Ncurses-based monitoring application for wireless network devices
+# URL:         https://github.com/uoaerg/wavemon
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses libcap libnl
+# Section:     net
+
+name=wavemon
+version=0.9.2
+release=1
+source=("https://github.com/uoaerg/wavemon/archive/v$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	sed -e '/^CFLAGS=/d' -i configure.ac
+	sed -r 's|(/share)|\1/doc|g' -i Makefile.in
+	sed -i 's|ncursesw/curses.h|curses.h|' wavemon.h
+
+	autoreconf -fiv
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make CFLAGS="$CFLAGS -pthread -I/usr/include/libnl3"
+	make DESTDIR="$PKG" install
+}
