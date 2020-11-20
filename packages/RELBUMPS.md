@@ -17,6 +17,7 @@ gdb
 gnome-builder
 gnome-music
 gnucash
+goocanvas
 gpgme
 gyp
 iotop
