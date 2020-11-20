@@ -1,0 +1,32 @@
+# Description: An IRC bouncer with modules & scripts support
+# URL:         https://wiki.znc.in/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai perl python boost icu libsasl
+# Section:     web
+
+name=znc
+version=1.7.5
+release=1
+source=("https://znc.in/releases/archive/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DWANT_I18N=OFF \
+		-DWANT_PYTHON=ON \
+		-DWANT_PERL=ON \
+		-DWANT_SYSTEMD=ON \
+		-DSYSTEMD_DIR=/usr/lib/systemd/system \
+		-DWANT_TCL=OFF \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+
+	install -Dm644 "$STUFF"/tmpfiles.d/znc.conf "$PKG"/usr/lib/tmpfiles.d/znc.conf
+	install -Dm644 "$STUFF"/sysusers.d/znc.conf "$PKG"/usr/lib/sysusers.d/znc.conf
+}

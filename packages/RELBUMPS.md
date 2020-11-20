@@ -93,6 +93,7 @@ tevent
 virt-manager
 volume_key
 weechat
+znc
 ```
 
 # Boost
@@ -104,6 +105,7 @@ i2pd
 inkscape
 openexr
 pybind11
+znc
 ```
 
 # ICU
@@ -128,6 +130,7 @@ tracker
 tracker-miners
 vte
 webkitgtk
+znc
 ```
 
 # Nettle
