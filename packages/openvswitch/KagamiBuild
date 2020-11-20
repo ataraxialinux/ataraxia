@@ -1,0 +1,34 @@
+# Description: Production Quality, Multilayer Open Virtual Switch
+# URL:         http://openvswitch.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libcap-ng libressl
+# Section:     net
+
+name=openvswitch
+version=2.14.0
+release=1
+source=("http://openvswitch.org/releases/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i \
+		-e 's|$(sysconfdir)/bash_completion.d|/usr/share/bash-completion/completions|g' \
+		Makefile.am
+
+	./boot.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-rundir=/run/openvswitch
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/tmpfiles.d/openvswitch.conf "$PKG"/usr/lib/tmpfiles.d/openvswitch.conf
+	for i in ovs-vswitchd ovsdb-server; do
+		install -Dm644 "$STUFF"/svc/$i.service "$PKG"/usr/lib/systemd/system/$i.service
+	done
+
+	rm -rf "$PKG"/run
+}
