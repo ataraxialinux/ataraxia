@@ -1,0 +1,23 @@
+# Description: A program that lets you manipulate digital audio waveforms
+# URL:         https://audacityteam.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai ffmpeg flac wxgtk lame libid3tag libsndfile libmad libsoxr soundtouch portaudio
+# Section:     audio
+
+name=audacity
+version=2.4.2
+release=1
+source=("https://github.com/audacity/audacity/archive/Audacity-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-Audacity-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-Audacity-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
