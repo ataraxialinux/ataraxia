@@ -121,6 +121,7 @@ firefox
 harfbuzz
 libical
 libreoffice
+mpd
 node
 php
 postgresql

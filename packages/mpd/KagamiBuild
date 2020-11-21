@@ -1,0 +1,24 @@
+# Description: Flexible, powerful, server-side application for playing music
+# URL:         https://www.musicpd.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson liburing libmpdclient boost curl dbus flac icu libid3tag mpg123 ffmpeg chromaprint lame libcdio-paranoia libgcrypt libmad libopenmpt-modplug libshout libsoxr openal sqlite yajl
+# Section:     audio
+
+name=mpd
+version=0.22.3
+release=1
+backup=("etc/mpd.conf")
+source=("https://www.musicpd.org/download/mpd/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dsndio=disabled
+	samu
+	DESTDIR="$PKG" samu install
+
+	install -Dm644 "$STUFF"/tmpfiles.d/mpd.conf "$PKG"/usr/lib/tmpfiles.d/mpd.conf
+	install -Dm644 "$STUFF"/sysusers.d/mpd.conf "$PKG"/usr/lib/sysusers.d/mpd.conf
+}
