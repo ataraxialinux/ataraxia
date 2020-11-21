@@ -1,0 +1,22 @@
+# Description: Powerful, beautiful and simple podcast client for the modern free desktop
+# URL:         https://vocalproject.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai clutter-gst clutter-gtk granite gst-libav gst-plugins-good gvfs libnotify
+# Section:     audio
+
+name=vocal
+version=2.4.2
+release=1
+source=("https://github.com/needle-and-thread/vocal/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
