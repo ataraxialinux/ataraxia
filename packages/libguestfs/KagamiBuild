@@ -1,7 +1,7 @@
 # Description: Access and modify virtual machine disk images
 # URL:         http://libguestfs.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gperf python gobject-introspection vala bash-completion cpio cdrkit iproute2 iputils lvm2 mdadm btrfs-progs dosfstools gptfdisk procps-ng psmisc rsync openssh lsof lzop pciutils squashfs-tools strace mtools augeas libvirt fuse2
+# Depends on:  gperf perl python ruby ocaml-findlib gobject-introspection vala bash-completion cpio cdrkit iproute2 iputils lvm2 mdadm btrfs-progs dosfstools gptfdisk procps-ng psmisc rsync openssh lsof lzop pciutils squashfs-tools strace mtools augeas libvirt fuse2 jansson hivex
 # Section:     virt
 
 name=libguestfs
@@ -20,15 +20,21 @@ build() {
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
+		--with-distro=ataraxia \
 		--with-extra-packages="openssh qemu-headless" \
 		--without-java \
+		--without-gtk \
+		--disable-appliance \
+		--disable-daemon \
+		--disable-erlang \
 		--disable-golang \
 		--disable-haskell \
 		--disable-ocaml \
 		--disable-php \
+		--disable-probes \
 		--disable-rust \
 		--disable-static
-	make
+	make LTLIBINTL=-lintl
 	make DESTDIR="$PKG" install
 
 	rm -f "$PKG"/usr/bin/virt-list-{filesystems,partitions}

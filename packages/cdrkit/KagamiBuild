@@ -1,0 +1,23 @@
+# Description: Command line CD/DVD writing tools
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake zlib bzip2 file libcap
+# Section:     otherosfs
+
+name=cdrkit
+version=1.1.11
+release=1
+source=("http://ftp.debian.org/debian/pool/main/c/cdrkit/cdrkit_${version}.orig.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -D__THROW='' -fcommon"
+
+	cd "$SRC"/$name-$version
+	sed -i include/xconfig.h.in -e "s/#define HAVE_RCMD 1/#undef HAVE_RCMD/g"
+
+	make PREFIX=/usr
+	make DESTDIR="$PKG" install
+
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin/
+	rm -rf "$PKG"/usr/sbin
+}

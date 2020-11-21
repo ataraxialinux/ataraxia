@@ -1,0 +1,20 @@
+# Description: OCaml package manager
+# URL:         http://projects.camlcity.org/projects/findlib.html
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ocaml
+# Section:     devel
+
+name=ocaml-findlib
+version=1.8.1
+release=1
+source=("http://download.camlcity.org/download/findlib-$version.tar.gz")
+
+build() {
+	cd "$SRC"/findlib-$version
+	  ./configure \
+		-sitelib /usr/lib/ocaml \
+		-config /etc/findlib.conf \
+		-mandir /usr/share/man
+	make all opt
+	make prefix="$PKG" install
+}

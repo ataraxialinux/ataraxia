@@ -1,0 +1,78 @@
+From 22a083e845a41a227cac480970ef05d6d7e205cf Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 21 Nov 2020 03:59:15 +0300
+Subject: [PATCH] no google tracking
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build                                          |  2 +-
+ plugins/shotwell-publishing/meson.build              |  3 +--
+ plugins/shotwell-publishing/shotwell-publishing.vala | 12 ------------
+ 3 files changed, 2 insertions(+), 15 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 00a70d1..6b4f153 100644
+--- a/meson.build
++++ b/meson.build
+@@ -103,7 +103,7 @@ if get_option('face-detection')
+ endif
+ 
+ json_glib = dependency('json-glib-1.0')
+-gdata = dependency('libgdata')
++
+ gcr = dependency('gcr-3')
+ gcr_ui = dependency('gcr-ui-3')
+ cairo = dependency('cairo')
+diff --git a/plugins/shotwell-publishing/meson.build b/plugins/shotwell-publishing/meson.build
+index eeac177..4d723c5 100644
+--- a/plugins/shotwell-publishing/meson.build
++++ b/plugins/shotwell-publishing/meson.build
+@@ -3,7 +3,6 @@ shotwell_publishing_sources = [
+     'FacebookPublishing.vala',
+     'FlickrPublishing.vala',
+     'TumblrPublishing.vala',
+-    'YouTubePublishing.vala',
+     'PiwigoPublishing.vala',
+     'PhotosPublisher.vala',
+     'PhotosService.vala',
+@@ -18,7 +17,7 @@ shotwell_publishing_resources = gnome.compile_resources('publishing-resource',
+ shared_module('shotwell-publishing',
+               shotwell_publishing_sources + shotwell_publishing_resources,
+               dependencies : [gtk, soup, gexiv2, gee, sw_plugin, json_glib,
+-                              webkit, sw_plugin_common_dep, xml, gdata, gcr,
++                              webkit, sw_plugin_common_dep, xml, gcr,
+                               gcr_ui, authenticator_dep],
+               c_args : ['-DPLUGIN_RESOURCE_PATH="/org/gnome/Shotwell/Publishing"',
+                         '-DGCR_API_SUBJECT_TO_CHANGE'],
+diff --git a/plugins/shotwell-publishing/shotwell-publishing.vala b/plugins/shotwell-publishing/shotwell-publishing.vala
+index 52c82ec..96f1332 100644
+--- a/plugins/shotwell-publishing/shotwell-publishing.vala
++++ b/plugins/shotwell-publishing/shotwell-publishing.vala
+@@ -28,24 +28,12 @@ private class ShotwellPublishingCoreServices : Object, Spit.Module {
+         }
+ #endif
+ 
+-#if HAVE_GOOGLEPHOTOS
+-        if (authenicators.contains("google-photos")) {
+-            pluggables += new Publishing.GooglePhotos.Service(resource_directory);
+-        }
+-#endif
+-
+ #if HAVE_FLICKR
+         if (authenicators.contains("flickr")) {
+             pluggables += new FlickrService(resource_directory);
+         }
+ #endif
+ 
+-#if HAVE_YOUTUBE
+-        if (authenicators.contains("youtube")) {
+-            pluggables += new YouTubeService(resource_directory);
+-        }
+-#endif
+-
+ #if HAVE_PIWIGO
+         pluggables += new PiwigoService(resource_directory);
+ #endif
+-- 
+2.28.0
+
