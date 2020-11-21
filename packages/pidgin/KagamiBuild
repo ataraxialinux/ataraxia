@@ -1,0 +1,24 @@
+# Description: Multi-protocol instant messaging client
+# URL:         https://pidgin.im/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python gtk2 libgcrypt gstreamer gnutls nss libsasl startup-notification heimdal gtkspell
+# Section:     web
+
+name=pidgin
+version=2.14.1
+release=1
+source=("https://downloads.sourceforge.net/pidgin/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--disable-avahi \
+		--disable-meanwhile \
+		--disable-libidn \
+		--disable-nm \
+		--disable-vv
+	make
+	make DESTDIR="$PKG" install
+}
