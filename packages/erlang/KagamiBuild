@@ -1,0 +1,26 @@
+# Description: General-purpose concurrent functional programming language developed by Ericsson
+# URL:         https://www.erlang.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl zlib ncurses libressl systemd
+# Section:     devel
+
+name=erlang
+version=23.1.4
+release=1
+source=("https://github.com/erlang/otp/releases/download/OTP-$version/otp_src_${version}.tar.gz")
+
+build() {
+	cd "$SRC"/otp_src_${version}
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--with-ssl=/usr \
+		--with-wxdir=/dev/null \
+		--without-java \
+		--enable-smp-support \
+		--disable-builtin-zlib
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/svc/epmd.service "$PKG"/usr/lib/systemd/system/epmd.service
+	install -Dm644 "$STUFF"/svc/epmd.socket "$PKG"/usr/lib/systemd/system/epmd.socket
+}
