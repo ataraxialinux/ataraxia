@@ -12,12 +12,16 @@ source=("https://www.musicpd.org/download/mpd/${version%.*}/$name-$version.tar.x
 
 build() {
 	cd "$SRC"/$name-$version
+	sed -e '/\[Service\]/a User=mpd' -i systemd/system/mpd.service.in
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dsndio=disabled
 	samu
 	DESTDIR="$PKG" samu install
+
+	install -Dm644 "$STUFF"/mpd/mpd.conf "$PKG"/etc/mpd.conf
 
 	install -Dm644 "$STUFF"/tmpfiles.d/mpd.conf "$PKG"/usr/lib/tmpfiles.d/mpd.conf
 	install -Dm644 "$STUFF"/sysusers.d/mpd.conf "$PKG"/usr/lib/sysusers.d/mpd.conf
