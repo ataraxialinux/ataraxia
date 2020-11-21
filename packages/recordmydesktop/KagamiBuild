@@ -1,0 +1,26 @@
+# Description: Produces a OGG encapsulated Theora/Vorbis recording of your desktop
+# URL:         http://recordmydesktop.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  alsa-lib libsm libtheora libvorbis libxdamage libxext zlib
+# Section:     video
+
+name=recordmydesktop
+version=0.3.8.1
+release=1
+source=("https://downloads.sourceforge.net/recordmydesktop/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	for a in $(find . -name config.sub); do
+		cp "$STUFF"/config.sub $a
+	done
+
+	for a in $(find . -name config.guess); do
+		cp "$STUFF"/config.guess $a
+	done
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
