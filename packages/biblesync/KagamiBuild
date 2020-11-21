@@ -1,0 +1,23 @@
+# Description: Multicast shared co-navigation library for Bible programs
+# URL:         https://github.com/karlkleinpaste/biblesync/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai
+# Section:     libs
+
+name=biblesync
+version=2.1.0
+release=1
+source=("https://github.com/karlkleinpaste/biblesync/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
