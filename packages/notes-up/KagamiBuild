@@ -1,0 +1,24 @@
+# Description: Write beautiful notes fast and easy using Markdown
+# URL:         https://github.com/Philip-Scott/Notes-up
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai vala discount granite gtksourceview3 gtkspell webkitgtk
+# Section:     utils
+
+name=notes-up
+version=f955e14e9fa3f9d6a3de55016a393c9f19d28351
+#version=2.0.2
+release=1
+source=("https://github.com/Philip-Scott/Notes-up/archive/$version/Notes-up-$version.tar.gz")
+
+build() {
+	cd "$SRC"/Notes-up-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/Notes-up-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Dnoele=1 \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
