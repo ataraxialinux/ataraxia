@@ -1,0 +1,23 @@
+# Description: A GTK+ audio player for GNU/Linux
+# URL:         http://deadbeef.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gtk3 curl ffmpeg flac jansson libmad libsamplerate libsndfile imlib2 libcdio libzip desktop-file-utils
+# Section:     audio
+
+name=deadbeef
+version=1.8.4
+release=1
+source=("https://github.com/DeaDBeeF-Player/deadbeef/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/deadbeef/strdupa.patch
+	patch -Np1 -i "$STUFF"/deadbeef/use-endian-h.patch
+
+	./autogen.sh
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-oss
+	make
+	make DESTDIR="$PKG" install
+}
