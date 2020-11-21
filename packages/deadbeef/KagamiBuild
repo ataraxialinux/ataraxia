@@ -7,15 +7,18 @@
 name=deadbeef
 version=1.8.4
 release=1
-source=("https://github.com/DeaDBeeF-Player/deadbeef/archive/$version.tar.gz")
+source=("https://github.com/DeaDBeeF-Player/deadbeef/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
-	export CFLAGS="$CFLAGS -I$STUFF/include"
-	export CXXFLAGS="$CXXFLAGS -I$STUFF/include"
+	export CFLAGS="$CFLAGS -I$SRC/$name-$version/musl"
+	export CXXFLAGS="$CXXFLAGS -I$SRC/$name-$version/musl"
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/deadbeef/strdupa.patch
 	patch -Np1 -i "$STUFF"/deadbeef/use-endian-h.patch
+	patch -Np1 -i "$STUFF"/deadbeef/intl.patch
+
+	mkdir -p musl/sys && cp "$STUFF"/include/sys/queue.h musl/sys
 
 	./autogen.sh
 	./configure $BUILDFLAGS \

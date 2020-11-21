@@ -1,0 +1,20 @@
+# Description: Adds support for Telegram to Pidgin, Adium, Finch and other Libpurple based messengers
+# URL:         https://github.com/majn/telegram-purple
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pidgin libgcrypt libwebp
+# Section:     web
+
+name=telegram-purple
+version=1.4.3
+release=1
+source=("https://github.com/majn/telegram-purple/releases/download/v$version/telegram-purple_${version}.orig.tar.gz")
+
+build() {
+	cd "$SRC"/$name
+	patch -Np1 -i "$STUFF"/telegram-purple/no-locale.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
