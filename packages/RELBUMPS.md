@@ -91,8 +91,8 @@ ranger
 samba
 satyr
 scour
-sssd
 system-config-printer
+sword
 talloc
 tdb
 terminator
@@ -131,6 +131,7 @@ php
 postgresql
 qt5
 spidermonkey
+sword
 thunderbird
 tracker2
 tracker2-miners
