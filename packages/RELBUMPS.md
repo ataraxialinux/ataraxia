@@ -43,6 +43,7 @@ llvm
 lttng-ust
 meson
 openexr
+pitivi
 postgresql
 protobuf
 pybind11
