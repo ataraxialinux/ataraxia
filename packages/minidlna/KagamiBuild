@@ -1,0 +1,29 @@
+# Description: A DLNA/UPnP-AV Media server
+# URL:         https://sourceforge.net/projects/minidlna/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ffmpeg flac libid3tag libjpeg-turbo sqlite
+# Section:     net
+
+name=minidlna
+version=1.2.1
+release=1
+backup=('etc/minidlna.conf')
+source=("https://sourceforge.net/projects/minidlna/files/minidlna/$version/$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="$CFLAGS -fcommon"
+
+	cd "$SRC"/$name-$version
+	sed -i 's|#user=.*|user=minidlna|g' minidlna.conf
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 minidlna.conf "$PKG"/etc/minidlna.conf
+	install -Dm644 "$STUFF"/svc/minidlna.service "$PKG"/usr/lib/systemd/system/minidlna.service
+	install -Dm644 "$STUFF"/tmpfiles.d/minidlna.conf "$PKG"/usr/lib/tmpfiles.d/minidlna.conf
+	install -Dm644 "$STUFF"/sysusers.d/minidlna.conf "$PKG"/usr/lib/sysusers.d/minidlna.conf
+}
