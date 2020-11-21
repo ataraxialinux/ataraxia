@@ -1,0 +1,20 @@
+# Description: Linux-native io_uring I/O access library
+# URL:         https://git.kernel.dk/cgit/liburing/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=liburing
+version=0.7
+release=1
+source=("https://git.kernel.dk/cgit/liburing/snapshot/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's|@$(MAKE) -C examples|# @$(MAKE) -C examples|' Makefile
+
+	./configure \
+		--prefix=/usr \
+		--mandir=/usr/share/man
+	make
+	make DESTDIR="$PKG" install
+}
