@@ -11,6 +11,7 @@ capstone
 catfish
 cython
 dnf
+exaile
 fail2ban
 firewalld
 gdb
@@ -19,6 +20,7 @@ gnome-music
 gnucash
 goocanvas
 gpgme
+gst-python
 gyp
 iotop
 ktoblzcheck
@@ -49,6 +51,7 @@ pygobject
 pykickstart
 pyopenssl
 python-asn1crypto
+python-bsddb
 python-cffi
 python-chardet
 python-configobj
@@ -63,6 +66,7 @@ python-idna
 python-lxml
 python-mako
 python-markupsafe
+python-mutagen
 python-nose
 python-ordered-set
 python-pexpect

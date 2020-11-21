@@ -1,0 +1,18 @@
+# Description: A full-featured Amarok-style media player for GTK+
+# URL:         https://www.exaile.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  pygobject python-bsddb python-dbus python-mutagen gst-python gtk3 gst-plugins-base gst-plugins-good
+# Section:     video
+
+name=exaile
+version=4.1.0+alpha1
+release=1
+source=("https://github.com/exaile/exaile/archive/${version/+/-}.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-${version/+/-}
+	sed -i 's/all: compile completion locale manpage/all: compile completion/g' Makefile
+
+	make PREFIX=/usr
+	make PREFIX=/usr DESTDIR="$PKG" install
+}
