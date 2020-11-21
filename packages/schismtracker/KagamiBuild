@@ -1,0 +1,19 @@
+# Description: An oldschool sample-based music composition tool
+# URL:         http://schismtracker.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python libxv sdl
+# Section:     audio
+
+name=schismtracker
+version=20200412
+release=1
+source=("https://github.com/schismtracker/schismtracker/releases/download/$version/$name-$version.source.tar.gz")
+
+build() {
+	cd "$SRC"/$name
+	autoreconf -i
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
+}
