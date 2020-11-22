@@ -1,12 +1,12 @@
 # Description: A fast and easy-to-use status bar
 # URL:         https://github.com/polybar/polybar
 # Maintainer:  dotnixd, at gmail dot com
-# Depends on:  cmake samurai cairo libxcb python xcb-proto xcb-util-image xcb-util-wm pulseaudio wireless_tools
+# Depends on:  cmake cairo libxcb python xcb-proto xcb-util-image xcb-util-wm pulseaudio wireless_tools
 # Section:     x11
 
 name=polybar
 version=3.4.3
-release=1
+release=2
 source=("https://github.com/$name/$name/releases/download/$version/$name-$version.tar")
 
 build() {
@@ -16,7 +16,7 @@ build() {
 	cmake "$SRC"/$name \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-Wno-dev -G Ninja
-	samu
-	DESTDIR="$PKG" samu install
+		-Wno-dev
+	cmake --build "$SRC"/$name
+	cmake --build "$SRC"/$name --target install -- DESTDIR="$PKG"
 }
