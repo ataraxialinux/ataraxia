@@ -1,0 +1,27 @@
+# Description: A cross-platform, GPU-accelerated terminal emulator
+# URL:         https://github.com/alacritty/alacritty
+# Maintainer:  dotnixd, at gmail dot com
+# Depends on:  rust cmake freetype fontconfig libxcb desktop-file-utils
+# Section:     x11
+
+name=alacritty
+version=0.5.0
+release=1
+source=("https://github.com/$name/$name/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+
+	cargo build --release
+
+	desktop-file-install -m 644 --dir "$PKG"/usr/share/applications/ "$SRC"/$name-$version/extra/linux/Alacritty.desktop
+
+	install -Dm755 "target/release/alacritty" "$PKG"/usr/bin/alacritty
+	install -Dm644 "extra/alacritty.man" "$PKG"/usr/share/man/man1/alacritty.1
+	install -Dm644 "extra/linux/io.alacritty.Alacritty.appdata.xml" "$PKG"/usr/share/appdata/io.alacritty.Alacritty.appdata.xml
+	install -Dm644 "alacritty.yml" "$PKG"/usr/share/doc/alacritty/example/alacritty.yml
+	install -Dm644 "extra/completions/alacritty.bash" "$PKG"/usr/share/bash-completion/completions/alacritty
+	install -Dm644 "extra/completions/_alacritty" "$PKG"/usr/share/zsh/site-functions/_alacritty
+	install -Dm644 "extra/completions/alacritty.fish" "$PKG"/usr/share/fish/vendor_completions.d/alacritty.fish
+	install -Dm644 "extra/logo/alacritty-term.svg" "$PKG"/usr/share/pixmaps/Alacritty.svg
+}
