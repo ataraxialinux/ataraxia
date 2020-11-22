@@ -11,13 +11,12 @@ source=("https://github.com/$name/$name/releases/download/$version/$name-$versio
 
 build() {
 	cd "$SRC"/$name
-
 	mkdir build
 	cd build
-
-	cmake -DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_BUILD_TYPE=Release \
-		-G Ninja ..
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
 	samu
 	DESTDIR="$PKG" samu install
 }
