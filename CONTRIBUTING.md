@@ -111,7 +111,7 @@ If you wish to modify file after configuration but before build leave the space 
 ```
 
 ## General code style advices
-**NEVER USE TABS, ALWAYS USE SPACES**. If you're trying to add C or C++ code use Google's C++ style.
+**NEVER USE SPACES, ALWAYS USE TABS**. If you're trying to add C or C++ code use Google's C++ style.
 
 If the requirements are not met, then the pull request will be closed without explanation.
 
