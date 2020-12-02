@@ -1,7 +1,9 @@
-From cc07f333567830d0af8f1ff85baf1508c8f17c57 Mon Sep 17 00:00:00 2001
+From d4f0d92c84305c286bf50269fccfbcfac0b046c8 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 13 Nov 2020 23:10:08 +0300
+Date: Thu, 3 Dec 2020 01:43:44 +0900
 Subject: [PATCH 5/7] LibreSSL fixes
+
+Original: https://github.com/xhebox/noname-linux/blob/master/ports/systemd/libressl.patch
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -10,10 +12,10 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  2 files changed, 10 insertions(+), 8 deletions(-)
 
 diff --git a/src/home/homed-manager.c b/src/home/homed-manager.c
-index 62ded25..7b755e0 100644
+index 55b3bc4..835e7b3 100644
 --- a/src/home/homed-manager.c
 +++ b/src/home/homed-manager.c
-@@ -1322,19 +1322,19 @@ static int manager_generate_key_pair(Manager *m) {
+@@ -1357,19 +1357,19 @@ static int manager_generate_key_pair(Manager *m) {
                  m->private_key = NULL;
          }
  
@@ -39,10 +41,10 @@ index 62ded25..7b755e0 100644
          (void) mkdir_p("/var/lib/systemd/home", 0755);
  
 diff --git a/src/home/user-record-sign.c b/src/home/user-record-sign.c
-index 91f8639..af20419 100644
+index 8cd3a46..9216a16 100644
 --- a/src/home/user-record-sign.c
 +++ b/src/home/user-record-sign.c
-@@ -53,14 +53,16 @@ int user_record_sign(UserRecord *ur, EVP_PKEY *private_key, UserRecord **ret) {
+@@ -55,14 +55,16 @@ int user_record_sign(UserRecord *ur, EVP_PKEY *private_key, UserRecord **ret) {
                  return -EIO;
  
          /* Request signature size */
@@ -61,7 +63,7 @@ index 91f8639..af20419 100644
                  return -EIO;
  
          mf = open_memstream_unlocked(&key, &key_size);
-@@ -148,7 +150,7 @@ int user_record_verify(UserRecord *ur, EVP_PKEY *public_key) {
+@@ -150,7 +152,7 @@ int user_record_verify(UserRecord *ur, EVP_PKEY *public_key) {
                  if (EVP_DigestVerifyInit(md_ctx, NULL, NULL, NULL, public_key) <= 0)
                          return -EIO;
  

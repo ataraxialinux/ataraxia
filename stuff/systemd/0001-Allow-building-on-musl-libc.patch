@@ -1,7 +1,10 @@
-From 40bfcb964d509dcee67310c412d08ce75008e2d9 Mon Sep 17 00:00:00 2001
+From 38afdda69d4e423e1d2c0dc02b4080917d560f87 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 13 Nov 2020 23:08:08 +0300
+Date: Thu, 3 Dec 2020 01:41:16 +0900
 Subject: [PATCH 1/7] Allow building on musl libc
+
+Most work is done by OpenEmbedded. Other fixes by xhebox: https://github.com/xhebox https://github.com/xhebox/noname-linux
+Some fixes by protonesso (aka Ishimoto Shinobu) for Ataraxia Linux
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -16,6 +19,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/basic/glob-util.c                      |  12 +
  src/basic/linux/if.h                       |   2 +
  src/basic/linux/if_ether.h                 |   3 +-
+ src/basic/linux/netdevice.h                |   2 +
  src/basic/log.c                            |   1 +
  src/basic/meson.build                      |   5 +
  src/basic/missing_prctl.h                  |   2 +
@@ -83,11 +87,13 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/network/netdev/netdev-gperf.gperf      |   1 +
  src/network/netdev/netdev.c                |   1 +
  src/network/networkd-brvlan.c              |   1 +
- src/network/networkd-dhcp-common.c         |   1 +
+ src/network/networkd-dhcp-common.c         |   4 +-
+ src/network/networkd-dhcp-server.c         |   2 +-
  src/network/networkd-dhcp4.c               |   2 +-
  src/network/networkd-dhcp6.c               |   2 +-
  src/network/networkd-link.c                |   2 +-
  src/network/networkd-network.c             |   1 +
+ src/network/networkd-route.c               |   6 +-
  src/network/test-network-tables.c          |   1 +
  src/nspawn/nspawn-cgroup.c                 |   2 +-
  src/nspawn/nspawn-settings.c               |   1 +
@@ -107,13 +113,13 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/shared/ethtool-util.c                  |   1 +
  src/shared/ethtool-util.h                  |   1 +
  src/shared/format-table.c                  |  36 ++-
- src/shared/group-record-nss.c              |  20 ++
- src/shared/group-record-nss.h              |   4 +
  src/shared/journal-importer.c              |   1 +
  src/shared/logs-show.c                     |   1 +
  src/shared/pager.c                         |   1 +
  src/shared/sysctl-util.c                   |   2 +-
  src/shared/uid-range.c                     |   1 +
+ src/shared/user-record-nss.c               |  20 ++
+ src/shared/user-record-nss.h               |   6 +-
  src/shared/userdb.c                        |   6 +
  src/sleep/sleep.c                          |   8 +-
  src/socket-proxy/socket-proxyd.c           |   1 +
@@ -132,23 +138,23 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/userdb/userdbctl.c                     |   3 +-
  src/userdb/userwork.c                      |   4 +
  src/vconsole/vconsole-setup.c              |   2 +-
- 127 files changed, 684 insertions(+), 107 deletions(-)
+ 130 files changed, 695 insertions(+), 111 deletions(-)
  create mode 100644 src/basic/parse-printf-format.c
  create mode 100644 src/basic/parse-printf-format.h
 
 diff --git a/meson.build b/meson.build
-index cfb9ffd..12054ed 100644
+index f406d59..0d0fa49 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -528,6 +528,7 @@ foreach ident : [
-                                  #include <unistd.h>
-                                  #include <signal.h>
+@@ -535,6 +535,7 @@ foreach ident : [
                                   #include <sys/wait.h>'''],
+         ['mallinfo',          '''#include <malloc.h>'''],
+         ['close_range',       '''#include <unistd.h>'''],
 +        ['strndupa' ,         '''#include <string.h>'''],
  ]
  
          have = cc.has_function(ident[0], prefix : ident[1], args : '-D_GNU_SOURCE')
-@@ -639,6 +640,7 @@ endif
+@@ -646,6 +647,7 @@ endif
  foreach header : ['crypt.h',
                    'linux/memfd.h',
                    'linux/vm_sockets.h',
@@ -157,19 +163,19 @@ index cfb9ffd..12054ed 100644
                    'valgrind/memcheck.h',
                    'valgrind/valgrind.h',
 diff --git a/src/backlight/backlight.c b/src/backlight/backlight.c
-index 388bd03..2c9db66 100644
+index d1b6a81..38b7008 100644
 --- a/src/backlight/backlight.c
 +++ b/src/backlight/backlight.c
-@@ -17,6 +17,7 @@
+@@ -19,6 +19,7 @@
  #include "string-util.h"
  #include "strv.h"
  #include "util.h"
 +#include "missing_stdlib.h"
  
- static int find_pci_or_platform_parent(sd_device *device, sd_device **ret) {
-         const char *subsystem, *sysname, *value;
+ static int help(void) {
+         _cleanup_free_ char *link = NULL;
 diff --git a/src/basic/cgroup-util.c b/src/basic/cgroup-util.c
-index e94fcfa..cc71f6b 100644
+index f28bf18..cb804c5 100644
 --- a/src/basic/cgroup-util.c
 +++ b/src/basic/cgroup-util.c
 @@ -38,6 +38,7 @@
@@ -180,7 +186,7 @@ index e94fcfa..cc71f6b 100644
  
  static int cg_enumerate_items(const char *controller, const char *path, FILE **_f, const char *item) {
          _cleanup_free_ char *fs = NULL;
-@@ -768,7 +769,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
+@@ -758,7 +759,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
  
          sc = strstrip(contents);
          if (isempty(sc)) {
@@ -189,7 +195,7 @@ index e94fcfa..cc71f6b 100644
                  if (r < 0)
                          return r;
          } else if (!path_equal(sc, agent))
-@@ -786,7 +787,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
+@@ -776,7 +777,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
  
          sc = strstrip(contents);
          if (streq(sc, "0")) {
@@ -198,7 +204,7 @@ index e94fcfa..cc71f6b 100644
                  if (r < 0)
                          return r;
  
-@@ -813,7 +814,7 @@ int cg_uninstall_release_agent(const char *controller) {
+@@ -803,7 +804,7 @@ int cg_uninstall_release_agent(const char *controller) {
          if (r < 0)
                  return r;
  
@@ -207,7 +213,7 @@ index e94fcfa..cc71f6b 100644
          if (r < 0)
                  return r;
  
-@@ -823,7 +824,7 @@ int cg_uninstall_release_agent(const char *controller) {
+@@ -813,7 +814,7 @@ int cg_uninstall_release_agent(const char *controller) {
          if (r < 0)
                  return r;
  
@@ -216,7 +222,7 @@ index e94fcfa..cc71f6b 100644
          if (r < 0)
                  return r;
  
-@@ -1655,7 +1656,7 @@ int cg_set_attribute(const char *controller, const char *path, const char *attri
+@@ -1645,7 +1646,7 @@ int cg_set_attribute(const char *controller, const char *path, const char *attri
          if (r < 0)
                  return r;
  
@@ -226,7 +232,7 @@ index e94fcfa..cc71f6b 100644
  
  int cg_get_attribute(const char *controller, const char *path, const char *attribute, char **ret) {
 diff --git a/src/basic/copy.c b/src/basic/copy.c
-index b384010..1f5f35b 100644
+index 6a9c3a3..8948bb4 100644
 --- a/src/basic/copy.c
 +++ b/src/basic/copy.c
 @@ -8,6 +8,7 @@
@@ -238,7 +244,7 @@ index b384010..1f5f35b 100644
  #include "alloc-util.h"
  #include "btrfs-util.h"
 diff --git a/src/basic/env-util.c b/src/basic/env-util.c
-index b8dc989..5049b37 100644
+index a84863f..d4f5d57 100644
 --- a/src/basic/env-util.c
 +++ b/src/basic/env-util.c
 @@ -15,6 +15,7 @@
@@ -247,10 +253,10 @@ index b8dc989..5049b37 100644
  #include "utf8.h"
 +#include "missing_stdlib.h"
  
- #define VALID_CHARS_ENV_NAME                    \
-         DIGITS LETTERS                          \
+ /* We follow bash for the character set. Different shells have different rules. */
+ #define VALID_BASH_ENV_NAME_CHARS               \
 diff --git a/src/basic/fileio.h b/src/basic/fileio.h
-index 7d58fa7..111dba0 100644
+index 0886354..62b3cd7 100644
 --- a/src/basic/fileio.h
 +++ b/src/basic/fileio.h
 @@ -5,8 +5,8 @@
@@ -264,7 +270,7 @@ index 7d58fa7..111dba0 100644
  
  #include "macro.h"
 diff --git a/src/basic/format-util.h b/src/basic/format-util.h
-index c47fa76..14a78d9 100644
+index b7e1876..3195ab2 100644
 --- a/src/basic/format-util.h
 +++ b/src/basic/format-util.h
 @@ -32,13 +32,7 @@ assert_cc(sizeof(gid_t) == sizeof(uint32_t));
@@ -283,10 +289,10 @@ index c47fa76..14a78d9 100644
  #if SIZEOF_DEV_T == 8
  #  define DEV_FMT "%" PRIu64
 diff --git a/src/basic/fs-util.h b/src/basic/fs-util.h
-index b184570..06132d1 100644
+index 5dc8853..0491b3d 100644
 --- a/src/basic/fs-util.h
 +++ b/src/basic/fs-util.h
-@@ -42,7 +42,27 @@ int fchmod_opath(int fd, mode_t m);
+@@ -43,7 +43,27 @@ int futimens_opath(int fd, const struct timespec ts[2]);
  int fd_warn_permissions(const char *path, int fd);
  int stat_warn_permissions(const char *path, const struct stat *st);
  
@@ -316,7 +322,7 @@ index b184570..06132d1 100644
  int touch_file(const char *path, bool parents, usec_t stamp, uid_t uid, gid_t gid, mode_t mode);
  int touch(const char *path);
 diff --git a/src/basic/glob-util.c b/src/basic/glob-util.c
-index 1e7e301..9946140 100644
+index bc0278e..c973f82 100644
 --- a/src/basic/glob-util.c
 +++ b/src/basic/glob-util.c
 @@ -12,6 +12,12 @@
@@ -356,7 +362,7 @@ index 1e7e301..9946140 100644
                  return -ENOENT;
          if (k == GLOB_NOSPACE)
 diff --git a/src/basic/linux/if.h b/src/basic/linux/if.h
-index 59948c2..3174d6d 100644
+index e79f5c8..4ccb6c3 100644
 --- a/src/basic/linux/if.h
 +++ b/src/basic/linux/if.h
 @@ -132,8 +132,10 @@ enum net_device_flags {
@@ -371,10 +377,10 @@ index 59948c2..3174d6d 100644
  #define IF_GET_IFACE	0x0001		/* for querying only */
  #define IF_GET_PROTO	0x0002
 diff --git a/src/basic/linux/if_ether.h b/src/basic/linux/if_ether.h
-index f6ceb2e..5e0f66b 100644
+index d6de2b1..e66d4a8 100644
 --- a/src/basic/linux/if_ether.h
 +++ b/src/basic/linux/if_ether.h
-@@ -159,6 +159,7 @@
+@@ -160,6 +160,7 @@
  #define __UAPI_DEF_ETHHDR		1
  #endif
  
@@ -382,7 +388,7 @@ index f6ceb2e..5e0f66b 100644
  #if __UAPI_DEF_ETHHDR
  struct ethhdr {
  	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
-@@ -166,6 +167,6 @@ struct ethhdr {
+@@ -167,6 +168,6 @@ struct ethhdr {
  	__be16		h_proto;		/* packet type ID field	*/
  } __attribute__((packed));
  #endif
@@ -390,11 +396,25 @@ index f6ceb2e..5e0f66b 100644
 +#endif
  
  #endif /* _UAPI_LINUX_IF_ETHER_H */
+diff --git a/src/basic/linux/netdevice.h b/src/basic/linux/netdevice.h
+index f3770c5..f6a159b 100644
+--- a/src/basic/linux/netdevice.h
++++ b/src/basic/linux/netdevice.h
+@@ -32,7 +32,9 @@
+ #include <linux/if_link.h>
+ 
+ 
++#ifndef MAX_ADDR_LEN
+ #define MAX_ADDR_LEN	32		/* Largest hardware address length */
++#endif
+ 
+ /* Initial net device group. All devices belong to group 0 by default. */
+ #define INIT_NETDEV_GROUP	0
 diff --git a/src/basic/log.c b/src/basic/log.c
-index c6fe203..b7ef932 100644
+index d4054cf..b608863 100644
 --- a/src/basic/log.c
 +++ b/src/basic/log.c
-@@ -35,6 +35,7 @@
+@@ -36,6 +36,7 @@
  #include "terminal-util.h"
  #include "time-util.h"
  #include "utf8.h"
@@ -403,10 +423,10 @@ index c6fe203..b7ef932 100644
  #define SNDBUF_SIZE (8*1024*1024)
  
 diff --git a/src/basic/meson.build b/src/basic/meson.build
-index 90924d6..261d169 100644
+index 1183ea8..aa5c958 100644
 --- a/src/basic/meson.build
 +++ b/src/basic/meson.build
-@@ -317,6 +317,11 @@ foreach item : [['af',     af_list_txt,     'af',         ''],
+@@ -322,6 +322,11 @@ foreach item : [['af',     af_list_txt,     'af',         ''],
  endforeach
  
  basic_sources += generated_gperf_headers
@@ -419,11 +439,11 @@ index 90924d6..261d169 100644
          'gcrypt-util.c',
          'gcrypt-util.h')
 diff --git a/src/basic/missing_prctl.h b/src/basic/missing_prctl.h
-index f80cd17..47e4893 100644
+index ab85130..5547cad 100644
 --- a/src/basic/missing_prctl.h
 +++ b/src/basic/missing_prctl.h
 @@ -1,7 +1,9 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  #pragma once
  
 +#ifdef __GLIBC__
@@ -433,7 +453,7 @@ index f80cd17..47e4893 100644
  /* 58319057b7847667f0c9585b9de0e8932b0fdb08 (4.3) */
  #ifndef PR_CAP_AMBIENT
 diff --git a/src/basic/missing_stdlib.h b/src/basic/missing_stdlib.h
-index 188a8d4..1e16ec2 100644
+index 8c76f93..9068bfb 100644
 --- a/src/basic/missing_stdlib.h
 +++ b/src/basic/missing_stdlib.h
 @@ -11,3 +11,15 @@
@@ -453,7 +473,7 @@ index 188a8d4..1e16ec2 100644
 +  })
 +#endif
 diff --git a/src/basic/missing_type.h b/src/basic/missing_type.h
-index bf8a6ca..917d314 100644
+index f623309..697aa7f 100644
 --- a/src/basic/missing_type.h
 +++ b/src/basic/missing_type.h
 @@ -10,3 +10,33 @@
@@ -491,10 +511,10 @@ index bf8a6ca..917d314 100644
 +#define FTW_SKIP_SIBLINGS 3
 +#endif
 diff --git a/src/basic/mkdir.c b/src/basic/mkdir.c
-index 6ebc2b9..88f4359 100644
+index f91f8f7..fb31596 100644
 --- a/src/basic/mkdir.c
 +++ b/src/basic/mkdir.c
-@@ -13,6 +13,7 @@
+@@ -14,6 +14,7 @@
  #include "stat-util.h"
  #include "stdio-util.h"
  #include "user-util.h"
@@ -845,10 +865,10 @@ index 0000000..47be752
 +
 +#endif /* HAVE_PRINTF_H */
 diff --git a/src/basic/parse-util.c b/src/basic/parse-util.c
-index 44f0438..54b4133 100644
+index 5d4dafe..7074975 100644
 --- a/src/basic/parse-util.c
 +++ b/src/basic/parse-util.c
-@@ -19,6 +19,7 @@
+@@ -22,6 +22,7 @@
  #include "stat-util.h"
  #include "string-util.h"
  #include "strv.h"
@@ -857,7 +877,7 @@ index 44f0438..54b4133 100644
  int parse_boolean(const char *v) {
          if (!v)
 diff --git a/src/basic/path-lookup.c b/src/basic/path-lookup.c
-index 52968de..2f4f7e3 100644
+index 96b8217..71342b4 100644
 --- a/src/basic/path-lookup.c
 +++ b/src/basic/path-lookup.c
 @@ -15,6 +15,7 @@
@@ -869,7 +889,7 @@ index 52968de..2f4f7e3 100644
  int xdg_user_runtime_dir(char **ret, const char *suffix) {
          const char *e;
 diff --git a/src/basic/path-util.h b/src/basic/path-util.h
-index 30031fc..112990c 100644
+index d613709..2e49abd 100644
 --- a/src/basic/path-util.h
 +++ b/src/basic/path-util.h
 @@ -9,6 +9,7 @@
@@ -881,7 +901,7 @@ index 30031fc..112990c 100644
  #define PATH_SPLIT_SBIN_BIN(x) x "sbin:" x "bin"
  #define PATH_SPLIT_SBIN_BIN_NULSTR(x) x "sbin\0" x "bin\0"
 diff --git a/src/basic/proc-cmdline.c b/src/basic/proc-cmdline.c
-index ba47ca5..8baf728 100644
+index 0b6fb13..e8e8c7b 100644
 --- a/src/basic/proc-cmdline.c
 +++ b/src/basic/proc-cmdline.c
 @@ -15,6 +15,7 @@
@@ -893,7 +913,7 @@ index ba47ca5..8baf728 100644
  int proc_cmdline(char **ret) {
          const char *e;
 diff --git a/src/basic/process-util.c b/src/basic/process-util.c
-index 80f1304..662a4f3 100644
+index 0851613..556dab8 100644
 --- a/src/basic/process-util.c
 +++ b/src/basic/process-util.c
 @@ -18,6 +18,9 @@
@@ -932,7 +952,7 @@ index 80f1304..662a4f3 100644
  
  int pidfd_get_pid(int fd, pid_t *ret) {
 diff --git a/src/basic/procfs-util.c b/src/basic/procfs-util.c
-index 7aaf95b..2138f20 100644
+index ccab71f..480f8cc 100644
 --- a/src/basic/procfs-util.c
 +++ b/src/basic/procfs-util.c
 @@ -11,6 +11,7 @@
@@ -960,7 +980,7 @@ index 7aaf95b..2138f20 100644
                  uint64_t threads_max;
  
 diff --git a/src/basic/quota-util.h b/src/basic/quota-util.h
-index ff99e34..0fc2399 100644
+index a61bdcb..e02b835 100644
 --- a/src/basic/quota-util.h
 +++ b/src/basic/quota-util.h
 @@ -2,6 +2,7 @@
@@ -972,7 +992,7 @@ index ff99e34..0fc2399 100644
  #include <sys/types.h>
  
 diff --git a/src/basic/rlimit-util.c b/src/basic/rlimit-util.c
-index 2dc13ea..0633cc6 100644
+index 8809763..9e1b61c 100644
 --- a/src/basic/rlimit-util.c
 +++ b/src/basic/rlimit-util.c
 @@ -306,13 +306,13 @@ int rlimit_format(const struct rlimit *rl, char **ret) {
@@ -1003,7 +1023,7 @@ index 2dc13ea..0633cc6 100644
          return 1;
  }
 diff --git a/src/basic/selinux-util.c b/src/basic/selinux-util.c
-index c94ee26..14e35b4 100644
+index 4989f4f..ca00bf9 100644
 --- a/src/basic/selinux-util.c
 +++ b/src/basic/selinux-util.c
 @@ -27,6 +27,7 @@
@@ -1015,7 +1035,7 @@ index c94ee26..14e35b4 100644
  #if HAVE_SELINUX
  DEFINE_TRIVIAL_CLEANUP_FUNC(context_t, context_free);
 diff --git a/src/basic/smack-util.c b/src/basic/smack-util.c
-index 8043a97..fbd39c8 100644
+index 3362ee3..80c0f2a 100644
 --- a/src/basic/smack-util.c
 +++ b/src/basic/smack-util.c
 @@ -114,7 +114,7 @@ int mac_smack_apply_pid(pid_t pid, const char *label) {
@@ -1028,7 +1048,7 @@ index 8043a97..fbd39c8 100644
                  return r;
  
 diff --git a/src/basic/sort-util.h b/src/basic/sort-util.h
-index a8dc3bb..a284733 100644
+index 1d194a1..d9cb2ae 100644
 --- a/src/basic/sort-util.h
 +++ b/src/basic/sort-util.h
 @@ -4,6 +4,7 @@
@@ -1058,11 +1078,11 @@ index a8dc3bb..a284733 100644
 -                qsort_r_safe((p), (n), sizeof((p)[0]), (__compar_d_fn_t) _func_, userdata); \
 -        })
 diff --git a/src/basic/stdio-util.h b/src/basic/stdio-util.h
-index c3b9448..2937aa1 100644
+index 6dc1e72..cea76b3 100644
 --- a/src/basic/stdio-util.h
 +++ b/src/basic/stdio-util.h
 @@ -1,13 +1,13 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  #pragma once
  
 -#include <printf.h>
@@ -1077,10 +1097,10 @@ index c3b9448..2937aa1 100644
  #define snprintf_ok(buf, len, fmt, ...) \
          ((size_t) snprintf(buf, len, fmt, __VA_ARGS__) < (len))
 diff --git a/src/basic/time-util.c b/src/basic/time-util.c
-index 15cc1b8..02bb3f0 100644
+index 5318d63..23c2f77 100644
 --- a/src/basic/time-util.c
 +++ b/src/basic/time-util.c
-@@ -26,6 +26,7 @@
+@@ -27,6 +27,7 @@
  #include "string-util.h"
  #include "strv.h"
  #include "time-util.h"
@@ -1089,7 +1109,7 @@ index 15cc1b8..02bb3f0 100644
  static clockid_t map_clock_id(clockid_t c) {
  
 diff --git a/src/basic/user-util.c b/src/basic/user-util.c
-index 0e96a75..0074869 100644
+index 933a398..2f6427f 100644
 --- a/src/basic/user-util.c
 +++ b/src/basic/user-util.c
 @@ -1019,8 +1019,6 @@ int fgetpwent_sane(FILE *stream, struct passwd **pw) {
@@ -1129,7 +1149,7 @@ index 0e96a75..0074869 100644
          *sg = s;
          return !!s;
 diff --git a/src/basic/util.c b/src/basic/util.c
-index 2b3b391..aff8d0f 100644
+index f98ecf3..13e0f74 100644
 --- a/src/basic/util.c
 +++ b/src/basic/util.c
 @@ -267,7 +267,7 @@ void disable_coredumps(void) {
@@ -1142,7 +1162,7 @@ index 2b3b391..aff8d0f 100644
                  log_debug_errno(r, "Failed to turn off coredumps, ignoring: %m");
  }
 diff --git a/src/binfmt/binfmt.c b/src/binfmt/binfmt.c
-index 06aee22..207fe9e 100644
+index 43ed2f3..37a6f57 100644
 --- a/src/binfmt/binfmt.c
 +++ b/src/binfmt/binfmt.c
 @@ -48,7 +48,7 @@ static int delete_rule(const char *rule) {
@@ -1173,7 +1193,7 @@ index 06aee22..207fe9e 100644
                  STRV_FOREACH(f, files) {
                          k = apply_file(*f, true);
 diff --git a/src/boot/bless-boot.c b/src/boot/bless-boot.c
-index 0824266..ed2c7de 100644
+index cd34f88..3a77b6f 100644
 --- a/src/boot/bless-boot.c
 +++ b/src/boot/bless-boot.c
 @@ -18,6 +18,7 @@
@@ -1185,10 +1205,10 @@ index 0824266..ed2c7de 100644
  static char **arg_path = NULL;
  
 diff --git a/src/core/dbus-cgroup.c b/src/core/dbus-cgroup.c
-index b7d2e32..fdbc1df 100644
+index 37c581f..e02789d 100644
 --- a/src/core/dbus-cgroup.c
 +++ b/src/core/dbus-cgroup.c
-@@ -15,6 +15,7 @@
+@@ -16,6 +16,7 @@
  #include "fileio.h"
  #include "limits-util.h"
  #include "path-util.h"
@@ -1197,7 +1217,7 @@ index b7d2e32..fdbc1df 100644
  BUS_DEFINE_PROPERTY_GET(bus_property_get_tasks_max, "t", TasksMax, tasks_max_resolve);
  
 diff --git a/src/core/dbus-execute.c b/src/core/dbus-execute.c
-index 50f7ada..5c760ee 100644
+index abe009c..0451e58 100644
 --- a/src/core/dbus-execute.c
 +++ b/src/core/dbus-execute.c
 @@ -41,6 +41,7 @@
@@ -1209,7 +1229,7 @@ index 50f7ada..5c760ee 100644
  BUS_DEFINE_PROPERTY_GET_ENUM(bus_property_get_exec_output, exec_output, ExecOutput);
  static BUS_DEFINE_PROPERTY_GET_ENUM(property_get_exec_input, exec_input, ExecInput);
 diff --git a/src/core/dbus-util.c b/src/core/dbus-util.c
-index 951450e..50d134e 100644
+index d6223db..3654c34 100644
 --- a/src/core/dbus-util.c
 +++ b/src/core/dbus-util.c
 @@ -7,6 +7,7 @@
@@ -1221,10 +1241,10 @@ index 951450e..50d134e 100644
  int bus_property_get_triggered_unit(
                  sd_bus *bus,
 diff --git a/src/core/execute.c b/src/core/execute.c
-index 7b3de25..a14b210 100644
+index c992b8d..3352837 100644
 --- a/src/core/execute.c
 +++ b/src/core/execute.c
-@@ -89,6 +89,7 @@
+@@ -96,6 +96,7 @@
  #include "unit.h"
  #include "user-util.h"
  #include "utmp-wtmp.h"
@@ -1232,8 +1252,8 @@ index 7b3de25..a14b210 100644
  
  #define IDLE_TIMEOUT_USEC (5*USEC_PER_SEC)
  #define IDLE_TIMEOUT2_USEC (1*USEC_PER_SEC)
-@@ -4715,9 +4716,9 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
-         for (i = 0; i < RLIM_NLIMITS; i++)
+@@ -5287,9 +5288,9 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
+         for (unsigned i = 0; i < RLIM_NLIMITS; i++)
                  if (c->rlimit[i]) {
                          fprintf(f, "%sLimit%s: " RLIM_FMT "\n",
 -                                prefix, rlimit_to_string(i), c->rlimit[i]->rlim_max);
@@ -1245,7 +1265,7 @@ index 7b3de25..a14b210 100644
  
          if (c->ioprio_set) {
 diff --git a/src/core/kmod-setup.c b/src/core/kmod-setup.c
-index 1286743..f4e64fa 100644
+index 8a7f828..6b8729e 100644
 --- a/src/core/kmod-setup.c
 +++ b/src/core/kmod-setup.c
 @@ -10,6 +10,8 @@
@@ -1258,10 +1278,10 @@ index 1286743..f4e64fa 100644
  #if HAVE_KMOD
  #include "module-util.h"
 diff --git a/src/core/main.c b/src/core/main.c
-index 9a834a8..9151295 100644
+index a280b75..334532c 100644
 --- a/src/core/main.c
 +++ b/src/core/main.c
-@@ -1384,7 +1384,7 @@ static int bump_unix_max_dgram_qlen(void) {
+@@ -1382,7 +1382,7 @@ static int bump_unix_max_dgram_qlen(void) {
          if (v >= DEFAULT_UNIX_MAX_DGRAM_QLEN)
                  return 0;
  
@@ -1270,7 +1290,7 @@ index 9a834a8..9151295 100644
          if (r < 0)
                  return log_full_errno(IN_SET(r, -EROFS, -EPERM, -EACCES) ? LOG_DEBUG : LOG_WARNING, r,
                                        "Failed to bump AF_UNIX datagram queue length, ignoring: %m");
-@@ -1670,7 +1670,7 @@ static void initialize_core_pattern(bool skip_setup) {
+@@ -1666,7 +1666,7 @@ static void initialize_core_pattern(bool skip_setup) {
          if (getpid_cached() != 1)
                  return;
  
@@ -1280,7 +1300,7 @@ index 9a834a8..9151295 100644
                  log_warning_errno(r, "Failed to write '%s' to /proc/sys/kernel/core_pattern, ignoring: %m", arg_early_core_pattern);
  }
 diff --git a/src/core/service.c b/src/core/service.c
-index 402b521..430e99d 100644
+index d7bdeb7..bfd483b 100644
 --- a/src/core/service.c
 +++ b/src/core/service.c
 @@ -41,6 +41,7 @@
@@ -1292,7 +1312,7 @@ index 402b521..430e99d 100644
  static const UnitActiveState state_translation_table[_SERVICE_STATE_MAX] = {
          [SERVICE_DEAD] = UNIT_INACTIVE,
 diff --git a/src/core/smack-setup.c b/src/core/smack-setup.c
-index 4427397..8aeb5c8 100644
+index 1fe592a..603942a 100644
 --- a/src/core/smack-setup.c
 +++ b/src/core/smack-setup.c
 @@ -325,17 +325,17 @@ int mac_smack_setup(bool *loaded_policy) {
@@ -1318,7 +1338,7 @@ index 4427397..8aeb5c8 100644
                  log_warning_errno(r, "Failed to set SMACK netlabel rule \"127.0.0.1 -CIPSO\": %m");
  #endif
 diff --git a/src/coredump/coredump-vacuum.c b/src/coredump/coredump-vacuum.c
-index 35885df..bb9f066 100644
+index 30c67ff..595bc30 100644
 --- a/src/coredump/coredump-vacuum.c
 +++ b/src/coredump/coredump-vacuum.c
 @@ -16,6 +16,7 @@
@@ -1330,7 +1350,7 @@ index 35885df..bb9f066 100644
  #define DEFAULT_MAX_USE_LOWER (uint64_t) (1ULL*1024ULL*1024ULL)           /* 1 MiB */
  #define DEFAULT_MAX_USE_UPPER (uint64_t) (4ULL*1024ULL*1024ULL*1024ULL)   /* 4 GiB */
 diff --git a/src/hibernate-resume/hibernate-resume.c b/src/hibernate-resume/hibernate-resume.c
-index 17e7cd1..87a7667 100644
+index d8f91f4..a088e6e 100644
 --- a/src/hibernate-resume/hibernate-resume.c
 +++ b/src/hibernate-resume/hibernate-resume.c
 @@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
@@ -1343,7 +1363,7 @@ index 17e7cd1..87a7667 100644
                  log_error_errno(r, "Failed to write '%s' to /sys/power/resume: %m", major_minor);
                  return EXIT_FAILURE;
 diff --git a/src/home/homed-manager.c b/src/home/homed-manager.c
-index 6c7c8eb..62ded25 100644
+index 365ea4d..55b3bc4 100644
 --- a/src/home/homed-manager.c
 +++ b/src/home/homed-manager.c
 @@ -44,6 +44,7 @@
@@ -1355,10 +1375,10 @@ index 6c7c8eb..62ded25 100644
  /* Where to look for private/public keys that are used to sign the user records. We are not using
   * CONF_PATHS_NULSTR() here since we want to insert /var/lib/systemd/home/ in the middle. And we insert that
 diff --git a/src/home/homework-luks.c b/src/home/homework-luks.c
-index 0d53fa4..df9f287 100644
+index b0b2d80..cdf1b95 100644
 --- a/src/home/homework-luks.c
 +++ b/src/home/homework-luks.c
-@@ -34,6 +34,7 @@
+@@ -37,6 +37,7 @@
  #include "stat-util.h"
  #include "strv.h"
  #include "tmpfile-util.h"
@@ -1367,7 +1387,7 @@ index 0d53fa4..df9f287 100644
  /* Round down to the nearest 1K size. Note that Linux generally handles block devices with 512 blocks only,
   * but actually doesn't accept uneven numbers in many cases. To avoid any confusion around this we'll
 diff --git a/src/import/curl-util.c b/src/import/curl-util.c
-index 261fbec..f35eaf6 100644
+index 5e09043..8e9c12e 100644
 --- a/src/import/curl-util.c
 +++ b/src/import/curl-util.c
 @@ -360,6 +360,7 @@ int curl_parse_http_time(const char *t, usec_t *ret) {
@@ -1387,7 +1407,7 @@ index 261fbec..f35eaf6 100644
          v = timegm(&tm);
          if (v == (time_t) -1)
 diff --git a/src/import/import-fs.c b/src/import/import-fs.c
-index db55fa5..cc849ee 100644
+index 3b43ea1..6b29c75 100644
 --- a/src/import/import-fs.c
 +++ b/src/import/import-fs.c
 @@ -2,6 +2,7 @@
@@ -1399,7 +1419,7 @@ index db55fa5..cc849ee 100644
  #include "alloc-util.h"
  #include "btrfs-util.h"
 diff --git a/src/journal-remote/journal-remote-main.c b/src/journal-remote/journal-remote-main.c
-index 77dfdef..e21ecbe 100644
+index d2aa181..a851aa2 100644
 --- a/src/journal-remote/journal-remote-main.c
 +++ b/src/journal-remote/journal-remote-main.c
 @@ -22,6 +22,7 @@
@@ -1411,7 +1431,7 @@ index 77dfdef..e21ecbe 100644
  #define PRIV_KEY_FILE CERTIFICATE_ROOT "/private/journal-remote.pem"
  #define CERT_FILE     CERTIFICATE_ROOT "/certs/journal-remote.pem"
 diff --git a/src/journal/catalog.c b/src/journal/catalog.c
-index b258927..324cd81 100644
+index 0f6ad8a..4e1077a 100644
 --- a/src/journal/catalog.c
 +++ b/src/journal/catalog.c
 @@ -28,6 +28,7 @@
@@ -1423,7 +1443,7 @@ index b258927..324cd81 100644
  const char * const catalog_file_dirs[] = {
          "/usr/local/lib/systemd/catalog/",
 diff --git a/src/journal/journal-send.c b/src/journal/journal-send.c
-index d51d03a..c984e51 100644
+index fd3fd7e..8ca5271 100644
 --- a/src/journal/journal-send.c
 +++ b/src/journal/journal-send.c
 @@ -2,7 +2,6 @@
@@ -1456,10 +1476,10 @@ index d51d03a..c984e51 100644
                          char error[STRLEN("ERRNO=") + DECIMAL_STR_MAX(int) + 1];
  
 diff --git a/src/journal/journalctl.c b/src/journal/journalctl.c
-index 8d4897b..15476b3 100644
+index bcf2e01..5394d1d 100644
 --- a/src/journal/journalctl.c
 +++ b/src/journal/journalctl.c
-@@ -69,6 +69,7 @@
+@@ -73,6 +73,7 @@
  #include "unit-name.h"
  #include "user-util.h"
  #include "varlink.h"
@@ -1468,7 +1488,7 @@ index 8d4897b..15476b3 100644
  #define DEFAULT_FSS_INTERVAL_USEC (15*USEC_PER_MINUTE)
  #define PROCESS_INOTIFY_INTERVAL 1024   /* Every 1,024 messages processed */
 diff --git a/src/journal/sd-journal.c b/src/journal/sd-journal.c
-index 6fb0abb..2d94d99 100644
+index cb1ab88..7f35759 100644
 --- a/src/journal/sd-journal.c
 +++ b/src/journal/sd-journal.c
 @@ -40,6 +40,7 @@
@@ -1480,7 +1500,7 @@ index 6fb0abb..2d94d99 100644
  #define JOURNAL_FILES_MAX 7168
  
 diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
-index 5cdb82b..34bdbd2 100644
+index 30ac526..126077e 100644
 --- a/src/libsystemd-network/sd-dhcp6-client.c
 +++ b/src/libsystemd-network/sd-dhcp6-client.c
 @@ -5,7 +5,6 @@
@@ -1492,10 +1512,10 @@ index 5cdb82b..34bdbd2 100644
  
  #include "sd-dhcp6-client.h"
 diff --git a/src/libsystemd/sd-bus/bus-error.c b/src/libsystemd/sd-bus/bus-error.c
-index f760f0f..962a4de 100644
+index 8da2024..38b6cf9 100644
 --- a/src/libsystemd/sd-bus/bus-error.c
 +++ b/src/libsystemd/sd-bus/bus-error.c
-@@ -54,8 +54,8 @@ BUS_ERROR_MAP_ELF_REGISTER const sd_bus_error_map bus_standard_errors[] = {
+@@ -55,8 +55,8 @@ BUS_ERROR_MAP_ELF_REGISTER const sd_bus_error_map bus_standard_errors[] = {
  };
  
  /* GCC maps this magically to the beginning and end of the BUS_ERROR_MAP section */
@@ -1506,7 +1526,7 @@ index f760f0f..962a4de 100644
  
  /* Additional maps registered with sd_bus_error_add_map() are in this
   * NULL terminated array */
-@@ -379,7 +379,12 @@ static void bus_error_strerror(sd_bus_error *e, int error) {
+@@ -392,7 +392,12 @@ static void bus_error_strerror(sd_bus_error *e, int error) {
                          return;
  
                  errno = 0;
@@ -1520,7 +1540,7 @@ index f760f0f..962a4de 100644
                          free(m);
                          k *= 2;
 diff --git a/src/libsystemd/sd-bus/bus-message.c b/src/libsystemd/sd-bus/bus-message.c
-index 55e35cd..0ed98f9 100644
+index 86ff5bd..3fd053a 100644
 --- a/src/libsystemd/sd-bus/bus-message.c
 +++ b/src/libsystemd/sd-bus/bus-message.c
 @@ -21,6 +21,7 @@
@@ -1532,7 +1552,7 @@ index 55e35cd..0ed98f9 100644
  static int message_append_basic(sd_bus_message *m, char type, const void *p, const void **stored);
  
 diff --git a/src/libsystemd/sd-bus/bus-objects.c b/src/libsystemd/sd-bus/bus-objects.c
-index 6abac88..c74c9cd 100644
+index 275c431..5ffee59 100644
 --- a/src/libsystemd/sd-bus/bus-objects.c
 +++ b/src/libsystemd/sd-bus/bus-objects.c
 @@ -13,6 +13,7 @@
@@ -1544,7 +1564,7 @@ index 6abac88..c74c9cd 100644
  static int node_vtable_get_userdata(
                  sd_bus *bus,
 diff --git a/src/libsystemd/sd-bus/bus-socket.c b/src/libsystemd/sd-bus/bus-socket.c
-index de36a1f..0f1ba6e 100644
+index 4881fd0..c865f11 100644
 --- a/src/libsystemd/sd-bus/bus-socket.c
 +++ b/src/libsystemd/sd-bus/bus-socket.c
 @@ -28,6 +28,7 @@
@@ -1556,7 +1576,7 @@ index de36a1f..0f1ba6e 100644
  #define SNDBUF_SIZE (8*1024*1024)
  
 diff --git a/src/libsystemd/sd-bus/sd-bus.c b/src/libsystemd/sd-bus/sd-bus.c
-index 39e23d9..6312bb6 100644
+index b8d4dc8..a8bac26 100644
 --- a/src/libsystemd/sd-bus/sd-bus.c
 +++ b/src/libsystemd/sd-bus/sd-bus.c
 @@ -41,6 +41,7 @@
@@ -1568,7 +1588,7 @@ index 39e23d9..6312bb6 100644
  #define log_debug_bus_message(m)                                         \
          do {                                                             \
 diff --git a/src/libsystemd/sd-bus/test-bus-benchmark.c b/src/libsystemd/sd-bus/test-bus-benchmark.c
-index 8de0a85..58044b6 100644
+index 8c67117..fac1788 100644
 --- a/src/libsystemd/sd-bus/test-bus-benchmark.c
 +++ b/src/libsystemd/sd-bus/test-bus-benchmark.c
 @@ -14,6 +14,7 @@
@@ -1580,10 +1600,10 @@ index 8de0a85..58044b6 100644
  #define MAX_SIZE (2*1024*1024)
  
 diff --git a/src/libsystemd/sd-device/sd-device.c b/src/libsystemd/sd-device/sd-device.c
-index 3bba17a..383e1fe 100644
+index d06f90c..43d0a58 100644
 --- a/src/libsystemd/sd-device/sd-device.c
 +++ b/src/libsystemd/sd-device/sd-device.c
-@@ -1877,7 +1877,7 @@ _public_ int sd_device_set_sysattr_value(sd_device *device, const char *sysattr,
+@@ -1976,7 +1976,7 @@ _public_ int sd_device_set_sysattr_value(sd_device *device, const char *sysattr,
          if (!value)
                  return -ENOMEM;
  
@@ -1593,10 +1613,10 @@ index 3bba17a..383e1fe 100644
                  if (r == -ELOOP)
                          return -EINVAL;
 diff --git a/src/libsystemd/sd-hwdb/hwdb-util.c b/src/libsystemd/sd-hwdb/hwdb-util.c
-index 5c75216..3986fc8 100644
+index 4c94ba9..95495db 100644
 --- a/src/libsystemd/sd-hwdb/hwdb-util.c
 +++ b/src/libsystemd/sd-hwdb/hwdb-util.c
-@@ -128,9 +128,13 @@ static void trie_free(struct trie *trie) {
+@@ -126,9 +126,13 @@ static void trie_free(struct trie *trie) {
  
  DEFINE_TRIVIAL_CLEANUP_FUNC(struct trie*, trie_free);
  
@@ -1613,7 +1633,7 @@ index 5c75216..3986fc8 100644
  }
  
  static int trie_node_add_value(struct trie *trie, struct trie_node *node,
-@@ -158,7 +162,10 @@ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
+@@ -156,7 +160,10 @@ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
                          .value_off = v,
                  };
  
@@ -1625,7 +1645,7 @@ index 5c75216..3986fc8 100644
                  if (val) {
                          /* At this point we have 2 identical properties on the same match-string.
                           * Since we process files in order, we just replace the previous value. */
-@@ -184,7 +191,9 @@ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
+@@ -182,7 +189,9 @@ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
                  .line_number = line_number,
          };
          node->values_count++;
@@ -1637,7 +1657,7 @@ index 5c75216..3986fc8 100644
  }
  
 diff --git a/src/libsystemd/sd-netlink/netlink-types.c b/src/libsystemd/sd-netlink/netlink-types.c
-index 060458a..a3a2e80 100644
+index 6fb6c14..8eda02d 100644
 --- a/src/libsystemd/sd-netlink/netlink-types.c
 +++ b/src/libsystemd/sd-netlink/netlink-types.c
 @@ -3,6 +3,7 @@
@@ -1649,7 +1669,7 @@ index 060458a..a3a2e80 100644
  #include <linux/netlink.h>
  #include <linux/rtnetlink.h>
 diff --git a/src/locale/keymap-util.c b/src/locale/keymap-util.c
-index 233d081..40a32b9 100644
+index cb8153f..d52a560 100644
 --- a/src/locale/keymap-util.c
 +++ b/src/locale/keymap-util.c
 @@ -21,6 +21,7 @@
@@ -1661,7 +1681,7 @@ index 233d081..40a32b9 100644
  static bool startswith_comma(const char *s, const char *prefix) {
          s = startswith(s, prefix);
 diff --git a/src/locale/localed.c b/src/locale/localed.c
-index 715ce5c..f27d767 100644
+index 736dacd..cc5b117 100644
 --- a/src/locale/localed.c
 +++ b/src/locale/localed.c
 @@ -507,7 +507,7 @@ static void log_xkb(struct xkb_context *ctx, enum xkb_log_level lvl, const char
@@ -1674,21 +1694,21 @@ index 715ce5c..f27d767 100644
          })
  
 diff --git a/src/login/logind-brightness.c b/src/login/logind-brightness.c
-index 450ec32..d4b011f 100644
+index a6a1603..54848ce 100644
 --- a/src/login/logind-brightness.c
 +++ b/src/login/logind-brightness.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <sys/wait.h>
  #include "bus-util.h"
  #include "device-util.h"
  #include "hash-funcs.h"
 diff --git a/src/login/logind-dbus.c b/src/login/logind-dbus.c
-index 75a4830..82d08c7 100644
+index b95af1a..4568322 100644
 --- a/src/login/logind-dbus.c
 +++ b/src/login/logind-dbus.c
-@@ -1341,7 +1341,7 @@ static int trigger_device(Manager *m, sd_device *d) {
+@@ -1337,7 +1337,7 @@ static int trigger_device(Manager *m, sd_device *d) {
                  if (!t)
                          return -ENOMEM;
  
@@ -1698,7 +1718,7 @@ index 75a4830..82d08c7 100644
  
          return 0;
 diff --git a/src/login/pam_systemd.c b/src/login/pam_systemd.c
-index 16f4289..6c5e438 100644
+index 8e7a94d..b5c368c 100644
 --- a/src/login/pam_systemd.c
 +++ b/src/login/pam_systemd.c
 @@ -31,6 +31,7 @@
@@ -1710,7 +1730,7 @@ index 16f4289..6c5e438 100644
  #include "parse-util.h"
  #include "path-util.h"
 diff --git a/src/machine/machine-dbus.c b/src/machine/machine-dbus.c
-index 73ef594..a720d5b 100644
+index bb67beb..aec5825 100644
 --- a/src/machine/machine-dbus.c
 +++ b/src/machine/machine-dbus.c
 @@ -3,6 +3,7 @@
@@ -1734,7 +1754,7 @@ index 73ef594..a720d5b 100644
  #include "bus-common-errors.h"
  #include "bus-get-properties.h"
 diff --git a/src/network/generator/network-generator.c b/src/network/generator/network-generator.c
-index bed1e42..e4847c2 100644
+index 2fa21a0..2e9995a 100644
 --- a/src/network/generator/network-generator.c
 +++ b/src/network/generator/network-generator.c
 @@ -13,6 +13,7 @@
@@ -1746,40 +1766,40 @@ index bed1e42..e4847c2 100644
  /*
    # .network
 diff --git a/src/network/netdev/bond.c b/src/network/netdev/bond.c
-index b5cf162..d216bde 100644
+index e27f360..8868f1d 100644
 --- a/src/network/netdev/bond.c
 +++ b/src/network/netdev/bond.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include "alloc-util.h"
  #include "bond.h"
  #include "bond-util.h"
 diff --git a/src/network/netdev/bridge.c b/src/network/netdev/bridge.c
-index 7024066..0f4b574 100644
+index 1f59cd8..5fdbae7 100644
 --- a/src/network/netdev/bridge.c
 +++ b/src/network/netdev/bridge.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <net/if.h>
  
  #include "bridge.h"
 diff --git a/src/network/netdev/macsec.c b/src/network/netdev/macsec.c
-index de21ece..c1f1c57 100644
+index 82e71c3..fbae86e 100644
 --- a/src/network/netdev/macsec.c
 +++ b/src/network/netdev/macsec.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <netinet/in.h>
  #include <linux/if_ether.h>
  #include <linux/if_macsec.h>
 diff --git a/src/network/netdev/netdev-gperf.gperf b/src/network/netdev/netdev-gperf.gperf
-index 0e2a9ce..dc4e2a5 100644
+index 4e89761..91251fa 100644
 --- a/src/network/netdev/netdev-gperf.gperf
 +++ b/src/network/netdev/netdev-gperf.gperf
 @@ -2,6 +2,7 @@
@@ -1788,21 +1808,21 @@ index 0e2a9ce..dc4e2a5 100644
  #endif
 +#include <netinet/if_ether.h>
  #include <stddef.h>
+ #include "bareudp.h"
  #include "bond.h"
- #include "bridge.h"
 diff --git a/src/network/netdev/netdev.c b/src/network/netdev/netdev.c
-index 446a580..333c449 100644
+index 9f390b5..62aeafb 100644
 --- a/src/network/netdev/netdev.c
 +++ b/src/network/netdev/netdev.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <net/if.h>
  #include <netinet/in.h>
  #include <unistd.h>
 diff --git a/src/network/networkd-brvlan.c b/src/network/networkd-brvlan.c
-index 3fc252d..fae13b1 100644
+index e53c73c..9bf0771 100644
 --- a/src/network/networkd-brvlan.c
 +++ b/src/network/networkd-brvlan.c
 @@ -4,6 +4,7 @@
@@ -1814,23 +1834,39 @@ index 3fc252d..fae13b1 100644
  #include <stdbool.h>
  
 diff --git a/src/network/networkd-dhcp-common.c b/src/network/networkd-dhcp-common.c
-index ecf9bce..1da52bb 100644
+index c338c77..1dd824e 100644
 --- a/src/network/networkd-dhcp-common.c
 +++ b/src/network/networkd-dhcp-common.c
-@@ -5,6 +5,7 @@
- #include "escape.h"
- #include "in-addr-util.h"
- #include "networkd-dhcp-common.h"
+@@ -1,7 +1,9 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
++#include <net/if.h>
++#include <net/if_arp.h>
 +#include <netinet/if_ether.h>
- #include "networkd-network.h"
- #include "parse-util.h"
- #include "string-table.h"
+ 
+ #include "dhcp-internal.h"
+ #include "dhcp6-internal.h"
+diff --git a/src/network/networkd-dhcp-server.c b/src/network/networkd-dhcp-server.c
+index cf279c6..d3a4282 100644
+--- a/src/network/networkd-dhcp-server.c
++++ b/src/network/networkd-dhcp-server.c
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
++#include <net/if_arp.h>
+ #include <linux/if.h>
+ 
+ #include "sd-dhcp-server.h"
 diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
-index ba03d36..71e9367 100644
+index 02d3384..a30d8dd 100644
 --- a/src/network/networkd-dhcp4.c
 +++ b/src/network/networkd-dhcp4.c
 @@ -1,9 +1,9 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <netinet/in.h>
@@ -1841,7 +1877,7 @@ index ba03d36..71e9367 100644
  #include "escape.h"
  #include "alloc-util.h"
 diff --git a/src/network/networkd-dhcp6.c b/src/network/networkd-dhcp6.c
-index 675f19c..59699e8 100644
+index d4d4182..635d08f 100644
 --- a/src/network/networkd-dhcp6.c
 +++ b/src/network/networkd-dhcp6.c
 @@ -3,9 +3,9 @@
@@ -1856,11 +1892,11 @@ index 675f19c..59699e8 100644
  #include "sd-dhcp6-client.h"
  
 diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
-index ea3ff55..f2e8a67 100644
+index ced18de..07b4377 100644
 --- a/src/network/networkd-link.c
 +++ b/src/network/networkd-link.c
 @@ -1,8 +1,8 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <netinet/in.h>
@@ -1870,27 +1906,53 @@ index ea3ff55..f2e8a67 100644
  #include <unistd.h>
  
 diff --git a/src/network/networkd-network.c b/src/network/networkd-network.c
-index 97f5551..acdd3e1 100644
+index 3254641..f0ada41 100644
 --- a/src/network/networkd-network.c
 +++ b/src/network/networkd-network.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <net/if.h>
  #include <netinet/in.h>
  #include <linux/netdevice.h>
+diff --git a/src/network/networkd-route.c b/src/network/networkd-route.c
+index 10f30c1..9d00bc7 100644
+--- a/src/network/networkd-route.c
++++ b/src/network/networkd-route.c
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <linux/icmpv6.h>
+-#include <linux/ipv6_route.h>
++#include <netinet/in.h>
+ 
+ #include "alloc-util.h"
+ #include "netlink-util.h"
+@@ -22,6 +22,10 @@
+ 
+ #define ROUTES_DEFAULT_MAX_PER_FAMILY 4096U
+ 
++#ifndef IP6_RT_PRIO_USER
++#define IP6_RT_PRIO_USER	1024
++#endif
++
+ static uint32_t link_get_vrf_table(const Link *link) {
+         return link->network->vrf ? VRF(link->network->vrf)->table : RT_TABLE_MAIN;
+ }
 diff --git a/src/network/test-network-tables.c b/src/network/test-network-tables.c
-index 25b9396..530e492 100644
+index 475cac7..9bae6ed 100644
 --- a/src/network/test-network-tables.c
 +++ b/src/network/test-network-tables.c
-@@ -1,3 +1,4 @@
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
 +#include <netinet/if_ether.h>
  #include "bond.h"
  #include "dhcp6-internal.h"
  #include "dhcp6-protocol.h"
 diff --git a/src/nspawn/nspawn-cgroup.c b/src/nspawn/nspawn-cgroup.c
-index a16ee5c..205e987 100644
+index cb01b25..e920512 100644
 --- a/src/nspawn/nspawn-cgroup.c
 +++ b/src/nspawn/nspawn-cgroup.c
 @@ -124,7 +124,7 @@ int sync_cgroup(pid_t pid, CGroupUnified unified_requested, uid_t uid_shift) {
@@ -1903,7 +1965,7 @@ index a16ee5c..205e987 100644
                  log_error_errno(r, "Failed to move process: %m");
                  goto finish;
 diff --git a/src/nspawn/nspawn-settings.c b/src/nspawn/nspawn-settings.c
-index d341fa2..91646bc 100644
+index 92bb512..eeca905 100644
 --- a/src/nspawn/nspawn-settings.c
 +++ b/src/nspawn/nspawn-settings.c
 @@ -16,6 +16,7 @@
@@ -1915,10 +1977,10 @@ index d341fa2..91646bc 100644
  Settings *settings_new(void) {
          Settings *s;
 diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
-index 8a1f74b..6fd4f5d 100644
+index 0842731..11b0c20 100644
 --- a/src/nspawn/nspawn.c
 +++ b/src/nspawn/nspawn.c
-@@ -2494,7 +2494,7 @@ static int reset_audit_loginuid(void) {
+@@ -2667,7 +2667,7 @@ static int reset_audit_loginuid(void) {
          if (streq(p, "4294967295"))
                  return 0;
  
@@ -1927,7 +1989,7 @@ index 8a1f74b..6fd4f5d 100644
          if (r < 0) {
                  log_error_errno(r,
                                  "Failed to reset audit login UID. This probably means that your kernel is too\n"
-@@ -3727,13 +3727,13 @@ static int setup_uid_map(pid_t pid) {
+@@ -3920,13 +3920,13 @@ static int setup_uid_map(pid_t pid) {
  
          xsprintf(uid_map, "/proc/" PID_FMT "/uid_map", pid);
          xsprintf(line, UID_FMT " " UID_FMT " " UID_FMT "\n", 0, arg_uid_shift, arg_uid_range);
@@ -1943,7 +2005,7 @@ index 8a1f74b..6fd4f5d 100644
          if (r < 0)
                  return log_error_errno(r, "Failed to write GID map: %m");
  
-@@ -4891,7 +4891,7 @@ static int cant_be_in_netns(void) {
+@@ -5084,7 +5084,7 @@ static int cant_be_in_netns(void) {
          if (fd < 0)
                  return log_error_errno(errno, "Failed to allocate udev control socket: %m");
  
@@ -1953,7 +2015,7 @@ index 8a1f74b..6fd4f5d 100644
                  if (errno == ENOENT || ERRNO_IS_DISCONNECT(errno))
                          return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP),
 diff --git a/src/nss-mymachines/nss-mymachines.c b/src/nss-mymachines/nss-mymachines.c
-index 5db0dce..681f867 100644
+index 53f0492..c71941f 100644
 --- a/src/nss-mymachines/nss-mymachines.c
 +++ b/src/nss-mymachines/nss-mymachines.c
 @@ -19,6 +19,7 @@
@@ -1965,7 +2027,7 @@ index 5db0dce..681f867 100644
  NSS_GETHOSTBYNAME_PROTOTYPES(mymachines);
  NSS_GETPW_PROTOTYPES(mymachines);
 diff --git a/src/partition/makefs.c b/src/partition/makefs.c
-index 33ede22..fcc52ea 100644
+index fd924d2..b97580f 100644
 --- a/src/partition/makefs.c
 +++ b/src/partition/makefs.c
 @@ -6,6 +6,7 @@
@@ -1977,7 +2039,7 @@ index 33ede22..fcc52ea 100644
  #include "alloc-util.h"
  #include "blockdev-util.h"
 diff --git a/src/portable/portable.c b/src/portable/portable.c
-index 3a1367e..f29336c 100644
+index ed7eac0..7898697 100644
 --- a/src/portable/portable.c
 +++ b/src/portable/portable.c
 @@ -31,6 +31,7 @@
@@ -1989,19 +2051,19 @@ index 3a1367e..f29336c 100644
  static const char profile_dirs[] = CONF_PATHS_NULSTR("systemd/portable/profile");
  
 diff --git a/src/resolve/resolvectl.c b/src/resolve/resolvectl.c
-index 8378ff5..6adeafa 100644
+index b479335..212d0be 100644
 --- a/src/resolve/resolvectl.c
 +++ b/src/resolve/resolvectl.c
-@@ -36,6 +36,7 @@
- #include "strv.h"
+@@ -37,6 +37,7 @@
  #include "terminal-util.h"
+ #include "utf8.h"
  #include "verbs.h"
 +#include "missing_stdlib.h"
  
  static int arg_family = AF_UNSPEC;
  static int arg_ifindex = 0;
 diff --git a/src/shared/base-filesystem.c b/src/shared/base-filesystem.c
-index 657407d..fbd5782 100644
+index 1d05409..1ed06c3 100644
 --- a/src/shared/base-filesystem.c
 +++ b/src/shared/base-filesystem.c
 @@ -54,7 +54,7 @@ int base_filesystem_create(const char *root, uid_t uid, gid_t gid) {
@@ -2032,19 +2094,19 @@ index 657407d..fbd5782 100644
                                  }
  
 diff --git a/src/shared/bus-get-properties.c b/src/shared/bus-get-properties.c
-index 8ad4694..da5082c 100644
+index 32f68d5..bda1e1e 100644
 --- a/src/shared/bus-get-properties.c
 +++ b/src/shared/bus-get-properties.c
-@@ -3,6 +3,7 @@
- #include "bus-get-properties.h"
+@@ -4,6 +4,7 @@
  #include "rlimit-util.h"
+ #include "stdio-util.h"
  #include "string-util.h"
 +#include "missing_stdlib.h"
  
  int bus_property_get_bool(
                  sd_bus *bus,
 diff --git a/src/shared/bus-unit-procs.c b/src/shared/bus-unit-procs.c
-index b21fe39..af26400 100644
+index 3e97be9..2b8ca83 100644
 --- a/src/shared/bus-unit-procs.c
 +++ b/src/shared/bus-unit-procs.c
 @@ -10,6 +10,7 @@
@@ -2056,10 +2118,10 @@ index b21fe39..af26400 100644
  struct CGroupInfo {
          char *cgroup_path;
 diff --git a/src/shared/bus-unit-util.c b/src/shared/bus-unit-util.c
-index f2652ed..eb019fc 100644
+index 2bab229..62afdc7 100644
 --- a/src/shared/bus-unit-util.c
 +++ b/src/shared/bus-unit-util.c
-@@ -39,6 +39,7 @@
+@@ -44,6 +44,7 @@
  #include "unit-def.h"
  #include "user-util.h"
  #include "utf8.h"
@@ -2068,19 +2130,19 @@ index f2652ed..eb019fc 100644
  int bus_parse_unit_info(sd_bus_message *message, UnitInfo *u) {
          assert(message);
 diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
-index 77c1c62..5cd31f3 100644
+index fbda218..aae0be7 100644
 --- a/src/shared/bus-util.c
 +++ b/src/shared/bus-util.c
-@@ -22,6 +22,7 @@
+@@ -21,6 +21,7 @@
+ #include "path-util.h"
  #include "socket-util.h"
  #include "stdio-util.h"
- /* #include "string-util.h" */
 +#include "missing_stdlib.h"
  
  static int name_owner_change_callback(sd_bus_message *m, void *userdata, sd_bus_error *ret_error) {
          sd_event *e = userdata;
 diff --git a/src/shared/cgroup-setup.c b/src/shared/cgroup-setup.c
-index e8398cb..ba682ec 100644
+index f197f71..077f893 100644
 --- a/src/shared/cgroup-setup.c
 +++ b/src/shared/cgroup-setup.c
 @@ -267,7 +267,7 @@ int cg_attach(const char *controller, const char *path, pid_t pid) {
@@ -2092,7 +2154,7 @@ index e8398cb..ba682ec 100644
          if (r < 0)
                  return r;
  
-@@ -817,7 +817,7 @@ int cg_enable_everywhere(
+@@ -799,7 +799,7 @@ int cg_enable_everywhere(
                                          return log_debug_errno(errno, "Failed to open cgroup.subtree_control file of %s: %m", p);
                          }
  
@@ -2102,7 +2164,7 @@ index e8398cb..ba682ec 100644
                                  log_debug_errno(r, "Failed to %s controller %s for %s (%s): %m",
                                                  FLAGS_SET(mask, bit) ? "enable" : "disable", n, p, fs);
 diff --git a/src/shared/cpu-set-util.h b/src/shared/cpu-set-util.h
-index a60d4ec..3d72a69 100644
+index 3c63a58..4c2d434 100644
 --- a/src/shared/cpu-set-util.h
 +++ b/src/shared/cpu-set-util.h
 @@ -6,6 +6,8 @@
@@ -2115,10 +2177,10 @@ index a60d4ec..3d72a69 100644
  typedef struct CPUSet {
          cpu_set_t *set;
 diff --git a/src/shared/dns-domain.c b/src/shared/dns-domain.c
-index b812665..8e68f7f 100644
+index 8bd1e3a..f8d6eab 100644
 --- a/src/shared/dns-domain.c
 +++ b/src/shared/dns-domain.c
-@@ -23,6 +23,7 @@
+@@ -17,6 +17,7 @@
  #include "string-util.h"
  #include "strv.h"
  #include "utf8.h"
@@ -2127,18 +2189,18 @@ index b812665..8e68f7f 100644
  int dns_label_unescape(const char **name, char *dest, size_t sz, DNSLabelFlags flags) {
          const char *n;
 diff --git a/src/shared/ethtool-util.c b/src/shared/ethtool-util.c
-index 14e91e3..714da7d 100644
+index e6fab26..41dd3d7 100644
 --- a/src/shared/ethtool-util.c
 +++ b/src/shared/ethtool-util.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <net/if.h>
  #include <sys/ioctl.h>
  #include <linux/ethtool.h>
 diff --git a/src/shared/ethtool-util.h b/src/shared/ethtool-util.h
-index 4730241..468a68f 100644
+index f94b3e1..08a7e4f 100644
 --- a/src/shared/ethtool-util.h
 +++ b/src/shared/ethtool-util.h
 @@ -3,6 +3,7 @@
@@ -2150,19 +2212,18 @@ index 4730241..468a68f 100644
  
  #include "conf-parser.h"
 diff --git a/src/shared/format-table.c b/src/shared/format-table.c
-index 87ef5c3..834b47b 100644
+index a13a198..5de3e68 100644
 --- a/src/shared/format-table.c
 +++ b/src/shared/format-table.c
-@@ -1246,31 +1246,33 @@ static int cell_data_compare(TableData *a, size_t index_a, TableData *b, size_t
+@@ -1243,30 +1243,32 @@ static int cell_data_compare(TableData *a, size_t index_a, TableData *b, size_t
          return CMP(index_a, index_b);
  }
  
 -static int table_data_compare(const size_t *a, const size_t *b, Table *t) {
 +static Table *user_table;
 +static int table_data_compare(const void *x, const void *y) {
-+        const size_t *a = x, *b=y;
-         size_t i;
          int r;
++        const size_t *a = x, *b=y;
  
 -        assert(t);
 -        assert(t->sort_map);
@@ -2181,8 +2242,8 @@ index 87ef5c3..834b47b 100644
                  return 1;
  
          /* Order other lines by the sorting map */
--        for (i = 0; i < t->n_sort_map; i++) {
-+        for (i = 0; i < user_table->n_sort_map; i++) {
+-        for (size_t i = 0; i < t->n_sort_map; i++) {
++        for (size_t i = 0; i < user_table->n_sort_map; i++) {
                  TableData *d, *dd;
  
 -                d = t->data[*a + t->sort_map[i]];
@@ -2197,8 +2258,8 @@ index 87ef5c3..834b47b 100644
          }
  
          /* Order identical lines by the order there were originally added in */
-@@ -1798,7 +1800,12 @@ int table_print(Table *t, FILE *f) {
-                 for (i = 0; i < n_rows; i++)
+@@ -1844,7 +1846,12 @@ int table_print(Table *t, FILE *f) {
+                 for (size_t i = 0; i < n_rows; i++)
                          sorted[i] = i * t->n_columns;
  
 -                typesafe_qsort_r(sorted, n_rows, table_data_compare, t);
@@ -2211,8 +2272,8 @@ index 87ef5c3..834b47b 100644
          }
  
          if (t->display_map)
-@@ -2375,7 +2382,12 @@ int table_to_json(Table *t, JsonVariant **ret) {
-                 for (i = 0; i < n_rows; i++)
+@@ -2440,7 +2447,12 @@ int table_to_json(Table *t, JsonVariant **ret) {
+                 for (size_t i = 0; i < n_rows; i++)
                          sorted[i] = i * t->n_columns;
  
 -                typesafe_qsort_r(sorted, n_rows, table_data_compare, t);
@@ -2225,129 +2286,8 @@ index 87ef5c3..834b47b 100644
          }
  
          if (t->display_map)
-diff --git a/src/shared/group-record-nss.c b/src/shared/group-record-nss.c
-index b018a46..5a85e0c 100644
---- a/src/shared/group-record-nss.c
-+++ b/src/shared/group-record-nss.c
-@@ -19,8 +19,10 @@ int nss_group_to_group_record(
-         if (isempty(grp->gr_name))
-                 return -EINVAL;
- 
-+#if ENABLE_GSHADOW
-         if (sgrp && !streq_ptr(sgrp->sg_namp, grp->gr_name))
-                 return -EINVAL;
-+#endif
- 
-         g = group_record_new();
-         if (!g)
-@@ -36,6 +38,7 @@ int nss_group_to_group_record(
- 
-         g->gid = grp->gr_gid;
- 
-+#if ENABLE_GSHADOW
-         if (sgrp) {
-                 if (looks_like_hashed_password(sgrp->sg_passwd)) {
-                         g->hashed_password = strv_new(sgrp->sg_passwd);
-@@ -51,6 +54,7 @@ int nss_group_to_group_record(
-                 if (!g->administrators)
-                         return -ENOMEM;
-         }
-+#endif
- 
-         r = json_build(&g->json, JSON_BUILD_OBJECT(
-                                        JSON_BUILD_PAIR("groupName", JSON_BUILD_STRING(g->group_name)),
-@@ -76,6 +80,7 @@ int nss_sgrp_for_group(const struct group *grp, struct sgrp *ret_sgrp, char **re
-         assert(ret_sgrp);
-         assert(ret_buffer);
- 
-+#if ENABLE_GSHADOW
-         for (;;) {
-                 _cleanup_free_ char *buf = NULL;
-                 struct sgrp sgrp, *result;
-@@ -104,6 +109,9 @@ int nss_sgrp_for_group(const struct group *grp, struct sgrp *ret_sgrp, char **re
-                 buflen *= 2;
-                 buf = mfree(buf);
-         }
-+#else
-+        return -ESRCH;
-+#endif
- }
- 
- int nss_group_record_by_name(
-@@ -115,7 +123,9 @@ int nss_group_record_by_name(
-         struct group grp, *result;
-         bool incomplete = false;
-         size_t buflen = 4096;
-+#if ENABLE_GSHADOW
-         struct sgrp sgrp, *sresult = NULL;
-+#endif
-         int r;
- 
-         assert(name);
-@@ -145,6 +155,7 @@ int nss_group_record_by_name(
-                 buf = mfree(buf);
-         }
- 
-+#if ENABLE_GSHADOW
-         if (with_shadow) {
-                 r = nss_sgrp_for_group(result, &sgrp, &sbuf);
-                 if (r < 0) {
-@@ -156,6 +167,9 @@ int nss_group_record_by_name(
-                 incomplete = true;
- 
-         r = nss_group_to_group_record(result, sresult, ret);
-+#else
-+        r = nss_group_to_group_record(result, NULL, ret);
-+#endif
-         if (r < 0)
-                 return r;
- 
-@@ -172,7 +186,9 @@ int nss_group_record_by_gid(
-         struct group grp, *result;
-         bool incomplete = false;
-         size_t buflen = 4096;
-+#if ENABLE_GSHADOW
-         struct sgrp sgrp, *sresult = NULL;
-+#endif
-         int r;
- 
-         assert(ret);
-@@ -200,6 +216,7 @@ int nss_group_record_by_gid(
-                 buf = mfree(buf);
-         }
- 
-+#if ENABLE_GSHADOW
-         if (with_shadow) {
-                 r = nss_sgrp_for_group(result, &sgrp, &sbuf);
-                 if (r < 0) {
-@@ -211,6 +228,9 @@ int nss_group_record_by_gid(
-                 incomplete = true;
- 
-         r = nss_group_to_group_record(result, sresult, ret);
-+#else
-+        r = nss_group_to_group_record(result, NULL, ret);
-+#endif
-         if (r < 0)
-                 return r;
- 
-diff --git a/src/shared/group-record-nss.h b/src/shared/group-record-nss.h
-index 077c22d..2372b0c 100644
---- a/src/shared/group-record-nss.h
-+++ b/src/shared/group-record-nss.h
-@@ -2,7 +2,11 @@
- #pragma once
- 
- #include <grp.h>
-+#if ENABLE_GSHADOW
- #include <gshadow.h>
-+#else
-+struct sgrp;
-+#endif
- 
- #include "group-record.h"
- 
 diff --git a/src/shared/journal-importer.c b/src/shared/journal-importer.c
-index 7c4fc70..3fbaf5a 100644
+index e95b638..a1bf15b 100644
 --- a/src/shared/journal-importer.c
 +++ b/src/shared/journal-importer.c
 @@ -14,6 +14,7 @@
@@ -2359,7 +2299,7 @@ index 7c4fc70..3fbaf5a 100644
  enum {
          IMPORTER_STATE_LINE = 0,    /* waiting to read, or reading line */
 diff --git a/src/shared/logs-show.c b/src/shared/logs-show.c
-index 899e894..628854a 100644
+index bf574d3..a09c79d 100644
 --- a/src/shared/logs-show.c
 +++ b/src/shared/logs-show.c
 @@ -41,6 +41,7 @@
@@ -2371,10 +2311,10 @@ index 899e894..628854a 100644
  /* up to three lines (each up to 100 characters) or 300 characters, whichever is less */
  #define PRINT_LINE_THRESHOLD 3
 diff --git a/src/shared/pager.c b/src/shared/pager.c
-index e03be6d..50e3d1f 100644
+index f689d9f..aae3957 100644
 --- a/src/shared/pager.c
 +++ b/src/shared/pager.c
-@@ -23,6 +23,7 @@
+@@ -26,6 +26,7 @@
  #include "strv.h"
  #include "terminal-util.h"
  #include "util.h"
@@ -2383,7 +2323,7 @@ index e03be6d..50e3d1f 100644
  static pid_t pager_pid = 0;
  
 diff --git a/src/shared/sysctl-util.c b/src/shared/sysctl-util.c
-index 8543dbd..7616259 100644
+index 670c331..7c7c3dc 100644
 --- a/src/shared/sysctl-util.c
 +++ b/src/shared/sysctl-util.c
 @@ -93,7 +93,7 @@ int sysctl_write_ip_property(int af, const char *ifname, const char *property, c
@@ -2396,7 +2336,7 @@ index 8543dbd..7616259 100644
  
  int sysctl_read(const char *property, char **content) {
 diff --git a/src/shared/uid-range.c b/src/shared/uid-range.c
-index 7cb7d8a..8e7d7f9 100644
+index 5d5bf7f..f1002ff 100644
 --- a/src/shared/uid-range.c
 +++ b/src/shared/uid-range.c
 @@ -9,6 +9,7 @@
@@ -2407,11 +2347,133 @@ index 7cb7d8a..8e7d7f9 100644
  
  static bool uid_range_intersect(UidRange *range, uid_t start, uid_t nr) {
          assert(range);
+diff --git a/src/shared/user-record-nss.c b/src/shared/user-record-nss.c
+index 88b8fc2..a819d41 100644
+--- a/src/shared/user-record-nss.c
++++ b/src/shared/user-record-nss.c
+@@ -331,8 +331,10 @@ int nss_group_to_group_record(
+         if (isempty(grp->gr_name))
+                 return -EINVAL;
+ 
++#if ENABLE_GSHADOW
+         if (sgrp && !streq_ptr(sgrp->sg_namp, grp->gr_name))
+                 return -EINVAL;
++#endif
+ 
+         g = group_record_new();
+         if (!g)
+@@ -348,6 +350,7 @@ int nss_group_to_group_record(
+ 
+         g->gid = grp->gr_gid;
+ 
++#if ENABLE_GSHADOW
+         if (sgrp) {
+                 if (looks_like_hashed_password(utf8_only(sgrp->sg_passwd))) {
+                         g->hashed_password = strv_new(sgrp->sg_passwd);
+@@ -363,6 +366,7 @@ int nss_group_to_group_record(
+                 if (r < 0)
+                         return r;
+         }
++#endif
+ 
+         r = json_build(&g->json, JSON_BUILD_OBJECT(
+                                        JSON_BUILD_PAIR("groupName", JSON_BUILD_STRING(g->group_name)),
+@@ -388,6 +392,7 @@ int nss_sgrp_for_group(const struct group *grp, struct sgrp *ret_sgrp, char **re
+         assert(ret_sgrp);
+         assert(ret_buffer);
+ 
++#if ENABLE_GSHADOW
+         for (;;) {
+                 _cleanup_free_ char *buf = NULL;
+                 struct sgrp sgrp, *result;
+@@ -416,6 +421,9 @@ int nss_sgrp_for_group(const struct group *grp, struct sgrp *ret_sgrp, char **re
+                 buflen *= 2;
+                 buf = mfree(buf);
+         }
++#else
++        return -ESRCH;
++#endif
+ }
+ 
+ int nss_group_record_by_name(
+@@ -427,7 +435,9 @@ int nss_group_record_by_name(
+         struct group grp, *result;
+         bool incomplete = false;
+         size_t buflen = 4096;
++#if ENABLE_GSHADOW
+         struct sgrp sgrp, *sresult = NULL;
++#endif
+         int r;
+ 
+         assert(name);
+@@ -457,6 +467,7 @@ int nss_group_record_by_name(
+                 buf = mfree(buf);
+         }
+ 
++#if ENABLE_GSHADOW
+         if (with_shadow) {
+                 r = nss_sgrp_for_group(result, &sgrp, &sbuf);
+                 if (r < 0) {
+@@ -468,6 +479,9 @@ int nss_group_record_by_name(
+                 incomplete = true;
+ 
+         r = nss_group_to_group_record(result, sresult, ret);
++#else
++        r = nss_group_to_group_record(result, NULL, ret);
++#endif
+         if (r < 0)
+                 return r;
+ 
+@@ -484,7 +498,9 @@ int nss_group_record_by_gid(
+         struct group grp, *result;
+         bool incomplete = false;
+         size_t buflen = 4096;
++#if ENABLE_GSHADOW
+         struct sgrp sgrp, *sresult = NULL;
++#endif
+         int r;
+ 
+         assert(ret);
+@@ -512,6 +528,7 @@ int nss_group_record_by_gid(
+                 buf = mfree(buf);
+         }
+ 
++#if ENABLE_GSHADOW
+         if (with_shadow) {
+                 r = nss_sgrp_for_group(result, &sgrp, &sbuf);
+                 if (r < 0) {
+@@ -523,6 +540,9 @@ int nss_group_record_by_gid(
+                 incomplete = true;
+ 
+         r = nss_group_to_group_record(result, sresult, ret);
++#else
++        r = nss_group_to_group_record(result, NULL, ret);
++#endif
+         if (r < 0)
+                 return r;
+ 
+diff --git a/src/shared/user-record-nss.h b/src/shared/user-record-nss.h
+index 22ab04d..d96e9ae 100644
+--- a/src/shared/user-record-nss.h
++++ b/src/shared/user-record-nss.h
+@@ -2,7 +2,11 @@
+ #pragma once
+ 
+ #include <grp.h>
+-#include <gshadow.h>
++#if ENABLE_GSHADOW
++ #include <gshadow.h>
++#else
++struct sgrp;
++#endif
+ #include <pwd.h>
+ #include <shadow.h>
+ 
 diff --git a/src/shared/userdb.c b/src/shared/userdb.c
-index 9412086..db1f053 100644
+index 2d48028..0d19764 100644
 --- a/src/shared/userdb.c
 +++ b/src/shared/userdb.c
-@@ -930,13 +930,16 @@ int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
+@@ -929,13 +929,16 @@ int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
                  if (gr) {
                          _cleanup_free_ char *buffer = NULL;
                          bool incomplete = false;
@@ -2428,7 +2490,7 @@ index 9412086..db1f053 100644
                          r = nss_sgrp_for_group(gr, &sgrp, &buffer);
                          if (r < 0) {
                                  log_debug_errno(r, "Failed to acquire shadow entry for group %s, ignoring: %m", gr->gr_name);
-@@ -944,6 +947,9 @@ int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
+@@ -943,6 +946,9 @@ int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
                          }
  
                          r = nss_group_to_group_record(gr, r >= 0 ? &sgrp : NULL, ret);
@@ -2439,10 +2501,10 @@ index 9412086..db1f053 100644
                                  return r;
  
 diff --git a/src/sleep/sleep.c b/src/sleep/sleep.c
-index 600e9c2..82ec0b5 100644
+index 39ab554..d0e5666 100644
 --- a/src/sleep/sleep.c
 +++ b/src/sleep/sleep.c
-@@ -49,7 +49,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
+@@ -48,7 +48,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
          assert(hibernate_location->swap);
  
          xsprintf(resume_str, "%u:%u", major(hibernate_location->devno), minor(hibernate_location->devno));
@@ -2451,7 +2513,7 @@ index 600e9c2..82ec0b5 100644
          if (r < 0)
                  return log_debug_errno(r, "Failed to write partition device to /sys/power/resume for '%s': '%s': %m",
                                         hibernate_location->swap->device, resume_str);
-@@ -76,7 +76,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
+@@ -75,7 +75,7 @@ static int write_hibernate_location_info(const HibernateLocation *hibernate_loca
          }
  
          xsprintf(offset_str, "%" PRIu64, hibernate_location->offset);
@@ -2460,7 +2522,7 @@ index 600e9c2..82ec0b5 100644
          if (r < 0)
                  return log_debug_errno(r, "Failed to write swap file offset to /sys/power/resume_offset for '%s': '%s': %m",
                                         hibernate_location->swap->device, offset_str);
-@@ -93,7 +93,7 @@ static int write_mode(char **modes) {
+@@ -92,7 +92,7 @@ static int write_mode(char **modes) {
          STRV_FOREACH(mode, modes) {
                  int k;
  
@@ -2469,7 +2531,7 @@ index 600e9c2..82ec0b5 100644
                  if (k >= 0)
                          return 0;
  
-@@ -115,7 +115,7 @@ static int write_state(FILE **f, char **states) {
+@@ -114,7 +114,7 @@ static int write_state(FILE **f, char **states) {
          STRV_FOREACH(state, states) {
                  int k;
  
@@ -2479,7 +2541,7 @@ index 600e9c2..82ec0b5 100644
                          return 0;
                  log_debug_errno(k, "Failed to write '%s' to /sys/power/state: %m", *state);
 diff --git a/src/socket-proxy/socket-proxyd.c b/src/socket-proxy/socket-proxyd.c
-index bf47436..3af492d 100644
+index 4391d9f..9b73cd0 100644
 --- a/src/socket-proxy/socket-proxyd.c
 +++ b/src/socket-proxy/socket-proxyd.c
 @@ -26,6 +26,7 @@
@@ -2491,7 +2553,7 @@ index bf47436..3af492d 100644
  #define BUFFER_SIZE (256 * 1024)
  
 diff --git a/src/test/test-glob-util.c b/src/test/test-glob-util.c
-index 667d153..76a8444 100644
+index df6444c..79a6920 100644
 --- a/src/test/test-glob-util.c
 +++ b/src/test/test-glob-util.c
 @@ -12,6 +12,12 @@
@@ -2542,7 +2604,7 @@ index 667d153..76a8444 100644
  
          (void) rm_rf(template, REMOVE_ROOT|REMOVE_PHYSICAL);
 diff --git a/src/test/test-hexdecoct.c b/src/test/test-hexdecoct.c
-index 5221742..70708de 100644
+index f0f9679..128fc16 100644
 --- a/src/test/test-hexdecoct.c
 +++ b/src/test/test-hexdecoct.c
 @@ -6,6 +6,7 @@
@@ -2554,10 +2616,10 @@ index 5221742..70708de 100644
  static void test_hexchar(void) {
          assert_se(hexchar(0xa) == 'a');
 diff --git a/src/test/test-json.c b/src/test/test-json.c
-index 032619a..291f8a1 100644
+index 1d4b119..572c8cf 100644
 --- a/src/test/test-json.c
 +++ b/src/test/test-json.c
-@@ -12,6 +12,10 @@
+@@ -13,6 +13,10 @@
  #include "tests.h"
  #include "util.h"
  
@@ -2569,11 +2631,11 @@ index 032619a..291f8a1 100644
          unsigned line = 0, column = 0;
          void *state = NULL;
 diff --git a/src/test/test-sizeof.c b/src/test/test-sizeof.c
-index b9d63d6..cb4bf21 100644
+index 3c9dc18..c269ea6 100644
 --- a/src/test/test-sizeof.c
 +++ b/src/test/test-sizeof.c
 @@ -1,6 +1,5 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 -#include <sched.h>
  #include <stdio.h>
@@ -2587,7 +2649,7 @@ index b9d63d6..cb4bf21 100644
  
  /* Print information about various types. Useful when diagnosing
   * gcc diagnostics on an unfamiliar architecture. */
-@@ -44,8 +44,10 @@ int main(void) {
+@@ -55,8 +55,10 @@ int main(void) {
          info(unsigned);
          info(long unsigned);
          info(long long unsigned);
@@ -2598,7 +2660,7 @@ index b9d63d6..cb4bf21 100644
  
          info(float);
          info(double);
-@@ -63,7 +65,9 @@ int main(void) {
+@@ -74,7 +76,9 @@ int main(void) {
          info(ssize_t);
          info(time_t);
          info(usec_t);
@@ -2609,10 +2671,10 @@ index b9d63d6..cb4bf21 100644
          info(uid_t);
          info(gid_t);
 diff --git a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
-index 2db3773..865f736 100644
+index 9906c70..5eb63b1 100644
 --- a/src/tmpfiles/tmpfiles.c
 +++ b/src/tmpfiles/tmpfiles.c
-@@ -59,6 +59,12 @@
+@@ -63,6 +63,12 @@
  #include "umask-util.h"
  #include "user-util.h"
  
@@ -2625,7 +2687,7 @@ index 2db3773..865f736 100644
  /* This reads all files listed in /etc/tmpfiles.d/?*.conf and creates
   * them in the file system. This is intended to be used to create
   * properly owned directories beneath /tmp, /var/tmp, /run, which are
-@@ -1870,7 +1876,9 @@ finish:
+@@ -1936,7 +1942,9 @@ finish:
  
  static int glob_item(Item *i, action_t action) {
          _cleanup_globfree_ glob_t g = {
@@ -2635,7 +2697,7 @@ index 2db3773..865f736 100644
          };
          int r = 0, k;
          char **fn;
-@@ -1890,7 +1898,9 @@ static int glob_item(Item *i, action_t action) {
+@@ -1956,7 +1964,9 @@ static int glob_item(Item *i, action_t action) {
  
  static int glob_item_recursively(Item *i, fdaction_t action) {
          _cleanup_globfree_ glob_t g = {
@@ -2646,29 +2708,29 @@ index 2db3773..865f736 100644
          int r = 0, k;
          char **fn;
 diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
-index 03fd429..2662dc4 100644
+index d12fd0e..636806d 100644
 --- a/src/udev/net/link-config.c
 +++ b/src/udev/net/link-config.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include <linux/netdevice.h>
  #include <netinet/ether.h>
  #include <unistd.h>
 diff --git a/src/udev/udev-builtin-net_setup_link.c b/src/udev/udev-builtin-net_setup_link.c
-index ee3ca9f..9aa4e82 100644
+index cb12b94..5a28c8b 100644
 --- a/src/udev/udev-builtin-net_setup_link.c
 +++ b/src/udev/udev-builtin-net_setup_link.c
 @@ -1,5 +1,6 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
  #include "device-util.h"
  #include "alloc-util.h"
  #include "link-config.h"
 diff --git a/src/udev/udev-builtin-path_id.c b/src/udev/udev-builtin-path_id.c
-index 6c020ac..10723ec 100644
+index 0da59e2..66da374 100644
 --- a/src/udev/udev-builtin-path_id.c
 +++ b/src/udev/udev-builtin-path_id.c
 @@ -22,6 +22,7 @@
@@ -2680,7 +2742,7 @@ index 6c020ac..10723ec 100644
  _printf_(2,3)
  static void path_prepend(char **path, const char *fmt, ...) {
 diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
-index f276964..ad1b44a 100644
+index 5159d19..0ed5b65 100644
 --- a/src/udev/udev-event.c
 +++ b/src/udev/udev-event.c
 @@ -34,6 +34,7 @@
@@ -2692,7 +2754,7 @@ index f276964..ad1b44a 100644
  typedef struct Spawn {
          sd_device *device;
 diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
-index 9d6dc42..9018398 100644
+index ef6a0c1..422fc19 100644
 --- a/src/udev/udev-rules.c
 +++ b/src/udev/udev-rules.c
 @@ -30,6 +30,7 @@
@@ -2704,7 +2766,7 @@ index 9d6dc42..9018398 100644
  #define RULES_DIRS (const char* const*) CONF_PATHS_STRV("udev/rules.d")
  
 diff --git a/src/udev/udevadm-trigger.c b/src/udev/udevadm-trigger.c
-index 39113d2..6c012d7 100644
+index 5c74184..65f5283 100644
 --- a/src/udev/udevadm-trigger.c
 +++ b/src/udev/udevadm-trigger.c
 @@ -43,7 +43,7 @@ static int exec_list(sd_device_enumerator *e, const char *action, Set **settle_s
@@ -2714,13 +2776,13 @@ index 39113d2..6c012d7 100644
 -                r = write_string_file(filename, action, WRITE_STRING_FILE_DISABLE_BUFFER);
 +                r = write_string_file(filename, action, 0);
                  if (r < 0) {
-                         bool ignore = IN_SET(r, -ENOENT, -EACCES, -ENODEV, -EROFS);
+                         bool ignore = IN_SET(r, -ENOENT, -ENODEV);
  
 diff --git a/src/udev/udevd.c b/src/udev/udevd.c
-index 0551d27..2e5ae8a 100644
+index d24b8d4..d123a43 100644
 --- a/src/udev/udevd.c
 +++ b/src/udev/udevd.c
-@@ -1153,7 +1153,7 @@ static int synthesize_change_one(sd_device *dev, const char *syspath) {
+@@ -1192,7 +1192,7 @@ static int synthesize_change_one(sd_device *dev, const char *syspath) {
  
          filename = strjoina(syspath, "/uevent");
          log_device_debug(dev, "device is closed, synthesising 'change' on %s", syspath);
@@ -2730,10 +2792,10 @@ index 0551d27..2e5ae8a 100644
                  return log_device_debug_errno(dev, r, "Failed to write 'change' to %s: %m", filename);
          return 0;
 diff --git a/src/userdb/userdbctl.c b/src/userdb/userdbctl.c
-index c6836cd..f1b40f9 100644
+index a0e22df..586f697 100644
 --- a/src/userdb/userdbctl.c
 +++ b/src/userdb/userdbctl.c
-@@ -510,7 +510,8 @@ static int display_services(int argc, char *argv[], void *userdata) {
+@@ -511,7 +511,8 @@ static int display_services(int argc, char *argv[], void *userdata) {
                  if (fd < 0)
                          return log_error_errno(r, "Failed to allocate AF_UNIX/SOCK_STREAM socket: %m");
  
@@ -2744,10 +2806,10 @@ index c6836cd..f1b40f9 100644
                          if (!no)
                                  return log_oom();
 diff --git a/src/userdb/userwork.c b/src/userdb/userwork.c
-index d720209..cafd1a1 100644
+index d525a6e..8fe3061 100644
 --- a/src/userdb/userwork.c
 +++ b/src/userdb/userwork.c
-@@ -337,7 +337,9 @@ static int vl_method_get_group_record(Varlink *link, JsonVariant *parameters, Va
+@@ -336,7 +336,9 @@ static int vl_method_get_group_record(Varlink *link, JsonVariant *parameters, Va
                                  _cleanup_(group_record_unrefp) GroupRecord *z = NULL;
                                  _cleanup_free_ char *sbuf = NULL;
                                  struct group *grp;
@@ -2757,7 +2819,7 @@ index d720209..cafd1a1 100644
  
                                  errno = 0;
                                  grp = getgrent();
-@@ -348,6 +350,7 @@ static int vl_method_get_group_record(Varlink *link, JsonVariant *parameters, Va
+@@ -347,6 +349,7 @@ static int vl_method_get_group_record(Varlink *link, JsonVariant *parameters, Va
                                          break;
                                  }
  
@@ -2765,7 +2827,7 @@ index d720209..cafd1a1 100644
                                  r = nss_sgrp_for_group(grp, &sgrp, &sbuf);
                                  if (r < 0)
                                          log_debug_errno(r, "Failed to acquire shadow entry for group %s, ignoring: %m", grp->gr_name);
-@@ -357,6 +360,7 @@ static int vl_method_get_group_record(Varlink *link, JsonVariant *parameters, Va
+@@ -356,6 +359,7 @@ static int vl_method_get_group_record(Varlink *link, JsonVariant *parameters, Va
                                          endgrent();
                                          return r;
                                  }
@@ -2774,7 +2836,7 @@ index d720209..cafd1a1 100644
                                  if (last) {
                                          r = varlink_notify(link, last);
 diff --git a/src/vconsole/vconsole-setup.c b/src/vconsole/vconsole-setup.c
-index a2fe7e9..38a858e 100644
+index b28e285..115b723 100644
 --- a/src/vconsole/vconsole-setup.c
 +++ b/src/vconsole/vconsole-setup.c
 @@ -116,7 +116,7 @@ static int toggle_utf8_vc(const char *name, int fd, bool utf8) {

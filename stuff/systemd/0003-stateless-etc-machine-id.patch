@@ -1,74 +1,41 @@
-From 839382be7bedf8036a70d74a3cd16e6c0073a46c Mon Sep 17 00:00:00 2001
+From e91812aa33a704b38c4399b05a21d64fedb2e8a3 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 13 Nov 2020 23:09:20 +0300
+Date: Thu, 3 Dec 2020 01:42:43 +0900
 Subject: [PATCH 3/7] stateless /etc/machine-id
+
+find src units -type f -exec sed -i 's|etc/machine-id|run/machine-id|' {} +
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- man/systemd-machine-id-commit.service.xml    | 10 +++++-----
  src/core/machine-id-setup.c                  | 14 +++++++-------
- src/core/main.c                              |  4 ++--
+ src/core/main.c                              |  6 +++---
  src/firstboot/firstboot.c                    |  2 +-
  src/journal/test-journal-interleaving.c      |  4 ++--
  src/journal/test-journal-stream.c            |  4 ++--
  src/journal/test-journal-verify.c            |  4 ++--
  src/journal/test-journal.c                   |  4 ++--
+ src/kernel-install/kernel-install            |  4 ++--
  src/libsystemd/sd-id128/sd-id128.c           |  2 +-
  src/machine-id-setup/machine-id-setup-main.c |  4 ++--
  src/nspawn/nspawn.c                          |  6 +++---
  src/partition/repart.c                       |  4 ++--
- src/shared/dissect-image.c                   | 12 ++++++------
+ src/portable/profile/default/service.conf    |  2 +-
+ src/portable/profile/nonetwork/service.conf  |  2 +-
+ src/portable/profile/strict/service.conf     |  2 +-
+ src/portable/profile/trusted/service.conf    |  2 +-
+ src/shared/dissect-image.c                   | 14 +++++++-------
+ src/shared/dissect-image.h                   |  2 +-
  src/shared/machine-image.c                   |  4 ++--
  src/test/test-fs-util.c                      |  2 +-
- test/test-execute/exec-specifier.service     |  2 +-
- test/test-execute/exec-specifier@.service    |  2 +-
+ src/test/test-systemd-tmpfiles.py            |  2 +-
  units/systemd-machine-id-commit.service      |  2 +-
- 18 files changed, 43 insertions(+), 43 deletions(-)
+ 22 files changed, 46 insertions(+), 46 deletions(-)
 
-diff --git a/man/systemd-machine-id-commit.service.xml b/man/systemd-machine-id-commit.service.xml
-index 781a984..df80c61 100644
---- a/man/systemd-machine-id-commit.service.xml
-+++ b/man/systemd-machine-id-commit.service.xml
-@@ -33,29 +33,29 @@
- 
-     <para><filename>systemd-machine-id-commit.service</filename> is an
-     early boot service responsible for committing transient
--    <filename>/etc/machine-id</filename> files to a writable disk file
-+    <filename>/run/machine-id</filename> files to a writable disk file
-     system. See
-     <citerefentry><refentrytitle>machine-id</refentrytitle><manvolnum>5</manvolnum></citerefentry>
-     for more information about machine IDs.</para>
- 
-     <para>This service is started after
-     <filename>local-fs.target</filename> in case
--    <filename>/etc/machine-id</filename> is a mount point of its own
-+    <filename>/run/machine-id</filename> is a mount point of its own
-     (usually from a memory file system such as
-     <literal>tmpfs</literal>) and /etc is writable. The service will
-     invoke <command>systemd-machine-id-setup --commit</command>, which
-     writes the current transient machine ID to disk and unmount the
--    <filename>/etc/machine-id</filename> file in a race-free manner to
-+    <filename>/run/machine-id</filename> file in a race-free manner to
-     ensure that file is always valid and accessible for other
-     processes. See
-     <citerefentry><refentrytitle>systemd-machine-id-setup</refentrytitle><manvolnum>1</manvolnum></citerefentry>
-     for details.</para>
- 
-     <para>The main use case of this service are systems where
--    <filename>/etc/machine-id</filename> is read-only and initially
-+    <filename>/run/machine-id</filename> is read-only and initially
-     not initialized. In this case, the system manager will generate a
-     transient machine ID file on a memory file system, and mount it
--    over <filename>/etc/machine-id</filename>, during the early boot
-+    over <filename>/run/machine-id</filename>, during the early boot
-     phase. This service is then invoked in a later boot phase, as soon
-     as <filename>/etc</filename> has been remounted writable and the
-     ID may thus be committed to disk to make it permanent.</para>
 diff --git a/src/core/machine-id-setup.c b/src/core/machine-id-setup.c
-index 90f03db..e7ab477 100644
+index 6d15f9c..beeb405 100644
 --- a/src/core/machine-id-setup.c
 +++ b/src/core/machine-id-setup.c
-@@ -91,7 +91,7 @@ int machine_id_setup(const char *root, sd_id128_t machine_id, sd_id128_t *ret) {
+@@ -93,7 +93,7 @@ int machine_id_setup(const char *root, bool force_transient, sd_id128_t machine_
          bool writable;
          int r;
  
@@ -77,7 +44,7 @@ index 90f03db..e7ab477 100644
  
          RUN_WITH_UMASK(0000) {
                  /* We create this 0444, to indicate that this isn't really
-@@ -108,11 +108,11 @@ int machine_id_setup(const char *root, sd_id128_t machine_id, sd_id128_t *ret) {
+@@ -110,11 +110,11 @@ int machine_id_setup(const char *root, bool force_transient, sd_id128_t machine_
                          if (fd < 0) {
                                  if (old_errno == EROFS && errno == ENOENT)
                                          return log_error_errno(errno,
@@ -93,9 +60,9 @@ index 90f03db..e7ab477 100644
                                  else
                                          return log_error_errno(errno, "Cannot open %s: %m", etc_machine_id);
                          }
-@@ -184,11 +184,11 @@ int machine_id_commit(const char *root) {
-         sd_id128_t id;
-         int r;
+@@ -218,11 +218,11 @@ int machine_id_commit(const char *root) {
+         /* Afterwards, sync() the rest too, but we can't check the return value for these. */
+         sync();
  
 -        /* Replaces a tmpfs bind mount of /etc/machine-id by a proper file, atomically. For this, the umount is removed
 +        /* Replaces a tmpfs bind mount of /run/machine-id by a proper file, atomically. For this, the umount is removed
@@ -108,29 +75,34 @@ index 90f03db..e7ab477 100644
          r = path_is_mount_point(etc_machine_id, NULL, 0);
          if (r < 0)
 diff --git a/src/core/main.c b/src/core/main.c
-index 9151295..d708529 100644
+index 334532c..b200ec8 100644
 --- a/src/core/main.c
 +++ b/src/core/main.c
-@@ -2005,12 +2005,12 @@ static void log_execution_mode(bool *ret_first_boot) {
-                         log_info("Running in initial RAM disk.");
-                 } else {
-                         /* Let's check whether we are in first boot, i.e. whether /etc is still unpopulated. We use
--                         * /etc/machine-id as flag file, for this: if it exists we assume /etc is populated, if it
-+                         * /run/machine-id as flag file, for this: if it exists we assume /etc is populated, if it
-                          * doesn't it's unpopulated. This allows container managers and installers to provision a
-                          * couple of files already. If the container manager wants to provision the machine ID itself
-                          * it should pass $container_uuid to PID 1. */
+@@ -2003,16 +2003,16 @@ static void log_execution_mode(bool *ret_first_boot) {
+                         int r;
+                         _cleanup_free_ char *id_text = NULL;
  
--                        *ret_first_boot = access("/etc/machine-id", F_OK) < 0;
-+                        *ret_first_boot = access("/run/machine-id", F_OK) < 0;
-                         if (*ret_first_boot)
-                                 log_info("Running with unpopulated /etc.");
-                 }
+-                        /* Let's check whether we are in first boot.  We use /etc/machine-id as flag file
++                        /* Let's check whether we are in first boot.  We use /run/machine-id as flag file
+                          * for this: If it is missing or contains the value "uninitialized", this is the
+                          * first boot.  In any other case, it is not.  This allows container managers and
+                          * installers to provision a couple of files already.  If the container manager
+                          * wants to provision the machine ID itself it should pass $container_uuid to PID 1. */
+ 
+-                        r = read_one_line_file("/etc/machine-id", &id_text);
++                        r = read_one_line_file("/run/machine-id", &id_text);
+                         if (r < 0 || streq(id_text, "uninitialized")) {
+                                 if (r < 0 && r != -ENOENT)
+-                                        log_warning_errno(r, "Unexpected error while reading /etc/machine-id, ignoring: %m");
++                                        log_warning_errno(r, "Unexpected error while reading /run/machine-id, ignoring: %m");
+ 
+                                 *ret_first_boot = true;
+                                 log_info("Detected first boot.");
 diff --git a/src/firstboot/firstboot.c b/src/firstboot/firstboot.c
-index c9fc8dd..80d5bc4 100644
+index 742b43f..4c404d7 100644
 --- a/src/firstboot/firstboot.c
 +++ b/src/firstboot/firstboot.c
-@@ -538,7 +538,7 @@ static int process_machine_id(void) {
+@@ -537,7 +537,7 @@ static int process_machine_id(void) {
          char id[SD_ID128_STRING_MAX];
          int r;
  
@@ -140,7 +112,7 @@ index c9fc8dd..80d5bc4 100644
                  return 0;
  
 diff --git a/src/journal/test-journal-interleaving.c b/src/journal/test-journal-interleaving.c
-index c0bda68..ae986dd 100644
+index 8c78c3b..5737eac 100644
 --- a/src/journal/test-journal-interleaving.c
 +++ b/src/journal/test-journal-interleaving.c
 @@ -282,8 +282,8 @@ int main(int argc, char *argv[]) {
@@ -155,10 +127,10 @@ index c0bda68..ae986dd 100644
          arg_keep = argc > 1;
  
 diff --git a/src/journal/test-journal-stream.c b/src/journal/test-journal-stream.c
-index 50aab11..559feae 100644
+index a121859..ceaebaa 100644
 --- a/src/journal/test-journal-stream.c
 +++ b/src/journal/test-journal-stream.c
-@@ -176,8 +176,8 @@ static void run_test(void) {
+@@ -175,8 +175,8 @@ static void run_test(void) {
  int main(int argc, char *argv[]) {
  
          /* journal_file_open requires a valid machine id */
@@ -170,7 +142,7 @@ index 50aab11..559feae 100644
          test_setup_logging(LOG_DEBUG);
  
 diff --git a/src/journal/test-journal-verify.c b/src/journal/test-journal-verify.c
-index 2893a7c..4a48090 100644
+index d208e46..aff15d1 100644
 --- a/src/journal/test-journal-verify.c
 +++ b/src/journal/test-journal-verify.c
 @@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
@@ -185,7 +157,7 @@ index 2893a7c..4a48090 100644
          test_setup_logging(LOG_DEBUG);
  
 diff --git a/src/journal/test-journal.c b/src/journal/test-journal.c
-index 5850bb8..3691150 100644
+index f8f08b5..d6269ee 100644
 --- a/src/journal/test-journal.c
 +++ b/src/journal/test-journal.c
 @@ -246,8 +246,8 @@ int main(int argc, char *argv[]) {
@@ -199,8 +171,23 @@ index 5850bb8..3691150 100644
  
          test_non_empty();
          test_empty();
+diff --git a/src/kernel-install/kernel-install b/src/kernel-install/kernel-install
+index e7457e9..8a7d507 100755
+--- a/src/kernel-install/kernel-install
++++ b/src/kernel-install/kernel-install
+@@ -88,8 +88,8 @@ KERNEL_IMAGE="$2"
+ # Reuse directory created without a machine ID present if it exists.
+ if [[ -d /efi/Default ]] || [[ -d /boot/Default ]] || [[ -d /boot/efi/Default ]]; then
+     MACHINE_ID="Default"
+-elif [[ -f /etc/machine-id ]]; then
+-    read MACHINE_ID < /etc/machine-id
++elif [[ -f /run/machine-id ]]; then
++    read MACHINE_ID < /run/machine-id
+ else
+     MACHINE_ID="Default"
+ fi
 diff --git a/src/libsystemd/sd-id128/sd-id128.c b/src/libsystemd/sd-id128/sd-id128.c
-index 9b38ef0..54c4188 100644
+index d5de935..b8d5fa8 100644
 --- a/src/libsystemd/sd-id128/sd-id128.c
 +++ b/src/libsystemd/sd-id128/sd-id128.c
 @@ -88,7 +88,7 @@ _public_ int sd_id128_get_machine(sd_id128_t *ret) {
@@ -213,7 +200,7 @@ index 9b38ef0..54c4188 100644
                          return r;
  
 diff --git a/src/machine-id-setup/machine-id-setup-main.c b/src/machine-id-setup/machine-id-setup-main.c
-index 872b00c..f7a8c78 100644
+index c35da05..abdf049 100644
 --- a/src/machine-id-setup/machine-id-setup-main.c
 +++ b/src/machine-id-setup/machine-id-setup-main.c
 @@ -29,7 +29,7 @@ static int help(void) {
@@ -235,10 +222,10 @@ index 872b00c..f7a8c78 100644
                  if (r < 0)
                          return log_error_errno(r, "Failed to read machine ID back: %m");
 diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
-index 6fd4f5d..c7d1b30 100644
+index 11b0c20..7a51255 100644
 --- a/src/nspawn/nspawn.c
 +++ b/src/nspawn/nspawn.c
-@@ -2551,12 +2551,12 @@ static int setup_machine_id(const char *directory) {
+@@ -2719,12 +2719,12 @@ static int setup_machine_id(const char *directory) {
  
          /* If the UUID in the container is already set, then that's what counts, and we use. If it isn't set, and the
           * caller passed --uuid=, then we'll pass it in the $container_uuid env var to PID 1 of the container. The
@@ -252,13 +239,13 @@ index 6fd4f5d..c7d1b30 100644
 -        etc_machine_id = prefix_roota(directory, "/etc/machine-id");
 +        etc_machine_id = prefix_roota(directory, "/run/machine-id");
  
-         r = id128_read(etc_machine_id, ID128_PLAIN, &id);
+         r = id128_read(etc_machine_id, ID128_PLAIN_OR_UNINIT, &id);
          if (r < 0) {
 diff --git a/src/partition/repart.c b/src/partition/repart.c
-index c94b493..99f877f 100644
+index 6db413e..f14970b 100644
 --- a/src/partition/repart.c
 +++ b/src/partition/repart.c
-@@ -2211,7 +2211,7 @@ static int partition_acquire_uuid(Context *context, Partition *p, sd_id128_t *re
+@@ -2837,7 +2837,7 @@ static int partition_acquire_uuid(Context *context, Partition *p, sd_id128_t *re
           * time. Or in other words:
           *
           * With:
@@ -267,7 +254,7 @@ index c94b493..99f877f 100644
           *
           * If first partition instance of type TYPE_UUID:
           *     PARTITION_UUID := HMAC-SHA256(SEED, TYPE_UUID)
-@@ -2610,7 +2610,7 @@ static int context_read_seed(Context *context, const char *root) {
+@@ -3230,7 +3230,7 @@ static int context_read_seed(Context *context, const char *root) {
          if (!arg_randomize) {
                  _cleanup_close_ int fd = -1;
  
@@ -276,11 +263,61 @@ index c94b493..99f877f 100644
                  if (fd == -ENOENT)
                          log_info("No machine ID set, using randomized partition UUIDs.");
                  else if (fd < 0)
+diff --git a/src/portable/profile/default/service.conf b/src/portable/profile/default/service.conf
+index 792be50..1b576ae 100644
+--- a/src/portable/profile/default/service.conf
++++ b/src/portable/profile/default/service.conf
+@@ -5,7 +5,7 @@ MountAPIVFS=yes
+ TemporaryFileSystem=/run
+ BindReadOnlyPaths=/run/systemd/notify
+ BindReadOnlyPaths=/dev/log /run/systemd/journal/socket /run/systemd/journal/stdout
+-BindReadOnlyPaths=/etc/machine-id
++BindReadOnlyPaths=/run/machine-id
+ BindReadOnlyPaths=/etc/resolv.conf
+ BindReadOnlyPaths=/run/dbus/system_bus_socket
+ DynamicUser=yes
+diff --git a/src/portable/profile/nonetwork/service.conf b/src/portable/profile/nonetwork/service.conf
+index c81cebe..86dae0f 100644
+--- a/src/portable/profile/nonetwork/service.conf
++++ b/src/portable/profile/nonetwork/service.conf
+@@ -5,7 +5,7 @@ MountAPIVFS=yes
+ TemporaryFileSystem=/run
+ BindReadOnlyPaths=/run/systemd/notify
+ BindReadOnlyPaths=/dev/log /run/systemd/journal/socket /run/systemd/journal/stdout
+-BindReadOnlyPaths=/etc/machine-id
++BindReadOnlyPaths=/run/machine-id
+ BindReadOnlyPaths=/run/dbus/system_bus_socket
+ DynamicUser=yes
+ RemoveIPC=yes
+diff --git a/src/portable/profile/strict/service.conf b/src/portable/profile/strict/service.conf
+index d10fb5a..b388ee4 100644
+--- a/src/portable/profile/strict/service.conf
++++ b/src/portable/profile/strict/service.conf
+@@ -5,7 +5,7 @@ MountAPIVFS=yes
+ TemporaryFileSystem=/run
+ BindReadOnlyPaths=/run/systemd/notify
+ BindReadOnlyPaths=/dev/log /run/systemd/journal/socket /run/systemd/journal/stdout
+-BindReadOnlyPaths=/etc/machine-id
++BindReadOnlyPaths=/run/machine-id
+ DynamicUser=yes
+ RemoveIPC=yes
+ CapabilityBoundingSet=
+diff --git a/src/portable/profile/trusted/service.conf b/src/portable/profile/trusted/service.conf
+index 9a6af70..238cca0 100644
+--- a/src/portable/profile/trusted/service.conf
++++ b/src/portable/profile/trusted/service.conf
+@@ -3,5 +3,5 @@
+ [Service]
+ MountAPIVFS=yes
+ BindPaths=/run
+-BindReadOnlyPaths=/etc/machine-id
++BindReadOnlyPaths=/run/machine-id
+ BindReadOnlyPaths=/etc/resolv.conf
 diff --git a/src/shared/dissect-image.c b/src/shared/dissect-image.c
-index 6ac36e1..2c19945 100644
+index b32a8bc..53dadc3 100644
 --- a/src/shared/dissect-image.c
 +++ b/src/shared/dissect-image.c
-@@ -673,7 +673,7 @@ int dissect_image(
+@@ -937,7 +937,7 @@ int dissect_image(
                                           * ID. Why? Unlike the other partitions /var is inherently
                                           * installation specific, hence we need to be careful not to mount it
                                           * in the wrong installation. By hashing the partition UUID from
@@ -289,7 +326,7 @@ index 6ac36e1..2c19945 100644
                                           * installation. */
  
                                          r = sd_id128_get_machine_app_specific(GPT_VAR, &var_uuid);
-@@ -1675,7 +1675,7 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
+@@ -2202,7 +2202,7 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
  
          static const char *const paths[_META_MAX] = {
                  [META_HOSTNAME]     = "/etc/hostname\0",
@@ -298,7 +335,7 @@ index 6ac36e1..2c19945 100644
                  [META_MACHINE_INFO] = "/etc/machine-info\0",
                  [META_OS_RELEASE]   = "/etc/os-release\0"
                                        "/usr/lib/os-release\0",
-@@ -1764,15 +1764,15 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
+@@ -2308,17 +2308,17 @@ int dissected_image_acquire_metadata(DissectedImage *m) {
  
                          r = read_line(f, LONG_LINE_MAX, &line);
                          if (r < 0)
@@ -312,14 +349,30 @@ index 6ac36e1..2c19945 100644
                          } else if (r == 0)
 -                                log_debug("/etc/machine-id file is empty.");
 +                                log_debug("/run/machine-id file is empty.");
+                         else if (streq(line, "uninitialized"))
+-                                log_debug("/etc/machine-id file is uninitialized (likely aborted first boot).");
++                                log_debug("/run/machine-id file is uninitialized (likely aborted first boot).");
                          else
 -                                log_debug("/etc/machine-id has unexpected length %i.", r);
 +                                log_debug("/run/machine-id has unexpected length %i.", r);
  
                          break;
                  }
+diff --git a/src/shared/dissect-image.h b/src/shared/dissect-image.h
+index 3b30e08..33accb5 100644
+--- a/src/shared/dissect-image.h
++++ b/src/shared/dissect-image.h
+@@ -82,7 +82,7 @@ typedef enum DissectImageFlags {
+         DISSECT_IMAGE_MOUNT_NON_ROOT_ONLY = 1 << 7,  /* Mount only the non-root and non-/usr partitions */
+         DISSECT_IMAGE_VALIDATE_OS         = 1 << 8,  /* Refuse mounting images that aren't identifiable as OS images */
+         DISSECT_IMAGE_NO_UDEV             = 1 << 9,  /* Don't wait for udev initializing things */
+-        DISSECT_IMAGE_RELAX_VAR_CHECK     = 1 << 10, /* Don't insist that the UUID of /var is hashed from /etc/machine-id */
++        DISSECT_IMAGE_RELAX_VAR_CHECK     = 1 << 10, /* Don't insist that the UUID of /var is hashed from /run/machine-id */
+         DISSECT_IMAGE_FSCK                = 1 << 11, /* File system check the partition before mounting (no effect when combined with DISSECT_IMAGE_READ_ONLY) */
+         DISSECT_IMAGE_NO_PARTITION_TABLE  = 1 << 12, /* Only recognize single file system images */
+         DISSECT_IMAGE_VERITY_SHARE        = 1 << 13, /* When activating a verity device, reuse existing one if already open */
 diff --git a/src/shared/machine-image.c b/src/shared/machine-image.c
-index 1b7cfb5..e2898c7 100644
+index 671a56b..98d2985 100644
 --- a/src/shared/machine-image.c
 +++ b/src/shared/machine-image.c
 @@ -1123,9 +1123,9 @@ int image_read_metadata(Image *i) {
@@ -335,7 +388,7 @@ index 1b7cfb5..e2898c7 100644
                          _cleanup_close_ int fd = -1;
  
 diff --git a/src/test/test-fs-util.c b/src/test/test-fs-util.c
-index f2df2e3..d7245ad 100644
+index d1f9252..6eccfe0 100644
 --- a/src/test/test-fs-util.c
 +++ b/src/test/test-fs-util.c
 @@ -211,7 +211,7 @@ static void test_chase_symlinks(void) {
@@ -347,39 +400,26 @@ index f2df2e3..d7245ad 100644
          assert_se(r == -ENOTDIR);
          result = mfree(result);
  
-diff --git a/test/test-execute/exec-specifier.service b/test/test-execute/exec-specifier.service
-index a58abc6..39c9e46 100644
---- a/test/test-execute/exec-specifier.service
-+++ b/test/test-execute/exec-specifier.service
-@@ -25,7 +25,7 @@ ExecStart=sh -c 'test %g = $$(id -gn)'
- ExecStart=sh -c 'test %G = $$(id -g)'
- ExecStart=test %h = /root
- ExecStart=sh -c 'test %s = /bin/sh'
--ExecStart=sh -c 'test %m = $$(cat /etc/machine-id)'
-+ExecStart=sh -c 'test %m = $$(cat /run/machine-id)'
- ExecStart=sh -c 'test %b = $$(cat /proc/sys/kernel/random/boot_id | sed -e 's/-//g')'
- ExecStart=sh -c 'test %H = $$(uname -n)'
- ExecStart=sh -c 'test %v = $$(uname -r)'
-diff --git a/test/test-execute/exec-specifier@.service b/test/test-execute/exec-specifier@.service
-index faecbf3..ad94121 100644
---- a/test/test-execute/exec-specifier@.service
-+++ b/test/test-execute/exec-specifier@.service
-@@ -23,7 +23,7 @@ ExecStart=sh -c 'test %g = $$(id -gn)'
- ExecStart=sh -c 'test %G = $$(id -g)'
- ExecStart=test %h = /root
- ExecStart=sh -c 'test %s = /bin/sh'
--ExecStart=sh -c 'test %m = $$(cat /etc/machine-id)'
-+ExecStart=sh -c 'test %m = $$(cat /run/machine-id)'
- ExecStart=sh -c 'test %b = $$(cat /proc/sys/kernel/random/boot_id | sed -e 's/-//g')'
- ExecStart=sh -c 'test %H = $$(uname -n)'
- ExecStart=sh -c 'test %v = $$(uname -r)'
+diff --git a/src/test/test-systemd-tmpfiles.py b/src/test/test-systemd-tmpfiles.py
+index 255922d..fc903f2 100755
+--- a/src/test/test-systemd-tmpfiles.py
++++ b/src/test/test-systemd-tmpfiles.py
+@@ -89,7 +89,7 @@ def test_valid_specifiers(*, user):
+             test_content('f {} - - - - %m', '{}'.format(id128.get_machine().hex), user=user)
+         except AssertionError as e:
+             print(e)
+-            print('/etc/machine-id: {!r}'.format(open('/etc/machine-id').read()))
++            print('/run/machine-id: {!r}'.format(open('/etc/machine-id').read()))
+             print('/proc/cmdline: {!r}'.format(open('/proc/cmdline').read()))
+             print('skipping')
+         test_content('f {} - - - - %b', '{}'.format(id128.get_boot().hex), user=user)
 diff --git a/units/systemd-machine-id-commit.service b/units/systemd-machine-id-commit.service
-index e3acb0f..0828ec2 100644
+index 89e0613..242fafd 100644
 --- a/units/systemd-machine-id-commit.service
 +++ b/units/systemd-machine-id-commit.service
 @@ -15,7 +15,7 @@ Conflicts=shutdown.target
- Before=sysinit.target shutdown.target
- After=local-fs.target
+ Before=shutdown.target
+ After=local-fs.target first-boot-complete.target
  ConditionPathIsReadWrite=/etc
 -ConditionPathIsMountPoint=/etc/machine-id
 +ConditionPathIsMountPoint=/run/machine-id
