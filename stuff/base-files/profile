@@ -12,7 +12,12 @@ else
 	export INPUTRC="$HOME/.inputrc"
 fi
 
-if test -d /etc/profile.d/; then
+if test -d /usr/share/profile.d/; then
+	for profile in /usr/share/profile.d/*.sh; do
+		test -r "$profile" && . "$profile"
+	done
+	unset profile
+elif test -d /etc/profile.d/; then
 	for profile in /etc/profile.d/*.sh; do
 		test -r "$profile" && . "$profile"
 	done
