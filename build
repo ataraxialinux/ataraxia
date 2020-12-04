@@ -130,10 +130,6 @@ setup_architecture() {
 			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
 			export XTARGET="riscv64-linux-musl"
 			;;
-		riscv32)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="riscv32-linux-musl"
-			;;
 		*)
 			die "Architecture is not set or is not supported by 'build' script"
 	esac
@@ -226,38 +222,7 @@ build_toolchain() {
 				;;
 		esac
 	done
-
 	touch "$TOOLS"/.cross-linux
-
-	if [ "$BARCH" = "riscv32" ] || [ "$BARCH" = "riscv64" ]; then
-		if [ ! -f "$TOOLS/.cross-elf" ]; then
-			if [ -z "$ELFOPTS" ]; then
-				case $BARCH in
-					riscv64)
-						ELFOPTS="--with-arch=rv64imafdc --with-abi=lp64d"
-						;;
-					riscv32)
-						ELFOPTS="--with-arch=rv32imafdc --with-abi=ilp32d"
-						;;
-				esac
-			fi
-
-			msg "Building cross-toolchain for '${BARCH}-elf' platform"
-			unset CFLAGS CXXFLAGS LDFLAGS
-
-			git clone https://github.com/protonesso/riscv-gnu-toolchain "$SOURCES"/riscv-tools --depth 1
-			git clone https://github.com/riscv/riscv-gcc --depth 1 "$SOURCES"/riscv-tools/riscv-gcc
-			git clone https://github.com/riscv/riscv-binutils-gdb --depth 1 "$SOURCES"/riscv-tools/riscv-binutils
-			git clone https://github.com/riscv/riscv-newlib --depth 1 "$SOURCES"/riscv-tools/riscv-newlib
-
-			pushd "$SOURCES"/riscv-tools
-				./configure --prefix="$TOOLS" --disable-gdb --disable-linux $ELFOPTS
-				make -j$JOBS MAKEINFO="true"
-			popd
-
-			touch "$TOOLS"/.cross-elf
-		fi
-	fi
 
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf

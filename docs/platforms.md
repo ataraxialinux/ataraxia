@@ -10,5 +10,4 @@ Ataraxia Linux has been ported to following CPU architectures:
  * ppc64        - for 64-bit PowerPC CPUs (big-endian)
  * s390x        - for 64-bit IBM System Z CPUs
  * riscv64      - for 64-bit RISC V CPUs
- * riscv32      - for 32-bit RISC V CPUs
 ```
