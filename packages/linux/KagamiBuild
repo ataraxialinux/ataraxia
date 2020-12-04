@@ -41,7 +41,7 @@ build() {
 			export XKARCH="s390"
 			export IMAGELOC="arch/s390/boot/bzImage"
 			;;
-		riscv64|riscv32)
+		riscv64)
 			export XKARCH="riscv"
 			export IMAGELOC="arch/riscv/boot/Image"
 			;;
@@ -60,12 +60,6 @@ build() {
 
 	# Swap sucks
 	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
-
-	case $BARCH in
-		riscv64|riscv32)
-			patch -Np1 -i "$STUFF"/linux/9999-RISC-V-fixes.patch
-			;;
-	esac
 
 	unset LDFLAGS
 	make mrproper

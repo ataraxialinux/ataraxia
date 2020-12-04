@@ -8,18 +8,10 @@ name=musl
 version=1.2.1
 release=2
 options=('bootstrap')
-
-if [ "$BARCH" = "riscv32" ]; then
-	source=("https://github.com/riscv/riscv-musl/archive/develop.tar.gz")
-	musldir="riscv-musl-develop"
-else
-	source=("http://www.musl-libc.org/releases/$name-$version.tar.gz")
-	musldir="$name-$version"
-fi
-
+source=("http://www.musl-libc.org/releases/$name-$version.tar.gz")
 
 build() {
-	cd "$SRC"/$musldir
+	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/musl/CVE-2020-28928.patch
 
 	${CROSS_COMPILE}cc -c "$STUFF"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
