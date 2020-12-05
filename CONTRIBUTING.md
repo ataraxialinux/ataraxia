@@ -12,23 +12,23 @@ Let's look at "number sign info". Here's the correct example of it:
 # Section:     devel
 ```
 
-The field `Description` should have short description of package. It's required field.
+The field `Description` should have short description of package. It's a required field.
 
-The field `URL` should have package homepage. It's required field.
+The field `URL` should have package homepage. It's a required field.
 
-The field `Maintainer` should have package maintainer nickname and email address. It's required field.
+The field `Maintainer` should have package maintainer nickname and email address. It's a required field.
 
 **NOTE**: Don't forget email address, don't put email address like this: `nagakamira@gmail.com`, `nagakamira at gmail dot com` only. Don't put your name and last name, don't put stuff like 'aka', don't use any kind of brackets.
 
-The field `Depends on` should have package dependencies. It's optional field.
+The field `Depends on` should have package dependencies. It's an optional field.
 
 **NOTE**: Put build depends in the front. Put build systems in the front, then compilers, interpreters and other build dependencies. Don't add dependencies like: `gcc binutils pkgconf musl make` unless they required at runtime (except for musl and make). If your package depends on libtool's libltdl then add package called `libltdl`.
 
-The field "Dep [architecture]" should have platform specific dependencies. It's optional field.
+The field "Dep [architecture]" should have platform specific dependencies. It's an optional field.
 
-The field `Conflicts with` should have package conflicts. It's optional field.
+The field `Conflicts with` should have package conflicts. It's an optional field.
 
-The field `Obsoletes` should have package obsoletes. It's optional field.
+The field `Obsoletes` should have package obsoletes. It's an optional field.
 
 ## Port information variables
 In order to succesfully build a package you must have following variables:
@@ -115,4 +115,4 @@ If you wish to modify file after configuration but before build leave the space 
 
 If the requirements are not met, then the pull request will be closed without explanation.
 
-Ataraxia Linux development team
+Ataraxia Linux development team.
