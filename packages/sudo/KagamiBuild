@@ -1,12 +1,12 @@
 # Description: Give certain users the ability to run some commands as root
 # URL:         https://www.sudo.ws/sudo/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib pam
+# Depends on:  zlib audit libselinux pam
 # Section:     admin
 
 name=sudo
 version=1.9.4
-release=1
+release=2
 backup=('etc/sudoers')
 source=("http://www.sudo.ws/dist/$name-$version.tar.gz")
 
@@ -20,8 +20,10 @@ build() {
 		--with-vardir=/var/db/sudo \
 		--with-all-insults \
 		--with-env-editor \
+		--with-linux-audit \
 		--with-pam \
 		--with-passprompt="[sudo] password for %p: " \
+		--with-selinux \
 		--without-skey \
 		--enable-pie
 	make

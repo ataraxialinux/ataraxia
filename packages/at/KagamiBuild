@@ -1,12 +1,12 @@
 # Description: AT and batch delayed command scheduling utility and daemon
 # URL:         http://blog.calhariz.com/tag/at
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  systemd flex pam
+# Depends on:  systemd flex libselinux pam
 # Section:     admin
 
 name=at
 version=3.2.1
-release=1
+release=2
 options=('~makeflags')
 backup=('etc/at.deny'
 	'var/spool/atd/.SEQ')
@@ -30,7 +30,8 @@ build() {
 		--sbindir=/usr/bin \
 		--with-atspool=/var/spool/atd \
 		--with-jobdir=/var/spool/atd \
-		--with-systemdsystemunitdir=/usr/lib/systemd/system
+		--with-systemdsystemunitdir=/usr/lib/systemd/system \
+		--with-selinux
 	make -j1
 	make IROOT="$PKG" install
 
