@@ -1,7 +1,7 @@
 # Description: Pluggable Authentication Modules
 # URL:         http://linux-pam.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cracklib libtirpc
+# Depends on:  cracklib libtirpc libselinux
 # Section:     security
 
 name=pam
@@ -30,6 +30,8 @@ build() {
 		--prefix=/usr \
 		--libdir=/usr/lib \
 		--sbindir=/usr/bin \
+		--enable-audit \
+		--enable-selinux \
 		--disable-db \
 		--disable-nls \
 		--disable-regenerate-docu
@@ -43,4 +45,6 @@ build() {
 	for pam in system-local-login system-login system-remote-login system-services; do
 		install -Dm644 "$STUFF"/pam.d/$pam "$PKG"/etc/pam.d/$pam
 	done
+
+	install -Dm644 "$STUFF"/tmpfiles.d/pam.conf "$PKG"/usr/lib/tmpfiles.d/pam.conf
 }

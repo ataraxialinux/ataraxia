@@ -1,7 +1,7 @@
 # Description: Linux D-Bus Message Broker
 # URL:         https://github.com/bus1/dbus-broker/wiki
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson systemd expat
+# Depends on:  meson systemd expat libselinux
 # Section:     base
 
 name=dbus-broker
@@ -17,9 +17,10 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
+		-Daudit=true \
 		-Ddocs=false \
 		-Dlinux-4-17=true \
-		-Dselinux=false \
+		-Dselinux=true \
 		-Dsystem-console-users=gdm,lightdm,lxdm
 	samu
 	DESTDIR="$PKG" samu install

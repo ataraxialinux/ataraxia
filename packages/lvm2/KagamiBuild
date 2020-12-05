@@ -1,12 +1,12 @@
 # Description: Logical Volume Manager 2 utilities
 # URL:         https://sourceware.org/lvm2/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libaio systemd
+# Depends on:  libaio libselinux systemd
 # Section:     admin
 
 name=lvm2
 version=2.03.10
-release=4
+release=5
 options=('bootstrap')
 backup=('etc/lvm/lvm.conf'
 	'etc/lvm/lvmlocal.conf')
@@ -45,15 +45,16 @@ build() {
 		--enable-dmeventd \
 		--enable-lvmetad \
 		--enable-pkgconfig \
+		--enable-selinux \
 		--enable-udev_rules \
 		--enable-udev_sync \
 		--disable-readline
 
 	sed -i 's/ -p//g' make.tmpl libdm/make.tmpl
 
-	make SHELL=/usr/bin/bash
-	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install
-	make -j1 SHELL=/usr/bin/bash DESTDIR="$PKG" install_systemd_units
+	make SHELL=/bin/bash
+	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install
+	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install_systemd_units
 
 	install -d "$PKG"/etc/lvm/{archive,backup}
 

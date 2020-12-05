@@ -1,7 +1,7 @@
 # Description: System and service manager
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson zlib bzip2 xz lz4 pam acl libcap shadow libressl kbd kmod libelf iptables gperf hwids libblkid libseccomp
+# Depends on:  meson zlib bzip2 xz lz4 libselinux pam acl libcap shadow libressl kbd kmod libelf iptables gperf hwids libblkid libseccomp
 # Section:     base
 
 name=libsystemd
@@ -30,6 +30,7 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/systemd-stable-$version \
 		-Dapparmor=false \
+		-Daudit=true \
 		-Dbashcompletiondir=/usr/share/bash-completion \
 		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
 		-Ddefault-dnssec=no \
@@ -65,6 +66,7 @@ build() {
 		-Dp11kit=false \
 		-Dpcre2=false \
 		-Dqrencode=false \
+		-Dselinux=true \
 		-Dsmack=false \
 		-Dsysvinit-path= \
 		-Dsysvrcnd-path= \
