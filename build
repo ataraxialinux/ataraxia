@@ -36,13 +36,13 @@ generate_config() {
 	if [ "$USE_TARGET" = "1" ]; then
 		cat > "$file" <<- EOF
 			export BARCH="$BARCH"
-			export MKOPTS="$MKOPTS"
-			export OPTIONS=(emptydirs strip makeflags ~locales ~docs ~ccache ~libtool)
-			export REPOS=("${REPO}")
+			export mkopts="$MKOPTS"
+			export buildoptions=(emptydirs strip makeflags ~locales ~docs ~ccache ~libtool ~nobootstrap)
+			export repos="${REPO}"
 			export ROOTFS="$ROOTFS"
 			export TOOLS="$TOOLS"
-			export PKGDEST="$PACKAGES"
-			export SRCDEST="$SOURCES"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
 			export CFLAGS="$CFLAGS"
 			export CXXFLAGS="$CXXFLAGS"
 			export XHOST="$XHOST"
@@ -72,13 +72,13 @@ generate_config() {
 	elif [ "$USE_HOST" = "1" ]; then
 		cat > "$file" <<- EOF
 			export BARCH="$BARCH"
-			export MKOPTS="$MKOPTS"
-			export OPTIONS=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool)
-			export REPOS=("${TCREPO}" "${REPO}")
+			export mkopts="$MKOPTS"
+			export buildoptions=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool ~nobootstrap)
+			export repos="${TCREPO} ${REPO}"
 			export ROOTFS="$ROOTFS"
 			export TOOLS="$TOOLS"
-			export PKGDEST="$PACKAGES"
-			export SRCDEST="$SOURCES"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
 			export CFLAGS="$CFLAGS"
 			export CXXFLAGS="$CXXFLAGS"
 			export XHOST="$XHOST"
@@ -183,8 +183,6 @@ build_environment() {
 
 	USE_HOST=1 generate_config "$BUILD"/host.config
 	USE_TARGET=1 generate_config "$BUILD"/target.config
-
-	touch "$BUILD"/mask
 }
 
 
@@ -205,19 +203,21 @@ build_toolchain() {
 				;;
 	esac
 
-	for toolchain in rpm base-files gettext-tiny m4 bison flex bc kmod heimdal gperf \
+	mkdir -p "$ROOTFS/usr/lib/hydra/db"
+
+	for toolchain in base-files gettext-tiny m4 bison flex bc kmod heimdal gperf \
 			python samurai meson linux-headers binutils gcc-static musl gcc $EXTRAPKG \
 			slibtool autoconf automake cracklib pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
-				neko em -c "$BUILD"/host.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
+				hydra em -c "$BUILD"/host.config -r "$ROOTFS" -wND ${toolchain}
 				;;
 			musl)
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
+				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wND ${toolchain}
 				;;
 			*)
 				pushd "$TCREPO/host-$toolchain"
-					neko bi -c "$BUILD"/host.config -m "$BUILD"/mask -wP
+					hydra bi -c "$BUILD"/host.config -wp
 				popd
 				;;
 		esac
@@ -258,40 +258,40 @@ build_target() {
 		case $i in
 			libblkid)
 				if [ ! -f "$BUILD/.blkid" ]; then
-					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts libblkid
+					hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libblkid
 					rm -rf "$BUILD"/packages/libblkid-*.rpm
 					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
 				fi
 				;;
 			libsystemd)
 				if [ ! -f "$BUILD/.libsystemd" ]; then
-					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts libsystemd
+					hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libsystemd
 					rm -rf "$BUILD"/packages/libsystemd-*.rpm
 					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
 				fi
 				;;
 			util-linux)
 				pushd "$REPO/util-linux"
-					neko bi -c "$BUILD"/target.config -w util-linux
+					hydra bi -c "$BUILD"/target.config -w util-linux
 				popd
 				if [ -f "$BUILD/.rmblkid" ]; then
-					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libblkid
+					hydra rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libblkid
 					rm "$BUILD"/.rmblkid
 				fi
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts util-linux
+				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH util-linux
 				;;
 			systemd)
 				pushd "$REPO/systemd"
-					neko bi -c "$BUILD"/target.config -w systemd
+					hydra bi -c "$BUILD"/target.config -w systemd
 				popd
 				if [ -f "$BUILD/.rmsystemd" ]; then
-					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libsystemd
+					hydra rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libsystemd
 					rm "$BUILD"/.rmsystemd
 				fi
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts systemd
+				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH systemd
 				;;
 			*)
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts $i
+				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH $i
 				;;
 		esac
 	done
