@@ -14,4 +14,13 @@ build() {
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	cat > "$PKG"/usr/bin/update-icon-cache <<-EOF
+		#!/usr/bin/sh
+		if [ -x '/usr/bin/gtk-update-icon-cache' ]; then
+			/usr/bin/gtk-update-icon-cache --force --quiet /usr/share/icons/hicolor
+		fi
+	EOF
+
+	chmod +x "$PKG"/usr/bin/update-icon-cache
 }

@@ -8,7 +8,11 @@ name=glib
 version=2.66.3
 release=1
 options=('~emptydirs')
-source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz"
+	"glib-schemas.trigger"
+	"gio-modules.trigger"
+	"update-glib-schemas"
+	"update-gio-modules")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -20,4 +24,7 @@ build() {
 		-Dselinux=disabled
 	samu
 	DESTDIR="$PKG" samu install
+
+	for i in "$SRC"/update-*; do install -Dm755 "$i" "$PKG"/usr/bin/$(basename $i); do
+	for i in "$SRC"/*.trigger; do install -Dm755 "$i" "$PKG"/usr/lib/hydra/triggers/$(basename $i); do
 }

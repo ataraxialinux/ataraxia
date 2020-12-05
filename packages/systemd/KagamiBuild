@@ -21,7 +21,15 @@ backup=('etc/systemd/coredump.conf'
 	'etc/systemd/timesyncd.conf'
 	'etc/systemd/user.conf'
 	'etc/udev/udev.conf')
-source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz")
+source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz"
+	"daemon-reload.trigger"
+	"journald-catalog.trigger"
+	"systemd-binfmt.trigger"
+	"systemd-sysctl.trigger"
+	"systemd-sysusers.trigger"
+	"systemd-tmpfiles.trigger"
+	"udev-hwdb.trigger"
+	"udev-rules.trigger")
 
 build() {
 	cd "$SRC"/$name-stable-$version
@@ -88,6 +96,8 @@ build() {
 		mv "$PKG"/usr/sbin/* "$PKG"/usr/bin
 		rm -rf "$PKG"/usr/sbin
 	fi
+
+	for i in "$SRC"/*.trigger; do install -Dm755 "$i" "$PKG"/usr/lib/hydra/triggers/$(basename $i); do
 
 	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
 	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
