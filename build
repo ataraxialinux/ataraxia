@@ -242,17 +242,18 @@ build_target() {
 		LINUX="linux"
 	fi
 
-	packages="netbase tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
-		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc pkgconf pcre \
-		libcap-ng audit libsepol libselinux libsemanage cracklib libtirpc pam libpwquality \
-		attr acl libcap shadow grep sed psmisc mksh bash slibtool net-tools gdbm db53 sqlite \
-		expat libffi libressl nettle python perl ca-certificates autoconf automake lzip libarchive \
-		lzo kmod libuargp libelf gawk findutils 9base lobase sbase ubase less mandoc dialog gzip ncompress \
-		libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd samurai \
-		python-setuptools meson make patch tar cpio nano gperf libseccomp libblkid libsystemd util-linux \
-		libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus iputils procps-ng \
-		e2fsprogs btrfs-progs dosfstools run-parts libssh2 nghttp2 c-ares heimdal curl hpkg \
-		wireless_tools wpa_supplicant gptfdisk wget libevent links dropbear $LINUX"
+	packages="netbase selinux-policy tzdata man-pages musl-tools gettext-tiny \
+		zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc gmp mpfr mpc \
+		binutils gcc pkgconf pcre libcap-ng audit libsepol libselinux libsemanage \
+		cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed psmisc \
+		mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle \
+		python perl ca-certificates autoconf automake lzip libarchive lzo kmod libuargp libelf \
+		gawk findutils 9base lobase sbase ubase less checkpolicy policycoreutils semodule-utils \
+		mandoc dialog gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap \
+		iptables iproute2 kbd samurai python-setuptools meson make patch tar cpio nano gperf libseccomp \
+		libblkid libsystemd util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
+		iputils procps-ng e2fsprogs btrfs-progs dosfstools run-parts libssh2 nghttp2 c-ares heimdal curl \
+		hpkg wireless_tools wpa_supplicant gptfdisk wget libevent links dropbear $LINUX"
 
 	for i in $packages; do
 		case $i in
@@ -343,6 +344,31 @@ genrepo() {
 	echo -e '\t\t"homepage": "'${homepage}'",' >> "$2"
 	echo -e '\t\t"category": "'${category}'"' >> "$2"
 	echo -e '\t},' >> "$2"
+}
+
+selinux_relabel() {
+	local has_selinux has_security
+
+	[ -z "$1" ] && return 0
+
+	[ ! -d "/sys/kernel/security" ] && return 0
+	[ ! -d "/sys/fs/selinux" ] && return 0
+	[ ! -f "$1/usr/bin/restorecon" ] && return 0
+
+	msg "Relabeling filesystem"
+	mount -t proc proc "$1/proc"
+	mount -t sysfs sys "$1/sys"
+	mount -t securityfs securityfs "$1/sys/kernel/security"
+	mount -t selinuxfs selinuxfs "$1/sys/fs/selinux"
+
+	echo "0" > "$1/sys/fs/selinux/enforce"
+
+	chroot "$1" /usr/bin/restorecon -rFv /
+
+	umount -l "$1/sys/fs/selinux"
+	umount -l "$1/sys/kernel/security"
+	umount -l "$1/sys"
+	umount -l "$1/proc"
 }
 
 case $1 in
