@@ -12,7 +12,9 @@ source=("https://github.com/SELinuxProject/selinux/releases/download/20200710/$n
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/policycoreutils/0001-internal-fts.patch
+	patch -Np1 -i "$STUFF"/policycoreutils/0001-add-internal-fts-implementation.patch
+	patch -Np1 -i "$STUFF"/policycoreutils/0002-fix-bashisms.patch
+	patch -Np1 -i "$STUFF"/policycoreutils/0003-ataraxia-kernel-fix.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" 
@@ -21,4 +23,10 @@ build() {
 		make CFLAGS="$CFLAGS"
 		make CFLAGS="$CFLAGS" DESTDIR="$PKG" LIBEXECDIR=/usr/lib SBINDIR=/usr/bin install
 	fi
+
+	install -Dm755 "$STUFF"/policycoreutils/selinux-autorelabel "$PKG"/usr/bin/selinux-autorelabel
+
+	mkdir -p "$PKG"/usr/lib/systemd/system/sysinit.target.wants
+	install -Dm644 "$STUFF"/svc/selinux-relabel.service "$PKG"/usr/lib/systemd/system/selinux-relabel.service
+	ln -sf ../selinux-relabel.service "$PKG"/usr/lib/systemd/system/sysinit.target.wants/selinux-relabel.service
 }

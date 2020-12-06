@@ -346,31 +346,6 @@ genrepo() {
 	echo -e '\t},' >> "$2"
 }
 
-selinux_relabel() {
-	local has_selinux has_security
-
-	[ -z "$1" ] && return 0
-
-	[ ! -d "/sys/kernel/security" ] && return 0
-	[ ! -d "/sys/fs/selinux" ] && return 0
-	[ ! -f "$1/usr/bin/restorecon" ] && return 0
-
-	msg "Relabeling filesystem"
-	mount -t proc proc "$1/proc"
-	mount -t sysfs sys "$1/sys"
-	mount -t securityfs securityfs "$1/sys/kernel/security"
-	mount -t selinuxfs selinuxfs "$1/sys/fs/selinux"
-
-	echo "0" > "$1/sys/fs/selinux/enforce"
-
-	chroot "$1" /usr/bin/restorecon -rFv /
-
-	umount -l "$1/sys/fs/selinux"
-	umount -l "$1/sys/kernel/security"
-	umount -l "$1/sys"
-	umount -l "$1/proc"
-}
-
 case $1 in
 	stage)
 		shift

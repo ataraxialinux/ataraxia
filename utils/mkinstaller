@@ -28,6 +28,7 @@ generate_initramfs() {
 		rm -rf usr/lib/modules/*/kernel/net/netfilter usr/lib/modules/*/kernel/net/sched
 		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/drivers/mfd
 		rm -rf usr/lib/modules/*/kernel/drivers/edac usr/lib/modules/*/kernel/infiniband
+		rm -rf usr/lib/systemd/system/sysinit.target.wants/selinux-autorelabel.service
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
@@ -45,7 +46,7 @@ generate_initramfs() {
 		EOF
 
 		systemctl -q --root "$INITRAMFS" enable dropbear.service
-		systemd-firstboot --root="$INITRAMFS" --keymap=us --timezone=America/New_York --hostname=live
+		systemd-firstboot --root="$INITRAMFS" --keymap=us --timezone=America/New_York --hostname=live --root-password=anon
 
 		ln -sf usr/lib/systemd/systemd init
 
