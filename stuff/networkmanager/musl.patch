@@ -1,20 +1,30 @@
-diff -ruN NetworkManager-1.22.0-orig/libnm-core/nm-json.c NetworkManager-1.22.0/libnm-core/nm-json.c
---- NetworkManager-1.22.0-orig/libnm-core/nm-json.c	2019-12-16 01:32:32.000000000 +0900
-+++ NetworkManager-1.22.0/libnm-core/nm-json.c	2019-12-18 22:10:20.274870680 +0900
-@@ -10,6 +10,10 @@
- 
- #include <dlfcn.h>
- 
-+#ifndef RTLD_DEEPBIND
-+#define RTLD_DEEPBIND 0
-+#endif
-+
- void *_nm_jansson_json_object_iter_value;
- void *_nm_jansson_json_object_key_to_iter;
- void *_nm_jansson_json_integer;
-diff -ruN NetworkManager-1.22.0-orig/libnm-core/nm-utils.h NetworkManager-1.22.0/libnm-core/nm-utils.h
---- NetworkManager-1.22.0-orig/libnm-core/nm-utils.h	2019-12-17 16:59:49.000000000 +0900
-+++ NetworkManager-1.22.0/libnm-core/nm-utils.h	2019-12-18 22:10:20.278870608 +0900
+From 021cca419411ee4f164c35ca5daf921c9edea7f3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Tue, 8 Dec 2020 02:09:27 +0900
+Subject: [PATCH] fix building on musl libc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ libnm-core/nm-utils.h                              |  4 ++++
+ shared/nm-glib-aux/nm-json-aux.c                   |  4 ++++
+ shared/systemd/src/basic/process-util.c            | 11 ++++++++++-
+ shared/systemd/src/basic/socket-util.h             |  5 +++++
+ shared/systemd/src/basic/sort-util.h               | 14 +++++++++++++-
+ shared/systemd/src/basic/stdio-util.h              |  2 ++
+ shared/systemd/src/basic/util.h                    |  6 ++++++
+ src/NetworkManagerUtils.c                          |  1 +
+ src/devices/nm-device-bridge.c                     |  1 +
+ src/devices/nm-device.c                            |  4 ++++
+ src/nm-manager.c                                   |  1 +
+ src/platform/nm-linux-platform.c                   |  5 +++++
+ src/platform/wifi/nm-wifi-utils.h                  |  4 ++++
+ .../src/libsystemd-network/sd-dhcp6-client.c       |  2 +-
+ 14 files changed, 61 insertions(+), 3 deletions(-)
+
+diff --git a/libnm-core/nm-utils.h b/libnm-core/nm-utils.h
+index 9589c51..6b42883 100644
+--- a/libnm-core/nm-utils.h
++++ b/libnm-core/nm-utils.h
 @@ -15,7 +15,11 @@
  #include <netinet/in.h>
  
@@ -27,61 +37,25 @@ diff -ruN NetworkManager-1.22.0-orig/libnm-core/nm-utils.h NetworkManager-1.22.0
  #include <linux/if_infiniband.h>
  
  #include "nm-core-enum-types.h"
-diff -ruN NetworkManager-1.22.0-orig/shared/n-dhcp4/src/n-dhcp4-c-probe.c NetworkManager-1.22.0/shared/n-dhcp4/src/n-dhcp4-c-probe.c
---- NetworkManager-1.22.0-orig/shared/n-dhcp4/src/n-dhcp4-c-probe.c	2019-12-16 01:34:38.000000000 +0900
-+++ NetworkManager-1.22.0/shared/n-dhcp4/src/n-dhcp4-c-probe.c	2019-12-18 22:10:20.278870608 +0900
-@@ -362,7 +362,12 @@
-         seed16v[1] = (u64 >> 16) ^ (u64 >>  0);
-         seed16v[2] = (u64 >> 32) ^ (u64 >> 16);
+diff --git a/shared/nm-glib-aux/nm-json-aux.c b/shared/nm-glib-aux/nm-json-aux.c
+index 4212e62..83114c7 100644
+--- a/shared/nm-glib-aux/nm-json-aux.c
++++ b/shared/nm-glib-aux/nm-json-aux.c
+@@ -9,6 +9,10 @@
  
--        r = seed48_r(seed16v, &config->entropy);
-+#ifdef __GLIBC__
-+         r = seed48_r(seed16v, &config->entropy);
-+         c_assert(!r);
-+#else
-+        memcpy(config->entropy, seed16v, sizeof seed16v);
-+#endif
-         c_assert(!r);
- }
+ #include <dlfcn.h>
  
-@@ -377,10 +382,14 @@
-  */
- uint32_t n_dhcp4_client_probe_config_get_random(NDhcp4ClientProbeConfig *config) {
-         long int result;
--        int r;
--
--        r = mrand48_r(&config->entropy, &result);
--        c_assert(!r);
-+#ifdef __GLIBC__
-+         int r;
-+ 
-+         r = mrand48_r(&config->entropy, &result);
-+         c_assert(!r);
-+#else
-+        result = jrand48(config->entropy);
++#ifndef RTLD_DEEPBIND
++#define RTLD_DEEPBIND 0
 +#endif
++
+ /*****************************************************************************/
  
-         return result;
- };
-diff -ruN NetworkManager-1.22.0-orig/shared/n-dhcp4/src/n-dhcp4-private.h NetworkManager-1.22.0/shared/n-dhcp4/src/n-dhcp4-private.h
---- NetworkManager-1.22.0-orig/shared/n-dhcp4/src/n-dhcp4-private.h	2019-12-17 02:12:54.000000000 +0900
-+++ NetworkManager-1.22.0/shared/n-dhcp4/src/n-dhcp4-private.h	2019-12-18 22:10:20.278870608 +0900
-@@ -267,7 +267,11 @@
-         bool inform_only;
-         bool init_reboot;
-         struct in_addr requested_ip;
--        struct drand48_data entropy;    /* entropy pool */
-+#ifdef __GLIBC__
-+         struct drand48_data entropy;    /* entropy pool */
-+#else
-+        unsigned short entropy[3];      /* entropy pool */
-+#endif
-         uint64_t ms_start_delay;        /* max ms to wait before starting probe */
-         NDhcp4ClientProbeOption *options[UINT8_MAX + 1];
-         int8_t request_parameters[UINT8_MAX + 1];
-diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/process-util.c NetworkManager-1.22.0/shared/systemd/src/basic/process-util.c
---- NetworkManager-1.22.0-orig/shared/systemd/src/basic/process-util.c	2019-12-17 16:59:49.000000000 +0900
-+++ NetworkManager-1.22.0/shared/systemd/src/basic/process-util.c	2019-12-18 22:10:20.278870608 +0900
+ static void
+diff --git a/shared/systemd/src/basic/process-util.c b/shared/systemd/src/basic/process-util.c
+index 03ca04e..215384c 100644
+--- a/shared/systemd/src/basic/process-util.c
++++ b/shared/systemd/src/basic/process-util.c
 @@ -17,6 +17,9 @@
  #include <sys/wait.h>
  #include <syslog.h>
@@ -92,7 +66,7 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/process-util.c Net
  #if 0 /* NM_IGNORED */
  #if HAVE_VALGRIND_VALGRIND_H
  #include <valgrind/valgrind.h>
-@@ -1123,11 +1126,13 @@
+@@ -1152,11 +1155,13 @@ void reset_cached_pid(void) {
          cached_pid = CACHED_PID_UNSET;
  }
  
@@ -106,7 +80,7 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/process-util.c Net
  
  pid_t getpid_cached(void) {
          static bool installed = false;
-@@ -1156,7 +1161,11 @@
+@@ -1185,7 +1190,11 @@ pid_t getpid_cached(void) {
                           * only half-documented (glibc doesn't document it but LSB does — though only superficially)
                           * we'll check for errors only in the most generic fashion possible. */
  
@@ -119,9 +93,10 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/process-util.c Net
                                  /* OOM? Let's try again later */
                                  cached_pid = CACHED_PID_UNSET;
                                  return new_pid;
-diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/socket-util.h NetworkManager-1.22.0/shared/systemd/src/basic/socket-util.h
---- NetworkManager-1.22.0-orig/shared/systemd/src/basic/socket-util.h	2019-12-15 23:15:03.000000000 +0900
-+++ NetworkManager-1.22.0/shared/systemd/src/basic/socket-util.h	2019-12-18 22:10:20.278870608 +0900
+diff --git a/shared/systemd/src/basic/socket-util.h b/shared/systemd/src/basic/socket-util.h
+index 1ece911..c6d5a60 100644
+--- a/shared/systemd/src/basic/socket-util.h
++++ b/shared/systemd/src/basic/socket-util.h
 @@ -13,6 +13,11 @@
  #include <sys/socket.h>
  #include <sys/types.h>
@@ -134,9 +109,10 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/socket-util.h Netw
  
  #include "macro.h"
  #include "missing_socket.h"
-diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/sort-util.h NetworkManager-1.22.0/shared/systemd/src/basic/sort-util.h
---- NetworkManager-1.22.0-orig/shared/systemd/src/basic/sort-util.h	2019-12-15 23:14:23.000000000 +0900
-+++ NetworkManager-1.22.0/shared/systemd/src/basic/sort-util.h	2019-12-18 22:10:20.278870608 +0900
+diff --git a/shared/systemd/src/basic/sort-util.h b/shared/systemd/src/basic/sort-util.h
+index a8dc3bb..2b6d842 100644
+--- a/shared/systemd/src/basic/sort-util.h
++++ b/shared/systemd/src/basic/sort-util.h
 @@ -5,6 +5,14 @@
  
  #include "macro.h"
@@ -152,7 +128,7 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/sort-util.h Networ
  void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
                   __compar_d_fn_t compar, void *arg);
  
-@@ -60,7 +68,11 @@
+@@ -60,7 +68,11 @@ static inline void qsort_r_safe(void *base, size_t nmemb, size_t size, __compar_
                  return;
  
          assert(base);
@@ -165,9 +141,10 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/sort-util.h Networ
  }
  
  #define typesafe_qsort_r(p, n, func, userdata)                          \
-diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/stdio-util.h NetworkManager-1.22.0/shared/systemd/src/basic/stdio-util.h
---- NetworkManager-1.22.0-orig/shared/systemd/src/basic/stdio-util.h	2019-12-15 23:14:23.000000000 +0900
-+++ NetworkManager-1.22.0/shared/systemd/src/basic/stdio-util.h	2019-12-18 22:10:20.278870608 +0900
+diff --git a/shared/systemd/src/basic/stdio-util.h b/shared/systemd/src/basic/stdio-util.h
+index c3b9448..e80a938 100644
+--- a/shared/systemd/src/basic/stdio-util.h
++++ b/shared/systemd/src/basic/stdio-util.h
 @@ -1,7 +1,9 @@
  /* SPDX-License-Identifier: LGPL-2.1+ */
  #pragma once
@@ -178,10 +155,11 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/stdio-util.h Netwo
  #include <stdarg.h>
  #include <stdio.h>
  #include <sys/types.h>
-diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/util.h NetworkManager-1.22.0/shared/systemd/src/basic/util.h
---- NetworkManager-1.22.0-orig/shared/systemd/src/basic/util.h	2019-12-16 01:34:38.000000000 +0900
-+++ NetworkManager-1.22.0/shared/systemd/src/basic/util.h	2019-12-18 22:10:20.278870608 +0900
-@@ -30,6 +30,12 @@
+diff --git a/shared/systemd/src/basic/util.h b/shared/systemd/src/basic/util.h
+index 6fc7480..fab72e5 100644
+--- a/shared/systemd/src/basic/util.h
++++ b/shared/systemd/src/basic/util.h
+@@ -30,6 +30,12 @@ static inline unsigned u64log2(uint64_t n) {
  #endif
  }
  
@@ -194,9 +172,34 @@ diff -ruN NetworkManager-1.22.0-orig/shared/systemd/src/basic/util.h NetworkMana
  static inline unsigned u32ctz(uint32_t n) {
  #if __SIZEOF_INT__ == 4
          return n != 0 ? __builtin_ctz(n) : 32;
-diff -ruN NetworkManager-1.22.0-orig/src/devices/nm-device.c NetworkManager-1.22.0/src/devices/nm-device.c
---- NetworkManager-1.22.0-orig/src/devices/nm-device.c	2019-12-17 16:59:49.000000000 +0900
-+++ NetworkManager-1.22.0/src/devices/nm-device.c	2019-12-18 22:10:20.286870463 +0900
+diff --git a/src/NetworkManagerUtils.c b/src/NetworkManagerUtils.c
+index 4739e9d..ceadb50 100644
+--- a/src/NetworkManagerUtils.c
++++ b/src/NetworkManagerUtils.c
+@@ -4,6 +4,7 @@
+  * Copyright (C) 2005 - 2008 Novell, Inc.
+  */
+ 
++#include <netinet/if_ether.h>
+ #include "nm-default.h"
+ 
+ #include "NetworkManagerUtils.h"
+diff --git a/src/devices/nm-device-bridge.c b/src/devices/nm-device-bridge.c
+index 48dcec1..4a6e08f 100644
+--- a/src/devices/nm-device-bridge.c
++++ b/src/devices/nm-device-bridge.c
+@@ -8,6 +8,7 @@
+ #include "nm-device-bridge.h"
+ 
+ #include <stdlib.h>
++#include <netinet/if_ether.h>
+ 
+ #include "NetworkManagerUtils.h"
+ #include "nm-device-private.h"
+diff --git a/src/devices/nm-device.c b/src/devices/nm-device.c
+index 0be05f2..ebf233b 100644
+--- a/src/devices/nm-device.c
++++ b/src/devices/nm-device.c
 @@ -17,7 +17,11 @@
  #include <arpa/inet.h>
  #include <fcntl.h>
@@ -207,11 +210,12 @@ diff -ruN NetworkManager-1.22.0-orig/src/devices/nm-device.c NetworkManager-1.22
 +#include <linux/if.h>
 +#endif
  #include <linux/rtnetlink.h>
- #include <linux/pkt_sched.h>
  
-diff -ruN NetworkManager-1.22.0-orig/src/nm-manager.c NetworkManager-1.22.0/src/nm-manager.c
---- NetworkManager-1.22.0-orig/src/nm-manager.c	2019-12-17 16:59:49.000000000 +0900
-+++ NetworkManager-1.22.0/src/nm-manager.c	2019-12-18 22:11:24.897713474 +0900
+ #include "nm-std-aux/unaligned.h"
+diff --git a/src/nm-manager.c b/src/nm-manager.c
+index 46f81c7..a4f225e 100644
+--- a/src/nm-manager.c
++++ b/src/nm-manager.c
 @@ -14,6 +14,7 @@
  #include <sys/types.h>
  #include <sys/stat.h>
@@ -220,9 +224,10 @@ diff -ruN NetworkManager-1.22.0-orig/src/nm-manager.c NetworkManager-1.22.0/src/
  #include <limits.h>
  
  #include "nm-glib-aux/nm-c-list.h"
-diff -ruN NetworkManager-1.22.0-orig/src/platform/nm-linux-platform.c NetworkManager-1.22.0/src/platform/nm-linux-platform.c
---- NetworkManager-1.22.0-orig/src/platform/nm-linux-platform.c	2019-12-17 16:59:49.000000000 +0900
-+++ NetworkManager-1.22.0/src/platform/nm-linux-platform.c	2019-12-18 22:10:20.286870463 +0900
+diff --git a/src/platform/nm-linux-platform.c b/src/platform/nm-linux-platform.c
+index b377c85..7e32eea 100644
+--- a/src/platform/nm-linux-platform.c
++++ b/src/platform/nm-linux-platform.c
 @@ -6,6 +6,7 @@
  #include "nm-default.h"
  
@@ -243,9 +248,10 @@ diff -ruN NetworkManager-1.22.0-orig/src/platform/nm-linux-platform.c NetworkMan
  #include <linux/if_bridge.h>
  #include <linux/if_link.h>
  #include <linux/if_tun.h>
-diff -ruN NetworkManager-1.22.0-orig/src/platform/wifi/nm-wifi-utils.h NetworkManager-1.22.0/src/platform/wifi/nm-wifi-utils.h
---- NetworkManager-1.22.0-orig/src/platform/wifi/nm-wifi-utils.h	2019-12-11 17:47:50.000000000 +0900
-+++ NetworkManager-1.22.0/src/platform/wifi/nm-wifi-utils.h	2019-12-18 22:10:20.286870463 +0900
+diff --git a/src/platform/wifi/nm-wifi-utils.h b/src/platform/wifi/nm-wifi-utils.h
+index d1df2fb..792f4ab 100644
+--- a/src/platform/wifi/nm-wifi-utils.h
++++ b/src/platform/wifi/nm-wifi-utils.h
 @@ -7,7 +7,11 @@
  #ifndef __WIFI_UTILS_H__
  #define __WIFI_UTILS_H__
@@ -258,21 +264,10 @@ diff -ruN NetworkManager-1.22.0-orig/src/platform/wifi/nm-wifi-utils.h NetworkMa
  
  #include "nm-dbus-interface.h"
  #include "nm-setting-wireless.h"
-diff -ruN NetworkManager-1.22.0-orig/src/systemd/sd-adapt-core/nm-sd-adapt-core.h NetworkManager-1.22.0/src/systemd/sd-adapt-core/nm-sd-adapt-core.h
---- NetworkManager-1.22.0-orig/src/systemd/sd-adapt-core/nm-sd-adapt-core.h	2019-12-11 17:47:50.000000000 +0900
-+++ NetworkManager-1.22.0/src/systemd/sd-adapt-core/nm-sd-adapt-core.h	2019-12-18 22:10:20.286870463 +0900
-@@ -50,7 +50,7 @@
- #  ifdef HAVE___SECURE_GETENV
- #    define secure_getenv __secure_getenv
- #  else
--#    error neither secure_getenv nor __secure_getenv is available
-+#    define secure_getenv getenv
- #  endif
- #endif
- 
-diff -ruN NetworkManager-1.22.0-orig/src/systemd/src/libsystemd-network/sd-dhcp6-client.c NetworkManager-1.22.0/src/systemd/src/libsystemd-network/sd-dhcp6-client.c
---- NetworkManager-1.22.0-orig/src/systemd/src/libsystemd-network/sd-dhcp6-client.c	2019-12-16 01:34:38.000000000 +0900
-+++ NetworkManager-1.22.0/src/systemd/src/libsystemd-network/sd-dhcp6-client.c	2019-12-18 22:10:20.290870390 +0900
+diff --git a/src/systemd/src/libsystemd-network/sd-dhcp6-client.c b/src/systemd/src/libsystemd-network/sd-dhcp6-client.c
+index ec7f1be..0a7737a 100644
+--- a/src/systemd/src/libsystemd-network/sd-dhcp6-client.c
++++ b/src/systemd/src/libsystemd-network/sd-dhcp6-client.c
 @@ -7,7 +7,7 @@
  
  #include <errno.h>
@@ -282,35 +277,6 @@ diff -ruN NetworkManager-1.22.0-orig/src/systemd/src/libsystemd-network/sd-dhcp6
  #include <linux/if_infiniband.h>
  
  #include "sd-dhcp6-client.h"
-From 387ea9bf2a3df73144d7313f0d7de451b6c6b8da Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Thu, 14 May 2020 11:32:59 +0000
-Subject: [PATCH] musl
+-- 
+2.28.0
 
----
- src/devices/nm-device-bridge.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/src/devices/nm-device-bridge.c b/src/devices/nm-device-bridge.c
-index 544e66140c..f054b1a0e8 100644
---- a/src/devices/nm-device-bridge.c
-+++ b/src/devices/nm-device-bridge.c
-@@ -8,6 +8,7 @@
- #include "nm-device-bridge.h"
- 
- #include <stdlib.h>
-+#include <netinet/if_ether.h>
- 
- #include "NetworkManagerUtils.h"
- #include "nm-device-private.h"
-
---- a/src/NetworkManagerUtils.c	2020-07-17 20:05:45.382005791 +0200
-+++ b/src/NetworkManagerUtils.c	2020-07-17 20:05:39.721463542 +0200
-@@ -4,6 +4,7 @@
-  * Copyright (C) 2005 - 2008 Novell, Inc.
-  */
- 
-+#include <netinet/if_ether.h>
- #include "nm-default.h"
- 
- #include "NetworkManagerUtils.h"
