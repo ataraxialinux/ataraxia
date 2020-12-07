@@ -14,7 +14,7 @@ generate_initramfs() {
 		hwids systemd dbus-broker dbus e2fsprogs btrfs-progs dosfstools run-parts wireless_tools wpa_supplicant \
 		gptfdisk wget libevent links dropbear linux"
 
-	hydra em -c "$BUILD"/target.config -r "$INITRAMFS" -wDS $packages
+	hydra em -c "$BUILD"/target.config -r "$INITRAMFS" -wDSH $packages
 
 	pushd "$INITRAMFS"
 		rm -rf usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
@@ -57,6 +57,8 @@ generate_initramfs() {
 		rm -rf boot
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
+
+		selinux_relabel "$INITRAMFS"
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
