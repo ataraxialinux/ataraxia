@@ -6,7 +6,7 @@ generate_initramfs() {
 	mkdir -p "$INITRAMFS"/usr/lib/hydra/db
 
 	packages="base-files netbase selinux-policy musl tzdata zlib xz bzip2 file ncurses readline \
-		pcre libcap-ng audit libsepol libselinux libsemanage cracklib libtirpc pam libpwquality \
+		gmp mpfr pcre libcap-ng audit libsepol libselinux libsemanage cracklib libtirpc pam libpwquality \
 		attr acl libcap shadow grep sed psmisc mksh bash iputils net-tools expat libressl nettle \
 		ca-certificates lzip lz4 zstd libarchive lzo kmod gawk findutils 9base lobase sbase ubase less \
 		policycoreutils dialog gzip libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables \
@@ -57,8 +57,6 @@ generate_initramfs() {
 		rm -rf boot
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
-
-		selinux_relabel "$INITRAMFS"
 
 		find . | cpio -H newc -o | zstd -12 > "$ISODIR"/seiba/seiba.zst
 	popd
