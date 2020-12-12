@@ -9,12 +9,16 @@ for i in /usr/bin/fixfiles /usr/bin/setenforce; do
 done
 
 if [ -f "/.autorelabel" ]; then
-	echo
 	echo "SELinux: /.autorelabel placed, filesystem will be relabeled..."
 	setenforce 0
 	fixfiles -F -f relabel
 	rm -f /.autorelabel
 	echo "Relabel done, rebooting the system."
+
+	if [ -f "/.firstboot" ]; then
+		rm -f /etc/machine-id /.firstboot
+	fi
+
 	systemctl reboot
 fi
 
