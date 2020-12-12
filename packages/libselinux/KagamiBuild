@@ -12,7 +12,8 @@ source=("https://github.com/SELinuxProject/selinux/releases/download/20200710/$n
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/libselinux/musl.patch
+	patch -Np1 -i "$STUFF"/libselinux/0001-add-internal-fts-implementation.patch
+	patch -Np1 -i "$STUFF"/libselinux/0002-fix-gnuisms.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread"

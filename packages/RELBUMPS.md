@@ -51,6 +51,7 @@ pygobject
 pykickstart
 pyopenssl
 python-asn1crypto
+python-audit
 python-bsddb
 python-cffi
 python-chardet
@@ -63,10 +64,14 @@ python-decorator
 python-distutils-extra
 python-docutils
 python-idna
+python-ipy
+python-libselinux
+python-libsemanage
 python-lxml
 python-mako
 python-markupsafe
 python-mutagen
+python-networkx
 python-nose
 python-ordered-set
 python-pexpect
@@ -91,6 +96,8 @@ ranger
 samba
 satyr
 scour
+selinux-python
+setools
 system-config-printer
 sword
 talloc

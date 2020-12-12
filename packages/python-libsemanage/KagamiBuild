@@ -1,0 +1,20 @@
+# Description: Python bindings for SELinux binary policy manipulation library
+# URL:         https://github.com/SELinuxProject/selinux/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python swig libsemanage
+# Section:     python
+
+name=python-libsemanage
+version=3.1
+release=1
+options=('bootstrap' '~emptydirs')
+source=("https://github.com/SELinuxProject/selinux/releases/download/20200710/libsemanage-$version.tar.gz")
+
+build() {
+	cd "$SRC"/libsemanage-$version
+	make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" all
+	make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" swigify
+	make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" PYTHON=python3 pywrap
+	make CFLAGS="$CFLAGS" LDFLAGS="-fPIC -pthread" PYTHON=python3 \
+		DESTDIR="$PKG" SBINDIR=/usr/bin SHLIBDIR=/usr/lib install-pywrap
+}

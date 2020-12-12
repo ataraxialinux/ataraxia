@@ -11,6 +11,8 @@ source=("https://github.com/SELinuxProject/selinux/releases/download/20200710/$n
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libsepol/0001-fix-gnuisms.patch
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make HOSTCC="$HOSTCC" CC="$CC"
 		make HOSTCC="$HOSTCC" CC="$CC" DESTDIR="$PKG" SHLIBDIR=/usr/lib install

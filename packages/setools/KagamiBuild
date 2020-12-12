@@ -1,0 +1,19 @@
+# Description: Policy analysis tools for SELinux
+# URL:         https://github.com/SELinuxProject/selinux/wiki
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cython python-networkx libselinux
+# Section:     security
+
+name=setools
+version=4.3.0
+release=1
+source=("https://github.com/SELinuxProject/setools/releases/download/$version/setools-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name
+	patch -Np1 -i "$STUFF"/setools/setools-4.3.0-remove-gui.patch
+	patch -Np1 -i "$STUFF"/setools/0001-Disable-deprecated-function-warnings-to-fix-build-wi.patch
+
+	python3 setup.py build
+	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+}
