@@ -111,10 +111,16 @@ build() {
 	sed -i "s/uncomment/$version/g" "$PKG"/usr/bin/mkinitrd
 
 	[ -f "$topdir/trigger" ] && rm -rf "$topdir"/trigger
-	cat > "$topdir"/trigger <<-EOF
-		%transfiletriggerin -- /usr/lib/modules/${kver}-ataraxia
-		if [ -f "/boot/initramfs-ataraxia.img" ]; then
-			/usr/bin/mkinitrd
-		fi
+	cat > "$topdir/trigger" <<-'EOF'
+		{
+			"trigger": {
+				"name": "linux",
+				"directory": [
+					"usr/lib/modules/uncomment-ataraxia/"
+				],
+				"command": "/usr/bin/mkinitrd"
+			}
+		}
 	EOF
+	sed -i "s/uncomment/$version/g" "$topdir"/trigger
 }
