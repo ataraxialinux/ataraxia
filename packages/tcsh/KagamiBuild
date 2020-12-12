@@ -6,7 +6,9 @@
 
 name=tcsh
 version=6.22.03
-release=1
+release=2
+backup=('etc/csh.cshrc'
+	'etc/csh.login')
 source=("ftp://ftp.astron.com/pub/$name/$name-$version.tar.gz")
 
 build() {
@@ -21,4 +23,9 @@ build() {
 		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
+
+	ln -sf tcsh "$PKG"/usr/bin/csh
+
+	install -Dm0644 "$STUFF"/tcsh/csh.cshrc "$PKG"/etc/csh.cshrc
+	install -Dm0644 "$STUFF"/tcsh/csh.login "$PKG"/etc/csh.login
 }
