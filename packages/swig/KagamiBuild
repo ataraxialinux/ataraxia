@@ -7,25 +7,9 @@
 name=swig
 version=4.0.2
 release=1
-options=('bootstrap')
 source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
 
 build() {
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		cd "$SRC"
-		cp -a $name-$version swig-bootstrap
-		(
-			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
-			cd swig-bootstrap
-			./configure \
-				--prefix="$TOOLS"r \
-				--without-clisp \
-				--without-maximum-compile-warnings
-			$ORIGMAKE
-			$ORIGMAKE install
-		)
-	fi
-
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
