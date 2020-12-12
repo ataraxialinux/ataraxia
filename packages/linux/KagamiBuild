@@ -64,27 +64,15 @@ build() {
 	unset LDFLAGS
 	make mrproper
 
-	cat > certs/x509.genkey <<-EOF
-		[ req ]
-		default_bits = 4096
-		distinguished_name = req_distinguished_name
-		prompt = no
-		string_mask = utf8only
-		x509_extensions = myexts
+	cp "$STUFF"/linux/x509.genkey certs/
 
-		[ req_distinguished_name ]
-		CN = Modules
+	openssl req -new -nodes -utf8 -sha1 -days 36500 -batch -x509 \
+		-config certs/x509.genkey -outform PEM \
+		-out certs/signing_key.pem -keyout certs/signing_key.pem
 
-		[ myexts ]
-		basicConstraints=critical,CA:FALSE
-		keyUsage=digitalSignature
-		subjectKeyIdentifier=hash
-		authorityKeyIdentifier=keyid
-	EOF
-
-	cd certs
-	openssl req -new -nodes -utf8 -sha1 -days 36500 -batch -x509 -config x509.genkey -outform PEM -out signing_key.pem -keyout signing_key.priv
-	cd ..
+	chmod 0600 certs/signing_key.pem
+	openssl pkey -in certs/signing_key.pem -out certs/signing_prv.key
+	openssl x509 -outform der -in certs/signing_key.pem -out certs/signing_crt.crt
 
 	"$STUFF"/configure-kernel -a $BARCH
 
