@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
+
+main() {
+	if [ ! -f "$BUILD/.core-built" ]; then
+		die "Build core system first"
+	fi
+
+	if [ -z "$LINUX" ]; then
+		LINUX="linux"
+	fi
+
+	IMAGEFS="$BUILD/imagefs"
+
+	rm -rf "$IMAGEFS"
+	mkdir -p "$IMAGEFS"
+
+	IMG="$BUILD/ataraxialinux-$BARCH.img"
+
+	qemu-img create -f raw "$IMG" 6G
+	parted -s "$IMG" mklabel gpt
+	parted -a optimal -s "$IMG" mkpart primary 0% 256M
+	parted -a optimal -s "$IMG" mkpart primary 256M 300M
+	parted -a optimal -s "$IMG" mkpart primary 300M 5G
+	parted -a optimal -s "$IMG" mkpart primary 5G 100%
+	parted -s "$IMG" set 1 boot on
+
+	losetup -D
+	losetup -fP "$IMG"
+
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+	bootpart="${lodev}p1"
+	signpart="${lodev}p2"
+	distpart="${lodev}p3"
+	rootpart="${lodev}p4"
+
+	mkfs.vfat -F32 "$bootpart"
+	mkfs.btrfs -f "$rootpart"
+	mkfs.btrfs -f "$distpart"
+
+	mount -o loop "$rootpart" "$IMAGEFS"
+
+	mkdir -p "$IMAGEFS"/usr "$IMAGEFS"/boot
+
+	mount -o loop "$bootpart" "$IMAGEFS"/boot
+	mount -o loop "$distpart" "$IMAGEFS"/usr
+
+	mkdir -p "$IMAGEFS"/usr/lib/hydra/db
+
+	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools \
+		gettext-tiny zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc \
+		gmp mpfr mpc binutils gcc pkgconf pcre libcap-ng audit cracklib libtirpc pam libpwquality \
+		attr acl libcap shadow grep sed psmisc mksh bash slibtool net-tools gdbm db53 sqlite \
+		expat libffi libressl nettle python perl ca-certificates autoconf automake lzip libarchive lzo \
+		kmod libuargp libelf gawk findutils 9base lobase sbase ubase less mandoc gzip ncompress \
+		libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables iproute2 kbd \
+		samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng gperf libseccomp \
+		libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls iputils  util-linux \
+		libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus e2fsprogs btrfs-progs \
+		run-parts libssh2 nghttp2 c-ares heimdal brotli curl hpkg $LINUX"
+
+	hydra em -c "$BUILD"/target.config -r "$IMAGEFS" -wDSH $packages
+
+	umount -l "$IMAGEFS"/usr
+	umount -l "$IMAGEFS"/boot
+	umount -l "$IMAGEFS"
+
+	sha256="$(veritysetup format "$distpart" "$signpart" | grep -w "Root hash:" | awk '{print $3}')"
+
+	losetup -d $lodev
+
+	echo "hash: $sha256"
+}
