@@ -65,8 +65,6 @@ python-distutils-extra
 python-docutils
 python-idna
 python-ipy
-python-libselinux
-python-libsemanage
 python-lxml
 python-mako
 python-markupsafe
@@ -96,8 +94,6 @@ ranger
 samba
 satyr
 scour
-selinux-python
-setools
 system-config-printer
 sword
 talloc
