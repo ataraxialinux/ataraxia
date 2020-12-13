@@ -1,7 +1,7 @@
 # Description: Default file manager for GNOME
 # URL:         https://wiki.gnome.org/Apps/Nautilus
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson appstream-glib bubblewrap gnome-autoar gnome-desktop libnotify libseccomp tracker-miners desktop-file-utils libexif libselinux
+# Depends on:  meson appstream-glib bubblewrap gnome-autoar gnome-desktop libnotify libseccomp tracker-miners desktop-file-utils libexif
 # Section:     gnome
 
 name=nautilus
@@ -11,7 +11,7 @@ case $version in
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
-release=2
+release=3
 source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
@@ -20,7 +20,7 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dpackagekit=false \
-		-Dselinux=true
+		-Dselinux=false
 	samu
 	DESTDIR="$PKG" samu install
 }

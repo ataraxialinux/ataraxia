@@ -1,19 +1,17 @@
 # Description: Lists open files for running Unix processes
 # URL:         http://people.freebsd.org/~abe/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libselinux
 # Section:     admin
 
 name=lsof
 version=4.94.0
-release=2
+release=3
 source=("https://github.com/lsof-org/lsof/archive/$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	sed -i 's|/\* #define\tHASSECURITY\t1 \*/|#define\tHASSECURITY\t1|' dialects/linux/machine.h
 
-	LINUX_HASSELINUX=y \
 	./Configure -n linux
 	make CC="${CC:-cc} ${CFLAGS}"
 

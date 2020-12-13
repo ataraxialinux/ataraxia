@@ -1,12 +1,12 @@
 # Description: Low level core library
 # URL:         https://wiki.gnome.org/Projects/GLib
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson zlib pcre util-linux libffi libselinux
+# Depends on:  meson zlib pcre util-linux libffi
 # Section:     libs
 
 name=glib
 version=2.66.3
-release=2
+release=3
 options=('~emptydirs')
 source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz"
 	"glib-schemas.trigger"
@@ -20,7 +20,8 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
 		-Ddoc=false \
-		-Dman=false
+		-Dman=false \
+		-Dselinux=disabled
 	samu
 	DESTDIR="$PKG" samu install
 

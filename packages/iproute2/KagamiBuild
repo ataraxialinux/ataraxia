@@ -1,12 +1,12 @@
 # Description: IP Routing Utilities
 # URL:         https://git.kernel.org/pub/scm/network/iproute2/iproute2.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libcap iptables libselinux
+# Depends on:  libcap iptables
 # Section:     net
 
 name=iproute2
 version=5.9.0
-release=4
+release=5
 options=('bootstrap')
 backup=('etc/iproute2/ematch_map'
 	'etc/iproute2/rt_dsfield'
@@ -27,8 +27,7 @@ build() {
 		-e 's:-Werror::' Makefile
 	sed -e 's/^check_elf$/echo "no"/' -i configure
 
-	./configure $BUILDFLAGS \
-		--with-selinux
+	./configure $BUILDFLAGS
 	make
 	make DESTDIR="$PKG" SBINDIR="/usr/bin" install
 }
