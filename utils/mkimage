@@ -17,26 +17,28 @@ main() {
 	mkdir -p "$IMAGEFS"
 
 	IMG="$BUILD/ataraxialinux-$BARCH.img"
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=4G
-	losetup -f $IMG
-	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 
+	qemu-img create -f raw "$IMG" 5G
 	case $BARCH in
 		x86_64|i686)
-			parted -s $lodev mklabel msdos
-			parted -a optimal -s $lodev mkpart primary 0% 100%
-			parted -s $lodev set 1 boot on
+			parted -s "$IMG" mklabel msdos
+			parted -a optimal -s "$IMG" mkpart primary 0% 100%
+			parted -s "$IMG" set 1 boot on
 			;;
 		*)
-			parted -s $lodev mklabel msdos
-			parted -a optimal -s $lodev mkpart primary 0% 100%
+			parted -s "$IMG" mklabel msdos
+			parted -a optimal -s "$IMG" mkpart primary 0% 100%
 			;;
 	esac
 
-	lopart="${lodev}p1"
-	yes | mkfs.ext4 $lopart
+	losetup -D
+	losetup -fP "$IMG"
 
-	mount -o loop $lopart "$IMAGEFS"
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
+	lopart="${lodev}p1"
+	yes | mkfs.btrfs $lopart
+
+	mount -o loop $lopart "$IMAGEFS"	
 
 	mkdir -p "$IMAGEFS"/usr/lib/hydra/db
 
