@@ -1,9 +1,9 @@
-From 41302c704cd9346b60d90ddf9ce93d4dcbd3fd9f Mon Sep 17 00:00:00 2001
-From: Piotr Gorski <lucjan.lucjanov@gmail.com>
-Date: Sat, 31 Oct 2020 13:26:01 +0100
-Subject: [PATCH] UKSM for 5.9
+From cea280dd5321cf31697596716913bc777f4a6b88 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 13 Dec 2020 21:14:30 +0900
+Subject: [PATCH] UKSM
 
-Signed-off-by: Piotr Gorski <lucjan.lucjanov@gmail.com>
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
  Documentation/vm/uksm.txt   |   61 +
  fs/exec.c                   |    1 +
@@ -99,13 +99,13 @@ index 000000000..be19a3127
 +2016-09-10 UKSM 0.1.2.5 Fix a bug in dedup ratio calculation.
 +2017-02-26 UKSM 0.1.2.6 Fix a bug in hugetlbpage handling and a race bug with page migration.
 diff --git a/fs/exec.c b/fs/exec.c
-index 07910f503..221fc19de 100644
+index 329b7547e..ea2a81572 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -63,6 +63,7 @@
- #include <linux/compat.h>
+@@ -64,6 +64,7 @@
  #include <linux/vmalloc.h>
  #include <linux/io_uring.h>
+ #include <linux/random.h>
 +#include <linux/ksm.h>
  
  #include <linux/uaccess.h>
@@ -226,7 +226,7 @@ index 0f7a4ff4b..111e4e762 100644
  
  enum node_stat_item {
 diff --git a/include/linux/pgtable.h b/include/linux/pgtable.h
-index 90654cb63..40da7cc01 100644
+index cd5aa8752..ce1af819a 100644
 --- a/include/linux/pgtable.h
 +++ b/include/linux/pgtable.h
 @@ -1032,12 +1032,25 @@ extern void untrack_pfn(struct vm_area_struct *vma, unsigned long pfn,
@@ -504,10 +504,10 @@ index 000000000..bb8651f53
 +#endif /* !CONFIG_UKSM */
 +#endif /* __LINUX_UKSM_H */
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 8934886d1..62638fb14 100644
+index 4ce141b07..3e6d48ec9 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
-@@ -587,7 +587,7 @@ static __latent_entropy int dup_mmap(struct mm_struct *mm,
+@@ -588,7 +588,7 @@ static __latent_entropy int dup_mmap(struct mm_struct *mm,
  		__vma_link_rb(mm, tmp, rb_link, rb_parent);
  		rb_link = &tmp->vm_rb.rb_right;
  		rb_parent = &tmp->vm_rb;
@@ -1012,7 +1012,7 @@ index 000000000..ab21e6309
 +	return 0;
 +}
 diff --git a/mm/Kconfig b/mm/Kconfig
-index 6c974888f..4c6727acd 100644
+index 6800aa460..11ce79958 100644
 --- a/mm/Kconfig
 +++ b/mm/Kconfig
 @@ -317,6 +317,32 @@ config KSM
@@ -1173,7 +1173,7 @@ index eeae590e5..0b3bb88b1 100644
  		}
  		flush_cache_page(vma, vmf->address, pte_pfn(vmf->orig_pte));
 diff --git a/mm/mmap.c b/mm/mmap.c
-index 7a8987aa6..5af32b633 100644
+index 6416ffd17..1cfe8b4c1 100644
 --- a/mm/mmap.c
 +++ b/mm/mmap.c
 @@ -46,6 +46,7 @@
@@ -1192,7 +1192,7 @@ index 7a8987aa6..5af32b633 100644
  	vm_area_free(vma);
  	return next;
  }
-@@ -708,9 +710,16 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
+@@ -715,9 +717,16 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  	long adjust_next = 0;
  	int remove_next = 0;
  
@@ -1209,7 +1209,7 @@ index 7a8987aa6..5af32b633 100644
  		if (end >= next->vm_end) {
  			/*
  			 * vma expands, overlapping all the next, and
-@@ -841,6 +850,7 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
+@@ -848,6 +857,7 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  		end_changed = true;
  	}
  	vma->vm_pgoff = pgoff;
@@ -1217,7 +1217,7 @@ index 7a8987aa6..5af32b633 100644
  	if (adjust_next) {
  		next->vm_start += adjust_next << PAGE_SHIFT;
  		next->vm_pgoff += adjust_next;
-@@ -946,6 +956,7 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
+@@ -953,6 +963,7 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  		if (remove_next == 2) {
  			remove_next = 1;
  			end = next->vm_end;
@@ -1225,7 +1225,7 @@ index 7a8987aa6..5af32b633 100644
  			goto again;
  		}
  		else if (next)
-@@ -972,10 +983,14 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
+@@ -979,10 +990,14 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
  			 */
  			VM_WARN_ON(mm->highest_vm_end != vm_end_gap(vma));
  		}
@@ -1240,7 +1240,7 @@ index 7a8987aa6..5af32b633 100644
  	validate_mm(mm);
  
  	return 0;
-@@ -1434,6 +1449,9 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
+@@ -1441,6 +1456,9 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
  	vm_flags = calc_vm_prot_bits(prot, pkey) | calc_vm_flag_bits(flags) |
  			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
  
@@ -1250,7 +1250,7 @@ index 7a8987aa6..5af32b633 100644
  	if (flags & MAP_LOCKED)
  		if (!can_do_mlock())
  			return -EPERM;
-@@ -1826,6 +1844,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
+@@ -1833,6 +1851,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
  			allow_write_access(file);
  	}
  	file = vma->vm_file;
@@ -1258,7 +1258,7 @@ index 7a8987aa6..5af32b633 100644
  out:
  	perf_event_mmap(vma);
  
-@@ -1868,6 +1887,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
+@@ -1875,6 +1894,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
  	if (vm_flags & VM_DENYWRITE)
  		allow_write_access(file);
  free_vma:
@@ -1266,7 +1266,7 @@ index 7a8987aa6..5af32b633 100644
  	vm_area_free(vma);
  unacct_error:
  	if (charged)
-@@ -2730,6 +2750,8 @@ int __split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
+@@ -2737,6 +2757,8 @@ int __split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
  	else
  		err = vma_adjust(vma, vma->vm_start, addr, vma->vm_pgoff, new);
  
@@ -1275,7 +1275,7 @@ index 7a8987aa6..5af32b633 100644
  	/* Success. */
  	if (!err)
  		return 0;
-@@ -3037,6 +3059,7 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
+@@ -3044,6 +3066,7 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
  	if ((flags & (~VM_EXEC)) != 0)
  		return -EINVAL;
  	flags |= VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
@@ -1283,7 +1283,7 @@ index 7a8987aa6..5af32b633 100644
  
  	mapped_addr = get_unmapped_area(NULL, addr, len, 0, MAP_FIXED);
  	if (IS_ERR_VALUE(mapped_addr))
-@@ -3087,6 +3110,7 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
+@@ -3094,6 +3117,7 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
  	vma->vm_flags = flags;
  	vma->vm_page_prot = vm_get_page_prot(flags);
  	vma_link(mm, vma, prev, rb_link, rb_parent);
@@ -1291,7 +1291,7 @@ index 7a8987aa6..5af32b633 100644
  out:
  	perf_event_mmap(vma);
  	mm->total_vm += len >> PAGE_SHIFT;
-@@ -3164,6 +3188,12 @@ void exit_mmap(struct mm_struct *mm)
+@@ -3171,6 +3195,12 @@ void exit_mmap(struct mm_struct *mm)
  		mmap_write_unlock(mm);
  	}
  
@@ -1304,7 +1304,7 @@ index 7a8987aa6..5af32b633 100644
  	if (mm->locked_vm) {
  		vma = mm->mmap;
  		while (vma) {
-@@ -3199,6 +3229,11 @@ void exit_mmap(struct mm_struct *mm)
+@@ -3206,6 +3236,11 @@ void exit_mmap(struct mm_struct *mm)
  		cond_resched();
  	}
  	vm_unacct_memory(nr_accounted);
@@ -1316,7 +1316,7 @@ index 7a8987aa6..5af32b633 100644
  }
  
  /* Insert vm structure into process list sorted by address
-@@ -3306,6 +3341,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+@@ -3313,6 +3348,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
  			new_vma->vm_ops->open(new_vma);
  		vma_link(mm, new_vma, prev, rb_link, rb_parent);
  		*need_rmap_locks = false;
@@ -1324,7 +1324,7 @@ index 7a8987aa6..5af32b633 100644
  	}
  	return new_vma;
  
-@@ -3458,6 +3494,7 @@ static struct vm_area_struct *__install_special_mapping(
+@@ -3465,6 +3501,7 @@ static struct vm_area_struct *__install_special_mapping(
  	vm_stat_account(mm, vma->vm_flags, len >> PAGE_SHIFT);
  
  	perf_event_mmap(vma);
@@ -6967,5 +6967,5 @@ index 4f7b4ee6a..35852d5e2 100644
  	"nr_dirty_threshold",
  	"nr_dirty_background_threshold",
 -- 
-2.29.1.59.gf9b6481aed
+2.29.2
 
