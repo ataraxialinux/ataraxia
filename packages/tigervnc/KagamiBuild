@@ -7,7 +7,7 @@
 name=tigervnc
 version=1.11.0
 xserverver=1.20.9
-release=2
+release=3
 source=("https://github.com/TigerVNC/tigervnc/archive/v$version/$name-$version.tar.gz"
 	"https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-$xserverver.tar.bz2")
 
@@ -43,4 +43,8 @@ build() {
 
 	cd hw/vnc
 	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/pam.d
+	mv "$PKG"/etc/pam.d/* "$PKG"/usr/lib/pam.d/
+	rm -rf "$PKG"/etc/pam.d
 }

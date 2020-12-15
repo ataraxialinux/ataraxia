@@ -6,11 +6,10 @@
 
 name=cronie
 version=1.5.5
-release=6
+release=7
 backup=('etc/cronie/cron.deny'
 	'etc/cronie/cron.d/0hourly'
-	'etc/cronie/anacrontab'
-	'etc/pam.d/crond')
+	'etc/cronie/anacrontab')
 source=("https://github.com/cronie-crond/cronie/releases/download/$name-$version/$name-$version.tar.gz")
 
 build() {
@@ -38,6 +37,6 @@ build() {
 	install -Dm0755 contrib/0anacron "$PKG"/etc/cronie/cron.hourly/0anacron
 
 	touch "$PKG"/etc/cronie/cron.deny
-	install -Dm644 "$STUFF"/pam.d/crond "$PKG"/etc/pam.d/crond
+	install -Dm644 "$STUFF"/pam.d/crond "$PKG"/usr/lib/pam.d/crond
 	install -Dm644 "$STUFF"/svc/cronie.service "$PKG"/usr/lib/systemd/system/cronie.service
 }

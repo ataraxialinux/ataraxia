@@ -6,7 +6,7 @@
 
 name=phosh
 version=0.7.0
-release=1
+release=2
 source=("https://source.puri.sm/Librem5/phosh/-/archive/v$version/$name-v$version.tar.gz")
 
 build() {
@@ -18,4 +18,8 @@ build() {
 	ataraxia-meson "$SRC"/$name-v$version
 	samu
 	DESTDIR="$PKG" samu install
+
+	mkdir -p "$PKG"/usr/lib/pam.d
+	mv "$PKG"/etc/pam.d/* "$PKG"/usr/lib/pam.d/
+	rm -rf "$PKG"/etc/pam.d
 }

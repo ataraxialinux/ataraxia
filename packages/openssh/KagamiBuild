@@ -1,12 +1,12 @@
 # Description: Premier connectivity tool for remote login with the SSH protocol
 # URL:         https://www.openssh.com/portable.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib audit pam libressllibedit heimdal
+# Depends on:  zlib audit pam libressl libedit heimdal
 # Section:     net
 
 name=openssh
 version=8.4p1
-release=3
+release=4
 backup=('etc/ssh/ssh_config'
 	'etc/ssh/sshd_config')
 source=("https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/$name-$version.tar.gz")
@@ -34,7 +34,7 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm644 "$STUFF"/pam.d/sshd "$PKG"/etc/pam.d/sshd
+	install -Dm644 "$STUFF"/pam.d/sshd "$PKG"/usr/lib/pam.d/sshd
 	install -Dm644 "$STUFF"/svc/sshd.service "$PKG"/usr/lib/systemd/system/sshd.service
 	install -Dm644 "$STUFF"/svc/sshd_at.service "$PKG"/usr/lib/systemd/system/sshd@.service
 	install -Dm644 "$STUFF"/svc/sshd.socket "$PKG"/usr/lib/systemd/system/sshd.socket

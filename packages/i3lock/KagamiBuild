@@ -6,8 +6,7 @@
 
 name=i3lock
 version=2.13
-release=1
-backup=('etc/pam.d/i3lock')
+release=2
 source=("https://i3wm.org/$name/$name-$version.tar.bz2")
 
 build() {
@@ -24,4 +23,8 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -Dm644 i3lock.1 "$PKG"/usr/share/man/man1/i3lock.1
+
+	mkdir -p "$PKG"/usr/lib/pam.d
+	mv "$PKG"/etc/pam.d/i3lock "$PKG"/usr/lib/pam.d/
+	rm -rf "$PKG"/etc/pam.d
 }
