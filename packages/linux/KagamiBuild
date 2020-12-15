@@ -102,25 +102,13 @@ build() {
 
 	mkdir -p "$PKG"/boot
 	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-ataraxia
+	cp "$IMAGELOC" "$PKG"/usr/lib/modules/${kver}-ataraxia/vmlinuz
 	cp .config "$PKG"/boot/config-ataraxia
+	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
 
 	install -Dm755 "$STUFF"/linux/mkinitrd "$PKG"/usr/bin/mkinitrd
 	sed -i "s/uncomment/$version/g" "$PKG"/usr/bin/mkinitrd
-
-	[ -f "$topdir/trigger" ] && rm -rf "$topdir"/trigger
-	cat > "$topdir/trigger" <<-'EOF'
-		{
-			"trigger": {
-				"name": "linux",
-				"directory": [
-					"usr/lib/modules/uncomment-ataraxia/"
-				],
-				"command": "/usr/bin/mkinitrd"
-			}
-		}
-	EOF
-	sed -i "s/uncomment/$version/g" "$topdir"/trigger
 }
