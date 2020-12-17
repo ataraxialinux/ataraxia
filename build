@@ -346,32 +346,6 @@ genrepo() {
 	echo -e '\t},' >> "$2"
 }
 
-selinux_relabel() {
-	set +e
-
-	[ -z "$1" ] && die "Root filesystem was not specified."
-	[ ! -f "$1/usr/bin/restorecon" ] && die "restorecon is not installed"
-	selinuxenabled 2>/dev/null || die "SELinux is not enabled"
-
-	mount --bind /proc "$1/proc"
-	mount --bind /sys "$1/sys"
-	mount --bind /sys/fs/selinux "$1/sys/fs/selinux"
-
-	echo "0" >> "$1/sys/fs/selinux/enforce"
-
-	chroot "$1" /usr/bin/restorecon -rFv / || {
-		umount -l "$1/sys/fs/selinux"
-		umount -l "$1/sys"
-		umount -l "$1/proc"
-
-		die "Failed to relabel root filesystem"
-	}
-
-	umount -l "$1/sys/fs/selinux"
-	umount -l "$1/sys"
-	umount -l "$1/proc"
-}
-
 case $1 in
 	stage)
 		shift
