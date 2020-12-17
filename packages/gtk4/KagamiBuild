@@ -1,0 +1,36 @@
+# Description: GObject-based multi-platform GUI toolkit
+# URL:         https://www.gtk.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson at-spi2-atk cups fribidi gdk-pixbuf graphene gst-plugins-bad hicolor-icon-theme iso-codes json-glib libepoxy libxcomposite libxcursor libxinerama libxkbcommon libxrandr pango rest sassc vulkan-loader wayland-protocols rsvg
+# Section:     libs
+
+name=gtk4
+version=4.0.0
+release=1
+source=("https://download.gnome.org/sources/gtk/${version%.*}/gtk-$version.tar.xz")
+
+build() {
+	cd "$SRC"/gtk+-$version
+	mkdir -p build
+	cd build
+
+	ataraxia-meson "$SRC"/gtk+-$version \
+		-Dbroadway_backend=true \
+		-Dcolord=yes \
+		-Dgtk_doc=false \
+		-Dman=false \
+		-Dprint-backends=true \
+		-Dvulkan=enabled
+	ninja
+	DESTDIR="$PKG" ninja install
+
+	# Remove conflicts with gtk3 \
+	rm -rf "$PKG"/usr/share/gettext/its/gtkbuilder.its \
+		"$PKG"/usr/share/gettext/its/gtkbuilder.loc \
+		"$PKG"/usr/share/glib-2.0/schemas/org.gtk.Demo.gschema.xml \
+		"$PKG"/usr/share/glib-2.0/schemas/org.gtk.Settings.ColorChooser.gschema.xml \
+		"$PKG"/usr/share/glib-2.0/schemas/org.gtk.Settings.Debug.gschema.xml \
+		"$PKG"/usr/share/glib-2.0/schemas/org.gtk.Settings.FileChooser.gschema.xml \
+		"$PKG"/usr/share/glib-2.0/schemas/org.gtk.Settings.EmojiChooser.gschema.xml \
+		"$PKG"/usr/share/glib-2.0/schemas/org.gtk.exampleapp.gschema.xml
+}
