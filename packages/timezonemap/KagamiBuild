@@ -4,24 +4,16 @@
 # Depends on:  gobject-introspection gtk3 libsoup
 # Section:     libs
 
-name=gnome-keyring
-version=3.36.0
+name=timezonemap
+version=0.4.5.1
 release=1
-source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("https://github.com/dashea/timezonemap/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/gnome-keyring/fix-includes.patch
-	sed -i -r 's:"(/desktop):"/org/gnome\1:' schema/*.xml
-
+	autoreconf -fi
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--with-pam-dir=/usr/lib/security \
-		--disable-doc \
-		--disable-schemas-compile
+		--prefix=/usr
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
