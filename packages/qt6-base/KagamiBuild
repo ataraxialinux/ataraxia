@@ -13,7 +13,7 @@ build() {
 	cd "$SRC"/qtbase-everywhere-src-$version
 	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version \
+	cmake "$SRC"/qtbase-everywhere-src-$version \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DINSTALL_BINDIR=lib/qt6/bin \
 		-DINSTALL_DOCDIR=share/doc/qt6 \
@@ -28,10 +28,7 @@ build() {
 	samu
 	DESTDIR="$PKG" samu install
 
-	find "$PKG"/usr/lib -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
-	sed -i "s|$SRC/qt-everywhere-src-$version|/usr|" "$PKG"/usr/lib/qt/mkspecs/modules/qt_lib_bootstrap_private.pri
-
 	for b in "$PKG"/usr/bin/*; do
-		ln -sf $(basename $b) "$PKG"/usr/bin/$(basename $b)-qt6
+		mv "$PKG"/usr/bin/ $(basename $b) "$PKG"/usr/bin/$(basename $b)-qt6
 	done
 }
