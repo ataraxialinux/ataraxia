@@ -40,7 +40,7 @@ main() {
 
 	mount -o loop $lopart "$IMAGEFS"	
 
-	mkdir -p "$IMAGEFS"/usr/lib/hydra/db
+	mkdir -p "$IMAGEFS"/usr/lib/tsukuri/db
 
 	packages="base-files iana-etc linux-headers musl tzdata man-pages musl-tools \
 		gettext-tiny zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc \
@@ -52,9 +52,10 @@ main() {
 		iproute2 kbd samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng \
 		gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls iputils \
 		util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
-		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl tsukuri $LINUX"
+		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma jq \
+		tsukuri $LINUX"
 
-	hydra em -c "$BUILD"/target.config -r "$IMAGEFS" -wDSH $packages
+	tsukuri em -c "$BUILD"/target.config -r "$IMAGEFS" -wDSH $packages
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev

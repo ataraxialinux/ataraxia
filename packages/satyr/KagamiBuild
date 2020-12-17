@@ -1,12 +1,12 @@
 # Description: Tools to create anonymous, machine-friendly problem reports
 # URL:         https://github.com/abrt/satyr
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python gperf binutils json-c nettle libelf rpm
+# Depends on:  python gperf binutils json-c nettle libelf
 # Section:     admin
 
 name=satyr
 version=0.35
-release=1
+release=2
 source=("https://github.com/abrt/satyr/archive/$version/$name-$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -16,7 +16,8 @@ build() {
 
 	./autogen.sh
 	./configure $BUILDFLAGS \
-		--prefix=/usr
+		--prefix=/usr \
+		--without-rpm
 	make
 	make DESTDIR="$PKG" install
 }

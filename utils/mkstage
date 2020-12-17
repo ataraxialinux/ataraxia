@@ -14,7 +14,7 @@ main() {
 	STAGE="$BUILD/stage"
 
 	rm -rf "$STAGE"
-	mkdir -p "$STAGE"/usr/lib/hydra/db
+	mkdir -p "$STAGE"/usr/lib/tsukuri/db
 
 	packages="base-files iana-etc linux-headers musl tzdata man-pages musl-tools \
 		gettext-tiny zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc \
@@ -26,9 +26,10 @@ main() {
 		iproute2 kbd samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng \
 		gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls iputils \
 		util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
-		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl tsukuri $LINUX"
+		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma jq \
+		tsukuri $LINUX"
 
-	hydra em -c "$BUILD"/target.config -r "$STAGE" -wDSH $packages
+	tsukuri em -c "$BUILD"/target.config -r "$STAGE" -wDSH $packages
 
 	pushd "$STAGE"
 		bsdtar -c --zstd -f "$BUILD"/ataraxialinux-$BARCH.tar.zst .

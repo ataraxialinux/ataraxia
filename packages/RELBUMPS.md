@@ -27,12 +27,9 @@ ktoblzcheck
 ldb
 libblockdev
 libbytesize
-libcomps
-libdnf
 libguestfs
 libproxy
 libreoffice
-librepo
 libreport
 libsolv
 libteam
@@ -48,7 +45,6 @@ protobuf
 pybind11
 pycairo
 pygobject
-pykickstart
 pyopenssl
 python-asn1crypto
 python-audit
@@ -87,7 +83,6 @@ python-pysocks
 python-pytz
 python-pyxdg
 python-requests
-python-rpm
 python-setuptools
 python-six
 python-slip
@@ -137,7 +132,16 @@ mpd
 node
 php
 postgresql
-qt5
+qt5-base
+qt5-declarative
+qt5-multimedia
+qt5-svg
+qt5-tools
+qt5-x11extras
+qt6-base
+qt6-declarative
+qt6-svg
+qt6-tools
 spidermonkey
 sword
 thunderbird

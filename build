@@ -203,21 +203,21 @@ build_toolchain() {
 				;;
 	esac
 
-	mkdir -p "$ROOTFS/usr/lib/hydra/db"
+	mkdir -p "$ROOTFS/usr/lib/tsukuri/db"
 
 	for toolchain in base-files gettext-tiny texinfo m4 bison flex bc kmod heimdal gperf \
 			python samurai meson linux-headers binutils gcc-static musl gcc $EXTRAPKG \
 			slibtool autoconf automake cracklib pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
-				hydra em -c "$BUILD"/host.config -r "$ROOTFS" -wND ${toolchain}
+				tsukuri em -c "$BUILD"/host.config -r "$ROOTFS" -wND ${toolchain}
 				;;
 			musl)
-				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wND ${toolchain}
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wND ${toolchain}
 				;;
 			*)
 				pushd "$TCREPO/host-$toolchain"
-					hydra bi -c "$BUILD"/host.config -wp
+					tsukuri bi -c "$BUILD"/host.config -wp
 				popd
 				;;
 		esac
@@ -252,46 +252,47 @@ build_target() {
 		patch tar cpio texinfo nano gperf libseccomp libblkid libsystemd util-linux libgpg-error libgcrypt \
 		libunistring libidn2 libtasn1 p11-kit gnutls libaio lvm2 popt json-c argon2 cryptsetup hwids systemd \
 		dbus-broker dbus iputils procps-ng e2fsprogs btrfs-progs dosfstools run-parts libssh2 nghttp2 c-ares \
-		heimdal brotli curl tsukuri wireless_tools wpa_supplicant gptfdisk wget libevent links dropbear $LINUX"
+		heimdal brotli curl oniguruma jq tsukuri wireless_tools wpa_supplicant gptfdisk wget \
+		libevent links dropbear $LINUX"
 
 	for i in $packages; do
 		case $i in
 			libblkid)
 				if [ ! -f "$BUILD/.blkid" ]; then
-					hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libblkid
+					tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libblkid
 					rm -rf "$BUILD"/packages/libblkid-*.br
 					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
 				fi
 				;;
 			libsystemd)
 				if [ ! -f "$BUILD/.libsystemd" ]; then
-					hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libsystemd
+					tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libsystemd
 					rm -rf "$BUILD"/packages/libsystemd-*.br
 					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
 				fi
 				;;
 			util-linux)
 				pushd "$REPO/util-linux"
-					hydra bi -c "$BUILD"/target.config -w util-linux
+					tsukuri bi -c "$BUILD"/target.config -w util-linux
 				popd
 				if [ -f "$BUILD/.rmblkid" ]; then
-					hydra rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libblkid
+					tsukuri rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libblkid
 					rm "$BUILD"/.rmblkid
 				fi
-				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH util-linux
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH util-linux
 				;;
 			systemd)
 				pushd "$REPO/systemd"
-					hydra bi -c "$BUILD"/target.config -w systemd
+					tsukuri bi -c "$BUILD"/target.config -w systemd
 				popd
 				if [ -f "$BUILD/.rmsystemd" ]; then
-					hydra rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libsystemd
+					tsukuri rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libsystemd
 					rm "$BUILD"/.rmsystemd
 				fi
-				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH systemd
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH systemd
 				;;
 			*)
-				hydra em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH $i
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH $i
 				;;
 		esac
 	done

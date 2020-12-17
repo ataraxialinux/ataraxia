@@ -1,6 +1,9 @@
 {
 	"trigger": {
 		"name": "systemd-tmpfiles",
+		"directories-exist": [
+			"/run/systemd"
+		],
 		"directory": [
 			"usr/lib/tmpfiles.d/"
 		],

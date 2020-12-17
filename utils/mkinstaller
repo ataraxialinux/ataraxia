@@ -3,7 +3,7 @@
 die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 generate_initramfs() {
-	mkdir -p "$INITRAMFS"/usr/lib/hydra/db
+	mkdir -p "$INITRAMFS"/usr/lib/tsukuri/db
 
 	packages="base-files iana-etc musl tzdata zlib xz lz4 zstd bzip2 file \
 		ncurses readline gmp mpfr pcre libcap-ng audit cracklib libtirpc \
@@ -17,7 +17,7 @@ generate_initramfs() {
 		e2fsprogs btrfs-progs dosfstools run-parts wireless_tools wpa_supplicant \
 		gptfdisk wget libevent links dropbear linux"
 
-	hydra em -c "$BUILD"/target.config -r "$INITRAMFS" -wDSH $packages
+	tsukuri em -c "$BUILD"/target.config -r "$INITRAMFS" -wDSH $packages
 
 	pushd "$INITRAMFS"
 		rm -rf usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc

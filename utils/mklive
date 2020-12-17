@@ -4,7 +4,7 @@ msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
 die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 install_liveos() {
-	mkdir -p "$LIVEOS"/usr/lib/hydra/db
+	mkdir -p "$LIVEOS"/usr/lib/tsukuri/db
 
 	case $BARCH in
 		x86_64|i686|aarch64|armv7hl|armv6hl)
@@ -25,7 +25,8 @@ install_liveos() {
 		iproute2 kbd samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng \
 		gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls iputils \
 		util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
-		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl tsukuri linux"
+		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma jq \
+		tsukuri linux"
 
 	packages="linux-firmware squashfs-tools alsa-utils dnf earlyoom wireless_tools wpa_supplicant font-adobe-source-han-sans-jp-fonts mozc $EXTRAPKG"
 
@@ -63,8 +64,8 @@ install_liveos() {
 	fi
 
 	msg "Installing packages"
-	hydra em -c "$BUILD"/target.config -r "$LIVEOS" -DSH $core
-	hydra em -c "$BUILD"/target.config -r "$LIVEOS" $packages
+	tsukuri em -c "$BUILD"/target.config -r "$LIVEOS" -DSH $core
+	tsukuri em -c "$BUILD"/target.config -r "$LIVEOS" $packages
 
 	msg "Configuring system"
 	pushd "$LIVEOS"
