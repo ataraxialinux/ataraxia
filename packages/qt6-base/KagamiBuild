@@ -10,34 +10,23 @@ release=1
 source=("https://download.qt.io/official_releases/qt/${version::4}/$version/submodules/qtbase-everywhere-src-$version.tar.xz")
 
 build() {
-	if [ "$opt_ccache" = "1" ]; then
-		export PATH="/usr/lib/ccache/bin:$PATH"
-	fi
-
 	cd "$SRC"/qtbase-everywhere-src-$version
-	./configure \
-		-prefix /usr \
-		-docdir /usr/share/doc/qt \
-		-headerdir /usr/include/qt \
-		-archdatadir /usr/lib/qt \
-		-datadir /usr/share/qt \
-		-sysconfdir /etc/xdg \
-		-examplesdir /usr/share/doc/qt/examples \
-		-confirm-license \
-		-libdir /usr/lib \
-		-sysconfdir /etc/xdg \
-		-dbus-linked \
-		-nomake examples \
-		-no-mimetype-database \
-		-no-rpath \
-		-no-use-gold-linker \
-		-opensource \
-		-openssl-linked \
-		-reduce-relocations \
-		-system-harfbuzz \
-		-system-sqlite
-	make
-	make INSTALL_ROOT="$PKG" install
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DINSTALL_BINDIR=lib/qt6/bin \
+		-DINSTALL_DOCDIR=share/doc/qt6 \
+		-DINSTALL_ARCHDATADIR=lib/qt6 \
+		-DINSTALL_DATADIR=share/qt6 \
+		-DINSTALL_INCLUDEDIR=include/qt6 \
+		-DINSTALL_MKSPECSDIR=lib/qt6/mkspecs \
+		-DINSTALL_EXAMPLESDIR=share/doc/qt6/examples \
+		-DQT_FEATURE_journald=ON \
+		-DQT_FEATURE_openssl_linked=ON \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
 
 	find "$PKG"/usr/lib -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
 	sed -i "s|$SRC/qt-everywhere-src-$version|/usr|" "$PKG"/usr/lib/qt/mkspecs/modules/qt_lib_bootstrap_private.pri
