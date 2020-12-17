@@ -1,11 +1,11 @@
 # Description: A cross-platform application and UI framework
 # URL:         https://www.qt.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gst-plugins-base pulseaudio cups vulkan-headers dbus double-conversion fontconfig libinput libjpeg-turbo libproxy libxi libxkbcommon libxrender mesa shared-mime-info sqlite tslib xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm xdg-utils gtk3
+# Depends on:  cmake samurai gst-plugins-base pulseaudio cups vulkan-headers brotli dbus double-conversion fontconfig libinput libjpeg-turbo libproxy libxi libxkbcommon libxrender mesa shared-mime-info sqlite tslib xcb-util-cursor xcb-util-keysyms xcb-util-wm xdg-utils gtk3
 # Section:     libs
 
-name=qt5-base
-version=5.15.2
+name=qt6-base
+version=6.0.0
 release=1
 source=("https://download.qt.io/official_releases/qt/${version::4}/$version/submodules/qtbase-everywhere-src-$version.tar.xz")
 
@@ -15,8 +15,6 @@ build() {
 	fi
 
 	cd "$SRC"/qtbase-everywhere-src-$version
-	patch -Np1 -i "$STUFF"/qt5-base/qt-musl-iconv-no-bom.patch
-
 	./configure \
 		-prefix /usr \
 		-docdir /usr/share/doc/qt \
@@ -37,8 +35,7 @@ build() {
 		-openssl-linked \
 		-reduce-relocations \
 		-system-harfbuzz \
-		-system-sqlite \
-		-journald
+		-system-sqlite
 	make
 	make INSTALL_ROOT="$PKG" install
 
@@ -46,6 +43,6 @@ build() {
 	sed -i "s|$SRC/qt-everywhere-src-$version|/usr|" "$PKG"/usr/lib/qt/mkspecs/modules/qt_lib_bootstrap_private.pri
 
 	for b in "$PKG"/usr/bin/*; do
-		ln -sf $(basename $b) "$PKG"/usr/bin/$(basename $b)-qt5
+		ln -sf $(basename $b) "$PKG"/usr/bin/$(basename $b)-qt6
 	done
 }
