@@ -8,6 +8,7 @@ boost
 brotli
 bullet
 capstone
+caribou
 catfish
 cython
 dnf
