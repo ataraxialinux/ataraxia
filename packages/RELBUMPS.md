@@ -69,6 +69,7 @@ python-mutagen
 python-networkx
 python-nose
 python-ordered-set
+python-pam
 python-pexpect
 python-pillow
 python-pip
