@@ -1,0 +1,24 @@
+# Description: Linux desktop which provides advanced innovative features and a traditional user experience
+# URL:         https://github.com/linuxmint/cinnamon
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  st intltool meson gobject-introspection accountsservice caribou cinnamon-control-center cinnamon-menus cinnamon-session cjs gnome-themes-extra gstreamer gvfs libcroco libgnomekbd libkeybinder muffin nemo polkit-gnome python-cairo python-dbus python-gobject python-pam python-pexpect python-pillow python-pyinotify python-pytz python-tinycss2 python-xapp timezonemap xapps
+# Section:     cinnamon
+
+name=cinnamon
+version=4.8.3
+release=1
+source=("https://github.com/linuxmint/cinnamon/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i 's/mintinstall.desktop/org.gnome.Software.desktop/' data/org.cinnamon.gschema.xml
+	sed -i 's/RequiredComponents=\(.*\)$/RequiredComponents=\1polkit-gnome-authentication-agent-1;/' \
+		cinnamon*.session.in
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		--libexecdir=lib/cinnamon
+	samu
+	DESTDIR="$PKG" samu install
+}

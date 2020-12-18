@@ -1,0 +1,99 @@
+From 384bdb8de67b66d25ef1170eca4f4e0da16f72c2 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 22 Jun 2020 06:24:43 +0900
+Subject: [PATCH] initial support for musl
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ qtbase/src/corelib/codecs/qiconvcodec.cpp        |  2 +-
+ qtdeclarative/src/qml/jsruntime/qv4engine.cpp    |  5 +++++
+ .../mapbox-gl-native/mapbox-gl-native.pro        |  2 +-
+ .../javascriptcore/JavaScriptCore/wtf/Platform.h | 16 ++++++++++++++--
+ 4 files changed, 21 insertions(+), 4 deletions(-)
+
+diff --git a/qtbase/src/corelib/codecs/qiconvcodec.cpp b/qtbase/src/corelib/codecs/qiconvcodec.cpp
+index 9c39727946..625b222449 100644
+--- a/qtbase/src/corelib/codecs/qiconvcodec.cpp
++++ b/qtbase/src/corelib/codecs/qiconvcodec.cpp
+@@ -61,7 +61,7 @@
+ #elif defined(Q_OS_AIX)
+ #  define NO_BOM
+ #  define UTF16 "UCS-2"
+-#elif defined(Q_OS_FREEBSD)
++#elif defined(Q_OS_FREEBSD) || (defined(Q_OS_LINUX) && !defined(__GLIBC__))
+ #  define NO_BOM
+ #  if Q_BYTE_ORDER == Q_BIG_ENDIAN
+ #    define UTF16 "UTF-16BE"
+diff --git a/qtdeclarative/src/qml/jsruntime/qv4engine.cpp b/qtdeclarative/src/qml/jsruntime/qv4engine.cpp
+index 680ccc02a8..0a2c77481a 100644
+--- a/qtdeclarative/src/qml/jsruntime/qv4engine.cpp
++++ b/qtdeclarative/src/qml/jsruntime/qv4engine.cpp
+@@ -135,6 +135,11 @@
+ #include <valgrind/memcheck.h>
+ #endif
+ 
++#if defined(Q_OS_LINUX) && !defined(__GLIBC__)
++#include <sys/syscall.h>
++#define gettid() syscall(SYS_gettid)
++#endif
++
+ Q_DECLARE_METATYPE(QList<int>)
+ 
+ QT_BEGIN_NAMESPACE
+diff --git a/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro b/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
+index ed974db779..265fe9640d 100644
+--- a/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
++++ b/qtlocation/src/3rdparty/mapbox-gl-native/mapbox-gl-native.pro
+@@ -21,7 +21,7 @@ QMAKE_CXXFLAGS += \
+     -fvisibility-inlines-hidden \
+     -fvisibility=hidden
+ 
+-android|win32|darwin|qnx {
++android|win32|darwin|qnx|posix {
+     SOURCES += \
+         platform/qt/src/thread.cpp
+ } else {
+diff --git a/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h b/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h
+index a4695a261f..5d405e1c25 100644
+--- a/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h
++++ b/qtscript/src/3rdparty/javascriptcore/JavaScriptCore/wtf/Platform.h
+@@ -226,6 +226,18 @@
+ #define WTF_CPU_SPARC 1
+ #endif
+ 
++/* CPU(S390X) - S390 64-bit */
++#if defined(__s390x__)
++#define WTF_CPU_S390X 1
++#define WTF_CPU_BIG_ENDIAN 1
++#endif
++
++/* CPU(S390) - S390 32-bit */
++#if defined(__s390__) && !defined(__s390x__)
++#define WTF_CPU_S390 1
++#define WTF_CPU_BIG_ENDIAN 1
++#endif
++
+ /* CPU(X86) - i386 / x86 32-bit */
+ #if   defined(__i386__) \
+     || defined(i386)     \
+@@ -377,7 +389,7 @@
+ 
+ #if (defined(mips) || defined(__mips__) || defined(MIPS) || defined(_MIPS_))
+ #define WTF_CPU_MIPS 1
+-#include <sgidefs.h>
++#include <asm/sgidefs.h>
+ #if defined(__MIPSEB__)
+ #define WTF_CPU_BIG_ENDIAN 1
+ #endif
+@@ -960,7 +972,7 @@
+ #if !defined(WTF_USE_JSVALUE64) && !defined(WTF_USE_JSVALUE32) && !defined(WTF_USE_JSVALUE32_64)
+ #if (CPU(X86_64) && !CPU(X32) && (OS(UNIX) || OS(WINDOWS) || OS(SOLARIS) || OS(HPUX))) || (CPU(IA64) && !CPU(IA64_32)) || CPU(ALPHA) || CPU(AIX64) || CPU(SPARC64) || CPU(MIPS64) || CPU(AARCH64) || CPU(RISCV64)
+ #define WTF_USE_JSVALUE64 1
+-#elif CPU(ARM) || CPU(PPC64) || CPU(RISCV32)
++#elif CPU(ARM) || CPU(PPC64) || CPU(RISCV32) || CPU(S390X)
+ #define WTF_USE_JSVALUE32 1
+ #elif OS(WINDOWS) && COMPILER(MINGW)
+ /* Using JSVALUE32_64 causes padding/alignement issues for JITStubArg
+-- 
+2.27.0
+
