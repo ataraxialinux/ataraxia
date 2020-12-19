@@ -172,6 +172,7 @@ qemu
 rdesktop
 satyr
 squid
+systemd
 xorg-server
 ```
 
