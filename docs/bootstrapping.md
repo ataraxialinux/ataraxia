@@ -3,7 +3,7 @@ We need specific packages to build this Linux distribution. Without them you can
 #### Fedora
 ```
 dnf groupinstall "Development Tools" "C Development Tools and Libraries"
-dnf install glibc-static libstdc++-static jq bsdcpio bsdtar curl mtools libisoburn which python3 gcc-plugin-devel freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel gmp-devel mpfr-devel libmpc-devel readline-devel libffi-devel sqlite-devel
+dnf install glibc-static libstdc++-static jq lzip bsdcpio bsdtar curl mtools libisoburn which python3 texinfo gcc-plugin-devel freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel gmp-devel mpfr-devel libmpc-devel readline-devel libffi-devel sqlite-devel
 ```
 #### Arch Linux (and derivatives):
 ```
