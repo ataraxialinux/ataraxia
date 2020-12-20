@@ -1,29 +1,26 @@
 # Description: 2D graphics library with support for multiple output devices
 # URL:         https://cairographics.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libpng pixman fontconfig glib libxext libxrender xcb-util
+# Depends on:  meson libpng pixman fontconfig glib libxext libxrender xcb-util
 # Section:     libs
 
 name=cairo
-version=1.17.2+f93fc72c03e
+version=1.17.4
 release=1
-source=("http://anduin.linuxfromscratch.org/BLFS/cairo/$name-$version.tar.xz")
+case $version in
+	*.[0-9]*[13579].*) url="https://www.cairographics.org/snapshots" ;;
+	*) url="https://www.cairographics.org/releases" ;;
+esac
+source=("$url/$name-$version.tar.xz")
 
 build() {
-	export CFLAGS=${CFLAGS/-Wl,--gc-sections}
-	export CXXFLAGS=${CXXFLAGS/-Wl,--gc-sections}
-
 	cd "$SRC"/$name-$version
-	autoreconf -fiv
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--enable-ps \
-		--enable-pdf \
-		--enable-tee \
-		--enable-xcb \
-		--disable-gtk-doc
-
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dspectre=disabled \
+		-Dtee=enabled \
+		-Dtests=disabled
+	samu
+	DESTDIR="$PKG" samu install
 }
