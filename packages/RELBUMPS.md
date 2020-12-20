@@ -179,4 +179,16 @@ xorg-server
 # Ruby
 ```
 asciidoctor
-weechat```
+weechat
+```
+
+# LLVM
+```
+clang
+compiler-rt
+gst-plugins-bad
+lld
+mesa
+spidermonkey
+v4l-utils
+```
