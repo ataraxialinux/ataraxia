@@ -6,7 +6,7 @@
 
 name=brotli
 version=1.0.9
-release=4
+release=5
 source=("https://github.com/google/brotli/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -20,4 +20,6 @@ build() {
 	cd "$SRC"/$name-$version
 	python3 setup.py build
 	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+
+	sed -i "s/Version: 0.0.0/Version: $version/g" "$PKG"/usr/lib/pkgconfig/*.pc
 }
