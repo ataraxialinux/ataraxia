@@ -184,8 +184,12 @@ weechat
 
 # LLVM
 ```
+firefox
+gnome-builder
 gst-plugins-bad
+libreoffice
 mesa
 spidermonkey
+thunderbird
 v4l-utils
 ```
