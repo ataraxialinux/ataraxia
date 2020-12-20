@@ -11,6 +11,8 @@ source=("https://github.com/google/brotli/archive/v$version.tar.gz::archive=$nam
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/brotli/1.0.9-linker.patch
+
 	autoreconf -vif
 	./configure $BUILDFLAGS \
 		--prefix=/usr
