@@ -1,7 +1,7 @@
 {
 	"trigger": {
 		"name": "systemd-sysusers",
-		"directories-exist": [
+		"directories_exist": [
 			"/run/systemd"
 		],
 		"directory": [

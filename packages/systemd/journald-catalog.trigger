@@ -1,7 +1,7 @@
 {
 	"trigger": {
 		"name": "journald-catalog",
-		"directories-exist": [
+		"directories_exist": [
 			"/run/systemd"
 		],
 		"directory": [

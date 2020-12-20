@@ -1,7 +1,7 @@
 {
 	"trigger": {
 		"name": "daemon-reload",
-		"directories-exist": [
+		"directories_exist": [
 			"/run/systemd"
 		],
 		"directory": [

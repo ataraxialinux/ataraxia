@@ -1,7 +1,7 @@
 {
 	"trigger": {
 		"name": "udev-hwdb",
-		"directories-exist": [
+		"directories_exist": [
 			"/run/systemd"
 		],
 		"directory": [

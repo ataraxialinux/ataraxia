@@ -1,7 +1,7 @@
 {
 	"trigger": {
 		"name": "systemd-binfmt",
-		"directories-exist": [
+		"directories_exist": [
 			"/run/systemd"
 		],
 		"directory": [

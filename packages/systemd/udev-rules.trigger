@@ -1,7 +1,7 @@
 {
 	"trigger": {
 		"name": "udev-rules",
-		"directories-exist": [
+		"directories_exist": [
 			"/run/systemd"
 		],
 		"directory": [
