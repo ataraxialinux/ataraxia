@@ -15,31 +15,31 @@ build() {
 			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv,iris,zink"
 			dri="i915,i965,r100,r200,nouveau"
 			vulkan="intel,amd,swrast"
-			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 		ppc64le|ppc64|riscv64)
 			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv,zink"
 			dri="r100,r200,nouveau"
 			vulkan="amd,swrast"
-			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 		aarch64)
 			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
 			dri="r100,r200,nouveau"
 			vulkan="amd,freedreno,broadcom,swrast"
-			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 		armv7hl|armv6hl)
 			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
 			dri="nouveau"
 			vulkan="freedreno,broadcom,swrast"
-			opts="-Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			opts="-Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 		*)
 			gallium="swrast,virgl,zink"
 			dri=""
 			vulkan="swrast"
-			opts="-Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
+			opts="-Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 	esac
 
@@ -47,26 +47,28 @@ build() {
 	patch -Np1 -i "$STUFF"/mesa/glx-tls.patch
 	patch -Np1 -i "$STUFF"/mesa/0001-musl.patch
 
+	python3 bin/git_sha1_gen.py --output include/git_sha1.h
+
 	mkdir -p build
 	cd build
 
 	ataraxia-meson "$SRC"/$name-$version $opts \
 		-Ddri-drivers="$dri" \
-		-Degl=true \
+		-Degl=enabled \
 		-Delf-use-tls=false \
 		-Dgallium-drivers="$gallium" \
-		-Dgbm=true \
-		-Dgles1=true \
-		-Dgles2=true \
+		-Dgbm=enabled \
+		-Dgles1=enabled \
+		-Dgles2=enabled \
 		-Dglvnd=true \
 		-Dglx=dri \
-		-Dllvm=true \
-		-Dlmsensors=true \
+		-Dllvm=enabled \
+		-Dlmsensors=enabled \
 		-Dosmesa=gallium \
 		-Dplatforms=x11,wayland \
-		-Dshared-glapi=true \
-		-Dshared-llvm=true \
-		-Dvalgrind=false \
+		-Dshared-glapi=enabled \
+		-Dshared-llvm=enabled \
+		-Dvalgrind=disabled \
 		-Dvulkan-drivers="$vulkan"
 	samu
 	DESTDIR="$PKG" samu install
