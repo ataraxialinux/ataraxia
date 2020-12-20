@@ -19,4 +19,8 @@ build() {
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s|$ROOTFS||" "$PKG"/usr/bin/libgcrypt-config
+	fi
 }
