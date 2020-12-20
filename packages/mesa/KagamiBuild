@@ -1,45 +1,45 @@
 # Description: An open-source implementation of the OpenGL specification
 # URL:         https://www.mesa3d.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zstd libelf llvm python-mako xorgproto wayland-protocols libx11 libxdamage libxrandr libxshmfence libxvmc libxxf86vm libdrm libva libvdpau libglvnd lm_sensors
+# Depends on:  zstd libelf llvm python-mako xorgproto wayland-protocols libx11 libxdamage libxrandr libxshmfence libxvmc libxxf86vm libdrm libva libvdpau libglvnd lm_sensors vulkan-loader
 # Section:     x11
 
 name=mesa
 version=20.3.1
-release=1
+release=2
 source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
 
 build() {
 	case $BARCH in
 		x86_64|i686)
-			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv,iris"
+			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv,iris,zink"
 			dri="i915,i965,r100,r200,nouveau"
-			vulkan="intel,amd"
+			vulkan="intel,amd,swrast"
 			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
 			;;
 		ppc64le|ppc64|riscv64)
-			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv"
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv,zink"
 			dri="r100,r200,nouveau"
-			vulkan="amd"
+			vulkan="amd,swrast"
 			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
 			;;
 		aarch64)
-			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv"
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
 			dri="r100,r200,nouveau"
-			vulkan="amd,freedreno,broadcom"
+			vulkan="amd,freedreno,broadcom,swrast"
 			opts="-Ddri3=true -Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
 			;;
 		armv7hl|armv6hl)
-			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv"
+			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
 			dri="nouveau"
-			vulkan="freedreno,broadcom"
+			vulkan="freedreno,broadcom,swrast"
 			opts="-Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
 			;;
 		*)
-			gallium="swrast,virgl"
+			gallium="swrast,virgl,zink"
 			dri=""
-			vulkan=""
-			opts="-Dgallium-nine=false -Dgallium-va=false -Dgallium-vdpau=false -Dgallium-xa=false -Dgallium-xvmc=false"
+			vulkan="swrast"
+			opts="-Dgallium-nine=true -Dgallium-va=true -Dgallium-vdpau=true -Dgallium-xa=true -Dgallium-xvmc=true"
 			;;
 	esac
 
@@ -63,7 +63,7 @@ build() {
 		-Dllvm=true \
 		-Dlmsensors=true \
 		-Dosmesa=gallium \
-		-Dplatforms=x11,drm,wayland,surfaceless \
+		-Dplatforms=x11,wayland \
 		-Dshared-glapi=true \
 		-Dshared-llvm=true \
 		-Dvalgrind=false \

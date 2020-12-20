@@ -1,67 +1,14 @@
-From 747b6efc8c954bff06f9e0f15700c7f65ffb8bee Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 29 Sep 2020 19:05:43 +0300
-Subject: [PATCH] fix build on musl
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- src/gallium/frontends/nine/nine_debug.c  | 2 +-
- src/gallium/winsys/svga/drm/vmw_screen.h | 2 +-
- src/panfrost/encoder/pan_bo.h            | 1 +
- src/util/rand_xor.c                      | 2 ++
- 4 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/src/gallium/frontends/nine/nine_debug.c b/src/gallium/frontends/nine/nine_debug.c
-index 784d535..f4a6c41 100644
---- a/src/gallium/frontends/nine/nine_debug.c
-+++ b/src/gallium/frontends/nine/nine_debug.c
-@@ -65,7 +65,7 @@ _nine_debug_printf( unsigned long flag,
- {
-     static boolean first = TRUE;
-     static unsigned long dbg_flags = DBG_ERROR | DBG_WARN;
--    unsigned long tid = 0;
-+    pthread_t tid = 0;
- 
-     if (first) {
-         first = FALSE;
-diff --git a/src/gallium/winsys/svga/drm/vmw_screen.h b/src/gallium/winsys/svga/drm/vmw_screen.h
-index 73f0443..884706e 100644
---- a/src/gallium/winsys/svga/drm/vmw_screen.h
-+++ b/src/gallium/winsys/svga/drm/vmw_screen.h
-@@ -34,7 +34,7 @@
- #ifndef VMW_SCREEN_H_
- #define VMW_SCREEN_H_
- 
--
-+#include <sys/stat.h>
- #include "pipe/p_compiler.h"
- #include "pipe/p_state.h"
- 
-diff --git a/src/panfrost/encoder/pan_bo.h b/src/panfrost/encoder/pan_bo.h
-index 84d2a0a..1a0302f 100644
---- a/src/panfrost/encoder/pan_bo.h
-+++ b/src/panfrost/encoder/pan_bo.h
-@@ -26,6 +26,7 @@
- #ifndef __PAN_BO_H__
- #define __PAN_BO_H__
- 
-+#include <time.h>
- #include <panfrost-misc.h>
- #include "util/list.h"
- #include "pan_device.h"
 diff --git a/src/util/rand_xor.c b/src/util/rand_xor.c
-index 81b64f1..dfe444f 100644
+index 81b64f1ea71..14e6c9d27c3 100644
 --- a/src/util/rand_xor.c
 +++ b/src/util/rand_xor.c
-@@ -28,6 +28,8 @@
+@@ -27,6 +27,8 @@
+ #if !DETECT_OS_WINDOWS
  #if defined(HAVE_GETRANDOM)
  #include <sys/random.h>
- #endif
 +#include <sys/types.h>
 +#include <sys/stat.h>
+ #endif
  #include <unistd.h>
  #include <fcntl.h>
- #endif
--- 
-2.26.2
 
