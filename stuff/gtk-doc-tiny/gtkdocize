@@ -1,0 +1,170 @@
+#!/bin/sh
+
+progname=`echo "$0" | sed 's%^.*/%%'`
+
+PROGRAM=gtkdocize
+PACKAGE=gtk-doc
+VERSION=1.33.1
+
+prefix=/usr
+datarootdir=${prefix}/share
+datadir=${datarootdir}
+
+# options
+copy=no
+makefile=gtk-doc.make
+flavour=no-tmpl
+
+# mini help
+usage="\
+usage: $progname [ --copy ] [ --docdir DIR ] [ --flavour {legacy|legacy-flat|no-tmpl|no-tmpl-flat|no-xslt|no-xslt-flat} ] [ --srcdir DIR ]"
+
+# Find the srcdir early (and ignore a srcdir set in configure).
+# https://bugzilla.gnome.org/show_bug.cgi?id=707426
+args="$*"
+while test $# -gt 0; do
+  case "$1" in
+  --srcdir)
+    shift
+    srcdir="$1"
+    shift ;;
+  --srcdir=*)
+    srcdir=`expr "X$1" : '[^=]*=\(.*\)'`
+    shift ;;
+  *)
+    shift ;;
+  esac
+done
+set - $args
+
+# assume working directory if srcdir is not set
+test "$srcdir" || srcdir=.
+test "$docdir" || docdir="$srcdir"
+
+# detect configure script
+no_configure_found=0
+if test -f "$srcdir"/configure.ac; then
+  configure="$srcdir"/configure.ac
+elif test -f "$srcdir"/configure.in; then
+  configure="$srcdir"/configure.in
+else
+  no_configure_found=1
+fi
+
+# check configure script for GTK_DOC_CHECK macro
+no_gtk_doc_check_found=0
+if test $no_configure_found -eq 0; then
+  macro=`grep '^GTK_DOC_CHECK' $configure 2>/dev/null`
+  if test $? -eq 0; then
+    # GTK_DOC_CHECK([1.14],[--flavour no-tmpl])
+    params=`echo $macro | sed -e 's/^GTK_DOC_CHECK(\ *\(.*\)).*$/\1/'`
+    if echo $params | grep -q '^.*\,\ *\[\{0,1\}'; then
+      extra_options=`echo $params | sed -e 's/^.*\,\ *\[\{0,1\}\([^]]*\)\]\{0,1\}\ *$/\1/'`
+      #echo >&2 "DEBUG: adding extra options [$extra_options] to [$*]"
+      set - $* $GTKDOCIZE_FLAGS $extra_options
+    else
+      set - $* $GTKDOCIZE_FLAGS
+    fi
+  else
+    no_gtk_doc_check_found=1;
+  fi
+fi
+
+while test $# -gt 0; do
+  #echo >&2 "DEBUG: parsing args [$1]";
+  case "$1" in
+  --help)
+    echo "$usage"
+    exit 0 ;;
+  --version)
+    echo "$PROGRAM ($PACKAGE) $VERSION"
+    exit 0 ;;
+  --copy)
+    copy=yes
+    shift ;;
+  --docdir)
+    shift
+    docdir="$1"
+    shift ;;
+  --docdir=*)
+    docdir=`expr "X$1" : '[^=]*=\(.*\)'`
+    shift ;;
+  --flavour)
+    shift
+    flavour="$1"
+    shift ;;
+  --flavour=*)
+    flavour=`expr "X$1" : '[^=]*=\(.*\)'`
+    shift ;;
+  --srcdir)
+    shift
+    # srcdir was set earlier.
+    shift ;;
+  --srcdir=*)
+    # srcdir was set earlier.
+    shift ;;
+  -*)
+    echo "$progname: unrecognised option '$1'" 1>&2
+    echo "$usage" 1>&2
+    exit 1 ;;
+  *)
+    echo "$progname: too many arguments" 1>&2
+    echo "$usage" 1>&2
+    exit 1 ;;
+  esac
+done
+
+case "$flavour" in
+  legacy-flat|no-tmpl-flat)
+    makefile=gtk-doc.flat.make
+    ;;
+  no-xslt)
+    makefile=gtk-doc.no-xslt.make
+    ;;
+  no-xslt-flat)
+    makefile=gtk-doc.no-xslt-flat.make
+    ;;
+  legacy|no-tmpl)
+    ;;
+  *)
+    echo "$progname: invalid value for --flavour" 1>&2
+    echo "$usage" 1>&2
+    exit 1 ;;
+esac
+
+if test $no_configure_found -eq 1; then
+  echo "$progname: neither configure.ac nor configure.in exist" 1>&2
+  exit 1
+fi
+if test $no_gtk_doc_check_found -eq 1; then
+  echo "$progname: GTK_DOC_CHECK not called in $configure" 1>&2
+  exit 1
+fi
+
+# If the AC_CONFIG_MACRO_DIR() macro is used, copy gtk-doc.m4 from our
+# prefix to that directory.  This makes sure that the M4 macro used
+# matches the the automake fragment.
+# If AC_CONFIG_MACRO_DIR is not used, the macro won't be copied, and
+# the correct flags must be passed to aclocal for it to find the macro.
+m4dir="$srcdir"/`autoconf 2>/dev/null --trace 'AC_CONFIG_MACRO_DIR:$1' "$configure"`
+if test -n "$m4dir"; then
+  rm -f $m4dir/gtk-doc.m4
+  if test "$copy" = yes; then
+    cp -f $datadir/aclocal/gtk-doc.m4 $m4dir/ ||
+      exit 1
+  else
+    ln -sf $datadir/aclocal/gtk-doc.m4 $m4dir/ ||
+      cp -f $datadir/aclocal/gtk-doc.m4 $m4dir/ ||
+      exit 1
+  fi
+fi
+
+rm -f $docdir/gtk-doc.make
+if test "$copy" = yes; then
+  cp -f $datadir/gtk-doc/data/$makefile $docdir/gtk-doc.make ||
+    exit 1
+else
+  ln -sf $datadir/gtk-doc/data/$makefile $docdir/gtk-doc.make ||
+    cp -f $datadir/gtk-doc/data/$makefile $docdir/gtk-doc.make ||
+    exit 1
+fi
