@@ -1,19 +1,23 @@
 # Description: Simple packages manager for Ataraxia Linux
 # URL:         https://ataraxialinux.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson lzip libarchive curl jq
+# Depends on:  meson lzip libarchive curl jq systemd
 # Section:     base
 
 name=tsukuri
-version=20201218
+version=0.1
 release=1
 options=('bootstrap')
 backup=('etc/tsukuri/make.conf')
-#source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
+source=("https://github.com/ataraxialinux/tsukuri/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
 	#cd "$SRC"/$name-$version
-
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 
 	install -dm755 "$PKG"/etc/tsukuri "$PKG"/var/cache/packages "$PKG"/var/cache/sources
 	cat > "$PKG"/etc/tsukuri/make.conf <<-EOF
@@ -21,7 +25,7 @@ build() {
 		#
 		# mkopts=""
 		
-		# Specify options for the `curl` downloader
+		# Specify options for the "curl" downloader
 		# curlopts=""
 
 		# Specify options for git
@@ -36,7 +40,7 @@ build() {
 		#  docs        - Leave documentation files
 		#  ccache      - Enable ccache
 		#  libtool     - Don't clean libtool files
-		#  nostateless - Do not generate `stateless` packages
+		#  nostateless - Do not generate "stateless" packages
 		#
 		# Add '~' before option name to disable certain option
 		#
