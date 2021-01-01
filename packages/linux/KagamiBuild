@@ -4,8 +4,8 @@
 # Section:     kernel
 
 name=linux
-version=5.9.16
-hardenedver=5.9.16.a
+version=5.10.4
+hardenedver=5.10.4.a
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
@@ -53,8 +53,6 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
-	patch -Np1 -i "$STUFF"/linux/0001-UKSM.patch
-	patch -Np1 -i "$STUFF"/linux/0001-block-patches.patch
 	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
 	patch -Np1 -i "$STUFF"/linux/0110-Initialize-ata-before-graphics.patch
 
@@ -103,9 +101,7 @@ build() {
 	mkdir -p "$PKG"/boot
 	mkdir -p "$PKG"/boot
 	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-ataraxia
-	cp "$IMAGELOC" "$PKG"/usr/lib/modules/${kver}-ataraxia/vmlinuz
 	cp .config "$PKG"/boot/config-ataraxia
-	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
