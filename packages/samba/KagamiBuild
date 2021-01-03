@@ -9,8 +9,7 @@ version=4.13.3
 release=2
 backup=('etc/samba/smb.conf'
 	'etc/logrotate.d/samba'
-	'etc/openldap/schema'
-	'etc/pam.d/samba')
+	'etc/openldap/schema')
 source=("https://www.samba.org/ftp/samba/stable/$name-$version.tar.gz")
 
 build() {
@@ -22,6 +21,7 @@ build() {
 	patch -Np1 -i "$STUFF"/samba/missing-headers.patch
 	patch -Np1 -i "$STUFF"/samba/musl_rm_unistd_incl.patch
 	patch -Np1 -i "$STUFF"/samba/0001-samba-fix-musl-lib-without-innetgr.patch
+	patch -Np1 -i "$STUFF"/samba/16-do-not-check-xsltproc-manpages.patch
 
 	CFLAGS="-I/usr/include/tirpc $CFLAGS" \
 	LDFLAGS="-ltirpc" \
