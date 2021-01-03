@@ -1,7 +1,7 @@
 # Description: C++ bindings for GLib
 # URL:         https://www.gtkmm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libsigc++2 glib
+# Depends on:  meson libsigc++ glib
 # Section:     libs
 
 name=glibmm
@@ -11,10 +11,9 @@ source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.t
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-
-	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
