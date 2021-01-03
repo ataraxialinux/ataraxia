@@ -8,11 +8,13 @@ name=mozc
 version=2.26.4206.102
 commit=91cc1e19ef34aeb12888b697fefa52907f1a834d
 dictver=a4a66772e33746b91e99caceecced9a28507e925
-protobufver=92a7e778e7394386f413cec28d67a07630f784b1
+protobufver=fde7cf7358ec7cd69e8db9be4f1fa6a5c431386a
+abseilver=0f3bb466b868b523cf1dc9b2aaaed65c77b28862
 release=1
 source=("https://github.com/google/mozc/archive/$commit.tar.gz"
 	"https://github.com/hiroyuki-komatsu/japanese-usage-dictionary/archive/$dictver.tar.gz"
-	"https://github.com/protocolbuffers/protobuf/archive/$protobufver.tar.gz")
+	"https://github.com/protocolbuffers/protobuf/archive/$protobufver.tar.gz"
+	"https://github.com/abseil/abseil-cpp/archive/$abseilver.tar.gz")
 noextract=("$gypver.tar.gz")
 
 build() {
@@ -24,13 +26,22 @@ build() {
 	cd "$SRC"
 	mv japanese-usage-dictionary-$dictver japanese_usage_dictionary
 	mv protobuf-$protobufver protobuf
+	mv abseil-cpp-$abseilver abseil-cpp
 
-	for dep in protobuf japanese_usage_dictionary; do
+	for dep in protobuf abseil-cpp japanese_usage_dictionary; do
 		cp -a $dep $name-$commit/src/third_party/
 	done
 
 	cd "$SRC"/$name-$commit/src
 	sed -i 's|PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_RECURSIVE|' base/mutex.cc
+	sed \
+		-e "s:<!(which clang):(which cc):" \
+		-e "s:<!(which clang++):(which c++):" \
+		-i gyp/common.gypi
+	sed \
+		-e "/'-lc++'/d" \
+		-e "/'-stdlib=libc++'/d" \
+		-i gyp/common.gypi || die
 
 	python3 build_mozc.py gyp \
 		--gypdir="/usr/bin" \
