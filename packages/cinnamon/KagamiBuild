@@ -6,14 +6,19 @@
 
 name=cinnamon
 version=4.8.3
-release=1
+release=2
 source=("https://github.com/linuxmint/cinnamon/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/cinnamon/0001-cinnamon-settings-don-t-rely-on-the-presence-of-cinn.patch
+	patch -Np1 -i "$STUFF"/cinnamon/set_wheel.diff
+
 	sed -i 's/mintinstall.desktop/org.gnome.Software.desktop/' data/org.cinnamon.gschema.xml
 	sed -i 's/RequiredComponents=\(.*\)$/RequiredComponents=\1polkit-gnome-authentication-agent-1;/' \
 		cinnamon*.session.in
+	sed -i 's|/usr/share/cinnamon-background-properties|/usr/share/gnome-background-properties|' \
+		files/usr/share/cinnamon/cinnamon-settings/modules/cs_backgrounds.py
 
 	mkdir -p build
 	cd build
