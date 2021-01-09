@@ -173,11 +173,8 @@ qemu
 rdesktop
 satyr
 squid
-<<<<<<< HEAD
 systemd
-=======
 tigervnc
->>>>>>> master
 xorg-server
 ```
 
