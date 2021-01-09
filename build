@@ -308,9 +308,18 @@ build_target() {
 	fi
 }
 
+parse_numbersign() {
+	# $1 - kagamibuild
+	# $2 - number sign variable
+	[ -z "$1" ] && exit 1
+	[ -z "$2" ] && exit 1
+
+	echo "$(grep -w "^# ${2}[[:blank:]]*:" "$1" | sed "s/^# ${2}[[:blank:]]*:[[:blank:]]*//" | tr ',' ' ')"
+}
+
 genrepo() {
 	unset name version release options backup source noextract depends
-	local d i e url
+	local d i url
 
 	if [ -f "$1/.ignoreit" ]; then
 		return 0
@@ -320,12 +329,12 @@ genrepo() {
 	fi
 
 	source $1/KagamiBuild
-	local summary="$(npk-parse $1/KagamiBuild "# Description:")"
-	local homepage="$(npk-parse $1/KagamiBuild "# URL:")"
-	local category="$(npk-parse $1/KagamiBuild "# Section:")"
-	local maintainer="$(npk-parse  $1/KagamiBuild "# Maintainer:" | sed -e 's/, / /g' | sed -e 's/ at /@/g' | sed -e 's/ dot /./')"
+	local summary="$(parse_numbersign $1/KagamiBuild "Description")"
+	local homepage="$(parse_numbersign $1/KagamiBuild "URL")"
+	local category="$(parse_numbersign $1/KagamiBuild "Section")"
+	local maintainer="$(parse_numbersign  $1/KagamiBuild "Maintainer")"
 
-	e="$(echo $maintainer | awk '{print $NF}')"
+	maintainer="$(echo $maintainer | tr -d ',' | awk '{print $1}') <$(echo $maintainer | tr -d ',' | sed 's/^\w*\ *//' | sed 's/ at /@/' | sed 's/ dot /./')>"
 
 	for i in ${source[*]}; do
 		if echo $i | grep -q '::archive='; then
@@ -345,7 +354,7 @@ genrepo() {
 	echo -e '\t\t"name": "'${name}'",' >> "$2"
 	echo -e '\t\t"version": "'${version}'",' >> "$2"
 	echo -e '\t\t"summary": "'${summary}'",' >> "$2"
-	echo -e '\t\t"maintainer": "'${e}'",' >> "$2"
+	echo -e '\t\t"maintainer": "'${maintainer}'",' >> "$2"
 	echo -e '\t\t"download": "'${d}'",' >> "$2"
 	echo -e '\t\t"homepage": "'${homepage}'",' >> "$2"
 	echo -e '\t\t"category": "'${category}'"' >> "$2"
