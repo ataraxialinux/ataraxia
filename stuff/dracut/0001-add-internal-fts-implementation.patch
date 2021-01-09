@@ -1,7 +1,7 @@
-From 1d14d83fd53bfa4e51502959d6a7155655f69659 Mon Sep 17 00:00:00 2001
+From 4ac0d866b908b1fd21901cede500bf66ac509ca4 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 13 Nov 2020 23:13:33 +0300
-Subject: [PATCH 1/3] internal fts
+Date: Sun, 10 Jan 2021 00:31:58 +0900
+Subject: [PATCH 1/4] add internal fts implementation
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -21,11 +21,11 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  create mode 100644 install/recallocarray.c
 
 diff --git a/Makefile b/Makefile
-index 22b584f..da56cac 100644
+index 7eb3184..8dc1bac 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -46,6 +46,9 @@ manpages = $(man1pages) $(man5pages) $(man7pages) $(man8pages)
- all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
+@@ -53,6 +53,9 @@ all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
+ 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(KMOD_CFLAGS) $< -o $@
  
  DRACUT_INSTALL_OBJECTS = \
 +        install/fts.o \
@@ -35,7 +35,7 @@ index 22b584f..da56cac 100644
          install/hashmap.o\
          install/log.o \
 diff --git a/configure b/configure
-index 3f724ef..df8cf0f 100755
+index aceec13..fba31c7 100755
 --- a/configure
 +++ b/configure
 @@ -5,7 +5,7 @@ echo \#buildapi-variable-no-builddir >/dev/null
@@ -143,10 +143,10 @@ index 0000000..933717f
 +void	*reallocarray(void *, size_t, size_t);
 +void	*recallocarray(void *, size_t, size_t, size_t);
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 3d64ed7..1ba7a82 100644
+index 17544ac..0ea2f28 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
-@@ -39,7 +39,7 @@
+@@ -40,7 +40,7 @@
  #include <unistd.h>
  #include <sys/ioctl.h>
  #include <libkmod.h>
@@ -1505,5 +1505,5 @@ index 0000000..b1c8c35
 +}
 +DEF_WEAK(recallocarray);
 -- 
-2.28.0
+2.30.0
 

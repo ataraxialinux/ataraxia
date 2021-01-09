@@ -6,13 +6,17 @@
 
 name=dracut
 version=051
-release=2
+release=3
 backup=('etc/dracut.conf')
 source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/dracut/0001-internal-fts.patch
+	patch -Np1 -i "$STUFF"/dracut/0001-add-internal-fts-implementation.patch
+	patch -Np1 -i "$STUFF"/dracut/0002-toybox-compat.patch
+	patch -Np1 -i "$STUFF"/dracut/0003-don-t-use-ldd.patch
+	patch -Np1 -i "$STUFF"/dracut/0004-add-toybox-module.patch
+
 	./configure \
 		--prefix=/usr \
 		--libdir=/usr/lib \
@@ -22,5 +26,8 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	rm -rf "$PKG"/usr/bin/mkinitrd "$PKG"/usr/lib/dracut/modules.d/95terminfo
+	install -dm755 "$PKG"/usr/lib/dracut/dracut.conf.d
+
+	echo 'add_dracutmodules+=" mksh toybox "' >> "$PKG"/usr/lib/dracut/dracut.conf.d/omit.conf
+	echo 'omit_dracutmodules+=" bash busybox "' >> "$PKG"/usr/lib/dracut/dracut.conf.d/omit.conf
 }
