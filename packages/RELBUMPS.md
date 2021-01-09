@@ -150,6 +150,7 @@ dnsmasq
 epiphany
 filezilla
 gnutls
+gst-plugins-bad
 libarchive
 libfilezilla
 libreport
@@ -158,7 +159,35 @@ qemu
 rdesktop
 satyr
 squid
+tigervnc
 xorg-server
+```
+
+# GNUTLS
+```
+cups
+emacs
+filezilla
+glib-networking
+gnupg
+gst-plugins-bad
+gtk-vnc
+lftp
+libetpan
+libfilezilla
+libjcat
+libmicrohttpd
+libvirt
+libvncserver
+libzip
+mailutils
+pidgin
+rdesktop
+samba
+systemd
+tigervnc
+vte
+weechat
 ```
 
 # Ruby
