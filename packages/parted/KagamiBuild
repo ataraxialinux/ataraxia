@@ -1,15 +1,17 @@
 # Description: A program for creating, destroying, resizing, checking and copying partitions
 # URL:         https://www.gnu.org/software/parted/parted.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  lvm2
+# Depends on:  lvm2 readline
 # Section:     admin
 
 name=parted
 version=3.3
-release=4
+release=5
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
+	unset CFLAGS CXXFLAGS
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/parted/fix-includes.patch
 	patch -Np1 -i "$STUFF"/parted/sysmacros.patch
@@ -17,7 +19,6 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
-		--without-readline \
 		--disable-debug \
 		--disable-rpath
 	make
