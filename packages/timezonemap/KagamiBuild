@@ -1,0 +1,21 @@
+# Description: Timezone map widget, forked from gnome which forked from Ubiquity
+# URL:         https://github.com/dashea/timezonemap
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gobject-introspection gtk3 libsoup
+# Section:     libs
+
+name=timezonemap
+version=0.4.5.1
+release=1
+source=("https://github.com/dashea/timezonemap/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}

@@ -1,0 +1,24 @@
+# Description: Classes for QML and JavaScript languages
+# URL:         https://www.qt.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai at-spi2-core qt6-base
+# Section:     libs
+
+name=qt6-declarative
+version=6.0.0
+release=1
+source=("https://download.qt.io/official_releases/qt/${version::4}/$version/submodules/qtdeclarative-everywhere-src-$version.tar.xz")
+
+build() {
+	cd "$SRC"/qtdeclarative-everywhere-src-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/qtdeclarative-everywhere-src-$version \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+
+	for b in "$PKG"/usr/bin/*; do
+		mv "$PKG"/usr/bin/ $(basename $b) "$PKG"/usr/bin/$(basename $b)-qt6
+	done
+}

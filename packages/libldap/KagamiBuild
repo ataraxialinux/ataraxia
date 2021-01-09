@@ -10,6 +10,8 @@ release=1
 source=("ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release/openldap-$version.tgz")
 
 build() {
+	local i
+
 	cd "$SRC"/openldap-$version
 	patch -Np1 -i "$STUFF"/libldap/consolidated.patch
 
@@ -42,8 +44,8 @@ build() {
 		--disable-syslog
 	make
 
-	for dir in include libraries doc/man/man3 ; do
-		pushd $i
+	for i in include libraries doc/man/man3 ; do
+		pushd "$SRC"/openldap-$version/$i
 			make DESTDIR="$PKG" install
 		popd
 	done

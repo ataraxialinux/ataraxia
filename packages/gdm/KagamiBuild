@@ -1,25 +1,20 @@
 # Description: Display manager and login screen
 # URL:         https://wiki.gnome.org/Projects/GDM
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson pam accountsservice gtk3 iso-codes itstool libcanberra dconf
+# Depends on:  meson audit pam accountsservice gtk3 iso-codes itstool libcanberra dconf
 # Section:     gnome
 
 name=gdm
 version=3.38.2.1
-release=1
-backup=('etc/gdm/custom.conf'
-	'etc/gdm/PostSession/Default'
-	'etc/gdm/PreSession/Default'
-	'etc/pam.d/gdm-autologin'
-	'etc/pam.d/gdm-fingerprint'
-	'etc/pam.d/gdm-launch-environment'
-	'etc/pam.d/gdm-password'
-	'etc/pam.d/gdm-smartcard')
 case $version in
 	*.*.*.*) _v=${version%.*}
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
+release=2
+backup=('etc/gdm/custom.conf'
+	'etc/gdm/PostSession/Default'
+	'etc/gdm/PreSession/Default')
 source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
@@ -33,6 +28,7 @@ build() {
 		-Ddefault-pam-config=ataraxia \
 		-Ddefault-path=/usr/local/bin:/usr/local/sbin:/usr/bin \
 		-Dipv6=true \
+		-Dpam-prefix=/usr/lib \
 		-Dplymouth=disabled \
 		-Dprofiling=true \
 		-Drun-dir=/run/gdm \

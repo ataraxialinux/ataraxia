@@ -4,26 +4,31 @@ msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
 die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 
 install_liveos() {
+	mkdir -p "$LIVEOS"/usr/lib/tsukuri/db
+
 	case $BARCH in
 		x86_64|i686|aarch64|armv7hl|armv6hl)
-				EXTRAPKG="grub"
+				EXTRAPKG="grub gnu-efi"
 				;;
 		ppc64le|ppc64)
 				EXTRAPKG="grub"
 				;;
 	esac
 
-	core="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
-		zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-		pkgconf pcre libcap-ng cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed \
-		psmisc mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle python perl \
-		ca-certificates autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils \
-		9base lobase sbase ubase less mandoc gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack \
-		libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make patch tar cpio nano \
-		iputils procps-ng gperf libseccomp util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd \
-		dbus-broker dbus e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal curl rpm neko linux"
+	core="base-files iana-etc linux-headers musl tzdata man-pages musl-tools \
+		gettext-tiny zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc \
+		gmp mpfr mpc binutils gcc pkgconf pcre libcap-ng audit cracklib libtirpc pam \
+		libpwquality attr acl libcap shadow grep sed psmisc mksh bash slibtool net-tools \
+		gdbm db53 sqlite expat libffi libressl nettle python perl ca-certificates autoconf automake \
+		lzip lzo libarchive kmod libuargp libelf gawk findutils lobase sbase ubase less mandoc \
+		gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables \
+		iproute2 kbd samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng \
+		$EXTRAPKG gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls \
+		iputils util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
+		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma \
+		jq tsukuri $LINUX"
 
-	packages="linux-firmware squashfs-tools alsa-utils dnf earlyoom wireless_tools wpa_supplicant font-adobe-source-han-sans-jp-fonts mozc $EXTRAPKG"
+	packages="linux-firmware squashfs-tools alsa-utils wireless_tools wpa_supplicant font-adobe-source-han-sans-jp-fonts mozc $EXTRAPKG"
 
 	if [ "$DESKTOP" != "sway" ]; then
 		case $BARCH in
@@ -39,11 +44,11 @@ install_liveos() {
 	case $DESKTOP in
 		gnome) packages="$packages gnome" ;;
 		gnome-core) packages="$packages gnome-core" ;;
-		xfce) packages="$packages xfce lightdm network-manager-applet" ;;
-		xfce-core) packages="$packages xfce-core lightdm network-manager-applet" ;;
-		mate) packages="$packages mate lightdm network-manager-applet" ;;
-		mate-core) packages="$packages mate-core lightdm network-manager-applet" ;;
-		budgie) packages="$packages budgie-desktop gvfs nautilus gnome-terminal lightdm" ;;
+		xfce) packages="$packages xfce lxdm network-manager-applet" ;;
+		xfce-core) packages="$packages xfce-core lxdm network-manager-applet" ;;
+		mate) packages="$packages mate lxdm network-manager-applet" ;;
+		mate-core) packages="$packages mate-core lxdm network-manager-applet" ;;
+		budgie) packages="$packages budgie-desktop gvfs nautilus gnome-terminal lxdm" ;;
 		sway) packages="$packages sway networkmanager" ;;
 		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
 	esac
@@ -59,8 +64,8 @@ install_liveos() {
 	fi
 
 	msg "Installing packages"
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -wdst $core
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$LIVEOS" -w $packages
+	tsukuri em -c "$BUILD"/target.config -r "$LIVEOS" -DSH $core
+	tsukuri em -c "$BUILD"/target.config -r "$LIVEOS" $packages
 
 	msg "Configuring system"
 	pushd "$LIVEOS"
@@ -116,7 +121,7 @@ make_iso_x86() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw quiet
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -162,7 +167,7 @@ make_iso_x86() {
 		MENU COLOR sel          * #ffffffff #9000FF *
 		LABEL ataraxialinux
 		MENU LABEL Ataraxia Linux
-		KERNEL /seiba/seiba rw quiet live=1
+		KERNEL /seiba/seiba rw quiet
 		APPEND initrd=/seiba/seiba.zst
 	EOF
 
@@ -208,7 +213,7 @@ make_iso_arm() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba rw quiet live=1
+			linux	/seiba/seiba rw quiet
 			initrd	/seiba/seiba.zst
 		}
 	EOF
@@ -245,7 +250,7 @@ make_iso_ppc() {
 
 	cat > "$ISODIR"/boot/grub/grub.cfg <<- EOF
 		menuentry "Ataraxia Linux" {
-			linux	/seiba/seiba root=/dev/ram0 rw quiet live=1
+			linux	/seiba/seiba root=/dev/ram0 rw quiet
 			initrd	/seiba/seiba.zst
 		}
 	EOF

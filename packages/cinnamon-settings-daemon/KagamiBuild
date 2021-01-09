@@ -1,0 +1,20 @@
+# Description: The Cinnamon Settings daemon
+# URL:         https://github.com/linuxmint/cinnamon-settings-daemon
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson xf86-input-wacom cinnamon-desktop colord cups dbus-glib libcanberra libgnomekbd libgudev libnotify nss polkit pulseaudio rsvg upower
+# Section:     cinnamon
+
+name=cinnamon-settings-daemon
+version=4.8.2
+release=1
+source=("https://github.com/linuxmint/cinnamon-settings-daemon/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dinstall_binfiles=false
+	samu
+	DESTDIR="$PKG" samu install
+}

@@ -11,44 +11,57 @@ main() {
 		LINUX="linux"
 	fi
 
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
 	IMAGEFS="$BUILD/imagefs"
 
 	rm -rf "$IMAGEFS"
 	mkdir -p "$IMAGEFS"
 
 	IMG="$BUILD/ataraxialinux-$BARCH.img"
-	dd if=/dev/zero of=$IMG bs=1 count=0 seek=4G
-	losetup -f $IMG
-	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 
+	qemu-img create -f raw "$IMG" 5G
 	case $BARCH in
 		x86_64|i686)
-			parted -s $lodev mklabel msdos
-			parted -a optimal -s $lodev mkpart primary 0% 100%
-			parted -s $lodev set 1 boot on
+			parted -s "$IMG" mklabel msdos
+			parted -a optimal -s "$IMG" mkpart primary 0% 100%
+			parted -s "$IMG" set 1 boot on
 			;;
 		*)
-			parted -s $lodev mklabel msdos
-			parted -a optimal -s $lodev mkpart primary 0% 100%
+			parted -s "$IMG" mklabel msdos
+			parted -a optimal -s "$IMG" mkpart primary 0% 100%
 			;;
 	esac
 
+	losetup -D
+	losetup -fP "$IMG"
+
+	lodev=$(losetup -a | grep "$IMG" | cut -d: -f1)
 	lopart="${lodev}p1"
-	yes | mkfs.ext4 $lopart
+	yes | mkfs.btrfs $lopart
 
-	mount -o loop $lopart "$IMAGEFS"
+	mount -o loop $lopart "$IMAGEFS"	
 
-	packages="base-files netbase linux-headers musl tzdata man-pages musl-tools gettext-tiny \
-		zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc \
-		pkgconf pcre libcap-ng cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed \
-		psmisc mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle python perl \
-		ca-certificates autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils \
-		9base lobase sbase ubase less mandoc gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack \
-		libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make patch tar cpio nano \
-		iputils procps-ng gperf libseccomp util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd \
-		dbus-broker dbus e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal curl rpm neko $LINUX"
+	mkdir -p "$IMAGEFS"/usr/lib/tsukuri/db
 
-	neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$IMAGEFS" -wdts $packages
+	packages="base-files iana-etc linux-headers musl tzdata man-pages musl-tools \
+		gettext-tiny zlib xz lz4 zstd bzip2 file ncurses readline m4 bison flex bc \
+		gmp mpfr mpc binutils gcc pkgconf pcre libcap-ng audit cracklib libtirpc pam \
+		libpwquality attr acl libcap shadow grep sed psmisc mksh bash slibtool net-tools \
+		gdbm db53 sqlite expat libffi libressl nettle python perl ca-certificates autoconf automake \
+		lzip lzo libarchive kmod libuargp libelf gawk findutils lobase sbase ubase less mandoc \
+		gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables \
+		iproute2 kbd samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng \
+		$EXTRAPKG gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls \
+		iputils util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
+		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma \
+		jq tsukuri $LINUX"
+
+	tsukuri em -c "$BUILD"/target.config -r "$IMAGEFS" -wDSH $packages
 
 	umount -l "$IMAGEFS"
 	losetup -d $lodev

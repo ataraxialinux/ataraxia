@@ -1,12 +1,12 @@
 # Description: Linux D-Bus Message Broker
 # URL:         https://github.com/bus1/dbus-broker/wiki
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson systemd expat
+# Depends on:  meson audit expat systemd
 # Section:     base
 
 name=dbus-broker
 version=25
-release=1
+release=3
 options=('bootstrap')
 source=("https://github.com/bus1/dbus-broker/releases/download/v$version/$name-$version.tar.xz")
 
@@ -17,8 +17,7 @@ build() {
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
-		-Db_lto=false \
-		-Daudit=false \
+		-Daudit=true \
 		-Ddocs=false \
 		-Dlinux-4-17=true \
 		-Dselinux=false \

@@ -1,0 +1,29 @@
+From dd284a02a23cd51daddc314fa0604f44e3f55a42 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 7 Dec 2020 22:53:26 +0900
+Subject: [PATCH 3/6] Better systemd-firstboot preset
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ units/systemd-firstboot.service | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/units/systemd-firstboot.service b/units/systemd-firstboot.service
+index 2fea883..9daa061 100644
+--- a/units/systemd-firstboot.service
++++ b/units/systemd-firstboot.service
+@@ -21,7 +21,10 @@ ConditionFirstBoot=yes
+ [Service]
+ Type=oneshot
+ RemainAfterExit=yes
+-ExecStart=systemd-firstboot --prompt-locale --prompt-timezone --prompt-root-password
++ExecStart=systemd-firstboot --prompt-keymap --prompt-timezone --prompt-hostname --prompt-root-password
+ StandardOutput=tty
+ StandardInput=tty
+ StandardError=tty
++
++[Install]
++WantedBy=sysinit.target
+-- 
+2.28.0
+

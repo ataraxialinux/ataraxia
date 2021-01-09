@@ -1,7 +1,7 @@
 # Description: GNOME's main interface to configure various aspects of the desktop
 # URL:         https://gitlab.gnome.org/GNOME/gnome-control-center
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson systemd accountsservice clutter-gtk gnome-color-manager gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality heimdal shared-mime-info udisks gnome-bluetooth ibus libgnomekbd libhandy modemmanager libnma sound-theme-freedesktop
+# Depends on:  meson systemd accountsservice clutter-gtk gnome-color-manager gnome-online-accounts gnome-settings-daemon grilo gsound libgtop libpwquality heimdal shared-mime-info udisks gnome-bluetooth ibus libgnomekbd libhandy modemmanager libnma sound-theme-freedesktop samba cups-pk-helper
 # Section:     gnome
 
 name=gnome-control-center
@@ -11,13 +11,12 @@ case $version in
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
-release=1
+release=2
 source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/gnome-control-center/0001-fix-musl-strlen.patch
-	patch -Np1 -i "$STUFF"/gnome-control-center/0001-samba-optional.patch
 	patch -Np0 -i "$STUFF"/gnome-control-center/0001-fix-build-on-heimdal.patch
 	sed -i '/ln -s/s/s /sf /' panels/user-accounts/meson.build
 

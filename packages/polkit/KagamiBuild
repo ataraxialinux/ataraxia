@@ -1,12 +1,12 @@
 # Description: Application development toolkit for controlling system-wide privileges
 # URL:         https://www.freedesktop.org/wiki/Software/polkit/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  pam intltool gobject-introspection duktape dbus
+# Depends on:  pam intltool gtk-doc-tiny gobject-introspection duktape dbus
 # Section:     utils
 
 name=polkit
 version=0.118
-release=3
+release=6
 source=("https://www.freedesktop.org/software/$name/releases/$name-$version.tar.gz")
 
 build() {
@@ -34,4 +34,8 @@ build() {
 
 	install -d -o root -g 102 -m 750 "$PKG"/{etc,usr/share}/polkit-1/rules.d
 	install -Dm644 "$STUFF"/sysusers.d/polkit.conf "$PKG"/usr/lib/sysusers.d/polkit.conf
+
+	mkdir -p "$PKG"/usr/lib/pam.d
+	mv "$PKG"/etc/pam.d/* "$PKG"/usr/lib/pam.d/
+	rm -rf "$PKG"/etc/pam.d
 }

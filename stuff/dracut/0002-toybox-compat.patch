@@ -1,0 +1,153 @@
+From 5ee05de77827d4cb3203243763038a77b6c0ba9b Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 10 Jan 2021 00:43:01 +0900
+Subject: [PATCH 2/4] toybox compat
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ 50-dracut.install                    | 2 +-
+ 51-dracut-rescue.install             | 2 +-
+ Makefile                             | 2 +-
+ dracut-init.sh                       | 4 ++--
+ dracut.sh                            | 4 ++--
+ install/dracut-install.c             | 8 ++++----
+ modules.d/10i18n/module-setup.sh     | 2 +-
+ modules.d/95terminfo/module-setup.sh | 2 +-
+ 8 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/50-dracut.install b/50-dracut.install
+index 7ea5e17..3112d9e 100755
+--- a/50-dracut.install
++++ b/50-dracut.install
+@@ -25,7 +25,7 @@ case "$COMMAND" in
+         if [[ -f ${INITRD_IMAGE_PREGENERATED} ]]; then
+             # we found an initrd at the same place as the kernel
+             # use this and don't generate a new one
+-            cp --reflink=auto "$INITRD_IMAGE_PREGENERATED" "$BOOT_DIR_ABS/$INITRD" \
++            cp "$INITRD_IMAGE_PREGENERATED" "$BOOT_DIR_ABS/$INITRD" \
+                 && chown root:root "$BOOT_DIR_ABS/$INITRD" \
+                 && chmod 0600 "$BOOT_DIR_ABS/$INITRD" \
+                 && exit 0
+diff --git a/51-dracut-rescue.install b/51-dracut-rescue.install
+index b2b3b9e..7782b40 100755
+--- a/51-dracut-rescue.install
++++ b/51-dracut-rescue.install
+@@ -87,7 +87,7 @@ case "$COMMAND" in
+ 
+         [[ -d "$BOOT_DIR_ABS" ]] || mkdir -p "$BOOT_DIR_ABS"
+ 
+-        if ! cp --reflink=auto "$KERNEL_IMAGE" "$BOOT_DIR_ABS/$KERNEL"; then
++        if ! cp "$KERNEL_IMAGE" "$BOOT_DIR_ABS/$KERNEL"; then
+             echo "Can't copy '$KERNEL_IMAGE to '$BOOT_DIR_ABS/$KERNEL'!" >&2
+         fi
+ 
+diff --git a/Makefile b/Makefile
+index 8dc1bac..a9489d6 100644
+--- a/Makefile
++++ b/Makefile
+@@ -146,7 +146,7 @@ install: all
+ 	ln -fs dracut-functions.sh $(DESTDIR)$(pkglibdir)/dracut-functions
+ 	install -m 0755 dracut-logger.sh $(DESTDIR)$(pkglibdir)/dracut-logger.sh
+ 	install -m 0755 dracut-initramfs-restore.sh $(DESTDIR)$(pkglibdir)/dracut-initramfs-restore
+-	cp -arx modules.d $(DESTDIR)$(pkglibdir)
++	cp -a modules.d $(DESTDIR)$(pkglibdir)
+ ifneq ($(enable_documentation),no)
+ 	for i in $(man1pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man1/$${i##*/}; done
+ 	for i in $(man5pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man5/$${i##*/}; done
+diff --git a/dracut-init.sh b/dracut-init.sh
+index 592a550..c61af6a 100644
+--- a/dracut-init.sh
++++ b/dracut-init.sh
+@@ -20,9 +20,9 @@
+ export LC_MESSAGES=C
+ 
+ if [[ "$EUID" = "0" ]] && ! [[ $DRACUT_NO_XATTR ]]; then
+-    export DRACUT_CP="cp --reflink=auto --sparse=auto --preserve=mode,timestamps,xattr,links -dfr"
++    export DRACUT_CP="cp --preserve=mode,timestamps,xattr -dfr"
+ else
+-    export DRACUT_CP="cp --reflink=auto --sparse=auto --preserve=mode,timestamps,links -dfr"
++    export DRACUT_CP="cp --preserve=mode,timestamps -dfr"
+ fi
+ 
+ # is_func <command>
+diff --git a/dracut.sh b/dracut.sh
+index 0f46483..c86c7a3 100755
+--- a/dracut.sh
++++ b/dracut.sh
+@@ -2046,7 +2046,7 @@ if [[ $uefi = yes ]]; then
+                 exit 1
+             fi
+         else
+-            if cp --reflink=auto "${uefi_outdir}/linux.efi" "$outfile"; then
++            if cp "${uefi_outdir}/linux.efi" "$outfile"; then
+                 dinfo "*** Creating UEFI image file '$outfile' done ***"
+             fi
+         fi
+@@ -2056,7 +2056,7 @@ if [[ $uefi = yes ]]; then
+         exit 1
+     fi
+ else
+-    if cp --reflink=auto "${DRACUT_TMPDIR}/initramfs.img" "$outfile"; then
++    if cp "${DRACUT_TMPDIR}/initramfs.img" "$outfile"; then
+         dinfo "*** Creating initramfs image file '$outfile' done ***"
+     else
+         rm -f -- "$outfile"
+diff --git a/install/dracut-install.c b/install/dracut-install.c
+index 0ea2f28..6abb1e9 100644
+--- a/install/dracut-install.c
++++ b/install/dracut-install.c
+@@ -314,10 +314,10 @@ static int cp(const char *src, const char *dst)
+         pid = fork();
+         if (pid == 0) {
+                 if (geteuid() == 0 && no_xattr == false)
+-                        execlp("cp", "cp", "--reflink=auto", "--sparse=auto", "--preserve=mode,xattr,timestamps", "-fL", src, dst,
++                        execlp("cp", "cp", "--preserve=mode,xattr,timestamps", "-fL", src, dst,
+                                NULL);
+                 else
+-                        execlp("cp", "cp", "--reflink=auto", "--sparse=auto", "--preserve=mode,timestamps", "-fL", src, dst,
++                        execlp("cp", "cp", "--preserve=mode,timestamps", "-fL", src, dst,
+                                NULL);
+                 _exit(EXIT_FAILURE);
+         }
+@@ -326,10 +326,10 @@ static int cp(const char *src, const char *dst)
+                 if (errno != EINTR) {
+                         ret = -1;
+                         if (geteuid() == 0 && no_xattr == false)
+-                                log_error("Failed: cp --reflink=auto --sparse=auto --preserve=mode,xattr,timestamps -fL %s %s", src,
++                                log_error("Failed: cp --preserve=mode,xattr,timestamps -fL %s %s", src,
+                                           dst);
+                         else
+-                                log_error("Failed: cp --reflink=auto --sparse=auto --preserve=mode,timestamps -fL %s %s", src,
++                                log_error("Failed: cp --preserve=mode,timestamps -fL %s %s", src,
+                                           dst);
+                         break;
+                 }
+diff --git a/modules.d/10i18n/module-setup.sh b/modules.d/10i18n/module-setup.sh
+index dd45b66..4cc1684 100755
+--- a/modules.d/10i18n/module-setup.sh
++++ b/modules.d/10i18n/module-setup.sh
+@@ -119,7 +119,7 @@ install() {
+         for __src in $(eval echo $dracutsysrootdir${kbddir}/{${KBDSUBDIRS}}); do
+             _src=${__src#$dracutsysrootdir}
+             inst_dir "$_src"
+-            $DRACUT_CP -L -t "${initdir}/${_src}" "$__src"/*
++            $DRACUT_CP -L "$__src"/* "${initdir}/${_src}"
+         done
+ 
+         # remove unnecessary files
+diff --git a/modules.d/95terminfo/module-setup.sh b/modules.d/95terminfo/module-setup.sh
+index 532f5bd..0b247b5 100755
+--- a/modules.d/95terminfo/module-setup.sh
++++ b/modules.d/95terminfo/module-setup.sh
+@@ -11,7 +11,7 @@ install() {
+     if [ -d $dracutsysrootdir${_terminfodir} ]; then
+         for i in "l/linux" "v/vt100" "v/vt102" "v/vt220"; do
+             inst_dir "$_terminfodir/${i%/*}"
+-            $DRACUT_CP -L -t "${initdir}/${_terminfodir}/${i%/*}" "$dracutsysrootdir$_terminfodir/$i"
++            $DRACUT_CP -L "$dracutsysrootdir$_terminfodir/$i" "${initdir}/${_terminfodir}/${i%/*}"
+         done
+     fi
+ }
+-- 
+2.30.0
+

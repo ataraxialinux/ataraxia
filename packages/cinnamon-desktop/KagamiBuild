@@ -1,0 +1,21 @@
+# Description: Library with common API for various Cinnamon modules
+# URL:         https://github.com/linuxmint/cinnamon-desktop
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool meson gobject-introspection accountsservice gtk3 libxkbfile pulseaudio
+# Section:     cinnamon
+
+name=cinnamon-desktop
+version=4.8.1
+release=1
+source=("https://github.com/linuxmint/cinnamon-desktop/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/cinnamon-desktop/0001-adjust-default-wallpapers.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
+}

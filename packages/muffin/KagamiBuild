@@ -1,0 +1,30 @@
+# Description: Cinnamon window manager based on Mutter
+# URL:         https://github.com/linuxmint/muffin
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool gobject-introspection gtk-doc-tiny cinnamon-desktop libcanberra libinput libsm libxkbcommon startup-notification zenity
+# Section:     cinnamon
+
+name=muffin
+version=4.8.0
+release=3
+source=("https://github.com/linuxmint/muffin/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--libexecdir=/usr/lib/muffin \
+		--localstatedir=/var \
+		--disable-gtk-doc \
+		--disable-schemas-compile
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool clutter/libtool cogl/libtool
+	make
+	make DESTDIR="$PKG" install
+	make -C src DESTDIR="$PKG" uninstall-binPROGRAMS uninstall-desktopfilesDATA
+	make -C src/tools DESTDIR="$PKG" uninstall
+	make -C src/compositor/plugins DESTDIR="$PKG" uninstall
+	make -C doc/man DESTDIR="$PKG" uninstall
+}

@@ -4,16 +4,16 @@
 # Section:     kernel
 
 name=linux
-version=5.10.1
-uksmver=5.9
+version=5.10.4
+hardenedver=5.10.4.a
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
-release=1
+release=2
 options=('~strip' 'bootstrap' '~ccache')
 source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
-	"https://raw.githubusercontent.com/dolohow/uksm/master/v5.x/uksm-$uksmver.patch")
+	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 build() {
 	case $BARCH in
@@ -51,18 +51,26 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	#patch -Np1 -i "$SRC"/uksm-$uksmver.patch
-	#patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
-	#patch -Np1 -i "$STUFF"/linux/0001-futex-patches.patch
-	#patch -Np1 -i "$STUFF"/linux/0001-block-patches.patch
-	#patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
-	#patch -Np1 -i "$STUFF"/linux/0110-Initialize-ata-before-graphics.patch
+	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
+	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
+	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
+	patch -Np1 -i "$STUFF"/linux/0110-Initialize-ata-before-graphics.patch
 
 	# Swap sucks
 	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
 
 	unset LDFLAGS
 	make mrproper
+
+	cp "$STUFF"/linux/x509.genkey certs/
+
+	openssl req -new -nodes -utf8 -sha1 -days 36500 -batch -x509 \
+		-config certs/x509.genkey -outform PEM \
+		-out certs/signing_key.pem -keyout certs/signing_key.pem
+
+	chmod 0600 certs/signing_key.pem
+	openssl pkey -in certs/signing_key.pem -out certs/signing_prv.key
+	openssl x509 -outform der -in certs/signing_key.pem -out certs/signing_crt.crt
 
 	"$STUFF"/configure-kernel -a $BARCH
 
@@ -90,21 +98,11 @@ build() {
 			;;
 	esac
 
-	mkdir -p "$PKG"/boot
-	cp "$IMAGELOC" "$PKG"/boot/vmlinuz-ataraxia
-	cp .config "$PKG"/boot/config-ataraxia
+	cp "$IMAGELOC" "$PKG"/usr/lib/modules/${kver}-ataraxia/vmlinuz
+	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
+
+	echo "${kver}-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-ataraxia/version
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
-
-	install -Dm755 "$STUFF"/linux/mkinitrd "$PKG"/usr/bin/mkinitrd
-	sed -i "s/uncomment/$version/g" "$PKG"/usr/bin/mkinitrd
-
-	[ -f "$topdir/trigger" ] && rm -rf "$topdir"/trigger
-	cat > "$topdir"/trigger <<-EOF
-		%transfiletriggerin -- /usr/lib/modules/${kver}-ataraxia
-		if [ -f "/boot/initramfs-ataraxia.img" ]; then
-			/usr/bin/mkinitrd
-		fi
-	EOF
 }

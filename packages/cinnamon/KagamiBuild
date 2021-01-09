@@ -1,0 +1,29 @@
+# Description: Linux desktop which provides advanced innovative features and a traditional user experience
+# URL:         https://github.com/linuxmint/cinnamon
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  st intltool meson gobject-introspection accountsservice caribou cinnamon-control-center cinnamon-menus cinnamon-screensaver cinnamon-session cjs gnome-themes-extra gstreamer gvfs libcroco libgnomekbd libkeybinder muffin nemo polkit-gnome python-dbus pygobject python-pam python-pexpect python-pillow python-pyinotify python-pytz python-tinycss2 python-xapp timezonemap xapp
+# Section:     cinnamon
+
+name=cinnamon
+version=4.8.3
+release=2
+source=("https://github.com/linuxmint/cinnamon/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/cinnamon/0001-cinnamon-settings-don-t-rely-on-the-presence-of-cinn.patch
+	patch -Np1 -i "$STUFF"/cinnamon/set_wheel.diff
+
+	sed -i 's/mintinstall.desktop/org.gnome.Software.desktop/' data/org.cinnamon.gschema.xml
+	sed -i 's/RequiredComponents=\(.*\)$/RequiredComponents=\1polkit-gnome-authentication-agent-1;/' \
+		cinnamon*.session.in
+	sed -i 's|/usr/share/cinnamon-background-properties|/usr/share/gnome-background-properties|' \
+		files/usr/share/cinnamon/cinnamon-settings/modules/cs_backgrounds.py
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		--libexecdir=lib/cinnamon
+	samu
+	DESTDIR="$PKG" samu install
+}

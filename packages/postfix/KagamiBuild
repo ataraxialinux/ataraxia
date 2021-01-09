@@ -6,7 +6,7 @@
 
 name=postfix
 version=3.5.8
-release=1
+release=2
 backup=('etc/postfix/aliases'
 	'etc/postfix/main.cf'
 	'etc/postfix/master.cf')
@@ -51,6 +51,10 @@ build() {
 
 	install -Dm644 "$STUFF"/svc/postfix.service "$PKG"/usr/lib/systemd/system/postfix.service
 	install -Dm644 "$STUFF"/sysusers.d/postfix.conf "$PKG"/usr/lib/sysusers.d/postfix.conf
+
+	mkdir -p "$PKG"/usr/lib/pam.d
+	mv "$PKG"/etc/pam.d/* "$PKG"/usr/lib/pam.d/
+	rm -rf "$PKG"/etc/pam.d
 
 	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin/
 	rm -rf "$PKG"/usr/sbin

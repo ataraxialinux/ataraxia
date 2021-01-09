@@ -6,7 +6,7 @@
 
 name=lxdm
 version=0.5.3
-release=11
+release=12
 source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
 
 build() {
@@ -34,4 +34,8 @@ build() {
 	chmod 644 "$PKG"/etc/lxdm/lxdm.conf
 	install -Dm644 "$STUFF"/tmpfiles.d/lxdm.conf "$PKG"/usr/lib/tmpfiles.d/lxdm.conf
 	install -Dm644 "$STUFF"/sysusers.d/lxdm.conf "$PKG"/usr/lib/sysusers.d/lxdm.conf
+
+	mkdir -p "$PKG"/usr/lib/pam.d
+	mv "$PKG"/etc/pam.d/* "$PKG"/usr/lib/pam.d/
+	rm -rf "$PKG"/etc/pam.d
 }

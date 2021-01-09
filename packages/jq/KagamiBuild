@@ -2,11 +2,12 @@
 # URL:         http://stedolan.github.io/jq/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  oniguruma
-# Section:     libs
+# Section:     base
 
 name=jq
 version=1.6
-release=2
+release=3
+options=('bootstrap')
 source=("https://github.com/stedolan/jq/releases/download/$name-$version/$name-$version.tar.gz")
 
 build() {
@@ -14,6 +15,11 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-docs
-	make
-	make DESTDIR="$PKG" install
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
 }

@@ -6,7 +6,7 @@
 
 name=kbd
 version=2.4.0
-release=1
+release=2
 options=('bootstrap')
 source=("http://www.kernel.org/pub/linux/utils/$name/$name-$version.tar.xz")
 
@@ -17,4 +17,7 @@ build() {
 		--disable-tests
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/pam.d/vlock "$PKG"/usr/lib/pam.d/vlock
+	rm -rf "$PKG"/usr/etc
 }

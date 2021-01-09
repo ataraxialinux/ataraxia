@@ -1,12 +1,12 @@
 # Description: A library for bits of crypto UI and parsing
 # URL:         https://gitlab.gnome.org/GNOME/gcr
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gobject-introspection vala gcr json-glib rest telepathy-glib webkitgtk
+# Depends on:  gobject-introspection vala json-glib rest telepathy-glib webkitgtk
 # Section:     gnome
 
 name=gnome-online-accounts
 version=3.38.0
-release=1
+release=2
 source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
@@ -14,19 +14,21 @@ build() {
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--libexecdir=/usr/lib \
+		--enable-backend \
 		--enable-imap-smtp \
 		--enable-media-server \
 		--enable-owncloud \
+		--disable-documentation \
 		--disable-exchange \
 		--disable-facebook \
+		--disable-fedora \
 		--disable-flickr \
 		--disable-foursquare \
 		--disable-google \
 		--disable-gtk-doc \
 		--disable-lastfm \
-		--disable-windows-live \
 		--disable-kerberos \
-		--disable-fedora
+		--disable-windows-live
 	make
 	make DESTDIR="$PKG" install
 }

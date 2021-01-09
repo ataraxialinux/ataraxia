@@ -6,7 +6,8 @@
 name=hicolor-icon-theme
 version=0.17
 release=1
-source=("https://icon-theme.freedesktop.org/releases/$name-$version.tar.xz")
+source=("https://icon-theme.freedesktop.org/releases/$name-$version.tar.xz"
+	"update-icon-cache")
 
 build() {
 	cd "$SRC"/$name-$version
@@ -14,4 +15,6 @@ build() {
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	install -Dm755 "$SRC"/update-icon-cache "$PKG"/usr/bin/update-icon-cache
 }

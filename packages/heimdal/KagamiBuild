@@ -24,10 +24,7 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/heimdal/0001-get-rid-of-getpwnam_r.patch
-	patch -Np1 -i "$STUFF"/heimdal/0001-always-compile-compile_et.patch
 	patch -Np1 -i "$STUFF"/heimdal/heimdal_missing-include.patch
-
-	autoreconf -fi
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -57,11 +54,11 @@ build() {
 
 		sed -i "s,$b,$a,g" libtool
 
-		$ORIGMAKE MAKEINFO=true
-		$ORIGMAKE MAKEINFO=true DESTDIR="$PKG" install
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
 	else
-		make MAKEINFO=true
-		make MAKEINFO=true DESTDIR="$PKG" install
+		make
+		make DESTDIR="$PKG" install
 	fi
 
 	mv "$PKG"/usr/bin/su "$PKG"/usr/bin/ksu

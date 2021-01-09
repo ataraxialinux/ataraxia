@@ -1,15 +1,19 @@
 # Description: System and service manager
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson zlib bzip2 xz lz4 pam acl libcap shadow libressl kbd kmod libelf iptables gperf hwids cryptsetup libseccomp
+# Depends on:  meson zlib bzip2 xz lz4 audit pam acl libcap shadow kbd kmod libelf iptables gperf hwids libseccomp libgcrypt gnutls cryptsetup
+# Dep x86_64:  gnu-efi
+# Dep i686:    gnu-efi
+# Dep aarch64: gnu-efi
+# Dep armv7hl: gnu-efi
+# Dep armv6hl: gnu-efi
 # Section:     base
 
 name=systemd
 version=247.2
-release=1
+release=4
 options=('bootstrap')
-backup=('etc/systemd/coredump.conf'
-	'etc/systemd/homed.conf'
+backup=('etc/systemd/homed.conf'
 	'etc/systemd/journald.conf'
 	'etc/systemd/logind.conf'
 	'etc/systemd/networkd.conf'
@@ -21,36 +25,57 @@ backup=('etc/systemd/coredump.conf'
 	'etc/systemd/timesyncd.conf'
 	'etc/systemd/user.conf'
 	'etc/udev/udev.conf')
-source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz")
+source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::archive=$name-$version.tar.gz"
+	"daemon-reload.trigger"
+	"journald-catalog.trigger"
+	"systemd-binfmt.trigger"
+	"systemd-sysctl.trigger"
+	"systemd-sysusers.trigger"
+	"systemd-tmpfiles.trigger"
+	"udev-hwdb.trigger"
+	"udev-rules.trigger")
 
 build() {
+	local efi
+
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+			if [ "$USEBOOTSTRAP" = "yes" ]; then
+				efi="-Defi=true -Dgnu-efi=true -Defi-cc="$CC" -Defi-ld="$LD" -Defi-libdir=$ROOTFS/usr/lib -Defi-ldsdir=$ROOTFS/usr/lib -Defi-includedir=$ROOTFS/usr/include/efi"
+			else
+				efi="-Dgnu-efi=true"
+			fi
+			;;
+		*)
+			efi="-Dgnu-efi=false"
+			;;
+	esac
+
 	cd "$SRC"/$name-stable-$version
 	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
 	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
-	patch -Np1 -i "$STUFF"/systemd/0003-stateless-etc-machine-id.patch
-	patch -Np1 -i "$STUFF"/systemd/0004-better-firstboot.patch
-	patch -Np1 -i "$STUFF"/systemd/0005-LibreSSL-fixes.patch
-	patch -Np1 -i "$STUFF"/systemd/0006-tune-etc.conf.patch
-	patch -Np1 -i "$STUFF"/systemd/0007-Use-home-root.patch
+	patch -Np1 -i "$STUFF"/systemd/0003-Better-systemd-firstboot-preset.patch
+	patch -Np1 -i "$STUFF"/systemd/0004-LibreSSL-fixes.patch
+	patch -Np1 -i "$STUFF"/systemd/0005-tune-up-etc.patch
+	patch -Np1 -i "$STUFF"/systemd/0006-Use-home-root.patch
 
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/systemd-stable-$version \
+	ataraxia-meson "$SRC"/systemd-stable-$version $efi \
 		-Dapparmor=false \
-		-Daudit=false \
-		-Db_lto=false \
+		-Daudit=true \
 		-Dbashcompletiondir=/usr/share/bash-completion \
 		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
-		-Ddefault-dnssec=no \
+		-Dcoredump=false \
+		-Ddefault-dnssec=yes \
 		-Ddefault-hierarchy=unified \
 		-Ddefault-kill-user-processes=false \
 		-Ddefault-locale=C.UTF-8 \
-		-Ddns-over-tls=openssl \
+		-Ddns-over-tls=true \
+		-Ddefault-dns-over-tls=yes \
 		-Ddns-servers="1.1.1.1 1.0.0.1 9.9.9.9 8.8.8.8 8.8.4.4 2606:4700:4700::1111 2620:fe::10 2001:4860:4860::8888" \
 		-Delfutils=true \
 		-Dfallback-hostname="ataraxia" \
-		-Dgcrypt=false \
-		-Dgnutls=false \
 		-Dgshadow=false \
 		-Dhibernate=false \
 		-Dhtml=false \
@@ -60,7 +85,7 @@ build() {
 		-Dkmod-path=/usr/bin/kmod \
 		-Dldconfig=false \
 		-Dlibcurl=false \
-		-Dlibidn2=false \
+		-Dlibidn2=true \
 		-Dman=false \
 		-Dmicrohttpd=false \
 		-Dmyhostname=false \
@@ -70,9 +95,9 @@ build() {
 		-Dnss-resolve=false \
 		-Dnss-systemd=false \
 		-Dntp-servers="0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org" \
-		-Dp11kit=false \
 		-Dpcre2=false \
 		-Dqrencode=false \
+		-Drpmmacrosdir=no \
 		-Dselinux=false \
 		-Dsmack=false \
 		-Dsysvinit-path= \
@@ -88,6 +113,8 @@ build() {
 		mv "$PKG"/usr/sbin/* "$PKG"/usr/bin
 		rm -rf "$PKG"/usr/sbin
 	fi
+
+	for i in "$SRC"/*.trigger; do install -Dm644 "$i" "$PKG"/usr/lib/tsukuri/triggers/$(basename $i); done
 
 	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
 	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
@@ -106,9 +133,9 @@ build() {
 
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
-	install -Dm644 "$STUFF"/systemd/issue "$PKG"/usr/share/factory/etc/issue
-	install -Dm644 "$STUFF"/pam.d/other "$PKG"/usr/share/factory/etc/pam.d/other
-	install -Dm644 "$STUFF"/pam.d/system-auth "$PKG"/usr/share/factory/etc/pam.d/system-auth
+	#install -Dm644 "$STUFF"/systemd/issue "$PKG"/usr/share/factory/etc/issue
+	#install -Dm644 "$STUFF"/pam.d/other "$PKG"/usr/share/factory/etc/pam.d/other
+	#install -Dm644 "$STUFF"/pam.d/system-auth "$PKG"/usr/share/factory/etc/pam.d/system-auth
 
 	case $BARCH in
 		x86_64|i686|aarch64|armv7hl|armv6hl)

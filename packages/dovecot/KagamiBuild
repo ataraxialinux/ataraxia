@@ -1,12 +1,12 @@
 # Description: An IMAP and POP3 server written with security primarily in mind
 # URL:         https://dovecot.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib bzip2 lz4 pam libcap libressl expat curl heimdal libsodium libldap
+# Depends on:  zlib bzip2 lz4 zstd pam libcap libressl expat curl heimdal libsodium libldap
 # Section:     mail
 
 name=dovecot
 version=2.3.13
-release=1
+release=2
 backup=('etc/dovecot/dovecot.conf'
 	'etc/dovecot/conf.d/10-auth.conf'
 	'etc/dovecot/conf.d/10-director.conf'
@@ -32,8 +32,7 @@ backup=('etc/dovecot/dovecot.conf'
 	'etc/dovecot/conf.d/auth-sql.conf.ext'
 	'etc/dovecot/conf.d/auth-static.conf.ext'
 	'etc/dovecot/conf.d/auth-system.conf.ext'
-	'etc/dovecot/conf.d/auth-vpopmail.conf.ext'
-	'etc/pam.d/dovecot')
+	'etc/dovecot/conf.d/auth-vpopmail.conf.ext')
 source=("https://dovecot.org/releases/2.3/$name-$version.tar.gz")
 
 build() {
@@ -56,7 +55,7 @@ build() {
 	rm -r "$PKG"/usr/share/doc
 	rm "$PKG"/etc/dovecot/README
 
-	install -Dm644 "$STUFF"/pam.d/dovecot "$PKG"/etc/pam.d/dovecot
+	install -Dm644 "$STUFF"/pam.d/dovecot "$PKG"/usr/lib/pam.d/dovecot
 	install -Dm644 "$STUFF"/tmpfiles.d/dovecot.conf "$PKG"/usr/lib/tmpfiles.d/dovecot.conf
 	install -Dm644 "$STUFF"/sysusers.d/dovecot.conf "$PKG"/usr/lib/sysusers.d/dovecot.conf
 }

@@ -10,8 +10,7 @@ release=4
 backup=('etc/cups/cupsd.conf'
 	'etc/cups/snmp.conf'
 	'etc/cups/cups-files.conf'
-	'etc/logrotate.d/cups'
-	'etc/pam.d/cups')
+	'etc/logrotate.d/cups')
 source=("https://github.com/apple/cups/releases/download/v$version/$name-$version-source.tar.gz")
 
 build() {
@@ -42,12 +41,13 @@ build() {
 	make BUILDROOT="$PKG" install
 
 	install -Dm644 "$STUFF"/cups/logrotate "$PKG"/etc/logrotate.d/cups
-	install -Dm644 "$STUFF"/pam.d/cups "$PKG"/etc/pam.d/cups
+	install -Dm644 "$STUFF"/pam.d/cups "$PKG"/usr/lib/pam.d/cups
 	install -Dm644 "$STUFF"/sysusers.d/cups.conf "$PKG"/usr/lib/sysusers.d/cups.conf
 
 	rm -rf "$PKG"/etc/rc*.d
 	rm -rf "$PKG"/etc/init.d
 	rm -rf "$PKG"/run
+	rm -rf "$PKG"/etc/pam.d
 	rm -r "$PKG"/usr/share/cups/{banners,data}
 	rm -rf "$PKG"/usr/share/{applications,icons}
 	chmod 0755 "$PKG"/var/{cache,spool}   

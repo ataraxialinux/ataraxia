@@ -1,20 +1,19 @@
 # Description: C++ bindings for GTK+ 3
 # URL:         https://www.gtkmm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  atkmm pangomm gtk3
+# Depends on:  meson atkmm2.28 pangomm2.42 gtk3
 # Section:     libs
 
 name=gtkmm3
-version=3.24.2
+version=3.24.3
 release=1
 source=("https://download.gnome.org/sources/gtkmm/${version%.*}/gtkmm-$version.tar.xz")
 
 build() {
 	cd "$SRC"/gtkmm-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-
-	sed -i -e 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/gtkmm-$version
+	samu
+	DESTDIR="$PKG" samu install
 }

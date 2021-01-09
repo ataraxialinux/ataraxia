@@ -1,25 +1,21 @@
 ### Installing build dependencies
 We need specific packages to build this Linux distribution. Without them you can't perform the required tasks. To install required build dependencies:
-#### Debian or Ubuntu (and derivatives):
-```
-apt-get install build-essential m4 bison flex texinfo python3 python perl libtool autoconf automake autopoint gperf libarchive-tools xorriso curl git mtools pigz zstd rsync pcregrep pkg-config liblzma-dev libgmp-dev libmpfr-dev libmpc-dev libelf-dev libssl-dev zlib1g-dev libarchive-dev libzstd-dev libfreetype6-dev libpopt-dev libacl1-dev libcap-dev libmagic-dev libdb-dev libreadline-dev libffi-dev libsqlite3-dev
-```
 #### Fedora
 ```
 dnf groupinstall "Development Tools" "C Development Tools and Libraries"
-dnf install gcc gcc-g++ libstdc++-static glibc-static mtools libisoburn python3 pigz libarchive curl bsdtar xorriso autoconf automake libtool which pcre-tools freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel libdb-devel popt-devel file file-devel libacl-devel libcap-devel gettext-devel gcc-plugin-devel gmp-devel mpfr-devel libmpc-devel readline-devel libffi-devel sqlite-devel
+dnf install glibc-static libstdc++-static jq lzip bsdcpio bsdtar curl mtools libisoburn which python3 texinfo gcc-plugin-devel freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel gmp-devel mpfr-devel libmpc-devel readline-devel libffi-devel sqlite-devel
 ```
 #### Arch Linux (and derivatives):
 ```
-pacman -S base-devel xorriso mtools git pigz python rsync freetype2
+pacman -S base-devel xorriso mtools jq python rsync freetype2
 ```
 #### Ataraxia Linux:
 ```
-neko emerge libisoburn python mtools freetype isomd5sum
+tsukuri emerge libisoburn mtools freetype
 ```
 
 ### Compiling package manager
-Ataraxia Linux uses `neko` as its package manager. You should do this commands to install pkgutils (**AS ROOT**):
+Ataraxia Linux uses `tsukuri` as its package manager. You should do this commands to install `tsukuri` (**AS ROOT**):
 ```
 cd /tmp
 git clone https://github.com/ataraxialinux/neko.git --depth 1

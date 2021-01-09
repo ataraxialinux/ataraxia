@@ -1,0 +1,52 @@
+From 11a2f7bb882b39cc0cc82578d73fd246c98de311 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 10 Jan 2021 00:58:29 +0900
+Subject: [PATCH 4/4] add toybox module
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ modules.d/05toybox/module-setup.sh | 32 ++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100755 modules.d/05toybox/module-setup.sh
+
+diff --git a/modules.d/05toybox/module-setup.sh b/modules.d/05toybox/module-setup.sh
+new file mode 100755
+index 0000000..03b3397
+--- /dev/null
++++ b/modules.d/05toybox/module-setup.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++
++# called by dracut
++check() {
++    require_binaries toybox || return 1
++
++    return 255
++}
++
++# called by dracut
++depends() {
++    return 0
++}
++
++# called by dracut
++install() {
++    local _i _path _toybox
++    local _progs=()
++    _toybox=$(type -P toybox)
++    inst $_toybox /usr/bin/toybox
++    for _i in $($_toybox); do
++        [[ ${_i} == toybox ]] && continue
++        _progs+=("${_i}")
++    done
++
++    for _i in "${_progs[@]}"; do
++        _path=$(find_binary "$_i")
++        [ -z "$_path" ] && continue
++        ln_r /usr/bin/toybox $_path
++    done
++}
++
+-- 
+2.30.0
+

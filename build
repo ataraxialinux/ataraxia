@@ -36,13 +36,13 @@ generate_config() {
 	if [ "$USE_TARGET" = "1" ]; then
 		cat > "$file" <<- EOF
 			export BARCH="$BARCH"
-			export MKOPTS="$MKOPTS"
-			export OPTIONS=(emptydirs strip makeflags ~locales ~docs ~ccache ~libtool)
-			export REPOS=("${REPO}")
+			export mkopts="$MKOPTS"
+			export buildoptions=(emptydirs strip makeflags ~locales ~docs ~ccache ~libtool ~nobootstrap)
+			export repos="${REPO}"
 			export ROOTFS="$ROOTFS"
 			export TOOLS="$TOOLS"
-			export PKGDEST="$PACKAGES"
-			export SRCDEST="$SOURCES"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
 			export CFLAGS="$CFLAGS"
 			export CXXFLAGS="$CXXFLAGS"
 			export XHOST="$XHOST"
@@ -72,13 +72,13 @@ generate_config() {
 	elif [ "$USE_HOST" = "1" ]; then
 		cat > "$file" <<- EOF
 			export BARCH="$BARCH"
-			export MKOPTS="$MKOPTS"
-			export OPTIONS=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool)
-			export REPOS=("${TCREPO}" "${REPO}")
+			export mkopts="$MKOPTS"
+			export buildoptions=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool ~nobootstrap)
+			export repos="${TCREPO} ${REPO}"
 			export ROOTFS="$ROOTFS"
 			export TOOLS="$TOOLS"
-			export PKGDEST="$PACKAGES"
-			export SRCDEST="$SOURCES"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
 			export CFLAGS="$CFLAGS"
 			export CXXFLAGS="$CXXFLAGS"
 			export XHOST="$XHOST"
@@ -183,8 +183,6 @@ build_environment() {
 
 	USE_HOST=1 generate_config "$BUILD"/host.config
 	USE_TARGET=1 generate_config "$BUILD"/target.config
-
-	touch "$BUILD"/mask
 }
 
 
@@ -205,19 +203,21 @@ build_toolchain() {
 				;;
 	esac
 
-	for toolchain in rpm base-files gettext-tiny m4 bison flex bc kmod heimdal gperf \
+	mkdir -p "$ROOTFS/usr/lib/tsukuri/db"
+
+	for toolchain in base-files gettext-tiny texinfo m4 bison flex bc kmod heimdal gperf \
 			python samurai meson linux-headers binutils gcc-static musl gcc $EXTRAPKG \
 			slibtool autoconf automake cracklib pkgconf; do
 		case $toolchain in
 			base-files|linux-headers)
-				neko em -c "$BUILD"/host.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
+				tsukuri em -c "$BUILD"/host.config -r "$ROOTFS" -wND ${toolchain}
 				;;
 			musl)
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wnd ${toolchain}
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wND ${toolchain}
 				;;
 			*)
 				pushd "$TCREPO/host-$toolchain"
-					neko bi -c "$BUILD"/host.config -m "$BUILD"/mask -wP
+					tsukuri bi -c "$BUILD"/host.config -wp
 				popd
 				;;
 		esac
@@ -242,56 +242,63 @@ build_target() {
 		LINUX="linux"
 	fi
 
-	packages="netbase tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
+	packages="iana-etc tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
 		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc pkgconf pcre \
-		libcap-ng cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed psmisc \
-		mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle python perl \
-		ca-certificates autoconf automake lzip libarchive lzo kmod libuargp libelf gawk findutils \
-		9base lobase sbase ubase less mandoc dialog gzip ncompress libmnl libnftnl libnfnetlink \
-		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd samurai python-setuptools \
-		meson make patch tar cpio nano gperf libseccomp libblkid libsystemd util-linux libaio lvm2 \
-		popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus iputils procps-ng e2fsprogs btrfs-progs \
-		dosfstools run-parts libssh2 nghttp2 c-ares heimdal curl rpm neko wireless_tools wpa_supplicant \
-		gptfdisk wget libevent links dropbear $LINUX"
+		libcap-ng audit cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed \
+		psmisc mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle \
+		python perl ca-certificates autoconf automake lzip lzo libarchive kmod libuargp libelf \
+		gawk findutils lobase sbase ubase less mandoc dialog gzip ncompress libmnl libnftnl libnfnetlink \
+		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make \
+		patch tar cpio texinfo nano gperf libseccomp libblkid libsystemd util-linux libgpg-error libgcrypt \
+		libunistring libidn2 libtasn1 p11-kit gnutls libaio lvm2 popt json-c argon2 cryptsetup hwids $EXTRAPKG \
+		systemd dbus-broker dbus iputils procps-ng e2fsprogs btrfs-progs dosfstools run-parts libssh2 \
+		nghttp2 c-ares heimdal brotli curl oniguruma jq tsukuri wireless_tools wpa_supplicant gptfdisk \
+		wget libevent links dropbear $LINUX"
 
 	for i in $packages; do
 		case $i in
 			libblkid)
 				if [ ! -f "$BUILD/.blkid" ]; then
-					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts libblkid
-					rm -rf "$BUILD"/packages/libblkid-*.rpm
+					tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libblkid
+					rm -rf "$BUILD"/packages/libblkid-*.lz
 					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
 				fi
 				;;
 			libsystemd)
 				if [ ! -f "$BUILD/.libsystemd" ]; then
-					neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts libsystemd
-					rm -rf "$BUILD"/packages/libsystemd-*.rpm
+					tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libsystemd
+					rm -rf "$BUILD"/packages/libsystemd-*.lz
 					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
 				fi
 				;;
 			util-linux)
 				pushd "$REPO/util-linux"
-					neko bi -c "$BUILD"/target.config -w util-linux
+					tsukuri bi -c "$BUILD"/target.config -w util-linux
 				popd
 				if [ -f "$BUILD/.rmblkid" ]; then
-					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libblkid
+					tsukuri rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libblkid
 					rm "$BUILD"/.rmblkid
 				fi
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts util-linux
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH util-linux
 				;;
 			systemd)
 				pushd "$REPO/systemd"
-					neko bi -c "$BUILD"/target.config -w systemd
+					tsukuri bi -c "$BUILD"/target.config -w systemd
 				popd
 				if [ -f "$BUILD/.rmsystemd" ]; then
-					neko rm -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -dt libsystemd
+					tsukuri rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libsystemd
 					rm "$BUILD"/.rmsystemd
 				fi
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts systemd
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH systemd
 				;;
 			*)
-				neko em -c "$BUILD"/target.config -m "$BUILD"/mask -r "$ROOTFS" -wndts $i
+				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH $i
 				;;
 		esac
 	done
@@ -398,7 +405,7 @@ case $1 in
 				;;
 		esac
 		;;
-	image|installer|live|archive)
+	image|installer|live|archive|verityefi)
 		if [ -z "$1" ]; then
 			die "Specify target"
 		fi
@@ -476,10 +483,10 @@ case $1 in
 						true
 					elif [ "$packages" = "libsystemd" ]; then
 						true
-					elif [ "$packages" = "linux" ]; then
-						"$UTILS/check-updates" linux
-					elif [ "$packages" = "linux-headers" ]; then
-						"$UTILS/check-updates" linux-headers
+					#elif [ "$packages" = "linux" ]; then
+					#	"$UTILS/check-updates" linux
+					#elif [ "$packages" = "linux-headers" ]; then
+					#	"$UTILS/check-updates" linux-headers
 					else
 						"$UTILS/check-updates" $cuopt $cuopttwo $packages
 					fi

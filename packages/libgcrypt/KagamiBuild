@@ -7,12 +7,20 @@
 name=libgcrypt
 version=1.8.7
 release=1
+options=('bootstrap')
 source=("https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
+
+	export ac_cv_sys_symbol_underscore=no
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s|$ROOTFS||" "$PKG"/usr/bin/libgcrypt-config
+	fi
 }

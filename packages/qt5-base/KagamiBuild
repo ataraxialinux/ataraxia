@@ -1,0 +1,51 @@
+# Description: A cross-platform application and UI framework
+# URL:         https://www.qt.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  gst-plugins-base pulseaudio cups vulkan-headers dbus double-conversion fontconfig libinput libjpeg-turbo libproxy libxi libxkbcommon libxrender mesa shared-mime-info sqlite tslib xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-wm xdg-utils gtk3
+# Section:     libs
+
+name=qt5-base
+version=5.15.2
+release=1
+source=("https://download.qt.io/official_releases/qt/${version::4}/$version/submodules/qtbase-everywhere-src-$version.tar.xz")
+
+build() {
+	if [ "$opt_ccache" = "1" ]; then
+		export PATH="/usr/lib/ccache/bin:$PATH"
+	fi
+
+	cd "$SRC"/qtbase-everywhere-src-$version
+	patch -Np1 -i "$STUFF"/qt5-base/qt-musl-iconv-no-bom.patch
+
+	./configure \
+		-prefix /usr \
+		-docdir /usr/share/doc/qt \
+		-headerdir /usr/include/qt \
+		-archdatadir /usr/lib/qt \
+		-datadir /usr/share/qt \
+		-sysconfdir /etc/xdg \
+		-examplesdir /usr/share/doc/qt/examples \
+		-confirm-license \
+		-libdir /usr/lib \
+		-sysconfdir /etc/xdg \
+		-dbus-linked \
+		-nomake examples \
+		-no-mimetype-database \
+		-no-rpath \
+		-no-use-gold-linker \
+		-opensource \
+		-openssl-linked \
+		-reduce-relocations \
+		-system-harfbuzz \
+		-system-sqlite \
+		-journald
+	make
+	make INSTALL_ROOT="$PKG" install
+
+	find "$PKG"/usr/lib -name \*.prl -exec sed -i -e '/^QMAKE_PRL_BUILD_DIR/d' {} \;
+	sed -i "s|$SRC/qtbase-everywhere-src-$version|/usr|" "$PKG"/usr/lib/qt/mkspecs/modules/qt_lib_bootstrap_private.pri
+
+	for b in "$PKG"/usr/bin/*; do
+		ln -sf $(basename $b) "$PKG"/usr/bin/$(basename $b)-qt5
+	done
+}

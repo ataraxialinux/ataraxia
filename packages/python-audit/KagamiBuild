@@ -1,0 +1,30 @@
+# Description: Python bindings for Linux Audit
+# URL:         https://people.redhat.com/sgrubb/audit
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python swig audit
+# Section:     python
+
+name=python-audit
+version=2.8.5
+release=1
+source=("https://people.redhat.com/sgrubb/audit/audit-$version.tar.gz")
+
+build() {
+	cd "$SRC"/audit-$version
+	patch -Np0 -i "$STUFF"/audit/fix.patch
+	patch -Np1 -i "$STUFF"/audit/audit-3.0-no-common.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/audit \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-python3 \
+		--without-python \
+		--enable-shared=audit \
+		--enable-systemd \
+		--disable-gssapi-krb5 \
+		--disable-zos-remote
+	make
+	make -C bindings DESTDIR="$PKG" INSTALL='install -p' install
+}

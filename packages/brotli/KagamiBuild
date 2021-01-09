@@ -1,27 +1,27 @@
 # Description: Generic lossless compressor
 # URL:         https://github.com/google/brotli
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python-setuptools cmake samurai
+# Depends on:  python-setuptools
 # Section:     libs
 
 name=brotli
 version=1.0.9
-release=3
+release=5
 source=("https://github.com/google/brotli/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	mkdir -p build
-	cd build
-	cmake "$SRC"/$name-$version \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
-		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-Wno-dev -G Ninja
-	samu
-	DESTDIR="$PKG" samu install
+	patch -Np1 -i "$STUFF"/brotli/1.0.9-linker.patch
+
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
 
 	cd "$SRC"/$name-$version
 	python3 setup.py build
 	python3 setup.py install --prefix=/usr --root="$PKG" --optimize=1
+
+	sed -i "s/Version: 0.0.0/Version: $version/g" "$PKG"/usr/lib/pkgconfig/*.pc
 }

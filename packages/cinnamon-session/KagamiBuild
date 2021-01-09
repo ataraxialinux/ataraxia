@@ -1,0 +1,21 @@
+# Description: The Cinnamon Session Handler
+# URL:         https://github.com/linuxmint/cinnamon-session
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson cinnamon-desktop libcanberra libsm xapp xtrans
+# Section:     cinnamon
+
+name=cinnamon-session
+version=4.8.0
+release=1
+source=("https://github.com/linuxmint/cinnamon-session/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dgconf=false \
+		-Ddocbook=false
+	samu
+	DESTDIR="$PKG" samu install
+}

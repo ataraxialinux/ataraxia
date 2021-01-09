@@ -6,9 +6,27 @@
 name=libgpg-error
 version=1.41
 release=1
+options=('bootstrap')
 source=("https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		cd "$SRC"
+		cp -a $name-$version libgpg-error-bootstrap
+		(
+			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
+			cd libgpg-error-bootstrap
+			./configure \
+				--prefix="$SRC"/libgpg-error \
+				--with-sysroot="$ROOTFS"
+			$ORIGMAKE
+			$ORIGMAKE install
+		)
+
+		install -Dm755 "$SRC"/libgpg-error/bin/gpg-error-config "$TOOLS"/bin/gpg-error-config
+		sed -i "s|prefix=$SRC/libgpg-error|prefix=$ROOTFS/usr|" "$TOOLS"/bin/gpg-error-config
+	fi
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \

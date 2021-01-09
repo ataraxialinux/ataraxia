@@ -1,0 +1,24 @@
+# Description: Javascript Bindings for Cinnamon
+# URL:         https://github.com/linuxmint/cjs
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection gtk3 spidermonkey
+# Section:     cinnamon
+
+name=cjs
+version=4.8.1
+release=2
+source=("https://github.com/linuxmint/cjs/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	export CFLAGS="${CFLAGS/-Os/-O2}"
+	export CXXFLAGS="${CXXFLAGS/-Os/-O2}"
+
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dinstalled_tests=false \
+		-Dprofiler=disabled
+	samu
+	DESTDIR="$PKG" samu install
+}

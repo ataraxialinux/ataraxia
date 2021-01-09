@@ -1,0 +1,74 @@
+# Description: Simple packages manager for Ataraxia Linux
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson lzip libarchive curl jq systemd
+# Section:     base
+
+name=tsukuri
+version=0.1.3.1.1
+release=1
+options=('bootstrap')
+backup=('etc/tsukuri/make.conf')
+source=("https://github.com/ataraxialinux/tsukuri/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
+
+	chmod +x "$PKG"/usr/bin/tsukuri
+
+	install -dm755 "$PKG"/etc/tsukuri "$PKG"/var/cache/packages "$PKG"/var/cache/sources
+	cat > "$PKG"/etc/tsukuri/make.conf <<-EOF
+		# Uncomment if you want parallel build or add certain options for 'make' and other build systems
+		#
+		# mkopts=""
+		
+		# Specify options for the "curl" downloader
+		# curlopts=""
+
+		# Specify options for git
+		# gitopts=""
+		
+		# Options for build:
+		#
+		#  emptydirs   - Leave empty directories
+		#  strip       - Remove debug information from binaries
+		#  makeflags   - Enable parallel build
+		#  locales     - Leave localization files
+		#  docs        - Leave documentation files
+		#  ccache      - Enable ccache
+		#  libtool     - Don't clean libtool files
+		#  nostateless - Do not generate "stateless" packages
+		#
+		# Add '~' before option name to disable certain option
+		#
+		buildoptions=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' 'ccache' '~libtool')
+		
+		# Source and package destination
+		#
+		pkgdest="/var/cache/packages"
+		srcdest="/var/cache/sources"
+		
+		# Repositories
+		#
+		# Example of adding repositories:
+		#
+		# repos="/path/to/repo1 /path/to/repo2"
+		#
+		repos="/usr/ports/packages"
+
+		# DO NOT EDIT THIS
+		export BARCH="$BARCH"
+		export XTARGET="$XTARGET"
+		export BUILDFLAGS="--build=$XTARGET"
+		export TOOLFLAGS="--build=$XTARGET"
+		export PERLFLAGS=
+		export CFLAGS="$CFLAGS"
+		export CXXFLAGS="$CXXFLAGS"
+		export STUFF="/usr/ports/stuff"
+	EOF
+}

@@ -1,0 +1,18 @@
+# Description: protocols and services provided by IANA
+# URL:         https://www.iana.org/protocols/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     base
+
+name=iana-etc
+version=20201216
+release=1
+options=('bootstrap')
+source=("https://github.com/Mic92/iana-etc/releases/download/$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	install -dm755 "$PKG"/etc
+
+	install -Dm644 services "$PKG"/etc/services
+	install -Dm644 protocols "$PKG"/etc/protocols
+}

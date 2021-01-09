@@ -1,0 +1,20 @@
+name=host-texinfo
+fakepath="$topdir/../../packages/${name/host-}"
+realpath="$(realpath $fakepath)"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://ftp.gnu.org/gnu/texinfo/texinfo-$version.tar.xz")
+
+build() {
+	cd "$SRC"/texinfo-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--without-external-libintl-perl \
+		--without-external-Unicode-EastAsianWidth \
+		--without-external-Text-Unidecode \
+		--disable-nls \
+		--disable-perl-xs
+	make
+	make install
+}

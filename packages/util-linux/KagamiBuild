@@ -1,7 +1,7 @@
 # Description: Miscellaneous system utilities for Linux 
 # URL:         http://git.kernel.org/cgit/utils/util-linux/util-linux.git
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib readline pam libcap-ng systemd
+# Depends on:  zlib readline audit pam libcap-ng systemd
 # Section:     base
 
 name=util-linux
@@ -10,15 +10,8 @@ case $version in
 	*.*.*) _v=${version%.*};;
 	*.*) _v=$version;;
 esac
-release=1
+release=4
 options=('bootstrap')
-backup=('etc/pam.d/chfn'
-	'etc/pam.d/chsh'
-	'etc/pam.d/login'
-	'etc/pam.d/runuser'
-	'etc/pam.d/runuser-l'
-	'etc/pam.d/su'
-	'etc/pam.d/su-l')
 source=("https://www.kernel.org/pub/linux/utils/util-linux/v${_v}/$name-$version.tar.xz")
 
 build() {
@@ -30,6 +23,7 @@ build() {
 		--bindir=/usr/bin \
 		--sbindir=/usr/bin \
 		--localstatedir=/var \
+		--with-audit \
 		--with-btrfs \
 		--with-readline \
 		--with-systemdsystemunitdir=/usr/lib/systemd/system \
@@ -53,13 +47,13 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/etc/pam.d/chfn
-	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/etc/pam.d/chsh
-	install -Dm644 "$STUFF"/pam.d/login "$PKG"/etc/pam.d/login
-	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser
-	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/etc/pam.d/runuser-l
-	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su
-	install -Dm644 "$STUFF"/pam.d/su "$PKG"/etc/pam.d/su-l
+	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/usr/lib/pam.d/chfn
+	install -Dm644 "$STUFF"/pam.d/chfn-chsh "$PKG"/usr/lib/pam.d/chsh
+	install -Dm644 "$STUFF"/pam.d/login "$PKG"/usr/lib/pam.d/login
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/usr/lib/pam.d/runuser
+	install -Dm644 "$STUFF"/pam.d/runuser "$PKG"/usr/lib/pam.d/runuser-l
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/usr/lib/pam.d/su
+	install -Dm644 "$STUFF"/pam.d/su "$PKG"/usr/lib/pam.d/su-l
 	install -Dm644 "$STUFF"/sysusers.d/util-linux.conf "$PKG"/usr/lib/sysusers.d/util-linux.conf
 
 	chmod 4755 "$PKG"/usr/bin/{newgrp,ch{sh,fn}}

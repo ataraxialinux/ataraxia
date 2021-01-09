@@ -2,6 +2,17 @@
 
 unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE
 
+if [ "$CFLAGS" ]; then
+        export CFLAGS="$CFLAGS -ffat-lto-objects"
+else
+        export CFLAGS="-ffat-lto-objects"
+fi
+if [ "$CXXFLAGS" ]; then
+        export CXXFLAGS="$CFLAGS -ffat-lto-objects"
+else
+    	export CXXFLAGS="-ffat-lto-objects"
+fi
+
 exec meson setup \
 	--prefix        /usr \
 	--libdir        lib \
