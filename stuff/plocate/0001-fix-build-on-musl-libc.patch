@@ -1,0 +1,185 @@
+From 3a6bbef8cca47d631562506eb84c14e340af3cea Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 10 Jan 2021 02:06:40 +0900
+Subject: [PATCH] fix build on musl libc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ compat.cpp         | 87 ++++++++++++++++++++++++++++++++++++++++++++++
+ compat.h           | 14 ++++++++
+ conf.cpp           |  2 +-
+ database-builder.h |  2 ++
+ lib.cpp            |  2 +-
+ meson.build        |  2 +-
+ 6 files changed, 106 insertions(+), 3 deletions(-)
+ create mode 100644 compat.cpp
+ create mode 100644 compat.h
+
+diff --git a/compat.cpp b/compat.cpp
+new file mode 100644
+index 0000000..97d766c
+--- /dev/null
++++ b/compat.cpp
+@@ -0,0 +1,87 @@
++#include "compat.h"
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <stdarg.h>
++#include <string.h>
++#include <limits.h>
++
++/*
++ * From Bionic libc
++ */
++
++#if !defined(__GLIBC__)
++const char *__progname;
++unsigned int error_message_count = 0;
++void (*error_print_progname)(void) = nullptr;
++int error_one_per_line = 0;
++
++const char *
++getprogname(void)
++{
++	return (__progname);
++}
++
++static void __error_head() {
++  ++error_message_count;
++
++  if (error_print_progname != nullptr) {
++    error_print_progname();
++  } else {
++    fflush(stdout);
++    fprintf(stderr, "%s:", getprogname());
++  }
++}
++
++static void __error_tail(int status, int error) {
++  if (error != 0) {
++    fprintf(stderr, ": %s", strerror(error));
++  }
++
++  putc('\n', stderr);
++  fflush(stderr);
++
++  if (status != 0) {
++    exit(status);
++  }
++}
++
++void error(int status, int error, const char* fmt, ...) {
++  __error_head();
++  putc(' ', stderr);
++
++  va_list ap;
++  va_start(ap, fmt);
++  vfprintf(stderr, fmt, ap);
++  va_end(ap);
++
++  __error_tail(status, error);
++}
++
++void error_at_line(int status, int error, const char* file, unsigned int line, const char* fmt, ...) {
++  if (error_one_per_line) {
++    static const char* last_file;
++    static unsigned int last_line;
++    if (last_line == line && last_file != nullptr && strcmp(last_file, file) == 0) {
++      return;
++    }
++    last_file = file;
++    last_line = line;
++  }
++
++  __error_head();
++  fprintf(stderr, "%s:%d: ", file, line);
++
++  va_list ap;
++  va_start(ap, fmt);
++  vfprintf(stderr, fmt, ap);
++  va_end(ap);
++
++  __error_tail(status, error);
++}
++
++char *canonicalize_file_name(const char *path)
++{
++  return realpath(path, NULL);
++}
++#endif
+diff --git a/compat.h b/compat.h
+new file mode 100644
+index 0000000..8a26a49
+--- /dev/null
++++ b/compat.h
+@@ -0,0 +1,14 @@
++#ifndef _ERROR_H
++#define _ERROR_R
++
++#if !defined(__GLIBC__)
++void error(int __status, int __errno, const char* __fmt, ...);
++void error_at_line(int __status, int __errno, const char* __filename, unsigned int __line_number, const char* __fmt, ...);
++
++extern unsigned int error_message_count;
++extern int error_one_per_line;
++extern char *canonicalize_file_name(const char *path);
++extern void (*error_print_progname)(void);
++#endif
++
++#endif
+diff --git a/conf.cpp b/conf.cpp
+index abea68a..0b7ccb2 100644
+--- a/conf.cpp
++++ b/conf.cpp
+@@ -22,7 +22,7 @@ any later version.
+ 
+ #include "conf.h"
+ 
+-#include "error.h"
++#include "compat.h"
+ #include "lib.h"
+ 
+ #include <algorithm>
+diff --git a/database-builder.h b/database-builder.h
+index 2a56e11..e8af73d 100644
+--- a/database-builder.h
++++ b/database-builder.h
+@@ -3,6 +3,8 @@
+ 
+ #include "db.h"
+ 
++#include <sys/types.h>
++
+ #include <chrono>
+ #include <fcntl.h>
+ #include <memory>
+diff --git a/lib.cpp b/lib.cpp
+index 83a9692..74307e7 100644
+--- a/lib.cpp
++++ b/lib.cpp
+@@ -23,7 +23,7 @@ any later version.
+ #include "lib.h"
+ 
+ #include "db.h"
+-#include "error.h"
++//#include "error.h"
+ 
+ #include <algorithm>
+ #include <arpa/inet.h>
+diff --git a/meson.build b/meson.build
+index b59c52b..96b4822 100644
+--- a/meson.build
++++ b/meson.build
+@@ -40,7 +40,7 @@ executable('plocate-build', ['plocate-build.cpp', 'database-builder.cpp'],
+ 	install: true,
+ 	install_dir: get_option('sbindir'))
+ updatedb_progname = get_option('updatedb_progname')
+-executable(updatedb_progname, ['updatedb.cpp', 'database-builder.cpp', 'conf.cpp', 'lib.cpp', 'bind-mount.cpp', 'complete_pread.cpp'],
++executable(updatedb_progname, ['updatedb.cpp', 'database-builder.cpp', 'conf.cpp', 'lib.cpp', 'bind-mount.cpp', 'complete_pread.cpp', 'compat.cpp'],
+ 	dependencies: [zstddep, threaddep],
+ 	install: true,
+ 	install_dir: get_option('sbindir'))
+-- 
+2.30.0
+

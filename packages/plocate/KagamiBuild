@@ -1,0 +1,30 @@
+# Description: Alternative to locate, faster and compatible with mlocate's database
+# URL:         https://plocate.sesse.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson systemd zstd
+# Section:     base
+
+name=plocate
+version=1.1.3
+release=1
+options=('bootstrap')
+source=("https://plocate.sesse.net/download/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/plocate/0001-fix-build-on-musl-libc.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dlocategroup=locate
+	samu
+	DESTDIR="$PKG" samu install
+
+	chgrp 21 "$PKG"/usr/bin/plocate
+	chmod 2755 "$PKG"/usr/bin/plocate
+
+	ln -sf plocate "$PKG"/usr/bin/locate
+
+	install -Dm644 "$STUFF"/tmpfiles.d/plocate.conf "$PKG"/usr/lib/tmpfiles.d/plocate.conf
+}
