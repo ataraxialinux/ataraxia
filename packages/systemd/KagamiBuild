@@ -2,11 +2,16 @@
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  meson zlib bzip2 xz lz4 audit pam acl libcap shadow kbd kmod libelf iptables gperf hwids libseccomp libgcrypt gnutls cryptsetup
+# Dep x86_64:  gnu-efi
+# Dep i686:    gnu-efi
+# Dep aarch64: gnu-efi
+# Dep armv7hl: gnu-efi
+# Dep armv6hl: gnu-efi
 # Section:     base
 
 name=systemd
 version=247.2
-release=2
+release=3
 options=('bootstrap')
 backup=('etc/systemd/homed.conf'
 	'etc/systemd/journald.conf'
@@ -31,6 +36,21 @@ source=("https://github.com/systemd/systemd-stable/archive/v${version}.tar.gz::a
 	"udev-rules.trigger")
 
 build() {
+	local efi
+
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+			if [ "$USEBOOTSTRAP" = "yes" ]; then
+				efi="-Defi=true -Dgnu-efi=true -Defi-cc="$CC" -Defi-ld="$LD" -Defi-libdir=$ROOTFS/usr/lib -Defi-ldsdir=$ROOTFS/usr/lib -Defi-includedir=$ROOTFS/usr/include/efi"
+			else
+				efi="-Dgnu-efi=true"
+			fi
+			;;
+		*)
+			efi="-Dgnu-efi=false"
+			;;
+	esac
+
 	cd "$SRC"/$name-stable-$version
 	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
 	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
@@ -41,7 +61,7 @@ build() {
 
 	mkdir -p build
 	cd build
-	ataraxia-meson "$SRC"/systemd-stable-$version \
+	ataraxia-meson "$SRC"/systemd-stable-$version $efi \
 		-Dapparmor=false \
 		-Daudit=true \
 		-Dbashcompletiondir=/usr/share/bash-completion \

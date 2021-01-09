@@ -242,6 +242,12 @@ build_target() {
 		LINUX="linux"
 	fi
 
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
 	packages="iana-etc tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
 		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc pkgconf pcre \
 		libcap-ng audit cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed \
@@ -250,10 +256,10 @@ build_target() {
 		gawk findutils lobase sbase ubase less mandoc dialog gzip ncompress libmnl libnftnl libnfnetlink \
 		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make \
 		patch tar cpio texinfo nano gperf libseccomp libblkid libsystemd util-linux libgpg-error libgcrypt \
-		libunistring libidn2 libtasn1 p11-kit gnutls libaio lvm2 popt json-c argon2 cryptsetup hwids systemd \
-		dbus-broker dbus iputils procps-ng e2fsprogs btrfs-progs dosfstools run-parts libssh2 nghttp2 c-ares \
-		heimdal brotli curl oniguruma jq tsukuri wireless_tools wpa_supplicant gptfdisk wget \
-		libevent links dropbear $LINUX"
+		libunistring libidn2 libtasn1 p11-kit gnutls libaio lvm2 popt json-c argon2 cryptsetup hwids $EXTRAPKG \
+		systemd dbus-broker dbus iputils procps-ng e2fsprogs btrfs-progs dosfstools run-parts libssh2 \
+		nghttp2 c-ares heimdal brotli curl oniguruma jq tsukuri wireless_tools wpa_supplicant gptfdisk \
+		wget libevent links dropbear $LINUX"
 
 	for i in $packages; do
 		case $i in

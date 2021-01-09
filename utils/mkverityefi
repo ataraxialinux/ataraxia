@@ -11,6 +11,12 @@ main() {
 		LINUX="linux"
 	fi
 
+	case $BARCH in
+		x86_64|i686|aarch64|armv7hl|armv6hl)
+				EXTRAPKG="gnu-efi"
+				;;
+	esac
+
 	IMAGEFS="$BUILD/imagefs"
 
 	rm -rf "$IMAGEFS"
@@ -56,10 +62,10 @@ main() {
 		lzip lzo libarchive kmod libuargp libelf gawk findutils lobase sbase ubase less mandoc \
 		gzip ncompress libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap iptables \
 		iproute2 kbd samurai python-setuptools meson make patch tar cpio texinfo nano procps-ng \
-		gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls iputils \
-		util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
-		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma jq \
-		tsukuri $LINUX"
+		$EXTRAPKG gperf libseccomp libgpg-error libgcrypt libunistring libidn2 libtasn1 p11-kit gnutls \
+		iputils util-linux libaio lvm2 popt json-c argon2 cryptsetup hwids systemd dbus-broker dbus \
+		e2fsprogs btrfs-progs run-parts libssh2 nghttp2 c-ares heimdal brotli curl oniguruma \
+		jq tsukuri $LINUX"
 
 	tsukuri em -c "$BUILD"/target.config -r "$IMAGEFS" -wDSH $packages
 
