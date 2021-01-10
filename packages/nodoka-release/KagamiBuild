@@ -1,0 +1,35 @@
+# Description: Nodoka Linux release files
+# URL:         https://ataraxialinux.github.io/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Provides:    system-release redhat-release
+# Section:     base
+
+name=nodoka-release
+version=20210110
+release=1
+options=('bootstrap')
+
+build() {
+	install -dm755 "$PKG"/usr/lib "$PKG"/etc
+
+	cat > "$PKG"/usr/lib/os-release <<- EOF
+		NAME="Nodoka Linux"
+		VERSION="666 (Workstation Edition Prerelease)"
+		ID="ataraxia"
+		ID_LIKE="ataraxialinux ataraxia januslinux janus"
+		VERSION_ID="666"
+		PRETTY_NAME="Nodoka Linux 666 (Workstation Edition Prerelease)"
+		HOME_URL="https://ataraxialinux.github.io/"
+		DOCUMENTATION_URL="https://github.com/ataraxialinux/ataraxia/wiki"
+		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
+		VARIANT="Workstation Edition"
+		VARIANT_ID=workstation
+	EOF
+
+	cat > "$PKG"/etc/nodoka-release <<- EOF
+		Nodoka Linux release 666 (It was a mistake)
+	EOF
+
+	ln -sf nodoka-release "$PKG"/etc/system-release
+	ln -sf nodoka-release "$PKG"/etc/redhat-release
+}
