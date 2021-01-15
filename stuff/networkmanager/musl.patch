@@ -1,11 +1,12 @@
-From 021cca419411ee4f164c35ca5daf921c9edea7f3 Mon Sep 17 00:00:00 2001
+From aed74985bc58a50942e904026fdb6d7c3d290f46 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 8 Dec 2020 02:09:27 +0900
+Date: Fri, 15 Jan 2021 16:25:51 +0900
 Subject: [PATCH] fix building on musl libc
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
  libnm-core/nm-utils.h                              |  4 ++++
+ meson.build                                        |  3 ++-
  shared/nm-glib-aux/nm-json-aux.c                   |  4 ++++
  shared/systemd/src/basic/process-util.c            | 11 ++++++++++-
  shared/systemd/src/basic/socket-util.h             |  5 +++++
@@ -19,7 +20,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/platform/nm-linux-platform.c                   |  5 +++++
  src/platform/wifi/nm-wifi-utils.h                  |  4 ++++
  .../src/libsystemd-network/sd-dhcp6-client.c       |  2 +-
- 14 files changed, 61 insertions(+), 3 deletions(-)
+ 15 files changed, 63 insertions(+), 4 deletions(-)
 
 diff --git a/libnm-core/nm-utils.h b/libnm-core/nm-utils.h
 index 9589c51..6b42883 100644
@@ -37,6 +38,20 @@ index 9589c51..6b42883 100644
  #include <linux/if_infiniband.h>
  
  #include "nm-core-enum-types.h"
+diff --git a/meson.build b/meson.build
+index 02bfb00..ee01586 100644
+--- a/meson.build
++++ b/meson.build
+@@ -126,7 +126,8 @@ config_h.set10('HAVE_RT_SIGQUEUEINFO', cc.has_function('rt_sigqueueinfo', prefix
+                                                                                      #include <sys/wait.h>'''))
+ config_h.set('HAVE_SECURE_GETENV', cc.has_function('secure_getenv'))
+ config_h.set('HAVE___SECURE_GETENV', cc.has_function('__secure_getenv'))
+-config_h.set10('HAVE_DECL_REALLOCARRAY', cc.has_function('reallocarray', prefix: '#include <malloc.h>'))
++config_h.set10('HAVE_DECL_REALLOCARRAY', cc.has_function('reallocarray', prefix: '''#include <malloc.h>
++                                                                                    #include <stdlib.h>'''))
+ config_h.set10('HAVE_DECL_EXPLICIT_BZERO', cc.has_function('explicit_bzero', prefix: '#include <string.h>'))
+ config_h.set10('HAVE_DECL_MEMFD_CREATE', cc.has_function('memfd_create', prefix: '#include <sys/mman.h>'))
+ 
 diff --git a/shared/nm-glib-aux/nm-json-aux.c b/shared/nm-glib-aux/nm-json-aux.c
 index 4212e62..83114c7 100644
 --- a/shared/nm-glib-aux/nm-json-aux.c
@@ -278,5 +293,5 @@ index ec7f1be..0a7737a 100644
  
  #include "sd-dhcp6-client.h"
 -- 
-2.28.0
+2.29.2
 

@@ -1,26 +1,19 @@
-From a5c23d876e15e792625c5b4f71ab9edabcec7c24 Mon Sep 17 00:00:00 2001
+From 3766f97f4238789e7667b2fd6c840c0d7f2dba9c Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 18 Sep 2020 00:40:03 +0900
-Subject: [PATCH] internal fts
+Date: Fri, 15 Jan 2021 16:55:40 +0900
+Subject: [PATCH] add internal fts implementation
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- libdwfl/Makefile.am            |    2 +-
- libdwfl/bsd.h                  |   54 ++
- libdwfl/fts.c                  | 1078 ++++++++++++++++++++++++++++++++
- libdwfl/fts.h                  |  125 ++++
- libdwfl/linux-kernel-modules.c |    2 +-
- libdwfl/reallocarray.c         |   40 ++
- libdwfl/recallocarray.c        |   82 +++
- 7 files changed, 1381 insertions(+), 2 deletions(-)
- create mode 100644 libdwfl/bsd.h
+ libdwfl/Makefile.am |    2 +-
+ libdwfl/fts.c       | 1068 +++++++++++++++++++++++++++++++++++++++++++
+ libdwfl/fts.h       |  125 +++++
+ 3 files changed, 1194 insertions(+), 1 deletion(-)
  create mode 100644 libdwfl/fts.c
  create mode 100644 libdwfl/fts.h
- create mode 100644 libdwfl/reallocarray.c
- create mode 100644 libdwfl/recallocarray.c
 
 diff --git a/libdwfl/Makefile.am b/libdwfl/Makefile.am
-index 1de0549..30d5e55 100644
+index a0013e4..a89ed4d 100644
 --- a/libdwfl/Makefile.am
 +++ b/libdwfl/Makefile.am
 @@ -70,7 +70,7 @@ libdwfl_a_SOURCES = dwfl_begin.c dwfl_end.c dwfl_error.c dwfl_version.c \
@@ -28,76 +21,16 @@ index 1de0549..30d5e55 100644
  		    dwfl_frame.c frame_unwind.c dwfl_frame_pc.c \
  		    linux-pid-attach.c linux-core-attach.c dwfl_frame_regs.c \
 -		    gzip.c
-+		    gzip.c fts.c reallocarray.c recallocarray.c
++		    fts.c gzip.c
  
  if BZLIB
  libdwfl_a_SOURCES += bzip2.c
-diff --git a/libdwfl/bsd.h b/libdwfl/bsd.h
-new file mode 100644
-index 0000000..642ad9b
---- /dev/null
-+++ b/libdwfl/bsd.h
-@@ -0,0 +1,54 @@
-+#include <sys/types.h>
-+#include <sys/sysmacros.h>
-+#include <stddef.h>
-+#include <stdarg.h>
-+
-+typedef u_int32_t uint32_t;
-+
-+#define	__attribute__(x)
-+#define __dead		__attribute__((__noreturn__))
-+#define __pure		__attribute__((__const__))
-+#define	__unused	__attribute__((__unused__))
-+
-+#ifndef __GLIBC__
-+#if defined(__cplusplus)
-+#define	__BEGIN_EXTERN_C	extern "C" {
-+#define	__END_EXTERN_C		}
-+#else
-+#define	__BEGIN_EXTERN_C
-+#define	__END_EXTERN_C
-+#endif
-+
-+#define	__BEGIN_DECLS	__BEGIN_EXTERN_C
-+#define	__END_DECLS	__END_EXTERN_C
-+#endif
-+
-+#if !defined(DEF_WEAK)
-+#define DEF_WEAK(x)
-+#endif
-+
-+#define timespeccmp(tsp, usp, cmp)					\
-+        (((tsp)->tv_sec == (usp)->tv_sec) ?			\
-+        ((tsp)->tv_nsec cmp (usp)->tv_nsec) :			\
-+        ((tsp)->tv_sec cmp (usp)->tv_sec))
-+
-+uint32_t arc4random(void);
-+uint32_t arc4random_uniform(uint32_t);
-+
-+void arc4random_buf(void *, size_t)
-+	__attribute__((__bounded__ (__buffer__,1,2)));
-+size_t	 strlcat(char *, const char *, size_t)
-+		__attribute__ ((__bounded__(__string__,1,3)));
-+size_t	 strlcpy(char *, const char *, size_t)
-+		__attribute__ ((__bounded__(__string__,1,3)));
-+void	 strmode(int, char *);
-+int	gid_from_group(const char *, gid_t *);
-+const char	*group_from_gid(gid_t, int);
-+int	uid_from_user(const char *, uid_t *);
-+const char	*user_from_uid(uid_t, int);
-+long long
-+	strtonum(const char *, long long, long long, const char **);
-+int		 setpassent(int);
-+int		 setgroupent(int);
-+void	*reallocarray(void *, size_t, size_t);
-+void	*recallocarray(void *, size_t, size_t, size_t);
 diff --git a/libdwfl/fts.c b/libdwfl/fts.c
 new file mode 100644
-index 0000000..75c1f03
+index 0000000..fdcf421
 --- /dev/null
 +++ b/libdwfl/fts.c
-@@ -0,0 +1,1078 @@
+@@ -0,0 +1,1068 @@
 +/*	$OpenBSD: fts.c,v 1.59 2019/06/28 13:32:41 deraadt Exp $	*/
 +
 +/*-
@@ -135,14 +68,13 @@ index 0000000..75c1f03
 +#include <dirent.h>
 +#include <errno.h>
 +#include <fcntl.h>
-+#include "fts.h"
 +#include <limits.h>
 +#include <stdlib.h>
 +#include <string.h>
 +#include <stdint.h>
 +#include <unistd.h>
 +
-+#include "bsd.h"
++#include "fts.h"
 +
 +#define MAXIMUM(a, b)	(((a) > (b)) ? (a) : (b))
 +
@@ -170,10 +102,6 @@ index 0000000..75c1f03
 +#define	BCHILD		1		/* fts_children */
 +#define	BNAMES		2		/* fts_children, names only */
 +#define	BREAD		3		/* fts_read */
-+
-+#ifdef __GLIBC__
-+typedef intptr_t uintptr_t;
-+#endif
 +
 +#define ALIGNBYTES (sizeof(uintptr_t) - 1)
 +#define ALIGN(p) (((uintptr_t)(p) + ALIGNBYTES) &~ ALIGNBYTES)
@@ -302,7 +230,6 @@ index 0000000..75c1f03
 +mem1:	free(sp);
 +	return (NULL);
 +}
-+DEF_WEAK(fts_open);
 +
 +static void
 +fts_load(FTS *sp, FTSENT *p)
@@ -369,7 +296,6 @@ index 0000000..75c1f03
 +
 +	return (error);
 +}
-+DEF_WEAK(fts_close);
 +
 +/*
 + * Special case of "/" at the end of the path so that slashes aren't
@@ -567,7 +493,6 @@ index 0000000..75c1f03
 +	p->fts_info = p->fts_errno ? FTS_ERR : FTS_DP;
 +	return (sp->fts_cur = p);
 +}
-+DEF_WEAK(fts_read);
 +
 +/*
 + * Fts_set takes the stream as an argument although it's not used in this
@@ -586,7 +511,6 @@ index 0000000..75c1f03
 +	p->fts_instr = instr;
 +	return (0);
 +}
-+DEF_WEAK(fts_set);
 +
 +FTSENT *
 +fts_children(FTS *sp, int instr)
@@ -655,7 +579,6 @@ index 0000000..75c1f03
 +	(void)close(fd);
 +	return (sp->fts_child);
 +}
-+DEF_WEAK(fts_children);
 +
 +/*
 + * This is the tricky part -- do not casually change *anything* in here.  The
@@ -1178,7 +1101,7 @@ index 0000000..75c1f03
 +}
 diff --git a/libdwfl/fts.h b/libdwfl/fts.h
 new file mode 100644
-index 0000000..8844e12
+index 0000000..53167dd
 --- /dev/null
 +++ b/libdwfl/fts.h
 @@ -0,0 +1,125 @@
@@ -1218,6 +1141,8 @@ index 0000000..8844e12
 +
 +#ifndef	_FTS_H_
 +#define	_FTS_H_
++
++#include <sys/types.h>
 +
 +typedef struct {
 +	struct _ftsent *fts_cur;	/* current node */
@@ -1297,163 +1222,14 @@ index 0000000..8844e12
 +	char fts_name[1];		/* file name */
 +} FTSENT;
 +
-+//__BEGIN_DECLS
 +FTSENT	*fts_children(FTS *, int);
 +int	 fts_close(FTS *);
 +FTS	*fts_open(char * const *, int,
 +	    int (*)(const FTSENT **, const FTSENT **));
 +FTSENT	*fts_read(FTS *);
 +int	 fts_set(FTS *, FTSENT *, int);
-+//__END_DECLS
 +
 +#endif /* !_FTS_H_ */
-diff --git a/libdwfl/linux-kernel-modules.c b/libdwfl/linux-kernel-modules.c
-index 548cb56..cb7364d 100644
---- a/libdwfl/linux-kernel-modules.c
-+++ b/libdwfl/linux-kernel-modules.c
-@@ -60,7 +60,7 @@
-   #endif
- #else
-   #include <sys/types.h>
--  #include <fts.h>
-+  #include "fts.h"
- #endif
- 
- 
-diff --git a/libdwfl/reallocarray.c b/libdwfl/reallocarray.c
-new file mode 100644
-index 0000000..9f03bc8
---- /dev/null
-+++ b/libdwfl/reallocarray.c
-@@ -0,0 +1,40 @@
-+/*	$OpenBSD: reallocarray.c,v 1.3 2015/09/13 08:31:47 guenther Exp $	*/
-+/*
-+ * Copyright (c) 2008 Otto Moerbeek <otto@drijf.net>
-+ *
-+ * Permission to use, copy, modify, and distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+
-+#include <sys/types.h>
-+#include <errno.h>
-+#include <stdint.h>
-+#include <stdlib.h>
-+#include "bsd.h"
-+
-+/*
-+ * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX
-+ * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW
-+ */
-+#define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
-+
-+void *
-+reallocarray(void *optr, size_t nmemb, size_t size)
-+{
-+	if ((nmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
-+	    nmemb > 0 && SIZE_MAX / nmemb < size) {
-+		errno = ENOMEM;
-+		return NULL;
-+	}
-+	return realloc(optr, size * nmemb);
-+}
-+DEF_WEAK(reallocarray);
-diff --git a/libdwfl/recallocarray.c b/libdwfl/recallocarray.c
-new file mode 100644
-index 0000000..34e2daa
---- /dev/null
-+++ b/libdwfl/recallocarray.c
-@@ -0,0 +1,82 @@
-+/*	$OpenBSD: recallocarray.c,v 1.1 2017/03/06 18:44:21 otto Exp $	*/
-+/*
-+ * Copyright (c) 2008, 2017 Otto Moerbeek <otto@drijf.net>
-+ *
-+ * Permission to use, copy, modify, and distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+
-+#include <errno.h>
-+#include <stdlib.h>
-+#include <stdint.h>
-+#include <string.h>
-+#include <unistd.h>
-+#include "bsd.h"
-+
-+/*
-+ * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX
-+ * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW
-+ */
-+#define MUL_NO_OVERFLOW ((size_t)1 << (sizeof(size_t) * 4))
-+
-+void *
-+recallocarray(void *ptr, size_t oldnmemb, size_t newnmemb, size_t size)
-+{
-+	size_t oldsize, newsize;
-+	void *newptr;
-+
-+	if (ptr == NULL)
-+		return calloc(newnmemb, size);
-+
-+	if ((newnmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
-+	    newnmemb > 0 && SIZE_MAX / newnmemb < size) {
-+		errno = ENOMEM;
-+		return NULL;
-+	}
-+	newsize = newnmemb * size;
-+
-+	if ((oldnmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
-+	    oldnmemb > 0 && SIZE_MAX / oldnmemb < size) {
-+		errno = EINVAL;
-+		return NULL;
-+	}
-+	oldsize = oldnmemb * size;
-+	
-+	/*
-+	 * Don't bother too much if we're shrinking just a bit,
-+	 * we do not shrink for series of small steps, oh well.
-+	 */
-+	if (newsize <= oldsize) {
-+		size_t d = oldsize - newsize;
-+
-+		if (d < oldsize / 2 && d < getpagesize()) {
-+			memset((char *)ptr + newsize, 0, d);
-+			return ptr;
-+		}
-+	}
-+
-+	newptr = malloc(newsize);
-+	if (newptr == NULL)
-+		return NULL;
-+
-+	if (newsize > oldsize) {
-+		memcpy(newptr, ptr, oldsize);
-+		memset((char *)newptr + oldsize, 0, newsize - oldsize);
-+	} else
-+		memcpy(newptr, ptr, newsize);
-+
-+	explicit_bzero(ptr, oldsize);
-+	free(ptr);
-+
-+	return newptr;
-+}
-+DEF_WEAK(recallocarray);
 -- 
-2.28.0
+2.29.2
 
