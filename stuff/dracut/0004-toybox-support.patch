@@ -1,19 +1,21 @@
-From 5ee05de77827d4cb3203243763038a77b6c0ba9b Mon Sep 17 00:00:00 2001
+From ec9e2362e33a13484a98c418a71f4a154a4f0328 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sun, 10 Jan 2021 00:43:01 +0900
-Subject: [PATCH 2/4] toybox compat
+Date: Fri, 15 Jan 2021 16:49:46 +0900
+Subject: [PATCH 4/4] toybox support
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- 50-dracut.install                    | 2 +-
- 51-dracut-rescue.install             | 2 +-
- Makefile                             | 2 +-
- dracut-init.sh                       | 4 ++--
- dracut.sh                            | 4 ++--
- install/dracut-install.c             | 8 ++++----
- modules.d/10i18n/module-setup.sh     | 2 +-
- modules.d/95terminfo/module-setup.sh | 2 +-
- 8 files changed, 13 insertions(+), 13 deletions(-)
+ 50-dracut.install                    |  2 +-
+ 51-dracut-rescue.install             |  2 +-
+ Makefile                             |  2 +-
+ dracut-init.sh                       |  4 ++--
+ dracut.sh                            |  4 ++--
+ install/dracut-install.c             |  8 +++----
+ modules.d/05toybox/module-setup.sh   | 32 ++++++++++++++++++++++++++++
+ modules.d/10i18n/module-setup.sh     |  2 +-
+ modules.d/95terminfo/module-setup.sh |  2 +-
+ 9 files changed, 45 insertions(+), 13 deletions(-)
+ create mode 100755 modules.d/05toybox/module-setup.sh
 
 diff --git a/50-dracut.install b/50-dracut.install
 index 7ea5e17..3112d9e 100755
@@ -42,10 +44,10 @@ index b2b3b9e..7782b40 100755
          fi
  
 diff --git a/Makefile b/Makefile
-index 8dc1bac..a9489d6 100644
+index 343569b..79b0824 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -146,7 +146,7 @@ install: all
+@@ -144,7 +144,7 @@ install: all
  	ln -fs dracut-functions.sh $(DESTDIR)$(pkglibdir)/dracut-functions
  	install -m 0755 dracut-logger.sh $(DESTDIR)$(pkglibdir)/dracut-logger.sh
  	install -m 0755 dracut-initramfs-restore.sh $(DESTDIR)$(pkglibdir)/dracut-initramfs-restore
@@ -71,7 +73,7 @@ index 592a550..c61af6a 100644
  
  # is_func <command>
 diff --git a/dracut.sh b/dracut.sh
-index 0f46483..c86c7a3 100755
+index f562fa6..b6c88fb 100755
 --- a/dracut.sh
 +++ b/dracut.sh
 @@ -2046,7 +2046,7 @@ if [[ $uefi = yes ]]; then
@@ -93,7 +95,7 @@ index 0f46483..c86c7a3 100755
      else
          rm -f -- "$outfile"
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 0ea2f28..6abb1e9 100644
+index 17544ac..a57f342 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
 @@ -314,10 +314,10 @@ static int cp(const char *src, const char *dst)
@@ -122,6 +124,44 @@ index 0ea2f28..6abb1e9 100644
                                            dst);
                          break;
                  }
+diff --git a/modules.d/05toybox/module-setup.sh b/modules.d/05toybox/module-setup.sh
+new file mode 100755
+index 0000000..03b3397
+--- /dev/null
++++ b/modules.d/05toybox/module-setup.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++
++# called by dracut
++check() {
++    require_binaries toybox || return 1
++
++    return 255
++}
++
++# called by dracut
++depends() {
++    return 0
++}
++
++# called by dracut
++install() {
++    local _i _path _toybox
++    local _progs=()
++    _toybox=$(type -P toybox)
++    inst $_toybox /usr/bin/toybox
++    for _i in $($_toybox); do
++        [[ ${_i} == toybox ]] && continue
++        _progs+=("${_i}")
++    done
++
++    for _i in "${_progs[@]}"; do
++        _path=$(find_binary "$_i")
++        [ -z "$_path" ] && continue
++        ln_r /usr/bin/toybox $_path
++    done
++}
++
 diff --git a/modules.d/10i18n/module-setup.sh b/modules.d/10i18n/module-setup.sh
 index dd45b66..4cc1684 100755
 --- a/modules.d/10i18n/module-setup.sh
@@ -149,5 +189,5 @@ index 532f5bd..0b247b5 100755
      fi
  }
 -- 
-2.30.0
+2.29.2
 

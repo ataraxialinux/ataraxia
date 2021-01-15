@@ -1,41 +1,32 @@
-From 4ac0d866b908b1fd21901cede500bf66ac509ca4 Mon Sep 17 00:00:00 2001
+From 2fffbe7b20b298e65a2619ffa58365032ab31872 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sun, 10 Jan 2021 00:31:58 +0900
+Date: Fri, 15 Jan 2021 16:45:39 +0900
 Subject: [PATCH 1/4] add internal fts implementation
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- Makefile                 |    3 +
- configure                |   18 +-
- install/bsd.h            |   59 +++
- install/dracut-install.c |    2 +-
- install/fts.c            | 1074 ++++++++++++++++++++++++++++++++++++++
- install/fts.h            |  127 +++++
- install/reallocarray.c   |   41 ++
- install/recallocarray.c  |   83 +++
- 8 files changed, 1397 insertions(+), 10 deletions(-)
- create mode 100644 install/bsd.h
+ Makefile      |    1 +
+ configure     |   15 +-
+ install/fts.c | 1068 +++++++++++++++++++++++++++++++++++++++++++++++++
+ install/fts.h |  125 ++++++
+ 4 files changed, 1196 insertions(+), 13 deletions(-)
  create mode 100644 install/fts.c
  create mode 100644 install/fts.h
- create mode 100644 install/reallocarray.c
- create mode 100644 install/recallocarray.c
 
 diff --git a/Makefile b/Makefile
-index 7eb3184..8dc1bac 100644
+index 7eb3184..343569b 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -53,6 +53,9 @@ all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
+@@ -53,6 +53,7 @@ all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
  	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(KMOD_CFLAGS) $< -o $@
  
  DRACUT_INSTALL_OBJECTS = \
-+        install/fts.o \
-+        install/reallocarray.o \
-+        install/recallocarray.o \
++	install/fts.o \
          install/dracut-install.o \
          install/hashmap.o\
          install/log.o \
 diff --git a/configure b/configure
-index aceec13..fba31c7 100755
+index aceec13..d1671b9 100755
 --- a/configure
 +++ b/configure
 @@ -5,7 +5,7 @@ echo \#buildapi-variable-no-builddir >/dev/null
@@ -47,22 +38,20 @@ index aceec13..fba31c7 100755
  
  CC="${CC:-cc}"
  PKG_CONFIG="${PKG_CONFIG:-pkg-config}"
-@@ -70,10 +70,10 @@ ret=$?
+@@ -69,12 +69,6 @@ ${CC} $CFLAGS $LDFLAGS conftest.c >/dev/null 2>&1
+ ret=$?
  rm -f conftest.c a.out
  
- # musl doesn't have fts.h included
+-# musl doesn't have fts.h included
 -if test $ret -ne 0; then
 -	echo "dracut needs fts development files." >&2
 -	exit 1
 -fi
-+#if test $ret -ne 0; then
-+#	echo "dracut needs fts development files." >&2
-+#	exit 1
-+#fi
- 
+-
  cat <<EOF >conftest.c
  #include <fts.h>
-@@ -95,10 +95,10 @@ for lib in "-lc" "-lfts"; do
+ int main(void) {
+@@ -95,11 +89,6 @@ for lib in "-lc" "-lfts"; do
  done
  rm -f conftest.c a.out
  
@@ -70,97 +59,25 @@ index aceec13..fba31c7 100755
 -	echo "dracut couldn't find usable fts library" >&2
 -	exit 1
 -fi
-+#if test $found = no; then
-+#	echo "dracut couldn't find usable fts library" >&2
-+#	exit 1
-+#fi
- 
+-
  cat > Makefile.inc.$$ <<EOF
  prefix ?= ${prefix}
-diff --git a/install/bsd.h b/install/bsd.h
-new file mode 100644
-index 0000000..933717f
---- /dev/null
-+++ b/install/bsd.h
-@@ -0,0 +1,59 @@
-+#include <sys/types.h>
-+#include <sys/sysmacros.h>
-+#include <stddef.h>
-+#include <stdarg.h>
-+
-+typedef u_int32_t uint32_t;
-+
-+#define	__attribute__(x)
-+#define __dead		__attribute__((__noreturn__))
-+#define __pure		__attribute__((__const__))
-+#define	__unused	__attribute__((__unused__))
-+
-+#ifndef __GLIBC__
-+#if defined(__cplusplus)
-+#define	__BEGIN_EXTERN_C	extern "C" {
-+#define	__END_EXTERN_C		}
-+#else
-+#define	__BEGIN_EXTERN_C
-+#define	__END_EXTERN_C
-+#endif
-+
-+#define	__BEGIN_DECLS	__BEGIN_EXTERN_C
-+#define	__END_DECLS	__END_EXTERN_C
-+#endif
-+
-+#if !defined(DEF_WEAK)
-+#define DEF_WEAK(x)
-+#endif
-+
-+#define timespeccmp(tsp, usp, cmp)					\
-+        (((tsp)->tv_sec == (usp)->tv_sec) ?			\
-+        ((tsp)->tv_nsec cmp (usp)->tv_nsec) :			\
-+        ((tsp)->tv_sec cmp (usp)->tv_sec))
-+
-+
-+#if !defined(DEF_WEAK)
-+#define DEF_WEAK(x)
-+#endif
-+
-+uint32_t arc4random(void);
-+uint32_t arc4random_uniform(uint32_t);
-+
-+void arc4random_buf(void *, size_t)
-+	__attribute__((__bounded__ (__buffer__,1,2)));
-+size_t	 strlcat(char *, const char *, size_t)
-+		__attribute__ ((__bounded__(__string__,1,3)));
-+size_t	 strlcpy(char *, const char *, size_t)
-+		__attribute__ ((__bounded__(__string__,1,3)));
-+void	 strmode(int, char *);
-+int	gid_from_group(const char *, gid_t *);
-+const char	*group_from_gid(gid_t, int);
-+int	uid_from_user(const char *, uid_t *);
-+const char	*user_from_uid(uid_t, int);
-+long long
-+	strtonum(const char *, long long, long long, const char **);
-+int		 setpassent(int);
-+int		 setgroupent(int);
-+void	*reallocarray(void *, size_t, size_t);
-+void	*recallocarray(void *, size_t, size_t, size_t);
-diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 17544ac..0ea2f28 100644
---- a/install/dracut-install.c
-+++ b/install/dracut-install.c
-@@ -40,7 +40,7 @@
- #include <unistd.h>
- #include <sys/ioctl.h>
- #include <libkmod.h>
--#include <fts.h>
-+#include "fts.h"
- #include <regex.h>
- #include <sys/utsname.h>
- 
+ libdir ?= ${libdir:-${prefix}/lib}
+@@ -107,7 +96,7 @@ datadir ?= ${datadir:-${prefix}/share}
+ sysconfdir ?= ${sysconfdir:-${prefix}/etc}
+ sbindir ?= ${sbindir:-${prefix}/sbin}
+ mandir ?= ${mandir:-${prefix}/share/man}
+-enable_documentation ?= ${enable_documentation:-yes}
++enable_documentation ?= ${enable_documentation:-no}
+ bindir ?= ${bindir:-${prefix}/bin}
+ KMOD_CFLAGS ?= $(${PKG_CONFIG} --cflags " libkmod >= 23 ")
+ KMOD_LIBS ?= $(${PKG_CONFIG} --libs " libkmod >= 23 ")
 diff --git a/install/fts.c b/install/fts.c
 new file mode 100644
-index 0000000..2439813
+index 0000000..fdcf421
 --- /dev/null
 +++ b/install/fts.c
-@@ -0,0 +1,1074 @@
+@@ -0,0 +1,1068 @@
 +/*	$OpenBSD: fts.c,v 1.59 2019/06/28 13:32:41 deraadt Exp $	*/
 +
 +/*-
@@ -204,7 +121,6 @@ index 0000000..2439813
 +#include <stdint.h>
 +#include <unistd.h>
 +
-+#include "bsd.h"
 +#include "fts.h"
 +
 +#define MAXIMUM(a, b)	(((a) > (b)) ? (a) : (b))
@@ -361,7 +277,6 @@ index 0000000..2439813
 +mem1:	free(sp);
 +	return (NULL);
 +}
-+DEF_WEAK(fts_open);
 +
 +static void
 +fts_load(FTS *sp, FTSENT *p)
@@ -428,7 +343,6 @@ index 0000000..2439813
 +
 +	return (error);
 +}
-+DEF_WEAK(fts_close);
 +
 +/*
 + * Special case of "/" at the end of the path so that slashes aren't
@@ -626,7 +540,6 @@ index 0000000..2439813
 +	p->fts_info = p->fts_errno ? FTS_ERR : FTS_DP;
 +	return (sp->fts_cur = p);
 +}
-+DEF_WEAK(fts_read);
 +
 +/*
 + * Fts_set takes the stream as an argument although it's not used in this
@@ -645,7 +558,6 @@ index 0000000..2439813
 +	p->fts_instr = instr;
 +	return (0);
 +}
-+DEF_WEAK(fts_set);
 +
 +FTSENT *
 +fts_children(FTS *sp, int instr)
@@ -714,7 +626,6 @@ index 0000000..2439813
 +	(void)close(fd);
 +	return (sp->fts_child);
 +}
-+DEF_WEAK(fts_children);
 +
 +/*
 + * This is the tricky part -- do not casually change *anything* in here.  The
@@ -1237,10 +1148,10 @@ index 0000000..2439813
 +}
 diff --git a/install/fts.h b/install/fts.h
 new file mode 100644
-index 0000000..ddb8a4f
+index 0000000..53167dd
 --- /dev/null
 +++ b/install/fts.h
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,125 @@
 +/*	$OpenBSD: fts.h,v 1.14 2012/12/05 23:19:57 deraadt Exp $	*/
 +/*	$NetBSD: fts.h,v 1.5 1994/12/28 01:41:50 mycroft Exp $	*/
 +
@@ -1358,152 +1269,14 @@ index 0000000..ddb8a4f
 +	char fts_name[1];		/* file name */
 +} FTSENT;
 +
-+//__BEGIN_DECLS
 +FTSENT	*fts_children(FTS *, int);
 +int	 fts_close(FTS *);
 +FTS	*fts_open(char * const *, int,
 +	    int (*)(const FTSENT **, const FTSENT **));
 +FTSENT	*fts_read(FTS *);
 +int	 fts_set(FTS *, FTSENT *, int);
-+//__END_DECLS
 +
 +#endif /* !_FTS_H_ */
-diff --git a/install/reallocarray.c b/install/reallocarray.c
-new file mode 100644
-index 0000000..ce98987
---- /dev/null
-+++ b/install/reallocarray.c
-@@ -0,0 +1,41 @@
-+/*	$OpenBSD: reallocarray.c,v 1.3 2015/09/13 08:31:47 guenther Exp $	*/
-+/*
-+ * Copyright (c) 2008 Otto Moerbeek <otto@drijf.net>
-+ *
-+ * Permission to use, copy, modify, and distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+
-+#include <sys/types.h>
-+#include <errno.h>
-+#include <stdint.h>
-+#include <stdlib.h>
-+
-+#include "bsd.h"
-+
-+/*
-+ * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX
-+ * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW
-+ */
-+#define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
-+
-+void *
-+reallocarray(void *optr, size_t nmemb, size_t size)
-+{
-+	if ((nmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
-+	    nmemb > 0 && SIZE_MAX / nmemb < size) {
-+		errno = ENOMEM;
-+		return NULL;
-+	}
-+	return realloc(optr, size * nmemb);
-+}
-+DEF_WEAK(reallocarray);
-diff --git a/install/recallocarray.c b/install/recallocarray.c
-new file mode 100644
-index 0000000..b1c8c35
---- /dev/null
-+++ b/install/recallocarray.c
-@@ -0,0 +1,83 @@
-+/*	$OpenBSD: recallocarray.c,v 1.1 2017/03/06 18:44:21 otto Exp $	*/
-+/*
-+ * Copyright (c) 2008, 2017 Otto Moerbeek <otto@drijf.net>
-+ *
-+ * Permission to use, copy, modify, and distribute this software for any
-+ * purpose with or without fee is hereby granted, provided that the above
-+ * copyright notice and this permission notice appear in all copies.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-+ */
-+
-+#include <errno.h>
-+#include <stdlib.h>
-+#include <stdint.h>
-+#include <string.h>
-+#include <unistd.h>
-+
-+#include "bsd.h"
-+
-+/*
-+ * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX
-+ * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW
-+ */
-+#define MUL_NO_OVERFLOW ((size_t)1 << (sizeof(size_t) * 4))
-+
-+void *
-+recallocarray(void *ptr, size_t oldnmemb, size_t newnmemb, size_t size)
-+{
-+	size_t oldsize, newsize;
-+	void *newptr;
-+
-+	if (ptr == NULL)
-+		return calloc(newnmemb, size);
-+
-+	if ((newnmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
-+	    newnmemb > 0 && SIZE_MAX / newnmemb < size) {
-+		errno = ENOMEM;
-+		return NULL;
-+	}
-+	newsize = newnmemb * size;
-+
-+	if ((oldnmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
-+	    oldnmemb > 0 && SIZE_MAX / oldnmemb < size) {
-+		errno = EINVAL;
-+		return NULL;
-+	}
-+	oldsize = oldnmemb * size;
-+	
-+	/*
-+	 * Don't bother too much if we're shrinking just a bit,
-+	 * we do not shrink for series of small steps, oh well.
-+	 */
-+	if (newsize <= oldsize) {
-+		size_t d = oldsize - newsize;
-+
-+		if (d < oldsize / 2 && d < getpagesize()) {
-+			memset((char *)ptr + newsize, 0, d);
-+			return ptr;
-+		}
-+	}
-+
-+	newptr = malloc(newsize);
-+	if (newptr == NULL)
-+		return NULL;
-+
-+	if (newsize > oldsize) {
-+		memcpy(newptr, ptr, oldsize);
-+		memset((char *)newptr + oldsize, 0, newsize - oldsize);
-+	} else
-+		memcpy(newptr, ptr, newsize);
-+
-+	explicit_bzero(ptr, oldsize);
-+	free(ptr);
-+
-+	return newptr;
-+}
-+DEF_WEAK(recallocarray);
 -- 
-2.30.0
+2.29.2
 
