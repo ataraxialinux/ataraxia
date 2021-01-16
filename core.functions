@@ -84,15 +84,15 @@ export_cflags() {
 
 	case "$1" in
 		amd64|x86)
-			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden -mretpoline -pipe"
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=shadow-call-stack -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden -mretpoline -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
 		arm64|armv7l|armv6l|armv5te)
-			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden -pipe"
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=shadow-call-stack -fsanitize=cfi -fsanitize-cfi-cross-dso  -fvisibility=hidden -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
 		*)
-			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -pipe"
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=shadow-call-stack -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
 	esac
