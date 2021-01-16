@@ -41,16 +41,6 @@ build() {
 	cd "$SRC"
 	mkdir -p compiler-rt-builtins-build
 
-	case "$LTARGET" in
-		X86|AArch64|ARM)
-			sanitizers="1"
-			mkdir -p compiler-rt-sanitizers-build
-			;;
-		*)
-			sanitizers="0"
-			;;
-	esac
-
 	pushd "$SRC/llvm-$version.src"
 		msg "Patching LLVM"
 		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
@@ -183,27 +173,4 @@ build() {
 	for i in lib/linux/*; do
 		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
 	done
-
-	if [ "$sanitizers" == "1" ]; then
-		msg "Compiling Compiler-RT sanitizers"
-		cd "$SRC"/compiler-rt-sanitizers-build
-		cmake "$SRC"/compiler-rt-$version.src \
-			-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
-			-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
-			-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
-			-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
-			-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
-			-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
-			-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
-			-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-			-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
-			-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-			-DCOMPILER_RT_STANDALONE_BUILD=ON \
-			-Wno-dev -G Ninja
-		samu cfi safestack
-
-		for i in lib/linux/*; do
-			install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
-		done
-	fi
 }
