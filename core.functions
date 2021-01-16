@@ -1,0 +1,143 @@
+#
+# Core functions for 'Marisa' build system
+#
+# Copyright (c) 2016-2021 Ataraxia Linux <ataraxialinux@protonmail.com>
+
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
+
+pushd () { command pushd "$@" > /dev/null; }
+popd () { command popd "$@" > /dev/null; }
+
+check_for_root() { [[ $EUID -ne 0 ]] && die 'You must be root to run `build`'; }
+check_for_arch() { [ -z "$1" ] && die 'Architecture is not specified'; }
+
+parse_architecture() {
+	check_for_arch "$1"
+
+	case "$1" in
+		amd64) export XTARGET="x86_64-linux-musl" ;;
+		x86) export XTARGET="i386-linux-musl" ;;
+		arm64) export XTARGET="aarch64-linux-musl" ;;
+		armv7l) export XTARGET="armv7l-linux-musleabihf" ;;
+		armv6l) export XTARGET="armv6l-linux-musleabihf" ;;
+		armv5te) export XTARGET="arm-linux-musleabi" ;;
+		mips64) export XTARGET="mips64-linux-musl" ;;
+		mips64el) export XTARGET="mips64el-linux-musl" ;;
+		mips) export XTARGET="mips-linux-musl" ;;
+		mipsel) export XTARGET="mipsel-linux-musl" ;;
+		powerpc64le) export XTARGET="powerpc64le-linux-musl" ;;
+		powerpc64) export XTARGET="powerpc64-linux-musl" ;;
+		riscv64) export XTARGET="riscv64-linux-musl" ;;
+		*) die 'Architecture called `'${1}'` is not supported by Ataraxia Linux' ;;
+	esac
+
+	export XHOST="$(echo $(clang -dumpmachine) | sed -e 's/-[^-]*/-cross/')"
+}
+
+export_variables() {
+	check_for_arch "$1"
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$1"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STUFF="$CWD/stuff"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+	export UTILS="$CWD/utils"
+
+	export PATH="$UTILS:$TOOLS/bin:$PATH"
+	export HOSTCC="clang"
+	export HOSTCXX="clang++"
+	export ORIGMAKE="$(command -v make)"
+
+	if [ -z "$JOBS" ]; then
+		export MKOPTS="-j$(expr $(nproc) + 1)"
+	fi
+}
+
+export_cflags() {
+	check_for_arch "$1"
+
+	case "$1" in
+		amd64|x86)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden -mretpoline -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		arm64|armv7l|armv6l|armv5te)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		*)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+	esac
+}
+
+generate_config() {
+	if [ "$target" = "1" ]; then
+		cat > "$1" <<- EOF
+			v
+		EOF
+	elif [ "$host" = "1" ]; then
+		cat > "$1" <<- EOF
+			# Target configuration
+			export BARCH="$BARCH"
+			export XHOST="$XHOST"
+			export XTARGET="$XTARGET"
+
+			# Host tools configuration
+			export PATH="$PATH"
+			export CC="$HOSTCC"
+			export CXX="$HOSTCXX"
+			export AR="llvm-ar"
+			export AS="llvm-as"
+			export RANLIB="llvm-ranlib"
+			export LD="llvm-ld"
+			export STRIP="llvm-strip"
+			export OBJCOPY="llvm-objcopy"
+			export OBJDUMP="llvm-objdump"
+			export SIZE="llvm-size"
+			export HOSTCC="$HOSTCC"
+			export HOSTCXX="$HOSTCXX"
+			export HOSTLD="ld.lld"
+			export HOSTAR="llvm-ar"
+			export ORIGMAKE="$ORIGMAKE"
+
+			# Paths configuration
+			export ROOTFS="$ROOTFS"
+			export TOOLS="$TOOLS"
+
+			# Package manager configuration
+			export mkopts="$MKOPTS"
+			export buildoptions=(emptydirs ~strip makeflags ~locales ~docs ccache ~libtool ~nobootstrap)
+			export repos="$TCREPO"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
+		EOF
+	fi
+}
+
+make_environment() {
+	rm -rf "$BUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS"
+
+	host=1 generate_config "$BUILD"/host.config
+	target=1 generate_config "$BUILD"/target.config
+}
