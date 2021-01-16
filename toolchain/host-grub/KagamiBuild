@@ -1,6 +1,5 @@
 name=host-grub
-fakepath="$topdir/../../packages/${name/host-}"
-realpath="$(realpath $fakepath)"
+realpath="$REPO/${name/host-}"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 unifontver="$(grep ^unifontver $realpath/KagamiBuild | sed -e 's/unifontver=//g')"
 release=1
@@ -39,10 +38,10 @@ build() {
 	export BUILD_LDFLAGS=""
 
 	case $BARCH in
-		x86_64|i686)
+		amd64|x86)
 			FLAVOR="efi pc"
 			;;
-		aarch64|armv7hl|armv6hl)
+		arm64|armv7l|armv6l|armv5te|riscv64)
 			FLAVOR="efi"
 			;;
 		ppc64le|ppc64)

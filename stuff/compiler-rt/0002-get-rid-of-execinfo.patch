@@ -1,0 +1,53 @@
+From 55292fce5ab633bb2987ea1280fc0a4911c4ea53 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 15 Jan 2021 20:24:11 +0900
+Subject: [PATCH 2/3] get rid of execinfo
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/gwp_asan/optional/backtrace_linux_libc.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/lib/gwp_asan/optional/backtrace_linux_libc.cpp b/lib/gwp_asan/optional/backtrace_linux_libc.cpp
+index bb0aad2..1a06401 100644
+--- a/lib/gwp_asan/optional/backtrace_linux_libc.cpp
++++ b/lib/gwp_asan/optional/backtrace_linux_libc.cpp
+@@ -7,7 +7,9 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include <assert.h>
+-#include <execinfo.h>
++#if defined(__GLIBC__)
++# include <execinfo.h>
++#endif
+ #include <stddef.h>
+ #include <stdint.h>
+ #include <stdlib.h>
+@@ -18,13 +20,16 @@
+ 
+ namespace {
+ size_t Backtrace(uintptr_t *TraceBuffer, size_t Size) {
++#if defined(__GLIBC__)
+   static_assert(sizeof(uintptr_t) == sizeof(void *), "uintptr_t is not void*");
+ 
+   return backtrace(reinterpret_cast<void **>(TraceBuffer), Size);
++#endif
+ }
+ 
+ static void PrintBacktrace(uintptr_t *Trace, size_t TraceLength,
+                            gwp_asan::crash_handler::Printf_t Printf) {
++#if defined(__GLIBC__)
+   if (TraceLength == 0) {
+     Printf("  <not found (does your allocator support backtracing?)>\n\n");
+     return;
+@@ -43,6 +48,7 @@ static void PrintBacktrace(uintptr_t *Trace, size_t TraceLength,
+   Printf("\n");
+   if (BacktraceSymbols)
+     free(BacktraceSymbols);
++#endif
+ }
+ } // anonymous namespace
+ 
+-- 
+2.29.2
+

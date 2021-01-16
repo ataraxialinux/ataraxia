@@ -1,0 +1,68 @@
+From 8b6ebec30c891c257bd5bb2e0ccad7cde93f87b6 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 2 Jan 2021 06:10:09 +0900
+Subject: [PATCH 2/3] PowerPC64 ELFv2 fixes
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Basic/Targets/PPC.h         | 3 +--
+ lib/Driver/ToolChains/Clang.cpp | 6 +-----
+ lib/Driver/ToolChains/Linux.cpp | 4 ++--
+ 3 files changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/lib/Basic/Targets/PPC.h b/lib/Basic/Targets/PPC.h
+index bda6cb7d..8b8703ee 100644
+--- a/lib/Basic/Targets/PPC.h
++++ b/lib/Basic/Targets/PPC.h
+@@ -408,11 +408,10 @@ public:
+       SuitableAlign = 64;
+     } else if ((Triple.getArch() == llvm::Triple::ppc64le)) {
+       resetDataLayout("e-m:e-i64:64-n32:64");
+-      ABI = "elfv2";
+     } else {
+       resetDataLayout("E-m:e-i64:64-n32:64");
+-      ABI = "elfv1";
+     }
++    ABI = "elfv2";
+ 
+     if (Triple.isOSFreeBSD() || Triple.isOSOpenBSD() ||
+         Triple.getOS() == llvm::Triple::AIX || Triple.isMusl()) {
+diff --git a/lib/Driver/ToolChains/Clang.cpp b/lib/Driver/ToolChains/Clang.cpp
+index af4bcf95..7cf6c69f 100644
+--- a/lib/Driver/ToolChains/Clang.cpp
++++ b/lib/Driver/ToolChains/Clang.cpp
+@@ -1883,11 +1883,7 @@ void Clang::AddPPCTargetArgs(const ArgList &Args,
+         ABIName = "elfv1-qpx";
+         break;
+       }
+-      if ((T.isOSFreeBSD() && T.getOSMajorVersion() >= 13) ||
+-          T.isOSOpenBSD() || T.isMusl())
+-        ABIName = "elfv2";
+-      else
+-        ABIName = "elfv1";
++      ABIName = "elfv2";
+       break;
+     }
+     case llvm::Triple::ppc64le:
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 5353e3a8..994a932f 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -496,12 +496,12 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+     Loader = "ld.so.1";
+     break;
+   case llvm::Triple::ppc64:
+-    LibDir = "lib64";
++    LibDir = "lib";
+     Loader =
+         (tools::ppc::hasPPCAbiArg(Args, "elfv2")) ? "ld64.so.2" : "ld64.so.1";
+     break;
+   case llvm::Triple::ppc64le:
+-    LibDir = "lib64";
++    LibDir = "lib";
+     Loader =
+         (tools::ppc::hasPPCAbiArg(Args, "elfv1")) ? "ld64.so.1" : "ld64.so.2";
+     break;
+-- 
+2.29.2
+

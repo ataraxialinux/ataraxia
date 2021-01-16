@@ -1,0 +1,189 @@
+From 2b8d1e1bb61c18a18574d6fe0f62c26ebf8106d4 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 31 Dec 2020 19:56:02 +0900
+Subject: [PATCH 2/2] Use pc-relative relocations in .eh_frame on MIPS
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/CodeGen/TargetLoweringObjectFileImpl.cpp |  2 +-
+ lib/MC/MCObjectFileInfo.cpp                  | 13 ++++------
+ lib/Object/RelocationResolver.cpp            |  3 +++
+ test/CodeGen/Mips/ehframe-indirect.ll        | 27 ++++++++------------
+ test/DebugInfo/Mips/eh_frame.ll              |  4 +--
+ test/MC/Mips/eh-frame.s                      | 15 +++++------
+ 6 files changed, 29 insertions(+), 35 deletions(-)
+
+diff --git a/lib/CodeGen/TargetLoweringObjectFileImpl.cpp b/lib/CodeGen/TargetLoweringObjectFileImpl.cpp
+index 27bebe50..1a0a65ee 100644
+--- a/lib/CodeGen/TargetLoweringObjectFileImpl.cpp
++++ b/lib/CodeGen/TargetLoweringObjectFileImpl.cpp
+@@ -208,7 +208,7 @@ void TargetLoweringObjectFileELF::Initialize(MCContext &Ctx,
+     // FreeBSD must be explicit about the data size and using pcrel since it's
+     // assembler/linker won't do the automatic conversion that the Linux tools
+     // do.
+-    if (TgtM.getTargetTriple().isOSFreeBSD()) {
++    if (isPositionIndependent() || TgtM.getTargetTriple().isOSFreeBSD()) {
+       PersonalityEncoding |= dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4;
+       LSDAEncoding = dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4;
+     }
+diff --git a/lib/MC/MCObjectFileInfo.cpp b/lib/MC/MCObjectFileInfo.cpp
+index b77a9635..b3c6f8ec 100644
+--- a/lib/MC/MCObjectFileInfo.cpp
++++ b/lib/MC/MCObjectFileInfo.cpp
+@@ -306,14 +306,11 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
+   case Triple::mipsel:
+   case Triple::mips64:
+   case Triple::mips64el:
+-    // We cannot use DW_EH_PE_sdata8 for the large PositionIndependent case
+-    // since there is no R_MIPS_PC64 relocation (only a 32-bit version).
+-    if (PositionIndependent && !Large)
+-      FDECFIEncoding = dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4;
+-    else
+-      FDECFIEncoding = Ctx->getAsmInfo()->getCodePointerSize() == 4
+-                           ? dwarf::DW_EH_PE_sdata4
+-                           : dwarf::DW_EH_PE_sdata8;
++    FDECFIEncoding = Ctx->getAsmInfo()->getCodePointerSize() == 4
++                         ? dwarf::DW_EH_PE_sdata4
++                         : dwarf::DW_EH_PE_sdata8;
++    if (PositionIndependent)
++      FDECFIEncoding |= dwarf::DW_EH_PE_pcrel;
+     break;
+   case Triple::ppc64:
+   case Triple::ppc64le:
+diff --git a/lib/Object/RelocationResolver.cpp b/lib/Object/RelocationResolver.cpp
+index ad7a50d1..0b90482d 100644
+--- a/lib/Object/RelocationResolver.cpp
++++ b/lib/Object/RelocationResolver.cpp
+@@ -334,6 +334,7 @@ static uint64_t resolveLanai(RelocationRef R, uint64_t S, uint64_t A) {
+ static bool supportsMips32(uint64_t Type) {
+   switch (Type) {
+   case ELF::R_MIPS_32:
++  case ELF::R_MIPS_PC32:
+   case ELF::R_MIPS_TLS_DTPREL32:
+     return true;
+   default:
+@@ -346,6 +347,8 @@ static uint64_t resolveMips32(RelocationRef R, uint64_t S, uint64_t A) {
+   uint32_t Rel = R.getType();
+   if (Rel == ELF::R_MIPS_32)
+     return (S + A) & 0xFFFFFFFF;
++  if (Rel == ELF::R_MIPS_PC32)
++    return (S + getELFAddend(R) - R.getOffset()) & 0xFFFFFFFF;
+   if (Rel == ELF::R_MIPS_TLS_DTPREL32)
+     return (S + A) & 0xFFFFFFFF;
+   llvm_unreachable("Invalid relocation type");
+diff --git a/test/CodeGen/Mips/ehframe-indirect.ll b/test/CodeGen/Mips/ehframe-indirect.ll
+index ab799ebe..11122f2b 100644
+--- a/test/CodeGen/Mips/ehframe-indirect.ll
++++ b/test/CodeGen/Mips/ehframe-indirect.ll
+@@ -1,32 +1,27 @@
+ ; RUN: llc -mtriple=mipsel-linux-gnu < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,LINUX,LINUX-O32,O32 %s
++; RUN:     FileCheck -check-prefixes=ALL,O32 %s
+ ; RUN: llc -mtriple=mipsel-linux-android < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,LINUX,LINUX-O32,O32 %s
++; RUN:     FileCheck -check-prefixes=ALL,O32 %s
+ ; RUN: llc -mtriple=mips64el-linux-gnu -target-abi=n32 < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,LINUX,LINUX-N32,N32 %s
++; RUN:     FileCheck -check-prefixes=ALL,N32 %s
+ ; RUN: llc -mtriple=mips64el-linux-gnu < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,LINUX,LINUX-N64,N64 %s
++; RUN:     FileCheck -check-prefixes=ALL,N64 %s
+ ; RUN: llc -mtriple=mips64el-linux-android < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,LINUX,LINUX-N64,N64 %s
++; RUN:     FileCheck -check-prefixes=ALL,N64 %s
+ ; RUN: llc -mtriple=mips64el-linux-gnu < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,LINUX,LINUX-N64,N64 %s
++; RUN:     FileCheck -check-prefixes=ALL,N64 %s
+ ; RUN: llc -mtriple=mips64-unknown-freebsd11.0 < %s -asm-verbose -relocation-model=pic | \
+-; RUN:     FileCheck -check-prefixes=ALL,FREEBSD,FREEBSD-N64,N64 %s
++; RUN:     FileCheck -check-prefixes=ALL,N64 %s
+ 
+ @_ZTISt9exception = external constant i8*
+ 
+ define i32 @main() personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*) {
+ ; ALL: .cfi_startproc
+ 
+-; Linux must rely on the assembler/linker converting the encodings.
+-; LINUX: .cfi_personality 128, DW.ref.__gxx_personality_v0
+-; LINUX-O32: .cfi_lsda 0, $exception0
+-; LINUX-NEW: .cfi_lsda 0, .Lexception0
+-
+-; FreeBSD can (and must) be more direct about the encodings it wants.
+-; FREEBSD: .cfi_personality 155, DW.ref.__gxx_personality_v0
+-; FREEBSD-O32: .cfi_lsda 27, $exception0
+-; FREEBSD-NEW: .cfi_lsda 27, .Lexception0
++; ALL: .cfi_personality 155, DW.ref.__gxx_personality_v0
++; O32: .cfi_lsda 27, $exception0
++; N32: .cfi_lsda 27, .Lexception0
++; N64: .cfi_lsda 27, .Lexception0
+ 
+ entry:
+   invoke void @foo() to label %cont unwind label %lpad
+diff --git a/test/DebugInfo/Mips/eh_frame.ll b/test/DebugInfo/Mips/eh_frame.ll
+index a71ae61f..0a53d256 100644
+--- a/test/DebugInfo/Mips/eh_frame.ll
++++ b/test/DebugInfo/Mips/eh_frame.ll
+@@ -17,9 +17,9 @@
+ ; STATIC-DAG: R_MIPS_32 00000000 .gcc_except_table
+ 
+ ; PIC-LABEL: Relocation section '.rel.eh_frame'
+-; PIC-DAG: R_MIPS_32   00000000 DW.ref.__gxx_personality_v0
++; PIC-DAG: R_MIPS_PC32 00000000 DW.ref.__gxx_personality_v0
++; PIC-DAG: R_MIPS_PC32
+ ; PIC-DAG: R_MIPS_PC32
+-; PIC-DAG: R_MIPS_32   00000000 .gcc_except_table
+ 
+ ; CHECK-READELF: DW.ref.__gxx_personality_v0
+ ; CHECK-READELF-STATIC-NEXT: R_MIPS_32 00000000 .text
+diff --git a/test/MC/Mips/eh-frame.s b/test/MC/Mips/eh-frame.s
+index 5be0d709..c4ef4a00 100644
+--- a/test/MC/Mips/eh-frame.s
++++ b/test/MC/Mips/eh-frame.s
+@@ -33,14 +33,13 @@
+ // RUN: llvm-readobj -r %t.o | FileCheck --check-prefixes=RELOCS,PIC64 %s
+ // RUN: llvm-dwarfdump -eh-frame %t.o | FileCheck --check-prefixes=DWARF64,DWARF64_PIC %s
+ 
+-/// However using the large code model forces R_MIPS_64 since there is no R_MIPS_PC64 relocation:
+ // RUN: llvm-mc -filetype=obj %s -o %t.o -triple mips64-unknown-linux-gnu --position-independent --large-code-model
+-// RUN: llvm-readobj -r %t.o | FileCheck --check-prefixes=RELOCS,ABS64 %s
+-// RUN: llvm-dwarfdump -eh-frame %t.o | FileCheck --check-prefixes=DWARF64,DWARF64_ABS %s
++// RUN: llvm-readobj -r %t.o | FileCheck --check-prefixes=RELOCS,PIC64-NEXT %s
++// RUN: llvm-dwarfdump -eh-frame %t.o | FileCheck --check-prefixes=DWARF64,DWARF64_PIC %s
+ 
+ // RUN: llvm-mc -filetype=obj %s -o %t.o -triple mips64el-unknown-linux-gnu --position-independent  --large-code-model
+-// RUN: llvm-readobj -r %t.o | FileCheck --check-prefixes=RELOCS,ABS64 %s
+-// RUN: llvm-dwarfdump -eh-frame %t.o | FileCheck --check-prefixes=DWARF64,DWARF64_ABS %s
++// RUN: llvm-readobj -r %t.o | FileCheck --check-prefixes=RELOCS,PIC64-NEXT %s
++// RUN: llvm-dwarfdump -eh-frame %t.o | FileCheck --check-prefixes=DWARF64,DWARF64_PIC %s
+ 
+ func:
+ 	.cfi_startproc
+@@ -51,7 +50,7 @@ func:
+ // ABS32-NEXT:      R_MIPS_32
+ // ABS64-NEXT:      R_MIPS_64/R_MIPS_NONE/R_MIPS_NONE
+ // PIC32-NEXT:      R_MIPS_PC32
+-// PIC64-NEXT:      R_MIPS_PC32/R_MIPS_NONE/R_MIPS_NONE
++// PIC64-NEXT:      R_MIPS_PC32/R_MIPS_64/R_MIPS_NONE
+ // RELOCS-NEXT:   }
+ 
+ // DWARF32: 00000000 00000010 00000000 CIE
+@@ -86,14 +85,14 @@ func:
+ // DWARF64-NEXT:     Return address column: 31
+ // DWARF64_ABS-NEXT: Augmentation data: 0C
+ //                                      ^^ fde pointer encoding: DW_EH_PE_sdata8
+-// DWARF64_PIC:      Augmentation data: 1B
++// DWARF64_PIC:      Augmentation data: 1C
+ //                                      ^^ fde pointer encoding: DW_EH_PE_pcrel | DW_EH_PE_sdata4
+ // DWARF64-EMPTY:
+ // DWARF64-NEXT:     DW_CFA_def_cfa_register: reg29
+ // DWARF64_PIC-NEXT: DW_CFA_nop:
+ //
+ // DWARF64_ABS:      00000014 00000018 00000018 FDE cie=00000000 pc=00000000...00000000
+-// DWARF64_PIC:      00000014 00000010 00000018 FDE cie=00000000 pc=00000000...00000000
++// DWARF64_PIC:      00000014 00000018 00000018 FDE cie=00000000 pc=00000000...00000000
+ // DWARF64-NEXT:     Format:       DWARF32
+ // DWARF64-NEXT:     DW_CFA_nop:
+ // DWARF64-NEXT:     DW_CFA_nop:
+-- 
+2.29.2
+

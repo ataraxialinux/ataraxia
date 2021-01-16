@@ -1,0 +1,53 @@
+From 47176a86ae32254d168ae540d34500b383ecaf0c Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 17 Jan 2021 00:46:51 +0900
+Subject: [PATCH 3/3] port crt on MIPS, build on PowerPC
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ cmake/config-ix.cmake | 2 +-
+ lib/crt/crtbegin.c    | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/config-ix.cmake b/cmake/config-ix.cmake
+index 2edc1da..5f67743 100644
+--- a/cmake/config-ix.cmake
++++ b/cmake/config-ix.cmake
+@@ -280,7 +280,7 @@ set(ALL_SANITIZER_COMMON_SUPPORTED_ARCH ${X86} ${X86_64} ${PPC64} ${RISCV64}
+     ${ARM32} ${ARM64} ${MIPS32} ${MIPS64} ${S390X} ${SPARC} ${SPARCV9})
+ set(ALL_ASAN_SUPPORTED_ARCH ${X86} ${X86_64} ${ARM32} ${ARM64}
+     ${MIPS32} ${MIPS64} ${PPC64} ${S390X} ${SPARC} ${SPARCV9})
+-set(ALL_CRT_SUPPORTED_ARCH ${X86} ${X86_64} ${ARM32} ${ARM64} ${RISCV32} ${RISCV64})
++set(ALL_CRT_SUPPORTED_ARCH ${X86} ${X86_64} ${ARM32} ${ARM64} ${MIPS32} ${MIPS64} ${PPC64} ${RISCV32} ${RISCV64})
+ set(ALL_DFSAN_SUPPORTED_ARCH ${X86_64} ${MIPS64} ${ARM64})
+ 
+ if(ANDROID)
+diff --git a/lib/crt/crtbegin.c b/lib/crt/crtbegin.c
+index 24bea1a..a0388c4 100644
+--- a/lib/crt/crtbegin.c
++++ b/lib/crt/crtbegin.c
+@@ -56,6 +56,10 @@ __asm__(".pushsection .init,\"ax\",@progbits\n\t"
+ __asm__(".pushsection .init,\"ax\",%progbits\n\t"
+     "bl " __USER_LABEL_PREFIX__ "__do_init\n\t"
+     ".popsection");
++#elif defined(__mips__) || defined(__mips64__)
++__asm__(".pushsection .init,\"ax\",@progbits\n\t"
++    "j " __USER_LABEL_PREFIX__ "__do_init\n\t"
++    ".popsection");
+ #elif defined(__powerpc__) || defined(__powerpc64__)
+ __asm__(".pushsection .init,\"ax\",@progbits\n\t"
+     "bl " __USER_LABEL_PREFIX__ "__do_init\n\t"
+@@ -105,6 +109,10 @@ __asm__(".pushsection .fini,\"ax\",@progbits\n\t"
+ __asm__(".pushsection .fini,\"ax\",%progbits\n\t"
+     "bl " __USER_LABEL_PREFIX__ "__do_fini\n\t"
+     ".popsection");
++#elif defined(__mips__) || defined(__mips64__)
++__asm__(".pushsection .fini,\"ax\",@progbits\n\t"
++    "j " __USER_LABEL_PREFIX__ "__do_fini\n\t"
++    ".popsection");
+ #elif defined(__powerpc__) || defined(__powerpc64__)
+ __asm__(".pushsection .fini,\"ax\",@progbits\n\t"
+     "bl " __USER_LABEL_PREFIX__ "__do_fini\n\t"
+-- 
+2.29.2
+

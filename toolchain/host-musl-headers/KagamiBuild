@@ -1,0 +1,29 @@
+name=host-musl-headers
+realpath="$REPO/musl"
+#version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+version=1.2.2
+release=1
+options=('bootstrap')
+source=("http://www.musl-libc.org/releases/musl-$version.tar.gz")
+
+build() {
+	case "$BARCH" in
+		amd64) export MARCH="x86_64" ;;
+		x86) export MARCH="i386" ;;
+		arm64) export MARCH="aarch64" ;;
+		armv7l) export MARCH="arm" ;;
+		armv6l) export MARCH="arm" ;;
+		armv5te) export MARCH="arm" ;;
+		mips64) export MARCH="mips64" ;;
+		mips64el) export MARCH="mips64" ;;
+		mips) export MARCH="mips" ;;
+		mipsel) export MARCH="mips" ;;
+		powerpc64le) export MARCH="powerpc64" ;;
+		powerpc64) export MARCH="powerpc64" ;;
+		riscv64) export MARCH="riscv64" ;;
+		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia Linux' ;;
+	esac
+
+	cd "$SRC"/musl-$version
+	make ARCH=$MARCH prefix=/usr DESTDIR="$ROOTFS" install-headers 
+}

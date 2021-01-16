@@ -1,0 +1,37 @@
+From aa9354d062af19b197c1e9a44b80647936b4cc81 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 15 Jan 2021 19:13:21 +0900
+Subject: [PATCH 2/2] force link against compiler-rt builtins
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/CMakeLists.txt | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 42bec42..3502462 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -167,6 +167,9 @@ if (LIBCXXABI_ENABLE_SHARED)
+     llvm_setup_rpath(cxxabi_shared)
+   endif()
+   target_link_libraries(cxxabi_shared PRIVATE ${LIBCXXABI_SHARED_LIBRARIES} ${LIBCXXABI_LIBRARIES})
++  if (LIBCXXABI_USE_COMPILER_RT)
++    target_link_libraries(cxxabi_shared PRIVATE ${LIBCXXABI_BUILTINS_LIBRARY})
++  endif()
+   if (TARGET pstl::ParallelSTL)
+     target_link_libraries(cxxabi_shared PUBLIC pstl::ParallelSTL)
+   endif()
+@@ -224,6 +227,9 @@ endif()
+ if (LIBCXXABI_ENABLE_STATIC)
+   add_library(cxxabi_static STATIC ${LIBCXXABI_SOURCES} ${LIBCXXABI_HEADERS})
+   target_link_libraries(cxxabi_static PRIVATE ${LIBCXXABI_STATIC_LIBRARIES} ${LIBCXXABI_LIBRARIES})
++  if (LIBCXXABI_USE_COMPILER_RT)
++    target_link_libraries(cxxabi_static PRIVATE ${LIBCXXABI_BUILTINS_LIBRARY})
++  endif()
+   if (TARGET pstl::ParallelSTL)
+     target_link_libraries(cxxabi_static PUBLIC pstl::ParallelSTL)
+   endif()
+-- 
+2.29.2
+

@@ -21,8 +21,16 @@ die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
 pushd () { command pushd "$@" > /dev/null; }
 popd () { command popd "$@" > /dev/null; }
 
-check_for_root() { [[ $EUID -ne 0 ]] && die 'You must be root to run `build`'; }
-check_for_arch() { [ -z "$1" ] && die 'Architecture is not specified'; }
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die 'You must be root to run `build`'
+	fi
+}
+check_for_arch() {
+	if [ -z "$1" ]; then
+		die 'Architecture is not specified'
+	fi
+}
 
 parse_architecture() {
 	check_for_arch "$1"
@@ -93,7 +101,58 @@ export_cflags() {
 generate_config() {
 	if [ "$target" = "1" ]; then
 		cat > "$1" <<- EOF
-			v
+			# Target configuration
+			export BARCH="$BARCH"
+			export XHOST="$XHOST"
+			export XTARGET="$XTARGET"
+			export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+			export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+			export PERLFLAGS="--target=$XTARGET"
+
+			# Host tools configuration
+			export PATH="$PATH"
+			export HOSTCC="$HOSTCC"
+			export HOSTCXX="$HOSTCXX"
+			export HOSTLD="ld.lld"
+			export HOSTAR="llvm-ar"
+			export ORIGMAKE="$ORIGMAKE"
+
+			# Target tools configuration
+			export CROSS_COMPILE="$XTARGET-"
+			export CC="$XTARGET-clang"
+			export CXX="$XTARGET-clang++"
+			export AR="$XTARGET-ar"
+			export AS="$XTARGET-as"
+			export RANLIB="$XTARGET-ranlib"
+			export LD="$XTARGET-ld"
+			export STRIP="$XTARGET-strip"
+			export OBJCOPY="$XTARGET-objcopy"
+			export OBJDUMP="$XTARGET-objdump"
+			export SIZE="$XTARGET-size"
+
+			# Compiler flags
+			export CFLAGS="$xcflags"
+			export CXXFLAGS="$xcflags"
+			export LDFLAGS="$xldflags"
+
+			# Paths configuration
+			export ROOTFS="$ROOTFS"
+			export TOOLS="$TOOLS"
+			export STUFF="$STUFF"
+
+			# pkg-config configuration
+			export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+			export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+			export PKG_CONFIG="$XTARGET-pkgconf"
+			export PKG_CONFIG_SYSROOT_DIR="/"
+			export PKG_CONFIG_LIBDIR="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+
+			# Package manager configuration
+			export mkopts="$MKOPTS"
+			export buildoptions=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' 'ccache' '~libtool' '~nobootstrap')
+			export repos="$REPO"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
 		EOF
 	elif [ "$host" = "1" ]; then
 		cat > "$1" <<- EOF
@@ -106,27 +165,24 @@ generate_config() {
 			export PATH="$PATH"
 			export CC="$HOSTCC"
 			export CXX="$HOSTCXX"
-			export AR="llvm-ar"
-			export AS="llvm-as"
-			export RANLIB="llvm-ranlib"
-			export LD="llvm-ld"
-			export STRIP="llvm-strip"
-			export OBJCOPY="llvm-objcopy"
-			export OBJDUMP="llvm-objdump"
-			export SIZE="llvm-size"
 			export HOSTCC="$HOSTCC"
 			export HOSTCXX="$HOSTCXX"
-			export HOSTLD="ld.lld"
-			export HOSTAR="llvm-ar"
 			export ORIGMAKE="$ORIGMAKE"
+
+			# Compiler flags
+			export CFLAGS=""
+			export CXXFLAGS="-stdlib=libc++"
+			export LDFLAGS="-rtlib=compiler-rt"
 
 			# Paths configuration
 			export ROOTFS="$ROOTFS"
 			export TOOLS="$TOOLS"
+			export REPO="$REPO"
+			export STUFF="$STUFF"
 
 			# Package manager configuration
 			export mkopts="$MKOPTS"
-			export buildoptions=(emptydirs ~strip makeflags ~locales ~docs ccache ~libtool ~nobootstrap)
+			export buildoptions=('emptydirs' 'strip' 'makeflags' 'locales' 'docs' 'ccache' 'libtool' '~nobootstrap')
 			export repos="$TCREPO"
 			export pkgdest="$PACKAGES"
 			export srcdest="$SOURCES"
@@ -136,8 +192,67 @@ generate_config() {
 
 make_environment() {
 	rm -rf "$BUILD"
-	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS/usr/lib/tsukuri/db" "$TOOLS"
 
 	host=1 generate_config "$BUILD"/host.config
 	target=1 generate_config "$BUILD"/target.config
+}
+
+
+emerge_host() {
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
+	fi
+
+	if [ ! -f "$TCREPO/host-${1}/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	pushd "$TCREPO/host-${1}"
+		tsukuri bi -c "$BUILD/host.config" -wp
+	popd
+}
+
+emerge_target() {
+	local root
+
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
+	fi
+
+	if [ -n "$2" ]; then
+		root="$2"
+	else
+		root="$ROOTFS"
+	fi
+
+	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	tsukuri em -c "$BUILD/target.config" -r "$root" -wND $1
+}
+
+emerge_host_target() {
+	local root
+
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
+	fi
+
+	if [ -n "$2" ]; then
+		root="$2"
+	else
+		root="$ROOTFS"
+	fi
+
+	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	pushd "$REPO/$1"
+		tsukuri bi -c "$BUILD/host.config" -w
+	popd
+
+	tsukuri em -c "$BUILD/target.config" -r "$root" -wND $1
 }

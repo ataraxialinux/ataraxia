@@ -1,0 +1,17 @@
+name=host-cmake
+realpath="$REPO/${name/host-}"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://www.cmake.org/files/v${version%.*}/cmake-$version.tar.gz")
+
+build() {
+	cd "$SRC"/cmake-$version
+	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
+
+	./bootstrap \
+		--prefix="$TOOLS" \
+		--mandir=/share/man
+	make
+	make install
+}
