@@ -130,7 +130,7 @@ build() {
 		done
 
 		if [ "$BARCH" != "riscv64" ]; then
-			cp ld $XTARGET-ld
+			cp lld $XTARGET-ld
 			cp lld $XTARGET-ld.lld
 		fi
 
@@ -147,30 +147,4 @@ build() {
 			rm -f lld-link ld.lld ld64.lld wasm-ld lld
 		fi
 	popd
-
-	msg "Compiling Compiler-RT builtins"
-	cd "$SRC"/compiler-rt-builtins-build
-	cmake "$SRC"/compiler-rt-$version.src \
-		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
-		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
-		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
-		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
-		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
-		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
-		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
-		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
-		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-		-DCOMPILER_RT_BUILD_BUILTINS=ON \
-		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
-		-DCOMPILER_RT_BUILD_PROFILE=OFF \
-		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-		-DCOMPILER_RT_BUILD_XRAY=OFF \
-		-DCOMPILER_RT_STANDALONE_BUILD=ON \
-		-Wno-dev -G Ninja
-	samu
-
-	for i in lib/linux/*; do
-		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
-	done
 }
