@@ -1,61 +1,95 @@
-From 25c7b02bb859ccb8f7de0aa0d69f666571f44c6a Mon Sep 17 00:00:00 2001
+From 585003cc2e0bd3cf90e92932306023e8d8e5def5 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 15 Jan 2021 20:15:33 +0900
+Date: Mon, 18 Jan 2021 00:12:15 +0900
 Subject: [PATCH 1/3] Make sanitizers work on musl libc
-
-Special thanks to Exherbo (https://git.exherbo.org/arbor.git/tree/packages/dev-libs/compiler-rt)
-and ngtc (https://github.com/tpimh/ngtc/tree/version-11.0.0/root/patch)
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- lib/asan/asan_linux.cpp                       |  4 +-
- lib/hwasan/hwasan_exceptions.cpp              |  4 ++
- lib/interception/interception_linux.cpp       |  4 +-
- lib/interception/interception_type_test.cpp   |  2 +-
- lib/sanitizer_common/sanitizer_linux.cpp      |  7 ++
- .../sanitizer_platform_limits_posix.cpp       | 72 +++++++++++++++----
- .../sanitizer_platform_limits_posix.h         | 23 ++++--
- 7 files changed, 93 insertions(+), 23 deletions(-)
+ cmake/Modules/AddCompilerRT.cmake             |  3 +-
+ lib/asan/asan_interceptors.h                  |  6 +-
+ lib/asan/tests/asan_test.cpp                  |  4 +-
+ lib/interception/interception_linux.cpp       |  6 +-
+ lib/interception/interception_linux.h         |  6 +-
+ lib/msan/tests/msan_test.cpp                  | 36 +++++---
+ .../sanitizer_common_interceptors_ioctl.inc   |  6 +-
+ .../sanitizer_linux_libcdep.cpp               | 12 +--
+ lib/sanitizer_common/sanitizer_platform.h     | 13 +++
+ .../sanitizer_platform_interceptors.h         | 79 +++++++++--------
+ .../sanitizer_platform_limits_posix.cpp       | 84 +++++++++++--------
+ .../sanitizer_platform_limits_posix.h         |  2 +
+ .../sanitizer_procmaps_solaris.cpp            |  4 +-
+ lib/tsan/rtl/tsan_interceptors_posix.cpp      |  8 +-
+ 14 files changed, 157 insertions(+), 112 deletions(-)
 
-diff --git a/lib/asan/asan_linux.cpp b/lib/asan/asan_linux.cpp
-index ce5e873..177ec0e 100644
---- a/lib/asan/asan_linux.cpp
-+++ b/lib/asan/asan_linux.cpp
-@@ -45,7 +45,7 @@
- #include <link.h>
+diff --git a/cmake/Modules/AddCompilerRT.cmake b/cmake/Modules/AddCompilerRT.cmake
+index 7c127a9..d53f71e 100644
+--- a/cmake/Modules/AddCompilerRT.cmake
++++ b/cmake/Modules/AddCompilerRT.cmake
+@@ -612,7 +612,8 @@ macro(add_custom_libcxx name prefix)
+     CMAKE_OBJDUMP
+     CMAKE_STRIP
+     CMAKE_SYSROOT
+-    CMAKE_SYSTEM_NAME)
++    CMAKE_SYSTEM_NAME
++    LIBCXX_HAS_MUSL_LIBC)
+   foreach(variable ${PASSTHROUGH_VARIABLES})
+     get_property(is_value_set CACHE ${variable} PROPERTY VALUE SET)
+     if(${is_value_set})
+diff --git a/lib/asan/asan_interceptors.h b/lib/asan/asan_interceptors.h
+index 344a64b..9b9ace2 100644
+--- a/lib/asan/asan_interceptors.h
++++ b/lib/asan/asan_interceptors.h
+@@ -59,7 +59,7 @@ void InitializePlatformInterceptors();
+ # define ASAN_USE_ALIAS_ATTRIBUTE_FOR_INDEX 0
  #endif
  
--#if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS
-+#if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS || (SANITIZER_LINUX && !defined(__GLIBC__))
- #include <ucontext.h>
- extern "C" void* _DYNAMIC;
- #elif SANITIZER_NETBSD
-@@ -138,7 +138,7 @@ void AsanApplyToGlobals(globals_op_fptr op, const void *needle) {
-   UNIMPLEMENTED();
+-#if (SANITIZER_LINUX && !SANITIZER_ANDROID) || SANITIZER_SOLARIS
++#if SANITIZER_GLIBC || SANITIZER_SOLARIS
+ # define ASAN_INTERCEPT_SWAPCONTEXT 1
+ #else
+ # define ASAN_INTERCEPT_SWAPCONTEXT 0
+@@ -71,7 +71,7 @@ void InitializePlatformInterceptors();
+ # define ASAN_INTERCEPT_SIGLONGJMP 0
+ #endif
+ 
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
++#if SANITIZER_GLIBC
+ # define ASAN_INTERCEPT___LONGJMP_CHK 1
+ #else
+ # define ASAN_INTERCEPT___LONGJMP_CHK 0
+@@ -105,7 +105,7 @@ void InitializePlatformInterceptors();
+ # define ASAN_INTERCEPT_ATEXIT 0
+ #endif
+ 
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
++#if SANITIZER_GLIBC
+ # define ASAN_INTERCEPT___STRDUP 1
+ #else
+ # define ASAN_INTERCEPT___STRDUP 0
+diff --git a/lib/asan/tests/asan_test.cpp b/lib/asan/tests/asan_test.cpp
+index edc98ed..34ea472 100644
+--- a/lib/asan/tests/asan_test.cpp
++++ b/lib/asan/tests/asan_test.cpp
+@@ -803,7 +803,7 @@ char* MallocAndMemsetString(size_t size) {
+   return MallocAndMemsetString(size, 'z');
  }
  
--#if SANITIZER_ANDROID
-+#if SANITIZER_ANDROID || (SANITIZER_LINUX && !defined(__GLIBC__))
- // FIXME: should we do anything for Android?
- void AsanCheckDynamicRTPrereqs() {}
- void AsanCheckIncompatibleRT() {}
-diff --git a/lib/hwasan/hwasan_exceptions.cpp b/lib/hwasan/hwasan_exceptions.cpp
-index 169e787..da96e36 100644
---- a/lib/hwasan/hwasan_exceptions.cpp
-+++ b/lib/hwasan/hwasan_exceptions.cpp
-@@ -16,6 +16,10 @@
+-#if defined(__linux__) && !defined(__ANDROID__)
++#if SANITIZER_GLIBC
+ #define READ_TEST(READ_N_BYTES)                                          \
+   char *x = new char[10];                                                \
+   int fd = open("/proc/self/stat", O_RDONLY);                            \
+@@ -826,7 +826,7 @@ TEST(AddressSanitizer, pread64) {
+ TEST(AddressSanitizer, read) {
+   READ_TEST(read(fd, x, 15));
+ }
+-#endif  // defined(__linux__) && !defined(__ANDROID__)
++#endif  // SANITIZER_GLIBC
  
- #include <unwind.h>
- 
-+#ifndef _Unwind_Word
-+# define _Unwind_Word uintptr_t
-+#endif
-+
- using namespace __hwasan;
- using namespace __sanitizer;
- 
+ // This test case fails
+ // Clang optimizes memcpy/memset calls which lead to unaligned access
 diff --git a/lib/interception/interception_linux.cpp b/lib/interception/interception_linux.cpp
-index 950cd51..f4942e2 100644
+index 950cd51..a930b7e 100644
 --- a/lib/interception/interception_linux.cpp
 +++ b/lib/interception/interception_linux.cpp
 @@ -63,8 +63,8 @@ bool InterceptFunction(const char *name, uptr *ptr_to_real, uptr func,
@@ -64,371 +98,903 @@ index 950cd51..f4942e2 100644
  
 -// Android and Solaris do not have dlvsym
 -#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS && !SANITIZER_OPENBSD
-+// Android and Solaris and musl-libc do not have dlvsym
-+#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS && !SANITIZER_OPENBSD && (!SANITIZER_LINUX || defined(__GLIBC__))
++// dlvsym is a GNU extension supported by some other platforms.
++#if SANITIZER_GLIBC || SANITIZER_FREEBSD || SANITIZER_NETBSD
  static void *GetFuncAddr(const char *name, const char *ver) {
    return dlvsym(RTLD_NEXT, name, ver);
  }
-diff --git a/lib/interception/interception_type_test.cpp b/lib/interception/interception_type_test.cpp
-index a611604..18e28d7 100644
---- a/lib/interception/interception_type_test.cpp
-+++ b/lib/interception/interception_type_test.cpp
-@@ -13,7 +13,7 @@
+@@ -75,7 +75,7 @@ bool InterceptFunction(const char *name, const char *ver, uptr *ptr_to_real,
+   *ptr_to_real = (uptr)addr;
+   return addr && (func == wrapper);
+ }
+-#endif  // !SANITIZER_ANDROID
++#endif  // SANITIZER_GLIBC || SANITIZER_FREEBSD || SANITIZER_NETBSD
  
- #include "interception.h"
+ }  // namespace __interception
  
--#if SANITIZER_LINUX || SANITIZER_MAC
-+#if SANITIZER_LINUX && defined __GLIBC__ || SANITIZER_MAC
+diff --git a/lib/interception/interception_linux.h b/lib/interception/interception_linux.h
+index e578da0..8c0729f 100644
+--- a/lib/interception/interception_linux.h
++++ b/lib/interception/interception_linux.h
+@@ -35,8 +35,8 @@ bool InterceptFunction(const char *name, const char *ver, uptr *ptr_to_real,
+       (::__interception::uptr) & (func),          \
+       (::__interception::uptr) & WRAP(func))
  
- #include <sys/types.h>
- #include <stddef.h>
-diff --git a/lib/sanitizer_common/sanitizer_linux.cpp b/lib/sanitizer_common/sanitizer_linux.cpp
-index 470f4b7..cd729ab 100644
---- a/lib/sanitizer_common/sanitizer_linux.cpp
-+++ b/lib/sanitizer_common/sanitizer_linux.cpp
-@@ -74,6 +74,11 @@
+-// Android,  Solaris and OpenBSD do not have dlvsym
+-#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS && !SANITIZER_OPENBSD
++// dlvsym is a GNU extension supported by some other platforms.
++#if SANITIZER_GLIBC || SANITIZER_FREEBSD || SANITIZER_NETBSD
+ #define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+   ::__interception::InterceptFunction(                        \
+       #func, symver,                                          \
+@@ -46,7 +46,7 @@ bool InterceptFunction(const char *name, const char *ver, uptr *ptr_to_real,
+ #else
+ #define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+   INTERCEPT_FUNCTION_LINUX_OR_FREEBSD(func)
+-#endif  // !SANITIZER_ANDROID && !SANITIZER_SOLARIS
++#endif  // SANITIZER_GLIBC || SANITIZER_FREEBSD || SANITIZER_NETBSD
  
- #if SANITIZER_LINUX && !SANITIZER_ANDROID
- #include <sys/personality.h>
-+#if !defined(__GLIBC__)
-+# if !defined(__NR_clock_gettime)
-+#  define __NR_clock_gettime __NR_clock_gettime64
-+# endif
-+#endif
+ #endif  // INTERCEPTION_LINUX_H
+ #endif  // SANITIZER_LINUX || SANITIZER_FREEBSD || SANITIZER_NETBSD ||
+diff --git a/lib/msan/tests/msan_test.cpp b/lib/msan/tests/msan_test.cpp
+index 53b9a3e..670cf96 100644
+--- a/lib/msan/tests/msan_test.cpp
++++ b/lib/msan/tests/msan_test.cpp
+@@ -33,6 +33,10 @@ int shmdt(const void *);
+ }
  #endif
  
- #if SANITIZER_FREEBSD
-@@ -500,7 +505,9 @@ u64 NanoTime() {
-   kernel_timeval tv;
- #endif
-   internal_memset(&tv, 0, sizeof(tv));
-+#if defined(__GLIBC__)
-   internal_syscall(SYSCALL(gettimeofday), &tv, 0);
++#if defined(__linux__) && !defined(__GLIBC__) && !defined(__ANDROID__)
++#define MUSL 1
 +#endif
-   return (u64)tv.tv_sec * 1000*1000*1000 + tv.tv_usec * 1000;
++
+ #include <inttypes.h>
+ #include <stdlib.h>
+ #include <stdarg.h>
+@@ -1175,7 +1179,7 @@ TEST(MemorySanitizer, gethostbyaddr) {
+   EXPECT_HOSTENT_NOT_POISONED(he);
  }
  
+-#if !defined(__NetBSD__)
++#if defined(__GLIBC__) || defined(__FreeBSD__)
+ TEST(MemorySanitizer, gethostent_r) {
+   char buf[2000];
+   struct hostent he;
+@@ -1354,7 +1358,7 @@ TEST(MemorySanitizer, shmat) {
+   ASSERT_GT(res, -1);
+ }
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, random_r) {
+   int32_t x;
+   char z[64];
+@@ -1434,7 +1438,7 @@ TEST(MemorySanitizer, realpath_null) {
+   free(res);
+ }
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, canonicalize_file_name) {
+   const char* relpath = ".";
+   char* res = canonicalize_file_name(relpath);
+@@ -1810,12 +1814,15 @@ TEST_STRTO_INT(strtol, char, )
+ TEST_STRTO_INT(strtoll, char, )
+ TEST_STRTO_INT(strtoul, char, )
+ TEST_STRTO_INT(strtoull, char, )
++#ifndef MUSL
+ TEST_STRTO_INT(strtouq, char, )
++#endif
+ 
+ TEST_STRTO_FLOAT(strtof, char, )
+ TEST_STRTO_FLOAT(strtod, char, )
+ TEST_STRTO_FLOAT(strtold, char, )
+ 
++#ifndef MUSL
+ TEST_STRTO_FLOAT_LOC(strtof_l, char, )
+ TEST_STRTO_FLOAT_LOC(strtod_l, char, )
+ TEST_STRTO_FLOAT_LOC(strtold_l, char, )
+@@ -1824,6 +1831,7 @@ TEST_STRTO_INT_LOC(strtol_l, char, )
+ TEST_STRTO_INT_LOC(strtoll_l, char, )
+ TEST_STRTO_INT_LOC(strtoul_l, char, )
+ TEST_STRTO_INT_LOC(strtoull_l, char, )
++#endif
+ 
+ TEST_STRTO_INT(wcstol, wchar_t, L)
+ TEST_STRTO_INT(wcstoll, wchar_t, L)
+@@ -1834,6 +1842,7 @@ TEST_STRTO_FLOAT(wcstof, wchar_t, L)
+ TEST_STRTO_FLOAT(wcstod, wchar_t, L)
+ TEST_STRTO_FLOAT(wcstold, wchar_t, L)
+ 
++#ifndef MUSL
+ TEST_STRTO_FLOAT_LOC(wcstof_l, wchar_t, L)
+ TEST_STRTO_FLOAT_LOC(wcstod_l, wchar_t, L)
+ TEST_STRTO_FLOAT_LOC(wcstold_l, wchar_t, L)
+@@ -1842,6 +1851,7 @@ TEST_STRTO_INT_LOC(wcstol_l, wchar_t, L)
+ TEST_STRTO_INT_LOC(wcstoll_l, wchar_t, L)
+ TEST_STRTO_INT_LOC(wcstoul_l, wchar_t, L)
+ TEST_STRTO_INT_LOC(wcstoull_l, wchar_t, L)
++#endif
+ 
+ 
+ TEST(MemorySanitizer, strtoimax) {
+@@ -1985,7 +1995,7 @@ TEST(MemorySanitizer, lgammal_r) {
+ }
+ #endif
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, drand48_r) {
+   struct drand48_data buf;
+   srand48_r(0, &buf);
+@@ -1993,9 +2003,7 @@ TEST(MemorySanitizer, drand48_r) {
+   drand48_r(&buf, &d);
+   EXPECT_NOT_POISONED(d);
+ }
+-#endif
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
+ TEST(MemorySanitizer, lrand48_r) {
+   struct drand48_data buf;
+   srand48_r(0, &buf);
+@@ -2346,7 +2354,7 @@ TEST(MemorySanitizer, getmntent) {
+ }
+ #endif
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, getmntent_r) {
+   TempFstabFile fstabtmp;
+   ASSERT_TRUE(fstabtmp.Create());
+@@ -3108,7 +3116,7 @@ static void GetProgramPath(char *buf, size_t sz) {
+   int res = sysctl(mib, 4, buf, &sz, NULL, 0);
+   ASSERT_EQ(0, res);
+ }
+-#elif defined(__GLIBC__)
++#elif defined(__GLIBC__) || defined(MUSL)
+ static void GetProgramPath(char *buf, size_t sz) {
+   extern char *program_invocation_name;
+   int res = snprintf(buf, sz, "%s", program_invocation_name);
+@@ -3372,7 +3380,7 @@ TEST(MemorySanitizer, pthread_attr_get) {
+     EXPECT_NOT_POISONED(v);
+     EXPECT_NOT_POISONED(w);
+   }
+-#if !defined(__NetBSD__)
++#ifdef __GLIBC__
+   {
+     cpu_set_t v;
+     res = pthread_attr_getaffinity_np(&attr, sizeof(v), &v);
+@@ -3486,7 +3494,7 @@ TEST(MemorySanitizer, valloc) {
+   free(a);
+ }
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, pvalloc) {
+   uintptr_t PageSize = GetPageSize();
+   void *p = pvalloc(PageSize + 100);
+@@ -3626,6 +3634,7 @@ TEST(MemorySanitizer, getpwent) {
+   EXPECT_NOT_POISONED(p->pw_uid);
+ }
+ 
++#ifndef MUSL
+ TEST(MemorySanitizer, getpwent_r) {
+   struct passwd pwd;
+   struct passwd *pwdres;
+@@ -3639,8 +3648,9 @@ TEST(MemorySanitizer, getpwent_r) {
+   EXPECT_NOT_POISONED(pwd.pw_uid);
+   EXPECT_NOT_POISONED(pwdres);
+ }
++#endif
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, fgetpwent) {
+   FILE *fp = fopen("/etc/passwd", "r");
+   struct passwd *p = fgetpwent(fp);
+@@ -3663,7 +3673,7 @@ TEST(MemorySanitizer, getgrent) {
+   EXPECT_NOT_POISONED(p->gr_gid);
+ }
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
++#ifdef __GLIBC__
+ TEST(MemorySanitizer, fgetgrent) {
+   FILE *fp = fopen("/etc/group", "r");
+   struct group *grp = fgetgrent(fp);
+@@ -3680,6 +3690,7 @@ TEST(MemorySanitizer, fgetgrent) {
+ }
+ #endif
+ 
++#if defined(__GLIBC__) || defined(__FreeBSD__)
+ TEST(MemorySanitizer, getgrent_r) {
+   struct group grp;
+   struct group *grpres;
+@@ -3694,7 +3705,6 @@ TEST(MemorySanitizer, getgrent_r) {
+   EXPECT_NOT_POISONED(grpres);
+ }
+ 
+-#if !defined(__FreeBSD__) && !defined(__NetBSD__)
+ TEST(MemorySanitizer, fgetgrent_r) {
+   FILE *fp = fopen("/etc/group", "r");
+   struct group grp;
+diff --git a/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc b/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
+index 490a04b..7f18125 100644
+--- a/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
++++ b/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
+@@ -330,13 +330,17 @@ static void ioctl_table_fill() {
+   _(SOUND_PCM_WRITE_CHANNELS, WRITE, sizeof(int));
+   _(SOUND_PCM_WRITE_FILTER, WRITE, sizeof(int));
+   _(TCFLSH, NONE, 0);
++#if SANITIZER_GLIBC
+   _(TCGETA, WRITE, struct_termio_sz);
++#endif
+   _(TCGETS, WRITE, struct_termios_sz);
+   _(TCSBRK, NONE, 0);
+   _(TCSBRKP, NONE, 0);
++#if SANITIZER_GLIBC
+   _(TCSETA, READ, struct_termio_sz);
+   _(TCSETAF, READ, struct_termio_sz);
+   _(TCSETAW, READ, struct_termio_sz);
++#endif
+   _(TCSETS, READ, struct_termios_sz);
+   _(TCSETSF, READ, struct_termios_sz);
+   _(TCSETSW, READ, struct_termios_sz);
+@@ -364,7 +368,7 @@ static void ioctl_table_fill() {
+   _(VT_WAITACTIVE, NONE, 0);
+ #endif
+ 
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
++#if SANITIZER_GLIBC
+   // _(SIOCDEVPLIP, WRITE, struct_ifreq_sz); // the same as EQL_ENSLAVE
+   _(CYGETDEFTHRESH, WRITE, sizeof(int));
+   _(CYGETDEFTIMEOUT, WRITE, sizeof(int));
+diff --git a/lib/sanitizer_common/sanitizer_linux_libcdep.cpp b/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
+index 4d17c96..2195a6a 100644
+--- a/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
++++ b/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
+@@ -189,8 +189,7 @@ __attribute__((unused)) static bool GetLibcVersion(int *major, int *minor,
+ #endif
+ }
+ 
+-#if !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !SANITIZER_GO &&               \
+-    !SANITIZER_NETBSD && !SANITIZER_OPENBSD && !SANITIZER_SOLARIS
++#if SANITIZER_GLIBC && !SANITIZER_GO
+ static uptr g_tls_size;
+ 
+ #ifdef __i386__
+@@ -262,8 +261,7 @@ void InitTlsSize() {
+ }
+ #else
+ void InitTlsSize() { }
+-#endif  // !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !SANITIZER_GO &&
+-        // !SANITIZER_NETBSD && !SANITIZER_SOLARIS
++#endif  // SANITIZER_GLIBC && !SANITIZER_GO
+ 
+ #if (defined(__x86_64__) || defined(__i386__) || defined(__mips__) ||          \
+      defined(__aarch64__) || defined(__powerpc64__) || defined(__s390__) ||    \
+@@ -491,11 +489,15 @@ uptr GetTlsSize() {
+   uptr addr, size;
+   GetTls(&addr, &size);
+   return size;
+-#elif defined(__mips__) || defined(__powerpc64__)
++#elif SANITIZER_GLIBC
++#if defined(__mips__) || defined(__powerpc64__)
+   return RoundUpTo(g_tls_size + TlsPreTcbSize(), 16);
+ #else
+   return g_tls_size;
+ #endif
++#else
++  return 0;
++#endif
+ }
+ #endif
+ 
+diff --git a/lib/sanitizer_common/sanitizer_platform.h b/lib/sanitizer_common/sanitizer_platform.h
+index f0b1e04..019ee03 100644
+--- a/lib/sanitizer_common/sanitizer_platform.h
++++ b/lib/sanitizer_common/sanitizer_platform.h
+@@ -19,12 +19,25 @@
+ # error "This operating system is not supported"
+ #endif
+ 
++// Get __GLIBC__ on a glibc platform. Exclude Android: features.h includes C
++// function declarations into a .S file which doesn't compile.
++// https://crbug.com/1162741
++#if __has_include(<features.h>) && !defined(__ANDROID__)
++#include <features.h>
++#endif
++
+ #if defined(__linux__)
+ # define SANITIZER_LINUX   1
+ #else
+ # define SANITIZER_LINUX   0
+ #endif
+ 
++#if defined(__GLIBC__)
++# define SANITIZER_GLIBC   1
++#else
++# define SANITIZER_GLIBC   0
++#endif
++
+ #if defined(__FreeBSD__)
+ # define SANITIZER_FREEBSD 1
+ #else
+diff --git a/lib/sanitizer_common/sanitizer_platform_interceptors.h b/lib/sanitizer_common/sanitizer_platform_interceptors.h
+index e28bb93..5405206 100644
+--- a/lib/sanitizer_common/sanitizer_platform_interceptors.h
++++ b/lib/sanitizer_common/sanitizer_platform_interceptors.h
+@@ -46,6 +46,12 @@
+ # define SI_LINUX_NOT_ANDROID 0
+ #endif
+ 
++#if SANITIZER_GLIBC
++#define SI_GLIBC 1
++#else
++#define SI_GLIBC 0
++#endif
++
+ #if SANITIZER_ANDROID
+ # define SI_ANDROID 1
+ #else
+@@ -165,7 +171,7 @@
+   SANITIZER_INTERCEPT_MEMCMP &&  \
+       ((SI_POSIX && _GNU_SOURCE) || SI_NETBSD || SI_OPENBSD || SI_FREEBSD)
+ #define SANITIZER_INTERCEPT_STRNDUP SI_POSIX
+-#define SANITIZER_INTERCEPT___STRNDUP SI_LINUX_NOT_FREEBSD
++#define SANITIZER_INTERCEPT___STRNDUP SI_GLIBC
+ #if defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) && \
+     __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070
+ # define SI_MAC_DEPLOYMENT_BELOW_10_7 1
+@@ -190,8 +196,8 @@
+ #define SANITIZER_INTERCEPT_FPUTS SI_POSIX
+ #define SANITIZER_INTERCEPT_PUTS SI_POSIX
+ 
+-#define SANITIZER_INTERCEPT_PREAD64 SI_LINUX_NOT_ANDROID || SI_SOLARIS32
+-#define SANITIZER_INTERCEPT_PWRITE64 SI_LINUX_NOT_ANDROID || SI_SOLARIS32
++#define SANITIZER_INTERCEPT_PREAD64 (SI_GLIBC || SI_SOLARIS32)
++#define SANITIZER_INTERCEPT_PWRITE64 (SI_GLIBC || SI_SOLARIS32)
+ 
+ #define SANITIZER_INTERCEPT_READV SI_POSIX
+ #define SANITIZER_INTERCEPT_WRITEV SI_POSIX
+@@ -199,8 +205,8 @@
+ #define SANITIZER_INTERCEPT_PREADV \
+   (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID)
+ #define SANITIZER_INTERCEPT_PWRITEV SI_LINUX_NOT_ANDROID
+-#define SANITIZER_INTERCEPT_PREADV64 SI_LINUX_NOT_ANDROID
+-#define SANITIZER_INTERCEPT_PWRITEV64 SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_PREADV64 SI_GLIBC
++#define SANITIZER_INTERCEPT_PWRITEV64 SI_GLIBC
+ 
+ #define SANITIZER_INTERCEPT_PRCTL   SI_LINUX
+ 
+@@ -208,16 +214,16 @@
+ #define SANITIZER_INTERCEPT_STRPTIME SI_POSIX
+ 
+ #define SANITIZER_INTERCEPT_SCANF SI_POSIX
+-#define SANITIZER_INTERCEPT_ISOC99_SCANF SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_ISOC99_SCANF SI_GLIBC
+ 
+ #ifndef SANITIZER_INTERCEPT_PRINTF
+ # define SANITIZER_INTERCEPT_PRINTF SI_POSIX
+ # define SANITIZER_INTERCEPT_PRINTF_L (SI_FREEBSD || SI_NETBSD)
+-# define SANITIZER_INTERCEPT_ISOC99_PRINTF SI_LINUX_NOT_ANDROID
++# define SANITIZER_INTERCEPT_ISOC99_PRINTF SI_GLIBC
+ #endif
+ 
+ #define SANITIZER_INTERCEPT___PRINTF_CHK \
+-  (SANITIZER_INTERCEPT_PRINTF && SI_LINUX_NOT_ANDROID)
++  (SANITIZER_INTERCEPT_PRINTF && SI_GLIBC)
+ 
+ #define SANITIZER_INTERCEPT_FREXP SI_NOT_FUCHSIA
+ #define SANITIZER_INTERCEPT_FREXPF_FREXPL SI_POSIX
+@@ -230,12 +236,12 @@
+   (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_MAC || SI_LINUX_NOT_ANDROID || \
+   SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_FGETGRENT_R                                       \
+-  (SI_FREEBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++  (SI_FREEBSD || SI_OPENBSD || SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_FGETPWENT SI_LINUX_NOT_ANDROID || SI_SOLARIS
+ #define SANITIZER_INTERCEPT_GETPWENT_R \
+   (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_FGETPWENT_R \
+-  (SI_FREEBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++  (SI_FREEBSD || SI_OPENBSD || SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_SETPWENT \
+   (SI_MAC || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_CLOCK_GETTIME \
+@@ -243,8 +249,8 @@
+ #define SANITIZER_INTERCEPT_CLOCK_GETCPUCLOCKID SI_LINUX
+ #define SANITIZER_INTERCEPT_GETITIMER SI_POSIX
+ #define SANITIZER_INTERCEPT_TIME SI_POSIX
+-#define SANITIZER_INTERCEPT_GLOB SI_LINUX_NOT_ANDROID || SI_SOLARIS
+-#define SANITIZER_INTERCEPT_GLOB64 SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_GLOB (SI_GLIBC || SI_SOLARIS)
++#define SANITIZER_INTERCEPT_GLOB64 SI_GLIBC
+ #define SANITIZER_INTERCEPT_WAIT SI_POSIX
+ #define SANITIZER_INTERCEPT_INET SI_POSIX
+ #define SANITIZER_INTERCEPT_PTHREAD_GETSCHEDPARAM (SI_POSIX && !SI_OPENBSD)
+@@ -259,8 +265,7 @@
+   (SI_FREEBSD || SI_LINUX_NOT_ANDROID)
+ #define SANITIZER_INTERCEPT_GETHOSTBYADDR_R \
+   (SI_FREEBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
+-#define SANITIZER_INTERCEPT_GETHOSTENT_R \
+-  (SI_FREEBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++#define SANITIZER_INTERCEPT_GETHOSTENT_R (SI_FREEBSD || SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_GETSOCKOPT SI_POSIX
+ #define SANITIZER_INTERCEPT_ACCEPT SI_POSIX
+ #define SANITIZER_INTERCEPT_ACCEPT4 \
+@@ -310,7 +315,7 @@
+ #define SANITIZER_INTERCEPT_TCGETATTR SI_LINUX_NOT_ANDROID || SI_SOLARIS
+ #define SANITIZER_INTERCEPT_REALPATH SI_POSIX
+ #define SANITIZER_INTERCEPT_CANONICALIZE_FILE_NAME \
+-  (SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++  (SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_CONFSTR                                           \
+   (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_MAC || SI_LINUX_NOT_ANDROID || \
+   SI_SOLARIS)
+@@ -337,7 +342,7 @@
+ #define SANITIZER_INTERCEPT_SIGPROCMASK SI_POSIX
+ #define SANITIZER_INTERCEPT_PTHREAD_SIGMASK SI_POSIX
+ #define SANITIZER_INTERCEPT_BACKTRACE \
+-  (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++  (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_GETMNTENT SI_LINUX
+ #define SANITIZER_INTERCEPT_GETMNTENT_R SI_LINUX_NOT_ANDROID
+ #define SANITIZER_INTERCEPT_STATFS \
+@@ -355,11 +360,11 @@
+ #define SANITIZER_INTERCEPT_SHMCTL                                       \
+   (((SI_FREEBSD || SI_LINUX_NOT_ANDROID) && SANITIZER_WORDSIZE == 64) || \
+    SI_NETBSD || SI_OPENBSD || SI_SOLARIS)  // NOLINT
+-#define SANITIZER_INTERCEPT_RANDOM_R SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_RANDOM_R SI_GLIBC
+ #define SANITIZER_INTERCEPT_PTHREAD_ATTR_GET SI_POSIX
+ #define SANITIZER_INTERCEPT_PTHREAD_ATTR_GETINHERITSCHED \
+   (SI_FREEBSD || SI_NETBSD || SI_MAC || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
+-#define SANITIZER_INTERCEPT_PTHREAD_ATTR_GETAFFINITY_NP SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_PTHREAD_ATTR_GETAFFINITY_NP SI_GLIBC
+ #define SANITIZER_INTERCEPT_PTHREAD_ATTR_GET_SCHED (SI_POSIX && !SI_OPENBSD)
+ #define SANITIZER_INTERCEPT_PTHREAD_MUTEXATTR_GETPSHARED \
+   (SI_POSIX && !SI_NETBSD && !SI_OPENBSD)
+@@ -373,7 +378,7 @@
+ #define SANITIZER_INTERCEPT_PTHREAD_MUTEXATTR_GETROBUST_NP SI_LINUX_NOT_ANDROID
+ #define SANITIZER_INTERCEPT_PTHREAD_RWLOCKATTR_GETPSHARED \
+   (SI_POSIX && !SI_NETBSD && !SI_OPENBSD)
+-#define SANITIZER_INTERCEPT_PTHREAD_RWLOCKATTR_GETKIND_NP SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_PTHREAD_RWLOCKATTR_GETKIND_NP SI_GLIBC
+ #define SANITIZER_INTERCEPT_PTHREAD_CONDATTR_GETPSHARED \
+   (SI_POSIX && !SI_NETBSD && !SI_OPENBSD)
+ #define SANITIZER_INTERCEPT_PTHREAD_CONDATTR_GETCLOCK \
+@@ -382,7 +387,7 @@
+   (SI_LINUX_NOT_ANDROID && !SI_NETBSD && !SI_OPENBSD)
+ #define SANITIZER_INTERCEPT_THR_EXIT SI_FREEBSD
+ #define SANITIZER_INTERCEPT_TMPNAM SI_POSIX
+-#define SANITIZER_INTERCEPT_TMPNAM_R SI_LINUX_NOT_ANDROID || SI_SOLARIS
++#define SANITIZER_INTERCEPT_TMPNAM_R (SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_TTYNAME SI_POSIX
+ #define SANITIZER_INTERCEPT_TTYNAME_R SI_POSIX
+ #define SANITIZER_INTERCEPT_TEMPNAM SI_POSIX
+@@ -393,7 +398,7 @@
+ #define SANITIZER_INTERCEPT_LGAMMAL (SI_POSIX && !SI_NETBSD)
+ #define SANITIZER_INTERCEPT_LGAMMA_R (SI_FREEBSD || SI_LINUX || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_LGAMMAL_R SI_LINUX_NOT_ANDROID || SI_SOLARIS
+-#define SANITIZER_INTERCEPT_DRAND48_R SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_DRAND48_R SI_GLIBC
+ #define SANITIZER_INTERCEPT_RAND_R                                            \
+   (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_MAC || SI_LINUX_NOT_ANDROID || \
+   SI_SOLARIS)
+@@ -409,12 +414,12 @@
+   (SI_LINUX || SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_MAC || SI_SOLARIS)
+ 
+ #define SANITIZER_INTERCEPT_PTHREAD_MUTEX SI_POSIX
+-#define SANITIZER_INTERCEPT___PTHREAD_MUTEX SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT___PTHREAD_MUTEX SI_GLIBC
+ #define SANITIZER_INTERCEPT___LIBC_MUTEX SI_NETBSD
+ #define SANITIZER_INTERCEPT_PTHREAD_SETNAME_NP \
+-  (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++  (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_GLIBC || SI_SOLARIS)
+ #define SANITIZER_INTERCEPT_PTHREAD_GETNAME_NP \
+-  (SI_FREEBSD || SI_NETBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
++  (SI_FREEBSD || SI_NETBSD || SI_GLIBC || SI_SOLARIS)
+ 
+ #define SANITIZER_INTERCEPT_TLS_GET_ADDR \
+   (SI_FREEBSD || SI_NETBSD || SI_OPENBSD || SI_LINUX_NOT_ANDROID || SI_SOLARIS)
+@@ -434,19 +439,19 @@
+ #else
+ #define SANITIZER_INTERCEPT_AEABI_MEM 0
+ #endif
+-#define SANITIZER_INTERCEPT___BZERO SI_MAC || SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT___BZERO SI_MAC || SI_GLIBC
+ #define SANITIZER_INTERCEPT_BZERO SI_LINUX_NOT_ANDROID
+ #define SANITIZER_INTERCEPT_FTIME \
+   (!SI_FREEBSD && !SI_NETBSD && !SI_OPENBSD && SI_POSIX)
+-#define SANITIZER_INTERCEPT_XDR SI_LINUX_NOT_ANDROID || SI_SOLARIS
++#define SANITIZER_INTERCEPT_XDR SI_GLIBC || SI_SOLARIS
+ #define SANITIZER_INTERCEPT_TSEARCH \
+   (SI_LINUX_NOT_ANDROID || SI_MAC || SI_NETBSD || SI_OPENBSD || SI_SOLARIS)
+-#define SANITIZER_INTERCEPT_LIBIO_INTERNALS SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_LIBIO_INTERNALS SI_GLIBC
+ #define SANITIZER_INTERCEPT_FOPEN SI_POSIX
+-#define SANITIZER_INTERCEPT_FOPEN64 SI_LINUX_NOT_ANDROID || SI_SOLARIS32
++#define SANITIZER_INTERCEPT_FOPEN64 (SI_GLIBC || SI_SOLARIS32)
+ #define SANITIZER_INTERCEPT_OPEN_MEMSTREAM \
+   (SI_LINUX_NOT_ANDROID || SI_NETBSD || SI_OPENBSD || SI_SOLARIS)
+-#define SANITIZER_INTERCEPT_OBSTACK SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT_OBSTACK SI_GLIBC
+ #define SANITIZER_INTERCEPT_FFLUSH SI_POSIX
+ #define SANITIZER_INTERCEPT_FCLOSE SI_POSIX
+ 
+@@ -496,17 +501,11 @@
+ 
+ #define SANITIZER_INTERCEPT_MMAP SI_POSIX
+ #define SANITIZER_INTERCEPT_MMAP64 SI_LINUX_NOT_ANDROID
+-#define SANITIZER_INTERCEPT_MALLOPT_AND_MALLINFO \
+-  (!SI_FREEBSD && !SI_MAC && !SI_NETBSD && !SI_OPENBSD && SI_NOT_FUCHSIA && \
+-  SI_NOT_RTEMS)
++#define SANITIZER_INTERCEPT_MALLOPT_AND_MALLINFO (SI_GLIBC || SI_ANDROID)
+ #define SANITIZER_INTERCEPT_MEMALIGN \
+   (!SI_FREEBSD && !SI_MAC && !SI_NETBSD && !SI_OPENBSD && SI_NOT_RTEMS)
+-#define SANITIZER_INTERCEPT_PVALLOC \
+-  (!SI_FREEBSD && !SI_MAC && !SI_NETBSD && !SI_OPENBSD && SI_NOT_FUCHSIA && \
+-  SI_NOT_RTEMS)
+-#define SANITIZER_INTERCEPT_CFREE \
+-  (!SI_FREEBSD && !SI_MAC && !SI_NETBSD && !SI_OPENBSD && SI_NOT_FUCHSIA && \
+-  SI_NOT_RTEMS)
++#define SANITIZER_INTERCEPT_PVALLOC (SI_GLIBC || SI_ANDROID)
++#define SANITIZER_INTERCEPT_CFREE SI_GLIBC
+ #define SANITIZER_INTERCEPT_REALLOCARRAY SI_POSIX
+ #define SANITIZER_INTERCEPT_ALIGNED_ALLOC (!SI_MAC && SI_NOT_RTEMS)
+ #define SANITIZER_INTERCEPT_MALLOC_USABLE_SIZE \
+@@ -547,7 +546,7 @@
+ #define SANITIZER_INTERCEPT_STRMODE (SI_NETBSD || SI_FREEBSD)
+ #define SANITIZER_INTERCEPT_TTYENT SI_NETBSD
+ #define SANITIZER_INTERCEPT_PROTOENT (SI_NETBSD || SI_LINUX)
+-#define SANITIZER_INTERCEPT_PROTOENT_R (SI_LINUX_NOT_ANDROID)
++#define SANITIZER_INTERCEPT_PROTOENT_R SI_GLIBC
+ #define SANITIZER_INTERCEPT_NETENT SI_NETBSD
+ #define SANITIZER_INTERCEPT_SETVBUF (SI_NETBSD || SI_FREEBSD || \
+   SI_LINUX || SI_MAC)
+@@ -598,7 +597,7 @@
+ #define SANITIZER_INTERCEPT_GETENTROPY SI_FREEBSD
+ #define SANITIZER_INTERCEPT_QSORT \
+   (SI_POSIX && !SI_IOSSIM && !SI_WATCHOS && !SI_TVOS && !SI_ANDROID)
+-#define SANITIZER_INTERCEPT_QSORT_R (SI_LINUX && !SI_ANDROID)
++#define SANITIZER_INTERCEPT_QSORT_R SI_GLIBC
+ // sigaltstack on i386 macOS cannot be intercepted due to setjmp()
+ // calling it and assuming that it does not clobber registers.
+ #define SANITIZER_INTERCEPT_SIGALTSTACK \
 diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp b/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
-index c052aa2..5108835 100644
+index c052aa2..e6ca2be 100644
 --- a/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
 +++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
-@@ -26,6 +26,7 @@
+@@ -11,18 +11,19 @@
+ // Sizes and layouts of platform-specific POSIX data structures.
+ //===----------------------------------------------------------------------===//
+ 
+-#include "sanitizer_platform.h"
+-
+-#if SANITIZER_LINUX || SANITIZER_MAC
++#if defined(__linux__) || defined(__APPLE__)
+ // Tests in this file assume that off_t-dependent data structures match the
+ // libc ABI. For example, struct dirent here is what readdir() function (as
+ // exported from libc) returns, and not the user-facing "dirent", which
+ // depends on _FILE_OFFSET_BITS setting.
+ // To get this "true" dirent definition, we undefine _FILE_OFFSET_BITS below.
+-#ifdef _FILE_OFFSET_BITS
+ #undef _FILE_OFFSET_BITS
+ #endif
+ 
++// Must go after undef _FILE_OFFSET_BITS.
++#include "sanitizer_platform.h"
++
++#if SANITIZER_LINUX || SANITIZER_MAC
  // Must go after undef _FILE_OFFSET_BITS.
  #include "sanitizer_glibc_version.h"
  
-+#include <stdio.h> /* BUFSIZ on musl */
- #include <arpa/inet.h>
- #include <dirent.h>
- #include <grp.h>
-@@ -58,7 +59,9 @@
+@@ -37,6 +38,7 @@
+ #include <pwd.h>
+ #include <signal.h>
+ #include <stddef.h>
++#include <stdio.h>
+ #include <sys/mman.h>
+ #include <sys/resource.h>
+ #include <sys/socket.h>
+@@ -58,7 +60,6 @@
  #endif
  
  #if !SANITIZER_ANDROID
 -#include <fstab.h>
-+# if defined(__GLIBC__)
-+# include <fstab.h>
-+# endif
  #include <sys/mount.h>
  #include <sys/timeb.h>
  #include <utmpx.h>
-@@ -68,7 +71,9 @@
- #include <malloc.h>
- #include <mntent.h>
- #include <netinet/ether.h>
--#include <sys/sysinfo.h>
-+#if defined(__GLIBC__)
-+# include <sys/sysinfo.h>
-+#endif
- #include <sys/vt.h>
- #include <linux/cdrom.h>
- #include <linux/fd.h>
-@@ -111,12 +116,21 @@ typedef struct user_fpregs elf_fpregset_t;
+@@ -109,20 +110,31 @@ typedef struct user_fpregs elf_fpregset_t;
+ #include <wordexp.h>
+ #endif
  
- #if SANITIZER_LINUX && !SANITIZER_ANDROID
- #include <glob.h>
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+-#include <glob.h>
 -#include <obstack.h>
-+#if defined (__GLIBC__)
-+# include <obstack.h>
-+#endif
- #include <mqueue.h>
--#include <net/if_ppp.h>
--#include <netax25/ax25.h>
--#include <netipx/ipx.h>
--#include <netrom/netrom.h>
-+# if __GLIBC_PREREQ(2, 14)
-+#  include <net/if_ppp.h>
-+#  include <netax25/ax25.h>
-+#  include <netipx/ipx.h>
-+#  include <netrom/netrom.h>
-+# else
-+#  include <linux/if_ppp.h>
-+#  include <linux/ax25.h>
-+#  include <linux/ipx.h>
-+#  include <linux/netrom.h>
-+# endif
+-#include <mqueue.h>
++#if SANITIZER_LINUX
++#if SANITIZER_GLIBC
++#include <fstab.h>
+ #include <net/if_ppp.h>
+ #include <netax25/ax25.h>
+ #include <netipx/ipx.h>
+ #include <netrom/netrom.h>
++#include <obstack.h>
  #if HAVE_RPC_XDR_H
  # include <rpc/xdr.h>
  #endif
-@@ -202,7 +216,11 @@ namespace __sanitizer {
+ #include <scsi/scsi.h>
+-#include <sys/mtio.h>
++#else
++#include <linux/if_ppp.h>
++#include <linux/kd.h>
++#include <linux/ppp_defs.h>
++#endif  // SANITIZER_GLIBC
++
++#if SANITIZER_ANDROID
++#include <linux/mtio.h>
++#else
++#include <glob.h>
++#include <mqueue.h>
+ #include <sys/kd.h>
++#include <sys/mtio.h>
+ #include <sys/shm.h>
+ #include <sys/statvfs.h>
+ #include <sys/timex.h>
+@@ -141,20 +153,14 @@ typedef struct user_fpregs elf_fpregset_t;
+ #include <sys/msg.h>
+ #include <sys/ipc.h>
+ #include <crypt.h>
+-#endif // SANITIZER_LINUX && !SANITIZER_ANDROID
++#endif  // SANITIZER_ANDROID
+ 
+-#if SANITIZER_ANDROID
+-#include <linux/kd.h>
+-#include <linux/mtio.h>
+-#include <linux/ppp_defs.h>
+-#include <linux/if_ppp.h>
+-#endif
+-
+-#if SANITIZER_LINUX
+ #include <link.h>
+ #include <sys/vfs.h>
+ #include <sys/epoll.h>
+ #include <linux/capability.h>
++#else
++#include <fstab.h>
+ #endif // SANITIZER_LINUX
+ 
+ #if SANITIZER_MAC
+@@ -201,8 +207,10 @@ namespace __sanitizer {
+   unsigned struct_statfs64_sz = sizeof(struct statfs64);
  #endif // (SANITIZER_MAC && !TARGET_CPU_ARM64) && !SANITIZER_IOS
  
- #if !SANITIZER_ANDROID
-+# if defined(__GLIBC__)
+-#if !SANITIZER_ANDROID
++#if SANITIZER_GLIBC || SANITIZER_FREEBSD || SANITIZER_NETBSD || SANITIZER_MAC
    unsigned struct_fstab_sz = sizeof(struct fstab);
-+# else
-+  unsigned struct_fstab_sz = 0;
-+# endif
++#endif  // SANITIZER_GLIBC || SANITIZER_FREEBSD || SANITIZER_NETBSD || SANITIZER_MAC
++#if !SANITIZER_ANDROID
    unsigned struct_statfs_sz = sizeof(struct statfs);
    unsigned struct_sockaddr_sz = sizeof(struct sockaddr);
    unsigned ucontext_t_sz = sizeof(ucontext_t);
-@@ -298,7 +316,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(ElfW(Phdr));
+@@ -298,7 +306,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(ElfW(Phdr));
  unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
  #endif
  
 -#if SANITIZER_LINUX && !SANITIZER_ANDROID
-+#if SANITIZER_LINUX && !SANITIZER_ANDROID && defined(__GLIBC__)
++#if SANITIZER_GLIBC
    int glob_nomatch = GLOB_NOMATCH;
    int glob_altdirfunc = GLOB_ALTDIRFUNC;
  #endif
-@@ -417,7 +435,11 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
+@@ -417,7 +425,9 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
    unsigned struct_input_id_sz = sizeof(struct input_id);
    unsigned struct_mtpos_sz = sizeof(struct mtpos);
    unsigned struct_rtentry_sz = sizeof(struct rtentry);
-+# if defined(__GLIBC__)
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
    unsigned struct_termio_sz = sizeof(struct termio);
-+# else
-+  unsigned struct_termio_sz = 0;
-+# endif
++#endif
    unsigned struct_vt_consize_sz = sizeof(struct vt_consize);
    unsigned struct_vt_sizes_sz = sizeof(struct vt_sizes);
    unsigned struct_vt_stat_sz = sizeof(struct vt_stat);
-@@ -443,7 +465,11 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
+@@ -442,7 +452,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
+   unsigned struct_vt_mode_sz = sizeof(struct vt_mode);
  #endif // SANITIZER_LINUX
  
- #if SANITIZER_LINUX && !SANITIZER_ANDROID
-+# if __GLIBC_PREREQ(2, 14)
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
++#if SANITIZER_GLIBC
    unsigned struct_ax25_parms_struct_sz = sizeof(struct ax25_parms_struct);
-+# else
-+  unsigned struct_ax25_parms_struct_sz = 0;
-+# endif
    unsigned struct_cyclades_monitor_sz = sizeof(struct cyclades_monitor);
  #if EV_VERSION > (0x010000)
-   unsigned struct_input_keymap_entry_sz = sizeof(struct input_keymap_entry);
-@@ -456,7 +482,11 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
-   unsigned struct_kbkeycode_sz = sizeof(struct kbkeycode);
-   unsigned struct_kbsentry_sz = sizeof(struct kbsentry);
-   unsigned struct_mtconfiginfo_sz = sizeof(struct mtconfiginfo);
-+# if __GLIBC_PREREQ(2, 14)
-   unsigned struct_nr_parms_struct_sz = sizeof(struct nr_parms_struct);
-+# else
-+  unsigned struct_nr_parms_struct_sz = 0;
-+# endif
-   unsigned struct_scc_modem_sz = sizeof(struct scc_modem);
-   unsigned struct_scc_stat_sz = sizeof(struct scc_stat);
-   unsigned struct_serial_multiport_struct_sz
-@@ -884,16 +914,22 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
-   unsigned IOCTL_SIOCAIPXPRISLT = SIOCAIPXPRISLT;
-   unsigned IOCTL_SIOCAX25ADDUID = SIOCAX25ADDUID;
-   unsigned IOCTL_SIOCAX25DELUID = SIOCAX25DELUID;
-+# if __GLIBC_PREREQ(2, 14)
-   unsigned IOCTL_SIOCAX25GETPARMS = SIOCAX25GETPARMS;
-+# endif
-   unsigned IOCTL_SIOCAX25GETUID = SIOCAX25GETUID;
-   unsigned IOCTL_SIOCAX25NOUID = SIOCAX25NOUID;
-+# if __GLIBC_PREREQ(2, 14)
-   unsigned IOCTL_SIOCAX25SETPARMS = SIOCAX25SETPARMS;
-+# endif
-   unsigned IOCTL_SIOCDEVPLIP = SIOCDEVPLIP;
-   unsigned IOCTL_SIOCIPXCFGDATA = SIOCIPXCFGDATA;
-   unsigned IOCTL_SIOCNRDECOBS = SIOCNRDECOBS;
-+# if __GLIBC_PREREQ(2, 14)
+@@ -465,12 +475,10 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
+   unsigned struct_sockaddr_ax25_sz = sizeof(struct sockaddr_ax25);
+   unsigned struct_unimapdesc_sz = sizeof(struct unimapdesc);
+   unsigned struct_unimapinit_sz = sizeof(struct unimapinit);
+-#endif // SANITIZER_LINUX && !SANITIZER_ANDROID
+ 
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+   unsigned struct_audio_buf_info_sz = sizeof(struct audio_buf_info);
+   unsigned struct_ppp_stats_sz = sizeof(struct ppp_stats);
+-#endif // (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
++#endif  // SANITIZER_GLIBC
+ 
+ #if !SANITIZER_ANDROID && !SANITIZER_MAC
+   unsigned struct_sioc_sg_req_sz = sizeof(struct sioc_sg_req);
+@@ -876,6 +884,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
+   unsigned IOCTL_PIO_UNIMAP = PIO_UNIMAP;
+   unsigned IOCTL_PIO_UNIMAPCLR = PIO_UNIMAPCLR;
+   unsigned IOCTL_PIO_UNISCRNMAP = PIO_UNISCRNMAP;
++#if SANITIZER_GLIBC
+   unsigned IOCTL_SCSI_IOCTL_GET_IDLUN = SCSI_IOCTL_GET_IDLUN;
+   unsigned IOCTL_SCSI_IOCTL_PROBE_HOST = SCSI_IOCTL_PROBE_HOST;
+   unsigned IOCTL_SCSI_IOCTL_TAGGED_DISABLE = SCSI_IOCTL_TAGGED_DISABLE;
+@@ -894,6 +903,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
    unsigned IOCTL_SIOCNRGETPARMS = SIOCNRGETPARMS;
    unsigned IOCTL_SIOCNRRTCTL = SIOCNRRTCTL;
    unsigned IOCTL_SIOCNRSETPARMS = SIOCNRSETPARMS;
-+# endif
++#endif
    unsigned IOCTL_TIOCGSERIAL = TIOCGSERIAL;
    unsigned IOCTL_TIOCSERGETMULTI = TIOCSERGETMULTI;
    unsigned IOCTL_TIOCSERSETMULTI = TIOCSERSETMULTI;
-@@ -964,7 +1000,7 @@ CHECK_SIZE_AND_OFFSET(dl_phdr_info, dlpi_phdr);
+@@ -964,7 +974,7 @@ CHECK_SIZE_AND_OFFSET(dl_phdr_info, dlpi_phdr);
  CHECK_SIZE_AND_OFFSET(dl_phdr_info, dlpi_phnum);
  #endif // SANITIZER_LINUX || SANITIZER_FREEBSD
  
 -#if (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
-+#if ((SANITIZER_LINUX && defined(__GLIBC__)) || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
++#if SANITIZER_GLIBC || SANITIZER_FREEBSD
  CHECK_TYPE_SIZE(glob_t);
  CHECK_SIZE_AND_OFFSET(glob_t, gl_pathc);
  CHECK_SIZE_AND_OFFSET(glob_t, gl_pathv);
-@@ -998,6 +1034,7 @@ CHECK_TYPE_SIZE(iovec);
+@@ -975,7 +985,7 @@ CHECK_SIZE_AND_OFFSET(glob_t, gl_readdir);
+ CHECK_SIZE_AND_OFFSET(glob_t, gl_opendir);
+ CHECK_SIZE_AND_OFFSET(glob_t, gl_lstat);
+ CHECK_SIZE_AND_OFFSET(glob_t, gl_stat);
+-#endif
++#endif  // SANITIZER_GLIBC || SANITIZER_FREEBSD
+ 
+ CHECK_TYPE_SIZE(addrinfo);
+ CHECK_SIZE_AND_OFFSET(addrinfo, ai_flags);
+@@ -998,17 +1008,27 @@ CHECK_TYPE_SIZE(iovec);
  CHECK_SIZE_AND_OFFSET(iovec, iov_base);
  CHECK_SIZE_AND_OFFSET(iovec, iov_len);
  
-+#if SANITIZER_LINUX && __GLIBC_PREREQ(2, 14)
++// In POSIX, int msg_iovlen; socklen_t msg_controllen; socklen_t cmsg_len; but
++// many implementations don't conform to the standard. Since we pick the
++// non-conforming glibc definition, exclude the checks for musl (incompatible
++// sizes but compatible offsets).
  CHECK_TYPE_SIZE(msghdr);
  CHECK_SIZE_AND_OFFSET(msghdr, msg_name);
  CHECK_SIZE_AND_OFFSET(msghdr, msg_namelen);
-@@ -1011,6 +1048,7 @@ CHECK_TYPE_SIZE(cmsghdr);
+ CHECK_SIZE_AND_OFFSET(msghdr, msg_iov);
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
+ CHECK_SIZE_AND_OFFSET(msghdr, msg_iovlen);
++#endif
+ CHECK_SIZE_AND_OFFSET(msghdr, msg_control);
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
+ CHECK_SIZE_AND_OFFSET(msghdr, msg_controllen);
++#endif
+ CHECK_SIZE_AND_OFFSET(msghdr, msg_flags);
+ 
+ CHECK_TYPE_SIZE(cmsghdr);
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
  CHECK_SIZE_AND_OFFSET(cmsghdr, cmsg_len);
++#endif
  CHECK_SIZE_AND_OFFSET(cmsghdr, cmsg_level);
  CHECK_SIZE_AND_OFFSET(cmsghdr, cmsg_type);
-+#endif
  
- #if SANITIZER_LINUX && (__ANDROID_API__ >= 21 || __GLIBC_PREREQ (2, 14))
- CHECK_TYPE_SIZE(mmsghdr);
-@@ -1019,15 +1057,21 @@ CHECK_SIZE_AND_OFFSET(mmsghdr, msg_len);
- #endif
- 
- COMPILER_CHECK(sizeof(__sanitizer_dirent) <= sizeof(dirent));
-+#if __GLIBC_PREREQ (2, 14)
- CHECK_SIZE_AND_OFFSET(dirent, d_ino);
-+#endif
- #if SANITIZER_MAC
- CHECK_SIZE_AND_OFFSET(dirent, d_seekoff);
- #elif SANITIZER_FREEBSD
- // There is no 'd_off' field on FreeBSD.
- #else
-+#if __GLIBC_PREREQ (2, 14)
- CHECK_SIZE_AND_OFFSET(dirent, d_off);
- #endif
-+#endif
-+#if __GLIBC_PREREQ (2, 14)
- CHECK_SIZE_AND_OFFSET(dirent, d_reclen);
-+#endif
- 
- #if SANITIZER_LINUX && !SANITIZER_ANDROID
- COMPILER_CHECK(sizeof(__sanitizer_dirent64) <= sizeof(dirent64));
-@@ -1116,7 +1160,7 @@ CHECK_SIZE_AND_OFFSET(mntent, mnt_passno);
+@@ -1116,7 +1136,7 @@ CHECK_SIZE_AND_OFFSET(mntent, mnt_passno);
  
  CHECK_TYPE_SIZE(ether_addr);
  
 -#if (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
-+#if ((SANITIZER_LINUX && __GLIBC_PREREQ(2, 14)) || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
++#if SANITIZER_GLIBC || SANITIZER_FREEBSD
  CHECK_TYPE_SIZE(ipc_perm);
  # if SANITIZER_FREEBSD
  CHECK_SIZE_AND_OFFSET(ipc_perm, key);
-@@ -1178,11 +1222,11 @@ CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_dstaddr);
+@@ -1178,7 +1198,7 @@ CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_dstaddr);
  CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_data);
  #endif
  
 -#if SANITIZER_LINUX
-+#if SANITIZER_LINUX && __GLIBC_PREREQ(2, 14)
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
  COMPILER_CHECK(sizeof(__sanitizer_struct_mallinfo) == sizeof(struct mallinfo));
  #endif
  
--#if !SANITIZER_ANDROID
-+#if !SANITIZER_ANDROID && __GLIBC_PREREQ (2, 14)
- CHECK_TYPE_SIZE(timeb);
- CHECK_SIZE_AND_OFFSET(timeb, time);
- CHECK_SIZE_AND_OFFSET(timeb, millitm);
-@@ -1228,7 +1272,7 @@ COMPILER_CHECK(__sanitizer_XDR_DECODE == XDR_DECODE);
+@@ -1228,7 +1248,7 @@ COMPILER_CHECK(__sanitizer_XDR_DECODE == XDR_DECODE);
  COMPILER_CHECK(__sanitizer_XDR_FREE == XDR_FREE);
  #endif
  
 -#if SANITIZER_LINUX && !SANITIZER_ANDROID
-+#if SANITIZER_LINUX && !SANITIZER_ANDROID && __GLIBC_PREREQ(2, 14)
++#if SANITIZER_GLIBC
  COMPILER_CHECK(sizeof(__sanitizer_FILE) <= sizeof(FILE));
  CHECK_SIZE_AND_OFFSET(FILE, _flags);
  CHECK_SIZE_AND_OFFSET(FILE, _IO_read_ptr);
-@@ -1247,7 +1291,7 @@ CHECK_SIZE_AND_OFFSET(FILE, _chain);
+@@ -1245,9 +1265,7 @@ CHECK_SIZE_AND_OFFSET(FILE, _IO_save_end);
+ CHECK_SIZE_AND_OFFSET(FILE, _markers);
+ CHECK_SIZE_AND_OFFSET(FILE, _chain);
  CHECK_SIZE_AND_OFFSET(FILE, _fileno);
- #endif
+-#endif
  
 -#if SANITIZER_LINUX && !SANITIZER_ANDROID
-+#if SANITIZER_LINUX && __GLIBC_PREREQ (2, 14) && !SANITIZER_ANDROID
  COMPILER_CHECK(sizeof(__sanitizer__obstack_chunk) <= sizeof(_obstack_chunk));
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, limit);
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, prev);
+@@ -1262,7 +1280,7 @@ CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, read);
+ CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, write);
+ CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, seek);
+ CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, close);
+-#endif
++#endif  // SANITIZER_GLIBC
+ 
+ #if SANITIZER_LINUX || SANITIZER_FREEBSD
+ CHECK_TYPE_SIZE(sem_t);
 diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.h b/lib/sanitizer_common/sanitizer_platform_limits_posix.h
-index 658b0ab..9310739 100644
+index 658b0ab..49435d3 100644
 --- a/lib/sanitizer_common/sanitizer_platform_limits_posix.h
 +++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.h
-@@ -24,6 +24,11 @@
- #include "sanitizer_glibc_version.h"
+@@ -443,6 +443,8 @@ struct __sanitizer_cmsghdr {
+   int cmsg_type;
+ };
+ #else
++// In POSIX, int msg_iovlen; socklen_t msg_controllen; socklen_t cmsg_len; but
++// many implementations don't conform to the standard.
+ struct __sanitizer_msghdr {
+   void *msg_name;
+   unsigned msg_namelen;
+diff --git a/lib/sanitizer_common/sanitizer_procmaps_solaris.cpp b/lib/sanitizer_common/sanitizer_procmaps_solaris.cpp
+index 8793423..9058ff2 100644
+--- a/lib/sanitizer_common/sanitizer_procmaps_solaris.cpp
++++ b/lib/sanitizer_common/sanitizer_procmaps_solaris.cpp
+@@ -9,13 +9,13 @@
+ // Information about the process mappings (Solaris-specific parts).
+ //===----------------------------------------------------------------------===//
+ 
++// Before Solaris 11.4, <procfs.h> doesn't work in a largefile environment.
++#undef _FILE_OFFSET_BITS
+ #include "sanitizer_platform.h"
+ #if SANITIZER_SOLARIS
+ #include "sanitizer_common.h"
+ #include "sanitizer_procmaps.h"
+ 
+-// Before Solaris 11.4, <procfs.h> doesn't work in a largefile environment.
+-#undef _FILE_OFFSET_BITS
+ #include <procfs.h>
+ #include <limits.h>
+ 
+diff --git a/lib/tsan/rtl/tsan_interceptors_posix.cpp b/lib/tsan/rtl/tsan_interceptors_posix.cpp
+index 9c3e036..d2ef7ee 100644
+--- a/lib/tsan/rtl/tsan_interceptors_posix.cpp
++++ b/lib/tsan/rtl/tsan_interceptors_posix.cpp
+@@ -52,10 +52,6 @@ using namespace __tsan;
+ #define vfork __vfork14
  #endif
  
-+# ifndef __GLIBC_PREREQ
-+/* Avoid, error: function-like macro '__GLIBC_PREREQ' not defined. */
-+#  define __GLIBC_PREREQ(...) (0)
-+# endif
-+
- # define GET_LINK_MAP_BY_DLOPEN_HANDLE(handle) ((link_map*)(handle))
+-#if SANITIZER_ANDROID
+-#define mallopt(a, b)
+-#endif
+-
+ #ifdef __mips__
+ const int kSigCount = 129;
+ #else
+@@ -95,7 +91,7 @@ extern "C" void _exit(int status);
+ extern "C" int fileno_unlocked(void *stream);
+ extern "C" int dirfd(void *dirp);
+ #endif
+-#if !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !SANITIZER_NETBSD
++#if SANITIZER_GLIBC
+ extern "C" int mallopt(int param, int value);
+ #endif
+ #if SANITIZER_NETBSD
+@@ -2622,7 +2618,7 @@ void InitializeInterceptors() {
+ #endif
  
- namespace __sanitizer {
-@@ -54,7 +59,9 @@ extern unsigned struct_regex_sz;
- extern unsigned struct_regmatch_sz;
- 
- #if !SANITIZER_ANDROID
-+# if defined(__GLIBC__)
- extern unsigned struct_fstab_sz;
-+# endif
- extern unsigned struct_statfs_sz;
- extern unsigned struct_sockaddr_sz;
- extern unsigned ucontext_t_sz;
-@@ -761,12 +768,10 @@ struct __sanitizer_glob_t {
-   int (*gl_lstat)(const char *, void *);
-   int (*gl_stat)(const char *, void *);
- };
--# endif  // SANITIZER_LINUX
- 
--# if SANITIZER_LINUX
- extern int glob_nomatch;
- extern int glob_altdirfunc;
--# endif
-+# endif  // SANITIZER_LINUX
- #endif  // !SANITIZER_ANDROID
- 
- extern unsigned path_max;
-@@ -777,7 +782,7 @@ struct __sanitizer_wordexp_t {
-   uptr we_offs;
- };
- 
--#if SANITIZER_LINUX && !SANITIZER_ANDROID
-+#if SANITIZER_LINUX && !SANITIZER_ANDROID && __GLIBC_PREREQ(2, 14)
- struct __sanitizer_FILE {
-   int _flags;
-   char *_IO_read_ptr;
-@@ -980,7 +985,9 @@ extern unsigned struct_vt_mode_sz;
- #endif // SANITIZER_LINUX
- 
- #if SANITIZER_LINUX && !SANITIZER_ANDROID
-+# if __GLIBC_PREREQ(2, 14)
- extern unsigned struct_ax25_parms_struct_sz;
-+# endif
- extern unsigned struct_cyclades_monitor_sz;
- extern unsigned struct_input_keymap_entry_sz;
- extern unsigned struct_ipx_config_data_sz;
-@@ -989,7 +996,9 @@ extern unsigned struct_kbentry_sz;
- extern unsigned struct_kbkeycode_sz;
- extern unsigned struct_kbsentry_sz;
- extern unsigned struct_mtconfiginfo_sz;
-+# if __GLIBC_PREREQ(2, 14)
- extern unsigned struct_nr_parms_struct_sz;
-+# endif
- extern unsigned struct_scc_modem_sz;
- extern unsigned struct_scc_stat_sz;
- extern unsigned struct_serial_multiport_struct_sz;
-@@ -1394,16 +1403,22 @@ extern unsigned IOCTL_SIOCAIPXITFCRT;
- extern unsigned IOCTL_SIOCAIPXPRISLT;
- extern unsigned IOCTL_SIOCAX25ADDUID;
- extern unsigned IOCTL_SIOCAX25DELUID;
-+# if __GLIBC_PREREQ(2, 14)
- extern unsigned IOCTL_SIOCAX25GETPARMS;
-+# endif
- extern unsigned IOCTL_SIOCAX25GETUID;
- extern unsigned IOCTL_SIOCAX25NOUID;
-+# if __GLIBC_PREREQ(2, 14)
- extern unsigned IOCTL_SIOCAX25SETPARMS;
-+# endif
- extern unsigned IOCTL_SIOCDEVPLIP;
- extern unsigned IOCTL_SIOCIPXCFGDATA;
- extern unsigned IOCTL_SIOCNRDECOBS;
-+# if __GLIBC_PREREQ(2, 14)
- extern unsigned IOCTL_SIOCNRGETPARMS;
- extern unsigned IOCTL_SIOCNRRTCTL;
- extern unsigned IOCTL_SIOCNRSETPARMS;
-+# endif
- extern unsigned IOCTL_SNDCTL_DSP_GETISPACE;
- extern unsigned IOCTL_SNDCTL_DSP_GETOSPACE;
- extern unsigned IOCTL_TIOCGSERIAL;
+   // Instruct libc malloc to consume less memory.
+-#if SANITIZER_LINUX
++#if SANITIZER_GLIBC
+   mallopt(1, 0);  // M_MXFAST
+   mallopt(-3, 32*1024);  // M_MMAP_THRESHOLD
+ #endif
 -- 
 2.29.2
 

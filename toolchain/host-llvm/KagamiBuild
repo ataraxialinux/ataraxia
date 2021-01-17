@@ -14,7 +14,7 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
 
 build() {
-	local ld clang sanitizers LARCH LTARGET i
+	local ld clang targets LARCH LTARGET i
 
 	case "$BARCH" in
 		amd64) LARCH="x86_64"; LTARGET="X86" ;;
@@ -38,8 +38,10 @@ build() {
 		*) ld="lld" ;;
 	esac
 
-	cd "$SRC"
-	mkdir -p compiler-rt-builtins-build
+	case "$BARCH" in
+		amd64|x86|arm64|armv7l|armv6l|armv5te) targets="crt builtins cfi safestack" ;;
+		*) targets="crt builtins" ;;
+	esac
 
 	pushd "$SRC/llvm-$version.src"
 		msg "Patching LLVM"
@@ -147,4 +149,28 @@ build() {
 			rm -f lld-link ld.lld ld64.lld wasm-ld lld
 		fi
 	popd
+
+	msg "Cross-compiling Compiler-RT"
+	cd "$SRC"
+	mkdir -p compiler-rt-builtins-build
+	cd compiler-rt-builtins-build
+	cmake "$SRC"/compiler-rt-$version.src \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
+		-DCOMPILER_RT_STANDALONE_BUILD=ON \
+		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+		-Wno-dev -G Ninja
+	samu $targets
+
+	for i in lib/linux/*; do
+		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
+	done
 }
