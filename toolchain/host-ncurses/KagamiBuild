@@ -1,0 +1,20 @@
+name=host-ncurses
+realpath="$REPO/${name/host-}"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://ftp.gnu.org/pub/gnu/ncurses/ncurses-$version.tar.gz")
+
+build() {
+	cd "$SRC"/ncurses-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--without-debug
+	make -C include
+	make -C progs tic
+
+	install -m755 progs/tic "$TOOLS"/bin
+
+	chmod +x misc/ncurses-config
+	cp misc/ncurses-config "$TOOLS"/bin/$XTARGET-ncursesw6-config
+}

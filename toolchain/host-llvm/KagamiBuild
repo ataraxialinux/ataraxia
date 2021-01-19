@@ -1,7 +1,6 @@
 name=host-llvm
-realpath="$REPO/${name/host-}"
-#version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
-version=11.0.1
+realpath="$REPO/llvm"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 release=1
 options=('bootstrap')
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz"
@@ -95,6 +94,7 @@ build() {
 		-DCLANG_BUILD_EXAMPLES=OFF \
 		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
 		-DCLANG_DEFAULT_LINKER="$ld" \
+		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp \
 		-DCLANG_DEFAULT_RTLIB=compiler-rt \
 		-DCLANG_DEFAULT_UNWINDLIB=libunwind \
 		-DCLANG_INCLUDE_DOCS=OFF \
@@ -110,10 +110,12 @@ build() {
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_ENABLE_DOXYGEN=OFF \
+		-DLLVM_ENABLE_SPHINX=OFF \
+		-DENABLE_LINKER_BUILD_ID=ON \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
 		-DLLVM_TARGET_ARCH=$LARCH \
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
-		-DENABLE_LINKER_BUILD_ID=ON \
 		-DDEFAULT_SYSROOT="$ROOTFS" \
 		-Wno-dev -G Ninja
 	samu

@@ -1,0 +1,173 @@
+# Description: Collection of modular and reusable compiler and toolchain technologies
+# URL:         https://llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai python-setuptools perl zlib libelf ncurses libedit libxml2 libffi
+# Section:     devel
+
+name=llvm
+version=11.0.1
+release=1
+source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/lld-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/openmp-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libunwind-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxx-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
+
+build() {
+	local LARCH CROSSOPTS ld
+
+	if [ -z "$XTARGET" ]; then
+		XTARGET="$(clang -dumpmachine)"
+	fi
+
+	case "$BARCH" in
+		amd64) LARCH="x86_64"; ;;
+		x86) LARCH="i686"; ;;
+		arm64) LARCH="aarch64"; ;;
+		armv7l) LARCH="armv7"; ;;
+		armv6l) LARCH="armv6"; ;;
+		armv5te) LARCH="armv5"; ;;
+		mips64) LARCH="mips64"; ;;
+		mips64el) LARCH="mips64el"; ;;
+		mips) LARCH="mips"; LTARGET="Mips" ;;
+		mipsel) LARCH="mipsel"; LTARGET="Mips" ;;
+		powerpc64le) LARCH="powerpc64le"; ;;
+		powerpc64) LARCH="powerpc64"; ;;
+		riscv64) LARCH="riscv64"; ;;
+		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia Linux' ;;
+	esac
+
+	case "$BARCH" in
+		riscv64) ld="/usr/bin/ld.bfd" ;;
+		*) ld="lld" ;;
+	esac
+
+	pushd "$SRC/llvm-$version.src"
+		msg "Patching LLVM"
+		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
+		patch -Np1 -i "$STUFF"/llvm/0002-Use-pc-relative-relocations-in-.eh_frame-on-MIPS.patch
+	popd
+	pushd "$SRC/clang-$version.src"
+		msg "Patching clang"
+		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
+		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
+		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
+	popd
+	pushd "$SRC/compiler-rt-$version.src"
+		msg "Patching Compiler-RT"
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-get-rid-of-execinfo.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-port-crt-on-MIPS-build-on-PowerPC.patch
+	popd
+	pushd "$SRC/libcxxabi-$version.src"
+		msg "Patching libc++abi"
+		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
+		patch -Np1 -i "$STUFF"/libcxxabi/0002-force-link-against-compiler-rt-builtins.patch
+	popd
+	pushd "$SRC/libcxx-$version.src"
+		msg "Patching libc++"
+		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
+		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
+	popd
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		(
+			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
+
+			cd "$SRC"
+			cd tablegen-build
+			mkdir tablegen-build
+
+			CC="clang" \
+			CXX="clang++" \
+			HOSTCC="clang" \
+			HOSTCXX="clang++" \
+			CFLAGS="" \
+			CXXFLAGS="-stdlib=libc++" \
+			LDFLAGS="-rtlib=compiler-rt" \
+			cmake "$SRC/llvm-$version.src" \
+				-Wno-dev -G Ninja
+			samu llvm-tblgen clang-tblgen
+
+			install -m755 bin/llvm-tblgen "$SRC"/llvm-tblgen
+			install -m755 bin/clang-tblgen "$SRC"/clang-tblgen
+		)
+
+		CROSSOPTS="-DCMAKE_CROSSCOMPILING=ON -DLLVM_TABLEGEN=$SRC/llvm-tblgen -DCLANG_TABLEGEN=$SRC/clang-tblgen"
+	fi
+
+	msg "Building LLVM"
+	cd "$SRC/llvm-$version.src"
+	cp -a "$SRC"/clang-$version.src tools/clang
+	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
+	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
+	cp -a "$SRC"/openmp-$version.src projects/openmp
+	cp -a "$SRC"/libunwind-$version.src projects/libunwind
+	cp -a "$SRC"/libcxx-$version.src projects/libcxx
+	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
+
+	if [ "$BARCH" != "riscv64" ]; then
+		ln -sf "$SRC"/lld-$version.src tools/lld
+	fi
+
+	mkdir -p build
+	cd build
+
+	cmake "$SRC/llvm-$version.src" $CROSSOPTS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCLANG_BUILD_EXAMPLES=OFF \
+		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
+		-DCLANG_DEFAULT_LINKER="$ld" \
+		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp \
+		-DCLANG_DEFAULT_RTLIB=compiler-rt \
+		-DCLANG_DEFAULT_UNWINDLIB=libunwind \
+		-DCLANG_INCLUDE_DOCS=OFF \
+		-DCLANG_INCLUDE_TESTS=OFF \
+		-DCLANG_PLUGIN_SUPPORT=ON \
+		-DCLANG_VENDOR=Ataraxia \
+		-DLIBCLANG_BUILD_STATIC=ON \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+		-DLIBCXX_HAS_MUSL_LIBC=ON \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
+		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-DLLVM_BUILD_EXAMPLES=OFF \
+		-DLLVM_BUILD_DOCS=OFF \
+		-DLLVM_BUILD_TESTS=OFF \
+		-DLLVM_BUILD_LLVM_DYLIB=ON \
+		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-DLLVM_ENABLE_DOXYGEN=OFF \
+		-DLLVM_ENABLE_SPHINX=OFF \
+		-DLLVM_ENABLE_RTTI=ON \
+		-DLLVM_ENABLE_EH=ON \
+		-DLLVM_INSTALL_BINUTILS_SYMLINKS=ON \
+		-DENABLE_LINKER_BUILD_ID=ON \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_HOST_TRIPLE=$XTARGET \
+		-DLLVM_TARGET_ARCH=$LARCH \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+
+	python3 ../utils/lit/setup.py install --prefix=/usr --root="$PKG" --optimize=1
+
+	install -Dm755 "$STUFF"/clang/c89 "$PKG"/usr/bin/c89
+	install -Dm755 "$STUFF"/clang/c99 "$PKG"/usr/bin/c99
+
+	ln -sf clang "$PKG"/usr/bin/cc
+	ln -sf clang++ "$PKG"/usr/bin/c++
+	ln -sf clang-cpp "$PKG"/usr/bin/cpp
+
+	install -m644 lib/libclang.a "$PKG"/usr/lib
+
+	mv "$PKG"/usr/libexec/{ccc,c++}-analyzer "$PKG"/usr/lib/clang/
+	rmdir "$PKG"/usr/libexec
+	sed -i 's|libexec|lib/clang|' "$PKG"/usr/bin/scan-build
+}

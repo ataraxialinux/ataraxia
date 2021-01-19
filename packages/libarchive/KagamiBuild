@@ -1,20 +1,18 @@
 # Description: Multi-format archive and compression library
 # URL:         http://libarchive.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib bzip2 acl expat libressl nettle xz lz4 zstd lzo
+# Depends on:  zlib bzip2 acl expat libressl nettle xz lz4 zstd lzo libxml2
 # Section:     base
 
 name=libarchive
 version=3.5.1
-release=2
-options=('bootstrap')
+release=3
 source=("https://github.com/libarchive/libarchive/releases/download/$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--without-xml2
+		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
 }

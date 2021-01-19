@@ -1,0 +1,115 @@
+name=host-llvm-runtime
+realpath="$REPO/llvm"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/lld-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libunwind-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxx-$version.src.tar.xz"
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
+
+build() {
+	local LARCH LTARGET i
+
+	export CFLAGS="$TARGET_CFLAGS"
+	export CXXFLAGS="$TARGET_CXXFLAGS"
+	export LDFLAGS="$TARGET_LDFLAGS"
+
+	case "$BARCH" in
+		amd64) LARCH="x86_64"; LTARGET="X86" ;;
+		x86) LARCH="i686"; LTARGET="X86" ;;
+		arm64) LARCH="aarch64"; LTARGET="AArch64" ;;
+		armv7l) LARCH="armv7"; LTARGET="ARM" ;;
+		armv6l) LARCH="armv6"; LTARGET="ARM" ;;
+		armv5te) LARCH="armv5"; LTARGET="ARM" ;;
+		mips64) LARCH="mips64"; LTARGET="Mips" ;;
+		mips64el) LARCH="mips64el"; LTARGET="Mips" ;;
+		mips) LARCH="mips"; LTARGET="Mips" ;;
+		mipsel) LARCH="mipsel"; LTARGET="Mips" ;;
+		powerpc64le) LARCH="powerpc64le"; LTARGET="PowerPC" ;;
+		powerpc64) LARCH="powerpc64"; LTARGET="PowerPC" ;;
+		riscv64) LARCH="riscv64"; LTARGET="RISCV" ;;
+		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia Linux' ;;
+	esac
+
+	pushd "$SRC/llvm-$version.src"
+		msg "Patching LLVM"
+		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
+		patch -Np1 -i "$STUFF"/llvm/0002-Use-pc-relative-relocations-in-.eh_frame-on-MIPS.patch
+	popd
+	pushd "$SRC/clang-$version.src"
+		msg "Patching clang"
+		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
+		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
+		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
+	popd
+	pushd "$SRC/compiler-rt-$version.src"
+		msg "Patching Compiler-RT"
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-get-rid-of-execinfo.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-port-crt-on-MIPS-build-on-PowerPC.patch
+	popd
+	pushd "$SRC/libcxxabi-$version.src"
+		msg "Patching libc++abi"
+		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
+		patch -Np1 -i "$STUFF"/libcxxabi/0002-force-link-against-compiler-rt-builtins.patch
+	popd
+	pushd "$SRC/libcxx-$version.src"
+		msg "Patching libc++"
+		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
+		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
+	popd
+
+	msg "Compiling LLVM runtime libraries for $BARCH"
+	for i in libunwind libcxx libcxxabi; do
+		ln -sf $i-$version.src $i
+	done
+
+	cd "$SRC"/llvm-$version.src"
+	cp -a "$SRC"/clang-$version.src tools/clang
+	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
+	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
+	cp -a "$SRC"/libunwind-$version.src projects/libunwind
+	cp -a "$SRC"/libcxx-$version.src projects/libcxx
+	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
+
+	if [ "$BARCH" != "riscv64" ]; then
+		ln -sf "$SRC"/lld-$version.src tools/lld
+	fi
+
+	mkdir -p build
+	cd build
+
+	cmake "$SRC/llvm-$version.src" \
+		-DCMAKE_CROSSCOMPILING=ON \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
+		-DLIBCXX_HAS_MUSL_LIBC=ON \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
+		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_ENABLE_PROJECTS="libunwind;libcxx;libcxxabi" \
+		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
+		-Wno-dev -G Ninja
+
+	sed -i 's/-latomic//g' build.ninja
+
+	samu unwind cxxabi cxx
+	DESTDIR="$SYSROOT" samu install-unwind install-cxxabi install-cxx
+}
