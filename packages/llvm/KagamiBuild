@@ -1,7 +1,7 @@
 # Description: Collection of modular and reusable compiler and toolchain technologies
 # URL:         https://llvm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai python-setuptools perl binutils zlib libelf ncurses libedit libxml2 libffi
+# Depends on:  cmake samurai python-setuptools perl zlib libelf ncurses libedit libxml2 libffi
 # Section:     devel
 
 name=llvm
@@ -98,8 +98,6 @@ build() {
 		)
 
 		CROSSOPTS="-DCMAKE_CROSSCOMPILING=ON -DLLVM_TABLEGEN=$SRC/llvm-tblgen -DCLANG_TABLEGEN=$SRC/clang-tblgen"
-	else
-		unset ROOTFS
 	fi
 
 	msg "Building LLVM"
@@ -140,7 +138,6 @@ build() {
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
 		-DLIBCXXABI_USE_COMPILER_RT=ON \
 		-DLIBUNWIND_USE_COMPILER_RT=ON \
-		-DLLVM_BINUTILS_INCDIR="$ROOTFS"/usr/include \
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
 		-DLLVM_BUILD_TESTS=OFF \
@@ -160,9 +157,6 @@ build() {
 	DESTDIR="$PKG" samu install
 
 	python3 ../utils/lit/setup.py install --prefix=/usr --root="$PKG" --optimize=1
-
-	mkdir -p "$PKG"/usr/lib/bfd-plugins
-	ln -sf ../LLVMgold.so "$PKG"/usr/lib/bfd-plugins/LLVMgold.so
 
 	install -Dm755 "$STUFF"/clang/c89 "$PKG"/usr/bin/c89
 	install -Dm755 "$STUFF"/clang/c99 "$PKG"/usr/bin/c99
