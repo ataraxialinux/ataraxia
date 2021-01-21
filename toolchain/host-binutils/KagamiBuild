@@ -6,7 +6,11 @@ options=('bootstrap')
 source=("https://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz")
 
 build() {
-	local hashconfig build_targets install_targets
+	local archconfig hashconfig build_targets install_targets
+
+	case "$BARCH" in
+		x86_64)	archconfig="--enable-targets=x86_64-pep"	;;
+	esac
 
 	case "$BARCH" in
 		mips64|mips64el|mips|mipsel)	hashconfig="--enable-default-hash-style=sysv" ;;
@@ -15,12 +19,12 @@ build() {
 
 	case "$BARCH" in
 		riscv64)
-			build_targets="all-ld all-gold all-gas all-bfd"
-			install_targets="install-ld install-gold install-gas install-bfd"
+			build_targets="all-bfd all-gold all-ld all-gas"
+			install_targets="install-bfd install-gold install-ld install-gas"
 			;;
 		*)
-			build_targets="all-gold all-gas all-bfd"
-			install_targets="install-gold install-gas install-bfd"
+			build_targets="all-bfd all-gold all-gas"
+			install_targets="install-bfd install-gold install-gas"
 			;;
 	esac
 
@@ -29,7 +33,7 @@ build() {
 	cd build
 	../configure \
 		--prefix="$TOOLS" \
-		--target=$XTARGET $hashconfig \
+		--target=$XTARGET $archconfig $hashconfig \
 		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
 		--with-sysroot="$ROOTFS" \
 		--with-lib-path="$ROOTFS/usr/lib" \
@@ -41,10 +45,9 @@ build() {
 		--enable-lto \
 		--enable-plugins \
 		--enable-relro \
-		--enable-threads \
-		--disable-compressed-debug-sections \
-		--disable-multilib \
+		--enable-shared \
 		--disable-nls \
+		--disable-multilib \
 		--disable-werror
 	make $build_targets
 	make $install_targets

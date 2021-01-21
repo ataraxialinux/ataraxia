@@ -10,7 +10,11 @@ release=1
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
-	local hashconfig build_targets install_targets
+	local archconfig hashconfig build_targets install_targets
+
+	case "$BARCH" in
+		x86_64)	archconfig="--enable-targets=x86_64-pep"	;;
+	esac
 
 	case "$BARCH" in
 		mips64|mips64el|mips|mipsel)	hashconfig="--enable-default-hash-style=sysv" ;;
@@ -19,12 +23,12 @@ build() {
 
 	case "$BARCH" in
 		riscv64)
-			build_targets="all-ld all-gold all-gas all-bfd"
-			install_targets="install-ld install-gold install-gas install-bfd"
+			build_targets="all-bfd all-gold all-ld all-gas"
+			install_targets="install-bfd install-gold install-ld install-gas"
 			;;
 		*)
-			build_targets="all-gold all-gas all-bfd"
-			install_targets="install-gold install-gas install-bfd"
+			build_targets="all-bfd all-gold all-gas"
+			install_targets="install-bfd install-gold install-gas"
 			;;
 	esac
 
@@ -32,7 +36,7 @@ build() {
 	mkdir build
 	cd build
 
-	../configure $TOOLFLAGS $hashconfig \
+	../configure $TOOLFLAGS $archconfig $hashconfig \
 		--prefix=/usr \
 		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
 		--with-pic \
@@ -44,11 +48,9 @@ build() {
 		--enable-plugins \
 		--enable-relro \
 		--enable-shared \
-		--enable-threads \
-		--disable-compressed-debug-sections \
-		--disable-multilib \
 		--disable-nls \
-		--disable-werror
+		--disable-multilib \
+		--disable-werro
 	make tooldir=/usr $build_targets
 	make tooldir=/usr DESTDIR="$PKG" $install_targets
 }
