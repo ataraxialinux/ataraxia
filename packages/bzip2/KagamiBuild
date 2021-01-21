@@ -10,24 +10,11 @@ source=("http://sourceware.org/pub/bzip2/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	sed -i "s|-O2|${CFLAGS}|g" Makefile
-	sed -i "s|-O2|${CFLAGS}|g" Makefile-libbz2_so
-	sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
-	sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
-	sed -i 's@all: libbz2.a bzip2 bzip2recover test@all: libbz2.a bzip2 bzip2recover@' Makefile
+	patch -Np0 -i "$STUFF"/bzip2/autoconf.patch
 
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make CC="$CC" AR="$AR" RANLIB="$RANLIB" -f Makefile-libbz2_so
-		make CC="$CC" AR="$AR" RANLIB="$RANLIB" all
-	else
-		make -f Makefile-libbz2_so
-		make all
-	fi
-
-	make PREFIX="$PKG/usr" install
-
-	install -m755 libbz2.so.${version} "$PKG"/usr/lib
-	ln -sf libbz2.so.${version} "$PKG"/usr/lib/libbz2.so
-	ln -sf libbz2.so.${version} "$PKG"/usr/lib/libbz2.so.1
-	ln -sf libbz2.so.${version} "$PKG"/usr/lib/libbz2.so.1.0
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr
+	make
+	make DESTDIR="$PKG" install
 }

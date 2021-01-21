@@ -1,0 +1,37 @@
+# Description: The Kerberos network authentication system
+# URL:         https://web.mit.edu/kerberos/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl libressl
+# Section:     admin
+
+name=krb5
+version=1.18.3
+case $version in
+	*.*.*) _v=${version%.*};;
+	*)     _v=${version};;
+esac
+release=1
+options=('~emptydirs')
+source=("https://web.mit.edu/kerberos/dist/krb5/${_v}/krb5-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/krb5/libressl.patch
+
+	cd src
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--localstatedir=/var/lib \
+		--with-system-verto=no \
+		--enable-dns-for-realm \
+		--enable-shared \
+		--disable-rpath
+	make
+	make DESTDIR="$PKG" install
+
+	for i in kprop.service kadmin.service krb5kdc.service; do
+		install -Dm644 "$STUFF"/svc/$i "$PKG"/usr/lib/systemd/system/$i
+	done
+}
