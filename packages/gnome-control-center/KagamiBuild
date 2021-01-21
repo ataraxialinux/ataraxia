@@ -11,13 +11,12 @@ case $version in
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
-release=2
+release=3
 source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/gnome-control-center/0001-fix-musl-strlen.patch
-	patch -Np0 -i "$STUFF"/gnome-control-center/0001-fix-build-on-heimdal.patch
 	sed -i '/ln -s/s/s /sf /' panels/user-accounts/meson.build
 
 	mkdir -p build
