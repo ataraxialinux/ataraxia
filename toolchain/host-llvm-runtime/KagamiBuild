@@ -15,9 +15,9 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 build() {
 	local LARCH LTARGET i
 
-	export CFLAGS="$TARGET_CFLAGS"
-	export CXXFLAGS="$TARGET_CXXFLAGS"
-	export LDFLAGS="$TARGET_LDFLAGS"
+	#export CFLAGS="$TARGET_CFLAGS"
+	#export CXXFLAGS="$TARGET_CXXFLAGS"
+	#export LDFLAGS="$TARGET_LDFLAGS"
 
 	case "$BARCH" in
 		amd64) LARCH="x86_64"; LTARGET="X86" ;;
@@ -65,11 +65,13 @@ build() {
 	popd
 
 	msg "Compiling LLVM runtime libraries for $BARCH"
-	for i in libunwind libcxx libcxxabi; do
-		ln -sf $i-$version.src $i
-	done
+	pushd "$SRC"
+		for i in libunwind libcxx libcxxabi; do
+			ln -sf $i-$version.src $i
+		done
+	popd
 
-	cd "$SRC"/llvm-$version.src"
+	cd "$SRC"/llvm-$version.src
 	cp -a "$SRC"/clang-$version.src tools/clang
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
 	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
@@ -111,5 +113,5 @@ build() {
 	sed -i 's/-latomic//g' build.ninja
 
 	samu unwind cxxabi cxx
-	DESTDIR="$SYSROOT" samu install-unwind install-cxxabi install-cxx
+	DESTDIR="$ROOTFS" samu install-unwind install-cxxabi install-cxx
 }

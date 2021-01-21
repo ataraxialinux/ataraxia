@@ -221,6 +221,13 @@ emerge_host() {
 emerge_target() {
 	local root force opts
 
+	while getopts f opts; do
+		case $opts in
+			f) force="-f" ;;
+		esac
+	done
+	shift $((OPTIND -1))
+
 	if [ -z "$1" ]; then
 		die 'Package was not specified'
 	fi
@@ -234,13 +241,6 @@ emerge_target() {
 	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
 		die 'Package does not exist'
 	fi
-
-	while getopts f opts; do
-		case $opts in
-			f) force="-f" ;;
-		esac
-	done
-	shift $((OPTIND -1))
 
 	tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $1
 }
@@ -248,6 +248,13 @@ emerge_target() {
 emerge_host_target() {
 	local root force opts
 
+	while getopts f opts; do
+		case $opts in
+			f) force="-f" ;;
+		esac
+	done
+	shift $((OPTIND -1))
+
 	if [ -z "$1" ]; then
 		die 'Package was not specified'
 	fi
@@ -261,13 +268,6 @@ emerge_host_target() {
 	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
 		die 'Package does not exist'
 	fi
-
-	while getopts f opts; do
-		case $opts in
-			f) force="-f" ;;
-		esac
-	done
-	shift $((OPTIND -1))
 
 	pushd "$REPO/$1"
 		tsukuri bi -c "$BUILD/host.config" -w $force

@@ -45,6 +45,9 @@ build() {
 	export BUILD_CXXFLAGS=""
 	export BUILD_LDFLAGS=""
 
+	export CFLAGS="-g0 -Os -fno-stack-protector -pipe"
+	export TARGET_CFLAGS="$CFLAGS"
+
 	case $BARCH in
 		x86_64|i686)
 			FLAVOR="efi pc"
@@ -61,11 +64,12 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
-	patch -Np1 -i "$STUFF"/grub/locale.patch
+	patch -Np1 -i "$STUFF"/grub/0001-Don-t-say-GNU-Linux-in-the-menu.patch
+	patch -Np1 -i "$STUFF"/grub/0002-support-Boot-Loader-Specification.patch
+	patch -Np1 -i "$STUFF"/grub/0003-don-t-look-for-locale-directory.patch
+	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
+	patch -Np1 -i "$STUFF"/grub/0005-fix-build-on-LLVM-LLD.patch
 	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
-	patch -Np1 -i "$STUFF"/grub/0027-blscfg-add-blscfg-module-to-parse-Boot-Loader-Specif.patch
-	patch -Np1 -i "$STUFF"/grub/0040-Don-t-say-GNU-Linux-in-generated-menus.patch
 
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in

@@ -1,25 +1,17 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Peter Jones <pjones@redhat.com>
-Date: Tue, 22 Jan 2013 06:31:38 +0100
-Subject: [PATCH] blscfg: add blscfg module to parse Boot Loader Specification
- snippets
+From f0fb53aadee18bd2b7bc79bea73e6d4216b4b441 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 20 Jan 2021 04:54:35 +0900
+Subject: [PATCH 2/5] support Boot Loader Specification
 
-The BootLoaderSpec (BLS) defines a scheme where different bootloaders can
-share a format for boot items and a configuration directory that accepts
-these common configurations as drop-in files.
-
-Signed-off-by: Peter Jones <pjones@redhat.com>
-Signed-off-by: Javier Martinez Canillas <javierm@redhat.com>
-[wjt: some cleanups and fixes]
-Signed-off-by: Will Thompson <wjt@endlessm.com>
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
  grub-core/Makefile.core.def    |   11 +
- grub-core/commands/blscfg.c    | 1096 ++++++++++++++++++++++++++++++++++++++++
+ grub-core/commands/blscfg.c    | 1096 ++++++++++++++++++++++++++++++++
  grub-core/commands/legacycfg.c |    5 +-
  grub-core/commands/loadenv.c   |   77 +--
+ grub-core/commands/loadenv.h   |   93 +++
  grub-core/commands/menuentry.c |   20 +-
  grub-core/normal/main.c        |    6 +
- grub-core/commands/loadenv.h   |   93 ++++
  include/grub/compiler.h        |    2 +
  include/grub/menu.h            |   13 +
  include/grub/normal.h          |    2 +-
@@ -28,10 +20,10 @@ Signed-off-by: Will Thompson <wjt@endlessm.com>
  create mode 100644 grub-core/commands/loadenv.h
 
 diff --git a/grub-core/Makefile.core.def b/grub-core/Makefile.core.def
-index 41b5e16a3ce..57e253ab1a1 100644
+index 474a63e..6a7918c 100644
 --- a/grub-core/Makefile.core.def
 +++ b/grub-core/Makefile.core.def
-@@ -811,6 +811,16 @@ module = {
+@@ -809,6 +809,16 @@ module = {
    common = commands/blocklist.c;
  };
  
@@ -48,7 +40,7 @@ index 41b5e16a3ce..57e253ab1a1 100644
  module = {
    name = boot;
    common = commands/boot.c;
-@@ -988,6 +998,7 @@ module = {
+@@ -986,6 +996,7 @@ module = {
  module = {
    name = loadenv;
    common = commands/loadenv.c;
@@ -58,7 +50,7 @@ index 41b5e16a3ce..57e253ab1a1 100644
  
 diff --git a/grub-core/commands/blscfg.c b/grub-core/commands/blscfg.c
 new file mode 100644
-index 00000000000..54458b14518
+index 0000000..54458b1
 --- /dev/null
 +++ b/grub-core/commands/blscfg.c
 @@ -0,0 +1,1096 @@
@@ -1159,7 +1151,7 @@ index 00000000000..54458b14518
 +  grub_unregister_extcmd (oldcmd);
 +}
 diff --git a/grub-core/commands/legacycfg.c b/grub-core/commands/legacycfg.c
-index db7a8f00273..891eac5a33f 100644
+index db7a8f0..891eac5 100644
 --- a/grub-core/commands/legacycfg.c
 +++ b/grub-core/commands/legacycfg.c
 @@ -133,7 +133,7 @@ legacy_file (const char *filename)
@@ -1182,7 +1174,7 @@ index db7a8f00273..891eac5a33f 100644
      }
  
 diff --git a/grub-core/commands/loadenv.c b/grub-core/commands/loadenv.c
-index 3fd664aac33..163b9a09042 100644
+index 3fd664a..163b9a0 100644
 --- a/grub-core/commands/loadenv.c
 +++ b/grub-core/commands/loadenv.c
 @@ -28,6 +28,8 @@
@@ -1276,105 +1268,9 @@ index 3fd664aac33..163b9a09042 100644
  static grub_err_t
  grub_cmd_load_env (grub_extcmd_context_t ctxt, int argc, char **args)
  {
-diff --git a/grub-core/commands/menuentry.c b/grub-core/commands/menuentry.c
-index 2c5363da7f5..9faf2be0f64 100644
---- a/grub-core/commands/menuentry.c
-+++ b/grub-core/commands/menuentry.c
-@@ -78,7 +78,7 @@ grub_normal_add_menu_entry (int argc, const char **args,
- 			    char **classes, const char *id,
- 			    const char *users, const char *hotkey,
- 			    const char *prefix, const char *sourcecode,
--			    int submenu)
-+			    int submenu, int *index, struct bls_entry *bls)
- {
-   int menu_hotkey = 0;
-   char **menu_args = NULL;
-@@ -149,9 +149,12 @@ grub_normal_add_menu_entry (int argc, const char **args,
-   if (! menu_title)
-     goto fail;
- 
-+  grub_dprintf ("menu", "id:\"%s\"\n", id);
-+  grub_dprintf ("menu", "title:\"%s\"\n", menu_title);
-   menu_id = grub_strdup (id ? : menu_title);
-   if (! menu_id)
-     goto fail;
-+  grub_dprintf ("menu", "menu_id:\"%s\"\n", menu_id);
- 
-   /* Save argc, args to pass as parameters to block arg later. */
-   menu_args = grub_malloc (sizeof (char*) * (argc + 1));
-@@ -170,8 +173,12 @@ grub_normal_add_menu_entry (int argc, const char **args,
-   }
- 
-   /* Add the menu entry at the end of the list.  */
-+  int ind=0;
-   while (*last)
--    last = &(*last)->next;
-+    {
-+      ind++;
-+      last = &(*last)->next;
-+    }
- 
-   *last = grub_zalloc (sizeof (**last));
-   if (! *last)
-@@ -188,8 +195,11 @@ grub_normal_add_menu_entry (int argc, const char **args,
-   (*last)->args = menu_args;
-   (*last)->sourcecode = menu_sourcecode;
-   (*last)->submenu = submenu;
-+  (*last)->bls = bls;
- 
-   menu->size++;
-+  if (index)
-+    *index = ind;
-   return GRUB_ERR_NONE;
- 
-  fail:
-@@ -286,7 +296,8 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
- 				       users,
- 				       ctxt->state[2].arg, 0,
- 				       ctxt->state[3].arg,
--				       ctxt->extcmd->cmd->name[0] == 's');
-+				       ctxt->extcmd->cmd->name[0] == 's',
-+				       NULL, NULL);
- 
-   src = args[argc - 1];
-   args[argc - 1] = NULL;
-@@ -303,7 +314,8 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
- 				  ctxt->state[0].args, ctxt->state[4].arg,
- 				  users,
- 				  ctxt->state[2].arg, prefix, src + 1,
--				  ctxt->extcmd->cmd->name[0] == 's');
-+				  ctxt->extcmd->cmd->name[0] == 's', NULL,
-+				  NULL);
- 
-   src[len - 1] = ch;
-   args[argc - 1] = src;
-diff --git a/grub-core/normal/main.c b/grub-core/normal/main.c
-index 9ef98481f70..a326b192c89 100644
---- a/grub-core/normal/main.c
-+++ b/grub-core/normal/main.c
-@@ -20,6 +20,7 @@
- #include <grub/kernel.h>
- #include <grub/normal.h>
- #include <grub/dl.h>
-+#include <grub/menu.h>
- #include <grub/misc.h>
- #include <grub/file.h>
- #include <grub/mm.h>
-@@ -70,6 +71,11 @@ grub_normal_free_menu (grub_menu_t menu)
- 	  grub_free (entry->args);
- 	}
- 
-+      if (entry->bls)
-+	{
-+	  entry->bls->visible = 0;
-+	}
-+
-       grub_free ((void *) entry->id);
-       grub_free ((void *) entry->users);
-       grub_free ((void *) entry->title);
 diff --git a/grub-core/commands/loadenv.h b/grub-core/commands/loadenv.h
 new file mode 100644
-index 00000000000..952f46121bd
+index 0000000..952f461
 --- /dev/null
 +++ b/grub-core/commands/loadenv.h
 @@ -0,0 +1,93 @@
@@ -1471,8 +1367,104 @@ index 00000000000..952f46121bd
 +
 +  return 0;
 +}
+diff --git a/grub-core/commands/menuentry.c b/grub-core/commands/menuentry.c
+index 2c5363d..9faf2be 100644
+--- a/grub-core/commands/menuentry.c
++++ b/grub-core/commands/menuentry.c
+@@ -78,7 +78,7 @@ grub_normal_add_menu_entry (int argc, const char **args,
+ 			    char **classes, const char *id,
+ 			    const char *users, const char *hotkey,
+ 			    const char *prefix, const char *sourcecode,
+-			    int submenu)
++			    int submenu, int *index, struct bls_entry *bls)
+ {
+   int menu_hotkey = 0;
+   char **menu_args = NULL;
+@@ -149,9 +149,12 @@ grub_normal_add_menu_entry (int argc, const char **args,
+   if (! menu_title)
+     goto fail;
+ 
++  grub_dprintf ("menu", "id:\"%s\"\n", id);
++  grub_dprintf ("menu", "title:\"%s\"\n", menu_title);
+   menu_id = grub_strdup (id ? : menu_title);
+   if (! menu_id)
+     goto fail;
++  grub_dprintf ("menu", "menu_id:\"%s\"\n", menu_id);
+ 
+   /* Save argc, args to pass as parameters to block arg later. */
+   menu_args = grub_malloc (sizeof (char*) * (argc + 1));
+@@ -170,8 +173,12 @@ grub_normal_add_menu_entry (int argc, const char **args,
+   }
+ 
+   /* Add the menu entry at the end of the list.  */
++  int ind=0;
+   while (*last)
+-    last = &(*last)->next;
++    {
++      ind++;
++      last = &(*last)->next;
++    }
+ 
+   *last = grub_zalloc (sizeof (**last));
+   if (! *last)
+@@ -188,8 +195,11 @@ grub_normal_add_menu_entry (int argc, const char **args,
+   (*last)->args = menu_args;
+   (*last)->sourcecode = menu_sourcecode;
+   (*last)->submenu = submenu;
++  (*last)->bls = bls;
+ 
+   menu->size++;
++  if (index)
++    *index = ind;
+   return GRUB_ERR_NONE;
+ 
+  fail:
+@@ -286,7 +296,8 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
+ 				       users,
+ 				       ctxt->state[2].arg, 0,
+ 				       ctxt->state[3].arg,
+-				       ctxt->extcmd->cmd->name[0] == 's');
++				       ctxt->extcmd->cmd->name[0] == 's',
++				       NULL, NULL);
+ 
+   src = args[argc - 1];
+   args[argc - 1] = NULL;
+@@ -303,7 +314,8 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
+ 				  ctxt->state[0].args, ctxt->state[4].arg,
+ 				  users,
+ 				  ctxt->state[2].arg, prefix, src + 1,
+-				  ctxt->extcmd->cmd->name[0] == 's');
++				  ctxt->extcmd->cmd->name[0] == 's', NULL,
++				  NULL);
+ 
+   src[len - 1] = ch;
+   args[argc - 1] = src;
+diff --git a/grub-core/normal/main.c b/grub-core/normal/main.c
+index 1b03dfd..bc29d3b 100644
+--- a/grub-core/normal/main.c
++++ b/grub-core/normal/main.c
+@@ -20,6 +20,7 @@
+ #include <grub/kernel.h>
+ #include <grub/normal.h>
+ #include <grub/dl.h>
++#include <grub/menu.h>
+ #include <grub/misc.h>
+ #include <grub/file.h>
+ #include <grub/mm.h>
+@@ -66,6 +67,11 @@ grub_normal_free_menu (grub_menu_t menu)
+ 	  grub_free (entry->args);
+ 	}
+ 
++      if (entry->bls)
++	{
++	  entry->bls->visible = 0;
++	}
++
+       grub_free ((void *) entry->id);
+       grub_free ((void *) entry->users);
+       grub_free ((void *) entry->title);
 diff --git a/include/grub/compiler.h b/include/grub/compiler.h
-index c9e1d7a73dc..9859ff4cc79 100644
+index c9e1d7a..9859ff4 100644
 --- a/include/grub/compiler.h
 +++ b/include/grub/compiler.h
 @@ -48,4 +48,6 @@
@@ -1483,7 +1475,7 @@ index c9e1d7a73dc..9859ff4cc79 100644
 +
  #endif /* ! GRUB_COMPILER_HEADER */
 diff --git a/include/grub/menu.h b/include/grub/menu.h
-index ee2b5e91045..0acdc2aa6bf 100644
+index ee2b5e9..0acdc2a 100644
 --- a/include/grub/menu.h
 +++ b/include/grub/menu.h
 @@ -20,6 +20,16 @@
@@ -1514,7 +1506,7 @@ index ee2b5e91045..0acdc2aa6bf 100644
  typedef struct grub_menu_entry *grub_menu_entry_t;
  
 diff --git a/include/grub/normal.h b/include/grub/normal.h
-index 218cbabccaf..8839ad85a19 100644
+index 218cbab..8839ad8 100644
 --- a/include/grub/normal.h
 +++ b/include/grub/normal.h
 @@ -145,7 +145,7 @@ grub_normal_add_menu_entry (int argc, const char **args, char **classes,
@@ -1526,3 +1518,6 @@ index 218cbabccaf..8839ad85a19 100644
  
  grub_err_t
  grub_normal_set_password (const char *user, const char *password);
+-- 
+2.29.2
+

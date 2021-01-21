@@ -1,9 +1,13 @@
-name=host-binutils
-realpath="$REPO/${name/host-}"
-version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+# Description: Tools necessary to build programs
+# URL:         https://www.gnu.org/software/binutils/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib
+# Section:     devel
+
+name=binutils
+version=2.35.1
 release=1
-options=('bootstrap')
-source=("https://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz")
+source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
 	local hashconfig build_targets install_targets
@@ -24,15 +28,13 @@ build() {
 			;;
 	esac
 
-	cd "$SRC"/binutils-$version
+	cd "$SRC"/$name-$version
 	mkdir build
 	cd build
-	../configure \
-		--prefix="$TOOLS" \
-		--target=$XTARGET $hashconfig \
+
+	../configure $TOOLFLAGS $hashconfig \
+		--prefix=/usr \
 		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
-		--with-sysroot="$ROOTFS" \
-		--with-lib-path="$ROOTFS/usr/lib" \
 		--with-pic \
 		--with-system-zlib \
 		--enable-64-bit-bfd \
@@ -41,11 +43,12 @@ build() {
 		--enable-lto \
 		--enable-plugins \
 		--enable-relro \
+		--enable-shared \
 		--enable-threads \
 		--disable-compressed-debug-sections \
 		--disable-multilib \
 		--disable-nls \
 		--disable-werror
-	make $build_targets
-	make $install_targets
+	make tooldir=/usr $build_targets
+	make tooldir=/usr DESTDIR="$PKG" $install_targets
 }

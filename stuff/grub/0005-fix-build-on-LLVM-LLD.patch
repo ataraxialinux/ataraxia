@@ -1,0 +1,26 @@
+From 168da6888a549d433f854d88b1799025c2836574 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 20 Jan 2021 05:00:58 +0900
+Subject: [PATCH 5/5] fix build on LLVM LLD
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ grub-core/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/grub-core/Makefile.am b/grub-core/Makefile.am
+index 3ea8e7f..2f31b9a 100644
+--- a/grub-core/Makefile.am
++++ b/grub-core/Makefile.am
+@@ -480,7 +480,7 @@ efiemu64_s.o: efiemu/runtime/efiemu.S
+ efiemu64.o: efiemu64_c.o efiemu64_s.o $(TARGET_OBJ2ELEF)
+ 	-rm -f $@
+ 	-rm -f $@.bin
+-	$(TARGET_CC) -m64 $(EFIEMU64_LINK_FORMAT) -nostdlib -static -Wl,-r -o $@.bin $^
++	$(TARGET_CC) -m64 $(EFIEMU64_LINK_FORMAT) -nostdlib -static -o $@.bin $^
+ 	if test "x$(EFIEMU64_LINK_FORMAT)" = x-arch,x86_64; then \
+ 	  $(TARGET_OBJCONV) -felf64 -nu -nd $@.bin $@ || exit 1; \
+ 	  rm -f $@.bin; \
+-- 
+2.29.2
+
