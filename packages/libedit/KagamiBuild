@@ -14,6 +14,7 @@ build() {
 	local i
 
 	cd "$SRC"/$name-${version/+/-}
+	CFLAGS="-D__STDC_ISO_10646__=201103L $CFLAGS" \
 	./configure $BUILDFLAGS \
 		--prefix=/usr
 	make
@@ -25,7 +26,8 @@ build() {
 	done
 
 	for i in history readline; do
-		ln -sf libedit.so "$PKG"/usr/include/lib${i}.so
+		ln -sf libedit.a "$PKG"/usr/lib/lib${i}.a
+		ln -sf libedit.so "$PKG"/usr/lib/lib${i}.so
 	done
 
 	ln -sf libedit.pc "$PKG"/usr/lib/pkgconfig/readline.pc
