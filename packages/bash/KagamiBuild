@@ -1,7 +1,7 @@
 # Description: The GNU Bourne Again shell
 # URL:         http://www.gnu.org/software/bash/bash.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libedit
+# Depends on:  ncurses
 # Section:     shells
 
 name=bash
@@ -34,6 +34,7 @@ build() {
 		esac
 	done
 
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 cat > config.cache << EOF
 ac_cv_func_mmap_fixed_mapped=yes
 ac_cv_func_strcoll_works=yes
@@ -49,12 +50,14 @@ bash_cv_unusable_rtsigs=no
 gt_cv_int_divbyzero_sigfpe=yes
 EOF
 
+		BUILDFLAGS="$BUILDFLAGS --cache-file=config.cache"
+	fi
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-curses \
 		--without-bash-malloc \
-		--enable-readline \
-		--cache-file=config.cache
+		--enable-readline
 	make
 	make DESTDIR="$PKG" install
 
