@@ -38,15 +38,7 @@ build_flavor() {
 }
 
 build() {
-	unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
-
-	export BUILD_CPPFLAGS=""
-	export BUILD_CFLAGS=""
-	export BUILD_CXXFLAGS=""
-	export BUILD_LDFLAGS=""
-
-	export CFLAGS="-g0 -Os -fno-stack-protector -pipe"
-	export TARGET_CFLAGS="$CFLAGS"
+	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
 
 	case $BARCH in
 		x86_64|i686)
@@ -68,7 +60,6 @@ build() {
 	patch -Np1 -i "$STUFF"/grub/0002-support-Boot-Loader-Specification.patch
 	patch -Np1 -i "$STUFF"/grub/0003-don-t-look-for-locale-directory.patch
 	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
-	patch -Np1 -i "$STUFF"/grub/0005-fix-build-on-LLVM-LLD.patch
 	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
 
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"

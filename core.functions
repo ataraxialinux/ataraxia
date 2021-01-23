@@ -225,6 +225,10 @@ emerge_host() {
 emerge_target() {
 	local root force opts host
 
+	if [ "$DEBUG_CLEAN" = "yes" ]; then
+		clean="-e"
+	fi
+
 	while getopts ft opts; do
 		case $opts in
 			f) force="-f" ;;
@@ -249,11 +253,11 @@ emerge_target() {
 
 	if [ "$host" = "yes" ]; then
 		pushd "$REPO/$1"
-			tsukuri bi -c "$BUILD/host.config" -w $force
+			tsukuri bi -c "$BUILD/host.config" -w $force $clean
 		popd
 
-		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $1
+		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $clean $1
 	else
-		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $1
+		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $clean $1
 	fi
 }
