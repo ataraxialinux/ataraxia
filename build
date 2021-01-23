@@ -21,9 +21,14 @@ set -e
 source core.functions
 
 build_toolchain() {
+	if check_stamp toolchain; then
+		return 0
+	fi
+
 	if ! check_stamp env; then
 		msg "Preparing environment for build"
 		make_environment
+		stamp env
 	fi
 
 	msg "Building cross-toolchain for '${BARCH}' architecture"
@@ -40,8 +45,8 @@ build_toolchain() {
 	emerge_host samurai
 	emerge_host meson
 	emerge_host cmake
-	emerge_target -t linux-headers
-	emerge_target -t fortify-headers
+	emerge_ht linux-headers
+	emerge_ht fortify-headers
 	emerge_host musl-headers
 	emerge_host binutils
 	emerge_host llvm

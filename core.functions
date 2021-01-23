@@ -210,10 +210,6 @@ make_environment() {
 
 
 emerge_host() {
-	if [ "$DEBUG_CLEAN" = "yes" ]; then
-		clean="-e"
-	fi
-
 	if [ -z "$1" ]; then
 		die 'Package was not specified'
 	fi
@@ -223,21 +219,16 @@ emerge_host() {
 	fi
 
 	pushd "$TCREPO/host-${1}"
-		tsukuri bi -c "$BUILD/host.config" -wp $clean
+		tsukuri bi -c "$BUILD/host.config" -wp
 	popd
 }
 
 emerge_target() {
-	local root force opts host
+	local root force opts
 
-	if [ "$DEBUG_CLEAN" = "yes" ]; then
-		clean="-e"
-	fi
-
-	while getopts ft opts; do
+	while getopts f opts; do
 		case $opts in
 			f) force="-f" ;;
-			t) host="yes" ;;
 		esac
 	done
 	shift $((OPTIND -1))
@@ -256,15 +247,31 @@ emerge_target() {
 		die 'Package does not exist'
 	fi
 
-	if [ "$host" = "yes" ]; then
-		pushd "$REPO/$1"
-			tsukuri bi -c "$BUILD/host.config" -w $force $clean
-		popd
+	tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $1
+}
 
-		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $clean $1
-	else
-		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $clean $1
+emerge_ht() {
+	local root
+
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
 	fi
+
+	if [ -n "$2" ]; then
+		root="$2"
+	else
+		root="$ROOTFS"
+	fi
+
+	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	pushd "$REPO/$1"
+		tsukuri bi -c "$BUILD/host.config" -w
+	popd
+
+	tsukuri em -c "$BUILD/target.config" -r "$root" -wND $1
 }
 
 stamp() {
