@@ -2,11 +2,12 @@
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  meson zlib bzip2 xz lz4 audit pam acl libcap shadow kbd kmod libelf iptables gperf hwids libseccomp libgcrypt gnutls cryptsetup
-# Dep x86_64:  gnu-efi
-# Dep i686:    gnu-efi
-# Dep aarch64: gnu-efi
-# Dep armv7hl: gnu-efi
-# Dep armv6hl: gnu-efi
+# Dep amd64:   gnu-efi
+# Dep x86:     gnu-efi
+# Dep arm64:   gnu-efi
+# Dep armv7l:  gnu-efi
+# Dep armv6l:  gnu-efi
+# Dep armv5te: gnu-efi
 # Section:     base
 
 name=systemd
@@ -38,7 +39,7 @@ build() {
 	local efi
 
 	case $BARCH in
-		x86_64|i686|aarch64|armv7hl|armv6hl)
+		amd64|x86|arm64|armv7l|armv6l|armv5te)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
 				efi="-Defi=true -Dgnu-efi=true -Defi-cc="$CC" -Defi-ld="$LD" -Defi-libdir=$ROOTFS/usr/lib -Defi-ldsdir=$ROOTFS/usr/lib -Defi-includedir=$ROOTFS/usr/include/efi"
 			else
@@ -137,19 +138,10 @@ build() {
 	#install -Dm644 "$STUFF"/pam.d/system-auth "$PKG"/usr/share/factory/etc/pam.d/system-auth
 
 	case $BARCH in
-		x86_64|i686|aarch64|armv7hl|armv6hl)
+		amd64|x86|arm64|armv7l|armv6l|armv5te)
 				install -Dm644 "$STUFF"/systemd/ataraxia.conf "$PKG"/usr/share/systemd/bootctl/ataraxia.conf
 				install -Dm644 "$STUFF"/systemd/loader.conf "$PKG"/usr/share/systemd/bootctl/loader.conf
 				;;
-	esac
-
-	case $BARCH in
-		aarch64|armv7hl|armv6hl)
-			systemctl -q --root "$PKG" enable getty@tty1.service getty@ttyAMA0.service remote-fs.target
-			;;
-		*)
-			systemctl -q --root "$PKG" enable getty@tty1.service remote-fs.target
-			;;
 	esac
 
 	rm -rf \

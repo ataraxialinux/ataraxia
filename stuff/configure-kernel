@@ -50,41 +50,48 @@ main() {
 	shift $((OPTIND - 1))
 
 	case $arch in
-		x86_64) defconfig="x86_64_defconfig" ;;
-		i686) defconfig="i386_defconfig" ;;
-		aarch64)
+		amd64) defconfig="x86_64_defconfig" ;;
+		x86) defconfig="i386_defconfig" ;;
+		arm64)
 			case $flavor in
 				rpi4) defconfig="bcm2711_defconfig" ;;
 				rpi3) defconfig="bcmrpi3_defconfig" ;;
 				*) defconfig="defconfig" ;;
 			esac
 			;;
-		armv7hl)
+		armv7l)
 			case $flavor in
 				rpi2) defconfig="bcm2709_defconfig" ;;
 				*) defconfig="vexpress_defconfig" ;;
 			esac
 			;;
-		armv6hl)
+		armv6l)
 			case $flavor in
 				rpi|rpizero|rpizerow) defconfig="bcmrpi_defconfig" ;;
 				*) defconfig="versatile_defconfig" ;;
 			esac
 			;;
+		armv5te) defconfig="mvebu_v5_defconfig" ;;
+		mips64|mips64el|mips|mipsel) defconfig="malta_defconfig" ;;
 		ppc64le) defconfig="pseries_le_defconfig" ;;
-		ppc64) defconfig="pseries_defconfig" ;;
-		s390x) defconfig="defconfig" ;;
+		ppc64)
+			case $flavor in
+				g5) defconfig="g5_defconfig" ;;
+				ps3) defconfig="ps3_defconfig" ;;
+				*) defconfig="pseries_defconfig" ;;
+			esac
+			;;
 		riscv64) defconfig="defconfig" ;;
 		*) echo "Architecture is not set or is not supported by Ataraxia Linux"; exit 1 ;;
 	esac
 
 	case $arch in
-		x86_64) karch="x86_64" ;;
-		i686) karch="i386" ;;
-		aarch64) karch="arm64" ;;
-		armv7hl|armv6hl) karch="arm" ;;
+		amd64) karch="x86_64" ;;
+		x86) karch="i386" ;;
+		arm64) karch="arm64" ;;
+		armv7l|armv6l|armv5te) karch="arm" ;;
+		mips64|mips64el|mips|mipsel)) karch="mips" ;;
 		ppc64le|ppc64) karch="powerpc" ;;
-		s390x) karch="s390" ;;
 		riscv64) karch="riscv" ;;
 		*) echo "Architecture is not set or is not supported by Ataraxia Linux"; exit 1 ;;
 	esac
@@ -92,7 +99,7 @@ main() {
 	make ARCH=$karch $defconfig
 
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS EFI_DISABLE_PCI_DMA \
 				NUMA AMD_NUMA NODES_SPAN_OTHER_NODES NEED_MULTIPLE_NODES USE_PERCPU_NUMA_NODE_ID \
 				ACPI_NUMA MICROCODE MICROCODE_EARLY MICROCODE_INTEL MICROCODE_AMD X86_PM_TIMER \
@@ -103,21 +110,37 @@ main() {
 				HYPERV_MOUSE HYPERV_NET HYPERV_BALLOON
 			varconfig NODES_SHIFT 6
 			;;
-		aarch64)
+		arm64)
 			case $flavor in
 				rpi4|rpi3) yconfig DMIID ;;
 				*) yconfig DMIID EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS EFI_DISABLE_PCI_DMA; nconfig EFI_CUSTOM_SSDT_OVERLAYS ;;
 			esac
 			;;
-		armv7hl|armv6hl)
+		armv7l|armv6l|armv5te)
 			yconfig DMIID
 			;;
-		s390x)
-			yconfig S390_GUEST
+		mips64|mips64el|mips|mipsel)
+			yconfig SERIAL_8250 SERIAL_8250_CONSOLE PCI NET_VENDOR_AMD PCNET32 POWER_RESET POWER_RESET_SYSCON
 			;;
 		riscv64)
 			yconfig RISCV_ISA_C RISCV_ISA_A FPU SIFIVE_PLIC EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS EFI_DISABLE_PCI_DMA
 			nconfig EFI_CUSTOM_SSDT_OVERLAYS
+			;;
+	esac
+
+	case $arch in
+		mips64|mips64el)
+			yconfig CPU_MIPS64_R2 MIPS_O32_FP64_SUPPORT 64BIT MIPS32_O32 MIPS32_N32
+			nconfig CPU_MIPS32_R2 32BIT
+			;;
+	esac
+
+	case $arch in
+		mip64|mips)
+			sed -i -e 's:CONFIG_CPU_LITTLE_ENDIAN:CONFIG_CPU_BIG_ENDIAN:' .config
+			;;
+		mips64el|mipsel)
+			sed -i -e 's:CONFIG_CPU_BIG_ENDIAN:CONFIG_CPU_LITTLE_ENDIAN:' .config
 			;;
 	esac
 
@@ -129,7 +152,7 @@ main() {
 	strconfig SYSTEM_TRUSTED_KEYS "certs/signing_key.pem"
 
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig RAS
 			;;
 		ppc64le|ppc64)
@@ -163,7 +186,7 @@ main() {
 
 	# Error detection and correction (x86)
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig EDAC_ATOMIC_SCRUB EDAC_SUPPORT EDAC EDAC_LEGACY_SYSFS EDAC_GHES
 			mconfig EDAC_DECODE_MCE EDAC_AMD64 EDAC_E752X EDAC_I82975X EDAC_I3000 EDAC_I3200 EDAC_IE31200 EDAC_X38 EDAC_I5400 EDAC_I7CORE \
 				EDAC_I5000 EDAC_I5100 EDAC_I7300 EDAC_SBRIDGE EDAC_SKX EDAC_I10NM EDAC_PND2
@@ -193,12 +216,12 @@ main() {
 
 	# Platform specific crypto
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig CRYPTO_AES_NI_INTEL CRYPTO_CRC32C_INTEL CRYPTO_GLUE_HELPER_X86 CRYPTO_GHASH_CLMUL_NI_INTEL
 			;;
 	esac
 	case $arch in
-		x86_64)
+		amd64)
 			yconfig CRYPTO_TWOFISH_X86_64 CRYPTO_CAMELLIA_X86_64 CRYPTO_SERPENT_SSE2_X86_64 \
 				CRYPTO_TWOFISH_AVX_X86_64 CRYPTO_SERPENT_AVX_X86_64 CRYPTO_SERPENT_AVX2_X86_64 \
 				CRYPTO_CAMELLIA_AESNI_AVX_X86_64 CRYPTO_CAMELLIA_AESNI_AVX2_X86_64 CRYPTO_CAST5_AVX_X86_64 \
@@ -207,14 +230,14 @@ main() {
 				CRYPTO_DES3_EDE_X86_64 CRYPTO_CHACHA20_X86_64 CRYPTO_BLOWFISH_X86_64 CRYPTO_CURVE25519_X86 \
 				CRYPTO_NHPOLY1305_AVX2
 			;;
-		aarch64)
+		arm64)
 			yconfig ARM64_CRYPTO CRYPTO_SHA256_ARM64 CRYPTO_SHA512_ARM64 CRYPTO_SHA1_ARM64_CE CRYPTO_SHA2_ARM64_CE \
 				CRYPTO_GHASH_ARM64_CE CRYPTO_AES_ARM64 CRYPTO_AES_ARM64_CE CRYPTO_AES_ARM64_CE_CCM CRYPTO_AES_ARM64_CE_BLK \
 				CRYPTO_AES_ARM64_NEON_BLK CRYPTO_SHA512_ARM64_CE CRYPTO_SHA3_ARM64 CRYPTO_SM3_ARM64_CE CRYPTO_SM4_ARM64_CE \
 				CRYPTO_CRCT10DIF_ARM64_CE CRYPTO_CHACHA20_NEON CRYPTO_POLY1305_NEON CRYPTO_NHPOLY1305_NEON CRYPTO_AES_ARM64_BS
 			nconfig CRYPTO_AEGIS128_SIMD
 			;;
-		armv7hl|armv6hl)
+		armv7l|armv6l|armv5te)
 			yconfig ARM_CRYPTO CRYPTO_SHA1_ARM CRYPTO_SHA256_ARM CRYPTO_SHA512_ARM CRYPTO_AES_ARM CRYPTO_AES_ARM_CE \
 				CRYPTO_GHASH_ARM_CE CRYPTO_CRCT10DIF_ARM_CE CRYPTO_CRC32_ARM_CE
 			nconfig CRYPTO_AEGIS128_SIMD
@@ -289,7 +312,7 @@ main() {
 
 	# Platform specific SCSI
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig VMWARE_PVSCSI XEN_SCSI_FRONTEND HYPERV_STORAGE
 			;;
 	esac
@@ -314,7 +337,7 @@ main() {
 
 	# Platform specific PATA
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig PATA_TOSHIBA PATA_TRIFLEX PATA_SCH
 			;;
 		*)
@@ -334,7 +357,7 @@ main() {
 
 	# Platform specific SDHCI
 	case $arch in
-		aarch64|armv7hl|armv5tel)
+		arm64|armv7l|armv6l|armv5te)
 			yconfig MMC_ARMMMCI MMC_QCOM_DML MMC_SDHCI_OF_ASPEED MMC_SDHCI_OF_AT91 MMC_SDHCI_CADENCE MMC_SDHCI_ESDHC_IMX \
 				MMC_SDHCI_TEGRA MMC_SDHCI_PXAV3 MMC_SDHCI_F_SDH30 MMC_SUNXI MMC_DW MMC_DW_PLTFM MMC_DW_EXYNOS MMC_DW_K3 MMC_DW_PCI MMC_DW_ROCKCHIP
 			nconfig MMC_DW_BLUEFIELD MMC_DW_HI3798CV200
@@ -406,7 +429,7 @@ main() {
 
 	# IEEE 1394 support (x86 and ppc)
 	case $arch in
-		x86_64|i686|ppc64le|ppc64)
+		amd64|x86|ppc64le|ppc64)
 			yconfig MACINTOSH_DRIVERS
 			mconfig FIREWIRE FIREWIRE_OHCI FIREWIRE_SBP2 FIREWIRE_NET FIREWIRE_NOSY
 			;;
@@ -483,7 +506,7 @@ main() {
 
 	# Platform specific HID support
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			mconfig INTEL_ISH_HID
 			;;
 	esac
@@ -596,13 +619,13 @@ main() {
 
 	# Platform specific networking drivers
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig IAVF 8139TOO_TUNE_TWISTER 8139TOO_8129 LIQUIDIO_VF
 			mconfig E100 E1000 E1000E IGB IGBVF IXGB IXGBE IXGBEVF I40E I40EVF ICE FM10K IGC \
 				ATP 8139CP 8139TOO R8169 LIQUIDIO
 			nconfig 8139_OLD_RX_RESET 8139TOO_PIO
 			;;
-		aarch64|armv7hl)
+		arm64|armv7l)
 			mconfig EMAC_ROCKCHIP
 			;;
 		ppc64le|ppc64)
@@ -655,7 +678,7 @@ main() {
 
 	# Platform specific virtualiztion
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig INTEL_IOMMU INTEL_IOMMU_SVM AMD_IOMMU AMD_IOMMU_V2 XEN_TMEM CLEANCACHE \
 				FRONTSWAP XEN_SELFBALLOONING X86_IO_APIC ACPI_PROCFS PCI_XEN
 			mconfig XEN_PCIDEV_BACKEND VIRTIO_MEM
@@ -673,7 +696,7 @@ main() {
 
 	# Platform specific GPU support
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig DRM_I915_CAPTURE_ERROR DRM_I915_COMPRESS_ERROR \
 				DRM_I915_USERPTR DRM_GMA600 DRM_GMA3600 DRM_VMWGFX_FBCON
 			mconfig DRM_I915 DRM_VMWGFX DRM_GMA500
@@ -802,8 +825,7 @@ main() {
 		SECURITY_DMESG_RESTRICT RESET_ATTACK_MITIGATION HW_RANDOM_TPM TCG_TPM DEBUG_VIRTUAL STATIC_USERMODEHELPER \
 		SECURITY_LOCKDOWN_LSM SECURITY_LOCKDOWN_LSM_EARLY LOCK_DOWN_KERNEL_FORCE_CONFIDENTIALITY INTEGRITY \
 		SECURITY_PERF_EVENTS_RESTRICT SECURITY_TIOCSTI_RESTRICT PAGE_SANITIZE_VERIFY SLAB_SANITIZE_VERIFY \
-		SECURITY_SAFESETID SECURITY_LOADPIN TRIM_UNUSED_KSYMS INIT_STACK_ALL CFI_CLANG CFI_CLANG_SHADOW \
-		SHADOW_CALL_STACK
+		SECURITY_SAFESETID SECURITY_LOADPIN TRIM_UNUSED_KSYMS INIT_STACK_ALL
 	nconfig DEVMEM DEVKMEM HARDENED_USERCOPY_FALLBACK HARDENED_USERCOPY_PAGESPAN ACPI_CUSTOM_METHOD COMPAT_BRK \
 		PROC_KCORE COMPAT_VDSO KEXEC HIBERNATION INET_DIAG LEGACY_PTYS SECURITY_SELINUX_DISABLE USERFAULTFD \
 		SLAB_MERGE_DEFAULT LDISC_AUTOLOAD DEVPORT RANDOM_TRUST_CPU RANDOM_TRUST_BOOTLOADER IKCONFIG IKHEADERS \
@@ -830,28 +852,31 @@ main() {
 
 	# Platform specific security
 	case $arch in
-		x86_64)
+		amd64)
 			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY PAGE_TABLE_ISOLATION LEGACY_VSYSCALL_NONE \
-				X86_MCE X86_MCE_INTE MTRR X86_PAT X86_SMAP X86_UMI
+				X86_MCE X86_MCE_INTE MTRR X86_PAT X86_SMAP X86_UMI CFI_CLANG CFI_CLANG_SHADOW SHADOW_CALL_STACK
 			nconfig X86_X32 MODIFY_LDT_SYSCALL X86_VSYSCALL_EMULATION LEGACY_VSYSCALL_EMULATE \
 				LEGACY_VSYSCALL_XONLY X86_IOPL_IOPERM X86_INTEL_MPX X86_INTEL_TSX_MODE_OFF \
 				X86_MSR X86_CPUID
 			varconfig DEFAULT_MMAP_MIN_ADDR 65536
 			;;
-		i686)
+		x86)
 			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY PAGE_TABLE_ISOLATION HIGHMEM64G X86_PAE \
-				LEGACY_VSYSCALL_NONE X86_MCE X86_MCE_INTE MTRR X86_PAT X86_SMAP X86_UMI
+				LEGACY_VSYSCALL_NONE X86_MCE X86_MCE_INTE MTRR X86_PAT X86_SMAP X86_UMI \
+				CFI_CLANG CFI_CLANG_SHADOW SHADOW_CALL_STACK
 			nconfig MODIFY_LDT_SYSCALL X86_VSYSCALL_EMULATION LEGACY_VSYSCALL_EMULATE \
 				LEGACY_VSYSCALL_XONLY X86_IOPL_IOPERM X86_INTEL_MPX X86_INTEL_TSX_MODE_OFF \
 				X86_MSR X86_CPUID
 			varconfig DEFAULT_MMAP_MIN_ADDR 65536
 			;;
-		aarch64)
-			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY ARM64_SW_TTBR0_PAN UNMAP_KERNEL_AT_EL0
+		arm64)
+			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY ARM64_SW_TTBR0_PAN UNMAP_KERNEL_AT_EL0 \
+				CFI_CLANG CFI_CLANG_SHADOW SHADOW_CALL_STACK
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
 			;;
-		armv7hl|armv6hl)
-			yconfig VMSPLIT_3G STRICT_MEMORY_RWX CPU_SW_DOMAIN_PAN
+		armv7l|armv6l|armv5te)
+			yconfig VMSPLIT_3G STRICT_MEMORY_RWX CPU_SW_DOMAIN_PAN \
+				CFI_CLANG CFI_CLANG_SHADOW SHADOW_CALL_STACK
 			nconfig OABI_COMPAT
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
 			;;
@@ -870,7 +895,7 @@ main() {
 
 	# Laptop drivers
 	case $arch in
-		x86_64|i686)
+		amd64|x86)
 			yconfig X86_PLATFORM_DEVICES INTEL_TURBO_MAX_3 INTEL_PMC_CORE THINKPAD_ACPI_ALSA_SUPPORT \
 				THINKPAD_ACPI_VIDEO THINKPAD_ACPI_HOTKEY_POLL SONYPI_COMPAT DELL_SMBIOS_WMI DELL_SMBIOS_SMM \
 				ACPI_I2C_OPREGION

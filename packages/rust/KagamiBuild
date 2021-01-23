@@ -15,34 +15,31 @@ source=("https://github.com/ataraxialinux/rustie/releases/download/$version/rust
 
 build() {
 	case $BARCH in
-		x86_64)
+		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			export ver=nightly
 			;;
-		i686)
+		x86)
 			export RTARGET="i686-gentoo-linux-musl"
 			export ver=1.46.0
 			;;
-		aarch64)
+		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
 			export ver=nightly
 			;;
-		armv7hl)
+		armv7l)
 			export RTARGET="armv7-unknown-linux-musleabihf"
 			export ver=nightly
 			;;
-		armv6hl)
+		armv6l)
 			export RTARGET="arm-unknown-linux-musleabihf"
 			export ver=nightly
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
+			die "Architecture is not set or is not supported by Rust Language"
 	esac
 
 	pushd "$SRC"/rust-$ver-$RTARGET
-		sed -i 's.\\-.-.g' install.sh
-		sed -i 's.\\_._.g' install.sh
 		bash install.sh \
 			--prefix=/usr \
 			--destdir="$PKG" \

@@ -16,34 +16,36 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 build() {
+	local KARCH IMAGELOC
+
 	case $BARCH in
-		x86_64)
-			export XKARCH="x86_64"
-			export IMAGELOC="arch/x86/boot/bzImage"
+		amd64)
+			KARCH="x86_64"
+			IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		i686)
-			export XKARCH="i386"
-			export IMAGELOC="arch/x86/boot/bzImage"
+		x86)
+			KARCH="i386"
+			IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		aarch64)
-			export XKARCH="arm64"
-			export IMAGELOC="arch/arm64/boot/Image"
+		arm64)
+			KARCH="arm64"
+			IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armv7hl|armv6hl)
-			export XKARCH="arm"
-			export IMAGELOC="arch/arm/boot/zImage"
+		armv7l|armv6l|armv5te)
+			KARCH="arm"
+			IMAGELOC="arch/arm/boot/zImage"
+			;;
+		mips64|mips64el|mips|mipsel)
+			KARCH="mips"
+			IMAGELOC="vmlinux"
 			;;
 		ppc64le|ppc64)
-			export XKARCH="powerpc"
-			export IMAGELOC="vmlinux"
-			;;
-		s390x)
-			export XKARCH="s390"
-			export IMAGELOC="arch/s390/boot/bzImage"
+			KARCH="powerpc"
+			IMAGELOC="vmlinux"
 			;;
 		riscv64)
-			export XKARCH="riscv"
-			export IMAGELOC="arch/riscv/boot/Image"
+			KARCH="riscv"
+			IMAGELOC="arch/riscv/boot/Image"
 			;;
 		*)
 			echo "Architecture is not set or is not supported by Ataraxia Linux"
@@ -77,25 +79,25 @@ build() {
 	"$STUFF"/configure-kernel -a $BARCH
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE}
+		yes '' | make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE}
 	else
-		yes '' | make ARCH=$XKARCH
+		yes '' | make ARCH=$KARCH
 	fi
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
-		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$KARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
 	depmod -a -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
-		aarch64|armv7hl|armv6hl)
+		arm64|armv7l|armv6l|armv5te)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
-				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
-				make ARCH=$XKARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$KARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			fi
 			;;
 	esac

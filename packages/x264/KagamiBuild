@@ -1,7 +1,8 @@
 # Description: Open Source H264/AVC video encoder
 # URL:         https://www.videolan.org/developers/x264.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  nasm
+# Dep amd64:   nasm
+# Dep x86:     nasm
 # Section:     video
 
 name=x264
@@ -12,12 +13,10 @@ source=("https://download.videolan.org/x264/snapshots/x264-snapshot-${version/+/
 build() {
 	cd "$SRC"/x264-snapshot-${version/+/-}-stable
 	case $BARCH in
-		i686|armv7hl|armv6hl)
+		x86|armv7l|armv6l)
 			export BUILDFLAGS="--disable-asm"
 			;;
 	esac
-
-	# FIXME: fix opencl build
 
 	./configure $BUILDFLAGS \
 		--host=$XTARGET \

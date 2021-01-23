@@ -1,7 +1,9 @@
 # Description: Standalone mail and news reader from mozilla.org
 # URL:         https://www.mozilla.org/thunderbird/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python autoconf2.13 clang cbindgen yasm nasm node unzip zip dbus-glib gtk3 gtk2 libnotify nss pulseaudio startup-notification icu libevent libwebp dav1d aom libvpx ffmpeg
+# Depends on:  python autoconf2.13 clang cbindgen node unzip zip dbus-glib gtk3 gtk2 libnotify nss pulseaudio startup-notification icu libevent libwebp dav1d aom libvpx ffmpeg
+# Dep amd64:   nasm yasm
+# Dep x86:     nasm yasm
 # Section:     web
 
 name=thunderbird
@@ -14,31 +16,30 @@ clear_vendor_checksums() {
 }
 
 build() {
-	export CFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
-	export CXXFLAGS="-g0 -Os -s -fexcess-precision=fast -fomit-frame-pointer -Wl,--as-needed -pipe"
+	export CFLAGS="-g0 -Os -s -fomit-frame-pointer -Wl,--as-needed -pipe"
+	export CXXFLAGS="-g0 -Os -s -fomit-frame-pointer -Wl,--as-needed -pipe"
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
 
 	case $BARCH in
-		x86_64)
+		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			;;
-		i686)
+		x86)
 			export RTARGET="i686-gentoo-linux-musl"
 			;;
-		aarch64)
+		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
 			;;
-		armv7hl)
+		armv7l)
 			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
-		armv6hl)
+		armv6l)
 			export RTARGET="arm-unknown-linux-musleabihf"
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
+			die "Architecture is not set or is not supported by Rust Language"
 	esac
 
 	cd "$SRC"/$name-$version

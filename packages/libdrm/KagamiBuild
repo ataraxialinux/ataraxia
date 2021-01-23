@@ -11,14 +11,14 @@ source=("https://dri.freedesktop.org/$name/$name-$version.tar.xz")
 
 build() {
 	case $BARCH in
-		x86_64|i686)
+		amd64|x86)
 			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Dvmwgfx=true -Detnaviv=true -Dintel=true"
+			;;
+		arm64|armv7l|armv6l)
+			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Domap=true -Dexynos=true -Dfreedreno=true -Dtegra=true -Dvc4=true -Detnaviv=true"
 			;;
 		ppc64le|ppc64|riscv64)
 			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Detnaviv=true"
-			;;
-		aarch64|armv7hl|armv6hl)
-			drm="-Damdgpu=true -Dradeon=true -Dnouveau=true -Domap=true -Dexynos=true -Dfreedreno=true -Dtegra=true -Dvc4=true -Detnaviv=true"
 			;;
 		*)
 			drm=""

@@ -11,29 +11,29 @@ source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
 
 build() {
 	case $BARCH in
-		x86_64|i686)
+		amd64|x86)
 			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv,iris,zink"
 			dri="i915,i965,r100,r200,nouveau"
 			vulkan="intel,amd,swrast"
 			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
+			;;
+		arm64)
+			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
+			dri="r100,r200,nouveau"
+			vulkan="amd,freedreno,broadcom,swrast"
+			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
+			;;
+		armv7l|armv6l)
+			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
+			dri="nouveau"
+			vulkan="freedreno,broadcom,swrast"
+			opts="-Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 		ppc64le|ppc64|riscv64)
 			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv,zink"
 			dri="r100,r200,nouveau"
 			vulkan="amd,swrast"
 			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
-			;;
-		aarch64)
-			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
-			dri="r100,r200,nouveau"
-			vulkan="amd,freedreno,broadcom,swrast"
-			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
-			;;
-		armv7hl|armv6hl)
-			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
-			dri="nouveau"
-			vulkan="freedreno,broadcom,swrast"
-			opts="-Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
 		*)
 			gallium="swrast,virgl,zink"

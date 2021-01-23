@@ -1,7 +1,9 @@
 # Description: A high quality MPEG Audio Layer III (MP3) encoder
 # URL:         http://lame.sourceforge.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  nasm ncurses
+# Depends on:  ncurses
+# Dep amd64:   nasm
+# Dep x86:     nasm
 # Section:     audio
 
 name=lame
@@ -10,10 +12,15 @@ release=2
 source=("https://downloads.sourceforge.net/$name/$name-$version.tar.gz")
 
 build() {
+	case $BARCH in
+		amd64|x86)
+			BUILDFLAGS="$BUILDFLAGS --enable-nasm"
+			;;
+	esac
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--enable-nasm \
 		--enable-shared
 	make
 	make DESTDIR="$PKG" install
