@@ -82,15 +82,20 @@ export_variables() {
 export_cflags() {
 	check_for_arch "$1"
 
+	# Investigate
+	#
+	# -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden
+	#
+
 	case "$1" in
-#		amd64|x86)
-#			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=shadow-call-stack -fsanitize=cfi -fsanitize-cfi-cross-dso -fvisibility=hidden -mretpoline -pipe"
-#			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
-#			;;
-#		arm64|armv7l|armv6l|armv5te)
-#			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=shadow-call-stack -fsanitize=cfi -fsanitize-cfi-cross-dso  -fvisibility=hidden -pipe"
-#			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
-#			;;
+		amd64|x86)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=safe-stack -fsanitize=shadow-call-stack -mretpoline -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		arm64|armv7l|armv6l|armv5te)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=safe-stack -fsanitize=shadow-call-stack -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
 		*)
 			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fstack-protector-strong -fstack-clash-protection -flto -fsanitize=shadow-call-stack -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
@@ -259,5 +264,31 @@ emerge_target() {
 		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $clean $1
 	else
 		tsukuri em -c "$BUILD/target.config" -r "$root" -wND $force $clean $1
+	fi
+}
+
+stamp() {
+	local target="$1"
+
+	if [ -z "$target" ]; then
+		return 1
+	fi
+
+	if [ ! -f "$BUILD/.${target}_stamp" ]; then
+		touch "$BUILD/.${target}_stamp"
+	fi
+}
+
+check_stamp() {
+	local target="$1"
+
+	if [ -z "$target" ]; then
+		return 1
+	fi
+
+	if [ -f "$BUILD/.${target}_stamp" ]; then
+		return 0
+	else
+		return 1
 	fi
 }

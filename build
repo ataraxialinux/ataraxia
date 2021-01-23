@@ -20,19 +20,13 @@ set -e
 
 source core.functions
 
-main() {
-	check_for_root
-	check_for_arch "$BARCH"
-	parse_architecture "$BARCH"
+build_toolchain() {
+	if ! check_stamp env; then
+		msg "Preparing environment for build"
+		make_environment
+	fi
 
-	msg "Exporting variables"
-	export_variables "$BARCH"
-	export_cflags "$BARCH"
-
-	msg "Preparing environment for build"
-	make_environment
-
-	msg "Building cross-toolchain for '${BARCH}' platform"
+	msg "Building cross-toolchain for '${BARCH}' architecture"
 	emerge_host gettext-tiny
 	emerge_host ncurses
 	emerge_host texinfo
@@ -63,6 +57,71 @@ main() {
 			emerge_host grub
 			;;
 	esac
+
+	msg "Cleaning up"
+	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+	install -m755 "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s|uncom|$ORIGMAKE|" "$TOOLS"/bin/make
+
+	stamp toolchain
+
+	msg "Toolchain has been built successfuly."
+}
+
+build_system() {
+	if ! check_stamp toolchain; then
+		die "Build toolchain first."
+	fi
+
+	msg "Building target system for '${BARCH}' architecture"
+
+	true
+
+	stamp system
+
+	msg "System has been built successfuly."
+}
+
+main() {
+	local mode opts
+	local date="$(date)"
+
+	case "$1" in
+		target) shift; mode="build_target" ;;
+	esac
+
+	while getopts b: opts; do
+		case $opts in
+			b) BARCH="$OPTARG" ;;
+		esac
+	done
+	shift $((OPTIND -1))
+
+	msg 'Invoking `Marisa` on '"${date}"''
+
+	check_for_root
+
+	if [ "$mode" = "build_target" ]; then
+		if [ -z "$1" ]; then
+			die "Target is not specified."
+		fi
+
+		check_for_arch "$BARCH"
+
+		msg "Exporting variables"
+		export_variables "$BARCH"
+		export_cflags "$BARCH"
+
+		case "$1" in
+			toolchain) build_toolchain ;;
+			system) build_toolchain; build_system ;;
+			*) die "Unknown target" ;;
+		esac
+	fi
 }
 
 main "$@"

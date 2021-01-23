@@ -14,13 +14,17 @@ build() {
 	export CFLAGS="${CFLAGS/-fvisibility=hidden/}"
 	export CFLAGS="${CFLAGS/-fsanitize=cfi/}"
 	export CFLAGS="${CFLAGS/-fsanitize-cfi-cross-dso/}"
-	export CFLAGS="${CFLAGS/-fsanitize=shadow-call-stack/}"
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/musl/0001-Implement-LLVM-SafeStack.patch
+
 	./configure $TOOLFLAGS \
 		--prefix=/usr \
 		--syslibdir=/usr/lib \
 		--enable-optimize=size
 	make
 	make DESTDIR="$PKG" install
+
+	install -d "$PKG"/usr/bin
+	ln -sf ../lib/libc.so "$PKG"/usr/bin/ldd
 }

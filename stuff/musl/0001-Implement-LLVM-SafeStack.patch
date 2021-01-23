@@ -1,0 +1,517 @@
+From 470bdcdf7f34c880381f0cfd594662a97bbaa766 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 24 Jan 2021 02:53:23 +0900
+Subject: [PATCH] Implement LLVM SafeStack
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ Makefile                    |  2 +-
+ arch/aarch64/syscall_arch.h |  2 ++
+ arch/i386/syscall_arch.h    |  2 ++
+ arch/x86_64/syscall_arch.h  |  2 ++
+ configure                   | 23 ++++++++++++++++++
+ crt/crt1.c                  |  1 +
+ ldso/dlstart.c              |  2 +-
+ ldso/dynlink.c              | 48 ++++++++++++++++++-------------------
+ src/env/__init_tls.c        |  2 +-
+ src/env/__libc_start_main.c | 19 ++++++++++++---
+ src/include/features.h      |  6 +++++
+ src/stdio/vfprintf.c        | 18 +++++++-------
+ 12 files changed, 88 insertions(+), 39 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index e8cc443..cdf8531 100644
+--- a/Makefile
++++ b/Makefile
+@@ -127,7 +127,7 @@ NOSSP_OBJS = $(CRT_OBJS) $(LDSO_OBJS) $(filter \
+ 	, $(LIBC_OBJS))
+ $(NOSSP_OBJS) $(NOSSP_OBJS:%.o=%.lo): CFLAGS_ALL += $(CFLAGS_NOSSP)
+ 
+-$(CRT_OBJS): CFLAGS_ALL += -DCRT
++$(CRT_OBJS): CFLAGS_ALL += -DCRT -fno-sanitize=safe-stack
+ 
+ $(LOBJS) $(LDSO_OBJS): CFLAGS_ALL += -fPIC
+ 
+diff --git a/arch/aarch64/syscall_arch.h b/arch/aarch64/syscall_arch.h
+index 504983a..5a63849 100644
+--- a/arch/aarch64/syscall_arch.h
++++ b/arch/aarch64/syscall_arch.h
+@@ -71,8 +71,10 @@ static inline long __syscall6(long n, long a, long b, long c, long d, long e, lo
+ 	__asm_syscall("r"(x8), "0"(x0), "r"(x1), "r"(x2), "r"(x3), "r"(x4), "r"(x5));
+ }
+ 
++#if !__has_feature(safe_stack)
+ #define VDSO_USEFUL
+ #define VDSO_CGT_SYM "__kernel_clock_gettime"
+ #define VDSO_CGT_VER "LINUX_2.6.39"
++#endif
+ 
+ #define IPC_64 0
+diff --git a/arch/i386/syscall_arch.h b/arch/i386/syscall_arch.h
+index f92b7aa..4e960d8 100644
+--- a/arch/i386/syscall_arch.h
++++ b/arch/i386/syscall_arch.h
+@@ -82,8 +82,10 @@ static inline long __syscall6(long n, long a1, long a2, long a3, long a4, long a
+ 	return __ret;
+ }
+ 
++#if !__has_feature(safe_stack)
+ #define VDSO_USEFUL
+ #define VDSO_CGT32_SYM "__vdso_clock_gettime"
+ #define VDSO_CGT32_VER "LINUX_2.6"
+ #define VDSO_CGT_SYM "__vdso_clock_gettime64"
+ #define VDSO_CGT_VER "LINUX_2.6"
++#endif
+diff --git a/arch/x86_64/syscall_arch.h b/arch/x86_64/syscall_arch.h
+index 92d5c17..2cd4083 100644
+--- a/arch/x86_64/syscall_arch.h
++++ b/arch/x86_64/syscall_arch.h
+@@ -61,10 +61,12 @@ static __inline long __syscall6(long n, long a1, long a2, long a3, long a4, long
+ 	return ret;
+ }
+ 
++#if !__has_feature(safe_stack)
+ #define VDSO_USEFUL
+ #define VDSO_CGT_SYM "__vdso_clock_gettime"
+ #define VDSO_CGT_VER "LINUX_2.6"
+ #define VDSO_GETCPU_SYM "__vdso_getcpu"
+ #define VDSO_GETCPU_VER "LINUX_2.6"
++#endif
+ 
+ #define IPC_64 0
+diff --git a/configure b/configure
+index a5231a0..73eaf6d 100755
+--- a/configure
++++ b/configure
+@@ -598,6 +598,29 @@ test -z "$LIBCC" && try_libcc=`$CC -print-libgcc-file-name 2>/dev/null` \
+                  && tryldflag LIBCC "$try_libcc"
+ test -z "$LIBCC" && try_libcc=`$CC -print-file-name=libpcc.a 2>/dev/null` \
+                  && tryldflag LIBCC "$try_libcc"
++
++if test "$cc_family" = clang ; then
++printf "checking whether compiler needs feature(safe_stack)... "
++cat > "$tmpc" <<EOF
++int foo()
++{
++#ifdef __clang__
++#if __has_feature(safe_stack)
++return 0;
++#endif
++#endif
++}
++EOF
++if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++printf "yes\n"
++test -z "$LIBSAFESTACK" && try_libsafestack=`$CC -print-libgcc-file-name | sed 's/builtins/safestack/'` \
++                 && tryldflag LIBSAFESTACK "$try_libsafestack"
++LIBCC="$LIBCC $LIBSAFESTACK"
++else
++printf "no\n"
++fi
++fi
++
+ printf "using compiler runtime libraries: %s\n" "$LIBCC"
+ 
+ # Figure out arch variants for archs with variants
+diff --git a/crt/crt1.c b/crt/crt1.c
+index 8fe8ab5..f96a4f4 100644
+--- a/crt/crt1.c
++++ b/crt/crt1.c
+@@ -15,5 +15,6 @@ void _start_c(long *p)
+ {
+ 	int argc = p[0];
+ 	char **argv = (void *)(p+1);
++
+ 	__libc_start_main(main, argc, argv, _init, _fini, 0);
+ }
+diff --git a/ldso/dlstart.c b/ldso/dlstart.c
+index 20d50f2..de42d0a 100644
+--- a/ldso/dlstart.c
++++ b/ldso/dlstart.c
+@@ -18,7 +18,7 @@
+ 	*(fp) = static_func_ptr; } while(0)
+ #endif
+ 
+-hidden void _dlstart_c(size_t *sp, size_t *dynv)
++__NO_SAFESTACK hidden void _dlstart_c(size_t *sp, size_t *dynv)
+ {
+ 	size_t i, aux[AUX_CNT], dyn[DYN_CNT];
+ 	size_t *rel, rel_size, base;
+diff --git a/ldso/dynlink.c b/ldso/dynlink.c
+index 6b868c8..6827074 100644
+--- a/ldso/dynlink.c
++++ b/ldso/dynlink.c
+@@ -203,7 +203,7 @@ static void (*fdbarrier(void *p))()
+ #define fpaddr(p, v) ((void (*)())laddr(p, v))
+ #endif
+ 
+-static void decode_vec(size_t *v, size_t *a, size_t cnt)
++__NO_SAFESTACK static void decode_vec(size_t *v, size_t *a, size_t cnt)
+ {
+ 	size_t i;
+ 	for (i=0; i<cnt; i++) a[i] = 0;
+@@ -213,7 +213,7 @@ static void decode_vec(size_t *v, size_t *a, size_t cnt)
+ 	}
+ }
+ 
+-static int search_vec(size_t *v, size_t *r, size_t key)
++__NO_SAFESTACK static int search_vec(size_t *v, size_t *r, size_t key)
+ {
+ 	for (; v[0]!=key; v+=2)
+ 		if (!v[0]) return 0;
+@@ -221,7 +221,7 @@ static int search_vec(size_t *v, size_t *r, size_t key)
+ 	return 1;
+ }
+ 
+-static uint32_t sysv_hash(const char *s0)
++__NO_SAFESTACK static uint32_t sysv_hash(const char *s0)
+ {
+ 	const unsigned char *s = (void *)s0;
+ 	uint_fast32_t h = 0;
+@@ -232,7 +232,7 @@ static uint32_t sysv_hash(const char *s0)
+ 	return h & 0xfffffff;
+ }
+ 
+-static uint32_t gnu_hash(const char *s0)
++__NO_SAFESTACK static uint32_t gnu_hash(const char *s0)
+ {
+ 	const unsigned char *s = (void *)s0;
+ 	uint_fast32_t h = 5381;
+@@ -241,7 +241,7 @@ static uint32_t gnu_hash(const char *s0)
+ 	return h;
+ }
+ 
+-static Sym *sysv_lookup(const char *s, uint32_t h, struct dso *dso)
++__NO_SAFESTACK static Sym *sysv_lookup(const char *s, uint32_t h, struct dso *dso)
+ {
+ 	size_t i;
+ 	Sym *syms = dso->syms;
+@@ -255,7 +255,7 @@ static Sym *sysv_lookup(const char *s, uint32_t h, struct dso *dso)
+ 	return 0;
+ }
+ 
+-static Sym *gnu_lookup(uint32_t h1, uint32_t *hashtab, struct dso *dso, const char *s)
++__NO_SAFESTACK static Sym *gnu_lookup(uint32_t h1, uint32_t *hashtab, struct dso *dso, const char *s)
+ {
+ 	uint32_t nbuckets = hashtab[0];
+ 	uint32_t *buckets = hashtab + 4 + hashtab[2]*(sizeof(size_t)/4);
+@@ -276,7 +276,7 @@ static Sym *gnu_lookup(uint32_t h1, uint32_t *hashtab, struct dso *dso, const ch
+ 	return 0;
+ }
+ 
+-static Sym *gnu_lookup_filtered(uint32_t h1, uint32_t *hashtab, struct dso *dso, const char *s, uint32_t fofs, size_t fmask)
++__NO_SAFESTACK static Sym *gnu_lookup_filtered(uint32_t h1, uint32_t *hashtab, struct dso *dso, const char *s, uint32_t fofs, size_t fmask)
+ {
+ 	const size_t *bloomwords = (const void *)(hashtab+4);
+ 	size_t f = bloomwords[fofs & (hashtab[2]-1)];
+@@ -298,7 +298,7 @@ static Sym *gnu_lookup_filtered(uint32_t h1, uint32_t *hashtab, struct dso *dso,
+ #if defined(__GNUC__)
+ __attribute__((always_inline))
+ #endif
+-static inline struct symdef find_sym2(struct dso *dso, const char *s, int need_def, int use_deps)
++__NO_SAFESTACK static inline struct symdef find_sym2(struct dso *dso, const char *s, int need_def, int use_deps)
+ {
+ 	uint32_t h = 0, gh = gnu_hash(s), gho = gh / (8*sizeof(size_t)), *ght;
+ 	size_t ghm = 1ul << gh % (8*sizeof(size_t));
+@@ -329,12 +329,12 @@ static inline struct symdef find_sym2(struct dso *dso, const char *s, int need_d
+ 	return def;
+ }
+ 
+-static struct symdef find_sym(struct dso *dso, const char *s, int need_def)
++__NO_SAFESTACK static struct symdef find_sym(struct dso *dso, const char *s, int need_def)
+ {
+ 	return find_sym2(dso, s, need_def, 0);
+ }
+ 
+-static void do_relocs(struct dso *dso, size_t *rel, size_t rel_size, size_t stride)
++__NO_SAFESTACK static void do_relocs(struct dso *dso, size_t *rel, size_t rel_size, size_t stride)
+ {
+ 	unsigned char *base = dso->base;
+ 	Sym *syms = dso->syms;
+@@ -603,7 +603,7 @@ static void *mmap_fixed(void *p, size_t n, int prot, int flags, int fd, off_t of
+ 	return p;
+ }
+ 
+-static void unmap_library(struct dso *dso)
++__NO_SAFESTACK static void unmap_library(struct dso *dso)
+ {
+ 	if (dso->loadmap) {
+ 		size_t i;
+@@ -619,7 +619,7 @@ static void unmap_library(struct dso *dso)
+ 	}
+ }
+ 
+-static void *map_library(int fd, struct dso *dso)
++__NO_SAFESTACK static void *map_library(int fd, struct dso *dso)
+ {
+ 	Ehdr buf[(896+sizeof(Ehdr))/sizeof(Ehdr)];
+ 	void *allocated_buf=0;
+@@ -908,7 +908,7 @@ static int fixup_rpath(struct dso *p, char *buf, size_t buf_size)
+ 	return 0;
+ }
+ 
+-static void decode_dyn(struct dso *p)
++__NO_SAFESTACK static void decode_dyn(struct dso *p)
+ {
+ 	size_t dyn[DYN_CNT];
+ 	decode_vec(p->dynv, dyn, DYN_CNT);
+@@ -987,7 +987,7 @@ static void makefuncdescs(struct dso *p)
+ 	}
+ }
+ 
+-static struct dso *load_library(const char *name, struct dso *needed_by)
++__NO_SAFESTACK static struct dso *load_library(const char *name, struct dso *needed_by)
+ {
+ 	char buf[2*NAME_MAX+2];
+ 	const char *pathname;
+@@ -1193,7 +1193,7 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
+ 	return p;
+ }
+ 
+-static void load_direct_deps(struct dso *p)
++__NO_SAFESTACK static void load_direct_deps(struct dso *p)
+ {
+ 	size_t i, cnt=0;
+ 
+@@ -1230,14 +1230,14 @@ static void load_direct_deps(struct dso *p)
+ 	p->ndeps_direct = cnt;
+ }
+ 
+-static void load_deps(struct dso *p)
++__NO_SAFESTACK static void load_deps(struct dso *p)
+ {
+ 	if (p->deps) return;
+ 	for (; p; p=p->next)
+ 		load_direct_deps(p);
+ }
+ 
+-static void extend_bfs_deps(struct dso *p)
++__NO_SAFESTACK static void extend_bfs_deps(struct dso *p)
+ {
+ 	size_t i, j, cnt, ndeps_all;
+ 	struct dso **tmp;
+@@ -1288,7 +1288,7 @@ static void extend_bfs_deps(struct dso *p)
+ 		p->mark = 0;
+ }
+ 
+-static void load_preload(char *s)
++__NO_SAFESTACK static void load_preload(char *s)
+ {
+ 	int tmp;
+ 	char *z;
+@@ -1322,7 +1322,7 @@ static void revert_syms(struct dso *old_tail)
+ 	syms_tail = old_tail;
+ }
+ 
+-static void do_mips_relocs(struct dso *p, size_t *got)
++__NO_SAFESTACK static void do_mips_relocs(struct dso *p, size_t *got)
+ {
+ 	size_t i, j, rel[2];
+ 	unsigned char *base = p->base;
+@@ -1342,7 +1342,7 @@ static void do_mips_relocs(struct dso *p, size_t *got)
+ 	}
+ }
+ 
+-static void reloc_all(struct dso *p)
++__NO_SAFESTACK static void reloc_all(struct dso *p)
+ {
+ 	size_t dyn[DYN_CNT];
+ 	for (; p; p=p->next) {
+@@ -1367,7 +1367,7 @@ static void reloc_all(struct dso *p)
+ 	}
+ }
+ 
+-static void kernel_mapped_dso(struct dso *p)
++__NO_SAFESTACK static void kernel_mapped_dso(struct dso *p)
+ {
+ 	size_t min_addr = -1, max_addr = 0, cnt;
+ 	Phdr *ph = p->phdr;
+@@ -1565,7 +1565,7 @@ void __init_tls(size_t *auxv)
+ {
+ }
+ 
+-static void update_tls_size()
++__NO_SAFESTACK static void update_tls_size()
+ {
+ 	libc.tls_cnt = tls_cnt;
+ 	libc.tls_align = tls_align;
+@@ -1638,7 +1638,7 @@ static void install_new_tls(void)
+  * linker itself, but some of the relocations performed may need to be
+  * replaced later due to copy relocations in the main program. */
+ 
+-hidden void __dls2(unsigned char *base, size_t *sp)
++__NO_SAFESTACK hidden void __dls2(unsigned char *base, size_t *sp)
+ {
+ 	size_t *auxv;
+ 	for (auxv=sp+1+*sp+1; *auxv; auxv++);
+@@ -1726,7 +1726,7 @@ void __dls2b(size_t *sp, size_t *auxv)
+  * process dependencies and relocations for the main application and
+  * transfer control to its entry point. */
+ 
+-void __dls3(size_t *sp, size_t *auxv)
++__NO_SAFESTACK void __dls3(size_t *sp, size_t *auxv)
+ {
+ 	static struct dso app, vdso;
+ 	size_t aux[AUX_CNT];
+diff --git a/src/env/__init_tls.c b/src/env/__init_tls.c
+index a93141e..2c4180b 100644
+--- a/src/env/__init_tls.c
++++ b/src/env/__init_tls.c
+@@ -36,7 +36,7 @@ static struct builtin_tls {
+ 
+ static struct tls_module main_tls;
+ 
+-void *__copy_tls(unsigned char *mem)
++__NO_SAFESTACK void *__copy_tls(unsigned char *mem)
+ {
+ 	pthread_t td;
+ 	struct tls_module *p;
+diff --git a/src/env/__libc_start_main.c b/src/env/__libc_start_main.c
+index 8fbe526..c95ec83 100644
+--- a/src/env/__libc_start_main.c
++++ b/src/env/__libc_start_main.c
+@@ -15,12 +15,20 @@ extern weak hidden void (*const __init_array_start)(void), (*const __init_array_
+ static void dummy1(void *p) {}
+ weak_alias(dummy1, __init_ssp);
+ 
++#ifdef __clang__
++#define PTHREAD_STACK_DEFAULT (1 << 20)
++#define PTHREAD_UNSAFE_STACK_ALIGNMENT 16
++
++__thread void *__safestack_unsafe_stack_ptr;
++char initial_unsafe_stack[PTHREAD_STACK_DEFAULT];
++#endif
++
+ #define AUX_CNT 38
+ 
+ #ifdef __GNUC__
+ __attribute__((__noinline__))
+ #endif
+-void __init_libc(char **envp, char *pn)
++__NO_SAFESTACK void __init_libc(char **envp, char *pn)
+ {
+ 	size_t i, *auxv, aux[AUX_CNT] = { 0 };
+ 	__environ = envp;
+@@ -69,7 +77,7 @@ weak_alias(libc_start_init, __libc_start_init);
+ typedef int lsm2_fn(int (*)(int,char **,char **), int, char **);
+ static lsm2_fn libc_start_main_stage2;
+ 
+-int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
++__NO_SAFESTACK int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
+ {
+ 	char **envp = argv+argc+1;
+ 
+@@ -85,11 +93,16 @@ int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
+ 	return stage2(main, argc, argv);
+ }
+ 
+-static int libc_start_main_stage2(int (*main)(int,char **,char **), int argc, char **argv)
++__NO_SAFESTACK static int libc_start_main_stage2(int (*main)(int,char **,char **), int argc, char **argv)
+ {
+ 	char **envp = argv+argc+1;
+ 	__libc_start_init();
+ 
++#ifdef __clang__
++	/* Setup LLVM SafeStack */
++	__safestack_unsafe_stack_ptr = &initial_unsafe_stack[PTHREAD_STACK_DEFAULT];
++#endif
++
+ 	/* Pass control to the application */
+ 	exit(main(argc, argv, envp));
+ 	return 0;
+diff --git a/src/include/features.h b/src/include/features.h
+index f17bd15..5ce9865 100644
+--- a/src/include/features.h
++++ b/src/include/features.h
+@@ -8,4 +8,10 @@
+ #define weak_alias(old, new) \
+ 	extern __typeof(old) new __attribute__((__weak__, __alias__(#old)))
+ 
++#if defined(__clang__)
++#define __NO_SAFESTACK __attribute__((__no_sanitize__("safe-stack", "shadow-call-stack")))
++#else
++#define __NO_SAFESTACK
++#endif
++
+ #endif
+diff --git a/src/stdio/vfprintf.c b/src/stdio/vfprintf.c
+index 9b961e7..6d8cb72 100644
+--- a/src/stdio/vfprintf.c
++++ b/src/stdio/vfprintf.c
+@@ -106,7 +106,7 @@ union arg
+ 	void *p;
+ };
+ 
+-static void pop_arg(union arg *arg, int type, va_list *ap)
++__NO_SAFESTACK static void pop_arg(union arg *arg, int type, va_list *ap)
+ {
+ 	switch (type) {
+ 	       case PTR:	arg->p = va_arg(*ap, void *);
+@@ -130,12 +130,12 @@ static void pop_arg(union arg *arg, int type, va_list *ap)
+ 	}
+ }
+ 
+-static void out(FILE *f, const char *s, size_t l)
++__NO_SAFESTACK static void out(FILE *f, const char *s, size_t l)
+ {
+ 	if (!(f->flags & F_ERR)) __fwritex((void *)s, l, f);
+ }
+ 
+-static void pad(FILE *f, char c, int w, int l, int fl)
++__NO_SAFESTACK static void pad(FILE *f, char c, int w, int l, int fl)
+ {
+ 	char pad[256];
+ 	if (fl & (LEFT_ADJ | ZERO_PAD) || l >= w) return;
+@@ -150,19 +150,19 @@ static const char xdigits[16] = {
+ 	"0123456789ABCDEF"
+ };
+ 
+-static char *fmt_x(uintmax_t x, char *s, int lower)
++__NO_SAFESTACK static char *fmt_x(uintmax_t x, char *s, int lower)
+ {
+ 	for (; x; x>>=4) *--s = xdigits[(x&15)]|lower;
+ 	return s;
+ }
+ 
+-static char *fmt_o(uintmax_t x, char *s)
++__NO_SAFESTACK static char *fmt_o(uintmax_t x, char *s)
+ {
+ 	for (; x; x>>=3) *--s = '0' + (x&7);
+ 	return s;
+ }
+ 
+-static char *fmt_u(uintmax_t x, char *s)
++__NO_SAFESTACK static char *fmt_u(uintmax_t x, char *s)
+ {
+ 	unsigned long y;
+ 	for (   ; x>ULONG_MAX; x/=10) *--s = '0' + x%10;
+@@ -418,7 +418,7 @@ static int fmt_fp(FILE *f, long double y, int w, int p, int fl, int t)
+ 	return MAX(w, pl+l);
+ }
+ 
+-static int getint(char **s) {
++__NO_SAFESTACK static int getint(char **s) {
+ 	int i;
+ 	for (i=0; isdigit(**s); (*s)++) {
+ 		if (i > INT_MAX/10U || **s-'0' > INT_MAX-10*i) i = -1;
+@@ -427,7 +427,7 @@ static int getint(char **s) {
+ 	return i;
+ }
+ 
+-static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg, int *nl_type)
++__NO_SAFESTACK static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg, int *nl_type)
+ {
+ 	char *a, *z, *s=(char *)fmt;
+ 	unsigned l10n=0, fl;
+@@ -654,7 +654,7 @@ overflow:
+ 	return -1;
+ }
+ 
+-int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
++__NO_SAFESTACK int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
+ {
+ 	va_list ap2;
+ 	int nl_type[NL_ARGMAX+1] = {0};
+-- 
+2.29.2
+
