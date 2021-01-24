@@ -10,14 +10,39 @@ release=1
 source=("https://www.cmake.org/files/v${version%.*}/$name-$version.tar.gz")
 
 build() {
+	local saved_cflags saved_cxxflags saved_ldflags
+
 	cd "$SRC"/$name-$version
 	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
 
-	./bootstrap \
-		--prefix=/usr \
-		--mandir=/share/man \
-		--docdir=/share/doc/cmake \
-		--system-libs
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		saved_cflags="$CFLAGS"
+		saved_cxxflags="$CXXFLAGS"
+		saved_ldflags="$LDFLAGS"
+
+		unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE
+
+		CFLAGS="" \
+		CXXFLAGS="-stdlib=libc++" \
+		LDFLAGS="-rtlib=compiler-rt" \
+		./bootstrap \
+			--prefix=/usr \
+			--mandir=/share/man \
+			--docdir=/share/doc/cmake \
+			--system-libs \
+			-- \
+			-DCMAKE_C_COMPILER="$XTARGET-cc" \
+			-DCMAKE_CXX_COMPILER="$XTARGET-c++" \
+			-DCMAKE_C_FLAGS="-Qunused-arguments $saved_cflags $saved_ldflags" \
+			-DCMAKE_CXX_FLAGS="-Qunused-arguments $saved_cxxflags $saved_ldflags"
+	else
+		./bootstrap \
+			--prefix=/usr \
+			--mandir=/share/man \
+			--docdir=/share/doc/cmake \
+			--system-libs
+	fi
+
 	make
 	make DESTDIR="$PKG" install
 }

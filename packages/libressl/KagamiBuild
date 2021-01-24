@@ -17,13 +17,9 @@ build() {
 		--with-openssldir=/etc/ssl
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE
-		$ORIGMAKE DESTDIR="$PKG" install
-	else
-		make
-		make DESTDIR="$PKG" install
-	fi
+
+	make
+	make DESTDIR="$PKG" install
 
 	rm -rf "$PKG"/usr/share/man
 }
