@@ -11,6 +11,17 @@ release=1
 source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.xz")
 
 build() {
+	case $BARCH in
+		amd64|x86|arm64|armv7l|armv6l|armv5te|mips64el|mipsel|ppc64le|riscv64) export ax_cv_c_float_words_bigendian=no ;;
+		mips64|mips|ppc64) export ax_cv_c_float_words_bigendian=yes ;;
+	esac
+
+	export ac_cv_have_long_long_format=yes
+	export ac_cv_file__dev_ptmx=yes
+	export ac_cv_file__dev_ptc=yes
+	export ac_cv_working_tzset=yes
+	export ac_cv_prog_HAS_HG=/usr/bin/false
+
 	cd "$SRC"/Python-${version}
 	patch -Np1 -i "$STUFF"/python/0030-Fix-cross-compiling-the-uuid-module.patch
 	patch -Np1 -i "$STUFF"/python/0001-distutils-sysconfig-append-STAGING_LIBDIR-python-sys.patch
@@ -22,9 +33,6 @@ build() {
 		Modules/_ctypes/darwin* \
 		Modules/_ctypes/libffi*
 
-	ac_cv_file__dev_ptmx=yes \
-	ac_cv_file__dev_ptc=no \
-	ac_cv_working_tzset=yes \
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-computed-gotos \
