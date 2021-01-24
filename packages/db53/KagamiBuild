@@ -10,7 +10,9 @@ source=("http://download.oracle.com/berkeley-db/db-$version.tar.gz")
 
 build() {
 	cd "$SRC"/db-$version
-	sed -i 's/\(__atomic_compare_exchange\)/\1_db/' src/dbinc/atomic.h
+	patch -Np1 -i "$STUFF"/db53/0001-Fix-libc-compatibility-by-renaming-atomic_init-API.patch
+	patch -Np1 -i "$STUFF"/db53/0001-atomic-Rename-local-__atomic_compare_exchange-to-avo.patch
+	patch -Np0 -i "$STUFF"/db53/patch-src_dbinc_db.in
 
 	for a in $(find . -name config.sub); do
 		cp "$STUFF"/config.sub $a
