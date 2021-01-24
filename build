@@ -61,6 +61,9 @@ build_toolchain() {
 			;;
 	esac
 
+	msg "Fixing Python prefix"
+	sed -i "s|$TOOLS|$ROOTFS/usr|" "$TOOLS"/bin/python-config
+
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
