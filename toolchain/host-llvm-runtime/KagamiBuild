@@ -46,6 +46,7 @@ build() {
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
 		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
+		patch -Np1 -i "$STUFF"/clang/riscv_relax.patch
 	popd
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
@@ -61,13 +62,6 @@ build() {
 		msg "Patching libc++"
 		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
 		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
-	popd
-
-	msg "Compiling LLVM runtime libraries for $BARCH"
-	pushd "$SRC"
-		for i in libunwind libcxx libcxxabi; do
-			ln -sf $i-$version.src $i
-		done
 	popd
 
 	cd "$SRC"/llvm-$version.src
