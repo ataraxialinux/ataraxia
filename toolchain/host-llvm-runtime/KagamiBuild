@@ -67,15 +67,19 @@ build() {
 	cd "$SRC"/llvm-$version.src
 	cp -a "$SRC"/clang-$version.src tools/clang
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
+	cp -a "$SRC"/lld-$version.src tools/lld
 	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
 	cp -a "$SRC"/libunwind-$version.src projects/libunwind
 	cp -a "$SRC"/libcxx-$version.src projects/libcxx
 	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
 
-	if [ "$BARCH" != "riscv64" ]; then
-		ln -sf "$SRC"/lld-$version.src tools/lld
-	fi
+	pushd "$SRC"
+		for i in libunwind libcxx libcxxabi; do
+			ln -sf $i-$version.src $i
+		done
+	popd
 
+	msg "Compiling LLVM runtime libraries for $BARCH"
 	mkdir -p build
 	cd build
 
