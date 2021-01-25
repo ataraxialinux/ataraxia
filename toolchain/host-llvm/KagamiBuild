@@ -13,7 +13,7 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
 
 build() {
-	local ld clang targets LARCH LTARGET i
+	local clang targets LARCH LTARGET i
 
 	case "$BARCH" in
 		amd64) LARCH="x86_64"; LTARGET="X86" ;;
@@ -33,11 +33,6 @@ build() {
 	esac
 
 	case "$BARCH" in
-		riscv64) ld="$TOOLS/bin/$XTARGET-ld" ;;
-		*) ld="lld" ;;
-	esac
-
-	case "$BARCH" in
 		amd64|x86|arm64|armv7l|armv6l|armv5te) targets="crt builtins cfi safestack" ;;
 		*) targets="crt builtins" ;;
 	esac
@@ -52,6 +47,7 @@ build() {
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
 		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
+		patch -Np1 -i "$STUFF"/clang/riscv_relax.patch
 	popd
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
@@ -74,14 +70,11 @@ build() {
 	cd "$SRC/llvm-$version.src"
 	cp -a "$SRC"/clang-$version.src tools/clang
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
+	cp -a "$SRC"/lld-$version.src tools/lld
 	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
 	cp -a "$SRC"/libunwind-$version.src projects/libunwind
 	cp -a "$SRC"/libcxx-$version.src projects/libcxx
 	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
-
-	if [ "$BARCH" != "riscv64" ]; then
-		ln -sf "$SRC"/lld-$version.src tools/lld
-	fi
 
 	mkdir -p build
 	cd build
@@ -93,7 +86,7 @@ build() {
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCLANG_BUILD_EXAMPLES=OFF \
 		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
-		-DCLANG_DEFAULT_LINKER="$ld" \
+		-DCLANG_DEFAULT_LINKER=lld \
 		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp \
 		-DCLANG_DEFAULT_RTLIB=compiler-rt \
 		-DCLANG_DEFAULT_UNWINDLIB=libunwind \
@@ -133,11 +126,8 @@ build() {
 			cp llvm-$i $XTARGET-$i
 		done
 
-		if [ "$BARCH" != "riscv64" ]; then
-			cp lld $XTARGET-ld
-			cp lld $XTARGET-ld.lld
-		fi
-
+		cp lld $XTARGET-ld
+		cp lld $XTARGET-ld.lld
 		cp llvm-symbolizer $XTARGET-addr2line
 		cp llvm-cxxfilt $XTARGET-c++filt
 		cp llvm-cov $XTARGET-gcov
@@ -145,11 +135,7 @@ build() {
 		cp llvm-readobj $XTARGET-readelf
 		cp llvm-objcopy $XTARGET-strip
 
-		rm -f $clang clang clang++ clang-cl clang-cpp
-
-		if [ "$BARCH" != "riscv64" ]; then
-			rm -f lld-link ld.lld ld64.lld wasm-ld lld
-		fi
+		rm -f $clang clang clang++ clang-cl clang-cpp lld-link ld.lld ld64.lld wasm-ld lld
 	popd
 
 	msg "Cross-compiling Compiler-RT"

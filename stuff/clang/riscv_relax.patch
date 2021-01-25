@@ -1,0 +1,20 @@
+From Abyss OS
+Source: https://raw.githubusercontent.com/abyss-os/phase1/master/devel/llvm/riscv_relax.patch
+
+diff --git a/lib/Driver/ToolChains/Arch/RISCV.cpp b/lib/Driver/ToolChains/Arch/RISCV.cpp
+index 8c343b869..65c357e86 100644
+--- a/lib/Driver/ToolChains/Arch/RISCV.cpp
++++ b/lib/Driver/ToolChains/Arch/RISCV.cpp
+@@ -426,11 +426,7 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
+   if (Args.hasArg(options::OPT_ffixed_x31))
+     Features.push_back("+reserve-x31");
+ 
+-  // -mrelax is default, unless -mno-relax is specified.
+-  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
+-    Features.push_back("+relax");
+-  else
+-    Features.push_back("-relax");
++  Features.push_back("-relax");
+ 
+   // GCC Compatibility: -mno-save-restore is default, unless -msave-restore is
+   // specified...

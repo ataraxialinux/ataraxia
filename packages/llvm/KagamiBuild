@@ -18,7 +18,7 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
 
 build() {
-	local LARCH CROSSOPTS ld
+	local LARCH CROSSOPTS
 
 	if [ -z "$XTARGET" ]; then
 		XTARGET="$(clang -dumpmachine)"
@@ -41,11 +41,6 @@ build() {
 		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia Linux' ;;
 	esac
 
-	case "$BARCH" in
-		riscv64) ld="/usr/bin/ld.bfd" ;;
-		*) ld="lld" ;;
-	esac
-
 	pushd "$SRC/llvm-$version.src"
 		msg "Patching LLVM"
 		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
@@ -56,6 +51,7 @@ build() {
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
 		patch -Np1 -i "$STUFF"/clang/0003-Add-fortify-headers-paths.patch
+		patch -Np1 -i "$STUFF"/clang/riscv_relax.patch
 	popd
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
@@ -102,15 +98,11 @@ build() {
 	cd "$SRC/llvm-$version.src"
 	cp -a "$SRC"/clang-$version.src tools/clang
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
+	cp -a "$SRC"/lld-$version.src tools/lld
 	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
-	cp -a "$SRC"/openmp-$version.src projects/openmp
 	cp -a "$SRC"/libunwind-$version.src projects/libunwind
 	cp -a "$SRC"/libcxx-$version.src projects/libcxx
 	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
-
-	if [ "$BARCH" != "riscv64" ]; then
-		ln -sf "$SRC"/lld-$version.src tools/lld
-	fi
 
 	mkdir -p build
 	cd build
@@ -120,7 +112,7 @@ build() {
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCLANG_BUILD_EXAMPLES=OFF \
 		-DCLANG_DEFAULT_CXX_STDLIB=libc++ \
-		-DCLANG_DEFAULT_LINKER="$ld" \
+		-DCLANG_DEFAULT_LINKER=lld \
 		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp \
 		-DCLANG_DEFAULT_RTLIB=compiler-rt \
 		-DCLANG_DEFAULT_UNWINDLIB=libunwind \

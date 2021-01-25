@@ -38,6 +38,11 @@ build() {
 			-DCMAKE_LIBRARY_PATH="$STAGING_LIBDIR" \
 			-DCMAKE_INCLUDE_PATH="$STAGING_INCDIR" \
 			-Wno-dev -G Ninja
+
+		if [ "$USEBOOTSTRAP" = "yes" ]; then
+			sed -i "s|$SRC/$name-$version/build/bin/cmake|$TOOLS/bin/cmake|" build.ninja
+		fi
+
 		samu
 		DESTDIR="$PKG" samu install
 	fi

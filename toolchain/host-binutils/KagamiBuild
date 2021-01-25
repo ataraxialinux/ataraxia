@@ -6,7 +6,7 @@ options=('bootstrap')
 source=("https://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz")
 
 build() {
-	local archconfig hashconfig build_targets install_targets
+	local archconfig hashconfig
 
 	case "$BARCH" in
 		amd64)	archconfig="--enable-targets=x86_64-pep" ;;
@@ -15,17 +15,6 @@ build() {
 	case "$BARCH" in
 		mips64|mips64el|mips|mipsel)	hashconfig="--enable-default-hash-style=sysv" ;;
 		*)				hashconfig="--enable-default-hash-style=gnu"  ;;
-	esac
-
-	case "$BARCH" in
-		riscv64)
-			build_targets="all-ld all-gas"
-			install_targets="install-ld install-gas"
-			;;
-		*)
-			build_targets="all-gas"
-			install_targets="install-gas"
-			;;
 	esac
 
 	cd "$SRC"/binutils-$version
@@ -51,6 +40,6 @@ build() {
 		--disable-nls \
 		--disable-multilib \
 		--disable-werror
-	make $build_targets
-	make $install_targets
+	make all-gas
+	make install-gas
 }
