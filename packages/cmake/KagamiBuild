@@ -1,7 +1,7 @@
 # Description: A cross-platform open-source make system
 # URL:         http://www.cmake.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libarchive curl libuv rhash jsoncpp
+# Depends on:  samurai ncurses libarchive curl libuv rhash jsoncpp
 # Section:     devel
 
 name=cmake
@@ -10,39 +10,35 @@ release=1
 source=("https://www.cmake.org/files/v${version%.*}/$name-$version.tar.gz")
 
 build() {
-	local saved_cflags saved_cxxflags saved_ldflags
+	if [ "$USEBOOTSTRAP" != "yes" ]; then
+		STAGING_INCDIR="/usr/include"
+		STAGING_LIBDIR="/usr/lib"
+	fi
 
 	cd "$SRC"/$name-$version
 	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
 
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		saved_cflags="$CFLAGS"
-		saved_cxxflags="$CXXFLAGS"
-		saved_ldflags="$LDFLAGS"
-
-		unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE
-
-		CFLAGS="" \
-		CXXFLAGS="-stdlib=libc++" \
-		LDFLAGS="-rtlib=compiler-rt" \
-		./bootstrap \
-			--prefix=/usr \
-			--mandir=/share/man \
-			--docdir=/share/doc/cmake \
-			--system-libs \
-			-- \
-			-DCMAKE_C_COMPILER="$XTARGET-cc" \
-			-DCMAKE_CXX_COMPILER="$XTARGET-c++" \
-			-DCMAKE_C_FLAGS="-Qunused-arguments $saved_cflags $saved_ldflags" \
-			-DCMAKE_CXX_FLAGS="-Qunused-arguments $saved_cxxflags $saved_ldflags"
-	else
+	if ! type cmake &>/dev/null; then
 		./bootstrap \
 			--prefix=/usr \
 			--mandir=/share/man \
 			--docdir=/share/doc/cmake \
 			--system-libs
+		make
+		make DESTDIR="$PKG" install
+	else
+		mkdir -p build
+		cd build
+		cmake "$SRC"/$name-$version \
+			-DCMAKE_INSTALL_PREFIX=/usr \
+			-DCMAKE_BUILD_TYPE=MinSizeRel \
+			-DCMAKE_DOC_DIR=/share/doc/cmake \
+			-DCMAKE_MAN_DIR=/share/man \
+			-DCMAKE_USE_SYSTEM_LIBRARIES=ON \
+			-DCMAKE_LIBRARY_PATH="$STAGING_LIBDIR" \
+			-DCMAKE_INCLUDE_PATH="$STAGING_INCDIR" \
+			-Wno-dev -G Ninja
+		samu
+		DESTDIR="$PKG" samu install
 	fi
-
-	make
-	make DESTDIR="$PKG" install
 }

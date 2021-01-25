@@ -76,16 +76,14 @@ build() {
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		(
-			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
+			unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE CFLAGS CXXFLAGS LDFLAGS
 
 			cd "$SRC"
 			cd tablegen-build
 			mkdir tablegen-build
 
-			CC="clang" \
-			CXX="clang++" \
-			HOSTCC="clang" \
-			HOSTCXX="clang++" \
+			CC="$HOSTCC" \
+			CXX="$HOSTCXX" \
 			CFLAGS="" \
 			CXXFLAGS="-stdlib=libc++" \
 			LDFLAGS="-rtlib=compiler-rt" \
