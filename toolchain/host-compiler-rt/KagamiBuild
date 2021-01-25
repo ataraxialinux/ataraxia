@@ -3,9 +3,16 @@ realpath="$REPO/llvm"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 release=1
 options=('bootstrap')
-source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz"")
+source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz")
 
 build() {
+	local targets
+
+	case "$BARCH" in
+		amd64|x86|arm64|armv7l|armv6l|armv5te) targets="crt builtins cfi safestack" ;;
+		*) targets="crt builtins" ;;
+	esac
+
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
