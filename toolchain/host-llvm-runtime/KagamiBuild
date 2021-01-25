@@ -15,9 +15,9 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 build() {
 	local LARCH LTARGET i
 
-	export CFLAGS="$TARGET_CFLAGS"
-	export CXXFLAGS="$TARGET_CXXFLAGS"
-	export LDFLAGS="$TARGET_LDFLAGS"
+	#export CFLAGS="$TARGET_CFLAGS"
+	#export CXXFLAGS="$TARGET_CXXFLAGS"
+	#export LDFLAGS="$TARGET_LDFLAGS"
 
 	case "$BARCH" in
 		amd64) LARCH="x86_64"; LTARGET="X86" ;;
@@ -50,8 +50,7 @@ build() {
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0002-get-rid-of-execinfo.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0003-port-crt-on-MIPS-build-on-PowerPC.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
 	popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"

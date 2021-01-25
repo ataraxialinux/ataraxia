@@ -9,16 +9,21 @@ release=1
 source=("http://distcache.freebsd.org/local-distfiles/itetcu/$name-$version.tar.bz2")
 
 build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/libexecinfo/misc.patch
 
-	export CFLAGS="${CFLAGS} -fno-omit-frame-pointer"
-	make
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CC="$CC" static
+	else
+		make static
+	fi
 
 	install -Dm0755  execinfo.h  "$PKG"/usr/include/execinfo.h
 	install -Dm0755  stacktraverse.h "$PKG"/usr/include/stacktraverse.h
 	install -Dm0755  libexecinfo.a "$PKG"/usr/lib/libexecinfo.a
-	install -Dm0755  libexecinfo.so.1 "$PKG"/usr/lib/libexecinfo.so.1
+#	install -Dm0755  libexecinfo.so.1 "$PKG"/usr/lib/libexecinfo.so.1
 
-	ln -sf libexecinfo.so.1  "$PKG"/usr/lib/libexecinfo.so
+#	ln -sf libexecinfo.so.1  "$PKG"/usr/lib/libexecinfo.so
 }
