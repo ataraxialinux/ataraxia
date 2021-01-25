@@ -83,13 +83,19 @@ export_variables() {
 export_cflags() {
 	check_for_arch "$1"
 
+	#
+	# Requires musl patching:
+	# -fsanitize-cfi-cross-dso
+	#
+	#
+
 	case "$1" in
 		amd64|x86)
-			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -flto -fvisibility=default -fsanitize=cfi -fsanitize-cfi-cross-dso -fsanitize=safe-stack -fsanitize=shadow-call-stack -mretpoline -pipe"
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -flto -fvisibility=default -fsanitize=cfi -fsanitize=safe-stack -fsanitize=shadow-call-stack -mretpoline -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
 		arm64|armv7l|armv6l|armv5te)
-			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -flto -fvisibility=default -fsanitize=cfi -fsanitize-cfi-cross-dso -fsanitize=safe-stack -fsanitize=shadow-call-stack -pipe"
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -flto -fvisibility=default -fsanitize=cfi -fsanitize=safe-stack -fsanitize=shadow-call-stack -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
 		*)
