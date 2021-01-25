@@ -1,7 +1,7 @@
 # Description: The Kerberos network authentication system
 # URL:         https://web.mit.edu/kerberos/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  perl libressl
+# Depends on:  perl libressl libedit
 # Section:     admin
 
 name=krb5
@@ -15,6 +15,14 @@ options=('~emptydirs')
 source=("https://web.mit.edu/kerberos/dist/krb5/${_v}/krb5-$version.tar.gz")
 
 build() {
+	export CFLAGS="-fPIC -DDESTRUCTOR_ATTR_WORKS=1 $CFLAGS"
+
+	export krb5_cv_attr_constructor_destructor=yes
+	export ac_cv_func_regcomp=yes
+	export ac_cv_printf_positional=yes
+	export ac_cv_file__etc_environment=yes
+	export ac_cv_file__etc_TIMEZONE=no
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/krb5/libressl.patch
 
@@ -24,7 +32,10 @@ build() {
 		--sbindir=/usr/bin \
 		--sysconfdir=/etc \
 		--localstatedir=/var/lib \
+		--with-system-et=no \
+		--with-system-ss=no \
 		--with-system-verto=no \
+		--without-tcl \
 		--enable-dns-for-realm \
 		--enable-shared \
 		--disable-rpath
@@ -34,4 +45,5 @@ build() {
 	for i in kprop.service kadmin.service krb5kdc.service; do
 		install -Dm644 "$STUFF"/svc/$i "$PKG"/usr/lib/systemd/system/$i
 	done
+	install -Dm644 "$STUFF"/tmpfiles.d/krb5.conf "$PKG"/usr/lib/tmpfiles.d/krb5.conf
 }
