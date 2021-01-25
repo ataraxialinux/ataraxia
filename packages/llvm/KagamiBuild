@@ -70,13 +70,24 @@ build() {
 		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
 	popd
 
+	msg "Preparing LLVM components"
+	cd "$SRC/llvm-$version.src"
+	cp -a "$SRC"/clang-$version.src tools/clang
+	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
+	cp -a "$SRC"/lld-$version.src tools/lld
+	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
+	cp -a "$SRC"/openmp-$version.src projects/openmp
+	cp -a "$SRC"/libunwind-$version.src projects/libunwind
+	cp -a "$SRC"/libcxx-$version.src projects/libcxx
+	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		(
 			unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE CFLAGS CXXFLAGS LDFLAGS
 
 			cd "$SRC"
+			mkdir -p tablegen-build
 			cd tablegen-build
-			mkdir tablegen-build
 
 			CC="$HOSTCC" \
 			CXX="$HOSTCXX" \
@@ -84,6 +95,9 @@ build() {
 			CXXFLAGS="-stdlib=libc++" \
 			LDFLAGS="-rtlib=compiler-rt" \
 			cmake "$SRC/llvm-$version.src" \
+				-DLLVM_ENABLE_LIBEDIT=OFF \
+				-DLLVM_ENABLE_LIBXML2=OFF \
+				-DLLVM_ENABLE_TERMINFO=OFF \
 				-Wno-dev -G Ninja
 			samu llvm-tblgen clang-tblgen
 
@@ -96,14 +110,6 @@ build() {
 
 	msg "Building LLVM"
 	cd "$SRC/llvm-$version.src"
-	cp -a "$SRC"/clang-$version.src tools/clang
-	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
-	cp -a "$SRC"/lld-$version.src tools/lld
-	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
-	cp -a "$SRC"/openmp-$version.src projects/openmp
-	cp -a "$SRC"/libunwind-$version.src projects/libunwind
-	cp -a "$SRC"/libcxx-$version.src projects/libcxx
-	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
 
 	mkdir -p build
 	cd build
