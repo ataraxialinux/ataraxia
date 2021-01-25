@@ -1,27 +1,33 @@
-From 2fffbe7b20b298e65a2619ffa58365032ab31872 Mon Sep 17 00:00:00 2001
+From 7741e96a3c6ddcb6edd786fc6b4e7e2ac12ddc33 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 15 Jan 2021 16:45:39 +0900
-Subject: [PATCH 1/4] add internal fts implementation
+Date: Tue, 26 Jan 2021 00:37:28 +0900
+Subject: [PATCH] add internal fts implementation
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
- Makefile      |    1 +
- configure     |   15 +-
- install/fts.c | 1068 +++++++++++++++++++++++++++++++++++++++++++++++++
- install/fts.h |  125 ++++++
- 4 files changed, 1196 insertions(+), 13 deletions(-)
+ Makefile                 |    2 +
+ configure                |   15 +-
+ install/dracut-install.c |    2 +-
+ install/fts.c            | 1069 ++++++++++++++++++++++++++++++++++++++
+ install/fts.h            |  125 +++++
+ install/recallocarray.c  |   80 +++
+ install/recallocarray.h  |    6 +
+ 7 files changed, 1285 insertions(+), 14 deletions(-)
  create mode 100644 install/fts.c
  create mode 100644 install/fts.h
+ create mode 100644 install/recallocarray.c
+ create mode 100644 install/recallocarray.h
 
 diff --git a/Makefile b/Makefile
-index 7eb3184..343569b 100644
+index 7eb3184..06a6e23 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -53,6 +53,7 @@ all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
+@@ -53,6 +53,8 @@ all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
  	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(KMOD_CFLAGS) $< -o $@
  
  DRACUT_INSTALL_OBJECTS = \
 +	install/fts.o \
++	install/recallocarray.o \
          install/dracut-install.o \
          install/hashmap.o\
          install/log.o \
@@ -72,12 +78,28 @@ index aceec13..d1671b9 100755
  bindir ?= ${bindir:-${prefix}/bin}
  KMOD_CFLAGS ?= $(${PKG_CONFIG} --cflags " libkmod >= 23 ")
  KMOD_LIBS ?= $(${PKG_CONFIG} --libs " libkmod >= 23 ")
+diff --git a/install/dracut-install.c b/install/dracut-install.c
+index 17544ac..f0cd10c 100644
+--- a/install/dracut-install.c
++++ b/install/dracut-install.c
+@@ -40,10 +40,10 @@
+ #include <unistd.h>
+ #include <sys/ioctl.h>
+ #include <libkmod.h>
+-#include <fts.h>
+ #include <regex.h>
+ #include <sys/utsname.h>
+ 
++#include "fts.h"
+ #include "log.h"
+ #include "hashmap.h"
+ #include "util.h"
 diff --git a/install/fts.c b/install/fts.c
 new file mode 100644
-index 0000000..fdcf421
+index 0000000..2a8559b
 --- /dev/null
 +++ b/install/fts.c
-@@ -0,0 +1,1068 @@
+@@ -0,0 +1,1069 @@
 +/*	$OpenBSD: fts.c,v 1.59 2019/06/28 13:32:41 deraadt Exp $	*/
 +
 +/*-
@@ -122,6 +144,7 @@ index 0000000..fdcf421
 +#include <unistd.h>
 +
 +#include "fts.h"
++#include "recallocarray.h"
 +
 +#define MAXIMUM(a, b)	(((a) > (b)) ? (a) : (b))
 +
@@ -1277,6 +1300,104 @@ index 0000000..53167dd
 +int	 fts_set(FTS *, FTSENT *, int);
 +
 +#endif /* !_FTS_H_ */
+diff --git a/install/recallocarray.c b/install/recallocarray.c
+new file mode 100644
+index 0000000..d93abd2
+--- /dev/null
++++ b/install/recallocarray.c
+@@ -0,0 +1,80 @@
++/*	$OpenBSD: recallocarray.c,v 1.1 2017/03/06 18:44:21 otto Exp $	*/
++/*
++ * Copyright (c) 2008, 2017 Otto Moerbeek <otto@drijf.net>
++ *
++ * Permission to use, copy, modify, and distribute this software for any
++ * purpose with or without fee is hereby granted, provided that the above
++ * copyright notice and this permission notice appear in all copies.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
++ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
++ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
++ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
++ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++ */
++
++#include <errno.h>
++#include <stdlib.h>
++#include <stdint.h>
++#include <string.h>
++#include <unistd.h>
++
++/*
++ * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX
++ * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW
++ */
++#define MUL_NO_OVERFLOW ((size_t)1 << (sizeof(size_t) * 4))
++
++void *
++recallocarray(void *ptr, size_t oldnmemb, size_t newnmemb, size_t size)
++{
++	size_t oldsize, newsize;
++	void *newptr;
++
++	if (ptr == NULL)
++		return calloc(newnmemb, size);
++
++	if ((newnmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
++	    newnmemb > 0 && SIZE_MAX / newnmemb < size) {
++		errno = ENOMEM;
++		return NULL;
++	}
++	newsize = newnmemb * size;
++
++	if ((oldnmemb >= MUL_NO_OVERFLOW || size >= MUL_NO_OVERFLOW) &&
++	    oldnmemb > 0 && SIZE_MAX / oldnmemb < size) {
++		errno = EINVAL;
++		return NULL;
++	}
++	oldsize = oldnmemb * size;
++	
++	/*
++	 * Don't bother too much if we're shrinking just a bit,
++	 * we do not shrink for series of small steps, oh well.
++	 */
++	if (newsize <= oldsize) {
++		size_t d = oldsize - newsize;
++
++		if (d < oldsize / 2 && d < getpagesize()) {
++			memset((char *)ptr + newsize, 0, d);
++			return ptr;
++		}
++	}
++
++	newptr = malloc(newsize);
++	if (newptr == NULL)
++		return NULL;
++
++	if (newsize > oldsize) {
++		memcpy(newptr, ptr, oldsize);
++		memset((char *)newptr + oldsize, 0, newsize - oldsize);
++	} else
++		memcpy(newptr, ptr, newsize);
++
++	explicit_bzero(ptr, oldsize);
++	free(ptr);
++
++	return newptr;
++}
+diff --git a/install/recallocarray.h b/install/recallocarray.h
+new file mode 100644
+index 0000000..0f2d810
+--- /dev/null
++++ b/install/recallocarray.h
+@@ -0,0 +1,6 @@
++#ifndef _RECALLOCARRAY_H_
++#define _RECALLOCARRAY_H_
++
++void	*recallocarray(void *, size_t, size_t, size_t);
++
++#endif
 -- 
 2.29.2
 
