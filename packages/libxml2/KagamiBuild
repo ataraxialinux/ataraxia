@@ -14,10 +14,16 @@ build() {
 	patch -Np1 -i "$STUFF"/libxml2/libxml2-2.9.10-parenthesize-type-checks.patch
 	patch -Np1 -i "$STUFF"/libxml2/libxml2-2.9.8-python3-unicode-errors.patch
 
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s|/usr/include|$ROOTFS/usr/include|" python/setup.py
+		sed -i "s|/usr/local/include|$ROOTFS/usr/local/include|" python/setup.py
+		sed -i "s|/opt/include|$ROOTFS/opt/include|" python/setup.py
+	fi
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-history \
-		--with-python=/usr/bin/python3 \
+		--with-python=python3 \
 		--with-threads \
 		--without-icu
 

@@ -12,6 +12,13 @@ source=("https://www.cpan.org/src/5.0/$name-$version.tar.xz"
 	"https://github.com/arsv/perl-cross/archive/$crossver.tar.gz")
 
 build() {
+	export CFLAGS="${CFLAGS/-flto}"
+	export CFLAGS="${CFLAGS/-fvisibility=default}"
+	export CFLAGS="${CFLAGS/-fsanitize=cfi}"
+	export CFLAGS="${CFLAGS/-fsanitize-cfi-cross-dso}"
+	export CFLAGS="${CFLAGS/-fdata-sections}"
+	export CFLAGS="${CFLAGS/-ffunction-sections}"
+
 	cd "$SRC"
 	cp -f -r perl-cross-$crossver/* $name-$version/
 
