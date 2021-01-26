@@ -14,10 +14,8 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/ruby/rubygems-avoid-platform-specific-gems.patch
 
-	export CFLAGS="${CFLAGS/-fomit-frame-pointer}"
-	export CXXFLAGS="${CXXFLAGS/-fomit-frame-pointer}"
-	export CFLAGS="$CFLAGS -fno-omit-frame-pointer -fno-strict-aliasing"
-	export CPPFLAGS="$CPPFLAGS -fno-omit-frame-pointer -fno-strict-aliasing"
+	append-cflags -fno-omit-frame-pointer -fno-strict-aliasing
+	append-cxxflags -fno-omit-frame-pointer -fno-strict-aliasing
 
 	export INSTALL=install
 

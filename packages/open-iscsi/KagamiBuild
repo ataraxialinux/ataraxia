@@ -11,7 +11,7 @@ backup=('etc/iscsi/iscsid.conf')
 source=("https://github.com/open-iscsi/open-iscsi/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
-	export CFLAGS="-D_LINUX_IF_ETHER_H -Wno-error=format -Wno-error=cpp $CFLAGS"
+	append-cflags -D_LINUX_IF_ETHER_H -Wno-error=format -Wno-error=cpp
 
 	cd "$SRC"/$name-$version
 	patch -Np0 -i "$STUFF"/open-iscsi/musl.patch

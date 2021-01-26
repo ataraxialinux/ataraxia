@@ -1,22 +1,22 @@
 # Description: Transport Independent RPC library (SunRPC replacement)
 # URL:         http://libtirpc.sourceforge.net/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  krb5
 # Section:     libs
 
 name=libtirpc
 version=1.3.1
-release=1
+release=2
 backup=('etc/netconfig')
 source=("http://downloads.sourceforge.net/sourceforge/libtirpc/$name-$version.tar.bz2")
 
 build() {
-	export CFLAGS="-I$STUFF/include $CFLAGS"
+	append-cflags "-I$STUFF/include"
 
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--sysconf=/etc \
-		--disable-gssapi
+		--sysconf=/etc
 	make
 	make DESTDIR="$PKG" install
 }

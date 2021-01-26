@@ -10,8 +10,8 @@ release=1
 source=("https://github.com/freedesktop/xorg-xf86-video-intel/archive/$version.tar.gz")
 
 build() {
-	export CFLAGS=${CFLAGS/,-z,now}
-	export LDFLAGS="-Wl,-z,lazy"
+	filter-flags -z,now
+	append-ldflags -Wl,-z,lazy
 
 	cd "$SRC"/xorg-$name-$version
 	NOCONFIGURE=1 ./autogen.sh

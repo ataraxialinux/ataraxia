@@ -1,7 +1,7 @@
 # Description: A Japanese Input Method Editor (IME) designed for multi-platform
 # URL:         https://github.com/google/mozc
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python-six gyp samurai ibus curl jsoncpp
+# Depends on:  llvm python-six gyp samurai ibus curl jsoncpp
 # Section:     localization
 
 name=mozc
@@ -20,8 +20,8 @@ noextract=("$gypver.tar.gz")
 build() {
 	local targets=(server/server.gyp:mozc_server unix/ibus/ibus.gyp:ibus_mozc renderer/renderer.gyp:mozc_renderer)
 
-	export CFLAGS="$CFLAGS -fvisibility=hidden"
-	export CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+	append-cflags -fvisibility=hidden
+	append-cxxflags -fvisibility=hidden
 
 	cd "$SRC"
 	mv japanese-usage-dictionary-$dictver japanese_usage_dictionary
@@ -34,14 +34,6 @@ build() {
 
 	cd "$SRC"/$name-$commit/src
 	sed -i 's|PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_RECURSIVE|' base/mutex.cc
-	sed \
-		-e "s:<!(which clang):(which cc):" \
-		-e "s:<!(which clang++):(which c++):" \
-		-i gyp/common.gypi
-	sed \
-		-e "/'-lc++'/d" \
-		-e "/'-stdlib=libc++'/d" \
-		-i gyp/common.gypi || die
 
 	python3 build_mozc.py gyp \
 		--gypdir="/usr/bin" \

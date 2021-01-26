@@ -6,14 +6,14 @@
 
 name=nfs-utils
 version=2.5.2
-release=1
+release=2
 backup=('etc/exports'
 	'etc/nfs.conf'
 	'etc/nfsmount.conf')
 source=("https://downloads.sourceforge.net/nfs/$name-$version.tar.xz")
 
 build() {
-	export CFLAGS="-I$STUFF/include $CFLAGS"
+	append-cppflags "-I$STUFF/include"
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/nfs-utils/musl-configure_ac.patch
@@ -33,7 +33,6 @@ build() {
 		--enable-ipv6 \
 		--enable-libmount-mount \
 		--enable-mountconfig \
-		--disable-gss \
 		--disable-nls \
 		--disable-svcgss
 	make

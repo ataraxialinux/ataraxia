@@ -10,9 +10,9 @@ release=3
 source=("https://xorg.freedesktop.org/releases/individual/xserver/$name-$version.tar.bz2")
 
 build() {
-	export CFLAGS=${CFLAGS/,-z,now}
-	export CFLAGS="$CFLAGS -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t"
-	export LDFLAGS="-Wl,-z,lazy"
+	append-cppflags -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t
+	append-ldflags -Wl,-z,lazy
+	filter-flags -z,now
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/xorg-server/rootless.patch
