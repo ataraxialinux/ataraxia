@@ -1,6 +1,6 @@
-From 4f6685c2f3454d64d96a0ea59be9f9c223daf064 Mon Sep 17 00:00:00 2001
+From b92a83a2418b3de8242cfb5195d791146fb06511 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 26 Jan 2021 03:36:36 +0900
+Date: Wed, 27 Jan 2021 06:33:26 +0900
 Subject: [PATCH] Implement LLVM SafeStack
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -10,13 +10,15 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  arch/i386/syscall_arch.h    |  2 ++
  arch/x86_64/syscall_arch.h  |  2 ++
  configure                   | 23 ++++++++++++++++++
+ crt/crt1.c                  | 10 ++++++++
+ dynamic.list                |  1 +
  ldso/dlstart.c              |  2 +-
  ldso/dynlink.c              | 48 ++++++++++++++++++-------------------
  src/env/__init_tls.c        |  2 +-
- src/env/__libc_start_main.c | 19 ++++++++++++---
  src/include/features.h      |  6 +++++
+ src/internal/libc.h         |  2 ++
  src/stdio/vfprintf.c        | 18 +++++++-------
- 11 files changed, 87 insertions(+), 39 deletions(-)
+ 13 files changed, 84 insertions(+), 36 deletions(-)
 
 diff --git a/Makefile b/Makefile
 index e8cc443..cdf8531 100644
@@ -112,6 +114,48 @@ index a5231a0..73eaf6d 100755
  printf "using compiler runtime libraries: %s\n" "$LIBCC"
  
  # Figure out arch variants for archs with variants
+diff --git a/crt/crt1.c b/crt/crt1.c
+index 8fe8ab5..15cd0e7 100644
+--- a/crt/crt1.c
++++ b/crt/crt1.c
+@@ -1,8 +1,12 @@
+ #include <features.h>
++#include <stdalign.h>
+ #include "libc.h"
+ 
+ #define START "_start"
+ 
++#define PTHREAD_STACK_DEFAULT (1 << 20)
++#define PTHREAD_UNSAFE_STACK_ALIGNMENT 16
++
+ #include "crt_arch.h"
+ 
+ int main();
+@@ -11,8 +15,14 @@ weak void _fini();
+ int __libc_start_main(int (*)(), int, char **,
+ 	void (*)(), void(*)(), void(*)());
+ 
++__thread void *__safestack_unsafe_stack_ptr;
++static alignas(PTHREAD_UNSAFE_STACK_ALIGNMENT) char initial_unsafe_stack[PTHREAD_STACK_DEFAULT];
++
+ void _start_c(long *p)
+ {
++	/* Setup LLVM SafeStack */
++	__safestack_unsafe_stack_ptr = &initial_unsafe_stack[PTHREAD_STACK_DEFAULT];
++
+ 	int argc = p[0];
+ 	char **argv = (void *)(p+1);
+ 	__libc_start_main(main, argc, argv, _init, _fini, 0);
+diff --git a/dynamic.list b/dynamic.list
+index ee0d363..93e1ead 100644
+--- a/dynamic.list
++++ b/dynamic.list
+@@ -42,4 +42,5 @@ __progname;
+ __progname_full;
+ 
+ __stack_chk_guard;
++__safestack_unsafe_stack_ptr;
+ };
 diff --git a/ldso/dlstart.c b/ldso/dlstart.c
 index 20d50f2..de42d0a 100644
 --- a/ldso/dlstart.c
@@ -354,59 +398,6 @@ index a93141e..2c4180b 100644
  {
  	pthread_t td;
  	struct tls_module *p;
-diff --git a/src/env/__libc_start_main.c b/src/env/__libc_start_main.c
-index 8fbe526..c95ec83 100644
---- a/src/env/__libc_start_main.c
-+++ b/src/env/__libc_start_main.c
-@@ -15,12 +15,20 @@ extern weak hidden void (*const __init_array_start)(void), (*const __init_array_
- static void dummy1(void *p) {}
- weak_alias(dummy1, __init_ssp);
- 
-+#ifdef __clang__
-+#define PTHREAD_STACK_DEFAULT (1 << 20)
-+#define PTHREAD_UNSAFE_STACK_ALIGNMENT 16
-+
-+__thread void *__safestack_unsafe_stack_ptr;
-+char initial_unsafe_stack[PTHREAD_STACK_DEFAULT];
-+#endif
-+
- #define AUX_CNT 38
- 
- #ifdef __GNUC__
- __attribute__((__noinline__))
- #endif
--void __init_libc(char **envp, char *pn)
-+__NO_SAFESTACK void __init_libc(char **envp, char *pn)
- {
- 	size_t i, *auxv, aux[AUX_CNT] = { 0 };
- 	__environ = envp;
-@@ -69,7 +77,7 @@ weak_alias(libc_start_init, __libc_start_init);
- typedef int lsm2_fn(int (*)(int,char **,char **), int, char **);
- static lsm2_fn libc_start_main_stage2;
- 
--int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
-+__NO_SAFESTACK int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
- {
- 	char **envp = argv+argc+1;
- 
-@@ -85,11 +93,16 @@ int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
- 	return stage2(main, argc, argv);
- }
- 
--static int libc_start_main_stage2(int (*main)(int,char **,char **), int argc, char **argv)
-+__NO_SAFESTACK static int libc_start_main_stage2(int (*main)(int,char **,char **), int argc, char **argv)
- {
- 	char **envp = argv+argc+1;
- 	__libc_start_init();
- 
-+#ifdef __clang__
-+	/* Setup LLVM SafeStack */
-+	__safestack_unsafe_stack_ptr = &initial_unsafe_stack[PTHREAD_STACK_DEFAULT];
-+#endif
-+
- 	/* Pass control to the application */
- 	exit(main(argc, argv, envp));
- 	return 0;
 diff --git a/src/include/features.h b/src/include/features.h
 index f17bd15..5ce9865 100644
 --- a/src/include/features.h
@@ -420,6 +411,17 @@ index f17bd15..5ce9865 100644
 +#else
 +#define __NO_SAFESTACK
 +#endif
++
+ #endif
+diff --git a/src/internal/libc.h b/src/internal/libc.h
+index 619bba8..c445cdd 100644
+--- a/src/internal/libc.h
++++ b/src/internal/libc.h
+@@ -55,4 +55,6 @@ extern hidden const char __libc_version[];
+ hidden void __synccall(void (*)(void *), void *);
+ hidden int __setxid(int, int, int, int);
+ 
++extern __thread void *__safestack_unsafe_stack_ptr;
 +
  #endif
 diff --git a/src/stdio/vfprintf.c b/src/stdio/vfprintf.c
