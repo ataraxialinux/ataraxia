@@ -6,9 +6,15 @@
 name=mksh
 version=R59c
 release=1
+options=(~strip)
 source=("http://www.mirbsd.org/MirOS/dist/mir/mksh/$name-$version.tgz")
 
 build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	append-cflags -Og -g -ggdb -pipe -fsanitize=safe-stack
+	append-ldflags -static
+
 	cd "$SRC"/$name
 	sh Build.sh -r
 	install -D -m 755 mksh "$PKG"/usr/bin/mksh
