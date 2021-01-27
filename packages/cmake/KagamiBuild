@@ -10,11 +10,6 @@ release=1
 source=("https://www.cmake.org/files/v${version%.*}/$name-$version.tar.gz")
 
 build() {
-	if [ "$USEBOOTSTRAP" != "yes" ]; then
-		STAGING_INCDIR="/usr/include"
-		STAGING_LIBDIR="/usr/lib"
-	fi
-
 	cd "$SRC"/$name-$version
 	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
 
@@ -29,18 +24,27 @@ build() {
 	else
 		mkdir -p build
 		cd build
-		cmake "$SRC"/$name-$version \
-			-DCMAKE_INSTALL_PREFIX=/usr \
-			-DCMAKE_BUILD_TYPE=MinSizeRel \
-			-DCMAKE_DOC_DIR=/share/doc/cmake \
-			-DCMAKE_MAN_DIR=/share/man \
-			-DCMAKE_USE_SYSTEM_LIBRARIES=ON \
-			-DCMAKE_LIBRARY_PATH="$STAGING_LIBDIR" \
-			-DCMAKE_INCLUDE_PATH="$STAGING_INCDIR" \
-			-Wno-dev -G Ninja
 
 		if [ "$USEBOOTSTRAP" = "yes" ]; then
-			sed -i "s|$SRC/$name-$version/build/bin/cmake|$TOOLS/bin/cmake|" build.ninja
+			cmake "$SRC"/$name-$version \
+				-DCMAKE_INSTALL_PREFIX=/usr \
+				-DCMAKE_BUILD_TYPE=MinSizeRel \
+				-DCMAKE_DOC_DIR=/share/doc/cmake \
+				-DCMAKE_MAN_DIR=/share/man \
+				-DCMAKE_USE_SYSTEM_LIBRARIES=ON \
+				-DCMAKE_LIBRARY_PATH="$STAGING_LIBDIR" \
+				-DCMAKE_INCLUDE_PATH="$STAGING_INCDIR" \
+				-Wno-dev -G Ninja
+
+				sed -i "s|$SRC/$name-$version/build/bin/cmake|$TOOLS/bin/cmake|" build.ninja
+		else
+			cmake "$SRC"/$name-$version \
+				-DCMAKE_INSTALL_PREFIX=/usr \
+				-DCMAKE_BUILD_TYPE=MinSizeRel \
+				-DCMAKE_DOC_DIR=/share/doc/cmake \
+				-DCMAKE_MAN_DIR=/share/man \
+				-DCMAKE_USE_SYSTEM_LIBRARIES=ON \
+				-Wno-dev -G Ninja
 		fi
 
 		samu
