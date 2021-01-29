@@ -26,7 +26,38 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/krb5/libressl.patch
 
-	cd src
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		(
+			unset CROSS_COMPILE CC CXX AR AS RANLIB LD STRIP OBJCOPY OBJDUMP SIZE CFLAGS CXXFLAGS LDFLAGS
+
+			cd "$SRC"
+			cp -a krb5-$version krb5-bootstrap
+			cd krb5-bootstrap/src
+
+			CC="$HOSTCC" \
+			CXX="$HOSTCXX" \
+			CFLAGS="" \
+			CXXFLAGS="-stdlib=libc++" \
+			LDFLAGS="-rtlib=compiler-rt" \
+			./configure \
+				--prefix=/usr \
+				--sbindir=/usr/bin \
+				--sysconfdir=/etc \
+				--localstatedir=/var/lib \
+				--with-system-et=no \
+				--with-system-ss=no \
+				--with-system-verto=no \
+				--without-tcl
+
+			sed -i "s|prefix=/usr|prefix=$ROOTFS/usr|" build-tools/krb5-config
+			sed -i 's|libdir=${exec_prefix}/lib64|libdir=${exec_prefix}/lib|' build-tools/krb5-config
+
+			install -Dm755 build-tools/krb5-config "$TOOLS"/bin/$XTARGET-krb5-config
+			install -Dm755 build-tools/krb5-config "$TOOLS"/bin/krb5-config
+		)
+	fi
+
+	cd "$SRC"/$name-$version/src
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
