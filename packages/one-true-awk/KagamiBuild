@@ -1,0 +1,22 @@
+# Description: One true awk
+# URL:         https://github.com/onetrueawk/awk
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     base
+
+name=one-true-awk
+version=178f660b5a4fde6f39e8065185373166f55b6e0c
+release=1
+source=("https://github.com/onetrueawk/awk/archive/$version.tar.gz")
+
+build() {
+	cd "$SRC"/awk-$version
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make HOSTCC="$HOSTCC" CC="$CC" CFLAGS="-Qunused-arguments $CFLAGS $LDFLAGS" a.out
+	else
+		make CFLAGS="-Qunused-arguments $CFLAGS $LDFLAGS" a.out
+	fi
+
+	install -Dm755 a.out "$PKG"/usr/bin/awk
+	install -Dm644 awk.1 "$PKG"/usr/share/man/man1/awk.1
+}
