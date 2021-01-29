@@ -15,6 +15,12 @@ build() {
 		(
 			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
 			cd libgpg-error-bootstrap
+
+			CC="$HOSTCC" \
+			CXX="$HOSTCXX" \
+			CFLAGS="" \
+			CXXFLAGS="-stdlib=libc++" \
+			LDFLAGS="-rtlib=compiler-rt" \
 			./configure \
 				--prefix="$SRC"/libgpg-error \
 				--with-sysroot="$ROOTFS"

@@ -19,6 +19,7 @@ build() {
 	patch -Np1 -i "$STUFF"/lvm2/mallinfo.patch
 	patch -Np1 -i "$STUFF"/lvm2/mlockall-default-config.patch
 	patch -Np1 -i "$STUFF"/lvm2/missing.patch
+	patch -Np1 -i "$STUFF"/lvm2/lvm2-2.02.184-mksh_build.patch
 
 	cp "$STUFF"/config.guess autoconf/config.guess
 	cp "$STUFF"/config.sub autoconf/config.sub
@@ -48,10 +49,11 @@ build() {
 		--disable-readline
 
 	sed -i 's/ -p//g' make.tmpl libdm/make.tmpl
+	sed -i 's/,-z,nowie//g' make.tmpl libdm/make.tmpl
 
-	make SHELL=/bin/bash
-	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install
-	make -j1 SHELL=/bin/bash DESTDIR="$PKG" install_systemd_units
+	make
+	make -j1 DESTDIR="$PKG" install
+	make -j1 DESTDIR="$PKG" install_systemd_units
 
 	install -d "$PKG"/etc/lvm/{archive,backup}
 

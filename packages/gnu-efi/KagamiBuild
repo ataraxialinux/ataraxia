@@ -16,6 +16,8 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	make -j1
-	make INSTALLROOT="$PKG" PREFIX=/usr LIBDIR=/usr/lib install
+	patch -Np1 -i "$STUFF"/gnu-efi/gnu-efi-3.0.9-fix-clang-build.patch
+
+	make CC="${CC:-clang}" -j1
+	make CC="${CC:-clang}" INSTALLROOT="$PKG" PREFIX=/usr LIBDIR=/usr/lib install
 }

@@ -177,6 +177,55 @@ build_system() {
 	# emerge_target tar cpio
 	emerge_target texinfo
 	emerge_target vi
+	emerge_target libgpg-error
+	emerge_target libgcrypt
+	emerge_target libseccomp
+	case $BARCH in
+		amd64|x86|arm64|armv7l|armv6l|armv5te)
+			emerge_target gnu-efi
+			;;
+	esac
+	emerge_target hwids
+	if ! check_stamp util-linux-pass1; then
+		emerge_target util-linux-runtime
+		rm -rf "$PACKAGES"/util-linux-runtime-*.czst
+		stamp util-linux-pass1
+	fi
+	if ! check_stamp systemd-pass1; then
+		emerge_target systemd-runtime
+		rm -rf "$PACKAGES"/systemd-runtime-*.czst
+		stamp systemd-pass1
+	fi
+	if ! check_stamp util-linux-final; then
+		pushd "$REPO/util-linux"
+			tsukuri bi -c "$BUILD/target.config" -w
+		popd
+
+		tsukuri rm -c "$BUILD/target.config" -r "$ROOTFS" util-linux-runtime
+		emerge_target util-linux
+
+		stamp util-linux-final
+	else
+		emerge_target util-linux
+	fi
+	emerge_target libaio
+	emerge_target lvm2
+	emerge_target popt
+	emerge_target json-c
+	emerge_target argon2
+	emerge_target cryptsetup
+	if ! check_stamp systemd-final; then
+		pushd "$REPO/systemd"
+			tsukuri bi -c "$BUILD/target.config" -w
+		popd
+
+		tsukuri rm -c "$BUILD/target.config" -r "$ROOTFS" systemd-runtime
+		emerge_target systemd
+
+		stamp systemd-final
+	else
+		emerge_target systemd
+	fi
 
 	stamp system
 
