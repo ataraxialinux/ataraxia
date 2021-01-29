@@ -1,0 +1,26 @@
+# Description: The Traditional Vi
+# URL:         http://ex-vi.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+# Section:     editors
+
+name=vi
+version=050325
+release=1
+source=("https://sourceforge.net/projects/ex-vi/files/ex-vi/$version/ex-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/ex-$version
+	patch -Np1 -i "$STUFF"/vi/preserve-dir.patch
+
+	make \
+		PREFIX=/usr \
+		LIBEXECDIR=/usr/lib/ex \
+		PRESERVEDIR=/var/lib/ex
+	make install \
+		INSTALL=install \
+		PREFIX=/usr \
+		LIBEXECDIR=/usr/lib/ex \
+		PRESERVEDIR=/var/lib/ex \
+		DESTDIR="$PKG"
+}
