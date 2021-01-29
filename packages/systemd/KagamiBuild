@@ -59,7 +59,11 @@ build() {
 	patch -Np1 -i "$STUFF"/systemd/0005-tune-up-etc.patch
 	patch -Np1 -i "$STUFF"/systemd/0006-Use-home-root.patch
 
-	sed -i "s|objcopy = find_program('objcopy')|objcopy = find_program('gobjcopy')|" src/boot/efi/meson.build
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s|objcopy = find_program('objcopy')|objcopy = find_program('"$XTARGET-gobjcopy"')|" src/boot/efi/meson.build
+	else
+		sed -i "s|objcopy = find_program('objcopy')|objcopy = find_program('gobjcopy')|" src/boot/efi/meson.build
+	fi
 
 	mkdir -p build
 	cd build
