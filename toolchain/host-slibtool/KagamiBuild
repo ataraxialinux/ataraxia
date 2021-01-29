@@ -3,8 +3,7 @@ realpath="$REPO/${name/host-}"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 release=1
 options=('bootstrap')
-source=("http://midipix.org/dl/slibtool/slibtool-$version.tar.xz"
-	"https://raw.githubusercontent.com/ataraxialinux/storage/master/ltmain.sh")
+source=("http://midipix.org/dl/slibtool/slibtool-$version.tar.xz")
 
 build() {
 	cd "$SRC"/slibtool-$version
@@ -26,18 +25,18 @@ build() {
 		"$TOOLS"/share/aclocal/
 
 	for macros in ltversion.m4 libtool.m4 ltargz.m4 ltdl.m4 ltoptions.m4 ltsugar.m4 lt~obsolete.m4; do
-		install -Dm0644 "$STUFF"/slibtool/$macros "$TOOLS"/share/aclocal/$macros
-		install -Dm0644 "$STUFF"/slibtool/$macros "$TOOLS"/share/libtoolize/AC_CONFIG_MACRO_DIRS/$macros
+		install -Dm644 "$STUFF"/slibtool/$macros "$TOOLS"/share/aclocal/$macros
+		install -Dm644 "$STUFF"/slibtool/$macros "$TOOLS"/share/libtoolize/AC_CONFIG_MACRO_DIRS/$macros
 	done
 
 	for aux in compile depcomp install-sh missing; do
-		install -Dm0755 "$STUFF"/slibtool/$aux "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/$aux
+		install -Dm755 "$STUFF"/slibtool/$aux "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/$aux
 	done
-	install -Dm0755 "$SRC"/ltmain.sh "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/ltmain.sh
+	install -Dm755 "$STUFF"/slibtool/ltmain.sh "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/ltmain.sh
 
-	install -Dm0755 "$STUFF"/config.sub "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/config.sub
-	install -Dm0755 "$STUFF"/config.guess "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/config.guess
+	install -Dm755 "$STUFF"/config.sub "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/config.sub
+	install -Dm755 "$STUFF"/config.guess "$TOOLS"/share/libtoolize/AC_CONFIG_AUX_DIR/config.guess
 
-	install -Dm0755 "$STUFF"/slibtool/libtoolize "$TOOLS"/bin/libtoolize
+	install -Dm755 "$STUFF"/slibtool/libtoolize "$TOOLS"/bin/libtoolize
 	sed -i "s,uncom_sysroot,$TOOLS,g" "$TOOLS"/bin/libtoolize
 }
