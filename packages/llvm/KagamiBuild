@@ -171,4 +171,9 @@ build() {
 	mv "$PKG"/usr/libexec/{ccc,c++}-analyzer "$PKG"/usr/lib/clang/
 	rmdir "$PKG"/usr/libexec
 	sed -i 's|libexec|lib/clang|' "$PKG"/usr/bin/scan-build
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		local py="$(which python3)"
+		sed -i "s|$py|/usr/bin/python3|" "$PKG"/usr/bin/lit
+	fi
 }
