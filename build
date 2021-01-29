@@ -135,7 +135,13 @@ build_system() {
 	emerge_target libuargp
 	emerge_target libelf
 	emerge_target binutils
-	emerge_target llvm
+	if ! check_stamp llvm; then
+		force="-f" \
+			emerge_target llvm
+		stamp llvm
+	else
+		emerge_target llvm
+	fi
 	emerge_target ccache
 	emerge_target pkgconf
 
