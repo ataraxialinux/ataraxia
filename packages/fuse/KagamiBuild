@@ -11,6 +11,8 @@ options=('~emptydirs')
 source=("https://github.com/libfuse/libfuse/archive/$name-$version.tar.gz")
 
 build() {
+	filter-flags -flto
+
 	cd "$SRC"/libfuse-$name-$version
 	sed -i 's|mknod "${DESTDIR}/dev/fuse" -m 0666 c 10 229|mknod -m 0666 "${DESTDIR}/dev/fuse" c 10 229|' util/install_helper.sh
 

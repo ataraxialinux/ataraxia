@@ -1,0 +1,81 @@
+From 403b0cd8511268689e437ed5fe4bac7511745cfc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?X=E2=84=B9=20Ruoyao?= <xry111@mengyan1223.wang>
+Date: Thu, 8 Oct 2020 15:53:35 +0800
+Subject: [PATCH] Port to libhandy-1
+
+---
+ README.md           |  2 +-
+ gnome-tweaks        |  2 +-
+ gtweak/tweakview.py | 14 ++++++--------
+ 3 files changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/README.md b/README.md
+index daa1cc7..8f6a143 100644
+--- a/README.md
++++ b/README.md
+@@ -21,7 +21,7 @@ RUNTIME DEPENDENCIES
+   - GLib (>= 2.58)
+   - GTK+ 3 (>= 3.12)
+   - gnome-desktop (>= 3.30)
+-  - libhandy
++  - libhandy (>= 1.0)
+   - libsoup
+   - libnotify
+   - Pango
+diff --git a/gnome-tweaks b/gnome-tweaks
+index d4a6455..a244a85 100755
+--- a/gnome-tweaks
++++ b/gnome-tweaks
+@@ -12,7 +12,7 @@ import sys
+ 
+ import gi
+ gi.require_version("Gtk", "3.0")
+-gi.require_version("Handy", "0.0")
++gi.require_version("Handy", "1")
+ 
+ import gtweak
+ from gtweak.defs import VERSION
+diff --git a/gtweak/tweakview.py b/gtweak/tweakview.py
+index 5de11d6..a02e52d 100644
+--- a/gtweak/tweakview.py
++++ b/gtweak/tweakview.py
+@@ -23,8 +23,7 @@ def __init__(self, app, model):
+         self.hsize_group = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+ 
+         self.main_box = Handy.Leaflet()
+-        self.main_box.set_mode_transition_type(Handy.LeafletModeTransitionType.SLIDE)
+-        self.main_box.set_child_transition_type(Handy.LeafletChildTransitionType.SLIDE)
++        self.main_box.set_transition_type(Handy.LeafletTransitionType.SLIDE)
+ 
+         left_box = self.sidebar()
+         right_box = self.main_content()
+@@ -68,14 +67,13 @@ def __init__(self, app, model):
+     def titlebar(self):
+ 
+         header = Handy.Leaflet()
+-        header.set_mode_transition_type(Handy.LeafletModeTransitionType.SLIDE)
+-        header.set_child_transition_type(Handy.LeafletChildTransitionType.SLIDE)
++        header.set_transition_type(Handy.LeafletTransitionType.SLIDE)
+         header.connect("notify::visible-child", self._update_decorations)
+         header.connect("notify::fold", self._update_decorations)
+ 
+-        left_header = Gtk.HeaderBar()
++        left_header = Handy.HeaderBar()
+         left_header.props.show_close_button = True
+-        right_header = Gtk.HeaderBar()
++        right_header = Handy.HeaderBar()
+         right_header.props.show_close_button = True
+         right_header.props.hexpand = True
+ 
+@@ -226,9 +224,9 @@ def _list_header_func(self, row, before, user_data):
+     def _update_decorations(self, *_):
+         header = self.get_titlebar()
+         if header.props.folded:
+-            self.header_group.set_focus(header.get_visible_child())
++            self.header_group.set_decorate_all(True)
+         else:
+-            self.header_group.set_focus(None)
++            self.header_group.set_decorate_all(False)
+ 
+     def _after_key_press(self, widget, event):
+         if not self.button.get_active() or not self.entry.is_focus():
