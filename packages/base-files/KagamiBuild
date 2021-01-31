@@ -4,7 +4,7 @@
 # Section:     base
 
 name=base-files
-version=0.20
+version=0.21
 release=1
 options=('bootstrap')
 backup=('etc/fstab'
@@ -19,13 +19,12 @@ backup=('etc/fstab'
 build() {
 	cd "$PKG"
 
-	for d in boot dev etc/{skel,profile.d,modprobe.d} mnt usr var opt run; do
-		install -d -m755 $d
+	for d in boot dev etc/{skel,profile.d,modprobe.d} usr var run; do
+		install -Dm755 $d
 	done
-
-	install -d -m555 proc
-	install -d -m555 sys
 	install -d -m1777 tmp
+	install -Dm555 proc
+	install -Dm555 sys
 
 	for f in fstab host.conf hosts motd profile resolv.conf securetty shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
@@ -33,16 +32,16 @@ build() {
 	install -m600 "$STUFF"/base-files/crypttab etc/
 
 	for d in local opt empty spool/cron/crontabs; do
-		install -d -m755 var/$d
+		install -Dm755 var/$d
 	done
 
-	install -d -m1777 var/{tmp,spool/mail}
+	install -Dm1777 var/{tmp,spool/mail}
 
-	install -d -m775 -g 50 var/games
+	install -Dm775 -g 50 var/games
 	ln -sf spool/mail var/mail
 
 	for d in bin games include lib/{modules,firmware} share/misc src; do
-		install -d -m755 usr/$d
+		install -Dm755 usr/$d
 	done
 
 	ln -sf usr/bin bin
@@ -50,14 +49,32 @@ build() {
 	ln -sf bin usr/sbin
 	ln -sf usr/lib lib
 
-	for d in bin etc games include lib man sbin share src; do
-		install -d -m755 usr/local/$d
-	done
-
 	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
-	install -D -m644 "$STUFF"/base-files/sysctl "$PKG"/usr/lib/sysctl.d/10-default.conf
-	install -D -m644 "$STUFF"/sysusers.d/base-files.conf "$PKG"/usr/lib/sysusers.d/zzz.conf
+	install -Dm644 "$STUFF"/base-files/sysctl "$PKG"/usr/lib/sysctl.d/10-default.conf
+	install -Dm644 "$STUFF"/sysusers.d/base-files.conf "$PKG"/usr/lib/sysusers.d/00-initial.conf
+	install -Dm644 "$STUFF"/tmpfiles.d/base-files.conf "$PKG"/usr/lib/tmpfiles.d/00-initial.conf
 
 	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
 	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+
+	cat > "$PKG"/usr/lib/os-release <<- EOF
+		NAME="Ataraxia Linux"
+		VERSION="1.0"
+		ID="ataraxia"
+		ID_LIKE="ataraxialinux ataraxia januslinux janus"
+		VERSION_ID="1.0"
+		PRETTY_NAME="Ataraxia Linux 1.0"
+		HOME_URL="https://ataraxialinux.github.io/"
+		DOCUMENTATION_URL="https://github.com/ataraxialinux/ataraxia/wiki"
+		BUG_REPORT_URL="https://github.com/ataraxialinux/ataraxia/issues"
+		VARIANT="Secure Edition"
+		VARIANT_ID=secure
+	EOF
+
+	cat > "$PKG"/etc/ataraxia-release <<- EOF
+		Ataraxia Linux release 1.0
+	EOF
+
+	ln -sf ataraxia-release "$PKG"/etc/system-release
+	ln -sf ataraxia-release "$PKG"/etc/redhat-release
 }

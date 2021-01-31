@@ -1,10 +1,7 @@
-From fcea0c7b27b3ee8bb11cec3997745ea3f8963cb9 Mon Sep 17 00:00:00 2001
+From af3cb370c4302681880a49f22ae3cc78753c2954 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 7 Dec 2020 22:52:33 +0900
-Subject: [PATCH 1/6] Allow building on musl libc
-
-Most work is done by OpenEmbedded. Other fixes by xhebox: https://github.com/xhebox https://github.com/xhebox/noname-linux
-Some fixes by protonesso (aka Ishimoto Shinobu) for Ataraxia Linux
+Date: Mon, 1 Feb 2021 03:01:31 +0900
+Subject: [PATCH 1/2] Allow building on musl libc
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -143,7 +140,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  create mode 100644 src/basic/parse-printf-format.h
 
 diff --git a/meson.build b/meson.build
-index f406d59..0d0fa49 100644
+index 580964c..e023677 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -535,6 +535,7 @@ foreach ident : [
@@ -1488,7 +1485,7 @@ index bcf2e01..5394d1d 100644
  #define DEFAULT_FSS_INTERVAL_USEC (15*USEC_PER_MINUTE)
  #define PROCESS_INOTIFY_INTERVAL 1024   /* Every 1,024 messages processed */
 diff --git a/src/journal/sd-journal.c b/src/journal/sd-journal.c
-index cb1ab88..7f35759 100644
+index 346970d..d471dd0 100644
 --- a/src/journal/sd-journal.c
 +++ b/src/journal/sd-journal.c
 @@ -40,6 +40,7 @@
@@ -1862,7 +1859,7 @@ index cf279c6..d3a4282 100644
  
  #include "sd-dhcp-server.h"
 diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
-index 02d3384..a30d8dd 100644
+index 68d9759..c7315c4 100644
 --- a/src/network/networkd-dhcp4.c
 +++ b/src/network/networkd-dhcp4.c
 @@ -1,9 +1,9 @@
@@ -1892,7 +1889,7 @@ index d4d4182..635d08f 100644
  #include "sd-dhcp6-client.h"
  
 diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
-index ced18de..07b4377 100644
+index 8120343..99b847d 100644
 --- a/src/network/networkd-link.c
 +++ b/src/network/networkd-link.c
 @@ -1,8 +1,8 @@
@@ -1917,7 +1914,7 @@ index 3254641..f0ada41 100644
  #include <netinet/in.h>
  #include <linux/netdevice.h>
 diff --git a/src/network/networkd-route.c b/src/network/networkd-route.c
-index 10f30c1..9d00bc7 100644
+index 0ed8958..78e20fb 100644
 --- a/src/network/networkd-route.c
 +++ b/src/network/networkd-route.c
 @@ -1,7 +1,7 @@
@@ -2177,7 +2174,7 @@ index 3c63a58..4c2d434 100644
  typedef struct CPUSet {
          cpu_set_t *set;
 diff --git a/src/shared/dns-domain.c b/src/shared/dns-domain.c
-index 8bd1e3a..f8d6eab 100644
+index b02ad3f..76140a4 100644
 --- a/src/shared/dns-domain.c
 +++ b/src/shared/dns-domain.c
 @@ -17,6 +17,7 @@
@@ -2849,5 +2846,5 @@ index b28e285..115b723 100644
                  return log_warning_errno(r, "Failed to %s sysfs UTF-8 flag: %m", enable_disable(utf8));
  
 -- 
-2.28.0
+2.29.2
 

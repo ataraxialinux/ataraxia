@@ -53,11 +53,7 @@ build() {
 
 	cd "$SRC"/$name-stable-$version
 	patch -Np1 -i "$STUFF"/systemd/0001-Allow-building-on-musl-libc.patch
-	patch -Np1 -i "$STUFF"/systemd/0002-non-GNU-userland-fixes.patch
-	patch -Np1 -i "$STUFF"/systemd/0003-Better-systemd-firstboot-preset.patch
-	patch -Np1 -i "$STUFF"/systemd/0004-LibreSSL-fixes.patch
-	patch -Np1 -i "$STUFF"/systemd/0005-tune-up-etc.patch
-	patch -Np1 -i "$STUFF"/systemd/0006-Use-home-root.patch
+	patch -Np1 -i "$STUFF"/systemd/0002-LibreSSL-fixes.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		sed -i "s|objcopy = find_program('objcopy')|objcopy = find_program('"$XTARGET-gobjcopy"')|" src/boot/efi/meson.build
@@ -124,6 +120,9 @@ build() {
 
 	for i in "$SRC"/*.trigger; do install -Dm644 "$i" "$PKG"/usr/lib/tsukuri/triggers/$(basename $i); done
 
+	rm "$PKG"/usr/share/factory/etc/nsswitch.conf
+	sed -i -e '/^C \/etc\/nsswitch\.conf/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf
+
 	echo "disable *" > "$PKG"/usr/lib/systemd/system-preset/99-default.preset
 	echo "disable *" > "$PKG"/usr/lib/systemd/user-preset/90-systemd.preset
 
@@ -141,9 +140,8 @@ build() {
 
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 
-	#install -Dm644 "$STUFF"/systemd/issue "$PKG"/usr/share/factory/etc/issue
-	#install -Dm644 "$STUFF"/pam.d/other "$PKG"/usr/share/factory/etc/pam.d/other
-	#install -Dm644 "$STUFF"/pam.d/system-auth "$PKG"/usr/share/factory/etc/pam.d/system-auth
+	install -Dm644 "$STUFF"/pam.d/other "$PKG"/usr/share/factory/etc/pam.d/other
+	install -Dm644 "$STUFF"/pam.d/system-auth "$PKG"/usr/share/factory/etc/pam.d/system-auth
 
 	case $BARCH in
 		amd64|x86|arm64|armv7l|armv6l|armv5te)
@@ -152,7 +150,5 @@ build() {
 				;;
 	esac
 
-	rm -rf \
-		"$PKG"/usr/share/factory/etc/nsswitch.conf \
-		"$PKG"/var
+	rm -rf "$PKG"/var
 }
