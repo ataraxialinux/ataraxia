@@ -20,11 +20,11 @@ build() {
 	cd "$PKG"
 
 	for d in boot dev etc/{skel,profile.d,modprobe.d} usr var run; do
-		install -Dm755 $d
+		install -dm755 $d
 	done
-	install -d -m1777 tmp
-	install -Dm555 proc
-	install -Dm555 sys
+	install -dm1777 tmp
+	install -dm555 proc
+	install -dm555 sys
 
 	for f in fstab host.conf hosts motd profile resolv.conf securetty shells; do
 		install -m644 "$STUFF"/base-files/$f etc/
@@ -32,16 +32,16 @@ build() {
 	install -m600 "$STUFF"/base-files/crypttab etc/
 
 	for d in local opt empty spool/cron/crontabs; do
-		install -Dm755 var/$d
+		install -dm755 var/$d
 	done
 
-	install -Dm1777 var/{tmp,spool/mail}
+	install -dm1777 var/{tmp,spool/mail}
 
-	install -Dm775 -g 50 var/games
+	install -dm775 -g 50 var/games
 	ln -sf spool/mail var/mail
 
 	for d in bin games include lib/{modules,firmware} share/misc src; do
-		install -Dm755 usr/$d
+		install -dm755 usr/$d
 	done
 
 	ln -sf usr/bin bin
@@ -49,13 +49,13 @@ build() {
 	ln -sf bin usr/sbin
 	ln -sf usr/lib lib
 
-	install -m644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
+	install -Dm644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
 	install -Dm644 "$STUFF"/base-files/sysctl "$PKG"/usr/lib/sysctl.d/10-default.conf
 	install -Dm644 "$STUFF"/sysusers.d/base-files.conf "$PKG"/usr/lib/sysusers.d/00-initial.conf
 	install -Dm644 "$STUFF"/tmpfiles.d/base-files.conf "$PKG"/usr/lib/tmpfiles.d/00-initial.conf
 
-	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+	install -Dm755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
+	install -Dm755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
 
 	cat > "$PKG"/usr/lib/os-release <<- EOF
 		NAME="Ataraxia Linux"
