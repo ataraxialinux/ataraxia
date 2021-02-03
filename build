@@ -54,12 +54,13 @@ build_toolchain() {
 	emerge_host slibtool
 	emerge_host autoconf
 	emerge_host automake
+	emerge_host pkgconf
+
 	case $BARCH in
 		amd64|x86|arm64|armv7l|armv6l|armv5te|ppc64le|ppc64|riscv64)
 			emerge_host grub
 			;;
 	esac
-	emerge_host pkgconf
 
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
@@ -160,7 +161,7 @@ build_system() {
 	emerge_target autoconf
 	emerge_target automake
 	emerge_target kmod
-	# emerge_target openbsd or gnu coreutils whatever
+	emerge_target busybox
 	emerge_target check
 	emerge_target one-true-awk
 	emerge_target mandoc
@@ -173,7 +174,6 @@ build_system() {
 	emerge_target iptables
 	emerge_target iproute2
 	emerge_target kbd
-	# emerge_target tar cpio
 	emerge_target texinfo
 	emerge_target vi
 	emerge_target libgpg-error
@@ -225,8 +225,8 @@ build_system() {
 	else
 		emerge_target systemd
 	fi
-	emerge_target dbus
-	emerge_target dbus-broker
+	# dbus
+	emerge_target linux
 
 	stamp system
 

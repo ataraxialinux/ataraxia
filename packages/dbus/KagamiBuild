@@ -6,7 +6,7 @@
 
 name=dbus
 version=1.12.20
-release=12
+release=13
 source=("https://dbus.freedesktop.org/releases/$name/$name-$version.tar.gz")
 
 build() {
@@ -17,6 +17,7 @@ build() {
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--with-console-auth-dir=/run/console \
+		--with-dbus-user=dbus \
 		--with-system-pid-file=/run/dbus/pid \
 		--with-system-socket=/run/dbus/system_bus_socket \
 		--with-systemdsystemunitdir=/usr/lib/systemd/system \
@@ -29,18 +30,6 @@ build() {
 		--disable-doxygen-docs \
 		--disable-xml-docs \
 		--disable-static
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE
-		$ORIGMAKE DESTDIR="$PKG" install
-	else
-		make
-		make DESTDIR="$PKG" install
-	fi
-
-	chown root:81 "$PKG"/usr/lib/dbus-1.0/dbus-daemon-launch-helper
-	chmod 4750 "$PKG"/usr/lib/dbus-1.0/dbus-daemon-launch-helper
-
-	ln -sf ../../../etc/machine-id "$PKG"/var/lib/dbus/machine-id
-
-	rm -rf "$PKG"/var/run
+	make
+	make DESTDIR="$PKG" install
 }
