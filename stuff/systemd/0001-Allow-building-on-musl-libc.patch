@@ -1,6 +1,6 @@
-From af3cb370c4302681880a49f22ae3cc78753c2954 Mon Sep 17 00:00:00 2001
+From c6ee8a8e2f7aeaab7a55236bb779ee229fcb010e Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 1 Feb 2021 03:01:31 +0900
+Date: Fri, 5 Feb 2021 01:42:35 +0900
 Subject: [PATCH 1/2] Allow building on musl libc
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -23,6 +23,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/basic/missing_stdlib.h                 |  12 +
  src/basic/missing_type.h                   |  30 +++
  src/basic/mkdir.c                          |   1 +
+ src/basic/mountpoint-util.c                |   1 +
  src/basic/parse-printf-format.c            | 273 +++++++++++++++++++++
  src/basic/parse-printf-format.h            |  57 +++++
  src/basic/parse-util.c                     |   1 +
@@ -135,7 +136,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  src/userdb/userdbctl.c                     |   3 +-
  src/userdb/userwork.c                      |   4 +
  src/vconsole/vconsole-setup.c              |   2 +-
- 130 files changed, 695 insertions(+), 111 deletions(-)
+ 131 files changed, 696 insertions(+), 111 deletions(-)
  create mode 100644 src/basic/parse-printf-format.c
  create mode 100644 src/basic/parse-printf-format.h
 
@@ -241,7 +242,7 @@ index 6a9c3a3..8948bb4 100644
  #include "alloc-util.h"
  #include "btrfs-util.h"
 diff --git a/src/basic/env-util.c b/src/basic/env-util.c
-index a84863f..d4f5d57 100644
+index b2483af..7249943 100644
 --- a/src/basic/env-util.c
 +++ b/src/basic/env-util.c
 @@ -15,6 +15,7 @@
@@ -519,6 +520,18 @@ index f91f8f7..fb31596 100644
  
  int mkdir_safe_internal(
                  const char *path,
+diff --git a/src/basic/mountpoint-util.c b/src/basic/mountpoint-util.c
+index a6602ad..2c48647 100644
+--- a/src/basic/mountpoint-util.c
++++ b/src/basic/mountpoint-util.c
+@@ -10,6 +10,7 @@
+ #include "fs-util.h"
+ #include "missing_stat.h"
+ #include "missing_syscall.h"
++#include "missing_stdlib.h"
+ #include "mountpoint-util.h"
+ #include "parse-util.h"
+ #include "path-util.h"
 diff --git a/src/basic/parse-printf-format.c b/src/basic/parse-printf-format.c
 new file mode 100644
 index 0000000..49437e5
@@ -1214,7 +1227,7 @@ index 37c581f..e02789d 100644
  BUS_DEFINE_PROPERTY_GET(bus_property_get_tasks_max, "t", TasksMax, tasks_max_resolve);
  
 diff --git a/src/core/dbus-execute.c b/src/core/dbus-execute.c
-index abe009c..0451e58 100644
+index 0473535..b1b8820 100644
 --- a/src/core/dbus-execute.c
 +++ b/src/core/dbus-execute.c
 @@ -41,6 +41,7 @@
@@ -1497,7 +1510,7 @@ index 346970d..d471dd0 100644
  #define JOURNAL_FILES_MAX 7168
  
 diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
-index 30ac526..126077e 100644
+index d502051..06d8181 100644
 --- a/src/libsystemd-network/sd-dhcp6-client.c
 +++ b/src/libsystemd-network/sd-dhcp6-client.c
 @@ -5,7 +5,6 @@
@@ -1597,10 +1610,10 @@ index 8c67117..fac1788 100644
  #define MAX_SIZE (2*1024*1024)
  
 diff --git a/src/libsystemd/sd-device/sd-device.c b/src/libsystemd/sd-device/sd-device.c
-index d06f90c..43d0a58 100644
+index d1aa328..f311182 100644
 --- a/src/libsystemd/sd-device/sd-device.c
 +++ b/src/libsystemd/sd-device/sd-device.c
-@@ -1976,7 +1976,7 @@ _public_ int sd_device_set_sysattr_value(sd_device *device, const char *sysattr,
+@@ -1945,7 +1945,7 @@ _public_ int sd_device_set_sysattr_value(sd_device *device, const char *sysattr,
          if (!value)
                  return -ENOMEM;
  
@@ -1831,7 +1844,7 @@ index e53c73c..9bf0771 100644
  #include <stdbool.h>
  
 diff --git a/src/network/networkd-dhcp-common.c b/src/network/networkd-dhcp-common.c
-index c338c77..1dd824e 100644
+index 9f58121..cd1d7c2 100644
 --- a/src/network/networkd-dhcp-common.c
 +++ b/src/network/networkd-dhcp-common.c
 @@ -1,7 +1,9 @@
@@ -1859,7 +1872,7 @@ index cf279c6..d3a4282 100644
  
  #include "sd-dhcp-server.h"
 diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
-index 68d9759..c7315c4 100644
+index f3c1e5f..e4ef6ec 100644
 --- a/src/network/networkd-dhcp4.c
 +++ b/src/network/networkd-dhcp4.c
 @@ -1,9 +1,9 @@
@@ -1974,7 +1987,7 @@ index 92bb512..eeca905 100644
  Settings *settings_new(void) {
          Settings *s;
 diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
-index 0842731..11b0c20 100644
+index 7515380..78563fa 100644
 --- a/src/nspawn/nspawn.c
 +++ b/src/nspawn/nspawn.c
 @@ -2667,7 +2667,7 @@ static int reset_audit_loginuid(void) {
@@ -2002,7 +2015,7 @@ index 0842731..11b0c20 100644
          if (r < 0)
                  return log_error_errno(r, "Failed to write GID map: %m");
  
-@@ -5084,7 +5084,7 @@ static int cant_be_in_netns(void) {
+@@ -5088,7 +5088,7 @@ static int cant_be_in_netns(void) {
          if (fd < 0)
                  return log_error_errno(errno, "Failed to allocate udev control socket: %m");
  
@@ -2174,7 +2187,7 @@ index 3c63a58..4c2d434 100644
  typedef struct CPUSet {
          cpu_set_t *set;
 diff --git a/src/shared/dns-domain.c b/src/shared/dns-domain.c
-index b02ad3f..76140a4 100644
+index ec42b29..74de694 100644
 --- a/src/shared/dns-domain.c
 +++ b/src/shared/dns-domain.c
 @@ -17,6 +17,7 @@
@@ -2284,7 +2297,7 @@ index a13a198..5de3e68 100644
  
          if (t->display_map)
 diff --git a/src/shared/journal-importer.c b/src/shared/journal-importer.c
-index e95b638..a1bf15b 100644
+index b2785f0..5f00902 100644
 --- a/src/shared/journal-importer.c
 +++ b/src/shared/journal-importer.c
 @@ -14,6 +14,7 @@
@@ -2296,7 +2309,7 @@ index e95b638..a1bf15b 100644
  enum {
          IMPORTER_STATE_LINE = 0,    /* waiting to read, or reading line */
 diff --git a/src/shared/logs-show.c b/src/shared/logs-show.c
-index bf574d3..a09c79d 100644
+index 840f221..5e69798 100644
 --- a/src/shared/logs-show.c
 +++ b/src/shared/logs-show.c
 @@ -41,6 +41,7 @@
