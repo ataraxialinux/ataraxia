@@ -213,6 +213,10 @@ build_system() {
 	emerge_target json-c
 	emerge_target argon2
 	emerge_target cryptsetup
+	emerge_target libtasn1
+	emerge_target p11-kit
+	emerge_target gnutls
+	emerge_target libmicrohttpd
 	if ! check_stamp systemd-final; then
 		pushd "$REPO/systemd"
 			tsukuri bi -c "$BUILD/target.config" -w
@@ -227,203 +231,29 @@ build_system() {
 	fi
 	emerge_target dbus-broker
 	emerge_target dbus
+	emerge_target net-tools
+	emerge_target iputils
 	emerge_target procps-ng
+	emerge_target dosfstools
+	emerge_target pciutils
+	emerge_target libusb
+	emerge_target usbutils
+	emerge_target oniguruma
+	emerge_target jq
+	#emerge_target tsukuri
 	emerge_target linux
+
+	# Building installer packages
+	emerge_target gptfdisk
+	emerge_target wget
+	emerge_target iwd
+	emerge_target wireless_tools
+	emerge_target wpa_supplicant
+	emerge_target lynx
 
 	stamp system
 
 	msg "System has been built successfuly."
-}
-
-nspawn_image() {
-	if ! check_stamp system; then
-		die "Build target system first."
-	fi
-
-	local imagefs img bootpart rootpart signpart homepart
-
-	imagefs="$BUILD/image"
-
-	rm -rf "$imagefs"
-	mkdir -p "$imagefs"
-
-	img="$BUILD/ataraxialinux-$BARCH.img"
-
-	losetup -D
-	qemu-img create -f raw "$img" 6G
-
-	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
-		g
-		n
-		1
-	  	
-		+256M
-		t
-		1
-		n
-		2
-	  	
-		+2G
-		t
-		2
-		23
-		n
-		3
-	  	
-		+512M
-		t
-		3
-		39
-		n
-		4
-	  	
-	  	
-		t
-		4
-		28
-		p
-		w
-		q
-	EOF
-
-	losetup -fP "$img"
-	lodev=$(losetup -a | grep "$img" | cut -d: -f1)
-
-	bootpart="${lodev}p1"
-	rootpart="${lodev}p2"
-	signpart="${lodev}p3"
-	homepart="${lodev}p4"
-
-	mkfs.vfat -F32 "$bootpart"
-	mkfs.ext4 "$rootpart"
-	mkfs.ext4 "$homepart"
-
-	mount "$rootpart" "$imagefs"
-
-	mkdir -p "$imagefs/boot" "$imagefs/home"
-
-	mount "$bootpart" "$imagefs/boot"
-	mount "$homepart" "$imagefs/home"
-
-	mkdir -p "$imagefs/usr/lib/tsukuri/db"
-
-	emerge_target base-files "$imagefs"
-	emerge_target iana-etc "$imagefs"
-	emerge_target linux-headers "$imagefs"
-	emerge_target musl "$imagefs"
-	emerge_target man-pages "$imagefs"
-	emerge_target musl-tools "$imagefs"
-	emerge_target gettext-tiny "$imagefs"
-	emerge_target tzdata "$imagefs"
-	emerge_target m4 "$imagefs"
-	emerge_target bison "$imagefs"
-	emerge_target flex "$imagefs"
-	emerge_target bc "$imagefs"
-	emerge_target zlib "$imagefs"
-	emerge_target bzip2 "$imagefs"
-	emerge_target xz "$imagefs"
-	emerge_target lz4 "$imagefs"
-	emerge_target zstd "$imagefs"
-	emerge_target lzo "$imagefs"
-	emerge_target file "$imagefs"
-	emerge_target ncurses "$imagefs"
-	emerge_target libedit "$imagefs"
-	emerge_target gmp "$imagefs"
-	emerge_target attr "$imagefs"
-	emerge_target acl "$imagefs"
-	emerge_target libressl "$imagefs"
-	emerge_target nettle "$imagefs"
-	emerge_target ca-certificates "$imagefs"
-	emerge_target expat "$imagefs"
-	emerge_target gdbm "$imagefs"
-	emerge_target db53 "$imagefs"
-	emerge_target sqlite "$imagefs"
-	emerge_target libffi "$imagefs"
-	emerge_target python "$imagefs"
-	emerge_target python-setuptools "$imagefs"
-	emerge_target perl "$imagefs"
-	emerge_target libxml2 "$imagefs"
-	emerge_target libarchive "$imagefs"
-	emerge_target libssh2 "$imagefs"
-	emerge_target nghttp2 "$imagefs"
-	emerge_target c-ares "$imagefs"
-	emerge_target libunistring "$imagefs"
-	emerge_target libidn2 "$imagefs"
-	emerge_target brotli "$imagefs"
-	emerge_target krb5 "$imagefs"
-	emerge_target curl "$imagefs"
-	emerge_target make "$imagefs"
-	emerge_target samurai "$imagefs"
-	emerge_target meson "$imagefs"
-	emerge_target jsoncpp "$imagefs"
-	emerge_target rhash "$imagefs"
-	emerge_target libuv "$imagefs"
-	emerge_target cmake "$imagefs"
-	emerge_target libuargp "$imagefs"
-	emerge_target libelf "$imagefs"
-	emerge_target binutils "$imagefs"
-	emerge_target llvm "$imagefs"
-	emerge_target ccache "$imagefs"
-	emerge_target pkgconf "$imagefs"
-	emerge_target cracklib "$imagefs"
-	emerge_target libtirpc "$imagefs"
-	emerge_target libcap-ng "$imagefs"
-	emerge_target audit "$imagefs"
-	emerge_target pam "$imagefs"
-	emerge_target libcap "$imagefs"
-	emerge_target libpwquality "$imagefs"
-	emerge_target shadow "$imagefs"
-	emerge_target psmisc "$imagefs"
-	emerge_target grep "$imagefs"
-	emerge_target mksh "$imagefs"
-	emerge_target bash "$imagefs"
-	emerge_target slibtool "$imagefs"
-	emerge_target gperf "$imagefs"
-	emerge_target autoconf "$imagefs"
-	emerge_target automake "$imagefs"
-	emerge_target kmod "$imagefs"
-	emerge_target check "$imagefs"
-	emerge_target one-true-awk "$imagefs"
-	emerge_target mandoc "$imagefs"
-	emerge_target libmnl "$imagefs"
-	emerge_target libnftnl "$imagefs"
-	emerge_target libnfnetlink "$imagefs"
-	emerge_target libnetfilter_conntrack "$imagefs"
-	emerge_target libnl "$imagefs"
-	emerge_target libpcap "$imagefs"
-	emerge_target iptables "$imagefs"
-	emerge_target iproute2 "$imagefs"
-	emerge_target kbd "$imagefs"
-	emerge_target texinfo "$imagefs"
-	emerge_target nano "$imagefs"
-	emerge_target libgpg-error "$imagefs"
-	emerge_target libgcrypt "$imagefs"
-	emerge_target libseccomp "$imagefs"
-	case $BARCH in
-		amd64|x86|arm64|armv7l|armv6l|armv5te)
-			emerge_target gnu-efi "$imagefs"
-			;;
-	esac
-	emerge_target hwids "$imagefs"
-	emerge_target util-linux "$imagefs"
-	emerge_target libaio "$imagefs"
-	emerge_target lvm2 "$imagefs"
-	emerge_target popt "$imagefs"
-	emerge_target json-c "$imagefs"
-	emerge_target argon2 "$imagefs"
-	emerge_target cryptsetup "$imagefs"
-	emerge_target systemd "$imagefs"
-	emerge_target dbus-broker "$imagefs"
-	emerge_target dbus "$imagefs"
-	emerge_target procps-ng "$imagefs"
-	emerge_target linux "$imagefs"
-	emerge_target strace "$imagefs"
-
-	rm "$imagefs/etc/securetty"
-
-	umount -lf "$homepart" "$bootpart" "$rootpart"
-
-	veritysetup format "$rootpart" "$signpart"
 }
 
 main() {
@@ -459,7 +289,6 @@ main() {
 		case "$1" in
 			toolchain) build_toolchain ;;
 			system) build_toolchain; build_system ;;
-			nspawn-image) nspawn_image ;;
 			*) die "Unknown target" ;;
 		esac
 	fi
