@@ -6,13 +6,6 @@ options=('bootstrap')
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz")
 
 build() {
-	local targets
-
-	case "$BARCH" in
-		amd64|x86|arm64|armv7l|armv6l|armv5te) targets="crt builtins cfi safestack" ;;
-		*) targets="crt builtins" ;;
-	esac
-
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
@@ -36,7 +29,7 @@ build() {
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
 		-DCOMPILER_RT_STANDALONE_BUILD=ON \
 		-Wno-dev -G Ninja
-	samu $targets
+	samu crt builtins
 
 	for i in lib/linux/*; do
 		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
