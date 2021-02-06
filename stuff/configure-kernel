@@ -65,13 +65,6 @@ main() {
 				*) defconfig="vexpress_defconfig" ;;
 			esac
 			;;
-		armv6l)
-			case $flavor in
-				rpi|rpizero|rpizerow) defconfig="bcmrpi_defconfig" ;;
-				*) defconfig="versatile_defconfig" ;;
-			esac
-			;;
-		armv5te) defconfig="mvebu_v5_defconfig" ;;
 		mips64|mips64el|mips|mipsel) defconfig="malta_defconfig" ;;
 		ppc64le) defconfig="pseries_le_defconfig" ;;
 		ppc64)
@@ -89,7 +82,7 @@ main() {
 		amd64) karch="x86_64" ;;
 		x86) karch="i386" ;;
 		arm64) karch="arm64" ;;
-		armv7l|armv6l|armv5te) karch="arm" ;;
+		armv7l) karch="arm" ;;
 		mips64|mips64el|mips|mipsel) karch="mips" ;;
 		ppc64le|ppc64) karch="powerpc" ;;
 		riscv64) karch="riscv" ;;
@@ -116,7 +109,7 @@ main() {
 				*) yconfig DMIID EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS EFI_DISABLE_PCI_DMA; nconfig EFI_CUSTOM_SSDT_OVERLAYS ;;
 			esac
 			;;
-		armv7l|armv6l|armv5te)
+		armv7l)
 			yconfig DMIID
 			;;
 		mips64|mips64el|mips|mipsel)
@@ -237,7 +230,7 @@ main() {
 				CRYPTO_CRCT10DIF_ARM64_CE CRYPTO_CHACHA20_NEON CRYPTO_POLY1305_NEON CRYPTO_NHPOLY1305_NEON CRYPTO_AES_ARM64_BS
 			nconfig CRYPTO_AEGIS128_SIMD
 			;;
-		armv7l|armv6l|armv5te)
+		armv7l)
 			yconfig ARM_CRYPTO CRYPTO_SHA1_ARM CRYPTO_SHA256_ARM CRYPTO_SHA512_ARM CRYPTO_AES_ARM CRYPTO_AES_ARM_CE \
 				CRYPTO_GHASH_ARM_CE CRYPTO_CRCT10DIF_ARM_CE CRYPTO_CRC32_ARM_CE
 			nconfig CRYPTO_AEGIS128_SIMD
@@ -357,7 +350,7 @@ main() {
 
 	# Platform specific SDHCI
 	case $arch in
-		arm64|armv7l|armv6l|armv5te)
+		arm64|armv7l)
 			yconfig MMC_ARMMMCI MMC_QCOM_DML MMC_SDHCI_OF_ASPEED MMC_SDHCI_OF_AT91 MMC_SDHCI_CADENCE MMC_SDHCI_ESDHC_IMX \
 				MMC_SDHCI_TEGRA MMC_SDHCI_PXAV3 MMC_SDHCI_F_SDH30 MMC_SUNXI MMC_DW MMC_DW_PLTFM MMC_DW_EXYNOS MMC_DW_K3 MMC_DW_PCI MMC_DW_ROCKCHIP
 			nconfig MMC_DW_BLUEFIELD MMC_DW_HI3798CV200
@@ -874,7 +867,7 @@ main() {
 				SHADOW_CALL_STACK
 			varconfig DEFAULT_MMAP_MIN_ADDR 32768
 			;;
-		armv7l|armv6l|armv5te)
+		armv7l)
 			yconfig VMSPLIT_3G STRICT_MEMORY_RWX CPU_SW_DOMAIN_PAN \
 				SHADOW_CALL_STACK
 			nconfig OABI_COMPAT
