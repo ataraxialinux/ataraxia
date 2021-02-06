@@ -11,6 +11,10 @@ source=("http://distcache.freebsd.org/local-distfiles/itetcu/$name-$version.tar.
 build() {
 	unset CFLAGS CXXFLAGS LDFLAGS
 
+	case "$BARCH" in
+		mips64|mips64el|mips|mipsel) export CFLAGS="-D__BUILTIN_HACK" ;;
+	esac
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/libexecinfo/misc.patch
 
