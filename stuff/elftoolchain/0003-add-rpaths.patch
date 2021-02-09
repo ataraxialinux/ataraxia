@@ -1,0 +1,99 @@
+diff --git a/addr2line/Makefile b/addr2line/Makefile
+index e388bc0..67e2323 100644
+--- a/addr2line/Makefile
++++ b/addr2line/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELF} ${LIBELFTC} ${LIBDWARF}
+ LDADD=	-lelftc -ldwarf -lelf
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ MAN1=	addr2line.1
+ 
+diff --git a/ar/Makefile b/ar/Makefile
+index 95e583a..8cd884e 100644
+--- a/ar/Makefile
++++ b/ar/Makefile
+@@ -13,7 +13,7 @@ DPADD=	${LIBARCHIVE} ${LIBELFTC} ${LIBELF} ${LIBZ}
+ LDADD=	-larchive -lelftc -lelf -lz
+ 
+ CFLAGS+=-I. -I${.CURDIR}
+-LDFLAGS+=-static
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ LINKS=	${BINDIR}/ar ${BINDIR}/ranlib
+ 
+diff --git a/cxxfilt/Makefile b/cxxfilt/Makefile
+index ca50f91..0acc5a0 100644
+--- a/cxxfilt/Makefile
++++ b/cxxfilt/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=	-lelftc -lelf
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ MAN1=	c++filt.1
+ 
+diff --git a/elfcopy/Makefile b/elfcopy/Makefile
+index dff967e..bc727aa 100644
+--- a/elfcopy/Makefile
++++ b/elfcopy/Makefile
+@@ -13,6 +13,7 @@ WARNS?=	5
+ 
+ DPADD=	${LIBELF} ${LIBELFTC}
+ LDADD=	-lelf -lelftc
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ .if !defined(LIBELF_AR)
+ LDADD+= -larchive
+diff --git a/nm/Makefile b/nm/Makefile
+index 6177c61..bdac4ff 100644
+--- a/nm/Makefile
++++ b/nm/Makefile
+@@ -9,5 +9,6 @@ SRCS=	nm.c
+ WARNS?=	6
+ 
+ LDADD=	-ldwarf -lelftc -lelf
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/readelf/Makefile b/readelf/Makefile
+index 09c8650..b0f2be4 100644
+--- a/readelf/Makefile
++++ b/readelf/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBDWARF} ${LIBELF}
+ LDADD=	-ldwarf -lelftc -lelf
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ MAN1=	readelf.1
+ 
+diff --git a/size/Makefile b/size/Makefile
+index 6d46d63..a8c7176 100644
+--- a/size/Makefile
++++ b/size/Makefile
+@@ -6,6 +6,7 @@ PROG=   size
+ WARNS?= 6
+ LDADD=  -lelftc -lelf
+ DPADD=	${LIBELFTC} ${LIBELF}
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+ 
+diff --git a/strings/Makefile b/strings/Makefile
+index 0bc4cd5..ac09af4 100644
+--- a/strings/Makefile
++++ b/strings/Makefile
+@@ -6,6 +6,7 @@ PROG=   strings
+ WARNS?= 6
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=  -lelftc -lelf
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+ 
+-- 
+2.29.2
+

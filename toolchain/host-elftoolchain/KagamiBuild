@@ -6,17 +6,19 @@ options=('bootstrap')
 source=("https://github.com/ataraxialinux/storage/raw/master/elftoolchain-code-$version-trunk.zip")
 
 build() {
-	append-cflags -static
-	append-ldflags -static
-
 	cd "$SRC"/elftoolchain-code-$version-trunk
 	patch -Np1 -i "$STUFF"/elftoolchain/0001-fix-makefiles.patch
 	patch -Np1 -i "$STUFF"/elftoolchain/0002-fix-build-on-musl-libc.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0003-add-rpaths.patch
 
 	mkdir -p common/sys
 	cp "$STUFF"/include/sys/queue.h common/sys
 
 	bmake WITH_TESTS=no
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libelftc install
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libelf install
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libdwarf install
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libpe install
 
 	install -m755 cxxfilt/c++filt "$TOOLS"/bin/$XTARGET-c++filt
 	install -m755 elfcopy/elfcopy "$TOOLS"/bin/$XTARGET-objcopy
