@@ -20,27 +20,16 @@ build() {
 	cp "$STUFF"/include/sys/queue.h common/sys
 
 	bmake WITH_TESTS=no
-	bmake WITH_TESTS=no DESTDIR="$PKG" -C libelftc install
-	bmake WITH_TESTS=no DESTDIR="$PKG" -C libelf install
-	bmake WITH_TESTS=no DESTDIR="$PKG" -C libdwarf install
-	bmake WITH_TESTS=no DESTDIR="$PKG" -C libpe install
+	bmake WITH_TESTS=no DESTDIR="$PKG" install
 
-	install -Dm755 cxxfilt/c++filt "$PKG"/usr/bin/c++filt
-	install -Dm644 cxxfilt/c++filt.1 "$PKG"/usr/share/man/man1/c++filt.1
-
-	install -Dm755 elfcopy/mcs "$PKG"/usr/bin/mcs
-	install -Dm644 elfcopy/mcs.1 "$PKG"/usr/share/man/man1/mcs.1
-
-	install -Dm755 elfcopy/elfcopy "$PKG"/usr/bin/objcopy
-	install -Dm644 elfcopy/elfcopy.1 "$PKG"/usr/share/man/man1/objcopy.1
-
-	install -Dm755 elfcopy/strip "$PKG"/usr/bin/strip
-	install -Dm644 elfcopy/strip.1 "$PKG"/usr/share/man/man1/strip.1
-
-	for i in addr2line brandelf elfcopy elfdump findtextrel nm readelf size strings; do
-		install -Dm755 $i/$i "$PKG"/usr/bin/$i
-		install -Dm644 $i/$i.1 "$PKG"/usr/share/man/man1/$i.1
-	done
+	rm \
+		"$PKG"/usr/bin/ar \
+		"$PKG"/usr/bin/ld \
+		"$PKG"/usr/bin/ranlib \
+		"$PKG"/usr/share/man/cat/cat1/ar.1 \
+		"$PKG"/usr/share/man/cat/cat1/ld.1 \
+		"$PKG"/usr/share/man/cat/cat1/ranlib.1 \
+		"$PKG"/usr/share/man/cat/cat5/ar.5
 
 	install -Dm644 "$STUFF"/elftoolchain/libelf.pc "$PKG"/usr/lib/pkgconfig/libelf.pc
 }
