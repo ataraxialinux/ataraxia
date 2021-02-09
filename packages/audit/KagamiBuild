@@ -10,11 +10,10 @@ release=1
 backup=('etc/libaudit.conf'
 	'etc/audit/audit-stop.rules'
 	'etc/audit/auditd.conf'
-	'etc/audisp/audispd.conf'
-	'etc/audisp/audisp-remote.conf'
-	'etc/audisp/plugins.d/af_unix.conf'
-	'etc/audisp/plugins.d/au-remote.conf'
-	'etc/audisp/plugins.d/syslog.conf')
+	'etc/audit/audisp-remote.conf'
+	'etc/audit/plugins.d/af_unix.conf'
+	'etc/audit/plugins.d/au-remote.conf'
+	'etc/audit/plugins.d/syslog.conf')
 options=('bootstrap')
 source=("https://people.redhat.com/sgrubb/$name/$name-$version.tar.gz")
 
@@ -47,7 +46,8 @@ build() {
 
 	sed -ri 's|/sbin|/usr/bin|' \
 		"$PKG"/etc/audit/*.conf \
-		"$PKG"/etc/audisp/plugins.d/*.conf
+		"$PKG"/etc/audit/plugins.d/*.conf \
+		"$PKG"/usr/lib/systemd/system/auditd.service
 
 	rm -rf "$PKG"/etc/rc.d "$PKG"/etc/sysconfig
 }
