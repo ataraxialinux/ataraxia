@@ -25,9 +25,18 @@ build() {
 	bmake WITH_TESTS=no DESTDIR="$PKG" -C libdwarf install
 	bmake WITH_TESTS=no DESTDIR="$PKG" -C libpe install
 
-	for i in copy; do
-		install -Dm755 elf${i}/elf${i} "$PKG"/usr/bin/elf${i}
-		install -Dm644 elf${i}/elf${i}.1 "$PKG"/usr/share/man/man1/elf${i}.1
+	install -Dm755 cxxfilt/c++filt "$PKG"/usr/bin/c++filt
+	install -Dm644 cxxfilt/c++filt.1 "$PKG"/usr/share/man/man1/c++filt.1
+
+	install -Dm755 elfcopy/elfcopy "$PKG"/usr/bin/objcopy
+	install -Dm644 elfcopy/elfcopy.1 "$PKG"/usr/share/man/man1/objcopy.1
+
+	install -Dm755 ar/ranlib "$PKG"/usr/bin/ranlib
+	install -Dm644 ar/ranlib.1 "$PKG"/usr/share/man/man1/ranlib.1
+
+	for i in addr2line ar nm readelf size strings strip; do
+		install -Dm755 $i/$i "$PKG"/usr/bin/$i
+		install -Dm644 $i/$i.1 "$PKG"/usr/share/man/man1/$i.1
 	done
 
 	install -Dm644 "$STUFF"/elftoolchain/libelf.pc "$PKG"/usr/lib/pkgconfig/libelf.pc

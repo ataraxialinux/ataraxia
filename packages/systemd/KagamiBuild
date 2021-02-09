@@ -59,11 +59,7 @@ build() {
 	patch -Np1 -i "$STUFF"/systemd/0002-LibreSSL-fixes.patch
 	patch -Np1 -i "$STUFF"/systemd/use-bfq-scheduler.patch
 
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		sed -i "s|objcopy = find_program('objcopy')|objcopy = find_program('"$XTARGET-gobjcopy"')|" src/boot/efi/meson.build
-	else
-		sed -i "s|objcopy = find_program('objcopy')|objcopy = find_program('gobjcopy')|" src/boot/efi/meson.build
-	fi
+	sed -i 's/--target/--output-target/g' src/boot/efi/meson.build
 
 	mkdir -p build
 	cd build
@@ -88,9 +84,7 @@ build() {
 		-Dlz4=true \
 		-Dman=false \
 		-Dmode=release \
-		-Dmyhostname=false \
 		-Dnologin-path=/usr/bin/nologin \
-		-Dnss=false \
 		-Dnss-myhostname=false \
 		-Dnss-mymachines=false \
 		-Dnss-resolve=false \

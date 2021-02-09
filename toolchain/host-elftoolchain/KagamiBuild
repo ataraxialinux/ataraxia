@@ -17,7 +17,11 @@ build() {
 
 	bmake WITH_TESTS=no
 
-	for i in copy; do
-		install -m755 elf${i}/elf${i} "$TOOLS"/bin/$XTARGET-elf${i}
+	install -m755 cxxfilt/c++filt "$TOOLS"/bin/$XTARGET-c++filt
+	install -m755 elfcopy/elfcopy "$TOOLS"/bin/$XTARGET-objcopy
+	install -m755 ar/ranlib "$TOOLS"/bin/$XTARGET-ranlib
+
+	for i in addr2line ar nm readelf size strings strip; do
+		install -m755 $i/$i "$TOOLS"/bin/$XTARGET-$i
 	done
 }
