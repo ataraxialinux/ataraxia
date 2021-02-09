@@ -1,0 +1,17 @@
+name=host-bmake
+realpath="$REPO/${name/host-}"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("http://www.crufty.net/ftp/pub/sjg/bmake-$version.tar.gz")
+
+build() {
+	cd "$SRC"/bmake
+	patch -Np1 -i "$STUFF"/bmake/0001-lld-compatibility.patch
+
+	sed -i 's/op_test() {/& return 0;/' boot-strap
+	sed -i '1s,:,#!/bin/sh,g' install-sh
+
+	./boot-strap --prefix="$TOOLS" op=build
+	./boot-strap --prefix="$TOOLS" op=install
+}

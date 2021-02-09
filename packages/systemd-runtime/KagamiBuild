@@ -1,7 +1,7 @@
 # Description: System and service manager
 # URL:         https://www.github.com/systemd/systemd
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson m4 gperf binutils zlib bzip2 xz lz4 zstd acl libressl libidn2 curl libelf audit pam libcap shadow bash kmod iptables kbd libgcrypt libseccomp hwids util-linux-runtime
+# Depends on:  meson m4 gperf binutils zlib bzip2 xz lz4 zstd acl libressl libidn2 curl elftoolchain audit pam libcap shadow bash kmod iptables kbd libgcrypt libseccomp hwids util-linux-runtime
 # Section:     base
 
 name=systemd-runtime
@@ -23,6 +23,8 @@ build() {
 	patch -Np1 -i "$STUFF"/systemd/0002-LibreSSL-fixes.patch
 	patch -Np1 -i "$STUFF"/systemd/use-bfq-scheduler.patch
 
+	sed -i 's/--target/--output-target/g' src/boot/efi/meson.build
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/systemd-stable-$version \
@@ -37,6 +39,7 @@ build() {
 		-Ddns-over-tls=false \
 		-Ddns-servers='1.1.1.1 1.0.0.1 9.9.9.9 8.8.8.8 8.8.4.4 2606:4700:4700::1111 2620:fe::10 2001:4860:4860::8888' \
 		-Dfallback-hostname='ataraxia' \
+		-Dgnu-efi=false \
 		-Dgnutls=false \
 		-Dgshadow=false \
 		-Dhomed=false \
@@ -53,8 +56,10 @@ build() {
 		-Dmyhostname=false \
 		-Dnologin-path=/usr/bin/nologin \
 		-Dnss=false \
+		-Dnss-myhostname=false \
 		-Dnss-mymachines=false \
 		-Dnss-resolve=false \
+		-Dnss-systemd=false \
 		-Dntp-servers='0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org' \
 		-Doomd=true \
 		-Dp11kit=false \

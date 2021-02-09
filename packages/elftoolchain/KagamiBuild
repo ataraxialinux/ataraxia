@@ -1,0 +1,36 @@
+# Description: BSD licensed ELF toolchain
+# URL:         https://sourceforge.net/projects/elftoolchain/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bmake libarchive
+# Section:     devel
+
+name=elftoolchain
+version=r3916
+release=1
+source=("https://sourceforge.net/code-snapshots/svn/e/el/elftoolchain/code/elftoolchain-code-$version-trunk.zip")
+
+build() {
+	filter-flags -fomit-frame-pointer
+
+	cd "$SRC"/elftoolchain-code-$version-trunk
+	patch -Np1 -i "$STUFF"/elftoolchain/0001-fix-makefiles.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0002-fix-build-on-musl-libc.patch
+
+	mkdir -p common/sys
+	cp "$STUFF"/include/sys/queue.h common/sys
+
+	bmake WITH_TESTS=no
+	bmake WITH_TESTS=no DESTDIR="$PKG" -C libelftc install
+	bmake WITH_TESTS=no DESTDIR="$PKG" -C libelf install
+	bmake WITH_TESTS=no DESTDIR="$PKG" -C libdwarf install
+	bmake WITH_TESTS=no DESTDIR="$PKG" -C libpe install
+
+	for i in copy; do
+		install -Dm755 elf${i}/elf${i} "$PKG"/usr/bin/elf${i}
+		install -Dm755 elf${i}/elf${i} "$PKG"/usr/bin/obj${i}
+		install -Dm644 elf${i}/elf${i}.1 "$PKG"/usr/share/man/man1/elf${i}.1
+		install -Dm644 elf${i}/elf${i}.1 "$PKG"/usr/share/man/man1/obj${i}.1
+	done
+
+	install -Dm644 "$STUFF"/elftoolchain/libelf.pc "$PKG"/usr/lib/pkgconfig/libelf.pc
+}

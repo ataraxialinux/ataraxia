@@ -10,6 +10,8 @@ source=("http://www.crufty.net/ftp/pub/sjg/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name
+	patch -Np1 -i "$STUFF"/bmake/0001-lld-compatibility.patch
+
 	sed -i 's/op_test() {/& return 0;/' boot-strap
 	sed -i '1s,:,#!/bin/sh,g' install-sh
 

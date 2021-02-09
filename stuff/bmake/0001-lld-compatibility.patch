@@ -1,0 +1,44 @@
+From 7e5e1d7b31eace90ff872c4ba34ae9423f1a78f7 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 10 Feb 2021 01:09:57 +0900
+Subject: [PATCH] lld compatibility
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ mk/lib.mk | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mk/lib.mk b/mk/lib.mk
+index c397941..094a2fd 100644
+--- a/mk/lib.mk
++++ b/mk/lib.mk
+@@ -111,7 +111,7 @@ APICFLAGS?= -k
+ # Platform-independent linker flags for ELF shared libraries
+ .if ${OBJECT_FMT} == "ELF"
+ SHLIB_SOVERSION=	${SHLIB_MAJOR}
+-SHLIB_SHFLAGS=		-soname lib${LIB}.so.${SHLIB_SOVERSION}
++SHLIB_SHFLAGS=		-fsymbol-partition=lib${LIB}.so.${SHLIB_SOVERSION}
+ SHLIB_LDSTARTFILE?=	/usr/lib/crtbeginS.o
+ SHLIB_LDENDFILE?=	/usr/lib/crtendS.o
+ .endif
+@@ -125,7 +125,7 @@ LD_shared=${SHLIB_SHFLAGS}
+ .if ${TARGET_OSNAME} == "FreeBSD"
+ .if ${OBJECT_FMT} == "ELF"
+ SHLIB_SOVERSION=	${SHLIB_MAJOR}
+-SHLIB_SHFLAGS=		-soname lib${LIB}.so.${SHLIB_SOVERSION}
++SHLIB_SHFLAGS=		-fsymbol-partition=lib${LIB}.so.${SHLIB_SOVERSION}
+ .else
+ SHLIB_SHFLAGS=		-assert pure-text
+ .endif
+@@ -170,7 +170,7 @@ LD_solib= lib${LIB}_pic.a
+ .elif ${TARGET_OSNAME} == "Linux"
+ SHLIB_LD = ${CC}
+ # this is ambiguous of course
+-LD_shared=-shared -Wl,"-soname lib${LIB}.so.${SHLIB_MAJOR}"
++LD_shared=-shared "-fsymbol-partition=lib${LIB}.so.${SHLIB_MAJOR}"
+ LD_solib= -Wl,--whole-archive lib${LIB}_pic.a -Wl,--no-whole-archive
+ .if ${COMPILER_TYPE} == "gcc"
+ # Linux uses GNU ld, which is a multi-pass linker
+-- 
+2.29.2
+

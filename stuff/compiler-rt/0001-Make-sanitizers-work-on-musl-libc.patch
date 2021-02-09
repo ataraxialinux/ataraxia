@@ -1,6 +1,6 @@
-From aedcf6b7627cfea67ee88123ecb7a058ac31fa7f Mon Sep 17 00:00:00 2001
+From 6fe0394d06961518099aae29e5a24abca63687d2 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 26 Jan 2021 03:59:13 +0900
+Date: Sun, 7 Feb 2021 20:36:34 +0900
 Subject: [PATCH 1/2] Make sanitizers work on musl libc
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -13,15 +13,15 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  lib/interception/interception_linux.h         |  6 +-
  lib/msan/tests/msan_test.cpp                  | 36 +++++---
  .../sanitizer_common_interceptors_ioctl.inc   |  6 +-
- lib/sanitizer_common/sanitizer_linux.cpp      |  4 +
- .../sanitizer_linux_libcdep.cpp               | 12 +--
+ lib/sanitizer_common/sanitizer_linux.cpp      | 10 ++
+ .../sanitizer_linux_libcdep.cpp               | 12 ++-
  lib/sanitizer_common/sanitizer_platform.h     | 13 +++
- .../sanitizer_platform_interceptors.h         | 79 +++++++++--------
- .../sanitizer_platform_limits_posix.cpp       | 84 +++++++++++--------
+ .../sanitizer_platform_interceptors.h         | 79 ++++++++--------
+ .../sanitizer_platform_limits_posix.cpp       | 92 ++++++++++++-------
  .../sanitizer_platform_limits_posix.h         |  2 +
  .../sanitizer_procmaps_solaris.cpp            |  4 +-
  lib/tsan/rtl/tsan_interceptors_posix.cpp      |  8 +-
- 16 files changed, 163 insertions(+), 114 deletions(-)
+ 16 files changed, 176 insertions(+), 115 deletions(-)
 
 diff --git a/cmake/Modules/AddCompilerRT.cmake b/cmake/Modules/AddCompilerRT.cmake
 index 7c127a9..d53f71e 100644
@@ -373,10 +373,29 @@ index 490a04b..7f18125 100644
    _(CYGETDEFTHRESH, WRITE, sizeof(int));
    _(CYGETDEFTIMEOUT, WRITE, sizeof(int));
 diff --git a/lib/sanitizer_common/sanitizer_linux.cpp b/lib/sanitizer_common/sanitizer_linux.cpp
-index 470f4b7..7daa687 100644
+index 470f4b7..39229be 100644
 --- a/lib/sanitizer_common/sanitizer_linux.cpp
 +++ b/lib/sanitizer_common/sanitizer_linux.cpp
-@@ -1753,6 +1753,7 @@ struct __sanitizer_esr_context {
+@@ -500,12 +500,18 @@ u64 NanoTime() {
+   kernel_timeval tv;
+ #endif
+   internal_memset(&tv, 0, sizeof(tv));
++#if __NR_gettimeofday
+   internal_syscall(SYSCALL(gettimeofday), &tv, 0);
++#endif
+   return (u64)tv.tv_sec * 1000*1000*1000 + tv.tv_usec * 1000;
+ }
+ 
+ uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp) {
++#if __NR_clock_gettime
+   return internal_syscall(SYSCALL(clock_gettime), clk_id, tp);
++#else
++  return NULL;
++#endif
+ }
+ #endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
+ 
+@@ -1753,6 +1759,7 @@ struct __sanitizer_esr_context {
  };
  
  static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
@@ -384,7 +403,7 @@ index 470f4b7..7daa687 100644
    static const u32 kEsrMagic = 0x45535201;
    u8 *aux = ucontext->uc_mcontext.__reserved;
    while (true) {
-@@ -1765,6 +1766,9 @@ static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
+@@ -1765,6 +1772,9 @@ static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
      aux += ctx->size;
    }
    return false;
@@ -709,7 +728,7 @@ index e28bb93..5405206 100644
  // calling it and assuming that it does not clobber registers.
  #define SANITIZER_INTERCEPT_SIGALTSTACK \
 diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp b/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
-index c052aa2..e6ca2be 100644
+index c052aa2..19e6ef7 100644
 --- a/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
 +++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
 @@ -11,18 +11,19 @@
@@ -794,15 +813,15 @@ index c052aa2..e6ca2be 100644
  #include <sys/ipc.h>
  #include <crypt.h>
 -#endif // SANITIZER_LINUX && !SANITIZER_ANDROID
-+#endif  // SANITIZER_ANDROID
- 
+-
 -#if SANITIZER_ANDROID
 -#include <linux/kd.h>
 -#include <linux/mtio.h>
 -#include <linux/ppp_defs.h>
 -#include <linux/if_ppp.h>
 -#endif
--
++#endif  // SANITIZER_ANDROID
+ 
 -#if SANITIZER_LINUX
  #include <link.h>
  #include <sys/vfs.h>
@@ -929,7 +948,29 @@ index c052aa2..e6ca2be 100644
  CHECK_SIZE_AND_OFFSET(cmsghdr, cmsg_level);
  CHECK_SIZE_AND_OFFSET(cmsghdr, cmsg_type);
  
-@@ -1116,7 +1136,7 @@ CHECK_SIZE_AND_OFFSET(mntent, mnt_passno);
+@@ -1019,15 +1039,21 @@ CHECK_SIZE_AND_OFFSET(mmsghdr, msg_len);
+ #endif
+ 
+ COMPILER_CHECK(sizeof(__sanitizer_dirent) <= sizeof(dirent));
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
+ CHECK_SIZE_AND_OFFSET(dirent, d_ino);
++#endif
+ #if SANITIZER_MAC
+ CHECK_SIZE_AND_OFFSET(dirent, d_seekoff);
+ #elif SANITIZER_FREEBSD
+ // There is no 'd_off' field on FreeBSD.
+ #else
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
+ CHECK_SIZE_AND_OFFSET(dirent, d_off);
+ #endif
++#endif
++#if SANITIZER_GLIBC || SANITIZER_ANDROID
+ CHECK_SIZE_AND_OFFSET(dirent, d_reclen);
++#endif
+ 
+ #if SANITIZER_LINUX && !SANITIZER_ANDROID
+ COMPILER_CHECK(sizeof(__sanitizer_dirent64) <= sizeof(dirent64));
+@@ -1116,7 +1142,7 @@ CHECK_SIZE_AND_OFFSET(mntent, mnt_passno);
  
  CHECK_TYPE_SIZE(ether_addr);
  
@@ -938,7 +979,7 @@ index c052aa2..e6ca2be 100644
  CHECK_TYPE_SIZE(ipc_perm);
  # if SANITIZER_FREEBSD
  CHECK_SIZE_AND_OFFSET(ipc_perm, key);
-@@ -1178,7 +1198,7 @@ CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_dstaddr);
+@@ -1178,11 +1204,11 @@ CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_dstaddr);
  CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_data);
  #endif
  
@@ -947,7 +988,12 @@ index c052aa2..e6ca2be 100644
  COMPILER_CHECK(sizeof(__sanitizer_struct_mallinfo) == sizeof(struct mallinfo));
  #endif
  
-@@ -1228,7 +1248,7 @@ COMPILER_CHECK(__sanitizer_XDR_DECODE == XDR_DECODE);
+-#if !SANITIZER_ANDROID
++#if SANITIZER_GLIBC
+ CHECK_TYPE_SIZE(timeb);
+ CHECK_SIZE_AND_OFFSET(timeb, time);
+ CHECK_SIZE_AND_OFFSET(timeb, millitm);
+@@ -1228,7 +1254,7 @@ COMPILER_CHECK(__sanitizer_XDR_DECODE == XDR_DECODE);
  COMPILER_CHECK(__sanitizer_XDR_FREE == XDR_FREE);
  #endif
  
@@ -956,7 +1002,7 @@ index c052aa2..e6ca2be 100644
  COMPILER_CHECK(sizeof(__sanitizer_FILE) <= sizeof(FILE));
  CHECK_SIZE_AND_OFFSET(FILE, _flags);
  CHECK_SIZE_AND_OFFSET(FILE, _IO_read_ptr);
-@@ -1245,9 +1265,7 @@ CHECK_SIZE_AND_OFFSET(FILE, _IO_save_end);
+@@ -1245,9 +1271,7 @@ CHECK_SIZE_AND_OFFSET(FILE, _IO_save_end);
  CHECK_SIZE_AND_OFFSET(FILE, _markers);
  CHECK_SIZE_AND_OFFSET(FILE, _chain);
  CHECK_SIZE_AND_OFFSET(FILE, _fileno);
@@ -966,7 +1012,7 @@ index c052aa2..e6ca2be 100644
  COMPILER_CHECK(sizeof(__sanitizer__obstack_chunk) <= sizeof(_obstack_chunk));
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, limit);
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, prev);
-@@ -1262,7 +1280,7 @@ CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, read);
+@@ -1262,7 +1286,7 @@ CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, read);
  CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, write);
  CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, seek);
  CHECK_SIZE_AND_OFFSET(cookie_io_functions_t, close);
