@@ -6,6 +6,7 @@ options=('bootstrap')
 source=("https://github.com/ataraxialinux/storage/raw/master/elftoolchain-code-$version-trunk.zip")
 
 build() {
+	append-cflags -static
 	append-ldflags -static
 
 	cd "$SRC"/elftoolchain-code-$version-trunk
@@ -19,10 +20,9 @@ build() {
 
 	install -m755 cxxfilt/c++filt "$TOOLS"/bin/$XTARGET-c++filt
 	install -m755 elfcopy/elfcopy "$TOOLS"/bin/$XTARGET-objcopy
-	install -m755 ar/ranlib "$TOOLS"/bin/$XTARGET-ranlib
 	install -m755 elfcopy/strip "$TOOLS"/bin/$XTARGET-strip
 
-	for i in addr2line ar nm readelf size strings; do
+	for i in addr2line nm readelf size strings; do
 		install -m755 $i/$i "$TOOLS"/bin/$XTARGET-$i
 	done
 }
