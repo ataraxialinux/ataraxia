@@ -4,37 +4,25 @@
 # Section:     devel
 
 name=rust
-version=1.49.0+nightly
+version=1.49.0
 release=1
 options=('~emptydirs')
-source=("https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-x86_64-unknown-linux-musl.tar.xz"
-	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-aarch64-unknown-linux-musl.tar.xz"
-	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-armv7-unknown-linux-musleabihf.tar.xz"
-	"https://portage.smaeul.xyz/distfiles/rust-1.46.0-i686-gentoo-linux-musl.tar.xz")
+source=("https://static.rust-lang.org/dist/rust-$version-aarch64-unknown-linux-musl.tar.gz"
+	"https://static.rust-lang.org/dist/rust-$version-x86_64-unknown-linux-musl.tar.gz")
 
 build() {
-	case $BARCH in
+	case "$BARCH" in
 		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
-			export ver=nightly
-			;;
-		x86)
-			export RTARGET="i686-gentoo-linux-musl"
-			export ver=1.46.0
 			;;
 		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
-			export ver=nightly
-			;;
-		armv7l)
-			export RTARGET="armv7-unknown-linux-musleabihf"
-			export ver=nightly
 			;;
 		*)
 			die "Architecture is not set or is not supported by Rust Language"
 	esac
 
-	pushd "$SRC"/rust-$ver-$RTARGET
+	pushd "$SRC"/rust-$version-$RTARGET
 		bash install.sh \
 			--prefix=/usr \
 			--destdir="$PKG" \

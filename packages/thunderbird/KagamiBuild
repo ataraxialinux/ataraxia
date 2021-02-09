@@ -16,24 +16,16 @@ clear_vendor_checksums() {
 }
 
 build() {
-	export CFLAGS="-g0 -Os -s -fomit-frame-pointer -Wl,--as-needed -pipe"
-	export CXXFLAGS="-g0 -Os -s -fomit-frame-pointer -Wl,--as-needed -pipe"
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
 
-	case $BARCH in
+	case "$BARCH" in
 		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			;;
-		x86)
-			export RTARGET="i686-gentoo-linux-musl"
-			;;
 		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
-			;;
-		armv7l)
-			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
 		*)
 			die "Architecture is not set or is not supported by Rust Language"
