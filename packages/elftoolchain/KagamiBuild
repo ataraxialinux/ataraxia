@@ -25,22 +25,24 @@ build() {
 	bmake WITH_TESTS=no DESTDIR="$PKG" -C libdwarf install
 	bmake WITH_TESTS=no DESTDIR="$PKG" -C libpe install
 
-	install -Dm755 cxxfilt/c++filt "$PKG"/usr/bin/c++filt
-	install -Dm644 cxxfilt/c++filt.1 "$PKG"/usr/share/man/man1/c++filt.1
+	mkdir -p "$PKG"/usr/bin "$PKG"/usr/share/man/man1
 
-	install -Dm755 elfcopy/mcs "$PKG"/usr/bin/mcs
-	install -Dm644 elfcopy/mcs.1 "$PKG"/usr/share/man/man1/mcs.1
+	cp cxxfilt/c++filt "$PKG"/usr/bin/c++filt
+	cp cxxfilt/c++filt.1 "$PKG"/usr/share/man/man1/c++filt.1
 
-	install -Dm755 elfcopy/elfcopy "$PKG"/usr/bin/objcopy
-	install -Dm644 elfcopy/elfcopy.1 "$PKG"/usr/share/man/man1/objcopy.1
+	cp elfcopy/mcs "$PKG"/usr/bin/mcs
+	cp elfcopy/mcs.1 "$PKG"/usr/share/man/man1/mcs.1
 
-	install -Dm755 elfcopy/strip "$PKG"/usr/bin/strip
-	install -Dm644 elfcopy/strip.1 "$PKG"/usr/share/man/man1/strip.1
+	cp elfcopy/elfcopy "$PKG"/usr/bin/objcopy
+	cp elfcopy/elfcopy.1 "$PKG"/usr/share/man/man1/objcopy.1
+
+	cp elfcopy/strip "$PKG"/usr/bin/strip
+	cp elfcopy/strip.1 "$PKG"/usr/share/man/man1/strip.1
 
 	for i in addr2line elfcopy elfdump findtextrel nm readelf size strings; do
-		install -Dm755 $i/$i "$PKG"/usr/bin/$i
-		install -Dm644 $i/$i.1 "$PKG"/usr/share/man/man1/$i.1
+		cp $i/$i "$PKG"/usr/bin/$i
+		cp $i/$i.1 "$PKG"/usr/share/man/man1/$i.1
 	done
 
-	install -Dm644 "$STUFF"/elftoolchain/libelf.pc "$PKG"/usr/lib/pkgconfig/libelf.pc
+	cp "$STUFF"/elftoolchain/libelf.pc "$PKG"/usr/lib/pkgconfig/libelf.pc
 }
