@@ -12,6 +12,9 @@ source=("https://sourceforge.net/projects/procps-ng/files/Production/$name-$vers
 
 build() {
 	cd "$SRC"/procps-$version
+	patch -Np1 -i "$STUFF"/procps-ng/0001-force-utmp.h.patch
+	patch -Np1 -i "$STUFF"/procps-ng/0002-get-rid-of-glibc-CODESET.patch
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		cat > config.cache <<-EOF
 			ac_cv_func_malloc_0_nonnull=yes
