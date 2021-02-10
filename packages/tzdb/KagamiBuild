@@ -3,18 +3,18 @@
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Section:     base
 
-name=tzdata
+name=tzdb
 version=2021a
 release=1
 options=('bootstrap' '~emptydirs')
-source=("https://www.iana.org/time-zones/repository/releases/tzdata${version}.tar.gz")
+source=("https://www.iana.org/time-zones/repository/releases/tzdb${version}.tar.gz")
 
 build() {
 	HOSTCC=${HOSTCC:-cc}
 
 	cd "$SRC"
-	$HOSTCC -Wall -I"$STUFF"/tzdata "$STUFF"/tzdata/zic.c \
-		"$STUFF"/tzdata/strlcat.c "$STUFF"/tzdata/strlcpy.c "$STUFF"/tzdata/reallocarray.c \
+	$HOSTCC -Wall -I"$STUFF"/tzdb "$STUFF"/tzdb/zic.c \
+		"$STUFF"/tzdb/strlcat.c "$STUFF"/tzdb/strlcpy.c "$STUFF"/tzdb/reallocarray.c \
 		-o "$SRC"/zic
 
 	ZONEINFO="$PKG"/usr/share/zoneinfo
@@ -31,6 +31,6 @@ build() {
 	./zic -d $ZONEINFO -p America/New_York
 
 	mkdir -p "$PKG"/usr/bin
-	${CROSS_COMPILE}cc -Wall -I"$STUFF"/tzdata "$STUFF"/tzdata/zic.c  \
+	${CROSS_COMPILE}cc -Wall -I"$STUFF"/tzdb "$STUFF"/tzdb/zic.c  \
 		-o "$PKG"/usr/bin/zic
 }
