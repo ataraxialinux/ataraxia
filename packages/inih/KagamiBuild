@@ -1,0 +1,22 @@
+# Description: inih (INI not invented here) simple .INI file parse
+# URL:         https://github.com/benhoyt/inih
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson
+# Section:     libs
+
+name=inih
+version=53
+release=1
+source=("https://github.com/benhoyt/inih/archive/r$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-r$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-r$version \
+		-Ddefault_library=both \
+		-Ddistro_install=true \
+		-Dwith_INIReader=true
+	samu
+	DESTDIR="$PKG" samu install
+}

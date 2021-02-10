@@ -1,7 +1,7 @@
 # Description: XFS filesystem utilities
 # URL:         http://xfs.org/index.php/Main_Page
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  lvm2
+# Depends on:  lvm2 libedit inih
 
 name=xfsprogs
 version=5.10.0
@@ -12,18 +12,22 @@ source=("https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/$name-$version.t
 build() {
 	export DEBUG=-DNDEBUG
 	export OPTIMIZER="$CFLAGS"
+	export ac_cv_search_dm_task_create=no
 
 	cd "$SRC"/$name-$version
+	sed -i 's/static-libtool-libs/all-static/g' */Makefile
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin \
 		--with-systemd-unit-dir=/usr/lib/systemd/system
 	make
-	make DIST_ROOT="$PKG" PKG_ROOT_SBIN_DIR="/usr/bin" install install-dev
+	make install install-dev \
+		DIST_ROOT="$PKG" \
+		PKG_ROOT_SBIN_DIR="/usr/bin" \
+		PKG_ROOT_LIB_DIR="/usr/lib" \
+		HAVE_ZIPPED_MANPAGES=false
 
 	chown -R root "$PKG"
 	chgrp -R root "$PKG"
-
-	mv "$PKG"/lib/libhandle.so* "$PKG"/usr/lib/
-	rm -rf "$PKG"/lib
 }
