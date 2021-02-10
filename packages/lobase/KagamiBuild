@@ -1,0 +1,22 @@
+# Description: Port of the OpenBSD userland to Linux
+# URL:         https://github.com/ataraxialinux/lobase
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  ncurses
+# Section:     base
+
+name=lobase
+version=6.8
+release=1
+source=("https://github.com/ataraxialinux/lobase/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -fi
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/lobase \
+		--bindir=/usr/bin \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}
