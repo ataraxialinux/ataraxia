@@ -9,9 +9,10 @@ release=1
 source=("http://www.tortall.net/projects/$name/releases/$name-$version.tar.gz")
 
 build() {
-	if [ "$BARCH" != "amd64" ] || [ "$BARCH" != "x86" ]; then
-		die "This package is x86 only"
-	fi
+	case "$BARCH" in
+		amd64|x86) true ;;
+		*) die "This package is x86 only" ;;
+	esac
 
 	cd "$SRC"/$name-$version
 	cp "$STUFF"/config.guess config/config.guess

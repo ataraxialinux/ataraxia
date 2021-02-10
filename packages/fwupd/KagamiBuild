@@ -18,8 +18,7 @@ backup=('etc/fwupd/daemon.conf'
 	'etc/fwupd/upower.conf')
 source=("https://people.freedesktop.org/~hughsient/releases/$name-$version.tar.xz")
 
-build() {
-	case $BARCH in
+build() {case $BARCH in
 		amd64|x86)
 			true
 			;;
@@ -27,6 +26,9 @@ build() {
 			die "fwupd is supported on x86 only"
 			;;
 	esac
+
+	
+	filter-flags -flto
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/fwupd/lib64.patch

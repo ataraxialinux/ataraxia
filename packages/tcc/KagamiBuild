@@ -10,9 +10,10 @@ release=1
 source=("https://repo.or.cz/tinycc.git/snapshot/$commit.tar.gz")
 
 build() {
-	if [ "$BARCH" != "amd64" ] || [ "$BARCH" != "x86" ]; then
-		die "This package is x86 only"
-	fi
+	case "$BARCH" in
+		amd64|x86) true ;;
+		*) die "This package is x86 only" ;;
+	esac
 
 	unset CFLAGS CXXFLAGS LDFLAGS
 
