@@ -1,0 +1,29 @@
+# Description: XFS filesystem utilities
+# URL:         http://xfs.org/index.php/Main_Page
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  lvm2
+
+name=xfsprogs
+version=5.10.0
+release=1
+options=('~makeflags')
+source=("https://www.kernel.org/pub/linux/utils/fs/xfs/xfsprogs/$name-$version.tar.xz")
+
+build() {
+	export DEBUG=-DNDEBUG
+	export OPTIMIZER="$CFLAGS"
+
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin \
+		--with-systemd-unit-dir=/usr/lib/systemd/system
+	make
+	make DIST_ROOT="$PKG" PKG_ROOT_SBIN_DIR="/usr/bin" install install-dev
+
+	chown -R root "$PKG"
+	chgrp -R root "$PKG"
+
+	mv "$PKG"/lib/libhandle.so* "$PKG"/usr/lib/
+	rm -rf "$PKG"/lib
+}
