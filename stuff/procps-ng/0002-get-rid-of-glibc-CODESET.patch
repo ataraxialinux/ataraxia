@@ -1,0 +1,30 @@
+From 1c69003ad8c64e9128407c99120d13ae589e7158 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Wed, 10 Feb 2021 21:14:04 +0900
+Subject: [PATCH 2/2] get rid of glibc CODESET
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ proc/escape.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/proc/escape.c b/proc/escape.c
+index 2e8fb7d..8ead481 100644
+--- a/proc/escape.c
++++ b/proc/escape.c
+@@ -233,10 +233,12 @@ int escaped_copy(char *restrict dst, const char *restrict src, int bufsize, int
+   int i, n;
+   char c;
+ 
++#ifdef __GLIBC__
+   if(utf_sw == 0){
+      char *enc = nl_langinfo(CODESET);
+      utf_sw = enc && strcasecmp(enc, "UTF-8")==0 ? 1 : -1;
+   }
++#endif
+   SECURE_ESCAPE_ARGS(dst, bufsize, *maxroom);
+   if (bufsize > *maxroom+1) bufsize = *maxroom+1;
+ 
+-- 
+2.29.2
+
