@@ -13,6 +13,8 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/plocate/0001-fix-build-on-musl-libc.patch
 
+	sed -i "s|unitdir = systemd.get_pkgconfig_variable('systemdsystemunitdir')|unitdir = '/usr/lib/systemd/system'|" meson.build
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
