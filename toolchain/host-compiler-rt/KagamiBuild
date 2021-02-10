@@ -6,6 +6,10 @@ options=('bootstrap')
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz")
 
 build() {
+	export CFLAGS="$TARGET_CFLAGS"
+	export CXXFLAGS="$TARGET_CXXFLAGS"
+	export LDFLAGS="$TARGET_LDFLAGS"
+
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
