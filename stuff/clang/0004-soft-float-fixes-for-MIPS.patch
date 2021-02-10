@@ -1,0 +1,76 @@
+From 95a3fe0151f1c2afb37db5007f1b7c1c77da55a7 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 11 Feb 2021 05:01:33 +0900
+Subject: [PATCH 4/5] soft-float fixes for MIPS
+
+Taken from Abyss OS: https://abyss.run/
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Arch/Mips.cpp |  4 ++--
+ lib/Driver/ToolChains/Linux.cpp     | 12 ++++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/lib/Driver/ToolChains/Arch/Mips.cpp b/lib/Driver/ToolChains/Arch/Mips.cpp
+index 7b4dd703..5011acd8 100644
+--- a/lib/Driver/ToolChains/Arch/Mips.cpp
++++ b/lib/Driver/ToolChains/Arch/Mips.cpp
+@@ -166,7 +166,7 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
+                 .Default(mips::FloatABI::Invalid);
+       if (ABI == mips::FloatABI::Invalid && !StringRef(A->getValue()).empty()) {
+         D.Diag(clang::diag::err_drv_invalid_mfloat_abi) << A->getAsString(Args);
+-        ABI = mips::FloatABI::Hard;
++        ABI = mips::FloatABI::Soft;
+       }
+     }
+   }
+@@ -180,7 +180,7 @@ mips::FloatABI mips::getMipsFloatABI(const Driver &D, const ArgList &Args,
+       // Assume "hard", because it's a default value used by gcc.
+       // When we start to recognize specific target MIPS processors,
+       // we will be able to select the default more correctly.
+-      ABI = mips::FloatABI::Hard;
++      ABI = mips::FloatABI::Soft;
+     }
+   }
+ 
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 994a932f..f3ff8f1f 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -422,6 +422,7 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+   if (Triple.isMusl()) {
+     std::string ArchName;
+     bool IsArm = false;
++    bool IsMips = false;
+ 
+     switch (Arch) {
+     case llvm::Triple::arm:
+@@ -434,14 +435,25 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+       ArchName = "armeb";
+       IsArm = true;
+       break;
++    case llvm::Triple::mips:
++    case llvm::Triple::mipsel:
++    case llvm::Triple::mips64:
++    case llvm::Triple::mips64el:
++      IsMips = true;
++      ArchName = Triple.getArchName().str();
++      break;
+     default:
+       ArchName = Triple.getArchName().str();
+     }
++
+     if (IsArm &&
+         (Triple.getEnvironment() == llvm::Triple::MuslEABIHF ||
+          tools::arm::getARMFloatABI(*this, Args) == tools::arm::FloatABI::Hard))
+       ArchName += "hf";
+ 
++    if (IsMips && tools::mips::getMipsFloatABI(getDriver(), Args, getTriple()) == tools::mips::FloatABI::Soft)
++      ArchName += "-sf";
++
+     return "/lib/ld-musl-" + ArchName + ".so.1";
+   }
+ 
+-- 
+2.29.2
+

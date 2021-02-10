@@ -1,11 +1,18 @@
-From Abyss OS
-Source: https://raw.githubusercontent.com/abyss-os/phase1/master/devel/llvm/riscv_relax.patch
+From e4dc11984394aa92c74f134161d657b336ecac22 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 11 Feb 2021 04:59:08 +0900
+Subject: [PATCH 3/5] disable relaxations on RISC-V
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Arch/RISCV.cpp | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/lib/Driver/ToolChains/Arch/RISCV.cpp b/lib/Driver/ToolChains/Arch/RISCV.cpp
-index 8c343b869..65c357e86 100644
+index be3f0a07..8e845720 100644
 --- a/lib/Driver/ToolChains/Arch/RISCV.cpp
 +++ b/lib/Driver/ToolChains/Arch/RISCV.cpp
-@@ -426,11 +426,7 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
+@@ -536,11 +536,7 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
    if (Args.hasArg(options::OPT_ffixed_x31))
      Features.push_back("+reserve-x31");
  
@@ -17,4 +24,7 @@ index 8c343b869..65c357e86 100644
 +  Features.push_back("-relax");
  
    // GCC Compatibility: -mno-save-restore is default, unless -msave-restore is
-   // specified...
+   // specified.
+-- 
+2.29.2
+

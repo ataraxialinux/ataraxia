@@ -1,0 +1,103 @@
+From deab17f29a6863c7264d9c41b79d67d8fb0ac4d3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Thu, 11 Feb 2021 05:03:40 +0900
+Subject: [PATCH 5/5] move dynamic linker in /usr/lib
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Hexagon.cpp |  2 +-
+ lib/Driver/ToolChains/Linux.cpp   |  2 +-
+ test/Driver/linux-ld.c            | 28 ++++++++++++++--------------
+ test/Driver/mips-mti-linux.c      |  4 ++--
+ 4 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/lib/Driver/ToolChains/Hexagon.cpp b/lib/Driver/ToolChains/Hexagon.cpp
+index 775f6e10..a348ef11 100644
+--- a/lib/Driver/ToolChains/Hexagon.cpp
++++ b/lib/Driver/ToolChains/Hexagon.cpp
+@@ -270,7 +270,7 @@ constructHexagonLinkArgs(Compilation &C, const JobAction &JA,
+ 
+   if (HTC.getTriple().isMusl()) {
+     if (!Args.hasArg(options::OPT_shared, options::OPT_static))
+-      CmdArgs.push_back("-dynamic-linker=/lib/ld-musl-hexagon.so.1");
++      CmdArgs.push_back("-dynamic-linker=/usr/lib/ld-musl-hexagon.so.1");
+ 
+     if (!Args.hasArg(options::OPT_shared, options::OPT_nostartfiles,
+                      options::OPT_nostdlib))
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index f3ff8f1f..f3842d86 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -454,7 +454,7 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+     if (IsMips && tools::mips::getMipsFloatABI(getDriver(), Args, getTriple()) == tools::mips::FloatABI::Soft)
+       ArchName += "-sf";
+ 
+-    return "/lib/ld-musl-" + ArchName + ".so.1";
++    return "/usr/lib/ld-musl-" + ArchName + ".so.1";
+   }
+ 
+   std::string LibDir;
+diff --git a/test/Driver/linux-ld.c b/test/Driver/linux-ld.c
+index ec539522..0ef667f0 100644
+--- a/test/Driver/linux-ld.c
++++ b/test/Driver/linux-ld.c
+@@ -2059,20 +2059,20 @@
+ // RUN: %clang %s -### -o %t.o 2>&1 \
+ // RUN:     --target=aarch64_be-pc-linux-musleabi \
+ // RUN:   | FileCheck --check-prefix=CHECK-MUSL-AARCH64_BE %s
+-// CHECK-MUSL-X86:        "-dynamic-linker" "/lib/ld-musl-i386.so.1"
+-// CHECK-MUSL-X86_64:     "-dynamic-linker" "/lib/ld-musl-x86_64.so.1"
+-// CHECK-MUSL-MIPS:       "-dynamic-linker" "/lib/ld-musl-mips.so.1"
+-// CHECK-MUSL-MIPSEL:     "-dynamic-linker" "/lib/ld-musl-mipsel.so.1"
+-// CHECK-MUSL-MIPS64:     "-dynamic-linker" "/lib/ld-musl-mips64.so.1"
+-// CHECK-MUSL-MIPS64EL:   "-dynamic-linker" "/lib/ld-musl-mips64el.so.1"
+-// CHECK-MUSL-PPC:        "-dynamic-linker" "/lib/ld-musl-powerpc.so.1"
+-// CHECK-MUSL-PPC64:      "-dynamic-linker" "/lib/ld-musl-powerpc64.so.1"
+-// CHECK-MUSL-ARM:        "-dynamic-linker" "/lib/ld-musl-arm.so.1"
+-// CHECK-MUSL-ARMHF:      "-dynamic-linker" "/lib/ld-musl-armhf.so.1"
+-// CHECK-MUSL-ARMEB:      "-dynamic-linker" "/lib/ld-musl-armeb.so.1"
+-// CHECK-MUSL-ARMEBHF:    "-dynamic-linker" "/lib/ld-musl-armebhf.so.1"
+-// CHECK-MUSL-AARCH64:    "-dynamic-linker" "/lib/ld-musl-aarch64.so.1"
+-// CHECK-MUSL-AARCH64_BE: "-dynamic-linker" "/lib/ld-musl-aarch64_be.so.1"
++// CHECK-MUSL-X86:        "-dynamic-linker" "/usr/lib/ld-musl-i386.so.1"
++// CHECK-MUSL-X86_64:     "-dynamic-linker" "/usr/lib/ld-musl-x86_64.so.1"
++// CHECK-MUSL-MIPS:       "-dynamic-linker" "/usr/lib/ld-musl-mips.so.1"
++// CHECK-MUSL-MIPSEL:     "-dynamic-linker" "/usr/lib/ld-musl-mipsel.so.1"
++// CHECK-MUSL-MIPS64:     "-dynamic-linker" "/usr/lib/ld-musl-mips64.so.1"
++// CHECK-MUSL-MIPS64EL:   "-dynamic-linker" "/usr/lib/ld-musl-mips64el.so.1"
++// CHECK-MUSL-PPC:        "-dynamic-linker" "/usr/lib/ld-musl-powerpc.so.1"
++// CHECK-MUSL-PPC64:      "-dynamic-linker" "/usr/lib/ld-musl-powerpc64.so.1"
++// CHECK-MUSL-ARM:        "-dynamic-linker" "/usr/lib/ld-musl-arm.so.1"
++// CHECK-MUSL-ARMHF:      "-dynamic-linker" "/usr/lib/ld-musl-armhf.so.1"
++// CHECK-MUSL-ARMEB:      "-dynamic-linker" "/usr/lib/ld-musl-armeb.so.1"
++// CHECK-MUSL-ARMEBHF:    "-dynamic-linker" "/usr/lib/ld-musl-armebhf.so.1"
++// CHECK-MUSL-AARCH64:    "-dynamic-linker" "/usr/lib/ld-musl-aarch64.so.1"
++// CHECK-MUSL-AARCH64_BE: "-dynamic-linker" "/usr/lib/ld-musl-aarch64_be.so.1"
+ 
+ // Check whether multilib gcc install works fine on Gentoo with gcc-config
+ // RUN: %clang -no-canonical-prefixes %s -### -o %t.o 2>&1 \
+diff --git a/test/Driver/mips-mti-linux.c b/test/Driver/mips-mti-linux.c
+index 21b270c0..51af61f3 100644
+--- a/test/Driver/mips-mti-linux.c
++++ b/test/Driver/mips-mti-linux.c
+@@ -16,7 +16,7 @@
+ // CHECK-BE-HF-32R2-SAME: "-target-cpu" "mips32r2"
+ // CHECK-BE-HF-32R2-SAME: "-isysroot" "{{.*}}mips_mti_linux/sysroot"
+ // CHECK-BE-HF-32R2: "{{[^"]*}}ld.lld{{[^"]*}}"
+-// CHECK-BE-HF-32R2-SAME: "--sysroot=[[SYSROOT:[^"]+]]" {{.*}} "-dynamic-linker" "/lib/ld-musl-mips.so.1"
++// CHECK-BE-HF-32R2-SAME: "--sysroot=[[SYSROOT:[^"]+]]" {{.*}} "-dynamic-linker" "/usr/lib/ld-musl-mips.so.1"
+ // CHECK-BE-HF-32R2-SAME: "[[SYSROOT]]/mips-r2-hard-musl/usr/lib{{/|\\\\}}crt1.o"
+ // CHECK-BE-HF-32R2-SAME: "[[SYSROOT]]/mips-r2-hard-musl/usr/lib{{/|\\\\}}crti.o"
+ // CHECK-BE-HF-32R2-SAME: "-L[[SYSROOT]]/mips-r2-hard-musl/usr/lib"
+@@ -34,7 +34,7 @@
+ // CHECK-LE-HF-32R2-SAME: "-target-cpu" "mips32r2"
+ // CHECK-LE-HF-32R2-SAME: "-isysroot" "{{.*}}mips_mti_linux/sysroot"
+ // CHECK-LE-HF-32R2: "{{[^"]*}}ld.lld{{[^"]*}}"
+-// CHECK-LE-HF-32R2-SAME: "--sysroot=[[SYSROOT:[^"]+]]" {{.*}} "-dynamic-linker" "/lib/ld-musl-mipsel.so.1"
++// CHECK-LE-HF-32R2-SAME: "--sysroot=[[SYSROOT:[^"]+]]" {{.*}} "-dynamic-linker" "/usr/lib/ld-musl-mipsel.so.1"
+ // CHECK-LE-HF-32R2-SAME: "[[SYSROOT]]/mipsel-r2-hard-musl/usr/lib{{/|\\\\}}crt1.o"
+ // CHECK-LE-HF-32R2-SAME: "[[SYSROOT]]/mipsel-r2-hard-musl/usr/lib{{/|\\\\}}crti.o"
+ // CHECK-LE-HF-32R2-SAME: "-L[[SYSROOT]]/mipsel-r2-hard-musl/usr/lib"
+-- 
+2.29.2
+
