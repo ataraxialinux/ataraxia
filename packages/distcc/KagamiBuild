@@ -5,15 +5,13 @@
 # Section:     devel
 
 name=distcc
-version=3.4
+version=3.3.5
 release=1
 backup=('etc/distcc/hosts')
 source=("https://github.com/distcc/distcc/releases/download/v$version/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/distcc/gcc10.patch
-
 	./autogen.sh
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -26,7 +24,8 @@ build() {
 	make DESTDIR="$PKG" INCLUDESERVER_PYTHON=/usr/bin/python install
 
 	install -d "$PKG"/usr/lib/$name/bin
-	for bin in c++ cc cpp g++ gcc; do
+	local bin
+	for bin in clang clang++ gcc g++ c++ cc clang-cpp cpp; do
 		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/bin/$bin
 		ln -sf /usr/bin/$name "$PKG"/usr/lib/$name/$bin
 	done
