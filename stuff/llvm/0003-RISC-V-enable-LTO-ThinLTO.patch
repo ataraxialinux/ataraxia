@@ -1,0 +1,223 @@
+From f5de30bca86430d98dfb4660515bf7f4150e5d53 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 12 Feb 2021 04:02:22 +0900
+Subject: [PATCH 3/3] RISC-V: enable LTO/ThinLTO
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/LTO/LTO.cpp                          | 17 ++++++++++++++
+ lib/Target/RISCV/RISCVTargetMachine.cpp  | 13 +++++++++++
+ lib/Target/RISCV/RISCVTargetMachine.h    |  3 +++
+ test/CodeGen/RISCV/module-target-abi2.ll |  3 +--
+ test/LTO/RISCV/Inputs/foo_ilp32.ll       | 14 ++++++++++++
+ test/LTO/RISCV/Inputs/foo_ilp32f.ll      | 14 ++++++++++++
+ test/LTO/RISCV/lit.local.cfg             |  2 ++
+ test/LTO/RISCV/mabi-invalid.ll           | 28 +++++++++++++++++++++++
+ test/LTO/RISCV/mabi.ll                   | 29 ++++++++++++++++++++++++
+ 9 files changed, 121 insertions(+), 2 deletions(-)
+ create mode 100644 test/LTO/RISCV/Inputs/foo_ilp32.ll
+ create mode 100644 test/LTO/RISCV/Inputs/foo_ilp32f.ll
+ create mode 100644 test/LTO/RISCV/lit.local.cfg
+ create mode 100644 test/LTO/RISCV/mabi-invalid.ll
+ create mode 100644 test/LTO/RISCV/mabi.ll
+
+diff --git a/lib/LTO/LTO.cpp b/lib/LTO/LTO.cpp
+index 6e1e3998..ba0bb04a 100644
+--- a/lib/LTO/LTO.cpp
++++ b/lib/LTO/LTO.cpp
+@@ -1059,6 +1059,23 @@ Error LTO::runRegularLTO(AddStreamFn AddStream) {
+         GV->setLinkage(GlobalValue::InternalLinkage);
+     }
+ 
++    // ThinLTO would link CombinedModule object with input file object later
++    // but different target abi object can not linked together
++    // add target-abi module flag from first input file into CombinedModule.
++    if (!ThinLTO.ModuleMap.empty()) {
++      LTOLLVMContext BackendContext(Conf);
++      auto &Mod = ThinLTO.ModuleMap.front();
++      auto MOrErr = Mod.second.parseModule(BackendContext);
++      if (MOrErr) {
++        if (const MDString *ModuleTargetABI = dyn_cast_or_null<MDString>(
++                (*MOrErr)->getModuleFlag("target-abi"))) {
++          llvm::LLVMContext &Ctx = RegularLTO.CombinedModule->getContext();
++          RegularLTO.CombinedModule->addModuleFlag(
++              llvm::Module::Error, "target-abi",
++              llvm::MDString::get(Ctx, ModuleTargetABI->getString()));
++        }
++      }
++    }
+     RegularLTO.CombinedModule->addModuleFlag(Module::Error, "LTOPostLink", 1);
+ 
+     if (Conf.PostInternalizeModuleHook &&
+diff --git a/lib/Target/RISCV/RISCVTargetMachine.cpp b/lib/Target/RISCV/RISCVTargetMachine.cpp
+index 75683e2f..cbd72fe6 100644
+--- a/lib/Target/RISCV/RISCVTargetMachine.cpp
++++ b/lib/Target/RISCV/RISCVTargetMachine.cpp
+@@ -105,6 +105,19 @@ RISCVTargetMachine::getSubtargetImpl(const Function &F) const {
+   return I.get();
+ }
+ 
++void RISCVTargetMachine::setTargetOptionsWithModuleMetadata(
++    const Module &M LLVM_ATTRIBUTE_UNUSED) const {
++  StringRef ABIName = Options.MCOptions.getABIName();
++  if (const MDString *ModuleTargetABI =
++          dyn_cast_or_null<MDString>(M.getModuleFlag("target-abi"))) {
++    StringRef ModuleABIName = ModuleTargetABI->getString();
++    if (!ABIName.empty() && ModuleABIName != ABIName)
++      report_fatal_error("-target-abi option != target-abi module flag");
++    if (ABIName.empty())
++      Options.MCOptions.ABIName = ModuleABIName.str();
++  }
++}
++
+ TargetTransformInfo
+ RISCVTargetMachine::getTargetTransformInfo(const Function &F) {
+   return TargetTransformInfo(RISCVTTIImpl(this, F));
+diff --git a/lib/Target/RISCV/RISCVTargetMachine.h b/lib/Target/RISCV/RISCVTargetMachine.h
+index a4476fa4..09d14c0b 100644
+--- a/lib/Target/RISCV/RISCVTargetMachine.h
++++ b/lib/Target/RISCV/RISCVTargetMachine.h
+@@ -42,6 +42,9 @@ public:
+     return TLOF.get();
+   }
+ 
++  void setTargetOptionsWithModuleMetadata(
++      const Module &M LLVM_ATTRIBUTE_UNUSED) const;
++
+   TargetTransformInfo getTargetTransformInfo(const Function &F) override;
+ };
+ }
+diff --git a/test/CodeGen/RISCV/module-target-abi2.ll b/test/CodeGen/RISCV/module-target-abi2.ll
+index 8664c9ad..f5fc69c2 100644
+--- a/test/CodeGen/RISCV/module-target-abi2.ll
++++ b/test/CodeGen/RISCV/module-target-abi2.ll
+@@ -8,8 +8,7 @@
+ 
+ ; RV32IF-ILP32: -target-abi option != target-abi module flag
+ 
+-; FLAGS: Flags: 0x0
+-; // this should be "Flags :0x2, single-float ABI", it will be fixed later.
++; FLAGS: Flags: 0x2, single-float ABI
+ 
+ define float @foo(i32 %a) nounwind #0 {
+ ; DEFAULT: # %bb.0:
+diff --git a/test/LTO/RISCV/Inputs/foo_ilp32.ll b/test/LTO/RISCV/Inputs/foo_ilp32.ll
+new file mode 100644
+index 00000000..a96743db
+--- /dev/null
++++ b/test/LTO/RISCV/Inputs/foo_ilp32.ll
+@@ -0,0 +1,14 @@
++target datalayout = "e-m:e-p:32:32-i64:64-n32-S128"
++target triple = "riscv32-unknown-unknown-elf"
++
++define float @foo(float %x) #0 {
++  %conv = fpext float %x to double
++  %add = fadd double %conv, 0x400921FD80C9BEFB
++  %conv1 = fptrunc double %add to float
++  ret float %conv1
++}
++
++attributes #0 = { nounwind "target-features"="+a,+c,+f,+m,+relax" }
++
++!llvm.module.flags = !{!0}
++!0 = !{i32 1, !"target-abi", !"ilp32"}
+diff --git a/test/LTO/RISCV/Inputs/foo_ilp32f.ll b/test/LTO/RISCV/Inputs/foo_ilp32f.ll
+new file mode 100644
+index 00000000..bcffedc0
+--- /dev/null
++++ b/test/LTO/RISCV/Inputs/foo_ilp32f.ll
+@@ -0,0 +1,14 @@
++target datalayout = "e-m:e-p:32:32-i64:64-n32-S128"
++target triple = "riscv32-unknown-unknown-elf"
++
++define float @foo(float %x) #0 {
++  %conv = fpext float %x to double
++  %add = fadd double %conv, 0x400921FD80C9BEFB
++  %conv1 = fptrunc double %add to float
++  ret float %conv1
++}
++
++attributes #0 = { nounwind "target-features"="+a,+c,+f,+m,+relax" }
++
++!llvm.module.flags = !{!0}
++!0 = !{i32 1, !"target-abi", !"ilp32f"}
+diff --git a/test/LTO/RISCV/lit.local.cfg b/test/LTO/RISCV/lit.local.cfg
+new file mode 100644
+index 00000000..7a762d49
+--- /dev/null
++++ b/test/LTO/RISCV/lit.local.cfg
+@@ -0,0 +1,2 @@
++if not 'RISCV' in config.root.targets:
++  config.unsupported = True
+diff --git a/test/LTO/RISCV/mabi-invalid.ll b/test/LTO/RISCV/mabi-invalid.ll
+new file mode 100644
+index 00000000..69516b61
+--- /dev/null
++++ b/test/LTO/RISCV/mabi-invalid.ll
+@@ -0,0 +1,28 @@
++; XFAIL: *
++; Check with regular LTO
++; RUN: llvm-as < %s > %t1
++; RUN: llvm-as < %S/Inputs/foo_ilp32.ll > %t2
++; RUN: llvm-lto -exported-symbol=main -o %t3 %t1 %t2 2>&1 | FileCheck %s
++
++; Check with ThinLTO.
++; RUN: opt -module-summary -o %t1.summary %s
++; RUN: opt -module-summary -o %t2.summary %S/Inputs/foo_ilp32.ll
++; RUN: llvm-lto2 run -r %t2.summary,foo,plx -r %t1.summary,main,plx -r %t1.summary,foo, -o %t3 %t1.summary %t2.summary 2>&1 | FileCheck %s
++
++; CHECK: 'target-abi': IDs have conflicting values
++
++target datalayout = "e-m:e-p:32:32-i64:64-n32-S128"
++target triple = "riscv32-unknown-unknown-elf"
++
++declare float @foo(float) #1
++
++define float @main(float %x) #0 {
++  %retval = call float @foo(float 10.0)
++  ret float %retval
++}
++
++attributes #0 = { nounwind "target-features"="+a,+c,+f,+m,+relax" }
++attributes #1 = { nounwind "target-features"="+a,+c,+f,+m,+relax" }
++
++!llvm.module.flags = !{!0}
++!0 = !{i32 1, !"target-abi", !"ilp32f"}
+diff --git a/test/LTO/RISCV/mabi.ll b/test/LTO/RISCV/mabi.ll
+new file mode 100644
+index 00000000..6cf50ec1
+--- /dev/null
++++ b/test/LTO/RISCV/mabi.ll
+@@ -0,0 +1,29 @@
++; Test target-abi module flag generate correct elf flags.
++
++; Check with regular LTO
++; RUN: llvm-as < %s >%t1
++; RUN: llvm-lto -exported-symbol=main  -o %t2 %t1
++; RUN: llvm-readelf -h %t2 | FileCheck %s
++
++; Check with ThinLTO.
++; RUN: opt -module-summary -o %t1.summary %s
++; RUN: llvm-lto2 run -r %t1.summary,foo, -r %t1.summary,main,plx -o %t2 %t1.summary
++; RUN: llvm-readelf -h %t2.1 | FileCheck %s
++
++; CHECK: Flags: 0x2, single-float ABI
++
++target datalayout = "e-m:e-p:32:32-i64:64-n32-S128"
++target triple = "riscv32-unknown-unknown-elf"
++
++declare float @foo(float) #1
++
++define float @main(float %x) #0 {
++  %retval = call float @foo(float 10.0)
++  ret float %retval
++}
++
++attributes #0 = { nounwind "target-features"="+a,+c,+f,+m,+relax" }
++attributes #1 = { nounwind "target-features"="+a,+c,+f,+m,+relax" }
++
++!llvm.module.flags = !{!0}
++!0 = !{i32 1, !"target-abi", !"ilp32f"}
+-- 
+2.29.2
+
