@@ -13,7 +13,7 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
 
 build() {
-	local clang targets LARCH LTARGET i
+	local clang LARCH LTARGET i
 
 	case "$BARCH" in
 		amd64) LARCH="x86_64"; LTARGET="X86" ;;
@@ -28,11 +28,6 @@ build() {
 		powerpc64) LARCH="powerpc64"; LTARGET="PowerPC" ;;
 		riscv64) LARCH="riscv64"; LTARGET="RISCV" ;;
 		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia Linux' ;;
-	esac
-
-	case "$BARCH" in
-		amd64|x86|arm64|armv7l) targets="crt builtins cfi safestack" ;;
-		*) targets="crt builtins" ;;
 	esac
 
 	pushd "$SRC/llvm-$version.src"
@@ -52,7 +47,7 @@ build() {
 		msg "Patching Compiler-RT"
 		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
 		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
-	popd
+	#popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"
 		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
@@ -93,7 +88,6 @@ build() {
 		-DCLANG_PLUGIN_SUPPORT=ON \
 		-DCLANG_VENDOR=Ataraxia \
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
-		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
 		-DLIBCXX_CXX_ABI=libcxxabi \
 		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
 		-DLIBCXX_USE_COMPILER_RT=ON \
@@ -107,7 +101,6 @@ build() {
 		-DLLVM_ENABLE_DOXYGEN=OFF \
 		-DLLVM_ENABLE_SPHINX=OFF \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
-		-DLLVM_HOST_TRIPLE=$XHOST \
 		-DLLVM_TARGET_ARCH=$LARCH \
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-DDEFAULT_SYSROOT="$ROOTFS" \
