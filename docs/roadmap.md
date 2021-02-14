@@ -1,5 +1,5 @@
 # Roadmap
-This document describes roadmap of Ataraxia Linux 1.0 (codename "Misaka")
+This document describes roadmap of Ataraxia GNU/Linux 1.0 (codename "Misaka")
 
 ## ~~Stage 1~~
  - [x] ~~Do the cross-toolchain~~

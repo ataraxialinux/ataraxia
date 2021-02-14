@@ -1,5 +1,5 @@
 ## Supported platforms
-Ataraxia Linux has been ported to following CPU architectures:
+Ataraxia GNU/Linux has been ported to following CPU architectures:
 ```
  * amd64         - for 64-bit x86 CPUs
  * x86           - for 32-bit x86 CPUs beginning with Intel Pentium Pro

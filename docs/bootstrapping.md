@@ -5,13 +5,13 @@ We need specific packages to build this Linux distribution. Without them you can
 dnf groupinstall "Development Tools" "C Development Tools and Libraries"
 dnf install clang libcxx-devel glibc-static libcxx-static libunwind-devel jq zstd bsdcpio bsdtar curl mtools libisoburn which python3 texinfo meson freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel readline-devel libffi-devel sqlite-devel
 ```
-#### Ataraxia Linux:
+#### Ataraxia GNU/Linux:
 ```
 tsukuri emerge libisoburn mtools freetype
 ```
 
 ### Compiling package manager
-Ataraxia Linux uses `tsukuri` as its package manager. You should do this commands to install `tsukuri` (**AS ROOT**):
+Ataraxia GNU/Linux uses `tsukuri` as its package manager. You should do this commands to install `tsukuri` (**AS ROOT**):
 ```
 cd /tmp
 git clone https://github.com/ataraxialinux/tsukuri.git --depth 1
