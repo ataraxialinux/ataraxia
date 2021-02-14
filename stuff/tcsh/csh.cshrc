@@ -13,7 +13,7 @@
 ##     Improved config file handling.
 ##
 ## 2020-07-04  --  Ishimoto Shinobu (nagakamira@gmail.com)
-##     Improved config for Ataraxia Linux.
+##     Improved config for Ataraxia GNU/Linux.
 ##
 onintr -
 ##
