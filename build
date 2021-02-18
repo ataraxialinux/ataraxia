@@ -79,6 +79,14 @@ build_toolchain() {
 }
 
 build_system() {
+	local linux
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
 	if ! check_stamp toolchain; then
 		die "Build toolchain first."
 	fi
@@ -249,7 +257,7 @@ build_system() {
 	emerge_target oniguruma
 	emerge_target jq
 	emerge_target tsukuri
-	emerge_target linux
+	emerge_target $linux
 
 	# Building installer packages
 	emerge_target gptfdisk
@@ -272,9 +280,10 @@ main() {
 		target) shift; mode="build_target" ;;
 	esac
 
-	while getopts a: opts; do
+	while getopts a:k: opts; do
 		case $opts in
 			a) BARCH="$OPTARG" ;;
+			k) KERNEL="$OPTARG" ;;
 		esac
 	done
 	shift $((OPTIND -1))

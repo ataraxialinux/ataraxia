@@ -1,9 +1,9 @@
-# Description: The Linux kernel
+# Description: The Linux kernel for Raspberry Pi 4
 # URL:         https://www.kernel.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Section:     kernel
 
-name=linux
+name=linux-rpi4
 version=5.10.17
 hardenedver=5.10.17-hardened1
 case $version in
@@ -12,47 +12,15 @@ case $version in
 esac
 release=1
 options=('~strip' 'bootstrap' '~ccache')
-source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
+source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$version.tar.xz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 build() {
-	local KARCH IMAGELOC
+	if [ "$BARCH" != "arm64" ]; then
+		die "This kernel is intended to run on 64-bit ARM processor"
+	fi
 
-	case $BARCH in
-		amd64)
-			KARCH="x86_64"
-			IMAGELOC="arch/x86/boot/bzImage"
-			;;
-		x86)
-			KARCH="i386"
-			IMAGELOC="arch/x86/boot/bzImage"
-			;;
-		arm64)
-			KARCH="arm64"
-			IMAGELOC="arch/arm64/boot/Image"
-			;;
-		armv7l)
-			KARCH="arm"
-			IMAGELOC="arch/arm/boot/zImage"
-			;;
-		mips64|mips64el|mips|mipsel)
-			KARCH="mips"
-			IMAGELOC="vmlinux"
-			;;
-		ppc64le|ppc64)
-			KARCH="powerpc"
-			IMAGELOC="vmlinux"
-			;;
-		riscv64)
-			KARCH="riscv"
-			IMAGELOC="arch/riscv/boot/Image"
-			;;
-		*)
-			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux"
-			exit 1
-	esac
-
-	cd "$SRC"/$name-$version
+	cd "$SRC"/linux-$version
 	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
 	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
@@ -74,33 +42,30 @@ build() {
 	openssl pkey -in certs/signing_key.pem -out certs/signing_prv.key
 	openssl x509 -outform der -in certs/signing_key.pem -out certs/signing_crt.crt
 
-	"$STUFF"/configure-kernel -a $BARCH
+	"$STUFF"/configure-kernel -a arm64 -f rpi4
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		yes '' | make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang
+		yes '' | make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang
 	else
-		yes '' | make ARCH=$KARCH
+		yes '' | make ARCH=arm64
 	fi
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
-		make ARCH=$KARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=arm64 INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
 	depmod -a -b "$PKG"/usr ${kver}-ataraxia
 
-	case $BARCH in
-		arm64|armv7l)
-			if [ "$USEBOOTSTRAP" = "yes" ]; then
-				make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
-			else
-				make ARCH=$KARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
-			fi
-			;;
-	esac
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+	else
+		make ARCH=arm64 INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+	fi
 
-	cp "$IMAGELOC" "$PKG"/usr/lib/modules/${kver}-ataraxia/vmlinuz
+	mkdir -p "$PKG"/boot
+	cp arch/arm64/boot/Image "$PKG"/boot/kernel8.img
 	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
 
 	echo "${kver}-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-ataraxia/version

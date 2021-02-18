@@ -49,16 +49,23 @@ build() {
 	sed -i 's/^all:.*$/all: build_all/' Makefile
 	make EXTRA_CFLAGS="$CFLAGS -DTHREAD_STACK_SIZE=0x100000" DESTDIR="$PKG" install
 
+	ln -sf python3 "$PKG"/usr/bin/python
+	ln -sf python3-config "$PKG"/usr/bin/python-config
+	ln -sf idle3 "$PKG"/usr/bin/idle
+	ln -sf pydoc3 "$PKG"/usr/bin/pydoc
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		for i in python${pybasever} python3 python; do
+			install -Dm755 "$PKG"/usr/bin/$i-config "$TOOLS"/bin/$i-config
+		done
+
+		sed -i 's|prefix_real=$(installed_prefix "$0")|prefix_real="ROOTFS/usr"|' "$TOOLS"/bin/python*-config
+		sed -i "s|ROOTFS|$ROOTFS|" "$TOOLS"/bin/python*-config
+
 		sed -i "s/$XTARGET-//g" \
 			"$PKG"/usr/lib/python${version%.*}/_sysconfigdata_*_*.py \
 			"$PKG"/usr/lib/python${version%.*}/config-${version%.*}*/Makefile
 		sed -i -e "s,$ROOTFS,,g" \
 			"$PKG"/usr/bin/python${version%.*}-config
 	fi
-
-	ln -sf python3 "$PKG"/usr/bin/python
-	ln -sf python3-config "$PKG"/usr/bin/python-config
-	ln -sf idle3 "$PKG"/usr/bin/idle
-	ln -sf pydoc3 "$PKG"/usr/bin/pydoc
 }
