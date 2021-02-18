@@ -4,15 +4,16 @@
 # Section:     kernel
 
 name=linux-rpi4
-version=5.10.17
-hardenedver=5.10.17-hardened1
+version=5.10.16
+hardenedver=5.10.16-hardened1
+commit=b8dc11c1933641989e9fbe7e6b95cc5a317b23b8
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
 esac
 release=1
 options=('~strip' 'bootstrap' '~ccache')
-source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$version.tar.xz"
+source=("https://github.com/raspberrypi/linux/archive/$commit.tar.gz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 build() {
@@ -20,11 +21,11 @@ build() {
 		die "This kernel is intended to run on 64-bit ARM processor"
 	fi
 
-	cd "$SRC"/linux-$version
+	cd "$SRC"/linux-$commit
 	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
-	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
-	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
-	patch -Np1 -i "$STUFF"/linux/0110-Initialize-ata-before-graphics.patch
+	patch -Np1 -i "$STUFF"/linux-rpi4/324aac90c651c1bac699a4918eb9327d6afa2776.patch
+	patch -Np1 -i "$STUFF"/linux-rpi4/0010-vfio.patch
+	patch -Np1 -i "$STUFF"/linux-rpi4/0110-Initialize-ata-before-graphics.patch
 
 	# Swap sucks
 	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
@@ -32,7 +33,7 @@ build() {
 	unset LDFLAGS
 	make CC=${CROSS_COMPILE}clang mrproper
 
-	cp "$STUFF"/linux/x509.genkey certs/
+	cp "$STUFF"/linux-rpi4/x509.genkey certs/
 
 	openssl req -new -nodes -utf8 -sha1 -days 36500 -batch -x509 \
 		-config certs/x509.genkey -outform PEM \
@@ -67,6 +68,9 @@ build() {
 	mkdir -p "$PKG"/boot
 	cp arch/arm64/boot/Image "$PKG"/boot/kernel8.img
 	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
+
+	install -m644 "$STUFF"/linux-rpi4/config.txt "$PKG"/boot/config.txt
+	install -m644 "$STUFF"/linux-rpi4/cmdline.txt "$PKG"/boot/cmdline.txt
 
 	echo "${kver}-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-ataraxia/version
 
