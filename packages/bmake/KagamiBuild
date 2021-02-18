@@ -15,8 +15,13 @@ build() {
 	sed -i 's/op_test() {/& return 0;/' boot-strap
 	sed -i '1s,:,#!/bin/sh,g' install-sh
 
-	./boot-strap --prefix=/usr op=build
-	./boot-strap --install-destdir="$PKG" --prefix=/usr op=install
+	./boot-strap $BUILDFLAGS --prefix=/usr op=build
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s,^BMAKE=$,BMAKE=$TOOLS/bin/bmake," boot-strap
+	fi
+
+	./boot-strap $BUILDFLAGS --install-destdir="$PKG" --prefix=/usr op=install
 
 	chmod -Rv 755 "$PKG"/*
 }
