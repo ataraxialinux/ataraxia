@@ -1,0 +1,20 @@
+# Description: Pre-compiled firmware for Raspberry Pi
+# URL:         https://github.com/raspberrypi/firmware
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=raspberrypi-firmware
+version=1.20210201
+release=1
+source=("https://github.com/raspberrypi/firmware/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	mkdir -p "$PKG"/boot
+
+	cd "$SRC"/$name-$version
+	cp -a boot/* "$PKG"/boot
+
+	pushd "$PKG/boot"
+		rm -rf overlays kernel*.img *.dtb
+	popd
+}
