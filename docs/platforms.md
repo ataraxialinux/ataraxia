@@ -13,3 +13,9 @@ Ataraxia GNU/Linux has been ported to following CPU architectures:
  * powerpc64     - for 64-bit PowerPC CPUs (big-endian)
  * riscv64       - for 64-bit RISC V CPUs
 ```
+
+## Supported boards
+Ataraxia GNU/Linux has been ported to following boards:
+```
+ * rpi4		- for Raspberry Pi 4 (64-bit ARM)
+```

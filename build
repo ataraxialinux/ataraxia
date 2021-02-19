@@ -259,17 +259,33 @@ build_system() {
 	emerge_target tsukuri
 	emerge_target $linux
 
-	# Building installer packages
-	emerge_target gptfdisk
-	emerge_target wget
-	emerge_target iwd
-	emerge_target wireless_tools
-	emerge_target wpa_supplicant
-	emerge_target lynx
-
 	stamp system
 
 	msg "System has been built successfuly."
+
+	# Building installer packages
+	if [ "$INSTALLER" == "1" ]; then
+		msg "Building installer packages"
+		emerge_target gptfdisk
+		emerge_target wget
+		emerge_target iwd
+		emerge_target wireless_tools
+		emerge_target wpa_supplicant
+		emerge_target lynx
+
+		stamp installer-packages
+		msg "Installer packages have been built successfuly!"
+	elif [ "$TARGET_BOARD" == "1" ]; then
+		[ -n "$EXTRA_PACKAGES" ] && {
+			msg "Building board specific pacakges"
+			for i in $EXTRA_PACKAGES; do
+				emerge_target $i
+			done
+
+			stamp board-$BOARD
+			msg "Board specific packages have been built successfuly!"
+		}
+	fi
 }
 
 main() {
@@ -280,10 +296,11 @@ main() {
 		target) shift; mode="build_target" ;;
 	esac
 
-	while getopts a:k: opts; do
+	while getopts a:k:b: opts; do
 		case $opts in
 			a) BARCH="$OPTARG" ;;
 			k) KERNEL="$OPTARG" ;;
+			b) BOARD="$OPTARG" ;;
 		esac
 	done
 	shift $((OPTIND -1))
@@ -302,6 +319,27 @@ main() {
 		msg "Exporting variables"
 		export_variables "$BARCH"
 		export_cflags "$BARCH"
+
+		case $BARCH in
+			amd64|x86|ppc64le|ppc64)
+				export INSTALLER=1
+				;;
+			*)
+				export INSTALLER=0
+				;;
+		esac
+
+		case $BARCH in
+			arm64)
+				export TARGET_BOARD=1
+				case $BOARD in
+					rpi4)
+						export KERNEL="linux-rpi4"
+						export EXTRA_PACKAGES="raspberrypi-firmware"
+						;;
+				esac
+				;;
+		esac
 
 		case "$1" in
 			toolchain) build_toolchain ;;

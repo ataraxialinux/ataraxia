@@ -31,6 +31,8 @@ target		- Select target for build
 Sub-arguments supported by "build script":
 ```
  -a <Architecture>		- Select architecture for build
+ -k <Kernel>			- Select kernel for target OS
+ -b <Board>			- Build OS for specific board
 ```
 We have seperated the build process into seperate "targets":
 ```
@@ -40,6 +42,6 @@ We have seperated the build process into seperate "targets":
 To begin the bootstrap process, **as root**:
 See [supported platforms and architecures.](platforms.md)
 ```
-./build target -a [supported architecture] [target name]
+./build target -a [supported architecture] -k [kernel] -b [supported board] [target name]
 ```
 And magic happens!
