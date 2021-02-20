@@ -41,4 +41,9 @@ build() {
 		-Dusethreads
 	make
 	make DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s/$XTARGET-//g" "$PKG"/usr/lib/perl5/core_perl/Config_heavy.pl
+		sed -i "s/$XTARGET-//g" "$PKG"/usr/lib/perl5/core_perl/Config.pm
+	fi
 }
