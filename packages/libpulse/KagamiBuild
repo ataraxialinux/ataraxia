@@ -1,7 +1,7 @@
 # Description: A featureful, general-purpose sound server (libraries only)
 # URL:         https://www.freedesktop.org/wiki/Software/PulseAudio/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libsndfile alsa-lib dbus glib libcap speex libxtst libsm sbc bluez libltdl
+# Depends on:  libsndfile alsa-lib dbus glib libcap speex libxtst libsm sbc bluez rtkit libltdl
 # Section:     sound
 
 name=libpulse
@@ -30,13 +30,13 @@ build() {
 		--enable-systemd-daemon \
 		--enable-systemd-journal \
 		--enable-systemd-login \
-		--disable-bluez4 \
 		--disable-manpages \
 		--disable-rpath
 	make
-	make DESTDIR="$PKG" install
+	make DESTDIR="$PKG" install-pkgconfigDATA install-cmakeDATA install-dist_vapiDATA install-exec
 
-	mkdir -p "$PKG"/usr/share/dbus-1/system.d
-	mv "$PKG"/etc/dbus-1/system.d/* "$PKG"/usr/share/dbus-1/system.d
-	rm -rf "$PKG"/etc/dbus-1
+	pushd "$PKG"
+		rm -rf usr/bin
+		rm -rf usr/lib/pulse-${version}
+	popd
 }
