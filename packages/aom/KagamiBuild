@@ -1,12 +1,14 @@
 # Description: Alliance for Open Media video codec
 # URL:         https://aomedia.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake yasm
+# Depends on:  cmake samurai
+# Dep amd64:   yasm
+# Dep x86:     yasm
 # Section:     video
 
 name=aom
-version=1.0.0
-commit=d14c5bb4f336ef1842046089849dee4a301fbbf0
+version=2.0.2
+commit=cb1d48da8da2061e72018761788a18b8fa8013bb
 release=1
 source=("https://aomedia.googlesource.com/aom/+archive/$commit.tar.gz")
 
@@ -19,10 +21,7 @@ build() {
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DBUILD_SHARED_LIBS=1 \
 		-DENABLE_TESTS=0 \
-		-Wno-dev -G "Unix Makefiles"
-	make
-	make DESTDIR="$PKG" install
-
-	# hack
-	sed -i "s,0.1.0,$version,g" "$PKG"/usr/lib/pkgconfig/aom.pc
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
 }
