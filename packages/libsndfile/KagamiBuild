@@ -1,19 +1,22 @@
 # Description: A C library for reading and writing files containing sampled sound
 # URL:         http://www.mega-nerd.com/libsndfile
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  alsa-lib flac libvorbis
+# Depends on:  python cmake samurai flac libogg libvorbis sqlite opus speex
 # Section:     audio
 
 name=libsndfile
 version=1.0.31
 release=1
-source=("https://github.com/erikd/libsndfile/releases/download/v$version/$name-$version.tar.bz2")
+source=("https://github.com/libsndfile/libsndfile/releases/download/$version/libsndfile-$version.tar.bz2")
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-sqlite
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version $CMAKEFLAGS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
 }
