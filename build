@@ -288,6 +288,75 @@ build_system() {
 	fi
 }
 
+build_board_image() {
+	local imagefs img bootpart rootpart
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	if [ "$TARGET_BOARD" == "1" ]; then
+		if ! check_stamp board-$BOARD; then
+			die "Build board specific packages first."
+		fi
+
+		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
+	else
+		img="$BUILD/ataraxialinux-$BARCH.img"
+	fi
+
+	imagefs="$BUILD/image"
+
+	rm -rf "$imagefs"
+	mkdir -p "$imagefs"
+
+	losetup -D
+	qemu-img create -f raw "$img" 5G
+
+	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+		o
+		w
+		q
+	EOF
+
+	case $BOARD in
+		rpi*)
+			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+				n
+				1
+				
+				+256M
+				t
+				c
+				w
+				q
+			EOF
+			;;
+		*)
+			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+				n
+				1
+				
+				+256M
+				t
+				1
+				w
+				q
+			EOF
+			;;
+	esac
+
+	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+		n
+		1
+		
+		
+		p
+		w
+		q
+	EOF
+}
+
 main() {
 	local mode opts
 	local date="$(date)"
@@ -342,8 +411,12 @@ main() {
 		esac
 
 		case "$1" in
-			toolchain) build_toolchain ;;
+			image) build_board_image ;;
+			installer) build_live_installer ;;
+			live) build_live_image ;;
+			stage) build_stage ;;
 			system) build_toolchain; build_system ;;
+			toolchain) build_toolchain ;;
 			*) die "Unknown target" ;;
 		esac
 	fi
