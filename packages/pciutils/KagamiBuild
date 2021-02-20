@@ -11,11 +11,11 @@ source=("https://www.kernel.org/pub/software/utils/pciutils/$name-$version.tar.x
 
 build() {
 	cd "$SRC"/$name-$version
-	make CC="${CC:-clang}" OPT="$CFLAGS -fPIC -DPIC" ZLIB=no SHARED=no PREFIX=/usr SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man SBINDIR=/usr/bin lib/libpci.a 
+	make CC="${CC:-clang}" STRIP="" OPT="$CFLAGS -fPIC -DPIC" ZLIB=no SHARED=no PREFIX=/usr SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man SBINDIR=/usr/bin lib/libpci.a 
 	cp lib/libpci.a "$SRC/"
 	make clean
-	make CC="${CC:-clang}" OPT="$CFLAGS" ZLIB=no SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man all
-	make CC="${CC:-clang}" SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man DESTDIR="$PKG" install install-lib
+	make CC="${CC:-clang}" STRIP="" OPT="$CFLAGS" ZLIB=no SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man all
+	make CC="${CC:-clang}" STRIP="" SHARED=yes PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man DESTDIR="$PKG" install install-lib
 
 	cp "$SRC"/libpci.a "$PKG"/usr/lib
 
