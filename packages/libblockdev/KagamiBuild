@@ -12,6 +12,8 @@ source=("https://github.com/storaged-project/libblockdev/releases/download/${ver
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libblockdev/clang.patch
+
 	sed -i 's,temp_file=$(mktemp --tmpdir XXXXX.c),temp_file=$(mktemp),g' acinclude.m4
 
 	autoreconf -vif
