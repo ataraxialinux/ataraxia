@@ -290,7 +290,7 @@ build_system() {
 }
 
 build_board_image() {
-	local imagefs img lodev bootpart rootpart
+	local imagefs img lodev bootpart rootpart bootuuid rootuuid
 
 	if ! check_stamp system; then
 		die "Build target system first."
@@ -301,8 +301,12 @@ build_board_image() {
 			die "Build board specific packages first."
 		fi
 
+		msg "Building target system for '${BOARD}' board"
+
 		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
 	else
+		msg "Building target image for '${BARCH}' architecture"
+
 		img="$BUILD/ataraxialinux-$BARCH.img"
 	fi
 
@@ -374,6 +378,9 @@ build_board_image() {
 
 	mkfs.vfat "$bootpart"
 	mkfs.xfs "$rootpart"
+
+	bootuuid="$(blkid -s UUID -o value $bootpart)"
+	rootuuid="$(blkid -s UUID -o value $rootpart)"
 
 	mount "$rootpart" "$imagefs"
 
@@ -520,9 +527,38 @@ build_board_image() {
 		}
 	fi
 
+	cat > "$imagefs/usr/lib/systemd/system/-.mount" <<- EOF
+		[Mount]
+		Where=/
+		What=/dev/disk/by-uuid/$rootuuid
+		Type=xfs
+
+		[Install]
+		WantedBy=local-fs.target
+	EOF
+	cat > "$imagefs/usr/lib/systemd/system/boot.mount" <<- EOF
+		[Mount]
+		Where=/boot
+		What=/dev/disk/by-uuid/$bootuuid
+		Type=vfat
+
+		[Install]
+		WantedBy=local-fs.target
+	EOF
+
+	systemctl -q --root "$imagefs" enable -- -.mount boot.mount
+
+	mkdir -p "$imagefs"/usr/lib/repart.d
+	cat > "$imagefs/usr/lib/repart.d/50-root.conf" <<- EOF
+		[Partition]
+		Type=root
+	EOF
+
 	umount -lf "$bootpart" "$rootpart"
 
 	losetup -D
+
+	msg "Filesystem image has been successfuly built!"
 }
 
 main() {
