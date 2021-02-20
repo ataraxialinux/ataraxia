@@ -14,6 +14,8 @@ build() {
 	patch -Np1 -i "$STUFF"/iwd/fix-rawmemchr.patch
 	patch -Np1 -i "$STUFF"/iwd/dbus-netdev-group.patch
 	patch -Np1 -i "$STUFF"/iwd/ell-pem.patch
+	patch -Np1 -i "$STUFF"/iwd/0001-add-support-for-libedit.patch
+	patch -Np1 -i "$STUFF"/iwd/0002-missing-readline-symbol.patch
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -23,6 +25,8 @@ build() {
 		--with-systemd-modloaddir=/usr/lib/modules-load.d \
 		--with-systemd-networkdir=/usr/lib/systemd/network \
 		--with-systemd-unitdir=/usr/lib/systemd/system \
+		--enable-hwsim \
+		--enable-ofono \
 		--enable-systemd-service \
 		--enable-tools \
 		--enable-wired
