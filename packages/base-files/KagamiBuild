@@ -1,61 +1,60 @@
 # Description: Filesystem layout and configuration files
 # URL:         https://ataraxialinux.github.io/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Provides:    system-release
 # Section:     base
 
 name=base-files
 version=0.22
 release=1
 options=('bootstrap')
-backup=('etc/fstab'
-	'etc/host.conf'
-	'etc/hosts'
-	'etc/motd'
-	'etc/profile'
-	'etc/resolv.conf'
-	'etc/securetty'
-	'etc/shells')
 
 build() {
 	cd "$PKG"
 
-	for d in boot dev etc/{skel,profile.d,modprobe.d} usr var run; do
-		install -dm755 $d
+	for d in boot dev etc/{skel,profile.d,modprobe.d} home mnt usr/share/factory/etc var opt run srv; do
+		install -d -m755 $d
 	done
-	install -dm1777 tmp
-	install -dm555 proc
-	install -dm555 sys
+
+	install -d -m555 proc
+	install -d -m555 sys
+	install -d -m0750 home/root
+	install -d -m555 -g 11 srv/ftp
+	install -d -m1777 tmp
+
+	ln -sf home/root root
 
 	for f in fstab host.conf hosts motd profile securetty shells; do
-		install -m644 "$STUFF"/base-files/$f etc/
+		install -m644 "$STUFF"/base-files/$f usr/share/factory/etc/
 	done
-	install -m600 "$STUFF"/base-files/crypttab etc/
+	install -m600 "$STUFF"/base-files/crypttab usr/share/factory/etc/
 
 	for d in local opt empty spool/cron/crontabs; do
-		install -dm755 var/$d
+		install -d -m755 var/$d
 	done
 
-	install -dm1777 var/{tmp,spool/mail}
+	install -d -m1777 var/{tmp,spool/mail}
 
-	install -dm775 -g 50 var/games
+	install -d -m775 -g 50 var/games
 	ln -sf spool/mail var/mail
 
 	for d in bin games include lib/{modules,firmware} share/misc src; do
-		install -dm755 usr/$d
+		install -d -m755 usr/$d
 	done
 
 	ln -sf usr/bin bin
-	ln -sf usr/bin sbin
-	ln -sf bin usr/sbin
+	#ln -sf usr/bin sbin
+	#ln -sf bin usr/sbin
 	ln -sf usr/lib lib
 
-	install -Dm644 "$STUFF"/base-files/blacklist.conf "$PKG"/etc/modprobe.d/10-blacklist.conf
-	install -Dm644 "$STUFF"/base-files/sysctl "$PKG"/usr/lib/sysctl.d/10-default.conf
-	install -Dm644 "$STUFF"/sysusers.d/base-files.conf "$PKG"/usr/lib/sysusers.d/base-files.conf
-	install -Dm644 "$STUFF"/tmpfiles.d/base-files.conf "$PKG"/usr/lib/tmpfiles.d/base-files.conf
+	for d in bin etc games include lib man sbin share src; do
+		install -d -m755 usr/local/$d
+	done
 
-	install -Dm755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
-	install -Dm755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
+	install -Dm0644 "$STUFF"/base-files/blacklist.conf "$PKG"/usr/lib/modprobe.d/10-blacklist.conf
+	install -Dm0644 "$STUFF"/sysusers.d/base-files.conf "$PKG"/usr/lib/sysusers.d/00-default.conf
+	install -Dm0644 "$STUFF"/tmpfiles.d/base-files.conf "$PKG"/usr/lib/tmpfiles.d/00-default.conf
+	install -Dm0644 "$STUFF"/base-files/sysctl "$PKG"/usr/lib/sysctl.d/10-default.conf
 
 	cat > "$PKG"/usr/lib/os-release <<- EOF
 		NAME="Ataraxia GNU/Linux"
@@ -75,6 +74,9 @@ build() {
 		Ataraxia GNU/Linux release 1.0
 	EOF
 
-	ln -sf ataraxia-release "$PKG"/etc/system-release
 	ln -sf ataraxia-release "$PKG"/etc/redhat-release
+	ln -sf ataraxia-release "$PKG"/etc/system-release
+
+	install -Dm0755 "$STUFF"/base-files/zzz "$PKG"/usr/bin/zzz
+	install -Dm0755 "$STUFF"/base-files/genfstab "$PKG"/usr/bin/genfstab
 }
