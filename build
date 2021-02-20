@@ -290,7 +290,7 @@ build_system() {
 }
 
 build_board_image() {
-	local imagefs img bootpart rootpart
+	local imagefs img lodev bootpart rootpart
 
 	if ! check_stamp system; then
 		die "Build target system first."
@@ -304,6 +304,12 @@ build_board_image() {
 		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
 	else
 		img="$BUILD/ataraxialinux-$BARCH.img"
+	fi
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
 	fi
 
 	imagefs="$BUILD/image"
@@ -321,9 +327,10 @@ build_board_image() {
 	EOF
 
 	case $BOARD in
-		rpi*)
+		rpi4)
 			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
 				n
+				p
 				1
 				
 				+256M
@@ -336,6 +343,7 @@ build_board_image() {
 		*)
 			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
 				n
+				p
 				1
 				
 				+256M
@@ -349,13 +357,172 @@ build_board_image() {
 
 	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
 		n
-		1
+		p
+		2
 		
 		
 		p
 		w
 		q
 	EOF
+
+	losetup -fP "$img"
+	lodev=$(losetup -a | grep "$img" | cut -d: -f1)
+
+	bootpart="${lodev}p1"
+	rootpart="${lodev}p2"
+
+	mkfs.vfat "$bootpart"
+	mkfs.xfs "$rootpart"
+
+	mount "$rootpart" "$imagefs"
+
+	mkdir -p "$imagefs/boot" "$imagefs/home"
+
+	mount "$bootpart" "$imagefs/boot"
+
+	mkdir -p "$imagefs/usr/lib/tsukuri/db"
+
+	emerge_target base-files "$imagefs"
+	emerge_target iana-etc "$imagefs"
+	emerge_target man-pages "$imagefs"
+	emerge_target musl-tools "$imagefs"
+	emerge_target gettext-tiny "$imagefs"
+	emerge_target tzdb "$imagefs"
+	emerge_target m4 "$imagefs"
+	emerge_target bison "$imagefs"
+	emerge_target flex "$imagefs"
+	emerge_target bc "$imagefs"
+	emerge_target zlib "$imagefs"
+	emerge_target bzip2 "$imagefs"
+	emerge_target xz "$imagefs"
+	emerge_target lz4 "$imagefs"
+	emerge_target zstd "$imagefs"
+	emerge_target lzo "$imagefs"
+	emerge_target file "$imagefs"
+	emerge_target ncurses "$imagefs"
+	emerge_target libedit "$imagefs"
+	emerge_target gmp "$imagefs"
+	emerge_target attr "$imagefs"
+	emerge_target acl "$imagefs"
+	emerge_target libressl "$imagefs"
+	emerge_target nettle "$imagefs"
+	emerge_target ca-certificates "$imagefs"
+	emerge_target expat "$imagefs"
+	emerge_target gdbm "$imagefs"
+	emerge_target db53 "$imagefs"
+	emerge_target sqlite "$imagefs"
+	emerge_target libffi "$imagefs"
+	emerge_target python "$imagefs"
+	emerge_target python-setuptools "$imagefs"
+	emerge_target perl "$imagefs"
+	emerge_target libxml2 "$imagefs"
+	emerge_target libarchive "$imagefs"
+	emerge_target libssh2 "$imagefs"
+	emerge_target nghttp2 "$imagefs"
+	emerge_target c-ares "$imagefs"
+	emerge_target libunistring "$imagefs"
+	emerge_target libidn2 "$imagefs"
+	emerge_target brotli "$imagefs"
+	emerge_target krb5 "$imagefs"
+	emerge_target curl "$imagefs"
+	emerge_target make "$imagefs"
+	emerge_target bmake "$imagefs"
+	emerge_target samurai "$imagefs"
+	emerge_target meson "$imagefs"
+	emerge_target jsoncpp "$imagefs"
+	emerge_target rhash "$imagefs"
+	emerge_target libuv "$imagefs"
+	emerge_target cmake "$imagefs"
+	emerge_target binutils "$imagefs"
+	emerge_target elftoolchain "$imagefs"
+	emerge_target llvm "$imagefs"
+	emerge_target ccache "$imagefs"
+	emerge_target pkgconf "$imagefs"
+	emerge_target cracklib "$imagefs"
+	emerge_target libtirpc "$imagefs"
+	emerge_target libcap-ng "$imagefs"
+	emerge_target audit "$imagefs"
+	emerge_target pam "$imagefs"
+	emerge_target libcap "$imagefs"
+	emerge_target libpwquality "$imagefs"
+	emerge_target shadow "$imagefs"
+	emerge_target psmisc "$imagefs"
+	emerge_target pcre "$imagefs"
+	emerge_target grep "$imagefs"
+	emerge_target bash "$imagefs"
+	emerge_target slibtool "$imagefs"
+	emerge_target gperf "$imagefs"
+	emerge_target autoconf "$imagefs"
+	emerge_target automake "$imagefs"
+	emerge_target kmod "$imagefs"
+	emerge_target toybox "$imagefs"
+	emerge_target lobase "$imagefs"
+	emerge_target check "$imagefs"
+	emerge_target one-true-awk "$imagefs"
+	emerge_target mandoc "$imagefs"
+	emerge_target libmnl "$imagefs"
+	emerge_target libnftnl "$imagefs"
+	emerge_target libnfnetlink "$imagefs"
+	emerge_target libnetfilter_conntrack "$imagefs"
+	emerge_target libnl "$imagefs"
+	emerge_target libpcap "$imagefs"
+	emerge_target iptables "$imagefs"
+	emerge_target iproute2 "$imagefs"
+	emerge_target kbd "$imagefs"
+	emerge_target texinfo "$imagefs"
+	emerge_target vim "$imagefs"
+	emerge_target libgpg-error "$imagefs"
+	emerge_target libgcrypt "$imagefs"
+	emerge_target libseccomp "$imagefs"
+	case $BARCH in
+		amd64|x86|arm64|armv7l)
+			emerge_target gnu-efi "$imagefs"
+			;;
+	esac
+	emerge_target hwids "$imagefs"
+	emerge_target util-linux "$imagefs"
+	emerge_target libaio "$imagefs"
+	emerge_target lvm2 "$imagefs"
+	emerge_target popt "$imagefs"
+	emerge_target json-c "$imagefs"
+	emerge_target argon2 "$imagefs"
+	emerge_target cryptsetup "$imagefs"
+	emerge_target libtasn1 "$imagefs"
+	emerge_target p11-kit "$imagefs"
+	emerge_target gnutls "$imagefs"
+	emerge_target libmicrohttpd "$imagefs"
+	emerge_target systemd "$imagefs"
+	emerge_target dbus-broker "$imagefs"
+	emerge_target dbus "$imagefs"
+	emerge_target net-tools "$imagefs"
+	emerge_target iputils "$imagefs"
+	emerge_target procps-ng "$imagefs"
+	emerge_target inih "$imagefs"
+	emerge_target xfsprogs "$imagefs"
+	emerge_target dosfstools "$imagefs"
+	emerge_target pciutils "$imagefs"
+	emerge_target libusb "$imagefs"
+	emerge_target usbutils "$imagefs"
+	emerge_target plocate "$imagefs"
+	emerge_target openssh "$imagefs"
+	emerge_target git "$imagefs"
+	emerge_target oniguruma "$imagefs"
+	emerge_target jq "$imagefs"
+	emerge_target tsukuri "$imagefs"
+	emerge_target $linux "$imagefs"
+
+	if [ "$TARGET_BOARD" == "1" ]; then
+		[ -n "$EXTRA_PACKAGES" ] && {
+			for i in $EXTRA_PACKAGES; do
+				emerge_target $i "$imagefs"
+			done
+		}
+	fi
+
+	umount -lf "$bootpart" "$rootpart"
+
+	losetup -D
 }
 
 main() {
