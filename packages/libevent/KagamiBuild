@@ -1,7 +1,7 @@
 # Description: An event notification library
 # URL:         http://libevent.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl
+# Depends on:  python cmake samurai libressl
 # Section:     libs
 
 name=libevent
@@ -11,9 +11,13 @@ source=("https://github.com/libevent/libevent/releases/download/release-$version
 
 build() {
 	cd "$SRC"/$name-$version-stable
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--sysconfdir=/etc
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version-stable $CMAKEFLAGS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
 }
