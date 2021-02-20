@@ -30,8 +30,12 @@ build() {
 	# Swap sucks
 	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
 
-	unset LDFLAGS
-	make CC=${CROSS_COMPILE}clang mrproper
+	unset LDFLAGS HOSTCFLAGS HOSTCXXFLAGS HOSTLDFLAGS
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CC=${CROSS_COMPILE}clang mrproper
+	else
+		make mrproper
+	fi
 
 	cp "$STUFF"/linux-rpi4/x509.genkey certs/
 
