@@ -1,6 +1,7 @@
 # Description: Open Source H264/AVC video encoder
 # URL:         https://www.videolan.org/developers/x264.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bash
 # Dep amd64:   nasm
 # Dep x86:     nasm
 # Section:     video
@@ -20,6 +21,8 @@ build() {
 	esac
 
 	cd "$SRC"/x264-snapshot-${version/+/-}-stable
+	sed -i 's|sh|bash|' tools/cltostr.sh
+
 	./configure \
 		--host=$XTARGET \
 		--prefix=/usr \
