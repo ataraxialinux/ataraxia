@@ -1,0 +1,487 @@
+From fc45decfc7ee1832c9234e5b73a2654b754a8868 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 22 Feb 2021 04:52:47 +0900
+Subject: [PATCH 2/2] add cat
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ bin/Makefile     |   2 +-
+ bin/cat/Makefile |   8 ++
+ bin/cat/cat.1    | 185 +++++++++++++++++++++++++++++++++++
+ bin/cat/cat.c    | 249 +++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 443 insertions(+), 1 deletion(-)
+ create mode 100644 bin/cat/Makefile
+ create mode 100644 bin/cat/cat.1
+ create mode 100644 bin/cat/cat.c
+
+diff --git a/bin/Makefile b/bin/Makefile
+index a43e851..30b070b 100644
+--- a/bin/Makefile
++++ b/bin/Makefile
+@@ -1,2 +1,2 @@
+-SUBDIR=	ed ksh pax
++SUBDIR=	cat ed ksh pax
+ include ${.TOPDIR}/mk/bsd.subdir.mk
+diff --git a/bin/cat/Makefile b/bin/cat/Makefile
+new file mode 100644
+index 0000000..2a0c1b6
+--- /dev/null
++++ b/bin/cat/Makefile
+@@ -0,0 +1,8 @@
++#	$OpenBSD: Makefile,v 1.4 2017/02/19 00:46:57 jca Exp $
++
++TOPDIR?=../..
++
++PROG=	cat
++
++
++include ${.TOPDIR}/mk/bsd.prog.mk
+diff --git a/bin/cat/cat.1 b/bin/cat/cat.1
+new file mode 100644
+index 0000000..e582167
+--- /dev/null
++++ b/bin/cat/cat.1
+@@ -0,0 +1,185 @@
++.\"	$OpenBSD: cat.1,v 1.36 2016/07/10 00:15:39 tedu Exp $
++.\"	$NetBSD: cat.1,v 1.12 1995/09/27 05:38:55 cgd Exp $
++.\"
++.\" Copyright (c) 1989, 1990, 1993
++.\"	The Regents of the University of California.  All rights reserved.
++.\"
++.\" This code is derived from software contributed to Berkeley by
++.\" the Institute of Electrical and Electronics Engineers, Inc.
++.\"
++.\" Redistribution and use in source and binary forms, with or without
++.\" modification, are permitted provided that the following conditions
++.\" are met:
++.\" 1. Redistributions of source code must retain the above copyright
++.\"    notice, this list of conditions and the following disclaimer.
++.\" 2. Redistributions in binary form must reproduce the above copyright
++.\"    notice, this list of conditions and the following disclaimer in the
++.\"    documentation and/or other materials provided with the distribution.
++.\" 3. Neither the name of the University nor the names of its contributors
++.\"    may be used to endorse or promote products derived from this software
++.\"    without specific prior written permission.
++.\"
++.\" THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
++.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
++.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++.\" SUCH DAMAGE.
++.\"
++.\"     @(#)cat.1	8.3 (Berkeley) 5/2/95
++.\"
++.Dd $Mdocdate: July 10 2016 $
++.Dt CAT 1
++.Os
++.Sh NAME
++.Nm cat
++.Nd concatenate and print files
++.Sh SYNOPSIS
++.Nm cat
++.Op Fl benstuv
++.Op Ar
++.Sh DESCRIPTION
++The
++.Nm
++utility reads files sequentially, writing them to the standard output.
++The
++.Ar file
++operands are processed in command-line order.
++If
++.Ar file
++is a single dash
++.Pq Sq -
++or absent,
++.Nm
++reads from the standard input.
++.Pp
++The options are as follows:
++.Bl -tag -width Ds
++.It Fl b
++Number the lines, but don't count blank lines.
++.It Fl e
++Print a dollar sign
++.Pq Ql \&$
++at the end of each line.
++Implies the
++.Fl v
++option to display non-printing characters.
++.It Fl n
++Number the output lines, starting at 1.
++.It Fl s
++Squeeze multiple adjacent empty lines, causing the output to be
++single spaced.
++.It Fl t
++Print tab characters as
++.Ql ^I .
++Implies the
++.Fl v
++option to display non-printing characters.
++.It Fl u
++The output is guaranteed to be unbuffered (see
++.Xr setvbuf 3 ) .
++.It Fl v
++Displays non-printing characters so they are visible.
++Control characters print as
++.Ql ^X
++for control-X, with the exception of the tab and EOL characters,
++which are displayed normally.
++The DEL character (octal 0177) prints as
++.Ql ^? .
++Non-ASCII characters (with the high bit set) are printed as
++.Ql M-
++(for meta) followed by the character for the low 7 bits.
++.El
++.Sh EXIT STATUS
++.Ex -std cat
++.Sh EXAMPLES
++Print the contents of
++.Ar file1
++to the standard output:
++.Pp
++.Dl $ cat file1
++.Pp
++Sequentially print the contents of
++.Ar file1
++and
++.Ar file2
++to the file
++.Ar file3 ,
++truncating
++.Ar file3
++if it already exists.
++See the manual page for your shell (e.g.,
++.Xr sh 1 )
++for more information on redirection.
++.Pp
++.Dl $ cat file1 file2 > file3
++.Pp
++Print the contents of
++.Ar file1 ,
++print data it receives from the standard input until it receives an
++.Dv EOF
++.Pq Sq ^D
++character, print the contents of
++.Ar file2 ,
++read and output contents of the standard input again, then finally output
++the contents of
++.Ar file3 .
++Note that if the standard input referred to a file, the second dash
++on the command line would have no effect, since the entire contents of the file
++would have already been read and printed by
++.Nm
++when it encountered the first
++.Ql \&-
++operand.
++.Pp
++.Dl $ cat file1 - file2 - file3
++.Sh SEE ALSO
++.Xr head 1 ,
++.Xr less 1 ,
++.Xr more 1 ,
++.Xr pr 1 ,
++.Xr sh 1 ,
++.Xr tail 1 ,
++.Xr vis 1 ,
++.Xr setvbuf 3
++.Rs
++.%A Rob Pike
++.%T "UNIX Style, or cat -v Considered Harmful"
++.%J "USENIX Summer Conference Proceedings"
++.%D 1983
++.Re
++.Sh STANDARDS
++The
++.Nm
++utility is compliant with the
++.St -p1003.1-2008
++specification.
++.Pp
++The flags
++.Op Fl benstv
++are extensions to that specification.
++.Sh HISTORY
++A
++.Nm
++utility appeared in
++.At v1 .
++.Sh CAVEATS
++Because of the shell language mechanism used to perform output
++redirection, the following command will cause the original data in
++.Ar file1
++to be destroyed:
++.Pp
++.Dl $ cat file1 file2 > file1
++.Pp
++To append
++.Ar file2
++to
++.Ar file1 ,
++instead use:
++.Pp
++.Dl $ cat file2 >> file1
+diff --git a/bin/cat/cat.c b/bin/cat/cat.c
+new file mode 100644
+index 0000000..609e000
+--- /dev/null
++++ b/bin/cat/cat.c
+@@ -0,0 +1,249 @@
++/*	$OpenBSD: cat.c,v 1.27 2019/06/28 13:34:58 deraadt Exp $	*/
++/*	$NetBSD: cat.c,v 1.11 1995/09/07 06:12:54 jtc Exp $	*/
++
++/*
++ * Copyright (c) 1989, 1993
++ *	The Regents of the University of California.  All rights reserved.
++ *
++ * This code is derived from software contributed to Berkeley by
++ * Kevin Fall.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. Neither the name of the University nor the names of its contributors
++ *    may be used to endorse or promote products derived from this software
++ *    without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#include <sys/types.h>
++#include <sys/stat.h>
++
++#include <ctype.h>
++#include <err.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++
++#define MAXIMUM(a, b)	(((a) > (b)) ? (a) : (b))
++
++extern char *__progname;
++
++int bflag, eflag, nflag, sflag, tflag, vflag;
++int rval;
++char *filename;
++
++void cook_args(char *argv[]);
++void cook_buf(FILE *);
++void raw_args(char *argv[]);
++void raw_cat(int);
++
++int
++main(int argc, char *argv[])
++{
++	int ch;
++
++	if (pledge("stdio rpath", NULL) == -1)
++		err(1, "pledge");
++
++	while ((ch = getopt(argc, argv, "benstuv")) != -1)
++		switch (ch) {
++		case 'b':
++			bflag = nflag = 1;	/* -b implies -n */
++			break;
++		case 'e':
++			eflag = vflag = 1;	/* -e implies -v */
++			break;
++		case 'n':
++			nflag = 1;
++			break;
++		case 's':
++			sflag = 1;
++			break;
++		case 't':
++			tflag = vflag = 1;	/* -t implies -v */
++			break;
++		case 'u':
++			setvbuf(stdout, NULL, _IONBF, 0);
++			break;
++		case 'v':
++			vflag = 1;
++			break;
++		default:
++			(void)fprintf(stderr,
++			    "usage: %s [-benstuv] [file ...]\n", __progname);
++			return 1;
++		}
++	argv += optind;
++
++	if (bflag || eflag || nflag || sflag || tflag || vflag)
++		cook_args(argv);
++	else
++		raw_args(argv);
++	if (fclose(stdout))
++		err(1, "stdout");
++	return rval;
++}
++
++void
++cook_args(char **argv)
++{
++	FILE *fp;
++
++	fp = stdin;
++	filename = "stdin";
++	do {
++		if (*argv) {
++			if (!strcmp(*argv, "-"))
++				fp = stdin;
++			else if ((fp = fopen(*argv, "r")) == NULL) {
++				warn("%s", *argv);
++				rval = 1;
++				++argv;
++				continue;
++			}
++			filename = *argv++;
++		}
++		cook_buf(fp);
++		if (fp == stdin)
++			clearerr(fp);
++		else
++			(void)fclose(fp);
++	} while (*argv);
++}
++
++void
++cook_buf(FILE *fp)
++{
++	int ch, gobble, line, prev;
++
++	line = gobble = 0;
++	for (prev = '\n'; (ch = getc(fp)) != EOF; prev = ch) {
++		if (prev == '\n') {
++			if (sflag) {
++				if (ch == '\n') {
++					if (gobble)
++						continue;
++					gobble = 1;
++				} else
++					gobble = 0;
++			}
++			if (nflag) {
++				if (!bflag || ch != '\n') {
++					(void)fprintf(stdout, "%6d\t", ++line);
++					if (ferror(stdout))
++						break;
++				} else if (eflag) {
++					(void)fprintf(stdout, "%6s\t", "");
++					if (ferror(stdout))
++						break;
++				}
++			}
++		}
++		if (ch == '\n') {
++			if (eflag && putchar('$') == EOF)
++				break;
++		} else if (ch == '\t') {
++			if (tflag) {
++				if (putchar('^') == EOF || putchar('I') == EOF)
++					break;
++				continue;
++			}
++		} else if (vflag) {
++			if (!isascii(ch)) {
++				if (putchar('M') == EOF || putchar('-') == EOF)
++					break;
++				ch = toascii(ch);
++			}
++			if (iscntrl(ch)) {
++				if (putchar('^') == EOF ||
++				    putchar(ch == '\177' ? '?' :
++				    ch | 0100) == EOF)
++					break;
++				continue;
++			}
++		}
++		if (putchar(ch) == EOF)
++			break;
++	}
++	if (ferror(fp)) {
++		warn("%s", filename);
++		rval = 1;
++		clearerr(fp);
++	}
++	if (ferror(stdout))
++		err(1, "stdout");
++}
++
++void
++raw_args(char **argv)
++{
++	int fd;
++
++	fd = fileno(stdin);
++	filename = "stdin";
++	do {
++		if (*argv) {
++			if (!strcmp(*argv, "-"))
++				fd = fileno(stdin);
++			else if ((fd = open(*argv, O_RDONLY, 0)) == -1) {
++				warn("%s", *argv);
++				rval = 1;
++				++argv;
++				continue;
++			}
++			filename = *argv++;
++		}
++		raw_cat(fd);
++		if (fd != fileno(stdin))
++			(void)close(fd);
++	} while (*argv);
++}
++
++void
++raw_cat(int rfd)
++{
++	int wfd;
++	ssize_t nr, nw, off;
++	static size_t bsize;
++	static char *buf = NULL;
++	struct stat sbuf;
++
++	wfd = fileno(stdout);
++	if (buf == NULL) {
++		if (fstat(wfd, &sbuf) == -1)
++			err(1, "stdout");
++		bsize = MAXIMUM(sbuf.st_blksize, BUFSIZ);
++		if ((buf = malloc(bsize)) == NULL)
++			err(1, "malloc");
++	}
++	while ((nr = read(rfd, buf, bsize)) != -1 && nr != 0)
++		for (off = 0; nr; nr -= nw, off += nw)
++			if ((nw = write(wfd, buf + off, (size_t)nr)) == 0 ||
++			     nw == -1)
++				err(1, "stdout");
++	if (nr == -1) {
++		warn("%s", filename);
++		rval = 1;
++	}
++}
+-- 
+2.29.2
+
