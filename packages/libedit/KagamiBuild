@@ -18,16 +18,4 @@ build() {
 		--prefix=/usr
 	make
 	make DESTDIR="$PKG" install
-
-	mkdir -p "$PKG"/usr/include/readline
-	for i in chardefs.h history.h keymaps.h readline.h rlconf.h rlstdc.h rltypedefs.h tilde.h; do
-		ln -sf ../editline/readline.h "$PKG"/usr/include/readline/$i
-	done
-
-	for i in history readline; do
-		ln -sf libedit.a "$PKG"/usr/lib/lib${i}.a
-		ln -sf libedit.so "$PKG"/usr/lib/lib${i}.so
-	done
-
-	ln -sf libedit.pc "$PKG"/usr/lib/pkgconfig/readline.pc
 }

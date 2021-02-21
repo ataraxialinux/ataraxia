@@ -1,7 +1,7 @@
 # Description: Daemons for the bluetooth protocol stack
 # URL:         http://www.bluez.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  dbus glib libical alsa-lib json-c
+# Depends on:  readline dbus glib libical alsa-lib json-c
 # Section:     admin
 
 name=bluez
@@ -13,8 +13,6 @@ source=("https://www.kernel.org/pub/linux/bluetooth/$name-$version.tar.xz")
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/bluez/musl.patch
-
-	export ac_cv_header_readline_readline_h=no
 
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -28,8 +26,7 @@ build() {
 		--enable-experimental \
 		--enable-deprecated \
 		--enable-library \
-		--enable-mesh \
-		--disable-client
+		--enable-mesh
 	make
 	make DESTDIR="$PKG" install
 
