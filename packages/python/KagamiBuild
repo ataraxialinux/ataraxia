@@ -11,10 +11,7 @@ release=1
 source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.xz")
 
 build() {
-	case $BARCH in
-		amd64|x86|arm64|armv7l|mips64el|mipsel|ppc64le|riscv64) export ax_cv_c_float_words_bigendian=no ;;
-		mips64|mips|ppc64) export ax_cv_c_float_words_bigendian=yes ;;
-	esac
+	filter-flags -flto
 
 	export ac_cv_have_long_long_format=yes
 	export ac_cv_file__dev_ptmx=yes
