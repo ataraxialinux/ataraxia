@@ -13,6 +13,10 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/lobase/0001-doas-remove-afterinstall.patch
 
+	sed -i 's/ pax//g' bin/Makefile
+	sed -i 's/ sed//g' usr.bin/Makefile
+	sed -i 's/ ${DOCGRP}/root/g' usr.bin/mg/Makefile
+
 	autoreconf -fi
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
@@ -28,8 +32,6 @@ build() {
 	mv "$PKG"/usr/bin/xinstall "$PKG"/usr/bin/install
 
 	rm \
-		"$PKG"/usr/bin/sed \
-		"$PKG"/usr/share/man/man1/sed.1 \
 		"$PKG"/usr/share/man/man3/btree.3 \
 		"$PKG"/usr/share/man/man3/dbopen.3 \
 		"$PKG"/usr/share/man/man3/hash.3 \
