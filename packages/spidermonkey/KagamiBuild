@@ -1,13 +1,17 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  llvm rust autoconf2.13 python zlib readline libffi nspr icu
+# Depends on:  rust autoconf2.13 python zlib readline libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
 version=78.7.1
 release=2
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
+
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/$1/.cargo-checksum.json
+}
 
 build() {
 	case "$BARCH" in
@@ -32,6 +36,8 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/spidermonkey/rust.patch
+
+	clear_vendor_checksums packed_simd
 
 	cd "$SRC"
 	mkdir build
