@@ -7,9 +7,6 @@
 name=libpulse
 version=14.2
 release=1
-backup=('etc/pulse/daemon.conf'
-	'etc/pulse/default.pa'
-	'etc/pulse/system.pa')
 source=("https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-$version.tar.xz")
 
 build() {
@@ -32,11 +29,11 @@ build() {
 		--enable-systemd-login \
 		--disable-manpages \
 		--disable-rpath
-	make
-	make DESTDIR="$PKG" install-pkgconfigDATA install-cmakeDATA install-dist_vapiDATA install-exec
-
-	pushd "$PKG"
-		rm -rf usr/bin
-		rm -rf usr/lib/pulse-${version}
-	popd
+	make -C src libpulse.la libpulsedsp.la libpulse-simple.la libpulse-mainloop-glib.la
+	make DESTDIR="$PKG" install-pkgconfigDATA install-cmakeDATA install-dist_vapiDATA
+	make DESTDIR="$PKG" -C src \
+		install-libLTLIBRARIES \
+		install-padsplibLTLIBRARIES \
+		lib_LTLIBRARIES="libpulse.la libpulse-simple.la libpulse-mainloop-glib.la" \
+		install-pulseincludeHEADERS
 }
