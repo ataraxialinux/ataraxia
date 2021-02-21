@@ -54,62 +54,65 @@ build() {
 
 	clear_vendor_checksums target-lexicon-0.9.0
 
-	cat > mozconfig <<-EOF
-		export MOZILLA_OFFICIAL=1
-		export MOZ_SERVICES_METRICS=
-		export MOZ_PAY=
-		export MOZ_SERVICES_HEALTHREPORTER=
-		export MOZ_SERVICES_FXACCOUNTS=
-		export MOZ_SERVICES_METRICS=
-		export MOZ_DATA_REPORTING=
-		export MOZ_DEVICES=
-		export MOZ_REQUIRE_SIGNING=
-		export MOZ_TELEMETRY_REPORTING=
-		ac_add_options --prefix=/usr
-		ac_add_options --with-distribution-id=io.github.ataraxialinux
-		ac_add_options --with-system-icu
-		ac_add_options --with-system-jpeg
-		ac_add_options --with-system-libevent
-		ac_add_options --with-system-libvpx
-		ac_add_options --with-system-nspr
-		ac_add_options --with-system-nss
-		ac_add_options --with-system-png
-		ac_add_options --with-system-webp
-		ac_add_options --with-system-zlib
-		ac_add_options --enable-application=browser
-		ac_add_options --enable-av1
-		ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
-		ac_add_options --enable-hardening
-		ac_add_options --enable-lto
-		ac_add_options --enable-official-branding
-		ac_add_options --enable-optimize
-		ac_add_options --enable-proxy-bypass-protection
-		ac_add_options --enable-release
-		ac_add_options --enable-rust-simd
-		ac_add_options --enable-system-ffi
-		ac_add_options --enable-system-pixman
-		ac_add_options --disable-crashreporter
-		ac_add_options --disable-debug
-		ac_add_options --disable-debug-symbols
-		ac_add_options --disable-elf-hack
-		ac_add_options --disable-eme
-		ac_add_options --disable-gold
-		ac_add_options --disable-jack
-		ac_add_options --disable-jemalloc
-		ac_add_options --disable-necko-wifi
-		ac_add_options --disable-parental-controls
-		ac_add_options --disable-tests
-		ac_add_options --disable-updater
-		ac_add_options --disable-webrtc
-		ac_add_options --host=$RTARGET
-		ac_add_options --target=$RTARGET
-	EOF
+	export MOZILLA_OFFICIAL=1
+	export MOZ_SERVICES_METRICS=
+	export MOZ_PAY=
+	export MOZ_SERVICES_HEALTHREPORTER=
+	export MOZ_SERVICES_FXACCOUNTS=
+	export MOZ_SERVICES_METRICS=
+	export MOZ_DATA_REPORTING=
+	export MOZ_DEVICES=
+	export MOZ_REQUIRE_SIGNING=
+	export MOZ_TELEMETRY_REPORTING=
 
-	./mach build
-	DESTDIR="$PKG" ./mach install
+	cd "$SRC"
+	mkdir -p build
+	cd build
+	"$SRC"/$name-$version/configure \
+		--prefix=/usr \
+		--with-distribution-id=io.github.ataraxialinux \
+		--with-system-icu \
+		--with-system-jpeg \
+		--with-system-libevent \
+		--with-system-libvpx \
+		--with-system-nspr \
+		--with-system-nss \
+		--with-system-png \
+		--with-system-webp \
+		--with-system-zlib \
+		--enable-application=browser \
+		--enable-av1 \
+		--enable-default-toolkit=cairo-gtk3-wayland \
+		--enable-hardening \
+		--enable-linker=lld \
+		--enable-lto \
+		--enable-official-branding \
+		--enable-optimize \
+		--enable-proxy-bypass-protection \
+		--enable-release \
+		--enable-rust-simd \
+		--enable-system-ffi \
+		--enable-system-pixman \
+		--disable-crashreporter \
+		--disable-debug \
+		--disable-debug-symbols \
+		--disable-elf-hack \
+		--disable-eme \
+		--disable-gold \
+		--disable-jack \
+		--disable-jemalloc \
+		--disable-necko-wifi \
+		--disable-parental-controls \
+		--disable-tests \
+		--disable-updater \
+		--disable-webrtc \
+		--host=$RTARGET \
+		--target=$RTARGET
+	make
+	make DESTDIR="$PKG" install
 
 	for i in 16 22 24 32 48 64 128 256; do
-		install -Dm644 browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
+		install -Dm644 "$SRC"/$name-$version/browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png
 	done
 
 	mkdir -p "$PKG"/usr/share/pixmaps
