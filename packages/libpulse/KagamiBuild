@@ -1,7 +1,7 @@
 # Description: A featureful, general-purpose sound server (libraries only)
 # URL:         https://www.freedesktop.org/wiki/Software/PulseAudio/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libsndfile alsa-lib dbus glib libcap speex libxtst libsm sbc bluez rtkit libltdl
+# Depends on:  meson libltdl libsndfile alsa-lib dbus glib libcap speex libxtst libsm sbc bluez rtkit
 # Section:     sound
 
 name=libpulse
@@ -10,32 +10,13 @@ release=1
 source=("https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-$version.tar.xz")
 
 build() {
-	append-cflags -fPIC
-
 	cd "$SRC"/pulseaudio-$version
-
-	NOCONFIGURE=1 ./bootstrap.sh
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--with-bash-completion-dir=/usr/share/bash-completion/completions \
-		--with-pulsedsp-location=/usr/lib/pulseaudio \
-		--with-systemduserunitdir=/usr/lib/systemd/user \
-		--with-udev-rules-dir=/usr/lib/udev/rules.d \
-		--with-caps \
-		--enable-ipv6 \
-		--enable-systemd-daemon \
-		--enable-systemd-journal \
-		--enable-systemd-login \
-		--disable-manpages \
-		--disable-rpath
-	make -C src libpulse.la libpulsedsp.la libpulse-simple.la libpulse-mainloop-glib.la
-	make DESTDIR="$PKG" install-pkgconfigDATA install-cmakeDATA install-dist_vapiDATA
-	make DESTDIR="$PKG" -C src \
-		install-libLTLIBRARIES \
-		install-padsplibLTLIBRARIES \
-		lib_LTLIBRARIES="libpulse.la libpulse-simple.la libpulse-mainloop-glib.la" \
-		install-pulseincludeHEADERS
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/pulseaudio-$version \
+		-Dpulsedsp-location='/usr/\$LIB/pulseaudio' \
+		-Dudevrulesdir=/usr/lib/udev/rules.d \
+		-Dman=false
+	samu
+	DESTDIR="$PKG" samu install
 }
