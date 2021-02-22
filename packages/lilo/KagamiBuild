@@ -1,0 +1,30 @@
+# Description: Standard Linux boot loader
+# URL:         https://alioth.debian.org/projects/lilo/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bin86
+# Section:     base
+
+name=lilo
+version=24.1
+release=1
+backup=('etc/lilo.conf')
+source=("http://lilo.alioth.debian.org/ftp/sources/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lilo/0001-fix-build-on-non-GNU-toolchain.patch
+
+	make
+	make DESTDIR="$PKG" install
+
+	install -Dm644 "$STUFF"/lilo.conf "$PKG"/etc/lilo.conf
+
+	mkdir -p "$PKG"/usr/bin
+	mv "$PKG"/sbin/* "$PKG"/usr/bin/
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin/
+
+	rm -rf "$PKG"/sbin
+	rm -rf "$PKG"/usr/sbin
+	rm -rf "$PKG"/etc/initramfs
+	rm -rf "$PKG"/etc/kernel
+}
