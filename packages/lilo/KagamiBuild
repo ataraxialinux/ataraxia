@@ -1,23 +1,27 @@
 # Description: Standard Linux boot loader
 # URL:         https://alioth.debian.org/projects/lilo/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  bin86
+# Depends on:  bin86 lvm2
 # Section:     base
 
 name=lilo
-version=24.1
+version=24.2
 release=1
 backup=('etc/lilo.conf')
-source=("http://lilo.alioth.debian.org/ftp/sources/$name-$version.tar.gz")
+source=("https://www.joonet.de/lilo/ftp/sources/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/lilo/0001-fix-build-on-non-GNU-toolchain.patch
+	patch -Np1 -i "$STUFF"/lilo/0002-don-t-build-images.patch
+	patch -Np1 -i "$STUFF"/lilo/0003-remove-installing-images.patch
+	patch -Np1 -i "$STUFF"/lilo/0004-use-above-4G-of-memory.patch
+	patch -Np1 -i "$STUFF"/lilo/0005-support-NVMe-support.patch
 
-	make
+	make CC="${CC:-clang}"
 	make DESTDIR="$PKG" install
 
-	install -Dm644 "$STUFF"/lilo.conf "$PKG"/etc/lilo.conf
+	install -Dm644 "$STUFF"/lilo/lilo.conf "$PKG"/etc/lilo.conf
 
 	mkdir -p "$PKG"/usr/bin
 	mv "$PKG"/sbin/* "$PKG"/usr/bin/
