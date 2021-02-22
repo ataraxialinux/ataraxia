@@ -1,0 +1,21 @@
+# Description: A complete 8086 assembler and loader
+# URL:         https://v3.sk/~lkundrak/dev86/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     devel
+
+name=bin86
+version=0.16.21
+release=1
+source=("http://v3.sk/~lkundrak/dev86/$name-$version.tar.gz")
+
+build() {
+	append-cppflags -U__linux__
+
+	install -d "$PKG"/usr/{bin,share/man/man1}
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/bin86/bin86-0.16.17-x86_64-1.patch
+
+	make PREFIX=/usr
+	make PREFIX="$PKG"/usr MANDIR="$PKG"/usr/share/man/man1 install
+}
