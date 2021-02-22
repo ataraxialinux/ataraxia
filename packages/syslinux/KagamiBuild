@@ -1,0 +1,23 @@
+# Description: Collection of boot loaders
+# URL:         http://www.syslinux.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl nasm mtools linux-headers
+# Section:     base
+
+name=syslinux
+version=05ac953c23f90b2328d393f7eecde96e41aed067
+release=1
+source=("https://repo.or.cz/syslinux.git/snapshot/$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	patch -Np1 -i "$STUFF"/syslinux/syslinux-6.03-sysmacros.patch
+	patch -Np1 -i "$STUFF"/syslinux/syslinux-6.04_pre1-fcommon.patch
+
+	make installer
+	make -j1 INSTALLROOT="$PKG" MANDIR=/usr/share/man bios install
+
+	install -Dm0644 "$STUFF"/syslinux/syslinux.cfg $PKG/boot/syslinux/syslinux.cfg
+}
