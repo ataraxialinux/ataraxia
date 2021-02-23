@@ -1,0 +1,21 @@
+# Description: Lightweight X11 session manager
+# URL:         https://lxde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool vala polkit gtk3
+# Section:     lxde
+
+name=lxsession
+version=0.5.5
+release=1
+source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--enable-gtk3
+	make
+	make DESTDIR="$PKG" install
+}

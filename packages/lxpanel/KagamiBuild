@@ -1,0 +1,20 @@
+# Description: Lightweight X11 desktop panel for LXDE
+# URL:         https://lxde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool wireless_tools alsa-lib curl menu-cache libfm libkeybinder libxml2
+# Section:     lxde
+
+name=lxpanel
+version=0.10.1
+release=1
+source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--enable-gtk3
+	make
+	make DESTDIR="$PKG" install
+}

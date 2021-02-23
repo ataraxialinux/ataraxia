@@ -1,0 +1,22 @@
+# Description: Common files of the LXDE Desktop
+# URL:         https://lxde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool adwaita-icon-theme cantarell-fonts gnome-themes-extra wallpapers
+# Section:     lxde
+
+name=lxde-common
+version=0.99.2
+release=1
+source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lxde-common/dbus-update-environment.patch
+	patch -Np1 -i "$STUFF"/lxde-common/default-config.patch
+
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc
+	make
+	make DESTDIR="$PKG" install
+}
