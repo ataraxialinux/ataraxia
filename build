@@ -305,6 +305,9 @@ install_os() {
 	emerge_target base-files "$targetfs"
 	emerge_target iana-etc "$targetfs"
 	emerge_target man-pages "$targetfs"
+	emerge_target linux-headers "$targetfs"
+	emerge_target musl "$targetfs"
+	emerge_target libexecinfo "$targetfs"
 	emerge_target musl-tools "$targetfs"
 	emerge_target gettext-tiny "$targetfs"
 	emerge_target tzdb "$targetfs"
@@ -433,7 +436,7 @@ install_os() {
 }
 
 build_board_image() {
-	local imagefs img lodev bootpart rootpart bootuuid rootuuid
+	local imagefs img lodev bootpart rootpart bootuuid rootuuid fs
 
 	if ! check_stamp system; then
 		die "Build target system first."
@@ -519,7 +522,17 @@ build_board_image() {
 	bootpart="${lodev}p1"
 	rootpart="${lodev}p2"
 
-	mkfs.vfat "$bootpart"
+	case $BOARD in
+		rpi4)
+			fs="vfat"
+			mkfs.vfat "$bootpart"
+			;;
+		*)
+			fs="ext4"
+			mkfs.ext4 "$bootpart"
+			;;
+	esac
+
 	mkfs.ext4 "$rootpart"
 
 	bootuuid="$(blkid -s UUID -o value $bootpart)"
@@ -554,7 +567,7 @@ build_board_image() {
 		[Mount]
 		Where=/boot
 		What=/dev/disk/by-uuid/$bootuuid
-		Type=vfat
+		Type=$fs
 
 		[Install]
 		WantedBy=local-fs.target
@@ -562,11 +575,15 @@ build_board_image() {
 
 	systemctl -q --root "$imagefs" enable -- -.mount boot.mount
 
-	mkdir -p "$imagefs"/usr/lib/repart.d
-	cat > "$imagefs/usr/lib/repart.d/50-root.conf" <<- EOF
-		[Partition]
-		Type=root
-	EOF
+	case $BOARD in
+		rpi4)
+			mkdir -p "$imagefs"/usr/lib/repart.d
+			cat > "$imagefs/usr/lib/repart.d/50-root.conf" <<- EOF
+				[Partition]
+				Type=root
+			EOF
+			;;
+	esac
 
 	umount -lf "$bootpart" "$rootpart"
 
