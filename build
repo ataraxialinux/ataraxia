@@ -238,8 +238,8 @@ build_system() {
 	emerge_target net-tools
 	emerge_target iputils
 	emerge_target procps-ng
-	emerge_target inih
-	emerge_target xfsprogs
+	emerge_target zfs
+	emerge_target e2fsprogs
 	emerge_target dosfstools
 	emerge_target pciutils
 	emerge_target libusb
@@ -417,8 +417,8 @@ install_os() {
 	emerge_target net-tools "$targetfs"
 	emerge_target iputils "$targetfs"
 	emerge_target procps-ng "$targetfs"
-	emerge_target inih "$targetfs"
-	emerge_target xfsprogs "$targetfs"
+	emerge_target zfs "$targetfs"
+	emerge_target e2fsprogs "$targetfs"
 	emerge_target dosfstools "$targetfs"
 	emerge_target pciutils "$targetfs"
 	emerge_target libusb "$targetfs"
@@ -520,7 +520,7 @@ build_board_image() {
 	rootpart="${lodev}p2"
 
 	mkfs.vfat "$bootpart"
-	mkfs.xfs "$rootpart"
+	mkfs.ext4 "$rootpart"
 
 	bootuuid="$(blkid -s UUID -o value $bootpart)"
 	rootuuid="$(blkid -s UUID -o value $rootpart)"
@@ -545,7 +545,7 @@ build_board_image() {
 		[Mount]
 		Where=/
 		What=/dev/disk/by-uuid/$rootuuid
-		Type=xfs
+		Type=ext4
 
 		[Install]
 		WantedBy=local-fs.target
