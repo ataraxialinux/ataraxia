@@ -715,6 +715,7 @@ main() {
 	local date="$(date)"
 
 	case "$1" in
+		chroot) shift; mode="enter_chroot" ;;
 		target) shift; mode="build_target" ;;
 	esac
 
@@ -731,7 +732,7 @@ main() {
 
 	check_for_root
 
-	if [ "$mode" = "build_target" ]; then
+	if [ "$mode" == "build_target" ]; then
 		if [ -z "$1" ]; then
 			die "Target is not specified."
 		fi
@@ -772,6 +773,24 @@ main() {
 			toolchain) build_toolchain ;;
 			*) die "Unknown target" ;;
 		esac
+	elif [ "$mode" == "enter_chroot" ]; then
+		check_for_arch "$BARCH"
+
+		msg "Exporting variables"
+		export_variables "$BARCH"
+
+		msg "Preparing system to boot"
+		sed -zi 's|\nC! /etc/securetty||' "$ROOTFS"/usr/lib/tmpfiles.d/00-default.conf
+
+		mkdir -p "$ROOTFS"/usr/ports/packages "$ROOTFS"/usr/ports/stuff
+
+		msg "Booting using systemd-nspawn"
+		systemd-nspawn \
+			-b -D "$ROOTFS" \
+			--bind="$REPO":/usr/ports/packages \
+			--bind="$STUFF":/usr/ports/stuff \
+			--bind="$PACKAGES":/var/cache/packages \
+			--bind="$SOURCES":/var/cache/sources
 	fi
 }
 
