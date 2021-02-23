@@ -19,15 +19,10 @@ build() {
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
-	make DESTDIR="$SRC/fakeinstall" install
+	make DESTDIR="$PKG" install
 
-	mkdir -p "$PKG"/usr/{lib/{libfm/modules,pkgconfig},share}
-	pushd "$PKG"
-		mv usr/bin "$PKG/usr"
-		mv usr/lib/libfm-gtk3.so* "$PKG"/usr/lib
-		mv usr/lib/libfm/modules/gtk-* "$PKG"/usr/lib/libfm/modules
-		mv usr/lib/pkgconfig/libfm-gtk3.pc "$PKG/usr/lib/pkgconfig"
-		mv usr/share/applications "$PKG/usr/share"
-		mv usr/share/man "$PKG/usr/share"
-	popd
+	rm -rf  \
+		"$PKG"/usr/include/libfm/fm-{extra,version,xml-file}.h \
+		"$PKG"/usr/lib/libfm-extra.* \
+		"$PKG"/usr/lib/pkgconfig/libfm-extra.pc
 }
