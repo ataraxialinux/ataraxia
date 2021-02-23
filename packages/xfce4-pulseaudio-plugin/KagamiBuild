@@ -1,0 +1,25 @@
+# Description: A PulseAudio plugin for the Xfce4 panel
+# URL:         https://goodies.xfce.org/projects/panel-plugins/xfce4-weather-plugin
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool dbus-glib xfce4-dev-tools xfce4-panel libpulse libkeybinder libnotify
+# Section:     xfce
+
+name=xfce4-pulseaudio-plugin
+version=0.4.3
+release=1
+source=("https://archive.xfce.org/src/panel-plugins/$name/${version%.*}/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--enable-keybinder \
+		--enable-libnotify
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
+}
