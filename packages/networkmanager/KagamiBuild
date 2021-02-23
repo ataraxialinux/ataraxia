@@ -14,7 +14,8 @@ build() {
 	filter-flags -flto
 
 	cd "$SRC"/NetworkManager-$version
-	sed '/initrd/d' -i src/core/meson.build
+	sed -i '/initrd/d' src/core/meson.build
+	sed -zi 's|\nset -e||' tools/create-exports-NetworkManager.sh
 
 	mkdir -p build
 	cd build
