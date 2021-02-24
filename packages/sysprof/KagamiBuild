@@ -1,7 +1,7 @@
 # Description: Kernel based performance profiler
 # URL:         https://wiki.gnome.org/Apps/Sysprof
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson yelp-tools libdazzle polkit
+# Depends on:  meson yelp-tools libdazzle polkit libexecinfo
 # Section:     gnome
 
 name=sysprof
@@ -10,10 +10,11 @@ release=1
 source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
-	append-cflags -ffat-lto-objects
+	filter-flags -flto
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/sysprof/0001-add-TEMP_FAILURE_RETRY-for-musl.patch
+	patch -Np1 -i "$STUFF"/sysprof/0001-link-against-libexecinfo.patch
 
 	mkdir -p build
 	cd build
