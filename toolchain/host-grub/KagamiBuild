@@ -1,0 +1,75 @@
+name=host-grub
+realpath="$REPO/${name/host-}"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+unifontver="$(grep ^unifontver $realpath/KagamiBuild | sed -e 's/unifontver=//g')"
+release=1
+options=('bootstrap')
+source=("https://ftp.gnu.org/gnu/grub/grub-$version.tar.xz"
+	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
+noextract=("unifont-$unifontver.pcf.gz")
+
+build_flavor() {
+	local flavor="$1"
+	shift
+	local configure="$@"
+	mkdir -p build_${flavor}
+	cd build_${flavor}
+	../configure $configure \
+		--prefix="$TOOLS" \
+		--bindir="$TOOLS"/bin \
+		--sbindir="$TOOLS"/bin \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--enable-grub-mkfont \
+		--disable-nls \
+		--disable-werror \
+		TARGET_NM=llvm-nm \
+		TARGET_OBJCOPY=llvm-objcopy \
+		TARGET_RANLIB=llvm-ranlib \
+		TARGET_STRIP=llvm-strip
+	make
+	make install
+	cd ..
+}
+
+build() {
+	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
+
+	case $BARCH in
+		amd64|x86)
+			#FLAVOR="efi pc"
+			FLAVOR="pc"
+			;;
+		ppc64le|ppc64)
+			FLAVOR="ieee1275"
+			;;
+		*)
+			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux"
+			exit 1
+	esac
+
+	cd "$SRC"/grub-$version
+	patch -Np1 -i "$STUFF"/grub/0001-Don-t-say-GNU-Linux-in-the-menu.patch
+	patch -Np1 -i "$STUFF"/grub/0002-support-Boot-Loader-Specification.patch
+	patch -Np1 -i "$STUFF"/grub/0003-don-t-look-for-locale-directory.patch
+	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
+	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
+
+	sed -i "s|/usr/share/fonts/dejavu|$TOOLS/share/fonts/dejavu $TOOLS/share/fonts/TTF|g" configure.ac
+	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
+
+	gzip -cd "$SRC"/unifont-$unifontver.pcf.gz > unifont.pcf
+
+	./autogen.sh
+	for f in $FLAVOR; do
+		case "$f" in
+			efi) build_flavor $f --with-platform=efi --disable-efiemu ;;
+			*)   build_flavor $f --with-platform=$f ;;
+		esac
+	done
+
+	rm -rf "$TOOLS"/lib/grub/*/*.module
+	rm -rf "$TOOLS"/lib/grub/*/*.image
+	rm -rf "$TOOLS"/lib/grub/*/{kernel.exec,gdb_grub,gmodule.pl}
+}
