@@ -1,0 +1,23 @@
+# Description: Breeze icon themes
+# URL:         https://community.kde.org/Frameworks
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai extra-cmake-modules python-lxml
+# Section:     kde
+
+name=breeze-icons
+version=5.79.0
+release=1
+source=("https://download.kde.org/stable/frameworks/${version%.*}/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/breeze-icons/0001-remove-qt-dependency.patch
+
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
