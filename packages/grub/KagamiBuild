@@ -1,16 +1,16 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python gettext-tiny xz freetype lvm2
+# Depends on:  python gettext-tiny xz freetype lvm2 zfs
 # Section:     utils
 
 name=grub
-version=2.04
+version=2.05
 unifontver=13.0.02
-release=19
+release=1
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
-source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
+source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
 	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
 noextract=("unifont-$unifontver.pcf.gz")
 
@@ -31,7 +31,11 @@ build_flavor() {
 		--enable-grub-mkfont \
 		--disable-grub-mount \
 		--disable-nls \
-		--disable-werror
+		--disable-werror \
+		TARGET_NM=llvm-nm \
+		TARGET_OBJCOPY=llvm-objcopy \
+		TARGET_RANLIB=llvm-ranlib \
+		TARGET_STRIP=llvm-strip
 	make
 	make DESTDIR="$PKG" bashcompletiondir=/usr/share/bash-completion/completions install
 	cd ..
@@ -57,7 +61,6 @@ build() {
 	patch -Np1 -i "$STUFF"/grub/0002-support-Boot-Loader-Specification.patch
 	patch -Np1 -i "$STUFF"/grub/0003-don-t-look-for-locale-directory.patch
 	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
-	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
 
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in

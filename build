@@ -57,6 +57,12 @@ build_toolchain() {
 	emerge_host automake
 	emerge_host pkgconf
 
+	case $BARCH in
+		amd64|x86|ppc64le|ppc64)
+			emerge_host grub
+			;;
+	esac
+
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
 	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
