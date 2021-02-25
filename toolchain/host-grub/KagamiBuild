@@ -38,8 +38,7 @@ build() {
 
 	case $BARCH in
 		amd64|x86)
-			#FLAVOR="efi pc"
-			FLAVOR="pc"
+			FLAVOR="efi pc"
 			;;
 		ppc64le|ppc64)
 			FLAVOR="ieee1275"
@@ -54,6 +53,7 @@ build() {
 	patch -Np1 -i "$STUFF"/grub/0002-support-Boot-Loader-Specification.patch
 	patch -Np1 -i "$STUFF"/grub/0003-don-t-look-for-locale-directory.patch
 	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
+	patch -Np1 -i "$STUFF"/grub/0005-fix-runtime-if-built-on-LLD.patch
 
 	sed -i "s|/usr/share/fonts/dejavu|$TOOLS/share/fonts/dejavu $TOOLS/share/fonts/TTF|g" configure.ac
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
@@ -71,4 +71,6 @@ build() {
 	rm -rf "$TOOLS"/lib/grub/*/*.module
 	rm -rf "$TOOLS"/lib/grub/*/*.image
 	rm -rf "$TOOLS"/lib/grub/*/{kernel.exec,gdb_grub,gmodule.pl}
+
+	cp "$STUFF"/mklive/unicode.pf2 "$TOOLS"/share/grub/unicode.pf2
 }
