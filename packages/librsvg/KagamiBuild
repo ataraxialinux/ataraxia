@@ -1,21 +1,16 @@
-# Description: SVG rendering library
+# Description: SVG rendering library (C version)
 # URL:         https://wiki.gnome.org/Projects/LibRsvg
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  rust gobject-introspection vala gdk-pixbuf pango
+# Depends on:  gobject-introspection vala libcroco gdk-pixbuf pango
 # Section:     libs
 
 name=librsvg
-version=2.50.3
+version=2.40.21
 release=1
-source=("https://gitlab.gnome.org/GNOME/librsvg/-/archive/9d4e465c750bfcaf0fb88d57cc9a8d4a9db16005/librsvg-9d4e465c750bfcaf0fb88d57cc9a8d4a9db16005.tar.gz")
+source=("https://download.gnome.org/sources/librsvg/${version%.*}/librsvg-$version.tar.xz")
 
 build() {
-	unset CFLAGS CXXFLAGS LDFLAGS
-
-	cd "$SRC"/librsvg-9d4e465c750bfcaf0fb88d57cc9a8d4a9db16005
-	cargo vendor
-
-	NOCONFIGURE=1 ./autogen.sh
+	cd "$SRC"/librsvg-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--enable-vala
