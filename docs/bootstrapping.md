@@ -18,7 +18,7 @@ git clone https://github.com/ataraxialinux/tsukuri.git --depth 1
 cd tsukuri
 mkdir build
 cd build
-meson --prefix=/usr -Dsystemd=false ../
+meson --prefix=/usr -Dsystemd=false ..
 ninja
 ninja install
 ```
@@ -38,6 +38,10 @@ We have seperated the build process into seperate "targets":
 ```
  * toolchain              - This stage intended to compile cross-toolchain
  * system                 - This stage intended to compile basic target system with cross-compiler (You don't need to compile stage 0)
+ * image                  - This stage intended to generate virtual disk image
+ * installer              - This stage intended to generate installer .iso image
+ * live                   - This stage intended to generate live .iso image
+ * stage                  - This stage intended to generate archive with pre-compiled OS
 ```
 To begin the bootstrap process, **as root**:
 See [supported platforms and architecures.](platforms.md)

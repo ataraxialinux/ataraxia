@@ -560,6 +560,10 @@ build_board_image() {
 		}
 	fi
 
+	if [ -n "$DESKTOP" ]; then
+		tsukuri em -c "$BUILD/target.config" -r "$imagefs" $(get_desktop_packages $DESKTOP)
+	fi
+
 	cat > "$imagefs/usr/lib/systemd/system/-.mount" <<- EOF
 		[Mount]
 		Where=/
@@ -617,6 +621,10 @@ build_stage() {
 	mkdir -p "$stagefs"
 
 	install_os "$stagefs"
+
+	if [ -n "$DESKTOP" ]; then
+		tsukuri em -c "$BUILD/target.config" -r "$stagefs" $(get_desktop_packages $DESKTOP)
+	fi
 
 	pushd "$stagefs"
 		bsdtar -c --zstd -f "$BUILD/ataraxialinux-$BARCH.tar.zst" --options zstd:compression-level=19 .
@@ -684,11 +692,12 @@ main() {
 		target) shift; mode="build_target" ;;
 	esac
 
-	while getopts a:k:b: opts; do
+	while getopts a:k:b:d: opts; do
 		case $opts in
 			a) BARCH="$OPTARG" ;;
 			k) KERNEL="$OPTARG" ;;
 			b) BOARD="$OPTARG" ;;
+			d) DESKTOP="$OPTARG" ;;
 		esac
 	done
 	shift $((OPTIND -1))
