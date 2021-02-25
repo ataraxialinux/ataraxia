@@ -1,0 +1,22 @@
+# Description: High-level loop and data-locality optimizer and optimization infrastructure for LLVM
+# URL:         https://llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python cmake samurai llvm
+# Section:     devel
+
+name=polly
+version=11.1.0
+release=1
+source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/$name-$version.src.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version.src
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version.src $CMAKEFLAGS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}

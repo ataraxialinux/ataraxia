@@ -1,0 +1,25 @@
+# Description: Next generation, high-performance debugger
+# URL:         https://llvm.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  python cmake samurai ncurses libedit xz llvm
+# Section:     devel
+
+name=lldb
+version=11.1.0
+release=1
+source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/$name-$version.src.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version.src
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version.src $CMAKEFLAGS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCLANG_LINK_CLANG_DYLIB=ON \
+		-DLLVM_LINK_LLVM_DYLIB=ON \
+		-DLLVM_EXTERNAL_LIT=/usr/bin/lit \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
