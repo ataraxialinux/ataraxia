@@ -459,7 +459,11 @@ build_board_image() {
 	else
 		msg "Building target image for '${BARCH}' architecture"
 
-		img="$BUILD/ataraxialinux-$BARCH.img"
+		if [ -n "$DESKTOP" ]; then
+			img="$BUILD/ataraxialinux-$DESKTOP-$BARCH.img"
+		else
+			img="$BUILD/ataraxialinux-$BARCH.img"
+		fi
 	fi
 
 	if [ -n "$KERNEL" ]; then
@@ -603,6 +607,8 @@ build_board_image() {
 }
 
 build_stage() {
+	local output_name
+
 	if ! check_stamp system; then
 		die "Build target system first."
 	fi
@@ -623,11 +629,15 @@ build_stage() {
 	install_os "$stagefs"
 
 	if [ -n "$DESKTOP" ]; then
+		output_name="ataraxialinux-$DESKTOP-$BARCH.tar.zst"
+
 		tsukuri em -c "$BUILD/target.config" -r "$stagefs" $(get_desktop_packages $DESKTOP)
+	else
+		output_name="ataraxialinux-$BARCH.tar.zst"
 	fi
 
 	pushd "$stagefs"
-		bsdtar -c --zstd -f "$BUILD/ataraxialinux-$BARCH.tar.zst" --options zstd:compression-level=19 .
+		bsdtar -c --zstd -f "$BUILD/$output_name" --options zstd:compression-level=19 .
 	popd
 
 	msg "Stage archive has been built successfuly!"
