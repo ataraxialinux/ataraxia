@@ -1,7 +1,7 @@
 # Description: Actions, Menus and Toolbars Kit for GTK+ applications
 # URL:         https://wiki.gnome.org/Projects/Amtk
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  gobject-introspection gtk3
+# Depends on:  meson gobject-introspection gtk3
 # Section:     gnome
 
 name=amtk
@@ -11,11 +11,9 @@ source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.t
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--disable-Werror
-
-	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }
