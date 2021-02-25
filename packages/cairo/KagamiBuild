@@ -1,7 +1,7 @@
 # Description: 2D graphics library with support for multiple output devices
 # URL:         https://cairographics.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson libpng pixman fontconfig glib libxext libxrender xcb-util
+# Depends on:  meson libpng pixman fontconfig glib libxext libxrender xcb-util lzo
 # Section:     libs
 
 name=cairo
@@ -15,6 +15,8 @@ source=("$url/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/cairo/musl-stacksize.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
