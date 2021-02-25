@@ -31,11 +31,7 @@ build_flavor() {
 		--enable-grub-mkfont \
 		--disable-grub-mount \
 		--disable-nls \
-		--disable-werror \
-		TARGET_NM=llvm-nm \
-		TARGET_OBJCOPY=llvm-objcopy \
-		TARGET_RANLIB=llvm-ranlib \
-		TARGET_STRIP=llvm-strip
+		--disable-werror
 	make
 	make DESTDIR="$PKG" bashcompletiondir=/usr/share/bash-completion/completions install
 	cd ..
@@ -43,6 +39,15 @@ build_flavor() {
 
 build() {
 	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
+
+	export NM=llvm-nm
+	export OBJCOPY=llvm-objcopy
+	export RANLIB=llvm-ranlib
+	export STRIP=llvm-strip
+	export TARGET_NM=llvm-nm
+	export TARGET_OBJCOPY=llvm-objcopy
+	export TARGET_RANLIB=llvm-ranlib
+	export TARGET_STRIP=llvm-strip
 
 	case $BARCH in
 		amd64|x86)
