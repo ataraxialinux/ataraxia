@@ -1,22 +1,19 @@
-# Description: SVG rendering library
-# URL:         https://wiki.gnome.org/Projects/librsvg
+# Description: SVG rendering library (C version)
+# URL:         https://wiki.gnome.org/Projects/LibRsvg
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  rust gobject-introspection vala gdk-pixbuf pango
+# Depends on:  gobject-introspection vala libcroco gdk-pixbuf pango
 # Section:     libs
 
 name=librsvg
-version=2.50.3
+version=2.40.21
 release=1
-source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("https://download.gnome.org/sources/librsvg/${version%.*}/librsvg-$version.tar.xz")
 
 build() {
-#	export RUSTFLAGS="$RUSTFLAGS -C debuginfo=2"
-
-	cd "$SRC"/$name-$version
+	cd "$SRC"/librsvg-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
-		--enable-vala \
-		--disable-static
+		--enable-vala
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
 	make
