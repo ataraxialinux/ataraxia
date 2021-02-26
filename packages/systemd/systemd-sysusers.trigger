@@ -1,12 +1,9 @@
 {
 	"trigger": {
 		"name": "systemd-sysusers",
-		"directories_exist": [
-			"/run/systemd"
-		],
 		"directory": [
 			"usr/lib/sysusers.d/"
 		],
-		"command": "/usr/bin/systemd-sysusers"
+		"command": "/usr/share/tsukuri/systemd-hook sysusers"
 	}
 }

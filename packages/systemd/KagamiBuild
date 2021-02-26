@@ -70,7 +70,7 @@ build() {
 		-Dcoredump=false \
 		-Ddbuspolicydir=/usr/share/dbus-1/system.d \
 		-Ddefault-dns-over-tls=yes \
-		-Ddefault-dnssec=yes \
+		-Ddefault-dnssec=no \
 		-Ddefault-hierarchy=unified \
 		-Ddefault-kill-user-processes=false \
 		-Ddefault-locale=C.UTF-8 \
@@ -106,6 +106,8 @@ build() {
 	DESTDIR="$PKG" samu install
 
 	for i in "$SRC"/*.trigger; do install -Dm644 "$i" "$PKG"/usr/lib/tsukuri/triggers/$(basename $i); done
+
+	install -Dm755 "$STUFF"/systemd/hook "$PKG"/usr/share/tsukuri/systemd-hook
 
 	rm "$PKG"/usr/share/factory/etc/nsswitch.conf
 	sed -i -e '/^C \/etc\/nsswitch\.conf/d' "$PKG"/usr/lib/tmpfiles.d/etc.conf

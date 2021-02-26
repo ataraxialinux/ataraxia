@@ -1,12 +1,9 @@
 {
 	"trigger": {
 		"name": "daemon-reload",
-		"directories_exist": [
-			"/run/systemd"
-		],
 		"directory": [
 			"usr/lib/systemd/system/"
 		],
-		"command": "/usr/bin/systemctl daemon-reload"
+		"command": "/usr/share/tsukuri/systemd-hook daemon-reload"
 	}
 }
