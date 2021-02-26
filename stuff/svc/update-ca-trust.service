@@ -1,0 +1,14 @@
+[Unit]
+Description=Updating CA trust
+DefaultDependencies=no
+After=systemd-tmpfiles-setup.service
+Before=sysinit.target
+ConditionFirstBoot=yes
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/ca-legacy install
+ExecStart=/usr/bin/update-ca-trust
+
+[Install]
+WantedBy=sysinit.target

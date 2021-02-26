@@ -103,28 +103,22 @@ build() {
 	mkdir -p -m755 "$PKG"/usr/bin
 	mkdir -p -m755 "$PKG"/usr/share/man/man8
 
-	install -p -m 644 ca-bundle.trust.p11-kit "$PKG"/usr/share/pki/ca-trust-source/ca-bundle.trust.p11-kit
-	install -p -m 644 ca-bundle.legacy.default.crt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.default.crt
-	install -p -m 644 ca-bundle.legacy.disable.crt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.disable.crt
+	install -p -m644 ca-bundle.trust.p11-kit "$PKG"/usr/share/pki/ca-trust-source/ca-bundle.trust.p11-kit
+	install -p -m644 ca-bundle.legacy.default.crt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.default.crt
+	install -p -m644 ca-bundle.legacy.disable.crt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.disable.crt
 
-	install -p -m 644 "$STUFF"/ca-certificates/ca-legacy.conf "$PKG"/etc/pki/ca-trust/ca-legacy.conf
+	install -p -m644 "$STUFF"/ca-certificates/ca-legacy.conf "$PKG"/etc/pki/ca-trust/ca-legacy.conf
+
+	install -m755 "$STUFF"/ca-certificates/ca-legacy "$PKG"/usr/bin/ca-legacy
+	install -m755 "$STUFF"/ca-certificates/update-ca-trust "$PKG"/usr/bin/update-ca-trust
+
+	mkdir -p "$PKG"/usr/lib/systemd/system/sysinit.target.wants
+	install -m644 "$STUFF"/svc/update-ca-trust.service "$PKG"/usr/lib/systemd/system/update-ca-trust.service
+	ln -sf ../update-ca-trust.service "$PKG"/usr/lib/systemd/system/sysinit.target.wants/update-ca-trust.service
 
 	cp "$SRC"/nss-$version/nss/lib/ckfw/builtins/certdata.txt "$PKG"/usr/share/pki/ca-trust-source/ca-bundle.trust.p11-kit
 	cp "$SRC"/nss-$version/nss/lib/ckfw/builtins/certdata.txt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.default.crt
 	cp "$SRC"/nss-$version/nss/lib/ckfw/builtins/certdata.txt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.disable.crt
-
-	#touch "$PKG"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-	#chmod 444 "$PKG"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-	#touch "$PKG"/etc/pki/ca-trust/extracted/pem/email-ca-bundle.pem
-	#chmod 444 "$PKG"/etc/pki/ca-trust/extracted/pem/email-ca-bundle.pem
-	#touch "$PKG"/etc/pki/ca-trust/extracted/pem/objsign-ca-bundle.pem
-	#chmod 444 "$PKG"/etc/pki/ca-trust/extracted/pem/objsign-ca-bundle.pem
-	#touch "$PKG"/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
-	#chmod 444 "$PKG"/etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
-	#touch "$PKG"/etc/pki/ca-trust/extracted/java/cacerts
-	#chmod 444 "$PKG"/etc/pki/ca-trust/extracted/java/cacerts
-	#touch "$PKG"/etc/pki/ca-trust/extracted/edk2/cacerts.bin
-	#chmod 444 "$PKG"/etc/pki/ca-trust/extracted/edk2/cacerts.bin
 
 	ln -sf /etc/pki/tls/certs \
 		"$PKG"/etc/ssl/certs
