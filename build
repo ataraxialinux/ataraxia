@@ -653,6 +653,9 @@ build_initramfs() {
 	if ! check_stamp system; then
 		die "Build target system first."
 	fi
+	if ! check_stamp installer-packages; then
+		die "Build installer packages first."
+	fi
 
 	msg "Building initramfs for '${BARCH}' architecture"
 
@@ -677,7 +680,8 @@ build_initramfs() {
 		hwids util-linux libaio lvm2 popt json-c argon2 cryptsetup \
 		libtasn1 p11-kit gnutls libmicrohttpd systemd dbus-broker dbus \
 		net-tools iputils procps-ng zfs e2fsprogs dosfstools run-parts \
-		openssh oniguruma jq tsukuri $linux; do
+		openssh oniguruma jq tsukuri $linux  gptfdisk wget iwd \
+		wireless_tools wpa_supplicant libevent links; do
 		emerge_target $i "$initramfs"
 	done
 
@@ -704,6 +708,8 @@ build_initramfs() {
 				bzcmp openssl nl* file; do
 			rm -rf usr/bin/$bins
 		done
+
+		sed -zi 's|\nConditionFirstBoot=yes||' usr/lib/systemd/system/update-ca-trust.service
 
 		mkdir -p etc/systemd/system/getty@tty1.service.d/
 		cat > etc/systemd/system/getty@tty1.service.d/override.conf <<-EOF
@@ -763,6 +769,11 @@ build_iso_image() {
 
 		menuentry "Ataraxia GNU/Linux" {
 			linux	/seiba/seiba rw quiet
+			initrd	/seiba/seiba.zst
+		}
+
+		menuentry "Ataraxia GNU/Linux (serial console)" {
+			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
 			initrd	/seiba/seiba.zst
 		}
 	EOF
