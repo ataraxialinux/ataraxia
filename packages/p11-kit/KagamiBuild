@@ -1,7 +1,7 @@
 # Description: Provides a way to load and enumerate PKCS#11 modules
 # URL:         https://github.com/p11-glue/p11-kit
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  systemd libffi libtasn1
+# Depends on:  meson systemd libffi libtasn1
 # Section:     utils
 
 name=p11-kit
@@ -11,15 +11,17 @@ source=("https://github.com/p11-glue/p11-kit/releases/download/$version/$name-$v
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr \
-		--libexecdir=/usr/lib \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--with-module-path=/usr/lib/pkcs11 \
-		--with-systemd \
-		--with-trust-paths=/etc/ca-certificates/trust-source:/usr/share/ca-certificates/trust-source \
-		--disable-nls
-	make
-	make DESTDIR="$PKG" install
+	patch -Np1 -i "$STUFF"/p11-kit/0001-force-systemd-user-unit-dir.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Dbashcompdir=/usr/share/bash-completion/completions \
+		-Dgtk_doc=false \
+		-Dman=false \
+		-Dmodule_path=/usr/lib/pkcs11 \
+		-Dsystemd=enabled \
+		-Dtrust_paths=/etc/ca-certificates/trust-source:/usr/share/ca-certificates/trust-source
+	samu
+	DESTDIR="$PKG" samu install
 }
