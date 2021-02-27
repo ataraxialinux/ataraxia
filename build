@@ -800,25 +800,29 @@ main() {
 	local date="$(date)"
 
 	case "$1" in
+		check-updates) shift; mode="upgrade_packages" ;;
 		chroot) shift; mode="enter_chroot" ;;
+		generate-repo) shift; mode="generate_repo" ;;
 		target) shift; mode="build_target" ;;
 	esac
 
-	while getopts a:k:b:d: opts; do
+	while getopts a:k:b:d:uc opts; do
 		case $opts in
 			a) BARCH="$OPTARG" ;;
 			k) KERNEL="$OPTARG" ;;
 			b) BOARD="$OPTARG" ;;
 			d) DESKTOP="$OPTARG" ;;
+			u) AUTOBUMB="yes" ;;
+			c) AUTOCOMMIT="yes" ;;
 		esac
 	done
 	shift $((OPTIND -1))
 
 	msg 'Invoking `Marisa` on '"${date}"''
 
-	check_for_root
-
 	if [ "$mode" == "build_target" ]; then
+		check_for_root
+
 		if [ -z "$1" ]; then
 			die "Target is not specified."
 		fi
@@ -860,6 +864,7 @@ main() {
 			*) die "Unknown target" ;;
 		esac
 	elif [ "$mode" == "enter_chroot" ]; then
+		check_for_root
 		check_for_arch "$BARCH"
 
 		msg "Exporting variables"
@@ -877,6 +882,54 @@ main() {
 			--bind="$STUFF":/usr/ports/stuff \
 			--bind="$PACKAGES":/var/cache/packages \
 			--bind="$SOURCES":/var/cache/sources
+	elif [ "$mode" == "upgrade_packages" ]; then
+		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
+		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
+
+		check_for_arch "amd64"
+		export_variables "amd64"
+
+		msg "Checking for updates"
+		for packages in $(ls "$REPO/" | sort); do
+			pushd "$REPO"
+				(
+					if [ "$packages" = "util-linux-runtime" ]; then
+						true
+					elif [ "$packages" = "systemd-runtime" ]; then
+						true
+					elif [ "$packages" = "linux" ]; then
+						"$UTILS/check-updates" linux
+					elif [ "$packages" = "linux-headers" ]; then
+						"$UTILS/check-updates" linux-headers
+					else
+						"$CWD/check-updates" $cuopt $cuopttwo $packages
+					fi
+				)
+			popd
+		done
+	elif [ "$mode" == "generate_repo" ]; then
+		check_for_arch "amd64"
+		export_variables "amd64"
+
+		msg "Generating repository file"
+		[ -f "$REPO/repo" ] && rm "$REPO/repo"
+		echo "[" >> "$REPO/repo"
+		for packages in $(ls "$REPO/" | sort); do
+			pushd "$REPO"
+				(
+					if [ "$packages" = "repo" ]; then
+						true
+					else
+						genrepo $packages $REPO/repo
+					fi
+				)
+			popd
+		done
+		echo "]" >> "$REPO/repo"
+		index="$(expr $(cat $REPO/repo | wc -l) - 1)"
+		sed -i "${index}s/},/}/" "$REPO/repo"
+		git add "$REPO/repo"
+		git commit -m "repo" -S
 	fi
 }
 
