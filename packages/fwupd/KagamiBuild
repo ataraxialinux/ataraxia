@@ -20,13 +20,16 @@ source=("https://people.freedesktop.org/~hughsient/releases/$name-$version.tar.x
 
 build() {
 	case $BARCH in
-		x86_64|i686)
+		amd64|x86)
 			true
 			;;
 		*)
 			die "fwupd is supported on x86 only"
 			;;
 	esac
+
+	
+	filter-flags -flto
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/fwupd/lib64.patch

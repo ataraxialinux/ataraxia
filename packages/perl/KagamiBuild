@@ -6,13 +6,14 @@
 
 name=perl
 version=5.32.1
-crossver=03cdb7152861a7ab367a213171241ecbbe995789
-release=1
-options=('bootstrap')
+crossver=be0a368b16054feee517b4b104e93d2d6eb1bf6e
+release=2
 source=("https://www.cpan.org/src/5.0/$name-$version.tar.xz"
 	"https://github.com/arsv/perl-cross/archive/$crossver.tar.gz")
 
 build() {
+	filter-flags -flto -fdata-sections -ffunction-sections
+
 	cd "$SRC"
 	cp -f -r perl-cross-$crossver/* $name-$version/
 
@@ -24,14 +25,14 @@ build() {
 		-Dvendorprefix=/usr \
 		-Dvendorlib=/usr/share/perl5/vendor_perl \
 		-Dvendorarch=/usr/lib/perl5/vendor_perl \
-		-Dsiteprefix=/usr/local \
-		-Dsitelib=/usr/local/share/perl5/site_perl \
-		-Dsitearch=/usr/local/lib/perl5/site_perl \
+		-Dsiteprefix=/usr \
+		-Dsitelib=/usr/share/perl5/site_perl \
+		-Dsitearch=/usr/lib/perl5/site_perl \
 		-Dman1dir=/usr/share/man/man1 \
 		-Dman3dir=/usr/share/man/man3 \
 		-Dpager="/usr/bin/less -isR" \
 		-Accflags=-D_GNU_SOURCE \
-		-Dcf_by='Ataraxia Linux' \
+		-Dcf_by='Ataraxia GNU/Linux' \
 		-Dcccdlflags='-fPIC' \
 		-Dcccdlflags='-fPIC' \
 		-Dccdlflags='-rdynamic' \
@@ -40,4 +41,9 @@ build() {
 		-Dusethreads
 	make
 	make DESTDIR="$PKG" install
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		sed -i "s/$XTARGET-//g" "$PKG"/usr/lib/perl5/core_perl/Config_heavy.pl
+		sed -i "s/$XTARGET-//g" "$PKG"/usr/lib/perl5/core_perl/Config.pm
+	fi
 }

@@ -1,0 +1,47 @@
+# Description: Userland utilities for ZFS Linux kernel module
+# URL:         http://www.gnu.org/software/m4
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  zlib libressl libtirpc pam util-linux libaio
+# Section:     admin
+
+name=zfs
+version=2.0.3
+release=1
+source=("https://github.com/openzfs/zfs/releases/download/$name-$version/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib/zfs \
+		--sbindir=/usr/bin \
+		--sysconfdir=/etc \
+		--with-config=user \
+		--with-dracutdir=/usr/lib/dracut \
+		--with-mounthelperdir=/usr/bin \
+		--with-pammoduledir=/usr/lib/security \
+		--with-systemdunitdir=/usr/lib/systemd/system \
+		--with-systemdpresetdir=/usr/lib/systemd/system-preset \
+		--with-udevdir=/usr/lib/udev \
+		--with-vendor=ataraxia \
+		--without-python \
+		--enable-shared \
+		--enable-systemd \
+		--disable-debug \
+		--disable-nls \
+		--disable-pyzfs \
+		--disable-sysvinit
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		$ORIGMAKE
+		$ORIGMAKE DESTDIR="$PKG" install
+	else
+		make
+		make DESTDIR="$PKG" install
+	fi
+
+	rm -rf \
+		"$PKG"/etc/init.d \
+		"$PKG"/etc/sudoers.d \
+		"$PKG"/usr/share/zfs/zfs-tests
+}

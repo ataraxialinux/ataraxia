@@ -7,7 +7,6 @@
 name=file
 version=5.39
 release=1
-options=('bootstrap')
 source=("https://astron.com/pub/file/$name-$version.tar.gz")
 
 build() {
@@ -17,6 +16,12 @@ build() {
 		(
 			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
 			cd file-bootstrap
+
+			CC="$HOSTCC" \
+			CXX="$HOSTCXX" \
+			CFLAGS="$HOSTCFLAGS" \
+			CXXFLAGS="$HOSTCXXFLAGS" \
+			LDFLAGS="$HOSTLDFLAGS" \
 			./configure \
 				--prefix="$SRC"/file \
 				--disable-libseccomp

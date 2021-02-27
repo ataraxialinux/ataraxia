@@ -1,16 +1,16 @@
 # Description: A version of mutt with added features
 # URL:         https://neomutt.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  tcl ncurses gdbm libressl libidn gpgme sqlite heimdal libsasl
+# Depends on:  tcl ncurses gdbm libressl libidn gpgme sqlite krb5 libsasl
 # Section:     mail
 
 name=neomutt
 version=20210205
-release=1
+release=2
 source=("https://github.com/neomutt/neomutt/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
-	export CFLAGS="-D_FILE_OFFSET_BITS=64 -DLARGEFILE_SOURCE=1 $CFLAGS"
+	append-cppflags -D_FILE_OFFSET_BITS=64 -DLARGEFILE_SOURCE=1
 
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \

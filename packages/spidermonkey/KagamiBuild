@@ -1,38 +1,35 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  llvm rust autoconf2.13 python yasm zlib readline libffi nspr icu
+# Depends on:  rust autoconf2.13 python zlib readline libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
 version=78.8.0
-release=1
+release=2
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
-	case $BARCH in
-		x86_64)
+	case "$BARCH" in
+		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			;;
-		i686)
-			export RTARGET="i686-gentoo-linux-musl"
+		x86)
+			export RTARGET="i686-unknown-linux-musl"
 			;;
-		aarch64)
+		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
 			;;
-		armv7hl)
+		armv7l)
 			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
-		armv6hl)
-			export RTARGET="arm-unknown-linux-musleabihf"
-			;;
 		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
+			die "Architecture is not set or is not supported by Rust Language"
 	esac
 
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
+	export RUSTFLAGS="$RUSTFLAGS -C debuginfo=0"
 
 	cd "$SRC"
 	mkdir build
@@ -45,9 +42,12 @@ build() {
 		--with-system-zlib \
 		--enable-ctypes \
 		--enable-hardening \
+		--enable-linker=lld \
+		--enable-lto \
 		--enable-optimize \
 		--enable-readline \
 		--enable-release \
+		--enable-rust-simd \
 		--enable-shared-js \
 		--enable-system-ffi \
 		--disable-debug \

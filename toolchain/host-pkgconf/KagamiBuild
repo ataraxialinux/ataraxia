@@ -1,6 +1,5 @@
 name=host-pkgconf
-fakepath="$topdir/../../packages/${name/host-}"
-realpath="$(realpath $fakepath)"
+realpath="$REPO/${name/host-}"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 release=1
 options=('bootstrap')
@@ -18,7 +17,7 @@ build() {
 	make
 	make install
 
-	ln -sf pkgconf "$TOOLS"/bin/pkg-config
-	ln -sf pkgconf "$TOOLS"/bin/$XTARGET-pkg-config
-	ln -sf pkgconf "$TOOLS"/bin/$XTARGET-pkgconf
+	cp pkgconf "$TOOLS"/bin/pkg-config
+	cp pkgconf "$TOOLS"/bin/$XTARGET-pkg-config
+	cp pkgconf "$TOOLS"/bin/$XTARGET-pkgconf
 }

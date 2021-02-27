@@ -10,8 +10,7 @@ release=2
 source=("https://github.com/neovim/neovim/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
-	export CFLAGS="$CFLAGS -fcommon"
-	export CXXFLAGS="$CXXFLAGS -fcommon"
+	append-cflags -fcommon
 
 	case "$BARCH" in
 		riscv64)
@@ -29,10 +28,11 @@ build() {
 	cd "$SRC"/$name-$version
 	mkdir build
 	cd build
-	cmake "$SRC"/$name-$version \
+	cmake "$SRC"/$name-$version $CMAKEFLAGS \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DENABLE_LTO=ON \
 		-Wno-dev -G Ninja
 	samu
 	DESTDIR="$PKG" samu install

@@ -1,22 +1,3 @@
-From ec9e2362e33a13484a98c418a71f4a154a4f0328 Mon Sep 17 00:00:00 2001
-From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 15 Jan 2021 16:49:46 +0900
-Subject: [PATCH 4/4] toybox support
-
-Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
----
- 50-dracut.install                    |  2 +-
- 51-dracut-rescue.install             |  2 +-
- Makefile                             |  2 +-
- dracut-init.sh                       |  4 ++--
- dracut.sh                            |  4 ++--
- install/dracut-install.c             |  8 +++----
- modules.d/05toybox/module-setup.sh   | 32 ++++++++++++++++++++++++++++
- modules.d/10i18n/module-setup.sh     |  2 +-
- modules.d/95terminfo/module-setup.sh |  2 +-
- 9 files changed, 45 insertions(+), 13 deletions(-)
- create mode 100755 modules.d/05toybox/module-setup.sh
-
 diff --git a/50-dracut.install b/50-dracut.install
 index 7ea5e17..3112d9e 100755
 --- a/50-dracut.install
@@ -162,19 +143,6 @@ index 0000000..03b3397
 +    done
 +}
 +
-diff --git a/modules.d/10i18n/module-setup.sh b/modules.d/10i18n/module-setup.sh
-index dd45b66..4cc1684 100755
---- a/modules.d/10i18n/module-setup.sh
-+++ b/modules.d/10i18n/module-setup.sh
-@@ -119,7 +119,7 @@ install() {
-         for __src in $(eval echo $dracutsysrootdir${kbddir}/{${KBDSUBDIRS}}); do
-             _src=${__src#$dracutsysrootdir}
-             inst_dir "$_src"
--            $DRACUT_CP -L -t "${initdir}/${_src}" "$__src"/*
-+            $DRACUT_CP -L "$__src"/* "${initdir}/${_src}"
-         done
- 
-         # remove unnecessary files
 diff --git a/modules.d/95terminfo/module-setup.sh b/modules.d/95terminfo/module-setup.sh
 index 532f5bd..0b247b5 100755
 --- a/modules.d/95terminfo/module-setup.sh

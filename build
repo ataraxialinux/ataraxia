@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Utility to bootstrap Ataraxia Linux distribution
+# The 'Marisa' build system
 #
-# Copyright (c) 2016-2021 Ataraxia Linux <ataraxialinux@protonmail.com>
+# Copyright (c) 2016-2021 Ataraxia GNU/Linux <ataraxialinux@protonmail.com>
 
 # Permission to use, copy, modify, and/or distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
+# purpose with or without fee is hereby granted, pronanoded that the above
 # copyright notice and this permission notice appear in all copies.
 
 # THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
@@ -18,211 +18,50 @@
 
 set -e
 
-msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
-die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
-
-pushd () { command pushd "$@" > /dev/null; }
-popd () { command popd "$@" > /dev/null; }
-
-check_for_root() {
-	if [[ $EUID -ne 0 ]]; then
-		die "You must be root to run 'build'"
-	fi
-}
-
-generate_config() {
-	local file="$1"
-
-	if [ "$USE_TARGET" = "1" ]; then
-		cat > "$file" <<- EOF
-			export BARCH="$BARCH"
-			export mkopts="$MKOPTS"
-			export buildoptions=(emptydirs strip makeflags ~locales ~docs ~ccache ~libtool ~nobootstrap)
-			export repos="${REPO}"
-			export ROOTFS="$ROOTFS"
-			export TOOLS="$TOOLS"
-			export pkgdest="$PACKAGES"
-			export srcdest="$SOURCES"
-			export CFLAGS="$CFLAGS"
-			export CXXFLAGS="$CXXFLAGS"
-			export XHOST="$XHOST"
-			export XTARGET="$XTARGET"
-			export CROSS_COMPILE="$XTARGET-"
-			export CC="$XTARGET-gcc"
-			export CXX="$XTARGET-g++"
-			export AR="$XTARGET-ar"
-			export AS="$XTARGET-as"
-			export RANLIB="$XTARGET-ranlib"
-			export LD="$XTARGET-ld"
-			export STRIP="$XTARGET-strip"
-			export OBJCOPY="$XTARGET-objcopy"
-			export OBJDUMP="$XTARGET-objdump"
-			export SIZE="$XTARGET-size"
-			export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
-			export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
-			export PERLFLAGS="--target=$XTARGET"
-			export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
-			export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
-			export HOSTCC="$HOSTCC"
-			export HOSTCXX="$HOSTCXX"
-			export ORIGMAKE="$ORIGMAKE"
-			export PATH="$PATH"
-			export STUFF="$STUFF"
-		EOF
-	elif [ "$USE_HOST" = "1" ]; then
-		cat > "$file" <<- EOF
-			export BARCH="$BARCH"
-			export mkopts="$MKOPTS"
-			export buildoptions=(emptydirs ~strip makeflags ~locales ~docs ~ccache ~libtool ~nobootstrap)
-			export repos="${TCREPO} ${REPO}"
-			export ROOTFS="$ROOTFS"
-			export TOOLS="$TOOLS"
-			export pkgdest="$PACKAGES"
-			export srcdest="$SOURCES"
-			export CFLAGS="$CFLAGS"
-			export CXXFLAGS="$CXXFLAGS"
-			export XHOST="$XHOST"
-			export XTARGET="$XTARGET"
-			export HOSTCC="$HOSTCC"
-			export HOSTCXX="$HOSTCXX"
-			export ORIGMAKE="$ORIGMAKE"
-			export PATH="$PATH"
-			export STUFF="$STUFF"
-		EOF
-	fi
-}
-
-setup_architecture() {
-	case "$BARCH" in
-		x86_64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="x86_64-linux-musl"
-			;;
-		i686)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="i686-linux-musl"
-			;;
-		aarch64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="aarch64-linux-musl"
-			;;
-		armv7hl)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="arm-linux-musleabihf"
-			;;
-		armv6hl)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="arm-linux-musleabi"
-			;;
-		ppc64le)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64le-linux-musl"
-			;;
-		ppc64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="powerpc64-linux-musl"
-			;;
-		s390x)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="s390x-linux-musl"
-			;;
-		riscv64)
-			export XHOST="$(echo ${MACHTYPE} | sed -e 's/-[^-]*/-cross/')"
-			export XTARGET="riscv64-linux-musl"
-			;;
-		*)
-			die "Architecture is not set or is not supported by 'build' script"
-	esac
-}
-
-setup_environment() {
-	msg "Setting up the build environment"
-
-	export CWD="$(pwd)"
-	export BUILD="$CWD/OUT.$BARCH"
-	export SOURCES="$BUILD/sources"
-	export PACKAGES="$BUILD/packages"
-	export ROOTFS="$BUILD/rootfs"
-	export TOOLS="$BUILD/tools"
-	export STUFF="$CWD/stuff"
-	export REPO="$CWD/packages"
-	export TCREPO="$CWD/toolchain"
-	export UTILS="$CWD/utils"
-
-	export PATH="$UTILS:$TOOLS/bin:$PATH"
-	export HOSTCC="gcc"
-	export HOSTCXX="g++"
-	export ORIGMAKE="$(which make)"
-
-	if [ -z "$JOBS" ]; then
-		export JOBS="$(expr $(nproc) + 1)"
-	fi
-
-	export MKOPTS="-j$JOBS"
-
-	if [ -z "$CFLAGS" ]; then
-		case $BARCH in
-			x86_64|i686)
-				export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fomit-frame-pointer -fstack-protector-strong -fstack-clash-protection -fcf-protection=full -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe"
-				;;
-			*)
-				export CFLAGS="-D_FORTIFY_SOURCE=2 -g0 -Os -s -fomit-frame-pointer -fstack-protector-strong -fstack-clash-protection -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -pipe"
-				;;
-		esac
-	fi
-	if [ -z "$CXXFLAGS" ]; then
-		export CXXFLAGS="$CFLAGS"
-	fi
-}
-
-build_environment() {
-	msg "Preparing the environment for build"
-
-	rm -rf "$BUILD"
-	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS" "$TOOLS"
-
-	USE_HOST=1 generate_config "$BUILD"/host.config
-	USE_TARGET=1 generate_config "$BUILD"/target.config
-}
-
+source core.functions
 
 build_toolchain() {
-	local EXTRAPKG
+	if check_stamp toolchain; then
+		return 0
+	fi
 
-	msg "Building cross-toolchain for '${BARCH}' platform"
+	msg "Preparing ennanoronment for build"
+	make_environment
 
-	msg "Adding fake ldconfig"
-	mkdir -p "$TOOLS"/bin
-
-	touch "$TOOLS"/bin/ldconfig
-	chmod +x "$TOOLS"/bin/ldconfig
+	msg "Building cross-toolchain for '${BARCH}' architecture"
+	emerge_host gettext-tiny
+	emerge_host ncurses
+	emerge_host m4
+	emerge_host bison
+	emerge_host flex
+	emerge_host bc
+	emerge_host kmod
+	emerge_host gperf
+	emerge_host python
+	emerge_host samurai
+	emerge_host meson
+	emerge_host bmake
+	emerge_host cmake
+	emerge_ht linux-headers
+	emerge_host musl-headers
+	emerge_host binutils
+	emerge_host elftoolchain
+	emerge_host llvm
+	emerge_target libexecinfo
+	emerge_host compiler-rt
+	force="-f" \
+		emerge_target musl
+	emerge_host llvm-runtime
+	emerge_host slibtool
+	emerge_host autoconf
+	emerge_host automake
+	emerge_host pkgconf
 
 	case $BARCH in
-		x86_64|i686|aarch64|armv7hl|armv6hl|ppc64le|ppc64)
-				EXTRAPKG="grub"
-				;;
+		amd64|x86|ppc64le|ppc64)
+			emerge_host grub
+			;;
 	esac
-
-	mkdir -p "$ROOTFS/usr/lib/tsukuri/db"
-
-	for toolchain in base-files gettext-tiny texinfo m4 bison flex bc kmod heimdal gperf \
-			python samurai meson linux-headers binutils gcc-static musl gcc $EXTRAPKG \
-			slibtool autoconf automake cracklib pkgconf; do
-		case $toolchain in
-			base-files|linux-headers)
-				tsukuri em -c "$BUILD"/host.config -r "$ROOTFS" -wND ${toolchain}
-				;;
-			musl)
-				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wND ${toolchain}
-				;;
-			*)
-				pushd "$TCREPO/host-$toolchain"
-					tsukuri bi -c "$BUILD"/host.config -wp
-				popd
-				;;
-		esac
-	done
-	touch "$TOOLS"/.cross-linux
 
 	msg "Cleaning up"
 	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
@@ -230,283 +69,849 @@ build_toolchain() {
 	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
 
 	msg "Adding fake make"
-	cp "$STUFF"/fakemake "$TOOLS"/bin/make
-	sed -i "s,uncom,$ORIGMAKE,g" "$TOOLS"/bin/make
-	chmod +x "$TOOLS"/bin/make
+	install -m755 "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s|uncom|$ORIGMAKE|" "$TOOLS"/bin/make
+
+	stamp toolchain
+
+	msg "Toolchain has been built successfuly."
 }
 
-build_target() {
-	msg "Building target system for '${BARCH}' platform"
+build_system() {
+	local linux
 
-	if [ -z "$LINUX" ]; then
-		LINUX="linux"
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
 	fi
 
+	if ! check_stamp toolchain; then
+		die "Build toolchain first."
+	fi
+
+	msg "Building target system for '${BARCH}' architecture"
+	emerge_target base-files
+	emerge_target iana-etc
+	emerge_target man-pages
+	emerge_target musl-tools
+	emerge_target gettext-tiny
+	emerge_target tzdb
+	emerge_target m4
+	emerge_target bison
+	emerge_target flex
+	emerge_target bc
+	emerge_target zlib
+	emerge_target bzip2
+	emerge_target xz
+	emerge_target lz4
+	emerge_target zstd
+	emerge_target lzo
+	emerge_target file
+	emerge_target ncurses
+	emerge_target readline
+	emerge_target libedit
+	emerge_target gmp
+	emerge_target attr
+	emerge_target acl
+	emerge_target libressl
+	emerge_target nettle
+	emerge_target ca-certificates
+	emerge_target expat
+	emerge_target gdbm
+	emerge_target db53
+	emerge_target sqlite
+	emerge_target libffi
+	emerge_target python
+	emerge_target python-setuptools
+	emerge_target perl
+	emerge_target libxml2
+	emerge_target libarchive
+	emerge_target libssh2
+	emerge_target nghttp2
+	emerge_target c-ares
+	emerge_target libunistring
+	emerge_target libidn2
+	emerge_target brotli
+	emerge_target krb5
+	emerge_target curl
+	emerge_target make
+	emerge_target bmake
+	emerge_target samurai
+	emerge_target meson
+	emerge_target jsoncpp
+	emerge_target rhash
+	emerge_target libuv
+	emerge_target cmake
+	emerge_target binutils
+	emerge_target elftoolchain
+	if ! check_stamp llvm; then
+		force="-f" \
+			emerge_target llvm
+		stamp llvm
+	else
+		emerge_target llvm
+	fi
+	emerge_target ccache
+	emerge_target pkgconf
+	emerge_target cracklib
+	emerge_target libtirpc
+	emerge_target libcap-ng
+	emerge_target audit
+	emerge_target pam
+	emerge_target libcap
+	emerge_target libpwquality
+	emerge_target shadow
+	emerge_target psmisc
+	emerge_target pcre
+	emerge_target grep
+	emerge_target bash
+	emerge_target slibtool
+	emerge_target gperf
+	emerge_target autoconf
+	emerge_target automake
+	emerge_target kmod
+	emerge_target toybox
+	emerge_target lobase
+	emerge_target check
+	emerge_target one-true-awk
+	emerge_target mandoc
+	emerge_target libmnl
+	emerge_target libnftnl
+	emerge_target libnfnetlink
+	emerge_target libnetfilter_conntrack
+	emerge_target libnl
+	emerge_target libpcap
+	emerge_target iptables
+	emerge_target iproute2
+	emerge_target kbd
+	emerge_target vim
+	emerge_target libgpg-error
+	emerge_target libgcrypt
+	emerge_target libseccomp
 	case $BARCH in
-		x86_64|i686|aarch64|armv7hl|armv6hl)
-				EXTRAPKG="gnu-efi"
-				;;
+		amd64|x86|arm64|armv7l)
+			emerge_target gnu-efi
+			;;
+	esac
+	emerge_target hwids
+	if ! check_stamp util-linux-pass1; then
+		emerge_target util-linux-runtime
+		rm -rf "$PACKAGES"/util-linux-runtime-*.czst
+		stamp util-linux-pass1
+	fi
+	if ! check_stamp systemd-pass1; then
+		emerge_target systemd-runtime
+		rm -rf "$PACKAGES"/systemd-runtime-*.czst
+		stamp systemd-pass1
+	fi
+	if ! check_stamp util-linux-final; then
+		pushd "$REPO/util-linux"
+			tsukuri bi -c "$BUILD/target.config" -w
+		popd
+
+		tsukuri rm -c "$BUILD/target.config" -r "$ROOTFS" util-linux-runtime
+		emerge_target util-linux
+
+		stamp util-linux-final
+	else
+		emerge_target util-linux
+	fi
+	emerge_target libaio
+	emerge_target lvm2
+	emerge_target popt
+	emerge_target json-c
+	emerge_target argon2
+	emerge_target cryptsetup
+	emerge_target libtasn1
+	emerge_target p11-kit
+	emerge_target gnutls
+	emerge_target libmicrohttpd
+	if ! check_stamp systemd-final; then
+		pushd "$REPO/systemd"
+			tsukuri bi -c "$BUILD/target.config" -w
+		popd
+
+		tsukuri rm -c "$BUILD/target.config" -r "$ROOTFS" systemd-runtime
+		emerge_target systemd
+
+		stamp systemd-final
+	else
+		emerge_target systemd
+	fi
+	emerge_target dbus-broker
+	emerge_target dbus
+	emerge_target net-tools
+	emerge_target iputils
+	emerge_target procps-ng
+	emerge_target zfs
+	emerge_target e2fsprogs
+	emerge_target dosfstools
+	emerge_target run-parts
+	emerge_target pciutils
+	emerge_target libusb
+	emerge_target usbutils
+	emerge_target plocate
+	emerge_target openssh
+	emerge_target git
+	emerge_target oniguruma
+	emerge_target jq
+	emerge_target tsukuri
+	emerge_target $linux
+
+	stamp system
+
+	msg "System has been built successfuly."
+
+	# Building installer packages
+	if [ "$INSTALLER" == "1" ]; then
+		msg "Building installer packages"
+		emerge_target gptfdisk
+		emerge_target wget
+		emerge_target iwd
+		emerge_target wireless_tools
+		emerge_target wpa_supplicant
+		emerge_target libevent
+		emerge_target links
+
+		stamp installer-packages
+		msg "Installer packages have been built successfuly!"
+	elif [ "$TARGET_BOARD" == "1" ]; then
+		[ -n "$EXTRA_PACKAGES" ] && {
+			msg "Building board specific pacakges"
+			for i in $EXTRA_PACKAGES; do
+				emerge_target $i
+			done
+
+			stamp board-$BOARD
+			msg "Board specific packages have been built successfuly!"
+		}
+	fi
+}
+
+install_os() {
+	local linux
+	local targetfs="$1"
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	if [ -z "$targetfs" ]; then
+		die "Path is not specified."
+	fi
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	mkdir -p "$targetfs/usr/lib/tsukuri/db"
+
+	emerge_target base-files "$targetfs"
+	emerge_target iana-etc "$targetfs"
+	emerge_target man-pages "$targetfs"
+	emerge_target linux-headers "$targetfs"
+	emerge_target musl "$targetfs"
+	emerge_target libexecinfo "$targetfs"
+	emerge_target musl-tools "$targetfs"
+	emerge_target gettext-tiny "$targetfs"
+	emerge_target tzdb "$targetfs"
+	emerge_target m4 "$targetfs"
+	emerge_target bison "$targetfs"
+	emerge_target flex "$targetfs"
+	emerge_target bc "$targetfs"
+	emerge_target zlib "$targetfs"
+	emerge_target bzip2 "$targetfs"
+	emerge_target xz "$targetfs"
+	emerge_target lz4 "$targetfs"
+	emerge_target zstd "$targetfs"
+	emerge_target lzo "$targetfs"
+	emerge_target file "$targetfs"
+	emerge_target ncurses "$targetfs"
+	emerge_target readline "$targetfs"
+	emerge_target libedit "$targetfs"
+	emerge_target gmp "$targetfs"
+	emerge_target attr "$targetfs"
+	emerge_target acl "$targetfs"
+	emerge_target libressl "$targetfs"
+	emerge_target nettle "$targetfs"
+	emerge_target ca-certificates "$targetfs"
+	emerge_target expat "$targetfs"
+	emerge_target gdbm "$targetfs"
+	emerge_target db53 "$targetfs"
+	emerge_target sqlite "$targetfs"
+	emerge_target libffi "$targetfs"
+	emerge_target python "$targetfs"
+	emerge_target python-setuptools "$targetfs"
+	emerge_target perl "$targetfs"
+	emerge_target libxml2 "$targetfs"
+	emerge_target libarchive "$targetfs"
+	emerge_target libssh2 "$targetfs"
+	emerge_target nghttp2 "$targetfs"
+	emerge_target c-ares "$targetfs"
+	emerge_target libunistring "$targetfs"
+	emerge_target libidn2 "$targetfs"
+	emerge_target brotli "$targetfs"
+	emerge_target krb5 "$targetfs"
+	emerge_target curl "$targetfs"
+	emerge_target make "$targetfs"
+	emerge_target bmake "$targetfs"
+	emerge_target samurai "$targetfs"
+	emerge_target meson "$targetfs"
+	emerge_target jsoncpp "$targetfs"
+	emerge_target rhash "$targetfs"
+	emerge_target libuv "$targetfs"
+	emerge_target cmake "$targetfs"
+	emerge_target binutils "$targetfs"
+	emerge_target elftoolchain "$targetfs"
+	emerge_target llvm "$targetfs"
+	emerge_target ccache "$targetfs"
+	emerge_target pkgconf "$targetfs"
+	emerge_target cracklib "$targetfs"
+	emerge_target libtirpc "$targetfs"
+	emerge_target libcap-ng "$targetfs"
+	emerge_target audit "$targetfs"
+	emerge_target pam "$targetfs"
+	emerge_target libcap "$targetfs"
+	emerge_target libpwquality "$targetfs"
+	emerge_target shadow "$targetfs"
+	emerge_target psmisc "$targetfs"
+	emerge_target pcre "$targetfs"
+	emerge_target grep "$targetfs"
+	emerge_target bash "$targetfs"
+	emerge_target slibtool "$targetfs"
+	emerge_target gperf "$targetfs"
+	emerge_target autoconf "$targetfs"
+	emerge_target automake "$targetfs"
+	emerge_target kmod "$targetfs"
+	emerge_target toybox "$targetfs"
+	emerge_target lobase "$targetfs"
+	emerge_target check "$targetfs"
+	emerge_target one-true-awk "$targetfs"
+	emerge_target mandoc "$targetfs"
+	emerge_target libmnl "$targetfs"
+	emerge_target libnftnl "$targetfs"
+	emerge_target libnfnetlink "$targetfs"
+	emerge_target libnetfilter_conntrack "$targetfs"
+	emerge_target libnl "$targetfs"
+	emerge_target libpcap "$targetfs"
+	emerge_target iptables "$targetfs"
+	emerge_target iproute2 "$targetfs"
+	emerge_target kbd "$targetfs"
+	emerge_target vim "$targetfs"
+	emerge_target libgpg-error "$targetfs"
+	emerge_target libgcrypt "$targetfs"
+	emerge_target libseccomp "$targetfs"
+	case $BARCH in
+		amd64|x86|arm64|armv7l)
+			emerge_target gnu-efi "$targetfs"
+			;;
+	esac
+	emerge_target hwids "$targetfs"
+	emerge_target util-linux "$targetfs"
+	emerge_target libaio "$targetfs"
+	emerge_target lvm2 "$targetfs"
+	emerge_target popt "$targetfs"
+	emerge_target json-c "$targetfs"
+	emerge_target argon2 "$targetfs"
+	emerge_target cryptsetup "$targetfs"
+	emerge_target libtasn1 "$targetfs"
+	emerge_target p11-kit "$targetfs"
+	emerge_target gnutls "$targetfs"
+	emerge_target libmicrohttpd "$targetfs"
+	emerge_target systemd "$targetfs"
+	emerge_target dbus-broker "$targetfs"
+	emerge_target dbus "$targetfs"
+	emerge_target net-tools "$targetfs"
+	emerge_target iputils "$targetfs"
+	emerge_target procps-ng "$targetfs"
+	emerge_target zfs "$targetfs"
+	emerge_target e2fsprogs "$targetfs"
+	emerge_target dosfstools "$targetfs"
+	emerge_target run-parts "$targetfs"
+	emerge_target pciutils "$targetfs"
+	emerge_target libusb "$targetfs"
+	emerge_target usbutils "$targetfs"
+	emerge_target plocate "$targetfs"
+	emerge_target openssh "$targetfs"
+	emerge_target git "$targetfs"
+	emerge_target oniguruma "$targetfs"
+	emerge_target jq "$targetfs"
+	emerge_target tsukuri "$targetfs"
+	emerge_target $linux "$targetfs"
+}
+
+build_board_image() {
+	local imagefs img lodev bootpart rootpart bootuuid rootuuid fs
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	if [ "$TARGET_BOARD" == "1" ]; then
+		if ! check_stamp board-$BOARD; then
+			die "Build board specific packages first."
+		fi
+
+		msg "Building target system for '${BOARD}' board"
+
+		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
+	else
+		msg "Building target image for '${BARCH}' architecture"
+
+		if [ -n "$DESKTOP" ]; then
+			img="$BUILD/ataraxialinux-$DESKTOP-$BARCH.img"
+		else
+			img="$BUILD/ataraxialinux-$BARCH.img"
+		fi
+	fi
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	imagefs="$BUILD/image"
+
+	rm -rf "$imagefs"
+	mkdir -p "$imagefs"
+
+	losetup -D
+	qemu-img create -f raw "$img" 5G
+
+	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+		o
+		w
+		q
+	EOF
+
+	case $BOARD in
+		rpi4)
+			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+				n
+				p
+				1
+				
+				+256M
+				t
+				c
+				w
+				q
+			EOF
+			;;
+		*)
+			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+				n
+				p
+				1
+				
+				+256M
+				t
+				1
+				w
+				q
+			EOF
+			;;
 	esac
 
-	packages="iana-etc tzdata man-pages musl-tools gettext-tiny zlib xz lz4 zstd bzip2 \
-		file ncurses readline m4 bison flex bc gmp mpfr mpc binutils gcc pkgconf pcre \
-		libcap-ng audit cracklib libtirpc pam libpwquality attr acl libcap shadow grep sed \
-		psmisc mksh bash slibtool net-tools gdbm db53 sqlite expat libffi libressl nettle \
-		python perl ca-certificates autoconf automake lzip lzo libarchive kmod libuargp libelf \
-		gawk findutils lobase sbase ubase less mandoc dialog gzip ncompress libmnl libnftnl libnfnetlink \
-		libnetfilter_conntrack libnl libpcap iptables iproute2 kbd samurai python-setuptools meson make \
-		patch tar cpio texinfo nano gperf libseccomp libblkid libsystemd util-linux libgpg-error libgcrypt \
-		libunistring libidn2 libtasn1 p11-kit gnutls libaio lvm2 popt json-c argon2 cryptsetup hwids $EXTRAPKG \
-		systemd dbus-broker dbus iputils procps-ng e2fsprogs btrfs-progs dosfstools run-parts libssh2 \
-		nghttp2 c-ares heimdal brotli curl oniguruma jq tsukuri wireless_tools wpa_supplicant gptfdisk \
-		wget libevent links dropbear $LINUX"
+	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
+		n
+		p
+		2
+		
+		
+		p
+		w
+		q
+	EOF
 
-	for i in $packages; do
-		case $i in
-			libblkid)
-				if [ ! -f "$BUILD/.blkid" ]; then
-					tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libblkid
-					rm -rf "$BUILD"/packages/libblkid-*.lz
-					touch "$BUILD"/.blkid "$BUILD"/.rmblkid
-				fi
-				;;
-			libsystemd)
-				if [ ! -f "$BUILD/.libsystemd" ]; then
-					tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH libsystemd
-					rm -rf "$BUILD"/packages/libsystemd-*.lz
-					touch "$BUILD"/.libsystemd "$BUILD"/.rmsystemd
-				fi
-				;;
-			util-linux)
-				pushd "$REPO/util-linux"
-					tsukuri bi -c "$BUILD"/target.config -w util-linux
-				popd
-				if [ -f "$BUILD/.rmblkid" ]; then
-					tsukuri rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libblkid
-					rm "$BUILD"/.rmblkid
-				fi
-				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH util-linux
-				;;
-			systemd)
-				pushd "$REPO/systemd"
-					tsukuri bi -c "$BUILD"/target.config -w systemd
-				popd
-				if [ -f "$BUILD/.rmsystemd" ]; then
-					tsukuri rm -c "$BUILD"/target.config -r "$ROOTFS" -DH libsystemd
-					rm "$BUILD"/.rmsystemd
-				fi
-				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH systemd
-				;;
-			*)
-				tsukuri em -c "$BUILD"/target.config -r "$ROOTFS" -wNDSH $i
-				;;
-		esac
+	losetup -fP "$img"
+	lodev=$(losetup -a | grep "$img" | cut -d: -f1)
+
+	bootpart="${lodev}p1"
+	rootpart="${lodev}p2"
+
+	case $BOARD in
+		rpi4)
+			fs="vfat"
+			mkfs.vfat "$bootpart"
+			;;
+		*)
+			fs="ext4"
+			mkfs.ext4 "$bootpart"
+			;;
+	esac
+
+	mkfs.ext4 "$rootpart"
+
+	bootuuid="$(blkid -s UUID -o value $bootpart)"
+	rootuuid="$(blkid -s UUID -o value $rootpart)"
+
+	mount "$rootpart" "$imagefs"
+
+	mkdir -p "$imagefs/boot" "$imagefs/home"
+
+	mount "$bootpart" "$imagefs/boot"
+
+	install_os "$imagefs"
+
+	if [ "$TARGET_BOARD" == "1" ]; then
+		[ -n "$EXTRA_PACKAGES" ] && {
+			for i in $EXTRA_PACKAGES; do
+				emerge_target $i "$imagefs"
+			done
+		}
+	fi
+
+	if [ -n "$DESKTOP" ]; then
+		tsukuri em -c "$BUILD/target.config" -r "$imagefs" $(get_desktop_packages $DESKTOP)
+	fi
+
+	cat > "$imagefs/usr/lib/systemd/system/-.mount" <<- EOF
+		[Mount]
+		Where=/
+		What=/dev/disk/by-uuid/$rootuuid
+		Type=ext4
+
+		[Install]
+		WantedBy=local-fs.target
+	EOF
+	cat > "$imagefs/usr/lib/systemd/system/boot.mount" <<- EOF
+		[Mount]
+		Where=/boot
+		What=/dev/disk/by-uuid/$bootuuid
+		Type=$fs
+
+		[Install]
+		WantedBy=local-fs.target
+	EOF
+
+	systemctl -q --root "$imagefs" enable -- -.mount boot.mount
+
+	case $BOARD in
+		rpi4)
+			mkdir -p "$imagefs"/usr/lib/repart.d
+			cat > "$imagefs/usr/lib/repart.d/50-root.conf" <<- EOF
+				[Partition]
+				Type=root
+			EOF
+			;;
+	esac
+
+	umount -lf "$bootpart" "$rootpart"
+
+	losetup -D
+
+	msg "Filesystem image has been successfuly built!"
+}
+
+build_stage() {
+	local output_name
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	msg "Building target stage for '${BARCH}' architecture"
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	local stagefs="$BUILD/stage"
+
+	rm -rf "$stagefs"
+	mkdir -p "$stagefs"
+
+	install_os "$stagefs"
+
+	if [ -n "$DESKTOP" ]; then
+		output_name="ataraxialinux-$DESKTOP-$BARCH.tar.zst"
+
+		tsukuri em -c "$BUILD/target.config" -r "$stagefs" $(get_desktop_packages $DESKTOP)
+	else
+		output_name="ataraxialinux-$BARCH.tar.zst"
+	fi
+
+	pushd "$stagefs"
+		bsdtar -c --zstd -v -f "$BUILD/$output_name" --options zstd:compression-level=19 .
+	popd
+
+	msg "Stage archive has been built successfuly!"
+}
+
+build_initramfs() {
+	local initramfs="$BUILD/initramfs"
+	local rootfs="$BUILD/rootfs"
+	local i
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+	if ! check_stamp installer-packages; then
+		die "Build installer packages first."
+	fi
+
+	msg "Building initramfs for '${BARCH}' architecture"
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	rm -rf "$initramfs"
+
+	mkdir -p "$initramfs/usr/lib/tsukuri/db"
+
+	for i in base-files iana-etc musl musl-tools tzdb \
+		zlib bzip2 xz lz4 zstd lzo file ncurses readline libedit \
+		gmp attr acl libressl nettle ca-certificates expat libffi \
+		libxml2 libarchive libssh2 nghttp2 c-ares libunistring libidn2 brotli \
+		krb5 curl cracklib libtirpc libcap-ng audit pam libcap libpwquality \
+		shadow psmisc pcre grep bash kmod toybox lobase one-true-awk \
+		libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap \
+		iptables iproute2 kbd vim libgpg-error libgcrypt libseccomp \
+		hwids util-linux libaio lvm2 popt json-c argon2 cryptsetup \
+		libtasn1 p11-kit gnutls libmicrohttpd systemd dbus-broker dbus \
+		net-tools iputils procps-ng zfs e2fsprogs dosfstools run-parts \
+		openssh oniguruma jq tsukuri $linux  gptfdisk wget iwd \
+		wireless_tools wpa_supplicant libevent links; do
+		emerge_target $i "$initramfs"
 	done
 
-	if [ ! -f "$BUILD/.core-built" ]; then
-		touch "$BUILD"/.core-built
-	fi
+	cp -a "$rootfs"/usr/lib/libc++.so* "$rootfs"/usr/lib/libunwind.so* \
+		"$initramfs"/usr/lib/
+
+	pushd "$initramfs"
+		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
+		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
+		rm -rf usr/lib/modules/*/kernel/drivers/gpu usr/lib/modules/*/kernel/drivers/gpu
+		rm -rf usr/lib/modules/*/kernel/drivers/input usr/lib/modules/*/kernel/drivers/hid
+		rm -rf usr/lib/modules/*/kernel/drivers/hwmon usr/lib/modules/*/kernel/drivers/nfs
+		rm -rf usr/lib/modules/*/kernel/drivers/isdn usr/lib/modules/*/kernel/drivers/bluetooth
+		rm -rf usr/lib/modules/*/kernel/drivers/leds usr/lib/modules/*/kernel/drivers/gpio
+		rm -rf usr/lib/modules/*/kernel/drivers/misc usr/lib/modules/*/kernel/drivers/video
+		rm -rf usr/lib/modules/*/kernel/net/netfilter usr/lib/modules/*/kernel/net/sched
+		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/drivers/mfd
+		rm -rf usr/lib/modules/*/kernel/drivers/edac usr/lib/modules/*/kernel/infiniband
+
+		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
+				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
+				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
+				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore bzless bzfgrep bzegrep \
+				bzcmp openssl nl* file; do
+			rm -rf usr/bin/$bins
+		done
+
+		sed -zi 's|\nConditionFirstBoot=yes||' usr/lib/systemd/system/update-ca-trust.service
+
+		echo 'Root password is `anon` if autologin did not work' >> usr/share/factory/etc/issue
+		echo '' >> usr/share/factory/etc/issue
+
+		mkdir -p etc/systemd/system/getty@tty1.service.d/
+		cat > etc/systemd/system/getty@tty1.service.d/override.conf <<-EOF
+			[Service]
+			ExecStart=
+			ExecStart=-/usr/bin/agetty --autologin root %I $TERM
+		EOF
+
+		systemctl -q --root "$initramfs" enable sshd.service
+		systemd-firstboot --root="$initramfs" --keymap=us --timezone=America/New_York --hostname=live --root-password=anon
+
+		ln -sf usr/lib/systemd/systemd init
+
+		find . -name "*.a" -print0 | xargs -0 rm -rf
+
+		find . | cpio -H newc -o | zstd -19 > "$BUILD"/seiba.zst
+	popd
+
+	msg "Initramfs has been built successfuly!"
 }
 
-parse_numbersign() {
-	# $1 - kagamibuild
-	# $2 - number sign variable
-	[ -z "$1" ] && exit 1
-	[ -z "$2" ] && exit 1
+build_iso_image() {
+	local isodir="$BUILD/rootcd"
+	local rootfs="$BUILD/rootfs"
+	local grub_mods="all_video disk part_gpt part_msdos linux normal configfile search search_label fat iso9660 cat echo ls test true help gzio gfxmenu gfxterm"
 
-	echo "$(grep -w "^# ${2}[[:blank:]]*:" "$1" | sed "s/^# ${2}[[:blank:]]*:[[:blank:]]*//" | tr ',' ' ')"
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	msg "Building .iso image for '${BARCH}' architecture"
+
+	case "$BARCH" in
+		amd64|x86) grub_mods="$grub_mods multiboot2" ;;
+	esac
+
+	rm -rf "$isodir"
+	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
+
+	cp "$rootfs"/boot/vmlinuz "$isodir"/seiba/seiba
+	cp "$BUILD"/seiba.zst "$isodir"/seiba/seiba.zst
+
+	cp "$STUFF"/mklive/background.png "$isodir"/boot/grub/ataraxia.png
+
+	cat > "$isodir"/boot/grub/grub.cfg <<- EOF
+		set timeout=5
+
+		insmod font
+		insmod all_video
+		insmod gfxterm
+		insmod gfxmenu
+		insmod png
+
+		loadfont /boot/grub/fonts/unicode.pf2
+		terminal_output gfxterm
+		background_image /boot/grub/ataraxia.png
+
+		menuentry "Ataraxia GNU/Linux" {
+			linux	/seiba/seiba rw quiet
+			initrd	/seiba/seiba.zst
+		}
+
+		menuentry "Ataraxia GNU/Linux (serial console)" {
+			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
+			initrd	/seiba/seiba.zst
+		}
+	EOF
+
+	"$BUILD"/tools/bin/grub-mkrescue \
+		--modules "$grub_mods" \
+		--output "$BUILD"/ataraxialinux-$BARCH.iso \
+		-A 'ataraxialinux' -V 'ataraxialinux' \
+		"$isodir"/
+
+	msg ".iso image has been built successfuly!"
 }
 
-genrepo() {
-	unset name version release options backup source noextract depends
-	local d i url
+build_live_installer() {
+	build_initramfs
+	build_iso_image
+}
 
-	if [ -f "$1/.ignoreit" ]; then
-		return 0
-	fi
-	if [ ! -d "$1" ]; then
-		return 0
-	fi
+main() {
+	local mode opts
+	local date="$(date)"
 
-	source $1/KagamiBuild
-	local summary="$(parse_numbersign $1/KagamiBuild "Description")"
-	local homepage="$(parse_numbersign $1/KagamiBuild "URL")"
-	local category="$(parse_numbersign $1/KagamiBuild "Section")"
-	local maintainer="$(parse_numbersign  $1/KagamiBuild "Maintainer")"
+	case "$1" in
+		check-updates) shift; mode="upgrade_packages" ;;
+		chroot) shift; mode="enter_chroot" ;;
+		generate-repo) shift; mode="generate_repo" ;;
+		target) shift; mode="build_target" ;;
+	esac
 
-	maintainer="$(echo $maintainer | tr -d ',' | awk '{print $1}') <$(echo $maintainer | tr -d ',' | sed 's/^\w*\ *//' | sed 's/ at /@/' | sed 's/ dot /./')>"
-
-	for i in ${source[*]}; do
-		if echo $i | grep -q '::archive='; then
-			url="$(echo $i | sed -e 's/::archive=/ /g' | awk '{print $1}')"
-		else
-			url="$i"
-		fi
-
-		if [ -n "$d" ]; then
-			d="$d $url"
-		else
-			d="$url"
-		fi
+	while getopts a:k:b:d:uc opts; do
+		case $opts in
+			a) BARCH="$OPTARG" ;;
+			k) KERNEL="$OPTARG" ;;
+			b) BOARD="$OPTARG" ;;
+			d) DESKTOP="$OPTARG" ;;
+			u) AUTOBUMB="yes" ;;
+			c) AUTOCOMMIT="yes" ;;
+		esac
 	done
+	shift $((OPTIND -1))
 
-	echo -e '\t{' >> "$2"
-	echo -e '\t\t"name": "'${name}'",' >> "$2"
-	echo -e '\t\t"version": "'${version}'",' >> "$2"
-	echo -e '\t\t"summary": "'${summary}'",' >> "$2"
-	echo -e '\t\t"maintainer": "'${maintainer}'",' >> "$2"
-	echo -e '\t\t"download": "'${d}'",' >> "$2"
-	echo -e '\t\t"homepage": "'${homepage}'",' >> "$2"
-	echo -e '\t\t"category": "'${category}'"' >> "$2"
-	echo -e '\t},' >> "$2"
-}
+	msg 'Invoking `Marisa` on '"${date}"''
 
-case $1 in
-	stage)
-		shift
-		while getopts :a:j:g:e:l:E opts; do
-			case $opts in
-				a)
-					BARCH="$OPTARG"
-					;;
-				j)
-					JOBS="$OPTARG"
-					;;
-				g)
-					GCCOPTS="$OPTARG"
-					;;
-				e)
-					ELFOPTS="$OPTARG"
-					;;
-				l)
-					LINUX="$OPTARG"
-					;;
-				:)
-					die "Option '-${OPTARG}' needs an argument"
-					;;
-				\?)
-					die "Option '-${OPTARG}' is illegal"
-					;;
-			esac
-		done
-		shift $((OPTIND - 1))
-
-		case $1 in
-			meta-toolchain)
-				check_for_root
-				setup_architecture
-				setup_environment
-				build_environment
-				build_toolchain
-				;;
-			core-image-minimal)
-				check_for_root
-				setup_architecture
-				setup_environment
-				if [ ! -f "$TOOLS/.cross-linux" ]; then
-					build_environment
-					build_toolchain
-				fi
-				build_target
-				;;
-			*)
-				die "Specify target"
-				;;
-		esac
-		;;
-	image|installer|live|archive|verityefi)
-		if [ -z "$1" ]; then
-			die "Specify target"
-		fi
-
-		case $1 in
-			archive)
-				prog="mkstage"
-				;;
-			*)
-				prog="mk${1}"
-				;;
-		esac
-
-		shift
-		while getopts :a:j:l:d:E opts; do
-			case $opts in
-				a)
-					BARCH="$OPTARG"
-					;;
-				j)
-					JOBS="$OPTARG"
-					;;
-				l)
-					LINUX="$OPTARG"
-					;;
-				d)
-					DESKTOP="$OPTARG"
-					;;
-				:)
-					die "Option '-${OPTARG}' needs an argument"
-					;;
-				\?)
-					die "Option '-${OPTARG}' is illegal"
-					;;
-			esac
-		done
-		shift $((OPTIND - 1))
-
+	if [ "$mode" == "build_target" ]; then
 		check_for_root
-		setup_architecture
-		setup_environment
 
-		source "$UTILS/$prog"
-		main
-		;;
-	check-updates)
-		shift
-		while getopts ac opts; do
-			case $opts in
-				a)
-					AUTOBUMB="yes"
-					;;
-				c)
-					AUTOCOMMIT="yes"
-					;;
-				:)
-					die "Option '-${OPTARG}' needs an argument"
-					;;
-				\?)
-					die "Option '-${OPTARG}' is illegal"
-					;;
-			esac
-		done
-		shift $((OPTIND - 1))
+		if [ -z "$1" ]; then
+			die "Target is not specified."
+		fi
 
+		check_for_arch "$BARCH"
+
+		msg "Exporting variables"
+		export_variables "$BARCH"
+		export_cflags "$BARCH"
+
+		case $BARCH in
+			amd64|x86|ppc64le|ppc64)
+				export INSTALLER=1
+				;;
+			*)
+				export INSTALLER=0
+				;;
+		esac
+
+		case $BARCH in
+			arm64)
+				export TARGET_BOARD=1
+				case $BOARD in
+					rpi4)
+						export KERNEL="linux-rpi4"
+						export EXTRA_PACKAGES="raspberrypi-firmware iwd"
+						;;
+				esac
+				;;
+		esac
+
+		case "$1" in
+			image) build_board_image ;;
+			installer) build_live_installer ;;
+			live) build_live_image ;;
+			stage) build_stage ;;
+			system) build_toolchain; build_system ;;
+			toolchain) build_toolchain ;;
+			*) die "Unknown target" ;;
+		esac
+	elif [ "$mode" == "enter_chroot" ]; then
+		check_for_root
+		check_for_arch "$BARCH"
+
+		msg "Exporting variables"
+		export_variables "$BARCH"
+
+		msg "Preparing system to boot"
+		sed -zi 's|\nC! /etc/securetty||' "$ROOTFS"/usr/lib/tmpfiles.d/00-default.conf
+
+		mkdir -p "$ROOTFS"/usr/ports/packages "$ROOTFS"/usr/ports/stuff
+
+		msg "Booting using systemd-nspawn"
+		systemd-nspawn \
+			-b -D "$ROOTFS" \
+			--bind="$REPO":/usr/ports/packages \
+			--bind="$STUFF":/usr/ports/stuff \
+			--bind="$PACKAGES":/var/cache/packages \
+			--bind="$SOURCES":/var/cache/sources
+	elif [ "$mode" == "upgrade_packages" ]; then
 		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
 		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
 
-		SILENT=1 setup_environment
-		msg "Checking packages for updates"
+		check_for_arch "amd64"
+		export_variables "amd64"
+
+		msg "Checking for updates"
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
-					if [ "$packages" = "libblkid" ]; then
+					if [ "$packages" = "util-linux-runtime" ]; then
 						true
-					elif [ "$packages" = "libsystemd" ]; then
+					elif [ "$packages" = "systemd-runtime" ]; then
 						true
 					elif [ "$packages" = "linux" ]; then
 						"$UTILS/check-updates" linux
 					elif [ "$packages" = "linux-headers" ]; then
 						"$UTILS/check-updates" linux-headers
 					else
-						"$UTILS/check-updates" $cuopt $cuopttwo $packages
+						"$CWD/check-updates" $cuopt $cuopttwo $packages
 					fi
 				)
 			popd
 		done
-		;;
-	gen-repo)
-		shift
-		SILENT=1 setup_environment
+	elif [ "$mode" == "generate_repo" ]; then
+		check_for_arch "amd64"
+		export_variables "amd64"
 
+		msg "Generating repository file"
 		[ -f "$REPO/repo" ] && rm "$REPO/repo"
 		echo "[" >> "$REPO/repo"
 		for packages in $(ls "$REPO/" | sort); do
@@ -525,63 +930,9 @@ case $1 in
 		sed -i "${index}s/},/}/" "$REPO/repo"
 		git add "$REPO/repo"
 		git commit -m "repo" -S
-		;;
-	enter-chroot)
-		shift
-		while getopts a:s opts; do
-			case $opts in
-				a)
-					BARCH="$OPTARG"
-					;;
-				s)
-					STAGE=1
-					;;
-				:)
-					die "Option '-${OPTARG}' needs an argument"
-					;;
-				\?)
-					die "Option '-${OPTARG}' is illegal"
-					;;
-			esac
-		done
-		shift $((OPTIND - 1))
+	fi
+}
 
-		check_for_root
-		setup_architecture
-		setup_environment
-
-		if [ "$BARCH" = "i686" ] && [ "$(uname -m)" = "x86_64" ]; then
-			HELPER="linux32"
-		fi
-
-		if [ "$STAGE" = "1" ]; then
-			rootdir="$BUILD/stage"
-		else
-			rootdir="$BUILD/rootfs"
-		fi
-		for i in proc sys dev; do
-			mount --bind /$i $rootdir/$i
-		done
-		mkdir -p "$rootdir"/usr/ports/packages "$rootdir"/usr/ports/stuff
-		for i in packages stuff; do
-			mount --bind "$CWD/$i" "$rootdir/usr/ports/$i"
-		done
-		for i in packages sources; do
-			mount --bind "$BUILD/$i" "$rootdir/var/cache/$i"
-		done
-
-		[ ! -L "$rootdir/etc/mtab" ] && ln -sf ../proc/self/mounts "$rootdir"/etc/mtab
-
-		$HELPER chroot "$rootdir" /usr/bin/env -i \
-			HOME=/home/root \
-			TERM="$TERM" \
-			PATH=/usr/bin \
-			/usr/bin/mksh
-		for i in proc sys dev usr/ports/packages usr/ports/stuff var/cache/packages var/cache/sources; do
-			umount -l $rootdir/$i
-		done
-		;;
-esac
+main "$@"
 
 exit 0
-

@@ -1,0 +1,36 @@
+# Description: Sources for time zone and daylight saving time data
+# URL:         https://www.iana.org/time-zones/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     base
+
+name=tzdb
+version=2021a
+release=1
+options=('bootstrap' '~emptydirs')
+source=("https://www.iana.org/time-zones/repository/releases/tzdata${version}.tar.gz")
+
+build() {
+	HOSTCC=${HOSTCC:-cc}
+
+	cd "$SRC"
+	$HOSTCC -Wall -I"$STUFF"/tzdb "$STUFF"/tzdb/zic.c \
+		"$STUFF"/tzdb/strlcat.c "$STUFF"/tzdb/strlcpy.c "$STUFF"/tzdb/reallocarray.c \
+		-o "$SRC"/zic
+
+	ZONEINFO="$PKG"/usr/share/zoneinfo
+	mkdir -p $ZONEINFO/{posix,right}
+
+	for tz in etcetera southamerica northamerica europe africa antarctica  \
+		asia australasia backward; do
+		./zic -L /dev/null -d $ZONEINFO ${tz}
+		./zic -L /dev/null -d $ZONEINFO/posix ${tz}
+		./zic -L leapseconds -d $ZONEINFO/right ${tz}
+	done
+
+	cp zone.tab zone1970.tab iso3166.tab $ZONEINFO
+	./zic -d $ZONEINFO -p America/New_York
+
+	mkdir -p "$PKG"/usr/bin
+	${CROSS_COMPILE}cc -Wall -I"$STUFF"/tzdb "$STUFF"/tzdb/zic.c  \
+		-o "$PKG"/usr/bin/zic
+}

@@ -1,60 +1,143 @@
-# Description: Common CA certificates (default providers)
-# URL:         https://packages.debian.org/sid/ca-certificates
+# Description: The Mozilla CA root certificate bundle
+# URL:         https://fedoraproject.org/wiki/CA-Certificates
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libressl
-# Section:     base
+# Section:     security
 
 name=ca-certificates
-version=20210119
+version=3.62
 release=1
-options=('bootstrap')
-source=("http://deb.debian.org/debian/pool/main/c/ca-certificates/ca-certificates_${version}.tar.xz")
+source=("https://ftp.mozilla.org/pub/security/nss/releases/NSS_${version//./_}_RTM/src/nss-${version}.tar.gz")
 
 build() {
-	mkdir -p "$PKG"/usr/bin
+	cd "$SRC"/nss-$version/nss
+	mkdir -p certs
+	cd certs
+	ln -sf ../lib/ckfw/builtins/{certdata.txt,nssckbi.h} .
 
-	cd "$SRC"/$name-$version
-	HOSTCC=${HOSTCC:-cc}
+	python3 "$STUFF"/ca-certificates/certdata2pem.py
 
-cat > sbin/Makefile << EOF
-install:
-	install -Dm755 update-ca-certificates \$(DESTDIR)\$(SBINDIR)/update-ca-certificates
-EOF
+	cd ..
+	(
+	cat <<-EOF
+		# This is a bundle of X.509 certificates of public Certificate
+		# Authorities.  It was generated from the Mozilla root CA list.
+		# These certificates and trust/distrust attributes use the file format accepted
+		# by the p11-kit-trust module.
+		#
+		# Source: nss/lib/ckfw/builtins/certdata.txt
+		# Source: nss/lib/ckfw/builtins/nssckbi.h
+		#
+		# Generated from:
+	EOF
+		cat lib/ckfw/builtins/nssckbi.h |grep -w NSS_BUILTINS_LIBRARY_VERSION | awk '{print "# " $2 " " $3}';
+		echo '#';
+	) > ca-bundle.trust.p11-kit
 
-	cp "$STUFF"/ca-certificates/certdata2pem.c mozilla/certdata2pem.c
+	touch ca-bundle.legacy.default.crt
+	NUM_LEGACY_DEFAULT=`find certs/legacy-default -type f | wc -l`
+	if [ $NUM_LEGACY_DEFAULT -ne 0 ]; then
+		for f in certs/legacy-default/*.crt; do 
+			echo "processing $f"
+			tbits=`sed -n '/^# openssl-trust/{s/^.*=//;p;}' $f`
+			alias=`sed -n '/^# alias=/{s/^.*=//;p;q;}' $f | sed "s/'//g" | sed 's/"//g'`
+			targs=""
+			if [ -n "$tbits" ]; then
+				for t in $tbits; do
+					targs="${targs} -addtrust $t"
+				done
+			fi
+			if [ -n "$targs" ]; then
+				echo "legacy default flags $targs for $f" >> info.trust
+				openssl x509 -text -in "$f" -trustout $targs -setalias "$alias" >> ca-bundle.legacy.default.crt
+			fi
+		done
+	fi
 
-cat > mozilla/Makefile << EOF
-all:
-	$HOSTCC -Wall certdata2pem.c -o certdata2pem
-	./certdata2pem
-clean:
-	-rm -f *.crt
-install:
-	for p in *.crt; do \
-	    install -Dm0644 \$\$p \$(CERTSDIR)/\$\$p ; \
-	done
-EOF
+	touch ca-bundle.legacy.disable.crt
+	NUM_LEGACY_DISABLE=`find certs/legacy-disable -type f | wc -l`
+	if [ $NUM_LEGACY_DISABLE -ne 0 ]; then
+		for f in certs/legacy-disable/*.crt; do 
+			echo "processing $f"
+			tbits=`sed -n '/^# openssl-trust/{s/^.*=//;p;}' $f`
+			alias=`sed -n '/^# alias=/{s/^.*=//;p;q;}' $f | sed "s/'//g" | sed 's/"//g'`
+			targs=""
+			if [ -n "$tbits" ]; then
+				for t in $tbits; do
+					targs="${targs} -addtrust $t"
+				done
+			fi
+			if [ -n "$targs" ]; then
+				echo "legacy disable flags $targs for $f" >> info.trust
+				openssl x509 -text -in "$f" -trustout $targs -setalias "$alias" >> ca-bundle.legacy.disable.crt
+			fi
+		done
+	fi
 
-	make
+	P11FILES=`find certs -name \*.tmp-p11-kit | wc -l`
+	if [ $P11FILES -ne 0 ]; then
+		for p in certs/*.tmp-p11-kit; do 
+			cat "$p" >>ca-bundle.trust.p11-kit
+		done
+	fi
 
-	${CROSS_COMPILE}cc "$STUFF"/ca-certificates/c_rehash.c -o "$PKG"/usr/bin/c_rehash -lssl -lcrypto -lz $CFLAGS
+	# Append our trust fixes
+	# cat %{SOURCE3} >>ca-bundle.trust.p11-kit
 
-	make DESTDIR="$PKG" SBINDIR=/usr/bin install
+	mkdir -p -m755 "$PKG"/etc/pki/tls/certs
+	mkdir -p -m755 "$PKG"/etc/pki/java
+	mkdir -p -m755 "$PKG"/etc/ssl/certs
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/source
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/source/anchors
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/source/blocklist
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/source/blacklist
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/extracted
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/extracted/pem
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/extracted/openssl
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/extracted/java
+	mkdir -p -m755 "$PKG"/etc/pki/ca-trust/extracted/edk2
+	mkdir -p -m755 "$PKG"/usr/share/ca-certificates/trust-source
+	mkdir -p -m755 "$PKG"/usr/share/pki/ca-trust-source
+	mkdir -p -m755 "$PKG"/usr/share/pki/ca-trust-source/anchors
+	mkdir -p -m755 "$PKG"/usr/share/pki/ca-trust-source/blocklist
+	mkdir -p -m755 "$PKG"/usr/share/pki/ca-trust-source/blacklist
+	mkdir -p -m755 "$PKG"/usr/share/pki/ca-trust-legacy
+	mkdir -p -m755 "$PKG"/usr/bin
+	mkdir -p -m755 "$PKG"/usr/share/man/man8
 
-	mkdir -p "$PKG"/etc/ssl/certs
-	find "$PKG"/usr/share/${name}/ -name '*.crt' | \
-		rev | cut -d/ -f1-2 | rev | sort > "$PKG"/etc/ca-certificates.conf
+	install -p -m644 ca-bundle.trust.p11-kit "$PKG"/usr/share/ca-certificates/trust-source/mozilla.trust.p11-kit
+	install -p -m644 ca-bundle.trust.p11-kit "$PKG"/usr/share/pki/ca-trust-source/ca-bundle.trust.p11-kit
+	install -p -m644 ca-bundle.legacy.default.crt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.default.crt
+	install -p -m644 ca-bundle.legacy.disable.crt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.disable.crt
 
-	cat "$PKG"/usr/share/ca-certificates/*/*.crt >"$PKG"/etc/ssl/certs/ca-certificates.crt
+	install -p -m644 "$STUFF"/ca-certificates/ca-legacy.conf "$PKG"/etc/pki/ca-trust/ca-legacy.conf
 
-	cd "$PKG"
-	for i in  etc/ssl/certs/* ; do
-		test ! -L "$i" && continue
-		s=$(readlink "$i")
-		p=$(printf "%s" "$s" | awk '{n=split($0, a, "/share"); if(n>1)print a[n];}')
-		if test -n "$p" ; then
-			nl=$(printf "../../../share%s" "$p")
-			ln -sf "$nl" "$i"
-		fi
-	done
+	install -m755 "$STUFF"/ca-certificates/ca-legacy "$PKG"/usr/bin/ca-legacy
+	install -m755 "$STUFF"/ca-certificates/update-ca-trust "$PKG"/usr/bin/update-ca-trust
+
+	mkdir -p "$PKG"/usr/lib/systemd/system/sysinit.target.wants
+	install -m644 "$STUFF"/svc/update-ca-trust.service "$PKG"/usr/lib/systemd/system/update-ca-trust.service
+	ln -sf ../update-ca-trust.service "$PKG"/usr/lib/systemd/system/sysinit.target.wants/update-ca-trust.service
+
+	cp "$SRC"/nss-$version/nss/lib/ckfw/builtins/certdata.txt "$PKG"/usr/share/pki/ca-trust-source/ca-bundle.trust.p11-kit
+	cp "$SRC"/nss-$version/nss/lib/ckfw/builtins/certdata.txt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.default.crt
+	cp "$SRC"/nss-$version/nss/lib/ckfw/builtins/certdata.txt "$PKG"/usr/share/pki/ca-trust-legacy/ca-bundle.legacy.disable.crt
+
+	ln -sf /etc/pki/tls/certs \
+		"$PKG"/etc/ssl/certs
+	ln -sf /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+		"$PKG"/etc/ssl/cert.pem
+	ln -sf /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+		"$PKG"/etc/ssl/certs/ca-certificates.crt
+	ln -sf /etc/pki/tls/openssl.cnf \
+		"$PKG"/etc/ssl/openssl.cnf
+	ln -sf /etc/pki/tls/ct_log_list.cnf \
+		"$PKG"/etc/ssl/ct_log_list.cnf
+	ln -sf /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+		"$PKG"/etc/pki/tls/cert.pem
+	ln -sf /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+		"$PKG"/etc/pki/tls/certs/ca-bundle.crt
+	ln -sf /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt \
+		"$PKG"/etc/pki/tls/certs/ca-bundle.trust.crt
+	ln -sf /etc/pki/ca-trust/extracted/java/cacerts \
+		"$PKG"/etc/pki/java/cacerts
 }

@@ -6,10 +6,11 @@
 name=libressl
 version=3.3.1
 release=1
-options=('bootstrap')
 source=("https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/$name-$version.tar.gz")
 
 build() {
+	filter-flags -fsanitize=cfi -fsanitize-cfi-cross-dso
+
 	cd "$SRC"/$name-$version
 	autoreconf -fi
 
@@ -18,13 +19,12 @@ build() {
 		--with-openssldir=/etc/ssl
 
 	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE
-		$ORIGMAKE DESTDIR="$PKG" install
-	else
-		make
-		make DESTDIR="$PKG" install
-	fi
 
-	rm -rf "$PKG"/usr/share/man
+	make
+	make DESTDIR="$PKG" install
+
+	rm -rf \
+		"$PKG"/etc/ssl/cert.pem \
+		"$PKG"/etc/ssl/openssl.cnf \
+		"$PKG"/usr/share/man
 }

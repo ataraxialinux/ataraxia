@@ -1,0 +1,74 @@
+From e200d0d41ef3158ea717206c1490e499a0c07f1b Mon Sep 17 00:00:00 2001
+From: Dimitry Andric <dimitry@andric.com>
+Date: Wed, 19 Feb 2020 21:24:59 +0100
+Subject: [PATCH] Don't compare with string literals
+
+xkbcomp.c:228:37: error: result of comparison against a string literal is unspecified (use an explicit string comparison function instead) [-Werror,-Wstring-compare]
+        if ((argv[i][0] != '-') || (uStringEqual(argv[i], "-")))
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+./utils.h:195:30: note: expanded from macro 'uStringEqual'
+                                 ^~~~~~~~~~~~~~~~~~~~~
+./utils.h:198:38: note: expanded from macro 'uStringCompare'
+                                 (s1)!=(s2):strcmp(s1,s2))
+                                     ^ ~~~~
+
+Don't attempt to do this macro trickery, and simply use strcmp instead,
+where it applies.
+
+Bug: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=244235
+---
+ xkbcomp.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/xkbcomp.c b/xkbcomp.c
+index adfa89a..51eb224 100644
+--- a/xkbcomp.c
++++ b/xkbcomp.c
+@@ -225,7 +225,7 @@ parseArgs(int argc, char *argv[])
+     for (i = 1; i < argc; i++)
+     {
+         int itmp;
+-        if ((argv[i][0] != '-') || (uStringEqual(argv[i], "-")))
++        if ((argv[i][0] != '-') || (strcmp(argv[i], "-") == 0))
+         {
+             if (!xkblist)
+             {
+@@ -651,7 +651,7 @@ parseArgs(int argc, char *argv[])
+         ERROR("No input file specified\n");
+         return False;
+     }
+-    else if (uStringEqual(inputFile, "-"))
++    else if (strcmp(inputFile, "-") == 0)
+     {
+         inputFormat = INPUT_XKB;
+     }
+@@ -755,7 +755,7 @@ parseArgs(int argc, char *argv[])
+             return False;
+         }
+     }
+-    else if ((!outputFile) && (inputFile) && uStringEqual(inputFile, "-"))
++    else if ((!outputFile) && (inputFile) && (strcmp(inputFile, "-") == 0))
+     {
+         int len = strlen("stdin") + strlen(fileTypeExt[outputFormat]) + 2;
+         outputFile = uTypedCalloc(len, char);
+@@ -930,7 +930,7 @@ main(int argc, char *argv[])
+     }
+     if (inputFile != NULL)
+     {
+-        if (uStringEqual(inputFile, "-"))
++        if (strcmp(inputFile, "-") == 0)
+         {
+             file = stdin;
+             inputFile = "stdin";
+@@ -1132,7 +1132,7 @@ main(int argc, char *argv[])
+         }
+         if (outputFile != NULL)
+         {
+-            if (uStringEqual(outputFile, "-"))
++            if (strcmp(outputFile, "-") == 0)
+                 outputFile = "stdout";
+             else
+             {
+-- 
+GitLab
+

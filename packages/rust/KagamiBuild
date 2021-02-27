@@ -1,59 +1,49 @@
 # Description: Systems programming language focused on safety, speed and concurrency
 # URL:         https://www.rust-lang.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  llvm
 # Section:     devel
 
 name=rust
 version=1.50.0
 release=1
 options=('~emptydirs')
-source=("https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-x86_64-unknown-linux-musl.tar.xz"
-	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-aarch64-unknown-linux-musl.tar.xz"
-	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-armv7-unknown-linux-musleabihf.tar.xz"
-	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-nightly-arm-unknown-linux-musleabihf.tar.xz"
-	"https://portage.smaeul.xyz/distfiles/rust-1.46.0-i686-gentoo-linux-musl.tar.xz")
+source=("https://github.com/ataraxialinux/rustie/releases/download/$version/rust-$version-aarch64-unknown-linux-musl.tar.xz"
+	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-$version-armv7-unknown-linux-musleabihf.tar.xz"
+	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-$version-i686-unknown-linux-musl.tar.xz"
+	"https://github.com/ataraxialinux/rustie/releases/download/$version/rust-$version-x86_64-unknown-linux-musl.tar.xz")
 
 build() {
-	case $BARCH in
-		x86_64)
+	case "$BARCH" in
+		amd64)
 			export RTARGET="x86_64-unknown-linux-musl"
-			export ver=nightly
 			;;
-		i686)
-			export RTARGET="i686-gentoo-linux-musl"
-			export ver=1.46.0
+		x86)
+			export RTARGET="i686-unknown-linux-musl"
 			;;
-		aarch64)
+		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
-			export ver=nightly
 			;;
-		armv7hl)
+		armv7l)
 			export RTARGET="armv7-unknown-linux-musleabihf"
-			export ver=nightly
-			;;
-		armv6hl)
-			export RTARGET="arm-unknown-linux-musleabihf"
-			export ver=nightly
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Rust Language"
-			exit 1
+			die "Architecture is not set or is not supported by Rust Language"
 	esac
 
-	pushd "$SRC"/rust-$ver-$RTARGET
-		sed -i 's.\\-.-.g' install.sh
-		sed -i 's.\\_._.g' install.sh
+	pushd "$SRC"/rust-$version-$RTARGET
 		bash install.sh \
 			--prefix=/usr \
 			--destdir="$PKG" \
 			--disable-ldconfig
 	popd
 
-	cd "$PKG"/usr/lib
-
-	rm -rf rustlib/{components,manifest-rustc,rust-installer-version}
-	ln -sf rustlib/$RTARGET/lib/*.so .
-
 	install -d "$PKG"/usr/share/bash-completion
 	mv "$PKG"/usr/etc/bash_completion.d/ "$PKG"/usr/share/bash-completion/completions/
+
+	cd "$PKG"/usr/lib
+	rm -rf rustlib/{components,manifest-rustc,rust-installer-version}
+
+	mv "$PKG"/usr/libexec/* "$PKG"/usr/lib/
+	rmdir "$PKG"/usr/libexec
 }

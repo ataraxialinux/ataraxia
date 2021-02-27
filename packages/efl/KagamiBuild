@@ -1,17 +1,19 @@
 # Description: Enlightenment Foundation Libraries
 # URL:         https://www.enlightenment.org
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson luajit dbus libxcomposite libxcursor libxinerama libxrandr libxss wayland-protocols mesa libinput libxkbcommon harfbuzz fribidi fontconfig giflib libjpeg-turbo libpng openjpeg libwebp libexif bullet libraw libspectre pulseaudio gst-plugins-base poppler shared-mime-info rsvg
+# Depends on:  meson luajit dbus libxcomposite libxcursor libxinerama libxrandr libxss libxpm libxpresent wayland-protocols mesa libinput libxkbcommon harfbuzz fribidi fontconfig giflib libjpeg-turbo libpng openjpeg libwebp libexif libraw libspectre libpulse gst-plugins-base poppler shared-mime-info librsvg libavif lz4 tslib libvncserver libexecinfo
 # Section:     libs
 
 name=efl
 version=1.25.1
-release=3
+release=4
 options=('~emptydirs')
 source=("https://download.enlightenment.org/rel/libs/$name/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/efl/00f5eed1d2390d204c83a2cb78a37531f6bbe49c.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
@@ -21,12 +23,12 @@ build() {
 		-Dbuild-tests=false \
 		-Ddrm=true \
 		-Decore-imf-loaders-disabler=scim,ibus,xim \
-		-Delogind=true \
 		-Devas-loaders-disabler=json \
 		-Dfb=true \
 		-Dnetwork-backend=connman \
 		-Dnls=false \
 		-Dpulseaudio=true \
+		-Dsystemd=true \
 		-Dwl=true
 	samu
 	DESTDIR="$PKG" samu install

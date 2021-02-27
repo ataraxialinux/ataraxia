@@ -10,8 +10,7 @@ _patchlevel=${version##*.}
 _bash_patchlevel="00$_patchlevel"
 _myver=${version%.*}
 _patchbase=${_myver/./}
-release=1
-options=('bootstrap')
+release=2
 source=("https://ftp.gnu.org/gnu/$name/$name-${_myver}.tar.gz")
 
 _i=1
@@ -35,7 +34,9 @@ build() {
 		esac
 	done
 
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
 cat > config.cache << EOF
+ac_cv_rl_prefix="$ROOTFS"
 ac_cv_func_mmap_fixed_mapped=yes
 ac_cv_func_strcoll_works=yes
 ac_cv_func_working_mktime=yes
@@ -50,12 +51,14 @@ bash_cv_unusable_rtsigs=no
 gt_cv_int_divbyzero_sigfpe=yes
 EOF
 
+		BUILDFLAGS="$BUILDFLAGS --cache-file=config.cache"
+	fi
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-curses \
 		--without-bash-malloc \
-		--enable-readline \
-		--cache-file=config.cache
+		--with-installed-readline
 	make
 	make DESTDIR="$PKG" install
 

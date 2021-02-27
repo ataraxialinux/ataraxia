@@ -1,7 +1,7 @@
 # Description: A cross-platform open-source make system
 # URL:         http://www.cmake.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libarchive curl libuv rhash jsoncpp
+# Depends on:  samurai ncurses libarchive curl libuv rhash jsoncpp
 # Section:     devel
 
 name=cmake
@@ -13,12 +13,41 @@ build() {
 	cd "$SRC"/$name-$version
 	sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake
 
-	./bootstrap \
-		--prefix=/usr \
-		--mandir=/share/man \
-		--docdir=/share/doc/cmake \
-		--system-libs \
-		--parallel=$(expr $(nproc) + 1)
-	make
-	make DESTDIR="$PKG" install
+	if ! type cmake &>/dev/null; then
+		./bootstrap \
+			--prefix=/usr \
+			--mandir=/share/man \
+			--docdir=/share/doc/cmake \
+			--system-libs
+		make
+		make DESTDIR="$PKG" install
+	else
+		mkdir -p build
+		cd build
+
+		if [ "$USEBOOTSTRAP" = "yes" ]; then
+			cmake "$SRC"/$name-$version $CMAKEFLAGS \
+				-DCMAKE_INSTALL_PREFIX=/usr \
+				-DCMAKE_BUILD_TYPE=MinSizeRel \
+				-DCMAKE_DOC_DIR=/share/doc/cmake \
+				-DCMAKE_MAN_DIR=/share/man \
+				-DCMAKE_USE_SYSTEM_LIBRARIES=ON \
+				-DCMAKE_LIBRARY_PATH="$STAGING_LIBDIR" \
+				-DCMAKE_INCLUDE_PATH="$STAGING_INCDIR" \
+				-Wno-dev -G Ninja
+
+				sed -i "s|$SRC/$name-$version/build/bin/cmake|$TOOLS/bin/cmake|" build.ninja
+		else
+			cmake "$SRC"/$name-$version \
+				-DCMAKE_INSTALL_PREFIX=/usr \
+				-DCMAKE_BUILD_TYPE=MinSizeRel \
+				-DCMAKE_DOC_DIR=/share/doc/cmake \
+				-DCMAKE_MAN_DIR=/share/man \
+				-DCMAKE_USE_SYSTEM_LIBRARIES=ON \
+				-Wno-dev -G Ninja
+		fi
+
+		samu
+		DESTDIR="$PKG" samu install
+	fi
 }

@@ -1,0 +1,36 @@
+# Description: A featureful, general-purpose sound server (libraries only)
+# URL:         https://www.freedesktop.org/wiki/Software/PulseAudio/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson libltdl libexecinfo gdbm libsndfile alsa-lib dbus glib libcap speex libxtst libsm sbc bluez rtkit
+# Section:     sound
+
+name=libpulse
+version=14.2
+release=1
+source=("https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-$version.tar.xz")
+
+build() {
+	cd "$SRC"/pulseaudio-$version
+	patch -Np1 -i "$STUFF"/libpulse/0001-link-against-libexecinfo.patch
+
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/pulseaudio-$version \
+		-Ddatabase=gdbm \
+		-Dpulsedsp-location='/usr/\$LIB/pulseaudio' \
+		-Dudevrulesdir=/usr/lib/udev/rules.d \
+		-Dman=false
+	samu
+	DESTDIR="$PWD/fakeinstall" samu install
+
+	mkdir -p "$PKG"/usr/bin "$PKG"/usr/lib "$PKG"/usr/share
+
+	cp -a "$PWD"/fakeinstall/usr/bin/pa{cat,ctl,dsp,mon,play,rec,record} "$PKG"/usr/bin
+	cp -a "$PWD"/fakeinstall/usr/lib/libpulse*.so* "$PKG"/usr/lib/
+
+	cp -a "$PWD"/fakeinstall/usr/lib/cmake "$PKG"/usr/lib/
+	cp -a "$PWD"/fakeinstall/usr/lib/pkgconfig "$PKG"/usr/lib/
+	cp -a "$PWD"/fakeinstall/usr/lib/pulseaudio "$PKG"/usr/lib/
+	cp -a "$PWD"/fakeinstall/usr/include "$PKG"/usr/
+	cp -a "$PWD"/fakeinstall/usr/share/vala "$PKG"/usr/share/
+}

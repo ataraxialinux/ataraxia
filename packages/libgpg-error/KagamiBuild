@@ -6,7 +6,6 @@
 name=libgpg-error
 version=1.41
 release=1
-options=('bootstrap')
 source=("https://gnupg.org/ftp/gcrypt/$name/$name-$version.tar.bz2")
 
 build() {
@@ -16,6 +15,12 @@ build() {
 		(
 			unset CC CXX AR AS RANLIB LD STRIP CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
 			cd libgpg-error-bootstrap
+
+			CC="$HOSTCC" \
+			CXX="$HOSTCXX" \
+			CFLAGS="$HOSTCFLAGS" \
+			CXXFLAGS="$HOSTCXXFLAGS" \
+			LDFLAGS="$HOSTLDFLAGS" \
 			./configure \
 				--prefix="$SRC"/libgpg-error \
 				--with-sysroot="$ROOTFS"

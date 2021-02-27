@@ -6,11 +6,11 @@
 
 name=lua51
 version=5.1.5
-release=1
+release=2
 source=("http://www.lua.org/ftp/lua-$version.tar.gz")
 
 build() {
-	export CFLAGS="$CFLAGS -fPIC"
+	append-cflags -fPIC
 
 	cd "$SRC"/lua-$version
 	patch -p1 -i "$STUFF"/lua51/main.patch
@@ -36,6 +36,7 @@ build() {
 		INSTALL_TOP="$PKG"/usr \
 		INSTALL_INC="$PKG"/usr/include/lua5.1 \
 		INSTALL_MAN="$PKG"/usr/share/man/man1 \
+		INSTALL_DATA='cp -d' \
 		install
 
 	install -m 0644 -D etc/lua.pc "$PKG"/usr/lib/pkgconfig/lua5.1.pc

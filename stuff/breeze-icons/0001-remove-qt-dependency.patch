@@ -1,0 +1,109 @@
+From 8b563513283b80f7bfbca970ca6fab607f7d19d9 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 26 Feb 2021 00:30:28 +0900
+Subject: [PATCH] remove qt dependency
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ CMakeLists.txt            | 52 ---------------------------------------
+ icons-dark/CMakeLists.txt |  4 ---
+ icons/CMakeLists.txt      |  4 ---
+ 3 files changed, 60 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7156b83..9f04531 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -61,57 +61,6 @@ endif()
+ option(BINARY_ICONS_RESOURCE "Install Qt binary resource files containing breeze icons (breeze-icons.rcc, breeze-icons-dark.rcc)" ${BINARY_ICONS_RESOURCE_OPTION_DEFAULT})
+ option(SKIP_INSTALL_ICONS "Skip installing the icons files" OFF)
+ 
+-if(BINARY_ICONS_RESOURCE)
+-    find_package(Qt5 NO_MODULE REQUIRED Core)
+-    add_executable(qrcAlias qrcAlias.cpp)
+-    target_link_libraries(qrcAlias PUBLIC Qt5::Core)
+-
+-function(generate_binary_resource target outfile)
+-    set(RESOURCES_WORKING_DIR ${CMAKE_CURRENT_BINARY_DIR}/res)
+-    set(RESOURCE_FILE ${RESOURCES_WORKING_DIR}/breeze-${target}.qrc)
+-    set(BINARY_RESOURCE_FILE ${CMAKE_CURRENT_BINARY_DIR}/breeze-${target}.rcc)
+-
+-    # Use $<IF:$<BOOL:${MSVC}>,PATH,LD_LIBRARY_PATH> instead of ${pathVarName} once CMake 3.8 is minimum
+-    if(MSVC)
+-        set(pathVarName PATH)
+-    else()
+-        set(pathVarName LD_LIBRARY_PATH)
+-    endif()
+-
+-    get_target_property(QT_RCC_EXECUTABLE Qt5::rcc LOCATION)
+-
+-    add_custom_target(breeze-${target}-mkdir
+-        COMMAND ${CMAKE_COMMAND} -E make_directory ${RESOURCES_WORKING_DIR}
+-    )
+-    add_custom_command(OUTPUT ${RESOURCE_FILE}
+-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR} ${RESOURCES_WORKING_DIR}
+-        COMMAND ${CMAKE_COMMAND} -E remove
+-            ${RESOURCE_FILE}
+-            ${RESOURCE_FILE}.depends
+-            ${RESOURCES_WORKING_DIR}/.gitignore
+-            ${RESOURCES_WORKING_DIR}/CMakeLists.txt
+-        COMMAND ${QT_RCC_EXECUTABLE} --project -o ${CMAKE_CURRENT_BINARY_DIR}/tmp.qrc
+-        COMMAND ${CMAKE_COMMAND} -E env
+-            ${pathVarName}=$<TARGET_FILE_DIR:Qt5::Core>
+-            $<TARGET_FILE:qrcAlias> -i ${CMAKE_CURRENT_BINARY_DIR}/tmp.qrc -o ${RESOURCE_FILE}
+-
+-        WORKING_DIRECTORY ${RESOURCES_WORKING_DIR}
+-        DEPENDS breeze-${target}-mkdir
+-    )
+-    add_custom_command(OUTPUT ${BINARY_RESOURCE_FILE}
+-        COMMAND ${QT_RCC_EXECUTABLE} --binary
+-                    -o ${BINARY_RESOURCE_FILE}
+-                    ${RESOURCE_FILE}
+-        DEPENDS ${RESOURCE_FILE}
+-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    )
+-
+-    add_custom_target(breeze-${target}-rcc ALL DEPENDS ${BINARY_RESOURCE_FILE})
+-
+-    set(${outfile} ${BINARY_RESOURCE_FILE} PARENT_SCOPE)
+-endfunction()
+-endif()
+-
+ if(NOT WIN32)
+     # validate
+     find_program(SH_EXE sh)
+@@ -132,7 +81,6 @@ endif()
+ 
+ add_definitions(-DQT_NO_FOREACH)
+ 
+-add_subdirectory(autotests)
+ add_subdirectory(icons)
+ add_subdirectory(icons-dark)
+ 
+diff --git a/icons-dark/CMakeLists.txt b/icons-dark/CMakeLists.txt
+index ef44db4..725d052 100644
+--- a/icons-dark/CMakeLists.txt
++++ b/icons-dark/CMakeLists.txt
+@@ -1,7 +1,3 @@
+-if(BINARY_ICONS_RESOURCE)
+-    generate_binary_resource(icons-dark binary_resource)
+-endif()
+-
+ ########### install files ###############
+ 
+ set(breeze_icon_dark_dirs
+diff --git a/icons/CMakeLists.txt b/icons/CMakeLists.txt
+index 81747a7..da50b1e 100644
+--- a/icons/CMakeLists.txt
++++ b/icons/CMakeLists.txt
+@@ -1,7 +1,3 @@
+-if(BINARY_ICONS_RESOURCE)
+-    generate_binary_resource(icons binary_resource)
+-endif()
+-
+ ########### install files ###############
+ 
+ set(breeze_icon_dirs
+-- 
+2.29.2
+

@@ -11,9 +11,11 @@ source=("https://github.com/mpv-player/mpv/archive/v$version.tar.gz::archive=$na
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/mpv/7c4465cefb27d4e0d07535d368febdf77b579566.patch
+
 	./bootstrap.py
 
-	export CFLAGS="-D_GNU_SOURCE $CFLAGS"
+	append-cppflags -D_GNU_SOURCE
 
 	./waf configure \
 		--prefix=/usr \
@@ -28,7 +30,6 @@ build() {
 		--enable-gl-x11 \
 		--enable-lcms2 \
 		--enable-libarchive \
-		--enable-libass \
 		--enable-libavdevice \
 		--enable-libbluray \
 		--enable-libmpv-shared \

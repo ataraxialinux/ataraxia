@@ -1,7 +1,7 @@
 # Description: Userspace components of the audit framework
 # URL:         https://people.redhat.com/sgrubb/audit
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  libcap-ng
+# Depends on:  libcap-ng krb5
 # Section:     security
 
 name=audit
@@ -14,7 +14,6 @@ backup=('etc/libaudit.conf'
 	'etc/audit/plugins.d/af_unix.conf'
 	'etc/audit/plugins.d/au-remote.conf'
 	'etc/audit/plugins.d/syslog.conf')
-options=('bootstrap')
 source=("https://people.redhat.com/sgrubb/$name/$name-$version.tar.gz")
 
 build() {
@@ -29,18 +28,12 @@ build() {
 		--sysconfdir=/etc \
 		--without-python \
 		--without-python3 \
+		--enable-gssapi-krb5=yes \
 		--enable-shared=audit \
 		--enable-systemd \
-		--disable-gssapi-krb5 \
 		--disable-zos-remote
-
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		$ORIGMAKE
-		$ORIGMAKE DESTDIR="$PKG" INSTALL='install -p' install
-	else
-		make
-		make DESTDIR="$PKG" INSTALL='install -p' install
-	fi
+	make
+	make DESTDIR="$PKG" INSTALL='install -p' install
 
 	install -d "$PKG"/var/log/audit
 

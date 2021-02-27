@@ -216,8 +216,11 @@ weechat
 firefox
 gnome-builder
 gst-plugins-bad
+libclc
 libreoffice
+lldb
 mesa
+polly
 spidermonkey
 thunderbird
 v4l-utils

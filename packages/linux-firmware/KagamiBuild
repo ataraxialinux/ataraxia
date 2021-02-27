@@ -7,12 +7,10 @@
 name=linux-firmware
 version=20210208
 release=1
-options=('~strip' 'bootstrap')
+options=('~strip')
 source=("https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/snapshot/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	sed -i 's/cp -d/cp/g' copy-firmware.sh 
-
 	make DESTDIR="$PKG" FIRMWAREDIR=/usr/lib/firmware install
 }

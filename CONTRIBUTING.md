@@ -115,4 +115,4 @@ If you wish to modify file after configuration but before build leave the space 
 
 If the requirements are not met, then the pull request will be closed without explanation.
 
-Ataraxia Linux development team.
+Ataraxia GNU/Linux development team.

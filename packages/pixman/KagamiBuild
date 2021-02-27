@@ -10,11 +10,11 @@ release=2
 source=("https://www.cairographics.org/releases/$name-$version.tar.gz")
 
 build() {
+	append-ldflags -Wl,-z,stack-size=2097152
+
 	cd "$SRC"/$name-$version
 	mkdir -p build
 	cd build
-
-	LDFLAGS="-Wl,-z,stack-size=2097152" \
 	ataraxia-meson "$SRC"/$name-$version \
 		-Dgtk=disabled
 	samu

@@ -1,0 +1,43 @@
+From 8889c1d2cf66fca52b09db16f875be81de48e3c1 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 15 Jan 2021 19:15:41 +0900
+Subject: [PATCH 1/2] fix musl locale
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ include/locale | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/include/locale b/include/locale
+index 3fe4430..e0f5526 100644
+--- a/include/locale
++++ b/include/locale
+@@ -9,7 +9,6 @@
+ 
+ #ifndef _LIBCPP_LOCALE
+ #define _LIBCPP_LOCALE
+-
+ /*
+     locale synopsis
+ 
+@@ -736,7 +735,7 @@ __num_get_signed_integral(const char* __a, const char* __a_end,
+         typename remove_reference<decltype(errno)>::type __save_errno = errno;
+         errno = 0;
+         char *__p2;
+-        long long __ll = strtoll_l(__a, &__p2, __base, _LIBCPP_GET_C_LOCALE);
++        long long __ll = strtoll(__a, &__p2, __base);
+         typename remove_reference<decltype(errno)>::type __current_errno = errno;
+         if (__current_errno == 0)
+             errno = __save_errno;
+@@ -776,7 +775,7 @@ __num_get_unsigned_integral(const char* __a, const char* __a_end,
+         typename remove_reference<decltype(errno)>::type __save_errno = errno;
+         errno = 0;
+         char *__p2;
+-        unsigned long long __ll = strtoull_l(__a, &__p2, __base, _LIBCPP_GET_C_LOCALE);
++        unsigned long long __ll = strtoull(__a, &__p2, __base);
+         typename remove_reference<decltype(errno)>::type __current_errno = errno;
+         if (__current_errno == 0)
+             errno = __save_errno;
+-- 
+2.29.2
+

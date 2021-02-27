@@ -1,0 +1,39 @@
+From 37664320e0fbc917f0eb54fd89e2872b7d1711bf Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 21 Feb 2021 11:25:05 +0900
+Subject: [PATCH] link against libexecinfo
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ meson.build     | 1 +
+ src/meson.build | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index a526321..58b747e 100644
+--- a/meson.build
++++ b/meson.build
+@@ -364,6 +364,7 @@ endif
+ # Core Dependencies
+ 
+ libm_dep = cc.find_library('m', required : true)
++libexecinfo_dep = cc.find_library('execinfo', required : true)
+ 
+ thread_dep = dependency('threads')
+ foreach f : [
+diff --git a/src/meson.build b/src/meson.build
+index 8d74a31..8e8f863 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -186,7 +186,7 @@ libpulsecommon = shared_library('pulsecommon-' + pa_version_major_minor,
+   install : true,
+   install_dir : privlibdir,
+   dependencies : [
+-    libm_dep, thread_dep, dl_dep, shm_dep, iconv_dep, sndfile_dep, dbus_dep,
++    libm_dep, libexecinfo_dep, thread_dep, dl_dep, shm_dep, iconv_dep, sndfile_dep, dbus_dep,
+     x11_dep, libsystemd_dep, glib_dep, gtk_dep, asyncns_dep, libintl_dep,
+   ],
+   implicit_include_directories : false)
+-- 
+2.29.2
+

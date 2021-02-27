@@ -12,6 +12,7 @@ source=("https://www.kernel.org/pub/software/scm/$name/$name-$version.tar.xz")
 build() {
 	cd "$SRC"/$name-$version
 	make prefix=/usr gitexecdir=/usr/lib/git DESTDIR="$PKG" \
+		HOSTCC="${HOSTCC:-clang}" CC="${CC:-clang}" \
 		NEEDS_SSL_WITH_CURL="y" NEEDS_CRYPTO_WITH_SSL="y" NO_PERL="y" \
 		CFLAGS="$CFLAGS" \
 		MAN_BOLD_LITERAL=1 \

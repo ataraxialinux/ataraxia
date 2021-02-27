@@ -1,0 +1,22 @@
+#!/usr/bin/sh
+#
+
+sd_booted() {
+	if [ ! -d /run/systemd/system ]; then
+		exit 0
+	fi
+}
+
+case "$1" in
+	daemon-reload) sd_booted; /usr/bin/systemctl daemon-reload ;;
+	journald-catalog) sd_booted; /usr/bin/journalctl --update-catalog ;;
+	binfmt) sd_booted; /usr/lib/systemd/systemd-binfmt ;;
+	sysctl) sd_booted; /usr/lib/systemd/systemd-sysctl ;;
+	sysusers) sd_booted; /usr/bin/systemd-sysusers ;;
+	tmpfiles) sd_booted; /usr/bin/systemd-tmpfiles --create ;;
+	udev-hwdb) sd_booted; /usr/bin/systemd-hwdb update ;;
+	udev-rules) sd_booted; /usr/bin/udevadm control --reload ;;
+esac
+
+exit 0
+

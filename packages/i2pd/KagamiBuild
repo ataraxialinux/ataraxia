@@ -13,14 +13,14 @@ source=("https://github.com/PurpleI2P/i2pd/archive/$version.tar.gz::archive=$nam
 
 build() {
 	case $BARCH in
-		x86_64|i686) true ;;
+		amd64|x86) true ;;
 		*) ARCHOPT="-DUSE_AESNI=no -DUSE_AVX=no"
 	esac
 
 	cd "$SRC"
 	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version/build \
+	cmake "$SRC"/$name-$version/build $CMAKEFLAGS \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DBUILD_SHARED_LIBS=yes $ARCHOPT \

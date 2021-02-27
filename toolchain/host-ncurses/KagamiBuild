@@ -1,6 +1,5 @@
 name=host-ncurses
-fakepath="$topdir/../../packages/${name/host-}"
-realpath="$(realpath $fakepath)"
+realpath="$REPO/${name/host-}"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 release=1
 options=('bootstrap')
@@ -18,4 +17,6 @@ build() {
 
 	chmod +x misc/ncurses-config
 	cp misc/ncurses-config "$TOOLS"/bin/$XTARGET-ncursesw6-config
+
+	sed -i "s|$TOOLS|$ROOTFS/usr|" "$TOOLS"/bin/$XTARGET-ncursesw6-config
 }

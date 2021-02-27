@@ -1,27 +1,30 @@
 name=host-binutils
-fakepath="$topdir/../../packages/${name/host-}"
-realpath="$(realpath $fakepath)"
+realpath="$REPO/${name/host-}"
 version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
 release=1
 options=('bootstrap')
 source=("https://ftp.gnu.org/gnu/binutils/binutils-$version.tar.xz")
 
 build() {
+	local archconfig hashconfig
+
 	case "$BARCH" in
-		*)				HASHCONFIG="--enable-default-hash-style=gnu"	;;
+		amd64)	archconfig="--enable-targets=x86_64-pep" ;;
 	esac
 
 	case "$BARCH" in
-		x86_64)	ARCHCONFIG="--enable-targets=x86_64-pep"	;;
+		mips64|mips64el|mips|mipsel)	hashconfig="--enable-default-hash-style=sysv" ;;
+		*)				hashconfig="--enable-default-hash-style=gnu"  ;;
 	esac
 
 	cd "$SRC"/binutils-$version
 	mkdir build
 	cd build
-
 	../configure \
 		--prefix="$TOOLS" \
-		--target=$XTARGET $ARCHCONFIG $HASHCONFIG \
+		--build=$XHOST \
+		--host=$XHOST \
+		--target=$XTARGET $archconfig $hashconfig \
 		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
 		--with-sysroot="$ROOTFS" \
 		--with-lib-path="$ROOTFS/usr/lib" \
@@ -30,19 +33,15 @@ build() {
 		--enable-64-bit-bfd \
 		--enable-deterministic-archives \
 		--enable-gold \
-		--enable-ld=default \
 		--enable-lto \
 		--enable-plugins \
 		--enable-relro \
 		--enable-threads \
-		--disable-compressed-debug-sections \
-		--disable-multilib \
 		--disable-nls \
+		--disable-multilib \
 		--disable-werror
-	make configure-host
-	make
-	make install
+	make MAKEINFO="true" all-gas all-binutils
+	make MAKEINFO="true" install-gas
 
-	rm -rf "$TOOLS"/bin/$XTARGET-ld
-	ln -sf $XTARGET-ld.bfd "$TOOLS"/bin/$XTARGET-ld
+	install -Dm755 binutils/elfedit "$TOOLS"/bin/$XTARGET-elfedit
 }

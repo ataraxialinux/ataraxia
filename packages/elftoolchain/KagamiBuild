@@ -1,0 +1,38 @@
+# Description: BSD licensed ELF toolchain
+# URL:         https://sourceforge.net/projects/elftoolchain/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  bmake libarchive
+# Section:     devel
+
+name=elftoolchain
+version=r3916
+release=1
+source=("https://github.com/ataraxialinux/storage/raw/master/elftoolchain-code-$version-trunk.zip")
+
+build() {
+	filter-flags -fomit-frame-pointer
+
+	cd "$SRC"/elftoolchain-code-$version-trunk
+	patch -Np1 -i "$STUFF"/elftoolchain/0001-fix-makefiles.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0002-fix-build-on-musl-libc.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0004-add-support-for-STN_UNDEF.patch
+
+	mkdir -p common/sys
+	cp "$STUFF"/include/sys/queue.h common/sys
+
+	bmake WITH_TESTS=no
+	bmake WITH_TESTS=no DESTDIR="$PKG" install
+
+	rm \
+		"$PKG"/usr/bin/ar \
+		"$PKG"/usr/bin/ld \
+		"$PKG"/usr/bin/nm \
+		"$PKG"/usr/bin/ranlib \
+		"$PKG"/usr/share/man/cat/cat1/ar.1 \
+		"$PKG"/usr/share/man/cat/cat1/ld.1 \
+		"$PKG"/usr/share/man/cat/cat1/nm.1 \
+		"$PKG"/usr/share/man/cat/cat1/ranlib.1 \
+		"$PKG"/usr/share/man/cat/cat5/ar.5
+
+	install -Dm644 "$STUFF"/elftoolchain/libelf.pc "$PKG"/usr/lib/pkgconfig/libelf.pc
+}

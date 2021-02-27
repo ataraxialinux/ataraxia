@@ -1,0 +1,61 @@
+From d09c8dfb2048f38eb07c0c6eaf3853684eb3d4f0 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 12 Feb 2021 03:56:24 +0900
+Subject: [PATCH 4/5] RISC-V: disable relaxations and enable LTO/ThinLTO
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Arch/RISCV.cpp     | 6 +-----
+ lib/Driver/ToolChains/RISCVToolchain.cpp | 6 ++++++
+ lib/Driver/ToolChains/RISCVToolchain.h   | 1 +
+ 3 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/lib/Driver/ToolChains/Arch/RISCV.cpp b/lib/Driver/ToolChains/Arch/RISCV.cpp
+index be3f0a07..8e845720 100644
+--- a/lib/Driver/ToolChains/Arch/RISCV.cpp
++++ b/lib/Driver/ToolChains/Arch/RISCV.cpp
+@@ -536,11 +536,7 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
+   if (Args.hasArg(options::OPT_ffixed_x31))
+     Features.push_back("+reserve-x31");
+ 
+-  // -mrelax is default, unless -mno-relax is specified.
+-  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
+-    Features.push_back("+relax");
+-  else
+-    Features.push_back("-relax");
++  Features.push_back("-relax");
+ 
+   // GCC Compatibility: -mno-save-restore is default, unless -msave-restore is
+   // specified.
+diff --git a/lib/Driver/ToolChains/RISCVToolchain.cpp b/lib/Driver/ToolChains/RISCVToolchain.cpp
+index cc912d94..56c3fda9 100644
+--- a/lib/Driver/ToolChains/RISCVToolchain.cpp
++++ b/lib/Driver/ToolChains/RISCVToolchain.cpp
+@@ -144,6 +144,12 @@ void RISCV::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+ 
+   std::string Linker = getToolChain().GetLinkerPath();
+ 
++  if (D.isUsingLTO()) {
++    assert(!Inputs.empty() && "Must have at least one input.");
++    addLTOOptions(ToolChain, Args, CmdArgs, Output, Inputs[0],
++                  D.getLTOMode() == LTOK_Thin);
++  }
++
+   bool WantCRTs =
+       !Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles);
+ 
+diff --git a/lib/Driver/ToolChains/RISCVToolchain.h b/lib/Driver/ToolChains/RISCVToolchain.h
+index 4734aee5..56e264ad 100644
+--- a/lib/Driver/ToolChains/RISCVToolchain.h
++++ b/lib/Driver/ToolChains/RISCVToolchain.h
+@@ -25,6 +25,7 @@ public:
+   void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
+                              llvm::opt::ArgStringList &CC1Args,
+                              Action::OffloadKind) const override;
++  bool HasNativeLLVMSupport() const override { return true; }
+   RuntimeLibType GetDefaultRuntimeLibType() const override;
+   UnwindLibType
+   GetUnwindLibType(const llvm::opt::ArgList &Args) const override;
+-- 
+2.29.2
+

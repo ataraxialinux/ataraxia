@@ -6,24 +6,26 @@
 
 name=binutils
 version=2.36.1
-release=1
-options=('bootstrap')
+release=2
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
+	local archconfig hashconfig
+
 	case "$BARCH" in
-		*)				HASHCONFIG="--enable-default-hash-style=gnu"	;;
+		amd64)	archconfig="--enable-targets=x86_64-pep" ;;
 	esac
 
 	case "$BARCH" in
-		x86_64)	ARCHCONFIG="--enable-targets=x86_64-pep"	;;
+		mips64|mips64el|mips|mipsel)	hashconfig="--enable-default-hash-style=sysv" ;;
+		*)				hashconfig="--enable-default-hash-style=gnu"  ;;
 	esac
 
 	cd "$SRC"/$name-$version
 	mkdir build
 	cd build
 
-	../configure $TOOLFLAGS $ARCHCONFIG $HASHCONFIG \
+	../configure $TOOLFLAGS $archconfig $hashconfig \
 		--prefix=/usr \
 		--with-bugurl="https://github.com/ataraxialinux/ataraxia/issues" \
 		--with-pic \
@@ -31,20 +33,15 @@ build() {
 		--enable-64-bit-bfd \
 		--enable-deterministic-archives \
 		--enable-gold \
-		--enable-ld=default \
 		--enable-lto \
 		--enable-plugins \
 		--enable-relro \
-		--enable-shared \
 		--enable-threads \
-		--disable-compressed-debug-sections \
-		--disable-multilib \
 		--disable-nls \
+		--disable-multilib \
 		--disable-werror
-	make configure-host
-	make tooldir=/usr
-	make tooldir=/usr DESTDIR="$PKG" install
+	make MAKEINFO="true" tooldir=/usr all-gas all-binutils
+	make MAKEINFO="true" tooldir=/usr DESTDIR="$PKG" install-gas
 
-	rm -rf "$PKG"/usr/bin/ld
-	ln -sf ld.bfd "$PKG"/usr/bin/ld
+	install -Dm755 binutils/elfedit "$PKG"/usr/bin/elfedit
 }

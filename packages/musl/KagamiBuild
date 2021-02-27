@@ -10,27 +10,16 @@ options=('bootstrap')
 source=("http://www.musl-libc.org/releases/$name-$version.tar.gz")
 
 build() {
-	cd "$SRC"/$name-$version
-	${CROSS_COMPILE}cc -c "$STUFF"/musl/__stack_chk_fail_local.c -o __stack_chk_fail_local.o
-	${CROSS_COMPILE}ar r libssp_nonshared.a __stack_chk_fail_local.o
+	filter-flags -flto -fvisibility=default
 
+	cd "$SRC"/$name-$version
 	./configure $TOOLFLAGS \
 		--prefix=/usr \
-		--libdir=/usr/lib \
 		--syslibdir=/usr/lib \
 		--enable-optimize=size
 	make
 	make DESTDIR="$PKG" install
 
-	cp libssp_nonshared.a "$PKG"/usr/lib
-
-	mkdir -p "$PKG"/usr/bin
+	install -d "$PKG"/usr/bin
 	ln -sf ../lib/libc.so "$PKG"/usr/bin/ldd
-
-	cat > "$PKG"/usr/bin/ldconfig <<-EOF
-		#!/usr/bin/sh
-		echo "adjusting libs..."
-		true
-	EOF
-	chmod +x "$PKG"/usr/bin/ldconfig
 }

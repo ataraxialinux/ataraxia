@@ -6,8 +6,7 @@
 
 name=iproute2
 version=5.11.0
-release=1
-options=('bootstrap')
+release=2
 backup=('etc/iproute2/ematch_map'
 	'etc/iproute2/rt_dsfield'
 	'etc/iproute2/rt_protos'
@@ -17,7 +16,7 @@ backup=('etc/iproute2/ematch_map'
 source=("https://www.kernel.org/pub/linux/utils/net/$name/$name-$version.tar.xz")
 
 build() {
-	export CFLAGS="-I$STUFF/include $CFLAGS"
+	append-cflags -I$STUFF/include
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/iproute2/musl-fixes.patch

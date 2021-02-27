@@ -5,7 +5,7 @@
 
 name=linux
 version=5.10.17
-hardenedver=5.10.16-hardened1
+hardenedver=5.10.17-hardened1
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
@@ -16,42 +16,45 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 build() {
+	local KARCH IMAGELOC
+
 	case $BARCH in
-		x86_64)
-			export XKARCH="x86_64"
-			export IMAGELOC="arch/x86/boot/bzImage"
+		amd64)
+			KARCH="x86_64"
+			IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		i686)
-			export XKARCH="i386"
-			export IMAGELOC="arch/x86/boot/bzImage"
+		x86)
+			KARCH="i386"
+			IMAGELOC="arch/x86/boot/bzImage"
 			;;
-		aarch64)
-			export XKARCH="arm64"
-			export IMAGELOC="arch/arm64/boot/Image"
+		arm64)
+			KARCH="arm64"
+			IMAGELOC="arch/arm64/boot/Image"
 			;;
-		armv7hl|armv6hl)
-			export XKARCH="arm"
-			export IMAGELOC="arch/arm/boot/zImage"
+		armv7l)
+			KARCH="arm"
+			IMAGELOC="arch/arm/boot/zImage"
+			;;
+		mips64|mips64el|mips|mipsel)
+			KARCH="mips"
+			IMAGELOC="vmlinux"
 			;;
 		ppc64le|ppc64)
-			export XKARCH="powerpc"
-			export IMAGELOC="vmlinux"
-			;;
-		s390x)
-			export XKARCH="s390"
-			export IMAGELOC="arch/s390/boot/bzImage"
+			KARCH="powerpc"
+			IMAGELOC="vmlinux"
 			;;
 		riscv64)
-			export XKARCH="riscv"
-			export IMAGELOC="arch/riscv/boot/Image"
+			KARCH="riscv"
+			IMAGELOC="arch/riscv/boot/Image"
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Ataraxia Linux"
+			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux"
 			exit 1
 	esac
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
+	patch -Np1 -i "$STUFF"/linux/0001-add-OpenZFS-support.patch
 	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
 	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
 	patch -Np1 -i "$STUFF"/linux/0110-Initialize-ata-before-graphics.patch
@@ -59,8 +62,12 @@ build() {
 	# Swap sucks
 	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
 
-	unset LDFLAGS
-	make mrproper
+	unset LDFLAGS HOSTCFLAGS HOSTCXXFLAGS HOSTLDFLAGS
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CC=${CROSS_COMPILE}clang mrproper
+	else
+		make mrproper
+	fi
 
 	cp "$STUFF"/linux/x509.genkey certs/
 
@@ -75,34 +82,35 @@ build() {
 	"$STUFF"/configure-kernel -a $BARCH
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		yes '' | make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE}
+		yes '' | make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang
 	else
-		yes '' | make ARCH=$XKARCH
+		yes '' | make ARCH=$KARCH
 	fi
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
-		make ARCH=$XKARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$KARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
-	depmod -a -b "$PKG"/usr ${kver}-ataraxia
+	depmod -a -b "$PKG"/usr ${kver}-hardened1-ataraxia
 
 	case $BARCH in
-		aarch64|armv7hl|armv6hl)
+		arm64|armv7l)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
-				make ARCH=$XKARCH CROSS_COMPILE=${CROSS_COMPILE} INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
-				make ARCH=$XKARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$KARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			fi
 			;;
 	esac
 
-	cp "$IMAGELOC" "$PKG"/usr/lib/modules/${kver}-ataraxia/vmlinuz
-	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
+	mkdir -p "$PKG"/boot
+	cp "$IMAGELOC" "$PKG"/boot/vmlinuz
+	cp .config "$PKG"/boot/config
 
-	echo "${kver}-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-ataraxia/version
+	echo "${kver}-hardened1-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/version
 
-	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
-	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
+	rm -rf "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/build
+	rm -rf "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/source
 }

@@ -1,7 +1,7 @@
 # Description: Reference implementation of a Wayland compositor
 # URL:         https://wayland.freedesktop.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson pam dbus libdrm libx11 libxcb libxcursor cairo libinput libpng libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu pango libwebp colord libva gst-plugins-base freerdp pipewire
+# Depends on:  meson pam dbus libdrm libx11 libxcb libxcursor cairo libinput libpng libjpeg-turbo libxkbcommon mesa mtdev wayland-protocols glu pango libwebp colord libva gst-plugins-base freerdp
 # Section:     x11
 
 name=weston
@@ -10,13 +10,17 @@ release=3
 source=("https://wayland.freedesktop.org/releases/$name-$version.tar.xz")
 
 build() {
+	filter-flags -flto
+
 	cd "$SRC"/$name-$version
+	sed -i "s|subdir('tests')|# subdir('tests')|" meson.build
+
 	mkdir -p build
 	cd build
 
 	ataraxia-meson "$SRC"/$name-$version \
 		-Db_lto=false \
-		-Dsimple-dmabuf-drm=auto
+		-Dpipewire=false
 	samu
 	DESTDIR="$PKG" samu install
 }

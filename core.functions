@@ -1,0 +1,400 @@
+#
+# Core functions for 'Marisa' build system
+#
+# Copyright (c) 2016-2021 Ataraxia GNU/Linux <ataraxialinux@protonmail.com>
+
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+msg() { printf "\033[1;34m::\033[0m %s\n" "$@"; }
+die() { printf "\033[1;31m::\033[0m %s\n" "$@"; exit 1; }
+
+pushd () { command pushd "$@" > /dev/null; }
+popd () { command popd "$@" > /dev/null; }
+
+check_for_root() {
+	if [[ $EUID -ne 0 ]]; then
+		die 'You must be root to run `build`'
+	fi
+}
+check_for_arch() {
+	if [ -z "$1" ]; then
+		die 'Architecture is not specified'
+	fi
+}
+
+parse_architecture() {
+	check_for_arch "$1"
+
+	case "$1" in
+		amd64) export XTARGET="x86_64-linux-musl" ;;
+		x86) export XTARGET="i386-linux-musl" ;;
+		arm64) export XTARGET="aarch64-linux-musl" ;;
+		armv7l) export XTARGET="armv7l-linux-musleabihf" ;;
+		mips64) export XTARGET="mips64-linux-musl" ;;
+		mips64el) export XTARGET="mips64el-linux-musl" ;;
+		mips) export XTARGET="mips-linux-musl" ;;
+		mipsel) export XTARGET="mipsel-linux-musl" ;;
+		ppc64le) export XTARGET="powerpc64le-linux-musl" ;;
+		ppc64) export XTARGET="powerpc64-linux-musl" ;;
+		riscv64) export XTARGET="riscv64-linux-musl" ;;
+		*) die 'Architecture called `'${1}'` is not supported by Ataraxia GNU/Linux' ;;
+	esac
+
+	export XHOST="$(echo $(clang -dumpmachine) | sed -e 's/-[^-]*/-cross/')"
+}
+
+export_variables() {
+	check_for_arch "$1"
+	parse_architecture "$1"
+
+	export CWD="$(pwd)"
+	export BUILD="$CWD/OUT.$1"
+	export SOURCES="$BUILD/sources"
+	export PACKAGES="$BUILD/packages"
+	export ROOTFS="$BUILD/rootfs"
+	export TOOLS="$BUILD/tools"
+	export STUFF="$CWD/stuff"
+	export REPO="$CWD/packages"
+	export TCREPO="$CWD/toolchain"
+
+	export PATH="$TOOLS/bin:$PATH"
+	export HOSTCC="clang"
+	export HOSTCXX="clang++"
+	export ORIGMAKE="$(command -v make)"
+
+	if [ -z "$JOBS" ]; then
+		export MKOPTS="-j$(expr $(nproc) + 1)"
+	fi
+}
+
+export_cflags() {
+	check_for_arch "$1"
+
+	case "$1" in
+		amd64|x86)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -fcf-protection=full -mretpoline --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		arm64|armv7l)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		ppc64le|ppc64)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		riscv64)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		*)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+	esac
+}
+
+generate_config() {
+	if [ "$target" = "1" ]; then
+		cat > "$1" <<- EOF
+			# Target configuration
+			export BARCH="$BARCH"
+			export XHOST="$XHOST"
+			export XTARGET="$XTARGET"
+			export BUILDFLAGS="--build=$XHOST --host=$XTARGET"
+			export TOOLFLAGS="--build=$XHOST --host=$XTARGET --target=$XTARGET"
+			export PERLFLAGS="--target=$XTARGET"
+			export CMAKEFLAGS="-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TOOLCHAIN_FILE=$TOOLS/share/cmake/cmake.cross"
+
+			# Host tools configuration
+			export PATH="$PATH"
+			export HOSTCC="$HOSTCC"
+			export HOSTCXX="$HOSTCXX"
+			export HOSTLD="ld.lld"
+			export HOSTAR="llvm-ar"
+			export ORIGMAKE="$ORIGMAKE"
+
+			# Target tools configuration
+			export CROSS_COMPILE="$XTARGET-"
+			export CC="$XTARGET-clang"
+			export CXX="$XTARGET-clang++"
+			export AR="$XTARGET-ar"
+			export AS="$XTARGET-as"
+			export RANLIB="$XTARGET-ranlib"
+			export LD="$XTARGET-ld"
+			export STRIP="$XTARGET-strip"
+			export OBJCOPY="$XTARGET-objcopy"
+			export OBJDUMP="$XTARGET-objdump"
+			export SIZE="$XTARGET-size"
+
+			# Compiler flags
+			export CFLAGS="$xcflags"
+			export CXXFLAGS="$xcflags"
+			export LDFLAGS="$xldflags"
+
+			# Host compiler flags
+			export HOSTCFLAGS=""
+			export HOSTCXXFLAGS="-stdlib=libc++"
+			export HOSTLDFLAGS="-rtlib=compiler-rt -unwindlib=libunwind"
+
+			# Paths configuration
+			export ROOTFS="$ROOTFS"
+			export STAGING_INCDIR="$ROOTFS/usr/include"
+			export STAGING_LIBDIR="$ROOTFS/usr/lib"
+			export TOOLS="$TOOLS"
+			export STUFF="$STUFF"
+
+			# pkg-config configuration
+			export PKG_CONFIG="$XTARGET-pkgconf"
+			export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+			export PKG_CONFIG_LIBDIR="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+
+			# Package manager configuration
+			export mkopts="$MKOPTS"
+			export buildoptions=('emptydirs' 'strip' 'makeflags' '~locales' '~docs' 'ccache' '~libtool' '~nobootstrap')
+			export repos="$REPO"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
+		EOF
+	elif [ "$host" = "1" ]; then
+		cat > "$1" <<- EOF
+			# Target configuration
+			export BARCH="$BARCH"
+			export XHOST="$XHOST"
+			export XTARGET="$XTARGET"
+
+			# Host tools configuration
+			export PATH="$PATH"
+			export CC="$HOSTCC"
+			export CXX="$HOSTCXX"
+			export HOSTCC="$HOSTCC"
+			export HOSTCXX="$HOSTCXX"
+			export ORIGMAKE="$ORIGMAKE"
+			export MAKEINFO=true
+
+			# Compiler flags
+			export CFLAGS=""
+			export CXXFLAGS="-stdlib=libc++"
+			export LDFLAGS="-rtlib=compiler-rt -unwindlib=libunwind"
+
+			# Compiler flags for target
+			export TARGET_CFLAGS="$xcflags"
+			export TARGET_CXXFLAGS="$xcflags"
+			export TARGET_LDFLAGS="$xldflags"
+
+			# Paths configuration
+			export ROOTFS="$ROOTFS"
+			export TOOLS="$TOOLS"
+			export REPO="$REPO"
+			export STUFF="$STUFF"
+
+			# pkg-config configuration
+			export PKG_CONFIG="$(which pkg-config)"
+
+			# Package manager configuration
+			export mkopts="$MKOPTS"
+			export buildoptions=('emptydirs' 'strip' 'makeflags' 'locales' 'docs' 'ccache' 'libtool' '~nobootstrap')
+			export repos="$TCREPO"
+			export pkgdest="$PACKAGES"
+			export srcdest="$SOURCES"
+		EOF
+	fi
+}
+
+make_environment() {
+	rm -rf "$BUILD"
+	mkdir -p "$BUILD" "$SOURCES" "$PACKAGES" "$ROOTFS/usr/lib/tsukuri/db" "$TOOLS"
+
+	host=1 generate_config "$BUILD"/host.config
+	target=1 generate_config "$BUILD"/target.config
+}
+
+
+emerge_host() {
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
+	fi
+
+	if [ ! -f "$TCREPO/host-${1}/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	pushd "$TCREPO/host-${1}"
+		tsukuri bi -c "$BUILD/host.config" -wp
+	popd
+}
+
+emerge_target() {
+	local root
+
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
+	fi
+
+	if [ -n "$2" ]; then
+		root="$2"
+	else
+		root="$ROOTFS"
+	fi
+
+	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	tsukuri em -c "$BUILD/target.config" -r "$root" -wNDSH $force $1
+}
+
+emerge_ht() {
+	local root
+
+	if [ -z "$1" ]; then
+		die 'Package was not specified'
+	fi
+
+	if [ -n "$2" ]; then
+		root="$2"
+	else
+		root="$ROOTFS"
+	fi
+
+	if [ ! -f "$REPO/$1/KagamiBuild" ]; then
+		die 'Package does not exist'
+	fi
+
+	pushd "$REPO/$1"
+		tsukuri bi -c "$BUILD/host.config" -w
+	popd
+
+	tsukuri em -c "$BUILD/target.config" -r "$root" -wNDSH $1
+}
+
+stamp() {
+	local target="$1"
+
+	if [ -z "$target" ]; then
+		return 1
+	fi
+
+	if [ ! -f "$BUILD/.${target}_stamp" ]; then
+		touch "$BUILD/.${target}_stamp"
+	fi
+}
+
+check_stamp() {
+	local target="$1"
+
+	if [ -z "$target" ]; then
+		return 1
+	fi
+
+	if [ -f "$BUILD/.${target}_stamp" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+get_desktop_packages() {
+	local desktop="$1"
+	local packages
+
+	if [ -z "$desktop" ]; then
+		return 1
+	fi
+
+	packages="linux-firmware"
+
+	case $desktop in
+		gnome|gnome-core|xfce|xfce-core|mate|mate-core|budgie) packages="$packages xorg-server xinit xf86-video-amdgpu xf86-video-ati xf86-video-nouveau xf86-video-fbdev xf86-video-vesa xf86-input-libinput" ;;
+	esac
+
+	case $desktop in
+		gnome) packages="$packages gnome" ;;
+		gnome-core) packages="$packages gnome-core" ;;
+		xfce) packages="$packages xfce lxdm network-manager-applet pipewire" ;;
+		xfce-core) packages="$packages xfce-core lxdm network-manager-applet pipewire" ;;
+		mate) packages="$packages mate lxdm network-manager-applet pipewire" ;;
+		mate-core) packages="$packages mate-core lxdm network-manager-applet pipewire" ;;
+		budgie) packages="$packages budgie lxdm" ;;
+		sway) packages="$packages sway networkmanager pipewire" ;;
+		weston) packages="weston networkmanager" ;;
+		*) die "You haven't specified desktop environment/windows manager or it's not supported" ;;
+	esac
+
+	case $desktop in
+		gnome|gnome-core|xfce|xfce-core|mate|mate-core|budgie) packages="$packages font-adobe-source-han-sans-jp-fonts font-adobe-source-han-sans-kr-fonts mozc ibus-hangul" ;;
+	esac
+
+	case $BARCH in
+		amd64|x86|arm64|armv7l) packages="$packages firefox" ;;
+	esac
+
+	case $BARCH in
+		amd64|x86) packages="$packages xf86-video-intel xf86-video-vmware grub" ;;
+	esac
+
+	echo "$packages"
+}
+
+parse_numbersign() {
+	# $1 - kagamibuild
+	# $2 - number sign variable
+	[ -z "$1" ] && exit 1
+	[ -z "$2" ] && exit 1
+
+	echo "$(grep -w "^# ${2}[[:blank:]]*:" "$1" | sed "s/^# ${2}[[:blank:]]*:[[:blank:]]*//" | tr ',' ' ')"
+}
+
+genrepo() {
+	unset name version release options backup source noextract depends
+	local d i url
+
+	if [ -f "$1/.ignoreit" ]; then
+		return 0
+	fi
+	if [ ! -d "$1" ]; then
+		return 0
+	fi
+
+	source $1/KagamiBuild
+	local summary="$(parse_numbersign $1/KagamiBuild "Description")"
+	local homepage="$(parse_numbersign $1/KagamiBuild "URL")"
+	local category="$(parse_numbersign $1/KagamiBuild "Section")"
+	local maintainer="$(parse_numbersign  $1/KagamiBuild "Maintainer")"
+
+	maintainer="$(echo $maintainer | tr -d ',' | awk '{print $1}') <$(echo $maintainer | tr -d ',' | sed 's/^\w*\ *//' | sed 's/ at /@/' | sed 's/ dot /./')>"
+
+	for i in ${source[*]}; do
+		if echo $i | grep -q '::archive='; then
+			url="$(echo $i | sed -e 's/::archive=/ /g' | awk '{print $1}')"
+		else
+			url="$i"
+		fi
+
+		if [ -n "$d" ]; then
+			d="$d $url"
+		else
+			d="$url"
+		fi
+	done
+
+	echo -e '\t{' >> "$2"
+	echo -e '\t\t"name": "'${name}'",' >> "$2"
+	echo -e '\t\t"version": "'${version}'",' >> "$2"
+	echo -e '\t\t"summary": "'${summary}'",' >> "$2"
+	echo -e '\t\t"maintainer": "'${maintainer}'",' >> "$2"
+	echo -e '\t\t"download": "'${d}'",' >> "$2"
+	echo -e '\t\t"homepage": "'${homepage}'",' >> "$2"
+	echo -e '\t\t"category": "'${category}'"' >> "$2"
+	echo -e '\t},' >> "$2"
+}

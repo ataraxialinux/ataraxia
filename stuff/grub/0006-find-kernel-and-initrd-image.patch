@@ -1,0 +1,46 @@
+From 9d7277d886ff054d9c1ced388e416366f6970f7a Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 26 Feb 2021 03:59:04 +0900
+Subject: [PATCH] find kernel and initrd image
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ util/grub.d/10_linux.in | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/util/grub.d/10_linux.in b/util/grub.d/10_linux.in
+index e8b01c0..1de63ec 100644
+--- a/util/grub.d/10_linux.in
++++ b/util/grub.d/10_linux.in
+@@ -164,12 +164,12 @@ machine=`uname -m`
+ case "x$machine" in
+     xi?86 | xx86_64)
+ 	list=
+-	for i in /boot/vmlinuz-* /vmlinuz-* /boot/kernel-* ; do
++	for i in /boot/vmlinuz-* /vmlinuz-* /boot/kernel-* /vmlinuz /boot/vmlinuz ; do
+ 	    if grub_file_is_not_garbage "$i" ; then list="$list $i" ; fi
+ 	done ;;
+     *) 
+ 	list=
+-	for i in /boot/vmlinuz-* /boot/vmlinux-* /vmlinuz-* /vmlinux-* /boot/kernel-* ; do
++	for i in /boot/vmlinuz-* /boot/vmlinux-* /vmlinuz-* /vmlinux-* /boot/kernel-* /vmlinuz /boot/vmlinuz ; do
+                   if grub_file_is_not_garbage "$i" ; then list="$list $i" ; fi
+ 	done ;;
+ esac
+@@ -211,10 +211,10 @@ while [ "x$list" != "x" ] ; do
+   done
+ 
+   initrd_real=
+-  for i in "initrd.img-${version}" "initrd-${version}.img" "initrd-${version}.gz" \
++  for i in "initrd.img-${version}" "initrd-${version}.img" "initrd-${version}.gz" "initrd.gz" \
+ 	   "initrd-${version}" "initramfs-${version}.img" \
+-	   "initrd.img-${alt_version}" "initrd-${alt_version}.img" \
+-	   "initrd-${alt_version}" "initramfs-${alt_version}.img" \
++	   "initrd.img-${alt_version}" "initrd-${alt_version}.img" "initrd.img" \
++	   "initrd-${alt_version}" "initramfs-${alt_version}.img" "initramfs.img" \
+ 	   "initramfs-genkernel-${version}" \
+ 	   "initramfs-genkernel-${alt_version}" \
+ 	   "initramfs-genkernel-${GENKERNEL_ARCH}-${version}" \
+-- 
+2.29.2
+

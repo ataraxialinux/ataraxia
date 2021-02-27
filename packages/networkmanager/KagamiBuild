@@ -11,12 +11,11 @@ backup=('etc/NetworkManager/NetworkManager.conf')
 source=("https://download.gnome.org/sources/NetworkManager/${version%.*}/NetworkManager-$version.tar.xz")
 
 build() {
-	unset CFLAGS CXXFLAGS
+	filter-flags -flto
 
 	cd "$SRC"/NetworkManager-$version
-	patch -Np1 -i "$STUFF"/networkmanager/musl.patch
-
-	sed '/initrd/d' -i src/meson.build
+	sed -i '/initrd/d' src/core/meson.build
+	sed -zi 's|\nset -e||' tools/create-exports-NetworkManager.sh
 
 	mkdir -p build
 	cd build
@@ -34,7 +33,6 @@ build() {
 		-Dmodify_system=true \
 		-Dnmtui=true \
 		-Dovs=false \
-		-Dpolkit_agent=true \
 		-Dppp=false \
 		-Dqt=false \
 		-Dselinux=false \

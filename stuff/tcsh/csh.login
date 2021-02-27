@@ -7,7 +7,7 @@
 ##     Initial version.  Inspired by the Suse version.
 ##
 ## 2020-07-04  --  Ishimoto Shinobu (nagakamira@gmail.com)
-##     Improved config for Ataraxia Linux.
+##     Improved config for Ataraxia GNU/Linux.
 ##
 
 

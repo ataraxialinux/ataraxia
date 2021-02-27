@@ -1,12 +1,12 @@
 # Description: Fast SQL database server
 # URL:         https://mariadb.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai systemd libevent cracklib lzo lz4 snappy zstd pam readline libaio pcre2
+# Depends on:  cmake samurai systemd libevent cracklib lzo lz4 snappy zstd pam readline libaio pcre2 krb5
 # Section:     database
 
 name=mariadb
 version=10.5.9
-release=1
+release=2
 backup=('etc/my.cnf'
 	'etc/my.cnf.d/client.cnf'
 	'etc/my.cnf.d/enable_encryption.preset'
@@ -15,15 +15,12 @@ backup=('etc/my.cnf'
 source=("https://downloads.mariadb.org/interstitial/$name-$version/source/$name-$version.tar.gz")
 
 build() {
-	export CFLAGS=${CFLAGS/-fno-asynchronous-unwind-tables}
-	export CXXFLAGS=${CXXFLAGS/-fno-asynchronous-unwind-tables}
-
 	cd "$SRC"/$name-$version
 	patch -Np0 -i "$STUFF"/mariadb/musl_ucontext-h.patch
 
 	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version \
+	cmake "$SRC"/$name-$version $CMAKEFLAGS \
 		-DINSTALL_LAYOUT=RPM \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DINSTALL_SCRIPTDIR=bin \
@@ -41,7 +38,7 @@ build() {
 		-DMYSQL_DATADIR=/var/lib/mysql \
 		-DTMPDIR=/var/tmp \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
-		-DCOMPILATION_COMMENT="Ataraxia Linux" \
+		-DCOMPILATION_COMMENT="Ataraxia GNU/Linux" \
 		-DSKIP_TESTS=ON \
 		-DWITH_EMBEDDED_SERVER=ON \
 		-DWITH_EXTRA_CHARSETS=complex \
@@ -53,9 +50,10 @@ build() {
 		-DWITH_SYSTEMD=yes \
 		-DWITH_UNIT_TESTS=OFF \
 		-DWITH_ZLIB=system \
-		-DAUTH_GSSAPI_PLUGIN_TYPE=OFF \
-		-DPLUGIN_AUTH_GSSAPI=NO \
 		-DSECURITY_HARDENED=ON \
+		-DPLUGIN_EXAMPLE=NO \
+		-DPLUGIN_FEDERATED=NO \
+		-DPLUGIN_FEEDBACK=NO \
 		-Wno-dev -G Ninja
 	samu
 	DESTDIR="$PKG" samu install

@@ -1,0 +1,21 @@
+# Description: Feature-rich GTK+ theme switcher of the LXDE Desktop
+# URL:         https://lxde.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  intltool dbus-glib gtk3
+# Section:     lxde
+
+name=lxappearance
+version=0.6.3
+release=1
+source=("https://downloads.sourceforge.net/lxde/$name-$version.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--enable-dbus \
+		--enable-gtk3
+	make
+	make DESTDIR="$PKG" install
+}

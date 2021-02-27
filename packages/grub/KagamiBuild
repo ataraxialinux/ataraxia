@@ -1,16 +1,16 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python gettext-tiny xz freetype lvm2
+# Depends on:  python gettext-tiny xz freetype lvm2 zfs
 # Section:     utils
 
 name=grub
-version=2.04
+version=2.05
 unifontver=13.0.02
-release=19
+release=1
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
-source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
+source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
 	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
 noextract=("unifont-$unifontver.pcf.gz")
 
@@ -38,34 +38,37 @@ build_flavor() {
 }
 
 build() {
-	unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
+	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
 
-	export BUILD_CPPFLAGS=""
-	export BUILD_CFLAGS=""
-	export BUILD_CXXFLAGS=""
-	export BUILD_LDFLAGS=""
+	export NM=llvm-nm
+	export OBJCOPY=llvm-objcopy
+	export RANLIB=llvm-ranlib
+	export STRIP=llvm-strip
+	export TARGET_NM=llvm-nm
+	export TARGET_OBJCOPY=llvm-objcopy
+	export TARGET_RANLIB=llvm-ranlib
+	export TARGET_STRIP=llvm-strip
 
 	case $BARCH in
-		x86_64|i686)
+		amd64|x86)
 			FLAVOR="efi pc"
-			;;
-		aarch64|armv7hl|armv6hl)
-			FLAVOR="efi"
 			;;
 		ppc64le|ppc64)
 			FLAVOR="ieee1275"
 			;;
 		*)
-			echo "Architecture is not set or is not supported by Ataraxia Linux"
+			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux"
 			exit 1
 	esac
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$STUFF"/grub/fix-gcc-no-pie-specs.patch
-	patch -Np1 -i "$STUFF"/grub/locale.patch
-	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
-	patch -Np1 -i "$STUFF"/grub/0027-blscfg-add-blscfg-module-to-parse-Boot-Loader-Specif.patch
-	patch -Np1 -i "$STUFF"/grub/0040-Don-t-say-GNU-Linux-in-generated-menus.patch
+	patch -Np1 -i "$STUFF"/grub/0001-Don-t-say-GNU-Linux-in-the-menu.patch
+	patch -Np1 -i "$STUFF"/grub/0002-support-Boot-Loader-Specification.patch
+	patch -Np1 -i "$STUFF"/grub/0003-don-t-look-for-locale-directory.patch
+	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
+	patch -Np1 -i "$STUFF"/grub/0005-fix-runtime-if-built-on-LLD.patch
+	patch -Np1 -i "$STUFF"/grub/0006-find-kernel-and-initrd-image.patch
+	patch -Np1 -i "$STUFF"/grub/0007-don-t-check-for-header.patch
 
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
@@ -83,6 +86,8 @@ build() {
 	rm -rf "$PKG"/usr/lib/grub/*/*.module
 	rm -rf "$PKG"/usr/lib/grub/*/*.image
 	rm -rf "$PKG"/usr/lib/grub/*/{kernel.exec,gdb_grub,gmodule.pl}
+
+	cp "$STUFF"/mklive/unicode.pf2 "$PKG"/usr/share/grub/unicode.pf2
 
 	install -Dm0644 "$STUFF"/grub/default "$PKG"/etc/default/grub
 }

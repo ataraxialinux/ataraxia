@@ -1,6 +1,75 @@
---- a/execinfo.c.orig
+From a068ed0d327bd15393910697c8ec76a58765c800 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 7 Feb 2021 05:24:17 +0900
+Subject: [PATCH] misc
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ Makefile        | 33 +++++++++++++++++----------------
+ execinfo.c      | 20 ++++++++++++--------
+ stacktraverse.c |  5 +++++
+ test.c          |  1 +
+ 4 files changed, 35 insertions(+), 24 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index c08a617..e512229 100644
+--- a/Makefile
++++ b/Makefile
+@@ -23,24 +23,25 @@
+ # SUCH DAMAGE.
+ #
+ # $Id: Makefile,v 1.3 2004/07/19 05:19:55 sobomax Exp $
++#
++# Linux Makefile by Matt Smith <mcs@darkregion.net>, 2011/01/04
+ 
+-LIB=	execinfo
+-
+-SRCS=	stacktraverse.c stacktraverse.h execinfo.c execinfo.h
+-
+-INCS=	execinfo.h
+-
+-SHLIB_MAJOR=	1
+-SHLIB_MINOR=	0
+-
+-NOPROFILE=	yes
++CC=cc
++AR=ar
++EXECINFO_CFLAGS=$(CFLAGS) -O2 -pipe -fno-strict-aliasing -std=gnu99 -fstack-protector -c
++EXECINFO_LDFLAGS=$(LDFLAGS)
+ 
+-DPADD=		${LIBM}
+-LDADD=		-lm
++all: static dynamic
+ 
+-#WARNS?=	4
++static:
++	$(CC) $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) stacktraverse.c
++	$(CC) $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) execinfo.c
++	$(AR) rcs libexecinfo.a stacktraverse.o execinfo.o
+ 
+-#stacktraverse.c: gen.py
+-#	./gen.py > stacktraverse.c
++dynamic:
++	$(CC) -fpic -DPIC $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) stacktraverse.c -o stacktraverse.So
++	$(CC) -fpic -DPIC $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) execinfo.c -o execinfo.So
++	$(CC) -shared -Wl,-soname,libexecinfo.so.1 -o libexecinfo.so.1 stacktraverse.So execinfo.So
+ 
+-.include <bsd.lib.mk>
++clean:
++	rm -rf *.o *.So *.a *.so
+diff --git a/execinfo.c b/execinfo.c
+index 906fb14..334a24b 100644
+--- a/execinfo.c
 +++ b/execinfo.c
-@@ -69,7 +69,8 @@
+@@ -26,6 +26,7 @@
+  * $Id: execinfo.c,v 1.3 2004/07/19 05:21:09 sobomax Exp $
+  */
+ 
++#define _GNU_SOURCE
+ #include <sys/types.h>
+ #include <sys/uio.h>
+ #include <dlfcn.h>
+@@ -69,7 +70,8 @@ backtrace(void **buffer, int size)
  char **
  backtrace_symbols(void *const *buffer, int size)
  {
@@ -10,7 +79,7 @@
      char **rval;
      char *cp;
      Dl_info info;
-@@ -78,7 +79,6 @@
+@@ -78,7 +80,6 @@ backtrace_symbols(void *const *buffer, int size)
      rval = malloc(clen);
      if (rval == NULL)
          return NULL;
@@ -18,7 +87,7 @@
      for (i = 0; i < size; i++) {
          if (dladdr(buffer[i], &info) != 0) {
              if (info.dli_sname == NULL)
-@@ -92,14 +92,14 @@
+@@ -92,14 +93,14 @@ backtrace_symbols(void *const *buffer, int size)
                     2 +                      /* " <" */
                     strlen(info.dli_sname) + /* "function" */
                     1 +                      /* "+" */
@@ -35,7 +104,7 @@
                buffer[i], info.dli_sname, offset, info.dli_fname);
          } else {
              alen = 2 +                      /* "0x" */
-@@ -108,12 +108,15 @@
+@@ -108,12 +109,15 @@ backtrace_symbols(void *const *buffer, int size)
              rval = realloc_safe(rval, clen + alen);
              if (rval == NULL)
                  return NULL;
@@ -54,7 +123,7 @@
      return rval;
  }
  
-@@ -155,6 +158,6 @@
+@@ -155,6 +159,6 @@ backtrace_symbols_fd(void *const *buffer, int size, int fd)
                  return;
              snprintf(buf, len, "%p\n", buffer[i]);
          }
@@ -62,73 +131,56 @@
 +        write(fd, buf, strlen(buf));
      }
  }
- 
- --- a/execinfo.c.orig
-+++ b/execinfo.c
-@@ -26,6 +26,7 @@
-  * $Id: execinfo.c,v 1.3 2004/07/19 05:21:09 sobomax Exp $
-  */
- 
-+#define _GNU_SOURCE
- #include <sys/types.h>
- #include <sys/uio.h>
- #include <dlfcn.h>
---- a/stacktraverse.c.orig
+diff --git a/stacktraverse.c b/stacktraverse.c
+index d143695..823c736 100644
+--- a/stacktraverse.c
 +++ b/stacktraverse.c
 @@ -1,3 +1,4 @@
 +#define _GNU_SOURCE
  #include <stddef.h>
  
  #include "stacktraverse.h"
---- a/test.c.orig
+@@ -7,6 +8,7 @@ getreturnaddr(int level)
+ {
+ 
+     switch(level) {
++#ifndef __BUILTIN_HACK
+     case 0: return __builtin_return_address(1);
+     case 1: return __builtin_return_address(2);
+     case 2: return __builtin_return_address(3);
+@@ -135,6 +137,7 @@ getreturnaddr(int level)
+     case 125: return __builtin_return_address(126);
+     case 126: return __builtin_return_address(127);
+     case 127: return __builtin_return_address(128);
++#endif
+     default: return NULL;
+     }
+ }
+@@ -148,6 +151,7 @@ getframeaddr(int level)
+ {
+ 
+     switch(level) {
++#ifndef __BUILTIN_HACK
+     case 0: return __builtin_frame_address(1);
+     case 1: return __builtin_frame_address(2);
+     case 2: return __builtin_frame_address(3);
+@@ -276,6 +280,7 @@ getframeaddr(int level)
+     case 125: return __builtin_frame_address(126);
+     case 126: return __builtin_frame_address(127);
+     case 127: return __builtin_frame_address(128);
++#endif
+     default: return NULL;
+     }
+ }
+diff --git a/test.c b/test.c
+index 8770428..21f4716 100644
+--- a/test.c
 +++ b/test.c
 @@ -1,3 +1,4 @@
 +#define _GNU_SOURCE
  #include <stdio.h>
  #include <stdlib.h>
  
---- a/Makefile.orig
-+++ b/Makefile
-@@ -23,24 +23,25 @@
- # SUCH DAMAGE.
- #
- # $Id: Makefile,v 1.3 2004/07/19 05:19:55 sobomax Exp $
-+#
-+# Linux Makefile by Matt Smith <mcs@darkregion.net>, 2011/01/04
- 
--LIB=	execinfo
-+CC=cc
-+AR=ar
-+EXECINFO_CFLAGS=$(CFLAGS) -O2 -pipe -fno-strict-aliasing -std=gnu99 -fstack-protector -c
-+EXECINFO_LDFLAGS=$(LDFLAGS)
- 
--SRCS=	stacktraverse.c stacktraverse.h execinfo.c execinfo.h
-+all: static dynamic
- 
--INCS=	execinfo.h
-+static:
-+	$(CC) $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) stacktraverse.c
-+	$(CC) $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) execinfo.c
-+	$(AR) rcs libexecinfo.a stacktraverse.o execinfo.o
- 
--SHLIB_MAJOR=	1
--SHLIB_MINOR=	0
-+dynamic:
-+	$(CC) -fpic -DPIC $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) stacktraverse.c -o stacktraverse.So
-+	$(CC) -fpic -DPIC $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) execinfo.c -o execinfo.So
-+	$(CC) -shared -Wl,-soname,libexecinfo.so.1 -o libexecinfo.so.1 stacktraverse.So execinfo.So
- 
--NOPROFILE=	yes
--
--DPADD=		${LIBM}
--LDADD=		-lm
--
--#WARNS?=	4
--
--#stacktraverse.c: gen.py
--#	./gen.py > stacktraverse.c
--
--.include <bsd.lib.mk>
-+clean:
-+	rm -rf *.o *.So *.a *.so
+-- 
+2.29.2
 

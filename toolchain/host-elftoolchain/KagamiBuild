@@ -1,0 +1,31 @@
+name=host-elftoolchain
+realpath="$REPO/${name/host-}"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://github.com/ataraxialinux/storage/raw/master/elftoolchain-code-$version-trunk.zip")
+
+build() {
+	cd "$SRC"/elftoolchain-code-$version-trunk
+	patch -Np1 -i "$STUFF"/elftoolchain/0001-fix-makefiles.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0002-fix-build-on-musl-libc.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0003-add-rpaths.patch
+	patch -Np1 -i "$STUFF"/elftoolchain/0004-add-support-for-STN_UNDEF.patch
+
+	mkdir -p common/sys
+	cp "$STUFF"/include/sys/queue.h common/sys
+
+	bmake WITH_TESTS=no
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libelftc install
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libelf install
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libdwarf install
+	bmake WITH_TESTS=no LIBDIR=/lib DESTDIR="$TOOLS" -C libpe install
+
+	install -m755 cxxfilt/c++filt "$TOOLS"/bin/$XTARGET-c++filt
+	install -m755 elfcopy/elfcopy "$TOOLS"/bin/$XTARGET-objcopy
+	install -m755 elfcopy/strip "$TOOLS"/bin/$XTARGET-strip
+
+	for i in addr2line readelf size strings; do
+		install -m755 $i/$i "$TOOLS"/bin/$XTARGET-$i
+	done
+}

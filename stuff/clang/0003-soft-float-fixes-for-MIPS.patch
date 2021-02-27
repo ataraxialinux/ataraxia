@@ -1,0 +1,51 @@
+From be7de0f2e579ae7e8ccb306474a366896c880c8e Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 12 Feb 2021 03:54:45 +0900
+Subject: [PATCH 3/5] soft-float fixes for MIPS
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Linux.cpp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 994a932f..f3ff8f1f 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -422,6 +422,7 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+   if (Triple.isMusl()) {
+     std::string ArchName;
+     bool IsArm = false;
++    bool IsMips = false;
+ 
+     switch (Arch) {
+     case llvm::Triple::arm:
+@@ -434,14 +435,25 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+       ArchName = "armeb";
+       IsArm = true;
+       break;
++    case llvm::Triple::mips:
++    case llvm::Triple::mipsel:
++    case llvm::Triple::mips64:
++    case llvm::Triple::mips64el:
++      IsMips = true;
++      ArchName = Triple.getArchName().str();
++      break;
+     default:
+       ArchName = Triple.getArchName().str();
+     }
++
+     if (IsArm &&
+         (Triple.getEnvironment() == llvm::Triple::MuslEABIHF ||
+          tools::arm::getARMFloatABI(*this, Args) == tools::arm::FloatABI::Hard))
+       ArchName += "hf";
+ 
++    if (IsMips && tools::mips::getMipsFloatABI(getDriver(), Args, getTriple()) == tools::mips::FloatABI::Soft)
++      ArchName += "-sf";
++
+     return "/lib/ld-musl-" + ArchName + ".so.1";
+   }
+ 
+-- 
+2.29.2
+
