@@ -887,7 +887,7 @@ main() {
 		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
 
 		check_for_arch "amd64"
-		export_variables "amd64"
+		NOSECHECK=1 export_variables "amd64"
 
 		msg "Checking for updates"
 		for packages in $(ls "$REPO/" | sort); do
@@ -898,9 +898,9 @@ main() {
 					elif [ "$packages" = "systemd-runtime" ]; then
 						true
 					elif [ "$packages" = "linux" ]; then
-						"$UTILS/check-updates" linux
+						"$CWD/check-updates" linux
 					elif [ "$packages" = "linux-headers" ]; then
-						"$UTILS/check-updates" linux-headers
+						"$CWD/check-updates" linux-headers
 					else
 						"$CWD/check-updates" $cuopt $cuopttwo $packages
 					fi
