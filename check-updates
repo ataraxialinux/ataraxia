@@ -57,7 +57,10 @@ check_updates() {
 	export LC_ALL=C
 
 	if [ -z "$site" ]; then
-		printf '%s\n' "$homepage"
+		case "$distfiles" in
+			*download.gnome.org*) ;;
+			*) printf '%s\n' "$homepage" ;;
+		esac
 		for i in $distfiles; do
 			printf '%s\n' "${i%/*}/"
 		done
@@ -149,11 +152,8 @@ check_updates() {
 				url="https://bitbucket.org/$bbname/downloads"
 				rx='/(get|downloads)/(v?|\Q'"$name"'\E-)?\K[\d\.]+(?=\.tar)';;
 			*download.gnome.org*)
-				: ${pattern="\Q$name\E-\K[0-9]+\.[0-9]*[02468]\.[0-9.]*[0-9](?=)"}
+				: ${pattern="\Q$name\E-\K(0|[13]\.[0-9]*[02468]|[4-9][0-9]+)\.[0-9.]*[0-9](?=)"}
 				url="https://download.gnome.org/sources/$name/cache.json";;
-			*ftp.gnome.org*)
-				: ${pattern="\Q$name\E-\K[0-9]+\.[0-9]*[02468]\.[0-9.]*[0-9](?=)"}
-				url="http://ftp.gnome.org/pub/GNOME/sources/$name/cache.json";;
 			*kernel.org/pub/linux/kernel/*)
 				rx=linux-'\K'${version%.*}'[\d.]+(?=\.tar\.xz)';;
 			*cran.r-project.org/src/contrib*)
