@@ -5,7 +5,7 @@
 
 name=linux
 version=5.10.20
-hardenedver=5.10.20-hardened1
+hardenedver=5.10.19-hardened1
 case $version in
 	*.*.*) kver=$version;;
 	*.*) kver=$version.0;;
@@ -53,7 +53,7 @@ build() {
 	esac
 
 	cd "$SRC"/$name-$version
-	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
+#	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/0001-add-OpenZFS-support.patch
 	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
 	patch -Np1 -i "$STUFF"/linux/0010-vfio.patch
@@ -93,7 +93,7 @@ build() {
 		make ARCH=$KARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
-	depmod -a -b "$PKG"/usr ${kver}-hardened1-ataraxia
+	depmod -a -b "$PKG"/usr ${kver}-ataraxia
 
 	case $BARCH in
 		arm64|armv7l)
@@ -108,8 +108,6 @@ build() {
 	mkdir -p "$PKG"/boot
 	cp "$IMAGELOC" "$PKG"/boot/vmlinuz
 	cp .config "$PKG"/boot/config
-
-	echo "${kver}-hardened1-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/version
 
 	rm -rf "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/build
 	rm -rf "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/source
