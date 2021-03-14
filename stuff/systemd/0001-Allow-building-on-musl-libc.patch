@@ -1,7 +1,7 @@
-From c6ee8a8e2f7aeaab7a55236bb779ee229fcb010e Mon Sep 17 00:00:00 2001
+From ebf974cd3d746cd26b1056b6bd670dbaffbb2968 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 5 Feb 2021 01:42:35 +0900
-Subject: [PATCH 1/3] Allow building on musl libc
+Date: Mon, 15 Mar 2021 02:29:08 +0900
+Subject: [PATCH] Allow building on musl libc
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -923,7 +923,7 @@ index 0b6fb13..e8e8c7b 100644
  int proc_cmdline(char **ret) {
          const char *e;
 diff --git a/src/basic/process-util.c b/src/basic/process-util.c
-index 0851613..556dab8 100644
+index adfebd6..bd3f881 100644
 --- a/src/basic/process-util.c
 +++ b/src/basic/process-util.c
 @@ -18,6 +18,9 @@
@@ -952,7 +952,7 @@ index 0851613..556dab8 100644
  
  pid_t getpid_cached(void) {
          static bool installed = false;
-@@ -1529,7 +1536,7 @@ int set_oom_score_adjust(int value) {
+@@ -1534,7 +1541,7 @@ int set_oom_score_adjust(int value) {
          sprintf(t, "%i", value);
  
          return write_string_file("/proc/self/oom_score_adj", t,
@@ -1251,7 +1251,7 @@ index d6223db..3654c34 100644
  int bus_property_get_triggered_unit(
                  sd_bus *bus,
 diff --git a/src/core/execute.c b/src/core/execute.c
-index c992b8d..3352837 100644
+index a063510..4674c3a 100644
 --- a/src/core/execute.c
 +++ b/src/core/execute.c
 @@ -96,6 +96,7 @@
@@ -1373,7 +1373,7 @@ index d8f91f4..a088e6e 100644
                  log_error_errno(r, "Failed to write '%s' to /sys/power/resume: %m", major_minor);
                  return EXIT_FAILURE;
 diff --git a/src/home/homed-manager.c b/src/home/homed-manager.c
-index 365ea4d..55b3bc4 100644
+index 8f961e2..c5ba084 100644
 --- a/src/home/homed-manager.c
 +++ b/src/home/homed-manager.c
 @@ -44,6 +44,7 @@
@@ -1385,7 +1385,7 @@ index 365ea4d..55b3bc4 100644
  /* Where to look for private/public keys that are used to sign the user records. We are not using
   * CONF_PATHS_NULSTR() here since we want to insert /var/lib/systemd/home/ in the middle. And we insert that
 diff --git a/src/home/homework-luks.c b/src/home/homework-luks.c
-index b0b2d80..cdf1b95 100644
+index 6197377..6e1345d 100644
 --- a/src/home/homework-luks.c
 +++ b/src/home/homework-luks.c
 @@ -37,6 +37,7 @@
@@ -1510,7 +1510,7 @@ index 346970d..d471dd0 100644
  #define JOURNAL_FILES_MAX 7168
  
 diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
-index d502051..06d8181 100644
+index 66f87c4..de1264a 100644
 --- a/src/libsystemd-network/sd-dhcp6-client.c
 +++ b/src/libsystemd-network/sd-dhcp6-client.c
 @@ -5,7 +5,6 @@
@@ -1887,7 +1887,7 @@ index f3c1e5f..e4ef6ec 100644
  #include "escape.h"
  #include "alloc-util.h"
 diff --git a/src/network/networkd-dhcp6.c b/src/network/networkd-dhcp6.c
-index d4d4182..635d08f 100644
+index 5c077c1..fa98042 100644
 --- a/src/network/networkd-dhcp6.c
 +++ b/src/network/networkd-dhcp6.c
 @@ -3,9 +3,9 @@
@@ -1902,7 +1902,7 @@ index d4d4182..635d08f 100644
  #include "sd-dhcp6-client.h"
  
 diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
-index 8120343..99b847d 100644
+index 3bfe636..e0c68c8 100644
 --- a/src/network/networkd-link.c
 +++ b/src/network/networkd-link.c
 @@ -1,8 +1,8 @@
@@ -2222,7 +2222,7 @@ index f94b3e1..08a7e4f 100644
  
  #include "conf-parser.h"
 diff --git a/src/shared/format-table.c b/src/shared/format-table.c
-index a13a198..5de3e68 100644
+index 31c976d..10d980d 100644
 --- a/src/shared/format-table.c
 +++ b/src/shared/format-table.c
 @@ -1243,30 +1243,32 @@ static int cell_data_compare(TableData *a, size_t index_a, TableData *b, size_t
@@ -2282,7 +2282,7 @@ index a13a198..5de3e68 100644
          }
  
          if (t->display_map)
-@@ -2440,7 +2447,12 @@ int table_to_json(Table *t, JsonVariant **ret) {
+@@ -2439,7 +2446,12 @@ int table_to_json(Table *t, JsonVariant **ret) {
                  for (size_t i = 0; i < n_rows; i++)
                          sorted[i] = i * t->n_columns;
  
@@ -2309,7 +2309,7 @@ index b2785f0..5f00902 100644
  enum {
          IMPORTER_STATE_LINE = 0,    /* waiting to read, or reading line */
 diff --git a/src/shared/logs-show.c b/src/shared/logs-show.c
-index 840f221..5e69798 100644
+index def6afb..7302391 100644
 --- a/src/shared/logs-show.c
 +++ b/src/shared/logs-show.c
 @@ -41,6 +41,7 @@
@@ -2729,16 +2729,16 @@ index d12fd0e..636806d 100644
  #include <netinet/ether.h>
  #include <unistd.h>
 diff --git a/src/udev/udev-builtin-net_setup_link.c b/src/udev/udev-builtin-net_setup_link.c
-index cb12b94..5a28c8b 100644
+index 87e1fb1..1387602 100644
 --- a/src/udev/udev-builtin-net_setup_link.c
 +++ b/src/udev/udev-builtin-net_setup_link.c
 @@ -1,5 +1,6 @@
  /* SPDX-License-Identifier: LGPL-2.1-or-later */
  
 +#include <netinet/if_ether.h>
- #include "device-util.h"
  #include "alloc-util.h"
- #include "link-config.h"
+ #include "device-util.h"
+ #include "errno-util.h"
 diff --git a/src/udev/udev-builtin-path_id.c b/src/udev/udev-builtin-path_id.c
 index 0da59e2..66da374 100644
 --- a/src/udev/udev-builtin-path_id.c
