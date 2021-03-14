@@ -1,0 +1,17 @@
+# Description: Manage PaX related program header flags
+# URL:         http://pax.grsecurity.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     base
+
+name=paxctl
+version=0.9
+release=1
+source=("https://pax.grsecurity.net/$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	sed -i -e 's:--owner:-o:g; s:--group:-g:g; s:--mode:-m:g' Makefile
+
+	make CC="${CC:-clang}" CFLAGS="$CFLAGS" LDFLASG="$LDFLAGS"
+	make DESTDIR="$PKG" install
+}

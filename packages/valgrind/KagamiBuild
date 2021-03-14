@@ -6,7 +6,7 @@
 
 name=valgrind
 version=3.16.1
-release=1
+release=2
 options=('~emptydirs' '~strip')
 source=("http://sourceware.org/pub/valgrind/$name-$version.tar.bz2")
 
@@ -25,4 +25,8 @@ build() {
 		--enable-tls
 	make
 	make DESTDIR="$PKG" install
+
+	for i in "$PKG"/usr/bin/* "$PKG"/usr/lib/valgrind/*; do
+		attr -q -s pax.flags -V "em" "$i"
+	done
 }

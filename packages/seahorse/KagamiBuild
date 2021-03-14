@@ -11,7 +11,7 @@ case $version in
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
-release=1
+release=2
 source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
@@ -25,4 +25,6 @@ build() {
 		-Dmanpage=false
 	samu
 	DESTDIR="$PKG" samu install
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/seahorse
 }

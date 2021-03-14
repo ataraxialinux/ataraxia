@@ -11,7 +11,7 @@ case $version in
 		_v=${_v%.*};;
 	*.*.*) _v=${version%.*};;
 esac
-release=2
+release=3
 source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
@@ -28,6 +28,8 @@ build() {
 	samu panels/network/cc-network-resources.h
 	samu
 	DESTDIR="$PKG" samu install
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/gnome-control-center
 
 	install -d -o root -g 102 -m 750 "$PKG"/usr/share/polkit-1/rules.d
 }

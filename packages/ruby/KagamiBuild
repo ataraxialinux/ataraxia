@@ -6,7 +6,7 @@
 
 name=ruby
 version=3.0.0
-release=2
+release=3
 options=('~emptydirs')
 source=("https://cache.ruby-lang.org/pub/ruby/${version:0:3}/ruby-${version}.tar.xz")
 
@@ -37,4 +37,7 @@ build() {
 		--disable-rpath
 	make
 	make DESTDIR="$PKG" install
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/rbx
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/ruby
 }

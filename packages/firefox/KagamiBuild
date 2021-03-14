@@ -8,7 +8,7 @@
 
 name=firefox
 version=78.8.0
-release=2
+release=3
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 clear_vendor_checksums() {
@@ -111,6 +111,9 @@ build() {
 		--target=$RTARGET
 	make
 	make DESTDIR="$PKG" install
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/lib/firefox/firefox
+	attr -q -s pax.flags -V "em" "$PKG"/usr/lib/firefox/plugin-container
 
 	for i in 16 22 24 32 48 64 128 256; do
 		install -Dm644 "$SRC"/$name-$version/browser/branding/official/default$i.png "$PKG"/usr/share/icons/hicolor/${i}x${i}/apps/firefox.png

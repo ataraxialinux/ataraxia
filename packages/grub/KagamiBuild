@@ -7,7 +7,7 @@
 name=grub
 version=2.05
 unifontver=13.0.02
-release=1
+release=2
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
@@ -82,6 +82,10 @@ build() {
 			efi) build_flavor $f --target=$EFITGT --with-platform=efi --disable-efiemu ;;
 			*)   build_flavor $f --with-platform=$f ;;
 		esac
+	done
+
+	for i in grub-bios-setup grub-probe grub-script-check;
+		attr -q -s pax.flags -V "em" "$PKG"/usr/bin/$i
 	done
 
 	rm -rf "$PKG"/usr/lib/grub/*/*.module

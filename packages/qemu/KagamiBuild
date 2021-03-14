@@ -6,7 +6,7 @@
 
 name=qemu
 version=5.2.0
-release=4
+release=5
 source=("http://download.qemu-project.org/$name-$version.tar.bz2")
 
 build() {
@@ -41,6 +41,10 @@ build() {
 		--disable-werror
 	make
 	make DESTDIR="$PKG" install
+
+	for i in "$PKG"/usr/bin/*; do
+		attr -q -s pax.flags -V "em" "$i"
+	done
 
 	install -Dm644 "$STUFF"/svc/qemu-guest-agent.service "$PKG"/usr/lib/systemd/system/qemu-guest-agent.service
 

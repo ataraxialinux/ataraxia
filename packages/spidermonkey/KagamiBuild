@@ -6,7 +6,7 @@
 
 name=spidermonkey
 version=78.8.0
-release=2
+release=3
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 build() {
@@ -59,6 +59,8 @@ build() {
 		--target=$RTARGET
 	make
 	make DESTDIR="$PKG" install
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/js*
 
 	rm -rf "$PKG"/usr/lib/libjs_static.ajs
 }

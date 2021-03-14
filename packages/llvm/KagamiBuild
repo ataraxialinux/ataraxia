@@ -6,7 +6,7 @@
 
 name=llvm
 version=11.1.0
-release=1
+release=2
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
@@ -160,6 +160,8 @@ build() {
 
 	install -Dm755 "$STUFF"/clang/c89 "$PKG"/usr/bin/c89
 	install -Dm755 "$STUFF"/clang/c99 "$PKG"/usr/bin/c99
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/lli
 
 	ln -sf clang "$PKG"/usr/bin/cc
 	ln -sf clang++ "$PKG"/usr/bin/c++

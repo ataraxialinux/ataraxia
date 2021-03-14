@@ -6,7 +6,7 @@
 
 name=imagemagick
 version=7.0.11+3
-release=1
+release=2
 options=('libtool')
 source=("https://www.imagemagick.org/download/releases/ImageMagick-${version/+/-}.tar.xz")
 
@@ -40,6 +40,10 @@ build() {
 	find . -name '*.so' -delete
 	sed -i 's,LD_RUN_PATH="$(LD_RUN_PATH)" ,,' quantum/Makefile
 	make DESTDIR="$PKG" install
+
+	for i in animate compare composite conjure convert display identify import mogrify montage stream; do
+		attr -q -s pax.flags -V "em" "$PKG"/usr/bin/$i
+	done
 
 	rm -rf "$PKG"/usr/lib/*.la
 }

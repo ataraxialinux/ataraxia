@@ -6,7 +6,7 @@
 
 name=vim
 version=8.2.2601
-release=1
+release=2
 source=("https://github.com/vim/vim/archive/v$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -42,6 +42,8 @@ build() {
 		--disable-tclinterp
 	make
 	make DESTDIR="$PKG" install
+
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/vim
 
 	ln -sf vim "$PKG"/usr/bin/vi
 }
