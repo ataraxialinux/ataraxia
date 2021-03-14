@@ -1,0 +1,48 @@
+# Description: A bootloader for Linux
+# URL:         https://alioth.debian.org/projects/lilo/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  perl bin86 toybox lobase lvm2
+# Section:     utils
+
+name=lilo
+version=24.2
+release=1
+backup=('etc/lilo.conf')
+source=("http://ftp.debian.org/debian/pool/main/l/lilo/lilo_${version}.orig.tar.gz")
+
+build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	export LC_ALL=C
+
+	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/lilo/01_makefile-adds.patch
+	patch -Np1 -i "$STUFF"/lilo/03_keytab-lilo.8-debian-based.patch
+	patch -Np1 -i "$STUFF"/lilo/05_readme.disk-change.patch
+	patch -Np1 -i "$STUFF"/lilo/06_notinteractive.patch
+	patch -Np1 -i "$STUFF"/lilo/08_small-typos-in-manpages.patch
+	patch -Np1 -i "$STUFF"/lilo/09_fix-manpage-lilo-conf-5.patch
+	patch -Np1 -i "$STUFF"/lilo/10_fix-manpage-lilo-conf-5.patch
+	patch -Np1 -i "$STUFF"/lilo/11_fix-gcc-10.patch
+	patch -Np1 -i "$STUFF"/lilo/0001-fix-build-with-clang.patch
+	patch -Np1 -i "$STUFF"/lilo/lilo-24.1-remove__GLIBC__.patch
+	patch -Np1 -i "$STUFF"/lilo/lilo-24.1-remove-O_ACCMODE.patch
+	patch -Np1 -i "$STUFF"/lilo/lilo.nvme.support.diff
+
+	sed -i Makefile src/Makefile \
+		-e '/strip/d;s|^	make|	$(MAKE)|g' \
+		-e '/images install/d' \
+		-e '/images all/d'
+
+	make CC="${CC:-clang}"
+	make DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/bin
+
+	mv "$PKG"/sbin/* "$PKG"/usr/bin/
+	mv "$PKG"/usr/sbin/* "$PKG"/usr/bin/
+
+	rm -rf "$PKG"/sbin "$PKG"/usr/sbin
+
+	install -Dm644 "$STUFF"/lilo/lilo.conf "$PKG"/etc/lilo.conf
+}

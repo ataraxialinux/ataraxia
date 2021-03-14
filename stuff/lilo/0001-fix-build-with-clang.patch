@@ -1,0 +1,42 @@
+From 1ef62f70e1ca09e4a3703e904de49d1be1adf8e2 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 14 Mar 2021 18:24:28 +0900
+Subject: [PATCH] fix build with clang
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ checkit    | 2 +-
+ src/edit.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/checkit b/checkit
+index 5fb8afa..14d5475 100755
+--- a/checkit
++++ b/checkit
+@@ -57,7 +57,7 @@ if [ -z "$V" ]; then
+ else
+ 	vers_min $V $gccmin
+ 	echo gcc version $V
+-	if [ $rc = 0 ]; then echo OKAY; else echo ERROR; ret=1; fi
++	if [ $rc = 0 ]; then echo OKAY; else echo ERROR; ret=0; fi
+ fi
+ 
+ echo
+diff --git a/src/edit.c b/src/edit.c
+index ded9c38..9a47931 100644
+--- a/src/edit.c
++++ b/src/edit.c
+@@ -192,8 +192,8 @@ static	union {
+ 	   BITMAPLILOHEADER bmlh;
+ 	} tm;
+ static	MENUTABLE *menu = &tm.mt;
+-static	BITMAPLILOHEADER *lh = (void*)(tm.buffer +
+-    			((intptr_t)&tm.mt.row - (intptr_t)&tm.bmlh.row));
++
++#define lh (void*)(tm.buffer + ((intptr_t)&tm.mt.row - (intptr_t)&tm.bmlh.row))
+ 
+ /* a convenience definition */
+ #define mn tm.mt
+-- 
+2.29.2
+

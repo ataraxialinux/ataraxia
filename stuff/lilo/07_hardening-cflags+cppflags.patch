@@ -1,0 +1,21 @@
+Package:     lilo
+Subject:     hardening CFLAGS and CPPFLAGS
+Author:      Joachim Wiedorn <joodebian at joonet.de>
+Origin:      issues found in buildd logs for lilo
+Forwarded:   no
+Last-Update: 2016-07-15
+---
+
+diff -urN s06/src/Makefile s07/src/Makefile
+--- s06/src/Makefile	2016-07-15 21:41:14.977602579 +0200
++++ s07/src/Makefile	2016-07-15 21:52:35.979409943 +0200
+@@ -22,7 +22,8 @@
+ NASM=nasm
+ G=`cat foo1 foo2 | grep version | cut -d " " -f 3`
+ 
+-CFLAGS=$(OPT) -Wall $(PCONFIG)
++CFLAGS = $(OPT) -Wall $(PCONFIG) `dpkg-buildflags --get CFLAGS`
++CPPFLAGS = `dpkg-buildflags --get CPPFLAGS`
+ LIBS=$(DEVMAPPER)
+ 
+ OBJS=lilo.o raid.o map.o geometry.o boot.o device.o common.o bsect.o cfg.o \
