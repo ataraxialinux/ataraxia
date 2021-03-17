@@ -29,6 +29,7 @@ build() {
 
 	# Swap sucks
 	sed -i 's/int vm_swappiness = 60/int vm_swappiness = 33/g' mm/vmscan.c
+	sed -zi 's|\nEXTRAVERSION = -hardened1||' Makefile
 
 	unset LDFLAGS HOSTCFLAGS HOSTCXXFLAGS HOSTLDFLAGS
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
@@ -61,7 +62,7 @@ build() {
 		make ARCH=arm64 INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
-	depmod -a -b "$PKG"/usr ${kver}-hardened1-ataraxia
+	depmod -a -b "$PKG"/usr ${kver}-ataraxia
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make ARCH=arm64 CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_DTBS_PATH="$PKG"/boot dtbs_install
@@ -71,13 +72,13 @@ build() {
 
 	mkdir -p "$PKG"/boot
 	cp arch/arm64/boot/Image "$PKG"/boot/kernel8.img
-	cp .config "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/config
+	cp .config "$PKG"/usr/lib/modules/${kver}-ataraxia/config
 
 	install -m644 "$STUFF"/linux-rpi4/config.txt "$PKG"/boot/config.txt
 	install -m644 "$STUFF"/linux-rpi4/cmdline.txt "$PKG"/boot/cmdline.txt
 
-	echo "${kver}-hardened1-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/version
+	echo "${kver}-ataraxia" >> "$PKG"/usr/lib/modules/${kver}-ataraxia/version
 
-	rm -rf "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/build
-	rm -rf "$PKG"/usr/lib/modules/${kver}-hardened1-ataraxia/source
+	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/build
+	rm -rf "$PKG"/usr/lib/modules/${kver}-ataraxia/source
 }
