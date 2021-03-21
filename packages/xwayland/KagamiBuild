@@ -1,0 +1,39 @@
+# Description: Run X clients under wayland
+# URL:         https://xorg.freedesktop.org/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson dbus libressl nettle libtirpc pixman libepoxy wayland-protocols egl-wayland xorg-fonts libdmx libxaw libxcomposite libxcursor libxfont2 libxft libxinerama libxkbfile libxrandr libxres libxtst
+# Section:     x11
+
+name=xwayland
+version=21.1.0
+release=1
+source=("https://xorg.freedesktop.org/archive/individual/xserver/$name-$version.tar.xz")
+
+build() {
+	append-cppflags -D_GNU_SOURCE -D__gid_t=gid_t -D__uid_t=uid_t
+	append-ldflags -Wl,-z,lazy
+	filter-flags -z,now
+
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version \
+		-Ddri3=true \
+		-Dglamor=true \
+		-Dipv6=true \
+		-Dos_vendor="Ataraxia" \
+		-Dxcsecurity=true \
+		-Dxkb_dir=/usr/share/X11/xkb \
+		-Dxkb_output_dir=/var/lib/xkb \
+		-Dxvfb=false \
+		-Dxdmcp=false \
+		-Dxwayland_eglstream=true
+	samu
+	DESTDIR="$PKG" samu install
+
+	rm "$PKG"/usr/share/man/man1/Xserver.1*
+	rm -Rf "$PKG"/usr/lib/xorg
+	rm -Rf "$PKG"/usr/include/xorg
+	rm -Rf "$PKG"/usr/share/aclocal
+	rm -Rf "$PKG"/var/lib/xkb
+}
