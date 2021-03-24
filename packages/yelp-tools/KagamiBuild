@@ -1,7 +1,7 @@
 # Description: Collection of tools for building and converting documentation
 # URL:         https://gitlab.gnome.org/GNOME/yelp-tools
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python-lxml itstool docbook-xsl yelp-xsl
+# Depends on:  meson python-lxml itstool docbook-xsl yelp-xsl
 # Section:     gnome
 
 name=yelp-tools
@@ -11,8 +11,9 @@ source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.t
 
 build() {
 	cd "$SRC"/$name-$version
-	./configure $BUILDFLAGS \
-		--prefix=/usr
-	make
-	make DESTDIR="$PKG" install
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/$name-$version
+	samu
+	DESTDIR="$PKG" samu install
 }

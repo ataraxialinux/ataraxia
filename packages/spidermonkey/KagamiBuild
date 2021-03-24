@@ -9,6 +9,10 @@ version=78.9.0
 release=1
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/$1/.cargo-checksum.json
+}
+
 build() {
 	case "$BARCH" in
 		amd64)
@@ -30,6 +34,11 @@ build() {
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
 	export RUSTFLAGS="$RUSTFLAGS -C debuginfo=0"
+
+	cd "$SRC"/firefox-$version
+	patch -Np1 -i "$STUFF"/spidermonkey/0002-Bug-1667736-Update-packed_simd-to-compile-on-Rust-1..patch
+
+	clear_vendor_checksums packed_simd
 
 	cd "$SRC"
 	mkdir build
