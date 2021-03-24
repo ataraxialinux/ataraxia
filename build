@@ -245,6 +245,7 @@ build_system() {
 	emerge_target iputils
 	emerge_target procps-ng
 	emerge_target e2fsprogs
+	emerge_target btrfs-progs
 	emerge_target dosfstools
 	emerge_target run-parts
 	emerge_target pciutils
@@ -265,6 +266,7 @@ build_system() {
 	# Building installer packages
 	if [ "$INSTALLER" == "1" ]; then
 		msg "Building installer packages"
+		emerge_target linux-firmware
 		emerge_target gptfdisk
 		emerge_target wget
 		emerge_target iwd
@@ -427,6 +429,7 @@ install_os() {
 	emerge_target iputils "$targetfs"
 	emerge_target procps-ng "$targetfs"
 	emerge_target e2fsprogs "$targetfs"
+	emerge_target btrfs-progs "$targetfs"
 	emerge_target dosfstools "$targetfs"
 	emerge_target run-parts "$targetfs"
 	emerge_target pciutils "$targetfs"
@@ -677,9 +680,9 @@ build_initramfs() {
 		iptables iproute2 kbd vim libgpg-error libgcrypt libseccomp \
 		hwids util-linux libaio lvm2 popt json-c argon2 cryptsetup \
 		libtasn1 p11-kit gnutls libmicrohttpd systemd dbus-broker dbus \
-		net-tools iputils procps-ng zfs e2fsprogs dosfstools run-parts \
-		openssh oniguruma jq tsukuri $linux  gptfdisk wget iwd \
-		wireless_tools wpa_supplicant libevent links; do
+		net-tools iputils procps-ng zfs e2fsprogs btrfs-progs dosfstools \
+		run-parts openssh oniguruma jq tsukuri $linux  gptfdisk wget \
+		iwd wireless_tools wpa_supplicant libevent links linux-firmware; do
 		emerge_target $i "$initramfs"
 	done
 
