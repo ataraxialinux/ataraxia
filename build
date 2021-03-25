@@ -682,7 +682,7 @@ build_initramfs() {
 		libtasn1 p11-kit gnutls libmicrohttpd systemd dbus-broker dbus \
 		net-tools iputils procps-ng zfs e2fsprogs btrfs-progs dosfstools \
 		run-parts openssh oniguruma jq tsukuri $linux  gptfdisk wget \
-		iwd wireless_tools wpa_supplicant libevent links linux-firmware; do
+		iwd wireless_tools wpa_supplicant libevent links; do
 		emerge_target $i "$initramfs"
 	done
 
@@ -701,6 +701,21 @@ build_initramfs() {
 		rm -rf usr/lib/modules/*/kernel/net/netfilter usr/lib/modules/*/kernel/net/sched
 		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/drivers/mfd
 		rm -rf usr/lib/modules/*/kernel/drivers/edac usr/lib/modules/*/kernel/infiniband
+
+		cp -a "$rootfs"/usr/lib/firmware/ath10k usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath11k usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath6k usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath9k_htc usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/brcm usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/3com usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/mellanox usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl8192e usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl_bt usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl_nic usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtlwifi usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtw88 usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtw89 usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/iwlwifi-*.ucode usr/lib/firmware/
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
