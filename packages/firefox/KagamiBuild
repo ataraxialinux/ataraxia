@@ -7,8 +7,8 @@
 # Section:     web
 
 name=firefox
-version=78.8.0
-release=3
+version=78.9.0
+release=1
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
 clear_vendor_checksums() {
@@ -50,10 +50,12 @@ build() {
 	patch -Np1 -i "$STUFF"/firefox/sandbox-fork.patch
 	patch -Np1 -i "$STUFF"/firefox/sandbox-sched_setscheduler.patch
 	patch -Np1 -i "$STUFF"/firefox/allow-custom-rust-vendor.patch
+	patch -Np1 -i "$STUFF"/firefox/0002-Bug-1667736-Update-packed_simd-to-compile-on-Rust-1..patch
 
 	cp "$STUFF"/firefox/stab.h toolkit/crashreporter/google-breakpad/src/
 
 	clear_vendor_checksums target-lexicon-0.9.0
+	clear_vendor_checksums packed_simd
 
 	export MOZILLA_OFFICIAL=1
 	export MOZ_SERVICES_METRICS=

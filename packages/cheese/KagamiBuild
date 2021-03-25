@@ -1,7 +1,7 @@
 # Description: Take photos and videos with your webcam, with fun graphical effects
 # URL:         https://wiki.gnome.org/Apps/Cheese
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson yelp-tools appstream-glib clutter-gst clutter-gtk gnome-desktop gnome-video-effects gst-plugins-good gst-plugins-bad itstool libcanberra libgudev
+# Depends on:  meson appstream-glib clutter-gst clutter-gtk gnome-desktop gnome-video-effects gst-plugins-good gst-plugins-bad itstool libcanberra libgudev
 # Section:     gnome
 
 name=cheese
@@ -11,6 +11,8 @@ source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.t
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/cheese/7cf6268e54620bbbe5e6e61800c50fb0cb4bea57.patch
+
 	mkdir -p build
 	cd build
 	ataraxia-meson "$SRC"/$name-$version \
