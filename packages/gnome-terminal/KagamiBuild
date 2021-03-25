@@ -1,7 +1,7 @@
 # Description: The GNOME Terminal Emulator
 # URL:         https://wiki.gnome.org/Apps/Terminal
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson appstream-glib vte pcre2 gsettings-desktop-schemas dconf nautilus
+# Depends on:  appstream-glib vte pcre2 gsettings-desktop-schemas dconf nautilus
 # Section:     gnome
 
 name=gnome-terminal
@@ -13,9 +13,15 @@ build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/gnome-terminal/musl.patch
 
-	mkdir -p build
-	cd build
-	ataraxia-meson "$SRC"/$name-$version
-	samu
-	DESTDIR="$PKG" samu install
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--libexecdir=/usr/lib \
+		--sysconfdir=/etc \
+		--localstatedir=/var \
+		--with-nautilus-extension \
+		--disable-search-provider
+
+	sed -i 's/ -shared / -Wl,--as-needed\0/g' libtool
+	make
+	make DESTDIR="$PKG" install
 }
