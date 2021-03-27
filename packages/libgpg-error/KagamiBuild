@@ -33,6 +33,12 @@ build() {
 	fi
 
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libgpg-error/cross-compile.patch
+
+	cp "$STUFF"/libgpg-error/gen-lock-obj.sh src/gen-lock-obj.sh
+	chmod +x src/gen-lock-obj.sh
+
+	./autogen.sh
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--disable-nls

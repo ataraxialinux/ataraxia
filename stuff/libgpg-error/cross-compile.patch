@@ -1,0 +1,29 @@
+From 41abd4d274f481c581a84ec09e64d43d2fbc6262 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 28 Mar 2021 06:59:59 +0900
+Subject: [PATCH] musl cross compile
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ configure.ac | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/configure.ac b/configure.ac
+index c0aab53..fcb69f7 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -82,6 +82,11 @@ AC_PROG_AWK
+ AC_CHECK_TOOL(AR, ar, :)
+ AC_USE_SYSTEM_EXTENSIONS
+ 
++case "${host}" in
++    *-*-*-musl*)
++        host=$(echo $host | sed 's/musl/gnu/g')
++        ;;
++esac
+ 
+ # Taken from mpfr-4.0.1, then modified for LDADD_FOR_TESTS_KLUDGE
+ dnl Under Linux, make sure that the old dtags are used if LD_LIBRARY_PATH
+-- 
+2.29.2
+
