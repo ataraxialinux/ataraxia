@@ -1,0 +1,29 @@
+From b9e679592c52ffb4592e4f2c3c982c8fcc0beec3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 28 Mar 2021 03:29:53 +0900
+Subject: [PATCH] fix build on x86 clang
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ src/x86/sysv.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/x86/sysv.S b/src/x86/sysv.S
+index 7c9598c..3dbff56 100644
+--- a/src/x86/sysv.S
++++ b/src/x86/sysv.S
+@@ -827,9 +827,9 @@ EHFrame0:
+ #elif defined(X86_WIN32)
+ .section .eh_frame,"r"
+ #elif defined(HAVE_AS_X86_64_UNWIND_SECTION_TYPE)
+-.section .eh_frame,EH_FRAME_FLAGS,@unwind
++.section .eh_frame,"a",@unwind
+ #else
+-.section .eh_frame,EH_FRAME_FLAGS,@progbits
++.section .eh_frame,"a",@progbits
+ #endif
+ 
+ #ifdef HAVE_AS_X86_PCREL
+-- 
+2.29.2
+
