@@ -638,6 +638,7 @@ build_stage() {
 
 build_initramfs() {
 	local initramfs="$BUILD/initramfs"
+	local firmwarefs="$BUILD/firmwarefs"
 	local rootfs="$BUILD/rootfs"
 	local i
 
@@ -656,9 +657,9 @@ build_initramfs() {
 		linux="linux"
 	fi
 
-	rm -rf "$initramfs"
+	rm -rf "$initramfs" "$firmwarefs"
 
-	mkdir -p "$initramfs/usr/lib/tsukuri/db"
+	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware"
 
 	for i in base-files iana-etc musl musl-tools tzdb \
 		zlib bzip2 xz lz4 zstd lzo file ncurses readline libedit \
@@ -692,19 +693,19 @@ build_initramfs() {
 		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/drivers/mfd
 		rm -rf usr/lib/modules/*/kernel/drivers/edac usr/lib/modules/*/kernel/infiniband
 
-		cp -a "$rootfs"/usr/lib/firmware/ath10k usr/lib/firmware/
-		cp -a "$rootfs"/usr/lib/firmware/ath11k usr/lib/firmware/
-		cp -a "$rootfs"/usr/lib/firmware/ath6k usr/lib/firmware/
-		cp -a "$rootfs"/usr/lib/firmware/ath9k_htc usr/lib/firmware/
-		cp -a "$rootfs"/usr/lib/firmware/brcm usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/3com usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/mellanox usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/rtl_bt usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/rtl_nic usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/rtlwifi usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/rtw88 usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/rtw89 usr/lib/firmware/
-    		cp -a "$rootfs"/usr/lib/firmware/iwlwifi-*.ucode usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath10k "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath11k "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath6k "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath9k_htc "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/brcm "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/3com "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/mellanox "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl_bt "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl_nic "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtlwifi "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtw88 "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtw89 "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/iwlwifi-*.ucode "$firmwarefs"/usr/lib/firmware/
 
 		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
 				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
@@ -736,6 +737,10 @@ build_initramfs() {
 		find . | cpio -H newc -o | zstd -19 > "$BUILD"/seiba.zst
 	popd
 
+	pushd "$firmwarefs"
+		find . | cpio -H newc -o | zstd -19 > "$BUILD"/firmware.zst
+	popd
+
 	msg "Initramfs has been built successfuly!"
 }
 
@@ -748,7 +753,7 @@ build_iso_image() {
 		die "Build target system first."
 	fi
 
-	msg "Building .iso image for '${BARCH}' architecture"
+	msg "Building installer image for '${BARCH}' architecture"
 
 	case "$BARCH" in
 		amd64|x86) grub_mods="$grub_mods multiboot2" ;;
@@ -758,7 +763,8 @@ build_iso_image() {
 	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
 
 	cp "$rootfs"/boot/vmlinuz "$isodir"/seiba/seiba
-	cp "$BUILD"/seiba.zst "$isodir"/seiba/seiba.zst
+	mv "$BUILD"/seiba.zst "$isodir"/seiba/seiba.zst
+	mv "$BUILD"/firmware.zst "$isodir"/seiba/firmware.zst
 
 	cp "$STUFF"/mklive/background.png "$isodir"/boot/grub/ataraxia.png
 
@@ -780,9 +786,19 @@ build_iso_image() {
 			initrd	/seiba/seiba.zst
 		}
 
+		menuentry "Ataraxia GNU/Linux (firmware)" {
+			linux	/seiba/seiba rw quiet
+			initrd	/seiba/seiba.zst /seiba/firmware.zst
+		}
+
 		menuentry "Ataraxia GNU/Linux (serial console)" {
 			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
 			initrd	/seiba/seiba.zst
+		}
+
+		menuentry "Ataraxia GNU/Linux (firmware) (serial console)" {
+			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
+			initrd	/seiba/seiba.zst /seiba/firmware.zst
 		}
 	EOF
 
@@ -792,7 +808,7 @@ build_iso_image() {
 		-A 'ataraxialinux' -V 'ataraxialinux' \
 		"$isodir"/
 
-	msg ".iso image has been built successfuly!"
+	msg "Installer image has been built successfuly!"
 }
 
 build_live_installer() {
