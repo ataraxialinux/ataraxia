@@ -1,0 +1,24 @@
+# Description: CBOR protocol implementation for C and others
+# URL:         https://github.com/pjk/libcbor/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  cmake samurai
+# Section:     libs
+
+name=libcbor
+version=0.8.0
+release=1
+source=("https://github.com/PJK/libcbor/archive/refs/tags/v$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	mkdir -p build
+	cd build
+	cmake "$SRC"/$name-$version $CMAKEFLAGS \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DBUILD_SHARED_LIBS=yes \
+		-DWITH_TESTS=OFF \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$PKG" samu install
+}
