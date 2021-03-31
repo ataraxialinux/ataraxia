@@ -1,5 +1,24 @@
+From 1d66006c8762fd7fcbbe7740c42206f318acb1da Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 29 Mar 2021 06:00:35 +0900
+Subject: [PATCH] POSIX compatibility and toybox support
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ 50-dracut.install                    |  2 +-
+ 51-dracut-rescue.install             |  2 +-
+ Makefile                             |  2 +-
+ dracut-init.sh                       |  4 ++--
+ dracut.sh                            | 14 ++++++------
+ install/dracut-install.c             |  8 +++----
+ modules.d/05toybox/module-setup.sh   | 32 ++++++++++++++++++++++++++++
+ modules.d/10i18n/module-setup.sh     |  6 +++---
+ modules.d/95terminfo/module-setup.sh |  2 +-
+ 9 files changed, 52 insertions(+), 20 deletions(-)
+ create mode 100755 modules.d/05toybox/module-setup.sh
+
 diff --git a/50-dracut.install b/50-dracut.install
-index 7ea5e17..3112d9e 100755
+index 70632ec..823f3fa 100755
 --- a/50-dracut.install
 +++ b/50-dracut.install
 @@ -25,7 +25,7 @@ case "$COMMAND" in
@@ -12,10 +31,10 @@ index 7ea5e17..3112d9e 100755
                  && chmod 0600 "$BOOT_DIR_ABS/$INITRD" \
                  && exit 0
 diff --git a/51-dracut-rescue.install b/51-dracut-rescue.install
-index b2b3b9e..7782b40 100755
+index 8bf9a6d..f748a6d 100755
 --- a/51-dracut-rescue.install
 +++ b/51-dracut-rescue.install
-@@ -87,7 +87,7 @@ case "$COMMAND" in
+@@ -91,7 +91,7 @@ case "$COMMAND" in
  
          [[ -d "$BOOT_DIR_ABS" ]] || mkdir -p "$BOOT_DIR_ABS"
  
@@ -25,10 +44,10 @@ index b2b3b9e..7782b40 100755
          fi
  
 diff --git a/Makefile b/Makefile
-index 343569b..79b0824 100644
+index 637e65b..4b9154f 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -144,7 +144,7 @@ install: all
+@@ -143,7 +143,7 @@ install: all
  	ln -fs dracut-functions.sh $(DESTDIR)$(pkglibdir)/dracut-functions
  	install -m 0755 dracut-logger.sh $(DESTDIR)$(pkglibdir)/dracut-logger.sh
  	install -m 0755 dracut-initramfs-restore.sh $(DESTDIR)$(pkglibdir)/dracut-initramfs-restore
@@ -38,7 +57,7 @@ index 343569b..79b0824 100644
  	for i in $(man1pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man1/$${i##*/}; done
  	for i in $(man5pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man5/$${i##*/}; done
 diff --git a/dracut-init.sh b/dracut-init.sh
-index 592a550..c61af6a 100644
+index e4c7bd5..09b894a 100644
 --- a/dracut-init.sh
 +++ b/dracut-init.sh
 @@ -20,9 +20,9 @@
@@ -54,10 +73,55 @@ index 592a550..c61af6a 100644
  
  # is_func <command>
 diff --git a/dracut.sh b/dracut.sh
-index f562fa6..b6c88fb 100755
+index 062ed6c..89b87e5 100755
 --- a/dracut.sh
 +++ b/dracut.sh
-@@ -2046,7 +2046,7 @@ if [[ $uefi = yes ]]; then
+@@ -984,7 +984,7 @@ case "${drivers_dir}" in
+         ;;
+ esac
+ 
+-readonly TMPDIR="$(realpath -e "$tmpdir")"
++readonly TMPDIR="$(realpath "$tmpdir")"
+ [ -d "$TMPDIR" ] || {
+     printf "%s\n" "dracut: Invalid tmpdir '$tmpdir'." >&2
+     exit 1
+@@ -1972,7 +1972,7 @@ if [[ $early_microcode = yes ]]; then
+                 for _ucodedir in "${early_microcode_image_dir[@]}"; do
+                     for _ucodename in "${early_microcode_image_name[@]}"; do
+                         [[ -e "$_ucodedir/$_ucodename" ]] && \
+-                        cpio --extract --file "$_ucodedir/$_ucodename" --quiet \
++                        bsdcpio --extract --file "$_ucodedir/$_ucodename" --quiet \
+                              "kernel/x86/microcode/${ucode_dest[$idx]}"
+                         if [[ -e "$_dest_dir/${ucode_dest[$idx]}" ]]; then
+                             dinfo "*** Using microcode found in '$_ucodedir/$_ucodename' ***"
+@@ -2103,7 +2103,7 @@ fi
+ if [[ $do_strip = yes ]] && ! [[ $DRACUT_FIPS_MODE ]]; then
+     dinfo "*** Stripping files ***"
+     find "$initdir" -type f \
+-        -executable -not -path '*/lib/modules/*.ko' -print0 \
++        -not -path '*/lib/modules/*.ko' -print0 \
+         | xargs -r -0 $strip_cmd -g -p 2>/dev/null
+ 
+     # strip kernel modules, but do not touch signed modules
+@@ -2161,7 +2161,7 @@ if [[ $create_early_cpio = yes ]]; then
+     if ! (
+             umask 077; cd "$early_cpio_dir/d"
+             find . -print0 | sort -z \
+-                | cpio ${CPIO_REPRODUCIBLE:+--reproducible} --null \
++                | bsdcpio ${CPIO_REPRODUCIBLE:+--reproducible} --null \
+                     ${cpio_owner:+-R "$cpio_owner"} -H newc -o --quiet > "${DRACUT_TMPDIR}/initramfs.img"
+         ); then
+         dfatal "dracut: creation of $outfile failed"
+@@ -2172,7 +2172,7 @@ fi
+ if ! (
+         umask 077; cd "$initdir"
+         find . -print0 | sort -z \
+-            | cpio ${CPIO_REPRODUCIBLE:+--reproducible} --null ${cpio_owner:+-R "$cpio_owner"} -H newc -o --quiet \
++            | bsdcpio ${CPIO_REPRODUCIBLE:+--reproducible} --null ${cpio_owner:+-R "$cpio_owner"} -H newc -o --quiet \
+             | $compress >> "${DRACUT_TMPDIR}/initramfs.img"
+     ); then
+     dfatal "dracut: creation of $outfile failed"
+@@ -2235,7 +2235,7 @@ if [[ $uefi = yes ]]; then
                  exit 1
              fi
          else
@@ -66,7 +130,7 @@ index f562fa6..b6c88fb 100755
                  dinfo "*** Creating UEFI image file '$outfile' done ***"
              fi
          fi
-@@ -2056,7 +2056,7 @@ if [[ $uefi = yes ]]; then
+@@ -2245,7 +2245,7 @@ if [[ $uefi = yes ]]; then
          exit 1
      fi
  else
@@ -76,7 +140,7 @@ index f562fa6..b6c88fb 100755
      else
          rm -f -- "$outfile"
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 17544ac..a57f342 100644
+index 24c5287..72c42c3 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
 @@ -314,10 +314,10 @@ static int cp(const char *src, const char *dst)
@@ -143,12 +207,38 @@ index 0000000..03b3397
 +    done
 +}
 +
+diff --git a/modules.d/10i18n/module-setup.sh b/modules.d/10i18n/module-setup.sh
+index d6688b4..ea89421 100755
+--- a/modules.d/10i18n/module-setup.sh
++++ b/modules.d/10i18n/module-setup.sh
+@@ -121,18 +121,18 @@ install() {
+ 
+         for _src in "${KBDSUBDIRS[@]}"; do
+             inst_dir "${kbddir}/$_src"
+-            $DRACUT_CP -L -t "${initdir}/${kbddir}/$_src" "${dracutsysrootdir}${kbddir}/$_src"/*
++            cp -L -t "${initdir}/${kbddir}/$_src" "${dracutsysrootdir}${kbddir}/$_src"/*
+         done
+ 
+         # remove unnecessary files
+         rm -f -- "${initdir}${kbddir}/consoletrans/utflist"
+         find "${initdir}${kbddir}/" -name README\* -delete
+-        find "${initdir}${kbddir}/" -name '*.gz' -print -quit \
++        find "${initdir}${kbddir}/" -name '*.gz' \
+             | while read line || [ -n "$line" ]; do
+             inst_multiple gzip
+             done
+ 
+-        find "${initdir}${kbddir}/" -name '*.bz2' -print -quit \
++        find "${initdir}${kbddir}/" -name '*.bz2' \
+             | while read line || [ -n "$line" ]; do
+             inst_multiple bzip2
+             done
 diff --git a/modules.d/95terminfo/module-setup.sh b/modules.d/95terminfo/module-setup.sh
-index 532f5bd..0b247b5 100755
+index 8cecaf3..e3c7ebc 100755
 --- a/modules.d/95terminfo/module-setup.sh
 +++ b/modules.d/95terminfo/module-setup.sh
 @@ -11,7 +11,7 @@ install() {
-     if [ -d $dracutsysrootdir${_terminfodir} ]; then
+     if [[ -d $dracutsysrootdir${_terminfodir} ]]; then
          for i in "l/linux" "v/vt100" "v/vt102" "v/vt220"; do
              inst_dir "$_terminfodir/${i%/*}"
 -            $DRACUT_CP -L -t "${initdir}/${_terminfodir}/${i%/*}" "$dracutsysrootdir$_terminfodir/$i"

@@ -1,0 +1,32 @@
+# Description: Pre-compiled Linux kernel for Raspberry Pi (64-bit)
+# URL:         https://github.com/raspberrypi/firmware
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=linux-rpi64
+version=5.10.25
+commit=20081d8e86119e95e516526700be62049850c01a
+release=1
+source=("https://github.com/raspberrypi/firmware/archive/$commit.tar.gz")
+
+build() {
+	mkdir -p "$PKG"/boot "$PKG"/usr/lib/modules
+
+	cd "$SRC"/firmware-$commit
+	cp -a boot/* "$PKG"/boot/
+	cp -a modules/${version}-v8+ "$PKG"/usr/lib/modules/${version}-v8+
+
+	install -m644 "$STUFF"/linux-rpi64/config.txt "$PKG"/boot/config.txt
+	install -m644 "$STUFF"/linux-rpi64/cmdline.txt "$PKG"/boot/cmdline.txt
+
+	rm -rf \
+		"$PKG"/boot/COPYING* \
+		"$PKG"/boot/LICENSE* \
+		"$PKG"/boot/LICENCE.broadcom \
+		"$PKG"/boot/bootcode.bin \
+		"$PKG"/boot/fix* \
+		"$PKG"/boot/kernel.img \
+		"$PKG"/boot/kernel7.img \
+		"$PKG"/boot/kernel7l.img \
+		"$PKG"/boot/start*
+}

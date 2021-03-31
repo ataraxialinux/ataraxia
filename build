@@ -474,49 +474,44 @@ build_board_image() {
 	qemu-img create -f raw "$img" 5G
 
 	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
-		o
+		g
 		w
-		q
 	EOF
 
 	case $BOARD in
 		rpi4)
 			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
 				n
-				p
 				1
 				
 				+256M
 				t
-				c
+				11
 				w
-				q
 			EOF
 			;;
 		*)
 			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
 				n
-				p
 				1
 				
 				+256M
 				t
 				1
 				w
-				q
 			EOF
 			;;
 	esac
 
 	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
 		n
-		p
 		2
 		
 		
-		p
+		t
+		2
+		20
 		w
-		q
 	EOF
 
 	losetup -fP "$img"
@@ -583,7 +578,7 @@ build_board_image() {
 	systemctl -q --root "$imagefs" enable -- -.mount boot.mount
 
 	case $BOARD in
-		rpi4)
+		rpi4|rpi3)
 			mkdir -p "$imagefs"/usr/lib/repart.d
 			cat > "$imagefs/usr/lib/repart.d/50-root.conf" <<- EOF
 				[Partition]
@@ -593,6 +588,127 @@ build_board_image() {
 	esac
 
 	umount -lf "$bootpart" "$rootpart"
+
+	losetup -D
+
+	msg "Filesystem image has been successfuly built!"
+}
+
+build_secure_image() {
+	local imagefs img lodev bootpart usrpart veritypart rootpart verityarch usrarch rootarch
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	case "$BARCH" in
+		amd64) rootarch="23"; usrarch="34"; verityarch="44" ;;
+		x86) rootarch="22"; usrarch="33"; verityarch="43" ;;
+		arm64) rootarch="25"; usrarch="36"; verityarch="46" ;;
+		armv7l) rootarch="24"; usrarch="35"; verityarch="45" ;;
+		*) die "Secure images are not supported on your architecture" ;;
+	esac
+
+	if [ "$TARGET_BOARD" == "1" ]; then
+		if ! check_stamp board-$BOARD; then
+			die "Build board specific packages first."
+		fi
+
+		msg "Building target system for '${BOARD}' board"
+
+		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
+	else
+		msg "Building target image for '${BARCH}' architecture"
+
+		if [ -n "$DESKTOP" ]; then
+			img="$BUILD/ataraxialinux-$DESKTOP-$BARCH.img"
+		else
+			img="$BUILD/ataraxialinux-$BARCH.img"
+		fi
+	fi
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	imagefs="$BUILD/image"
+
+	rm -rf "$imagefs"
+	mkdir -p "$imagefs"
+
+	losetup -D
+	qemu-img create -f raw "$img" 8G
+
+	fdisk "$img" <<-EOF
+		g
+		n
+		1
+		
+		+256M
+		t
+		1
+		n
+		2
+		
+		+5G
+		t
+		2
+		$usrarch
+		n
+		3
+		
+		+192M
+		t
+		3
+		$verityarch
+		n
+		4
+		
+		
+		t
+		4
+		$rootarch
+		w
+	EOF
+
+	losetup -fP "$img"
+	lodev=$(losetup -a | grep "$img" | cut -d: -f1)
+
+	bootpart="${lodev}p1"
+	usrpart="${lodev}p2"
+	veritypart="${lodev}p3"
+	rootpart="${lodev}p4"
+
+	mkfs.ext4 "$usrpart"
+	mkfs.vfat "$bootpart"
+	mkfs.ext4 "$rootpart"
+
+	mount "$rootpart" "$imagefs"
+
+	mkdir -p "$imagefs/boot" "$imagefs/home" "$imagefs/usr"
+
+	mount "$usrpart" "$imagefs/usr"
+	mount "$bootpart" "$imagefs/boot"
+
+	install_os "$imagefs"
+
+	if [ "$TARGET_BOARD" == "1" ]; then
+		[ -n "$EXTRA_PACKAGES" ] && {
+			for i in $EXTRA_PACKAGES; do
+				emerge_target $i "$imagefs"
+			done
+		}
+	fi
+
+	if [ -n "$DESKTOP" ]; then
+		tsukuri em -c "$BUILD/target.config" -r "$imagefs" $(get_desktop_packages $DESKTOP)
+	fi
+
+	umount -lf "$usrpart" "$bootpart" "$rootpart"
+
+	veritysetup format "$usrpart" "$veritypart"
 
 	losetup -D
 
@@ -868,8 +984,8 @@ main() {
 			arm64)
 				export TARGET_BOARD=1
 				case $BOARD in
-					rpi4)
-						export KERNEL="linux-rpi4"
+					rpi3|rpi4)
+						export KERNEL="linux-rpi64"
 						export EXTRA_PACKAGES="raspberrypi-firmware iwd"
 						;;
 				esac
@@ -878,6 +994,7 @@ main() {
 
 		case "$1" in
 			image) build_board_image ;;
+			image-secure) build_secure_image ;;
 			installer) build_live_installer ;;
 			live) build_live_image ;;
 			stage) build_stage ;;

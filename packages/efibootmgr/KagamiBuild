@@ -12,6 +12,8 @@ source=("https://github.com/rhboot/efibootmgr/archive/$version.tar.gz::archive=$
 build() {
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/efibootmgr/efivar.patch
+	patch -Np1 -i "$STUFF"/efibootmgr/efibootmgr-17-clang.patch
+
 	make EXTRA_CFLAGS="-Os" EFIDIR=/boot/EFI
 	install -d "$PKG"/usr/bin/
 	install -D -m0755 src/efibootmgr "$PKG"/usr/bin/efibootmgr
