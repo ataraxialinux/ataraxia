@@ -7,7 +7,7 @@ dnf install clang libcxx-devel glibc-static libcxx-static libunwind-devel jq zst
 ```
 ### Debian/Ubuntu:
 ```
-apt install build-essential clang lld libunwind-dev libc++-dev jq zstd libarchive-tools curl mtools xorriso python3 meson libfreetype-dev zlib1g-dev liblzma-dev libzstd-dev libarchive-dev libelf-dev libssl-dev libreadline-dev libffi-dev libsqlite-dev
+apt install build-essential clang lld libunwind-dev libc++-dev autoconf automake libtool jq zstd libarchive-tools curl mtools xorriso python3 meson libfreetype-dev zlib1g-dev liblzma-dev libzstd-dev libarchive-dev libelf-dev libssl-dev libreadline-dev libffi-dev libsqlite-dev
 ```
 #### Ataraxia GNU/Linux:
 ```
