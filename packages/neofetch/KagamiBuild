@@ -6,10 +6,12 @@
 
 name=neofetch
 version=7.1.0
-release=1
+release=2
 source=("https://github.com/dylanaraps/neofetch/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/neofetch/neofetch-add-tsukuri-support.patch	
+
 	make DESTDIR="$PKG" install
 }
