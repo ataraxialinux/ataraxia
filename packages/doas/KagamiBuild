@@ -1,0 +1,26 @@
+# Description: A portable fork of the OpenBSD `doas` command (alt sudo) (unofficial port from OpenBSD)
+# URL:         https://github.com/Duncaen/OpenDoas
+# Maintainer:  owl4ce, findarr at pm dot me
+# Depends on:  pam
+# Section:     admin
+
+name=doas
+alt_name=OpenDoas
+version=6.8.1
+release=1
+backup=('etc/doas.conf')
+source=("https://github.com/Duncaen/$alt_name/archive/refs/tags/v$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+        cd "$SRC"/$alt_name-$version
+	./configure \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-pam \
+		--with-timestamp
+	make
+	make DESTDIR="$PKG" install
+	
+	# Install example configuration
+	install -m644 -D "$STUFF"/doas/doas.conf "$PKG"/etc/doas.conf
+}
