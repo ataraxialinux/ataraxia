@@ -260,7 +260,7 @@ build_system() {
 
 	case $BARCH in
 		amd64|x86)
-			#emerge_target amd-microcode
+			emerge_target amd-microcode
 			emerge_target libuargp
 			emerge_target iucode-tool
 			emerge_target intel-microcode
@@ -450,7 +450,7 @@ install_os() {
 
 	case $BARCH in
 		amd64|x86)
-			#emerge_target amd-microcode "$targetfs"
+			emerge_target amd-microcode "$targetfs"
 			emerge_target libuargp "$targetfs"
 			emerge_target iucode-tool "$targetfs"
 			emerge_target intel-microcode "$targetfs"
@@ -885,6 +885,7 @@ build_initramfs() {
 }
 
 build_iso_image() {
+	local initrd="/seiba/seiba.zst"
 	local isodir="$BUILD/rootcd"
 	local rootfs="$BUILD/rootfs"
 	local grub_mods="all_video disk part_gpt part_msdos linux normal configfile search search_label fat iso9660 cat echo ls test true help gzio gfxmenu gfxterm"
@@ -895,12 +896,18 @@ build_iso_image() {
 
 	msg "Building installer image for '${BARCH}' architecture"
 
-	case "$BARCH" in
-		amd64|x86) grub_mods="$grub_mods multiboot2" ;;
-	esac
-
 	rm -rf "$isodir"
 	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
+
+	case "$BARCH" in
+		amd64|x86)
+			grub_mods="$grub_mods multiboot2"
+			initrd="/seiba/amd-microcode.img /seiba/intel-microcode.img $initrd"
+
+			cp "$rootfs"/boot/amd-microcode.img "$isodir"/seiba/amd-microcode.img
+			cp "$rootfs"/boot/intel-microcode.img "$isodir"/seiba/intel-microcode.img
+			;;
+	esac
 
 	cp "$rootfs"/boot/vmlinuz "$isodir"/seiba/seiba
 	mv "$BUILD"/seiba.zst "$isodir"/seiba/seiba.zst
@@ -923,22 +930,22 @@ build_iso_image() {
 
 		menuentry "Ataraxia GNU/Linux" {
 			linux	/seiba/seiba rw quiet
-			initrd	/seiba/seiba.zst
+			initrd	$initrd
 		}
 
 		menuentry "Ataraxia GNU/Linux (firmware)" {
 			linux	/seiba/seiba rw quiet
-			initrd	/seiba/seiba.zst /seiba/firmware.zst
+			initrd	$initrd /seiba/firmware.zst
 		}
 
 		menuentry "Ataraxia GNU/Linux (serial console)" {
 			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
-			initrd	/seiba/seiba.zst
+			initrd	$initrd
 		}
 
 		menuentry "Ataraxia GNU/Linux (firmware) (serial console)" {
 			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
-			initrd	/seiba/seiba.zst /seiba/firmware.zst
+			initrd	$initrd /seiba/firmware.zst
 		}
 	EOF
 

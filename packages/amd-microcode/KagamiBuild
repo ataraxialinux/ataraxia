@@ -1,0 +1,24 @@
+# Description: Microcode update image for AMD CPUs
+# URL:         https://git.kernel.org/?p=linux/kernel/git/firmware/linux-firmware.git;a=summary
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=amd-microcode
+version=20210315
+release=1
+options=('~strip')
+source=("https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/snapshot/linux-firmware-$version.tar.gz")
+
+build() {
+	mkdir -p "$PKG"/boot
+
+	cd "$SRC"/linux-firmware-$version
+	mkdir -p kernel/x86/microcode
+	cat amd-ucode/microcode_amd*.bin > kernel/x86/microcode/AuthenticAMD.bin
+
+	echo kernel/x86/microcode/AuthenticAMD.bin |
+		bsdtar --uid 0 --gid 0 -cnf - -T - |
+		bsdtar --null -cf - --format=newc @- > "$PKG"/boot/amd-microcode.img
+
+	chmod 644 "$PKG"/boot/amd-microcode.img
+}
