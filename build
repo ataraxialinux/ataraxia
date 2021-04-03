@@ -58,9 +58,11 @@ build_toolchain() {
 	emerge_host pkgconf
 
 	case $BARCH in
-		amd64|x86|ppc64le|ppc64)
-			emerge_host grub
-			;;
+		amd64|x86|ppc64le|ppc64) emerge_host grub ;;
+	esac
+
+	case $BARCH in
+		amd64|x86) emerge_host iucode-tool ;;
 	esac
 
 	msg "Cleaning up"
@@ -256,6 +258,14 @@ build_system() {
 	emerge_target tsukuri
 	emerge_target $linux
 
+	case $BARCH in
+		amd64|x86)
+			#emerge_target amd-microcode
+			emerge_target iucode-tool
+			emerge_target intel-microcode
+			;;
+	esac
+
 	stamp system
 
 	msg "System has been built successfuly."
@@ -436,6 +446,14 @@ install_os() {
 	emerge_target jq "$targetfs"
 	emerge_target tsukuri "$targetfs"
 	emerge_target $linux "$targetfs"
+
+	case $BARCH in
+		amd64|x86)
+			#emerge_target amd-microcode "$targetfs"
+			emerge_target iucode-tool "$targetfs"
+			emerge_target intel-microcode "$targetfs"
+			;;
+	esac
 }
 
 build_board_image() {

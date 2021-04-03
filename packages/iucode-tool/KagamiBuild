@@ -1,0 +1,18 @@
+# Description: Tool to manipulate Intel® IA-32/X86-64 microcode bundles
+# URL:         https://gitlab.com/iucode-tool/iucode-tool/wikis/home
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     hardware
+
+name=iucode-tool
+version=2.3.1
+release=1
+source=("https://gitlab.com/iucode-tool/releases/raw/master/${name}_${version}.tar.xz")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--sbindir=/usr/bin
+	make
+	make DESTDIR="$PKG" install
+}

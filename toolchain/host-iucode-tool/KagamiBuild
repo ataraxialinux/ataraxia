@@ -1,0 +1,15 @@
+name=host-iucode-tool
+realpath="$REPO/${name/host-}"
+version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+release=1
+options=('bootstrap')
+source=("https://gitlab.com/iucode-tool/releases/raw/master/iucode-tool_${version}.tar.xz")
+
+build() {
+	cd "$SRC"/iucode-tool-$version
+	./configure \
+		--prefix="$TOOLS" \
+		--sbindir="$TOOLS"/bin
+	make
+	make install
+}

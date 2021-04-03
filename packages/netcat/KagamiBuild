@@ -1,0 +1,19 @@
+# Description: GNU rewrite of netcat, the network piping application
+# URL:         http://netcat.sourceforge.net/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     net
+
+name=netcat
+version=0.7.1
+release=1
+source=("https://downloads.sourceforge.net/sourceforge/netcat/$name-$version.tar.bz2")
+
+build() {
+	cd "$SRC"/$name-$version
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--infodir=/usr/share/info
+	make MAKEINFO=true
+	make MAKEINFO=true DESTDIR="$PKG" install
+}
