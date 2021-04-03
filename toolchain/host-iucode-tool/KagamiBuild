@@ -7,6 +7,9 @@ source=("https://gitlab.com/iucode-tool/releases/raw/master/iucode-tool_${versio
 
 build() {
 	cd "$SRC"/iucode-tool-$version
+	patch -Np1 -i "$STUFF"/iucode-tool/0001-fix-rpl_realloc.patch
+
+	./autogen.sh
 	./configure \
 		--prefix="$TOOLS" \
 		--sbindir="$TOOLS"/bin

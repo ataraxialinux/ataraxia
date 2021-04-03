@@ -1,6 +1,7 @@
 # Description: Tool to manipulate Intel® IA-32/X86-64 microcode bundles
 # URL:         https://gitlab.com/iucode-tool/iucode-tool/wikis/home
 # Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libuargp
 # Section:     hardware
 
 name=iucode-tool
@@ -10,6 +11,9 @@ source=("https://gitlab.com/iucode-tool/releases/raw/master/${name}_${version}.t
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/iucode-tool/0001-fix-rpl_realloc.patch
+
+	./autogen.sh
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--sbindir=/usr/bin
