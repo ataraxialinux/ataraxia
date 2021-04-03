@@ -7,7 +7,7 @@ dnf install clang libcxx-devel glibc-static jq zstd bsdcpio bsdtar curl mtools l
 ```
 ### Debian/Ubuntu:
 ```
-apt install build-essential clang autoconf automake autopoint libtool jq zstd libarchive-tools attr curl mtools xorriso python3 meson libfreetype-dev zlib1g-dev liblzma-dev libzstd-dev libarchive-dev libelf-dev libssl-dev libreadline-dev libffi-dev libsqlite-dev
+apt install build-essential clang autoconf automake autopoint libtool jq zstd libarchive-tools attr curl mtools xorriso python3 meson libtasn1-bin libfreetype-dev zlib1g-dev liblzma-dev libzstd-dev libarchive-dev libelf-dev libssl-dev libreadline-dev libffi-dev libsqlite-dev
 ```
 #### Ataraxia GNU/Linux:
 ```

@@ -868,7 +868,15 @@ build_initramfs() {
 		EOF
 
 		systemctl -q --root "$initramfs" enable sshd.service
-		systemd-firstboot --root="$initramfs" --keymap=us --timezone=America/New_York --hostname=live --root-password=anon
+
+		ln -sf /usr/share/timzeone/
+
+		echo 'live' >> etc/hostname
+		echo 'root:x:0:0:Super User:/root:/bin/sh' >> etc/passwd
+		echo 'root:$6$KojQw0u76G/mcA/T$4XWEqkv5VJhl3On6tWtjBYKPDIatFdJ1CMy8eXLiiNYE2Jy5K1TN7m8NIqbsYTZAvZSJN7gcRR6brr1bTgCCQ1:18720::::::' >> etc/shadow
+		echo 'KEYMAP=us' >> etc/vconsole.conf
+
+		chmod 600 etc/shadow
 
 		ln -sf usr/lib/systemd/systemd init
 

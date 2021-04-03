@@ -21,9 +21,11 @@ build() {
 		-Dman=false \
 		-Dmodule_path=/usr/lib/pkcs11 \
 		-Dsystemd=enabled \
+		-Dtrust_module=enabled \
 		-Dtrust_paths=/etc/ca-certificates/trust-source:/usr/share/ca-certificates/trust-source
 	samu
 	DESTDIR="$PKG" samu install
 
 	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/p11-kit
+	attr -q -s pax.flags -V "em" "$PKG"/usr/bin/trust
 }
