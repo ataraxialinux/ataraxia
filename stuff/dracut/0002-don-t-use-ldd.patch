@@ -1,6 +1,6 @@
-From 5c575b2bc1105974007b80c6b42de5e20f0223d4 Mon Sep 17 00:00:00 2001
+From ad2465ad0d54324d07bdbaa2ade1b17b526f1e3b Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 15 Jan 2021 16:46:31 +0900
+Date: Sun, 4 Apr 2021 08:51:03 -0700
 Subject: [PATCH 2/4] don't use ldd
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -10,10 +10,10 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  2 files changed, 9 insertions(+), 8 deletions(-)
 
 diff --git a/dracut-functions.sh b/dracut-functions.sh
-index e5e6884..3394a92 100755
+index 8ce1ef0..965d87c 100755
 --- a/dracut-functions.sh
 +++ b/dracut-functions.sh
-@@ -81,7 +81,8 @@ find_binary() {
+@@ -83,7 +83,8 @@ find_binary() {
  
  ldconfig_paths()
  {
@@ -24,11 +24,11 @@ index e5e6884..3394a92 100755
  
  # Version comparision function.  Assumes Linux style version scheme.
 diff --git a/dracut.sh b/dracut.sh
-index 0f46483..f562fa6 100755
+index 062ed6c..1dee69f 100755
 --- a/dracut.sh
 +++ b/dracut.sh
-@@ -1729,13 +1729,13 @@ if [[ $kernel_only != yes ]]; then
-     for f in $dracutsysrootdir/etc/ld.so.conf $dracutsysrootdir/etc/ld.so.conf.d/*; do
+@@ -2091,13 +2091,13 @@ if [[ $kernel_only != yes ]]; then
+     for f in "$dracutsysrootdir"/etc/ld.so.conf "$dracutsysrootdir"/etc/ld.so.conf.d/*; do
          [[ -f $f ]] && inst_simple "${f#$dracutsysrootdir}"
      done
 -    if ! $DRACUT_LDCONFIG -r "$initdir" -f /etc/ld.so.conf; then
@@ -47,7 +47,7 @@ index 0f46483..f562fa6 100755
 +#    fi
  fi
  
- if [[ $do_hardlink = yes ]] && command -v hardlink >/dev/null; then
+ if [[ $do_strip = yes ]] && ! [[ $DRACUT_FIPS_MODE ]]; then
 -- 
-2.29.2
+2.31.0
 

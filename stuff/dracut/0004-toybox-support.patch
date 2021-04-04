@@ -1,20 +1,20 @@
-From 1d66006c8762fd7fcbbe7740c42206f318acb1da Mon Sep 17 00:00:00 2001
+From ce7f724541ec8e9ecdce2af0626bc5860bff0c36 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Mon, 29 Mar 2021 06:00:35 +0900
-Subject: [PATCH] POSIX compatibility and toybox support
+Date: Sun, 4 Apr 2021 08:52:34 -0700
+Subject: [PATCH 4/4] toybox support
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
  50-dracut.install                    |  2 +-
  51-dracut-rescue.install             |  2 +-
  Makefile                             |  2 +-
- dracut-init.sh                       |  4 ++--
+ dracut-init.sh                       | 19 +++++------------
  dracut.sh                            | 14 ++++++------
  install/dracut-install.c             |  8 +++----
  modules.d/05toybox/module-setup.sh   | 32 ++++++++++++++++++++++++++++
  modules.d/10i18n/module-setup.sh     |  6 +++---
  modules.d/95terminfo/module-setup.sh |  2 +-
- 9 files changed, 52 insertions(+), 20 deletions(-)
+ 9 files changed, 55 insertions(+), 32 deletions(-)
  create mode 100755 modules.d/05toybox/module-setup.sh
 
 diff --git a/50-dracut.install b/50-dracut.install
@@ -44,10 +44,10 @@ index 8bf9a6d..f748a6d 100755
          fi
  
 diff --git a/Makefile b/Makefile
-index 637e65b..4b9154f 100644
+index c9f9a3c..7182345 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -143,7 +143,7 @@ install: all
+@@ -145,7 +145,7 @@ install: all
  	ln -fs dracut-functions.sh $(DESTDIR)$(pkglibdir)/dracut-functions
  	install -m 0755 dracut-logger.sh $(DESTDIR)$(pkglibdir)/dracut-logger.sh
  	install -m 0755 dracut-initramfs-restore.sh $(DESTDIR)$(pkglibdir)/dracut-initramfs-restore
@@ -57,7 +57,7 @@ index 637e65b..4b9154f 100644
  	for i in $(man1pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man1/$${i##*/}; done
  	for i in $(man5pages); do install -m 0644 $$i $(DESTDIR)$(mandir)/man5/$${i##*/}; done
 diff --git a/dracut-init.sh b/dracut-init.sh
-index e4c7bd5..09b894a 100644
+index e4c7bd5..82f6cd4 100644
 --- a/dracut-init.sh
 +++ b/dracut-init.sh
 @@ -20,9 +20,9 @@
@@ -72,8 +72,30 @@ index e4c7bd5..09b894a 100644
  fi
  
  # is_func <command>
+@@ -1056,18 +1056,9 @@ instmods() {
+     return $_ret
+ }
+ 
+-if [[ "$(ln --help)" == *--relative* ]]; then
+-    ln_r() {
+-        ln -sfnr "${initdir}/$1" "${initdir}/$2"
+-    }
+-else
+-    ln_r() {
+-        local _source=$1
+-        local _dest=$2
+-        [[ -d "${_dest%/*}" ]] && _dest=$(readlink -f "${_dest%/*}")/${_dest##*/}
+-        ln -sfn -- "$(convert_abs_rel "${_dest}" "${_source}")" "${initdir}/${_dest}"
+-    }
+-fi
++ln_r() {
++    ln -sfnr "${initdir}/$1" "${initdir}/$2"
++}
+ 
+ is_qemu_virtualized() {
+     # 0 if a virt environment was detected
 diff --git a/dracut.sh b/dracut.sh
-index 062ed6c..89b87e5 100755
+index 1dee69f..e1bc3eb 100755
 --- a/dracut.sh
 +++ b/dracut.sh
 @@ -984,7 +984,7 @@ case "${drivers_dir}" in
@@ -140,7 +162,7 @@ index 062ed6c..89b87e5 100755
      else
          rm -f -- "$outfile"
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 24c5287..72c42c3 100644
+index a6da88a..c60a673 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
 @@ -314,10 +314,10 @@ static int cp(const char *src, const char *dst)
@@ -247,5 +269,5 @@ index 8cecaf3..e3c7ebc 100755
      fi
  }
 -- 
-2.29.2
+2.31.0
 

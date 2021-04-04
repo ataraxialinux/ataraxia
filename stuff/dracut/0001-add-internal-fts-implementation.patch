@@ -1,7 +1,7 @@
-From 7741e96a3c6ddcb6edd786fc6b4e7e2ac12ddc33 Mon Sep 17 00:00:00 2001
+From e4137c93608c9c6b47c9521ba21c30ca538737ab Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Tue, 26 Jan 2021 00:37:28 +0900
-Subject: [PATCH] add internal fts implementation
+Date: Sun, 4 Apr 2021 08:50:33 -0700
+Subject: [PATCH 1/4] add internal fts implementation
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -19,7 +19,7 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  create mode 100644 install/recallocarray.h
 
 diff --git a/Makefile b/Makefile
-index 7eb3184..06a6e23 100644
+index 637e65b..c9f9a3c 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -53,6 +53,8 @@ all: dracut-version.sh dracut.pc dracut-install skipcpio/skipcpio
@@ -32,7 +32,7 @@ index 7eb3184..06a6e23 100644
          install/hashmap.o\
          install/log.o \
 diff --git a/configure b/configure
-index aceec13..d1671b9 100755
+index a8b6e57..1909e44 100755
 --- a/configure
 +++ b/configure
 @@ -5,7 +5,7 @@ echo \#buildapi-variable-no-builddir >/dev/null
@@ -44,7 +44,7 @@ index aceec13..d1671b9 100755
  
  CC="${CC:-cc}"
  PKG_CONFIG="${PKG_CONFIG:-pkg-config}"
-@@ -69,12 +69,6 @@ ${CC} $CFLAGS $LDFLAGS conftest.c >/dev/null 2>&1
+@@ -70,12 +70,6 @@ ${CC} $CFLAGS $LDFLAGS conftest.c >/dev/null 2>&1
  ret=$?
  rm -f conftest.c a.out
  
@@ -57,7 +57,7 @@ index aceec13..d1671b9 100755
  cat <<EOF >conftest.c
  #include <fts.h>
  int main(void) {
-@@ -95,11 +89,6 @@ for lib in "-lc" "-lfts"; do
+@@ -97,11 +91,6 @@ for lib in "-lc" "-lfts"; do
  done
  rm -f conftest.c a.out
  
@@ -69,7 +69,7 @@ index aceec13..d1671b9 100755
  cat > Makefile.inc.$$ <<EOF
  prefix ?= ${prefix}
  libdir ?= ${libdir:-${prefix}/lib}
-@@ -107,7 +96,7 @@ datadir ?= ${datadir:-${prefix}/share}
+@@ -109,7 +98,7 @@ datadir ?= ${datadir:-${prefix}/share}
  sysconfdir ?= ${sysconfdir:-${prefix}/etc}
  sbindir ?= ${sbindir:-${prefix}/sbin}
  mandir ?= ${mandir:-${prefix}/share/man}
@@ -79,7 +79,7 @@ index aceec13..d1671b9 100755
  KMOD_CFLAGS ?= $(${PKG_CONFIG} --cflags " libkmod >= 23 ")
  KMOD_LIBS ?= $(${PKG_CONFIG} --libs " libkmod >= 23 ")
 diff --git a/install/dracut-install.c b/install/dracut-install.c
-index 17544ac..f0cd10c 100644
+index 24c5287..a6da88a 100644
 --- a/install/dracut-install.c
 +++ b/install/dracut-install.c
 @@ -40,10 +40,10 @@
@@ -1399,5 +1399,5 @@ index 0000000..0f2d810
 +
 +#endif
 -- 
-2.29.2
+2.31.0
 

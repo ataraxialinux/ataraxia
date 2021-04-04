@@ -6,7 +6,7 @@
 
 name=dracut
 version=053
-release=3
+release=4
 backup=('etc/dracut.conf')
 source=("https://mirrors.edge.kernel.org/pub/linux/utils/boot/dracut/dracut-$version.tar.gz")
 
@@ -27,6 +27,8 @@ build() {
 	make DESTDIR="$PKG" install
 
 	install -dm755 "$PKG"/usr/lib/dracut/dracut.conf.d
+
+	rm -rf "$PKG"/usr/lib/dracut/modules.d/10i18n
 
 	echo 'add_dracutmodules+=" toybox "' >> "$PKG"/usr/lib/dracut/dracut.conf.d/ataraxia.conf
 	echo 'omit_dracutmodules+=" busybox "' >> "$PKG"/usr/lib/dracut/dracut.conf.d/ataraxia.conf
