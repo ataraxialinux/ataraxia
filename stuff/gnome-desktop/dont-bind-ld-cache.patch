@@ -1,96 +1,30 @@
-<!DOCTYPE html>
-<html lang='en'>
-<head>
-<title>dont-bind-ld-cache.patch\gnome-desktop\community - aports - Alpine packages build scripts
-</title>
-<meta name='generator' content='cgit v1.2.1'/>
-<meta name='robots' content='index, nofollow'/>
-<link rel='stylesheet' type='text/css' href='/cgit.css'/>
-<link rel='shortcut icon' href='//alpinelinux.org/alpine-logo.ico'/>
-<link rel='alternate' title='Atom feed' href='http://git.alpinelinux.org/aports/atom/community/gnome-desktop/dont-bind-ld-cache.patch?h=master' type='application/atom+xml'/>
-<link rel='vcs-git' href='git://git.alpinelinux.org/aports' title='aports Git repository'/>
-<link rel='vcs-git' href='https://git.alpinelinux.org/aports' title='aports Git repository'/>
-</head>
-<body>
-<div id='cgit'><table id='header'>
-<tr>
-<td class='logo' rowspan='2'><a href='/'><img src='//wiki.alpinelinux.org/images/alogo.png' alt='cgit logo'/></a></td>
-<td class='main'><a href='/'>index</a> : <a title='aports' href='/aports/'>aports</a></td><td class='form'><form method='get'>
-<select name='h' onchange='this.form.submit();'>
-<option value='1.10-stable'>1.10-stable</option>
-<option value='1.9'>1.9</option>
-<option value='2.0-stable'>2.0-stable</option>
-<option value='2.1-stable'>2.1-stable</option>
-<option value='2.2-stable'>2.2-stable</option>
-<option value='2.3-stable'>2.3-stable</option>
-<option value='2.4-stable'>2.4-stable</option>
-<option value='2.5-stable'>2.5-stable</option>
-<option value='2.6-stable'>2.6-stable</option>
-<option value='2.7-stable'>2.7-stable</option>
-<option value='3.0-stable'>3.0-stable</option>
-<option value='3.1-stable'>3.1-stable</option>
-<option value='3.10-stable'>3.10-stable</option>
-<option value='3.11-stable'>3.11-stable</option>
-<option value='3.12-stable'>3.12-stable</option>
-<option value='3.13-stable'>3.13-stable</option>
-<option value='3.2-stable'>3.2-stable</option>
-<option value='3.3-stable'>3.3-stable</option>
-<option value='3.4-stable'>3.4-stable</option>
-<option value='3.5-stable'>3.5-stable</option>
-<option value='3.6-stable'>3.6-stable</option>
-<option value='3.7-stable'>3.7-stable</option>
-<option value='3.8-stable'>3.8-stable</option>
-<option value='3.9-stable'>3.9-stable</option>
-<option value='master' selected='selected'>master</option>
-</select> <input type='submit' value='switch'/></form></td></tr>
-<tr><td class='sub'>Alpine packages build scripts
-</td><td class='sub right'>uwsgi</td></tr></table>
-<table class='tabs'><tr><td>
-<a href='/aports/about/'>about</a><a href='/aports/'>summary</a><a href='/aports/refs/'>refs</a><a href='/aports/log/community/gnome-desktop/dont-bind-ld-cache.patch'>log</a><a class='active' href='/aports/tree/community/gnome-desktop/dont-bind-ld-cache.patch'>tree</a><a href='/aports/commit/community/gnome-desktop/dont-bind-ld-cache.patch'>commit</a><a href='/aports/diff/community/gnome-desktop/dont-bind-ld-cache.patch'>diff</a><a href='/aports/stats/community/gnome-desktop/dont-bind-ld-cache.patch'>stats</a></td><td class='form'><form class='right' method='get' action='/aports/log/community/gnome-desktop/dont-bind-ld-cache.patch'>
-<select name='qt'>
-<option value='grep'>log msg</option>
-<option value='author'>author</option>
-<option value='committer'>committer</option>
-<option value='range'>range</option>
-</select>
-<input class='txt' type='search' size='10' name='q' value=''/>
-<input type='submit' value='search'/>
-</form>
-</td></tr></table>
-<div class='path'>path: <a href='/aports/tree/'>root</a>/<a href='/aports/tree/community'>community</a>/<a href='/aports/tree/community/gnome-desktop'>gnome-desktop</a>/<a href='/aports/tree/community/gnome-desktop/dont-bind-ld-cache.patch'>dont-bind-ld-cache.patch</a></div><div class='content'>blob: 7607775716053b14962dd799f550c3c06adbf0e6 (<a href='/aports/plain/community/gnome-desktop/dont-bind-ld-cache.patch'>plain</a>) (<a href='/aports/blame/community/gnome-desktop/dont-bind-ld-cache.patch'>blame</a>)
-<table summary='blob content' class='blob'>
-<tr><td class='linenumbers'><pre><a id='n1' href='#n1'>1</a>
-<a id='n2' href='#n2'>2</a>
-<a id='n3' href='#n3'>3</a>
-<a id='n4' href='#n4'>4</a>
-<a id='n5' href='#n5'>5</a>
-<a id='n6' href='#n6'>6</a>
-<a id='n7' href='#n7'>7</a>
-<a id='n8' href='#n8'>8</a>
-<a id='n9' href='#n9'>9</a>
-<a id='n10' href='#n10'>10</a>
-<a id='n11' href='#n11'>11</a>
-<a id='n12' href='#n12'>12</a>
-<a id='n13' href='#n13'>13</a>
-<a id='n14' href='#n14'>14</a>
-</pre></td>
-<td class='lines'><pre><code>Upstream: No, Alpine specific
-Reason: We don&#39;t have that file, so we can&#39;t mount it into the sandbox
+From 2335302b569eec0b5397595295382fa98e9d0f9a Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 27 Mar 2021 11:39:40 +0900
+Subject: [PATCH] thumbnail: Fix sandboxing on MUSL systems
+
+Don't force bind /etc/ld.so.cache, as it isn't used on non-glibc systems
+such as MUSL-based OSes.
+
+Closes: #117
+---
+ libgnome-desktop/gnome-desktop-thumbnail-script.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 diff --git a/libgnome-desktop/gnome-desktop-thumbnail-script.c b/libgnome-desktop/gnome-desktop-thumbnail-script.c
-index 0aa2644..9260f0c 100644
-<span style="color:#000000; font-weight:bold">--- a/libgnome-desktop/gnome-desktop-thumbnail-script.c</span>
-<span style="color:#0057ae">+++ b/libgnome-desktop/gnome-desktop-thumbnail-script.c</span>
-&#64;&#64; -540,7 +540,6 &#64;&#64; add_bwrap (GPtrArray   *array,
+index a21597a9..ddcc1511 100644
+--- a/libgnome-desktop/gnome-desktop-thumbnail-script.c
++++ b/libgnome-desktop/gnome-desktop-thumbnail-script.c
+@@ -557,7 +557,7 @@ add_bwrap (GPtrArray   *array,
    add_args (array,
- 	    &quot;bwrap&quot;,
- 	    &quot;--ro-bind&quot;, &quot;/usr&quot;, &quot;/usr&quot;,
-<span style="color:#000000; font-weight:bold">-	    &quot;--ro-bind&quot;, &quot;/etc/ld.so.cache&quot;, &quot;/etc/ld.so.cache&quot;,</span>
+ 	    "bwrap",
+ 	    "--ro-bind", "/usr", "/usr",
+-	    "--ro-bind", "/etc/ld.so.cache", "/etc/ld.so.cache",
++	    "--ro-bind-try", "/etc/ld.so.cache", "/etc/ld.so.cache",
  	    NULL);
  
    /* These directories might be symlinks into /usr/... */
-</code></pre></td></tr></table>
-</div> <!-- class=content -->
-<div class='footer'>generated by <a href='https://git.zx2c4.com/cgit/about/'>cgit v1.2.1</a> (<a href='https://git-scm.com/'>git 2.18.0</a>) at 2021-03-27 02:27:12 +0000</div>
-</div> <!-- id=cgit -->
-</body>
-</html>
+-- 
+GitLab
+
+
