@@ -1,12 +1,12 @@
 # Description: GObject-based multi-platform GUI toolkit
 # URL:         https://www.gtk.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson at-spi2-atk cups fribidi gdk-pixbuf graphene gst-plugins-bad hicolor-icon-theme iso-codes json-glib libavif libcloudproviders libepoxy libxcomposite libxcursor libxinerama libxkbcommon libxrandr pango rest sassc vulkan-loader wayland-protocols librsvg
+# Depends on:  meson at-spi2-atk cups dconf fribidi gdk-pixbuf graphene gst-plugins-bad hicolor-icon-theme iso-codes json-glib libavif libcloudproviders libepoxy libxcomposite libxcursor libxinerama libxkbcommon libxrandr pango rest sassc tracker vulkan-loader wayland-protocols librsvg
 # Section:     libs
 
 name=gtk4
 version=4.0.3
-release=1
+release=2
 source=("https://download.gnome.org/sources/gtk/${version%.*}/gtk-$version.tar.xz")
 
 build() {
@@ -15,9 +15,11 @@ build() {
 	cd build
 	ataraxia-meson "$SRC"/gtk-$version \
 		-Dbroadway-backend=true \
+		-Dcloudproviders=enabled \
 		-Dbuild-tests=false \
 		-Dcolord=enabled \
 		-Dgtk_doc=false \
+		-Dtracker=enabled \
 		-Dvulkan=enabled
 	ninja
 	DESTDIR="$PKG" ninja install
