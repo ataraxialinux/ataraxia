@@ -6,11 +6,14 @@
 
 name=cups
 version=2.3.3
-release=5
-backup=('etc/cups/cupsd.conf'
-	'etc/cups/snmp.conf'
-	'etc/cups/cups-files.conf'
-	'etc/logrotate.d/cups')
+release=6
+factory=("/etc/cups/cups-files.conf::NULL::C::0644::cups::cups"
+	"/etc/cups/cupsd.conf::NULL::C::0644::cups::cups"
+	"/etc/cups/snmp.conf::NULL::C::0644::cups::cups"
+	"/etc/logrotate.d/cups::NULL::C"
+	"/etc/cups::NULL::d::0755::cups::cups"
+	"/etc/cups/ppd::NULL::d::0755::cups::cups"
+	"/etc/cups/ssl::NULL::d::0700::cups::cups"
 source=("https://github.com/apple/cups/releases/download/v$version/$name-$version-source.tar.gz")
 
 build() {
@@ -28,9 +31,8 @@ build() {
 		--with-rundir=/run/cups \
 		--with-cupsd-file-perm=0755 \
 		--with-dbusdir=/usr/share/dbus-1 \
-		--with-cups-user=lp \
-		--with-cups-group=lp \
-		--with-system-groups=lpadmin \
+		--with-cups-user=cups \
+		--with-cups-group=cups \
 		--with-optim="$CFLAGS" \
 		--enable-gnutls \
 		--enable-pam=yes \
@@ -46,12 +48,10 @@ build() {
 
 	rm -rf "$PKG"/etc/rc*.d
 	rm -rf "$PKG"/etc/init.d
+	rm -rf "$PKG"/etc/cups/*.default
 	rm -rf "$PKG"/run
 	rm -rf "$PKG"/etc/pam.d
 	rm -r "$PKG"/usr/share/cups/{banners,data}
 	rm -rf "$PKG"/usr/share/{applications,icons}
-	chmod 0755 "$PKG"/var/{cache,spool}   
 	chmod -R +w "$PKG"
-
-	install -dm700 -g 209 "$PKG"/etc/cups/ssl
 }

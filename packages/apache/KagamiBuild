@@ -6,14 +6,26 @@
 
 name=apache
 version=2.4.46
-release=3
-backup=(etc/httpd/conf/httpd.conf
-	etc/httpd/conf/extra/httpd-{autoindex,dav,default,info,languages}.conf
-	etc/httpd/conf/extra/httpd-{manual,mpm,multilang-errordoc}.conf
-	etc/httpd/conf/extra/httpd-{ssl,userdir,vhosts}.conf
-	etc/httpd/conf/extra/proxy-html.conf
-	etc/httpd/conf/{mime.types,magic}
-	etc/logrotate.d/httpd)
+release=4
+factory=("/etc/httpd/conf/httpd.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-autoindex.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-dav.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-default.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-info.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-languages.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-manual.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-mpm.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-multilang-errordoc.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-ssl.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-userdir.conf::NULL::C"
+	"/etc/httpd/conf/extra/httpd-vhosts.conf::NULL::C"
+	"/etc/httpd/conf/extra/proxy-html.conf::NULL::C"
+	"/etc/httpd/conf/magic::NULL::C"
+	"/etc/httpd/conf/mime.types::NULL::C"
+	"/etc/httpd/modules::/usr/lib/httpd/modules::L"
+	"/etc/logrotate.d/httpd::NULL::C"
+	"/var/log/httpd::NULL::d"
+	"/run/httpd::NULL::d::0755::root::root")
 source=("https://archive.apache.org/dist/httpd/httpd-$version.tar.bz2")
 
 build() {
@@ -43,9 +55,6 @@ build() {
 
 	install -Dm644 "$STUFF"/apache/logrotate "$PKG"/etc/logrotate.d/httpd
 	install -Dm644 "$STUFF"/svc/httpd.service "$PKG"/usr/lib/systemd/system/httpd.service
-	install -Dm644 "$STUFF"/tmpfiles.d/httpd.conf "$PKG"/usr/lib/tmpfiles.d/httpd.conf
-
-	ln -sf /usr/lib/httpd/modules "$PKG"/etc/httpd/modules
 
 	sed -e 's#/usr/lib/httpd/modules/#modules/#' \
 		-e 's|#\(LoadModule negotiation_module \)|\1|' \

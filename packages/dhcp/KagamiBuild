@@ -6,10 +6,15 @@
 
 name=dhcp
 version=4.4.2
-release=4
-backup=('etc/dhclient.conf'
-	'etc/dhcpd.conf'
-	'etc/dhcpd6.conf')
+release=5
+factory=("/etc/dhclient.conf::NULL::C"
+	"/etc/dhcpd.conf::NULL::C"
+	"/etc/dhcpd6.conf::NULL::C"
+	"/var/lib/dhcp::NULL::d::0750::root::root"
+	"/var/lib/dhcp/dhcpd.leases::NULL::f::0640::root::root"
+	"/var/lib/dhcp/dhcpd6.leases::NULL::f::0640::root::root"
+	"/var/lib/dhcp/dhclient.leases::NULL::f::0640::root::root"
+	"/var/lib/dhcp/dhclient6.leases::NULL::f::0640::root::root")
 source=("http://ftp.isc.org/isc/dhcp/$version/$name-$version.tar.gz")
 
 build() {
@@ -56,5 +61,4 @@ build() {
 		install -Dm644 "$STUFF"/svc/$i.service "$PKG"/usr/lib/systemd/system/$i.service
 	done
 	install -Dm644 "$STUFF"/svc/dhclient.service "$PKG"/usr/lib/systemd/system/dhclient@.service
-	install -Dm644 "$STUFF"/tmpfiles.d/dhcp.conf "$PKG"/usr/lib/tmpfiles.d/dhcp.conf
 }

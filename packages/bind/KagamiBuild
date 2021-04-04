@@ -6,8 +6,14 @@
 
 name=bind
 version=9.16.13
-release=1
-backup=('etc/named.conf')
+release=2
+factory=("/etc/bind.keys::NULL::C"
+	"/etc/named.conf::NULL::C::0640::named::named"
+	"/var/named::NULL::d::0770::named::named"
+	"/var/named/localhost.zone::NULL::C::0640::named::named"
+	"/var/named/localhost.ip6.zone::NULL::C::0640::named::named"
+	"/var/named/127.0.0.1.zone::NULL::C::0640::named::named"
+	"/run/named::NULL::d::0750::named::named")
 source=("http://ftp.isc.org/isc/bind9/$version/$name-$version.tar.xz")
 
 build() {
@@ -30,15 +36,12 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	install -D -m640 -o 0 -g 40 "$STUFF"/bind/named.conf "$PKG"/etc/named.conf
-	install -d -m770 -o 0 -g 40 "$PKG"/var/named
-	install -m640 -o 0 -g 40 "$STUFF"/bind/localhost.zone "$PKG"/var/named
-	install -m640 -o 0 -g 40 "$STUFF"/bind/localhost.ip6.zone "$PKG"/var/named
-	install -m640 -o 0 -g 40 "$STUFF"/bind/127.0.0.zone "$PKG"/var/named
+	install -Dm644 "$STUFF"/bind/named.conf "$PKG"/etc/named.conf
+	install -Dm644 "$STUFF"/bind/localhost.zone "$PKG"/var/named/localhost.zone
+	install -Dm644 "$STUFF"/bind/localhost.ip6.zone "$PKG"/var/named/localhost.ip6.zone
+	install -Dm644 "$STUFF"/bind/127.0.0.zone "$PKG"/var/named/127.0.0.zone
 
 	install -Dm644 "$STUFF"/svc/named.service "$PKG"/usr/lib/systemd/system/named.service
 	install -Dm644 "$STUFF"/tmpfiles.d/named.conf "$PKG"/usr/lib/tmpfiles.d/named.conf
 	install -Dm644 "$STUFF"/sysusers.d/named.conf "$PKG"/usr/lib/sysusers.d/named.conf
-
-	rm -rf "$PKG"/var/run
 }

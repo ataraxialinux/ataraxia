@@ -6,10 +6,17 @@
 
 name=cronie
 version=1.5.7
-release=1
-backup=('etc/cronie/cron.deny'
-	'etc/cronie/cron.d/0hourly'
-	'etc/cronie/anacrontab')
+release=2
+factory=("/etc/anacrontab::NULL::C"
+	"/etc/cron.d/0hourly::NULL::C"
+	"/etc/cron.hourly/0anacron::NULL::C"
+	"/etc/cron.d::NULL::d
+	"/etc/cron.hourly::NULL::d"
+	"/etc/cron.daily::NULL::d"
+	"/etc/cron.weekly::NULL::d"
+	"/etc/cron.monthly::NULL::d"
+	"/var/spool/cron::NULL::d"
+	"/var/spool/anacron::NULL::d")
 source=("https://github.com/cronie-crond/cronie/releases/download/$name-$version/$name-$version.tar.gz")
 
 build() {
@@ -30,8 +37,6 @@ build() {
 	make DESTDIR="$PKG" install
 
 	chmod u+s "$PKG"/usr/bin/crontab
-	install -d "$PKG"/var/spool/{ana,}cron
-	install -d "$PKG"/etc/cronie/cron.{d,hourly,daily,weekly,monthly}
 	install -Dm0644 contrib/anacrontab "$PKG"/etc/cronie/anacrontab
 	install -Dm0644 contrib/0hourly "$PKG"/etc/cronie/cron.d/0hourly
 	install -Dm0755 contrib/0anacron "$PKG"/etc/cronie/cron.hourly/0anacron

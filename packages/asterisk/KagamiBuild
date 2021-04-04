@@ -6,63 +6,13 @@
 
 name=asterisk
 version=18.3.0
-release=1
-backup=('etc/asterisk/acl.conf'
-	'etc/asterisk/adsi.conf'
-	'etc/asterisk/agents.conf'
-	'etc/asterisk/alarmreceiver.conf'
-	'etc/asterisk/amd.conf'
-	'etc/asterisk/ari.conf'
-	'etc/asterisk/ast_debug_tools.conf'
-	'etc/asterisk/asterisk.conf'
-	'etc/asterisk/ccss.conf'
-	'etc/asterisk/cdr.conf'
-	'etc/asterisk/cdr_beanstalkd.conf'
-	'etc/asterisk/cdr_custom.conf'
-	'etc/asterisk/cdr_manager.conf'
-	'etc/asterisk/cdr_syslog.conf'
-	'etc/asterisk/cel.conf'
-	'etc/asterisk/cel_beanstalkd.conf'
-	'etc/asterisk/cel_custom.conf'
-	'etc/asterisk/cli.conf'
-	'etc/asterisk/cli_aliases.conf'
-	'etc/asterisk/cli_permissions.conf'
-	'etc/asterisk/codecs.conf'
-	'etc/asterisk/confbridge.conf'
-	'etc/asterisk/dnsmgr.conf'
-	'etc/asterisk/dsp.conf'
-	'etc/asterisk/dundi.conf'
-	'etc/asterisk/enum.conf'
-	'etc/asterisk/extconfig.conf'
-	'etc/asterisk/extensions.conf'
-	'etc/asterisk/features.conf'
-	'etc/asterisk/followme.conf'
-	'etc/asterisk/http.conf'
-	'etc/asterisk/indications.conf'
-	'etc/asterisk/logger.conf'
-	'etc/asterisk/manager.conf'
-	'etc/asterisk/modules.conf'
-	'etc/asterisk/musiconhold.conf'
-	'etc/asterisk/muted.conf'
-	'etc/asterisk/osp.conf'
-	'etc/asterisk/phoneprov.conf'
-	'etc/asterisk/prometheus.conf'
-	'etc/asterisk/queuerules.conf'
-	'etc/asterisk/queues.conf'
-	'etc/asterisk/res_parking.conf'
-	'etc/asterisk/res_stun_monitor.conf'
-	'etc/asterisk/resolver_unbound.conf'
-	'etc/asterisk/rtp.conf'
-	'etc/asterisk/say.conf'
-	'etc/asterisk/sla.conf'
-	'etc/asterisk/smdi.conf'
-	'etc/asterisk/sorcery.conf'
-	'etc/asterisk/stasis.conf'
-	'etc/asterisk/statsd.conf'
-	'etc/asterisk/udptl.conf'
-	'etc/asterisk/users.conf'
-	'etc/asterisk/vpb.conf'
-	'etc/logrotate.d/asterisk')
+release=2
+factory=("/etc/asterisk::NULL::C::0755::asterisk::asterisk"
+	"/etc/logrotate.d/asterisk::NULL::C"
+	"/var/lib/asterisk::NULL::C::0755::asterisk::asterisk"
+	"/var/log/asterisk::NULL::C::0755::asterisk::asterisk"
+	"/var/spool/asterisk::NULL::C::0755::asterisk::asterisk"
+	"/run/asterisk::NULL::d::0755::asterisk::asterisk")
 source=("https://downloads.asterisk.org/pub/telephony/asterisk/releases/$name-$version.tar.gz")
 
 build() {
@@ -106,7 +56,6 @@ build() {
 	for i in contrib/systemd/asterisk.service contrib/systemd/*.socket; do
 		install -Dm644 $i "$PKG"/usr/lib/systemd/system/$(basename $i)
 	done
-	install -Dm644 "$STUFF"/tmpfiles.d/asterisk.conf "$PKG"/usr/lib/tmpfiles.d/asterisk.conf
 	install -Dm644 "$STUFF"/sysusers.d/asterisk.conf "$PKG"/usr/lib/sysusers.d/asterisk.conf
 	install -Dm644 "$STUFF"/asterisk/logrotate "$PKG"/etc/logrotate.d/asterisk
 }
