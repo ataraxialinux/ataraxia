@@ -1,13 +1,13 @@
 # Description: The GNU GRand Unified Bootloader
 # URL:         https://www.gnu.org/software/grub/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  python gettext-tiny xz freetype lvm2 zfs
+# Depends on:  python gettext-tiny binutils xz freetype lvm2
 # Section:     utils
 
 name=grub
 version=2.05
 unifontver=13.0.02
-release=2
+release=3
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
@@ -38,9 +38,15 @@ build_flavor() {
 }
 
 build() {
-	die "DEAD"
-
 	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
+
+	local linker
+
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		linker="-fuse-ld=$TOOLS/bin/${CROSS_COMPILE}ld.bfd"
+	else
+		linker="/usr/bin/ld.bfd"
+	fi
 
 	export NM=llvm-nm
 	export OBJCOPY=llvm-objcopy
@@ -50,6 +56,7 @@ build() {
 	export TARGET_OBJCOPY=llvm-objcopy
 	export TARGET_RANLIB=llvm-ranlib
 	export TARGET_STRIP=llvm-strip
+	export TARGET_CFLAGS="-fuse-ld=$linker"
 
 	case $BARCH in
 		amd64|x86)
