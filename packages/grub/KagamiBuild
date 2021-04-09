@@ -7,11 +7,13 @@
 name=grub
 version=2.05
 unifontver=13.0.02
+dejavuver=2.37
 release=3
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
 source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
-	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz")
+	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
+	"https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_${dejavuver/./_}/dejavu-fonts-ttf-$dejavuver.tar.bz2")
 noextract=("unifont-$unifontver.pcf.gz")
 
 build_flavor() {
@@ -20,6 +22,8 @@ build_flavor() {
 	local configure="$@"
 	mkdir -p build_${flavor}
 	cd build_${flavor}
+	cp ../unifont.pcf .
+	cp ../DejaVuSans.ttf .
 	../configure $TOOLFLAGS $configure \
 		--prefix=/usr \
 		--bindir=/usr/bin \
@@ -60,7 +64,7 @@ build() {
 
 	case $BARCH in
 		amd64|x86)
-			FLAVOR="efi pc"
+			FLAVOR="efi pc coreboot"
 			;;
 		ppc64le|ppc64)
 			FLAVOR="ieee1275"
@@ -69,6 +73,10 @@ build() {
 			echo "Architecture is not set or is not supported by Ataraxia GNU/Linux"
 			exit 1
 	esac
+
+	pushd "$SRC"
+		bsdtar -xvf dejavu-fonts-ttf-$dejavuver.tar.bz2
+	popd
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/grub/0001-Don-t-say-GNU-Linux-in-the-menu.patch
@@ -82,6 +90,7 @@ build() {
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
 
 	gzip -cd "$SRC"/unifont-$unifontver.pcf.gz > unifont.pcf
+	cp "$SRC"/dejavu-fonts-ttf-$dejavuver/ttf/DejaVuSans.ttf .
 
 	./autogen.sh
 	for f in $FLAVOR; do
