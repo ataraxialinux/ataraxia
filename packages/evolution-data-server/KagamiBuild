@@ -1,16 +1,18 @@
 # Description: Centralized access to appointments and contacts
 # URL:         https://wiki.gnome.org/Apps/Evolution
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai gobject-introspection vala db53 gcr libical libsecret nss sqlite gnome-online-accounts libcanberra liboauth libgweather krb5
+# Depends on:  cmake samurai gobject-introspection vala db53 gcr libical libsecret nss sqlite gnome-online-accounts libcanberra liboauth libgweather krb5 libldap
 # Section:     gnome
 
 name=evolution-data-server
 version=3.40.0
-release=1
+release=2
 source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
 
 build() {
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/evolution-data-server/c95a70bfeae25ba11fbe50fe759a6cdb29388e44.patch
+
 	mkdir -p build
 	cd build
 	cmake "$SRC"/$name-$version $CMAKEFLAGS \
@@ -24,7 +26,7 @@ build() {
 		-DENABLE_INSTALLED_TESTS=OFF \
 		-DENABLE_INTROSPECTION=ON \
 		-DENABLE_VALA_BINDINGS=ON \
-		-DWITH_OPENLDAP=OFF \
+		-DWITH_OPENLDAP=ON \
 		-Wno-dev -G Ninja
 	samu
 	DESTDIR="$PKG" samu install
