@@ -40,7 +40,6 @@ libxslt
 llvm
 lttng-ust
 meson
-openexr
 postgresql
 protobuf
 pybind11
@@ -115,7 +114,6 @@ exempi
 highlight
 i2pd
 inkscape
-openexr
 pybind11
 znc
 ```
