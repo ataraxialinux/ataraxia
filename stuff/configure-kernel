@@ -50,7 +50,7 @@ main() {
 	shift $((OPTIND - 1))
 
 	case $arch in
-		amd64) defconfig="x86_64_defconfig" ;;
+		x86_64) defconfig="x86_64_defconfig" ;;
 		x86) defconfig="i386_defconfig" ;;
 		arm64)
 			case $flavor in
@@ -79,7 +79,7 @@ main() {
 	esac
 
 	case $arch in
-		amd64) karch="x86_64" ;;
+		x86_64) karch="x86_64" ;;
 		x86) karch="i386" ;;
 		arm64) karch="arm64" ;;
 		armv7l) karch="arm" ;;
@@ -92,7 +92,7 @@ main() {
 	make ARCH=$karch CC=${CROSS_COMPILE}clang $defconfig
 
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig EFI EFI_STUB EFI_MIXED EFI_VARS FB_EFI EFI_RUNTIME_MAP EFIVAR_FS EFI_DISABLE_PCI_DMA \
 				NUMA AMD_NUMA NODES_SPAN_OTHER_NODES NEED_MULTIPLE_NODES USE_PERCPU_NUMA_NODE_ID \
 				ACPI_NUMA MICROCODE MICROCODE_EARLY MICROCODE_INTEL MICROCODE_AMD X86_PM_TIMER \
@@ -145,7 +145,7 @@ main() {
 	strconfig SYSTEM_TRUSTED_KEYS "certs/signing_key.pem"
 
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig RAS
 			;;
 		ppc64le|ppc64)
@@ -179,7 +179,7 @@ main() {
 
 	# Error detection and correction (x86)
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig EDAC_ATOMIC_SCRUB EDAC_SUPPORT EDAC EDAC_LEGACY_SYSFS EDAC_GHES
 			mconfig EDAC_DECODE_MCE EDAC_AMD64 EDAC_E752X EDAC_I82975X EDAC_I3000 EDAC_I3200 EDAC_IE31200 EDAC_X38 EDAC_I5400 EDAC_I7CORE \
 				EDAC_I5000 EDAC_I5100 EDAC_I7300 EDAC_SBRIDGE EDAC_SKX EDAC_I10NM EDAC_PND2
@@ -209,12 +209,12 @@ main() {
 
 	# Platform specific crypto
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig CRYPTO_AES_NI_INTEL CRYPTO_CRC32C_INTEL CRYPTO_GLUE_HELPER_X86 CRYPTO_GHASH_CLMUL_NI_INTEL
 			;;
 	esac
 	case $arch in
-		amd64)
+		x86_64)
 			yconfig CRYPTO_TWOFISH_X86_64 CRYPTO_CAMELLIA_X86_64 CRYPTO_SERPENT_SSE2_X86_64 \
 				CRYPTO_TWOFISH_AVX_X86_64 CRYPTO_SERPENT_AVX_X86_64 CRYPTO_SERPENT_AVX2_X86_64 \
 				CRYPTO_CAMELLIA_AESNI_AVX_X86_64 CRYPTO_CAMELLIA_AESNI_AVX2_X86_64 CRYPTO_CAST5_AVX_X86_64 \
@@ -306,7 +306,7 @@ main() {
 
 	# Platform specific SCSI
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig VMWARE_PVSCSI XEN_SCSI_FRONTEND HYPERV_STORAGE
 			;;
 	esac
@@ -331,7 +331,7 @@ main() {
 
 	# Platform specific PATA
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig PATA_TOSHIBA PATA_TRIFLEX PATA_SCH
 			;;
 		*)
@@ -423,7 +423,7 @@ main() {
 
 	# IEEE 1394 support (x86 and ppc)
 	case $arch in
-		amd64|x86|ppc64le|ppc64)
+		x86_64|x86|ppc64le|ppc64)
 			yconfig MACINTOSH_DRIVERS
 			mconfig FIREWIRE FIREWIRE_OHCI FIREWIRE_SBP2 FIREWIRE_NET FIREWIRE_NOSY
 			;;
@@ -500,7 +500,7 @@ main() {
 
 	# Platform specific HID support
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			mconfig INTEL_ISH_HID
 			;;
 	esac
@@ -613,7 +613,7 @@ main() {
 
 	# Platform specific networking drivers
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig IAVF 8139TOO_TUNE_TWISTER 8139TOO_8129 LIQUIDIO_VF
 			mconfig E100 E1000 E1000E IGB IGBVF IXGB IXGBE IXGBEVF I40E I40EVF ICE FM10K IGC \
 				ATP 8139CP 8139TOO R8169 LIQUIDIO
@@ -672,7 +672,7 @@ main() {
 
 	# Platform specific virtualiztion
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig INTEL_IOMMU INTEL_IOMMU_SVM AMD_IOMMU AMD_IOMMU_V2 XEN_TMEM CLEANCACHE \
 				FRONTSWAP XEN_SELFBALLOONING X86_IO_APIC ACPI_PROCFS PCI_XEN
 			mconfig XEN_PCIDEV_BACKEND VIRTIO_MEM
@@ -690,7 +690,7 @@ main() {
 
 	# Platform specific GPU support
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig DRM_I915_CAPTURE_ERROR DRM_I915_COMPRESS_ERROR \
 				DRM_I915_USERPTR DRM_GMA600 DRM_GMA3600 DRM_VMWGFX_FBCON
 			mconfig DRM_I915 DRM_VMWGFX DRM_GMA500
@@ -847,7 +847,7 @@ main() {
 
 	# Platform specific security
 	case $arch in
-		amd64)
+		x86_64)
 			yconfig RANDOMIZE_BASE RANDOMIZE_MEMORY PAGE_TABLE_ISOLATION LEGACY_VSYSCALL_NONE \
 				X86_MCE X86_MCE_INTE MTRR X86_PAT X86_SMAP X86_UMI SHADOW_CALL_STACK
 			nconfig X86_X32 MODIFY_LDT_SYSCALL X86_VSYSCALL_EMULATION LEGACY_VSYSCALL_EMULATE \
@@ -886,7 +886,7 @@ main() {
 
 	# Laptop drivers
 	case $arch in
-		amd64|x86)
+		x86_64|x86)
 			yconfig X86_PLATFORM_DEVICES INTEL_TURBO_MAX_3 INTEL_PMC_CORE THINKPAD_ACPI_ALSA_SUPPORT \
 				THINKPAD_ACPI_VIDEO THINKPAD_ACPI_HOTKEY_POLL SONYPI_COMPAT DELL_SMBIOS_WMI DELL_SMBIOS_SMM \
 				ACPI_I2C_OPREGION

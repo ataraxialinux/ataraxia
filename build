@@ -58,11 +58,11 @@ build_toolchain() {
 	emerge_host pkgconf
 
 	case $BARCH in
-		amd64|x86|ppc64le|ppc64) emerge_host grub ;;
+		x86_64|x86|ppc64le|ppc64) emerge_host grub ;;
 	esac
 
 	case $BARCH in
-		amd64|x86) emerge_host iucode-tool ;;
+		x86_64|x86) emerge_host iucode-tool ;;
 	esac
 
 	msg "Cleaning up"
@@ -259,7 +259,7 @@ build_system() {
 	emerge_target $linux
 
 	case $BARCH in
-		amd64|x86)
+		x86_64|x86)
 			emerge_target amd-microcode
 			emerge_target libuargp
 			emerge_target iucode-tool
@@ -449,7 +449,7 @@ install_os() {
 	emerge_target $linux "$targetfs"
 
 	case $BARCH in
-		amd64|x86)
+		x86_64|x86)
 			emerge_target amd-microcode "$targetfs"
 			emerge_target libuargp "$targetfs"
 			emerge_target iucode-tool "$targetfs"
@@ -626,7 +626,7 @@ build_secure_image() {
 	fi
 
 	case "$BARCH" in
-		amd64) rootarch="23"; usrarch="34"; verityarch="44" ;;
+		x86_64) rootarch="23"; usrarch="34"; verityarch="44" ;;
 		x86) rootarch="22"; usrarch="33"; verityarch="43" ;;
 		arm64) rootarch="25"; usrarch="36"; verityarch="46" ;;
 		armv7l) rootarch="24"; usrarch="35"; verityarch="45" ;;
@@ -908,7 +908,7 @@ build_iso_image() {
 	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
 
 	case "$BARCH" in
-		amd64|x86)
+		x86_64|x86)
 			grub_mods="$grub_mods multiboot2"
 			initrd="/seiba/amd-microcode.img /seiba/intel-microcode.img $initrd"
 
@@ -1011,7 +1011,7 @@ main() {
 		export_cflags "$BARCH"
 
 		case $BARCH in
-			amd64|x86|ppc64le|ppc64)
+			x86_64|x86|ppc64le|ppc64)
 				export INSTALLER=1
 				;;
 			*)
@@ -1064,8 +1064,8 @@ main() {
 		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
 		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
 
-		check_for_arch "amd64"
-		NOSECHECK=1 export_variables "amd64"
+		check_for_arch "x86_64"
+		NOSECHECK=1 export_variables "x86_64"
 
 		msg "Checking for updates"
 		for packages in $(ls "$REPO/" | sort); do
@@ -1096,8 +1096,8 @@ main() {
 			popd
 		done
 	elif [ "$mode" == "generate_repo" ]; then
-		check_for_arch "amd64"
-		NOSECHECK=1 export_variables "amd64"
+		check_for_arch "x86_64"
+		NOSECHECK=1 export_variables "x86_64"
 
 		msg "Generating repository file"
 		[ -f "$REPO/repo" ] && rm "$REPO/repo"
