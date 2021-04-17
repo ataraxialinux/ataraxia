@@ -39,9 +39,11 @@ parse_architecture() {
 		amd64) export XTARGET="x86_64-linux-musl" ;;
 		x86) export XTARGET="i386-linux-musl" ;;
 		arm64) export XTARGET="aarch64-linux-musl" ;;
-		arm) export XTARGET="arm-linux-musleabihf" ;;
+		arm) export XTARGET="armv7l-linux-musleabihf" ;;
 		powerpc64le) export XTARGET="powerpc64le-linux-musl" ;;
 		powerpc64) export XTARGET="powerpc64-linux-musl" ;;
+		powerpc) export XTARGET="powerpc-linux-musl" ;;
+		powerpcspe) export XTARGET="powerpc-linux-muslspe" ;;
 		riscv64) export XTARGET="riscv64-linux-musl" ;;
 		*) die 'Architecture called `'${1}'` is not supported by Ataraxia GNU/Linux' ;;
 	esac
@@ -89,7 +91,7 @@ export_cflags() {
 			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fvisibility=hidden -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong --param=ssp-buffer-size=4 -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
-		powerpc64le|powerpc64)
+		powerpc64le|powerpc64|powerpc|powerpcspe)
 			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fvisibility=hidden -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection --param=ssp-buffer-size=4 -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;

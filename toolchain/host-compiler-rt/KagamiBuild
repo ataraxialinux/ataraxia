@@ -8,12 +8,6 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 build() {
 	unset CFLAGS CXXFLAGS LDFLAGS
 
-	pushd "$SRC/compiler-rt-$version.src"
-		msg "Patching Compiler-RT"
-		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
-	popd
-
 	msg "Cross-compiling Compiler-RT"
 	cd "$SRC"
 	mkdir -p compiler-rt-builtins-build

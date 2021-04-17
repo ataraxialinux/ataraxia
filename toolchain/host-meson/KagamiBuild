@@ -7,20 +7,22 @@ source=("https://github.com/mesonbuild/meson/releases/download/$version/meson-$v
 
 build() {
 	case $BARCH in
-		x86_64)    cpu="x86_64" ;;
-		x86)      cpu="x86" cpuextra="i686" ;;
-		arm64)    cpu="aarch64" ;;
-		arm)   cpu="arm" cpuextra="arm" ;;
-		powerpc64le)  cpu="powerpc64" cpuextra="powerpc64le" ;;
-		powerpc64)    cpu="powerpc64" ;;
-		riscv64)  cpu="riscv64" ;;
+		x86_64)       cpu="x86_64" ;;
+		x86)          cpu="x86" cpuextra="i686" ;;
+		arm64)        cpu="aarch64" ;;
+		arm)          cpu="arm" cpuextra="arm" ;;
+		powerpc64le)  cpu="ppc64" cpuextra="ppc64le" ;;
+		powerpc64)    cpu="ppc64" ;;
+		powerpc)      cpu="ppc" ;;
+		powerpcspe)   cpu="ppc" ;;
+		riscv64)      cpu="riscv64" ;;
 	esac
 
 	[ -z "$cpuextra" ] && cpuextra="$cpu"
 
 	case $BARCH in
 		x86_64|x86|arm64|arm|powerpc64le|riscv64) endian="little" ;;
-		powerpc64) endian="big" ;;
+		powerpc64|powerpc|powerpcspe) endian="big" ;;
 	esac
 
 	cd "$SRC"/meson-$version
