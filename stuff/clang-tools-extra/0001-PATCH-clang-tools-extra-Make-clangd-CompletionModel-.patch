@@ -1,0 +1,31 @@
+From 84e4fe467f290c85b3d7d22c7333d192e1282054 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@redhat.com>
+Date: Wed, 17 Mar 2021 08:32:56 +0100
+Subject: [PATCH] [PATCH][clang-tools-extra] Make clangd CompletionModel usable
+ even with non-standard (but supported) layout
+
+llvm supports specifying a non-standard layout where each project lies in its
+own place. Do not assume a fixed layout and use the appropriate cmake variable
+instead.
+---
+ clangd/quality/CompletionModel.cmake | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/clangd/quality/CompletionModel.cmake b/clangd/quality/CompletionModel.cmake
+index 60c6d2a..41bc2ed 100644
+--- a/clangd/quality/CompletionModel.cmake
++++ b/clangd/quality/CompletionModel.cmake
+@@ -5,8 +5,8 @@
+ # will define a C++ class called ${cpp_class} - which may be a
+ # namespace-qualified class name.
+ function(gen_decision_forest model filename cpp_class)
+-  set(model_compiler ${CMAKE_SOURCE_DIR}/../clang-tools-extra/clangd/quality/CompletionModelCodegen.py)
+-  
++  set(model_compiler ${LLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR}/clangd/quality/CompletionModelCodegen.py)
++
+   set(output_dir ${CMAKE_CURRENT_BINARY_DIR})
+   set(header_file ${output_dir}/${filename}.h)
+   set(cpp_file ${output_dir}/${filename}.cpp)
+-- 
+1.8.3.1
+

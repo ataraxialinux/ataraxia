@@ -47,6 +47,10 @@ build() {
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC-use-ELFv2-ABI.patch
 		patch -Np1 -i "$STUFF"/clang/0003-RISCV-disable-relaxations.patch
 	popd
+	pushd "$SRC/clang-tools-extra-$version.src"
+		msg "Patching Clang Tools Extra"
+		patch -Np1 -i "$STUFF"/clang-tools-extra/0001-PATCH-clang-tools-extra-Make-clangd-CompletionModel-.patch
+	popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"
 		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
@@ -118,6 +122,7 @@ build() {
 		-DCLANG_VENDOR=Ataraxia \
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
 		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+		-DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR="$SRC/clang-tools-extra-$version.src" \
 		-DLIBCLANG_BUILD_STATIC=ON \
 		-DLIBCXX_CXX_ABI=libcxxabi \
 		-DLIBCXX_HAS_MUSL_LIBC=ON \
