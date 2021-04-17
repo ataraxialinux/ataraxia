@@ -1,7 +1,7 @@
-From 755e2b1e3db0e15316e9c09043f2617d918c08fe Mon Sep 17 00:00:00 2001
+From 67b7e545618b04a69fa5781b58b134ab7ca4b369 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Fri, 12 Feb 2021 03:54:11 +0900
-Subject: [PATCH 1/5] add support for Ataraxia Linux
+Date: Sat, 17 Apr 2021 05:11:10 -0700
+Subject: [PATCH 1/3] add support for Ataraxia GNU/Linux
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
 ---
@@ -13,10 +13,10 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  5 files changed, 25 insertions(+), 5 deletions(-)
 
 diff --git a/include/clang/Driver/Distro.h b/include/clang/Driver/Distro.h
-index 038d4ce7..2f45e9d2 100644
+index 0e98d007..d40f5445 100644
 --- a/include/clang/Driver/Distro.h
 +++ b/include/clang/Driver/Distro.h
-@@ -28,6 +28,7 @@ public:
+@@ -30,6 +30,7 @@ public:
      // the first and last known member in the family, e.g. IsRedHat().
      AlpineLinux,
      ArchLinux,
@@ -24,9 +24,9 @@ index 038d4ce7..2f45e9d2 100644
      DebianLenny,
      DebianSqueeze,
      DebianWheezy,
-@@ -132,6 +133,10 @@ public:
-     return DistroVal == Gentoo;
-   }
+@@ -129,6 +130,10 @@ public:
+ 
+   bool IsGentoo() const { return DistroVal == Gentoo; }
  
 +  bool IsAtaraxiaLinux() const {
 +    return DistroVal == AtaraxiaLinux;
@@ -36,10 +36,10 @@ index 038d4ce7..2f45e9d2 100644
  };
  
 diff --git a/lib/Driver/Distro.cpp b/lib/Driver/Distro.cpp
-index 4d58ad1a..2e1ed09f 100644
+index ee4fe841..3da18860 100644
 --- a/lib/Driver/Distro.cpp
 +++ b/lib/Driver/Distro.cpp
-@@ -165,6 +165,9 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS,
+@@ -200,6 +200,9 @@ static Distro::DistroType DetectDistro(llvm::vfs::FileSystem &VFS) {
    if (VFS.exists("/etc/gentoo-release"))
      return Distro::Gentoo;
  
@@ -50,10 +50,10 @@ index 4d58ad1a..2e1ed09f 100644
  }
  
 diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
-index 18035047..5353e3a8 100644
+index 9663a739..8e1883ed 100644
 --- a/lib/Driver/ToolChains/Linux.cpp
 +++ b/lib/Driver/ToolChains/Linux.cpp
-@@ -221,13 +221,13 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+@@ -225,13 +225,13 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
  
    Distro Distro(D.getVFS(), Triple);
  
@@ -69,7 +69,7 @@ index 18035047..5353e3a8 100644
      ExtraOpts.push_back("-z");
      ExtraOpts.push_back("relro");
    }
-@@ -266,7 +266,7 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+@@ -270,7 +270,7 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
    // Android loader does not support .gnu.hash until API 23.
    // Hexagon linker/loader does not support .gnu.hash
    if (!IsMips && !IsHexagon) {
@@ -78,7 +78,7 @@ index 18035047..5353e3a8 100644
          (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick) ||
          (IsAndroid && !Triple.isAndroidVersionLT(23)))
        ExtraOpts.push_back("--hash-style=gnu");
-@@ -819,8 +819,11 @@ void Linux::AddIAMCUIncludeArgs(const ArgList &DriverArgs,
+@@ -832,8 +832,11 @@ void Linux::AddIAMCUIncludeArgs(const ArgList &DriverArgs,
  }
  
  bool Linux::isPIEDefault() const {
@@ -105,10 +105,10 @@ index 6b16b0e6..a627828b 100644
    bool IsMathErrnoDefault() const override;
    SanitizerMask getSupportedSanitizers() const override;
 diff --git a/lib/Frontend/CompilerInvocation.cpp b/lib/Frontend/CompilerInvocation.cpp
-index 73114c6d..7607e974 100644
+index 5c5cf461..357924f9 100644
 --- a/lib/Frontend/CompilerInvocation.cpp
 +++ b/lib/Frontend/CompilerInvocation.cpp
-@@ -3808,6 +3808,14 @@ bool CompilerInvocation::CreateFromArgs(CompilerInvocation &Res,
+@@ -2954,6 +2954,14 @@ bool CompilerInvocation::CreateFromArgs(CompilerInvocation &Res,
    ParsePreprocessorOutputArgs(Res.getPreprocessorOutputOpts(), Args,
                                Res.getFrontendOpts().ProgramAction);
  
@@ -124,5 +124,5 @@ index 73114c6d..7607e974 100644
    if (T.isSPIR())
      Res.getDiagnosticOpts().Warnings.push_back("spir-compat");
 -- 
-2.29.2
+2.31.0
 
