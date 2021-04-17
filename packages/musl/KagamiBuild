@@ -10,6 +10,11 @@ options=('bootstrap')
 source=("http://www.musl-libc.org/releases/$name-$version.tar.gz")
 
 build() {
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		install -d "$ROOTFS"/usr/lib
+		touch "$ROOTFS"/usr/lib/libssp.a
+	fi
+
 	filter-flags -flto -fvisibility=hidden
 	replace-flags -D_FORTIFY_SOURCE=2 -D_FORTIFY_SOURCE=0
 	replace-flags -D_FORTIFY_SOURCE=3 -D_FORTIFY_SOURCE=0
