@@ -61,8 +61,7 @@ int __size_mul_overflow(__SIZE_TYPE__ a, __SIZE_TYPE__ b, __SIZE_TYPE__ *result)
 #define __noreturn __attribute__((__noreturn__))
 #endif
 
-extern void __stack_chk_fail(void);
-void __attribute__((visibility ("hidden"))) __stack_chk_fail_local(void) { __stack_chk_fail(); }
+#define __BIONIC_FORTIFY_UNKNOWN_SIZE ((size_t) -1)
 
 //
 // LLVM can't inline variadic functions, and we don't want one definition of
@@ -73,7 +72,7 @@ inline void __fortify_fatal(const char* fmt, ...) {
   va_start(args, fmt);
   syslog(LOG_CRIT, "FORTIFY: %s", fmt);
   va_end(args);
-  __stack_chk_fail();
+  abort();
 }
 
 //

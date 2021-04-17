@@ -79,27 +79,27 @@
 //   http://gcc.gnu.org/ml/gcc-patches/2004-09/msg02055.html
 //
 
-int __FD_ISSET_chk(int fd, const fd_set* set, size_t set_size) {
+extern "C" int __FD_ISSET_chk(int fd, const fd_set* set, size_t set_size) {
   __check_fd_set("FD_ISSET", fd, set_size);
   return __FD_ISSET(fd, set);
 }
 
-void __FD_CLR_chk(int fd, fd_set* set, size_t set_size) {
+extern "C" void __FD_CLR_chk(int fd, fd_set* set, size_t set_size) {
   __check_fd_set("FD_CLR", fd, set_size);
   __FD_CLR(fd, set);
 }
 
-void __FD_SET_chk(int fd, fd_set* set, size_t set_size) {
+extern "C" void __FD_SET_chk(int fd, fd_set* set, size_t set_size) {
   __check_fd_set("FD_SET", fd, set_size);
   __FD_SET(fd, set);
 }
 
-char* __fgets_chk(char* dst, int supplied_size, FILE* stream, size_t dst_len_from_compiler) {
+extern "C" char* __fgets_chk(char* dst, int supplied_size, FILE* stream, size_t dst_len_from_compiler) {
   __check_buffer_access("fgets", "write into", supplied_size, dst_len_from_compiler);
   return fgets(dst, supplied_size, stream);
 }
 
-size_t __fread_chk(void* buf, size_t size, size_t count, FILE* stream, size_t buf_size) {
+extern "C" size_t __fread_chk(void* buf, size_t size, size_t count, FILE* stream, size_t buf_size) {
   size_t total;
   if (__predict_false(__size_mul_overflow(size, count, &total))) {
     // overflow: trigger the error path in fread
@@ -119,12 +119,12 @@ extern "C" size_t __fwrite_chk(const void* buf, size_t size, size_t count, FILE*
   return fwrite(buf, size, count, stream);
 }
 
-extern char* __getcwd_chk(char* buf, size_t len, size_t actual_size) {
+extern "C"  char* __getcwd_chk(char* buf, size_t len, size_t actual_size) {
   __check_buffer_access("getcwd", "write into", len, actual_size);
   return getcwd(buf, len);
 }
 
-void* __memchr_chk(const void* s, int c, size_t n, size_t actual_size) {
+extern "C" void* __memchr_chk(const void* s, int c, size_t n, size_t actual_size) {
   __check_buffer_access("memchr", "read from", n, actual_size);
   return const_cast<void*>(memchr(s, c, n));
 }
@@ -143,7 +143,7 @@ extern "C" void* __memcpy_chk_fail(void* /*dst*/, const void* /*src*/, size_t co
   abort(); // One of the above is supposed to have failed, otherwise we shouldn't have been called.
 }
 
-void* __memrchr_chk(const void* s, int c, size_t n, size_t actual_size) {
+extern "C" void* __memrchr_chk(const void* s, int c, size_t n, size_t actual_size) {
   __check_buffer_access("memrchr", "read from", n, actual_size);
   return memrchr(const_cast<void *>(s), c, n);
 }
@@ -156,68 +156,80 @@ extern "C" void* __memset_chk_fail(void* /*dst*/, int /*byte*/, size_t count, si
   abort(); // One of the above is supposed to have failed, otherwise we shouldn't have been called.
 }
 
-int __poll_chk(pollfd* fds, nfds_t fd_count, int timeout, size_t fds_size) {
+extern "C" void *__memset_chk(void *d, int c, size_t n, size_t bos)
+{
+
+	if (__predict_false(bos == __BIONIC_FORTIFY_UNKNOWN_SIZE))
+		return memset(d, c, n);
+
+	if (__predict_false(n > bos))
+		__fortify_fatal("memset: prevented write past end of buffer");
+
+	return memset(d, c, n);
+}
+
+extern "C" int __poll_chk(pollfd* fds, nfds_t fd_count, int timeout, size_t fds_size) {
   __check_pollfd_array("poll", fds_size, fd_count);
   return poll(fds, fd_count, timeout);
 }
 
-int __ppoll_chk(pollfd* fds, nfds_t fd_count, const timespec* timeout,
+extern "C" int __ppoll_chk(pollfd* fds, nfds_t fd_count, const timespec* timeout,
                 const sigset_t* mask, size_t fds_size) {
   __check_pollfd_array("ppoll", fds_size, fd_count);
   return ppoll(fds, fd_count, timeout, mask);
 }
 
-ssize_t __pread64_chk(int fd, void* buf, size_t count, off64_t offset, size_t buf_size) {
+extern "C" ssize_t __pread64_chk(int fd, void* buf, size_t count, off64_t offset, size_t buf_size) {
   __check_count("pread64", "count", count);
   __check_buffer_access("pread64", "write into", count, buf_size);
   return pread64(fd, buf, count, offset);
 }
 
-ssize_t __pread_chk(int fd, void* buf, size_t count, off_t offset, size_t buf_size) {
+extern "C" ssize_t __pread_chk(int fd, void* buf, size_t count, off_t offset, size_t buf_size) {
   __check_count("pread", "count", count);
   __check_buffer_access("pread", "write into", count, buf_size);
   return pread(fd, buf, count, offset);
 }
 
-ssize_t __pwrite64_chk(int fd, const void* buf, size_t count, off64_t offset,
+extern "C" ssize_t __pwrite64_chk(int fd, const void* buf, size_t count, off64_t offset,
                                   size_t buf_size) {
   __check_count("pwrite64", "count", count);
   __check_buffer_access("pwrite64", "read from", count, buf_size);
   return pwrite64(fd, buf, count, offset);
 }
 
-ssize_t __pwrite_chk(int fd, const void* buf, size_t count, off_t offset,
+extern "C" ssize_t __pwrite_chk(int fd, const void* buf, size_t count, off_t offset,
                                 size_t buf_size) {
   __check_count("pwrite", "count", count);
   __check_buffer_access("pwrite", "read from", count, buf_size);
   return pwrite(fd, buf, count, offset);
 }
 
-ssize_t __read_chk(int fd, void* buf, size_t count, size_t buf_size) {
+extern "C" ssize_t __read_chk(int fd, void* buf, size_t count, size_t buf_size) {
   __check_count("read", "count", count);
   __check_buffer_access("read", "write into", count, buf_size);
   return read(fd, buf, count);
 }
 
-ssize_t __readlinkat_chk(int dirfd, const char* path, char* buf, size_t size, size_t buf_size) {
+extern "C" ssize_t __readlinkat_chk(int dirfd, const char* path, char* buf, size_t size, size_t buf_size) {
   __check_count("readlinkat", "size", size);
   __check_buffer_access("readlinkat", "write into", size, buf_size);
   return readlinkat(dirfd, path, buf, size);
 }
 
-ssize_t __readlink_chk(const char* path, char* buf, size_t size, size_t buf_size) {
+extern "C" ssize_t __readlink_chk(const char* path, char* buf, size_t size, size_t buf_size) {
   __check_count("readlink", "size", size);
   __check_buffer_access("readlink", "write into", size, buf_size);
   return readlink(path, buf, size);
 }
 
-ssize_t __recvfrom_chk(int socket, void* buf, size_t len, size_t buf_size,
+extern "C" ssize_t __recvfrom_chk(int socket, void* buf, size_t len, size_t buf_size,
                        int flags, sockaddr* src_addr, socklen_t* addrlen) {
   __check_buffer_access("recvfrom", "write into", len, buf_size);
   return recvfrom(socket, buf, len, flags, src_addr, addrlen);
 }
 
-ssize_t __sendto_chk(int socket, const void* buf, size_t len, size_t buflen,
+extern "C" ssize_t __sendto_chk(int socket, const void* buf, size_t len, size_t buflen,
                      int flags, const struct sockaddr* dest_addr,
                      socklen_t addrlen) {
   __check_buffer_access("sendto", "read from", len, buflen);
@@ -242,7 +254,7 @@ extern "C" char* __stpncpy_chk(char* dst, const char* src, size_t len, size_t ds
 // sure we don't read beyond the end of "src". The code for this is
 // based on the original version of stpncpy, but modified to check
 // how much we read from "src" during the copy operation.
-char* __stpncpy_chk2(char* dst, const char* src, size_t n, size_t dst_len, size_t src_len) {
+extern "C" char* __stpncpy_chk2(char* dst, const char* src, size_t n, size_t dst_len, size_t src_len) {
   __check_buffer_access("stpncpy", "write into", n, dst_len);
   if (n != 0) {
     char* d = dst;
@@ -273,7 +285,7 @@ extern "C" void __strcat_chk_fail(size_t dst_buf_size) {
   __fortify_fatal("strcat: prevented write past end of %zu-byte buffer", dst_buf_size);
 }
 
-char* __strchr_chk(const char* p, int ch, size_t s_len) {
+extern "C" char* __strchr_chk(const char* p, int ch, size_t s_len) {
   for (;; ++p, s_len--) {
     if (__predict_false(s_len == 0)) {
       __fortify_fatal("strchr: prevented read past end of buffer");
@@ -293,19 +305,19 @@ extern "C" void __strcpy_chk_fail(size_t dst_buf_size) {
   __fortify_fatal("strcpy: prevented write past end of %zu-byte buffer", dst_buf_size);
 }
 
-size_t __strlcat_chk(char* dst, const char* src,
+extern "C" size_t __strlcat_chk(char* dst, const char* src,
                      size_t supplied_size, size_t dst_len_from_compiler) {
   __check_buffer_access("strlcat", "write into", supplied_size, dst_len_from_compiler);
   return strlcat(dst, src, supplied_size);
 }
 
-size_t __strlcpy_chk(char* dst, const char* src,
+extern "C" size_t __strlcpy_chk(char* dst, const char* src,
                      size_t supplied_size, size_t dst_len_from_compiler) {
   __check_buffer_access("strlcpy", "write into", supplied_size, dst_len_from_compiler);
   return strlcpy(dst, src, supplied_size);
 }
 
-size_t __strlen_chk(const char* s, size_t s_len) {
+extern "C" size_t __strlen_chk(const char* s, size_t s_len) {
   // TODO: "prevented" here would be a lie because this strlen can run off the end.
   // strlen is too important to be expensive, so we wanted to be able to call the optimized
   // implementation, but I think we need to implement optimized assembler __strlen_chk routines.
@@ -353,7 +365,7 @@ extern "C" char* __strncpy_chk(char* dst, const char* src, size_t len, size_t ds
 // sure we don't read beyond the end of "src". The code for this is
 // based on the original version of strncpy, but modified to check
 // how much we read from "src" during the copy operation.
-char* __strncpy_chk2(char* dst, const char* src, size_t n, size_t dst_len, size_t src_len) {
+extern "C" char* __strncpy_chk2(char* dst, const char* src, size_t n, size_t dst_len, size_t src_len) {
   __check_buffer_access("strncpy", "write into", n, dst_len);
   if (n != 0) {
     char* d = dst;
@@ -378,7 +390,7 @@ char* __strncpy_chk2(char* dst, const char* src, size_t n, size_t dst_len, size_
   return dst;
 }
 
-char* __strrchr_chk(const char* p, int ch, size_t s_len) {
+extern "C" char* __strrchr_chk(const char* p, int ch, size_t s_len) {
   for (const char* save = nullptr;; ++p, s_len--) {
     if (s_len == 0) {
       __fortify_fatal("strrchr: prevented read past end of buffer");
@@ -392,7 +404,7 @@ char* __strrchr_chk(const char* p, int ch, size_t s_len) {
   }
 }
 
-mode_t __umask_chk(mode_t mode) {
+extern "C" mode_t __umask_chk(mode_t mode) {
   if (__predict_false((mode & 0777) != mode)) {
     __fortify_fatal("umask: called with invalid mask %o", mode);
   }
@@ -440,7 +452,7 @@ extern "C" int __sprintf_chk(char* dst, int flags, size_t dst_len_from_compiler,
   return result;
 }
 
-ssize_t __write_chk(int fd, const void* buf, size_t count, size_t buf_size) {
+extern "C" ssize_t __write_chk(int fd, const void* buf, size_t count, size_t buf_size) {
   __check_count("write", "count", count);
   __check_buffer_access("write", "read from", count, buf_size);
   return write(fd, buf, count);
