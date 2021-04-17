@@ -109,7 +109,7 @@ size_t __fread_chk(void* buf, size_t size, size_t count, FILE* stream, size_t bu
   return fread(buf, size, count, stream);
 }
 
-size_t __fwrite_chk(const void* buf, size_t size, size_t count, FILE* stream, size_t buf_size) {
+extern "C" size_t __fwrite_chk(const void* buf, size_t size, size_t count, FILE* stream, size_t buf_size) {
   size_t total;
   if (__predict_false(__size_mul_overflow(size, count, &total))) {
     // overflow: trigger the error path in fwrite

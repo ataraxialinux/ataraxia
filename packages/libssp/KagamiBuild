@@ -23,7 +23,8 @@ build() {
 
 	pushd "$SRC"
 		${CXX:-clang++} -I"$STUFF/libssp" -std=c++17 -Wall -Wextra -nostdlib -c -o fortify.o "$STUFF"/libssp/fortify.cpp
-		${AR:-llvm-ar} r libssp.a fortify.o
+		${AR:-llvm-ar} rcs libssp.a fortify.o
+		${RANLIB:-llvm-ranlib} libssp.a
 
 		install -Dm644 libssp.a "$PKG"/usr/lib/libssp.a
 	popd
