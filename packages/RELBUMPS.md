@@ -30,7 +30,6 @@ libblockdev
 libbytesize
 libguestfs
 libproxy
-libreoffice
 libreport
 libsolv
 libteam
@@ -127,7 +126,6 @@ evolution-data-server
 firefox
 harfbuzz
 libical
-libreoffice
 mpd
 node
 php
@@ -215,7 +213,6 @@ firefox
 gnome-builder
 gst-plugins-bad
 libclc
-libreoffice
 lldb
 mesa
 polly
