@@ -1,0 +1,80 @@
+From 5536d0b5c471ef80573fd90aaf1f80b8f76a4765 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 17 Apr 2021 10:56:09 -0700
+Subject: [PATCH 5/5] move dynamic linker in /usr/lib
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Hexagon.cpp |  2 +-
+ lib/Driver/ToolChains/Linux.cpp   |  2 +-
+ test/Driver/linux-ld.c            | 28 ++++++++++++++--------------
+ 3 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/lib/Driver/ToolChains/Hexagon.cpp b/lib/Driver/ToolChains/Hexagon.cpp
+index fb54f73b..e92cd0e9 100644
+--- a/lib/Driver/ToolChains/Hexagon.cpp
++++ b/lib/Driver/ToolChains/Hexagon.cpp
+@@ -271,7 +271,7 @@ constructHexagonLinkArgs(Compilation &C, const JobAction &JA,
+ 
+   if (HTC.getTriple().isMusl()) {
+     if (!Args.hasArg(options::OPT_shared, options::OPT_static))
+-      CmdArgs.push_back("-dynamic-linker=/lib/ld-musl-hexagon.so.1");
++      CmdArgs.push_back("-dynamic-linker=/usr/lib/ld-musl-hexagon.so.1");
+ 
+     if (!Args.hasArg(options::OPT_shared, options::OPT_nostartfiles,
+                      options::OPT_nostdlib))
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index f162de23..7ec40439 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -450,7 +450,7 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+          tools::arm::getARMFloatABI(*this, Args) == tools::arm::FloatABI::Hard))
+       ArchName += "hf";
+ 
+-    return "/lib/ld-musl-" + ArchName + ".so.1";
++    return "/usr/lib/ld-musl-" + ArchName + ".so.1";
+   }
+ 
+   std::string LibDir;
+diff --git a/test/Driver/linux-ld.c b/test/Driver/linux-ld.c
+index 24d3c786..af668924 100644
+--- a/test/Driver/linux-ld.c
++++ b/test/Driver/linux-ld.c
+@@ -2021,20 +2021,20 @@
+ // RUN: %clang %s -### -o %t.o 2>&1 \
+ // RUN:     --target=aarch64_be-pc-linux-musleabi \
+ // RUN:   | FileCheck --check-prefix=CHECK-MUSL-AARCH64_BE %s
+-// CHECK-MUSL-X86:        "-dynamic-linker" "/lib/ld-musl-i386.so.1"
+-// CHECK-MUSL-X86_64:     "-dynamic-linker" "/lib/ld-musl-x86_64.so.1"
+-// CHECK-MUSL-MIPS:       "-dynamic-linker" "/lib/ld-musl-mips.so.1"
+-// CHECK-MUSL-MIPSEL:     "-dynamic-linker" "/lib/ld-musl-mipsel.so.1"
+-// CHECK-MUSL-MIPS64:     "-dynamic-linker" "/lib/ld-musl-mips64.so.1"
+-// CHECK-MUSL-MIPS64EL:   "-dynamic-linker" "/lib/ld-musl-mips64el.so.1"
+-// CHECK-MUSL-PPC:        "-dynamic-linker" "/lib/ld-musl-powerpc.so.1"
+-// CHECK-MUSL-PPC64:      "-dynamic-linker" "/lib/ld-musl-powerpc64.so.1"
+-// CHECK-MUSL-ARM:        "-dynamic-linker" "/lib/ld-musl-arm.so.1"
+-// CHECK-MUSL-ARMHF:      "-dynamic-linker" "/lib/ld-musl-armhf.so.1"
+-// CHECK-MUSL-ARMEB:      "-dynamic-linker" "/lib/ld-musl-armeb.so.1"
+-// CHECK-MUSL-ARMEBHF:    "-dynamic-linker" "/lib/ld-musl-armebhf.so.1"
+-// CHECK-MUSL-AARCH64:    "-dynamic-linker" "/lib/ld-musl-aarch64.so.1"
+-// CHECK-MUSL-AARCH64_BE: "-dynamic-linker" "/lib/ld-musl-aarch64_be.so.1"
++// CHECK-MUSL-X86:        "-dynamic-linker" "/usr/lib/ld-musl-i386.so.1"
++// CHECK-MUSL-X86_64:     "-dynamic-linker" "/usr/lib/ld-musl-x86_64.so.1"
++// CHECK-MUSL-MIPS:       "-dynamic-linker" "/usr/lib/ld-musl-mips.so.1"
++// CHECK-MUSL-MIPSEL:     "-dynamic-linker" "/usr/lib/ld-musl-mipsel.so.1"
++// CHECK-MUSL-MIPS64:     "-dynamic-linker" "/usr/lib/ld-musl-mips64.so.1"
++// CHECK-MUSL-MIPS64EL:   "-dynamic-linker" "/usr/lib/ld-musl-mips64el.so.1"
++// CHECK-MUSL-PPC:        "-dynamic-linker" "/usr/lib/ld-musl-powerpc.so.1"
++// CHECK-MUSL-PPC64:      "-dynamic-linker" "/usr/lib/ld-musl-powerpc64.so.1"
++// CHECK-MUSL-ARM:        "-dynamic-linker" "/usr/lib/ld-musl-arm.so.1"
++// CHECK-MUSL-ARMHF:      "-dynamic-linker" "/usr/lib/ld-musl-armhf.so.1"
++// CHECK-MUSL-ARMEB:      "-dynamic-linker" "/usr/lib/ld-musl-armeb.so.1"
++// CHECK-MUSL-ARMEBHF:    "-dynamic-linker" "/usr/lib/ld-musl-armebhf.so.1"
++// CHECK-MUSL-AARCH64:    "-dynamic-linker" "/usr/lib/ld-musl-aarch64.so.1"
++// CHECK-MUSL-AARCH64_BE: "-dynamic-linker" "/usr/lib/ld-musl-aarch64_be.so.1"
+ 
+ // Check whether multilib gcc install works fine on Gentoo with gcc-config
+ // RUN: %clang -no-canonical-prefixes %s -### -o %t.o 2>&1 \
+-- 
+2.31.0
+

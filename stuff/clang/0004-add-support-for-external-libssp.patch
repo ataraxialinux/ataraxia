@@ -1,0 +1,39 @@
+From b680c07173afdb2c6b4d50c3352f199251fc739c Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 17 Apr 2021 10:54:31 -0700
+Subject: [PATCH 4/5] add support for external libssp
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Linux.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 682f8e04..f162de23 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -355,6 +355,10 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+ 
+   addPathIfExists(D, SysRoot + "/lib", Paths);
+   addPathIfExists(D, SysRoot + "/usr/lib", Paths);
++
++  if (Triple.isMusl()) {
++    CmdArgs.push_back("-lssp");
++  }
+ }
+ 
+ ToolChain::CXXStdlibType Linux::GetDefaultCXXStdlibType() const {
+@@ -767,8 +771,10 @@ void Linux::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
+   // Add an include of '/include' directly. This isn't provided by default by
+   // system GCCs, but is often used with cross-compiling GCCs, and harmless to
+   // add even when Clang is acting as-if it were a system compiler.
++  addExternCSystemInclude(DriverArgs, CC1Args, SysRoot + "/include/secure");
+   addExternCSystemInclude(DriverArgs, CC1Args, SysRoot + "/include");
+ 
++  addExternCSystemInclude(DriverArgs, CC1Args, SysRoot + "/usr/include/secure");
+   addExternCSystemInclude(DriverArgs, CC1Args, SysRoot + "/usr/include");
+ 
+   if (!DriverArgs.hasArg(options::OPT_nobuiltininc) && getTriple().isMusl())
+-- 
+2.31.0
+
