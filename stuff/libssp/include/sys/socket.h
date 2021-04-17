@@ -37,6 +37,8 @@ extern "C" {
 
 #include_next <sys/socket.h>
 
+#include <stddef.h>
+
 extern ssize_t __sendto_chk(int, const void*, size_t, size_t, int, const struct sockaddr*,
         socklen_t);
 ssize_t __recvfrom_chk(int, void*, size_t, size_t, int, struct sockaddr*,

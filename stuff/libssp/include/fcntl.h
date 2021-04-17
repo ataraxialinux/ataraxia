@@ -56,6 +56,11 @@ int __openat_real(int, const char*, int, ...) __RENAME(openat);
 /* O_TMPFILE shares bits with O_DIRECTORY. */
 #define __open_modes_useful(flags) (((flags) & O_CREAT) || ((flags) & O_TMPFILE) == O_TMPFILE)
 
+#undef open
+#undef open64
+#undef openat
+#undef openat64
+
 __BIONIC_ERROR_FUNCTION_VISIBILITY
 int open(const char* pathname, int flags, mode_t modes, ...) __overloadable
         __errorattr(__open_too_many_args_error);

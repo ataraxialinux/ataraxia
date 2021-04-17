@@ -37,6 +37,8 @@ extern "C" {
 
 #include_next <stdio.h>
 
+#include <stdarg.h>
+
 char* __fgets_chk(char*, int, FILE*, size_t);
 size_t __fread_chk(void*, size_t, size_t, FILE*, size_t);
 size_t __fwrite_chk(const void*, size_t, size_t, FILE*, size_t);

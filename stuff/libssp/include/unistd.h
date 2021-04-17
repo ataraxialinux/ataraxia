@@ -79,6 +79,11 @@ ssize_t __readlinkat_chk(int dirfd, const char*, char*, size_t, size_t);
       ((__bos_dynamic_check_impl_and((bos_val), >=, (index), (bos_val) <= SSIZE_MAX) && \
         __builtin_constant_p(index) && (index) <= SSIZE_MAX))
 
+#undef pread
+#undef pread64
+#undef pwrite
+#undef pwrite64
+
 __BIONIC_FORTIFY_INLINE
 char* getcwd(char* const __pass_object_size buf, size_t size)
         __overloadable
