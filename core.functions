@@ -36,7 +36,7 @@ parse_architecture() {
 	check_for_arch "$1"
 
 	case "$1" in
-		amd64) export XTARGET="x86_64-linux-musl" ;;
+		x86_64) export XTARGET="x86_64-linux-musl" ;;
 		x86) export XTARGET="i386-linux-musl" ;;
 		arm64) export XTARGET="aarch64-linux-musl" ;;
 		arm) export XTARGET="armv7l-linux-musleabihf" ;;
@@ -83,7 +83,7 @@ export_cflags() {
 	check_for_arch "$1"
 
 	case "$1" in
-		amd64|x86)
+		x86_64|x86)
 			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -fcf-protection=full -mretpoline --param=ssp-buffer-size=4 -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
@@ -335,11 +335,11 @@ get_desktop_packages() {
 	esac
 
 	case $BARCH in
-		amd64|x86|arm64|arm) packages="$packages firefox" ;;
+		x86_64|x86|arm64|arm) packages="$packages firefox" ;;
 	esac
 
 	case $BARCH in
-		amd64|x86) packages="$packages xf86-video-intel xf86-video-vmware grub" ;;
+		x86_64|x86) packages="$packages xf86-video-intel xf86-video-vmware grub" ;;
 	esac
 
 	echo "$packages"
