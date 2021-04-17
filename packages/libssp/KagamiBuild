@@ -8,6 +8,8 @@ version=20210417
 release=1
 
 build() {
+	set -x
+
 	install -Dm644 "$STUFF"/libssp/include/common.h "$PKG"/usr/include/secure/common.h
 	install -Dm644 "$STUFF"/libssp/include/fcntl.h "$PKG"/usr/include/secure/fcntl.h
 	install -Dm644 "$STUFF"/libssp/include/poll.h "$PKG"/usr/include/secure/poll.h
@@ -18,4 +20,11 @@ build() {
 	install -Dm644 "$STUFF"/libssp/include/unistd.h "$PKG"/usr/include/secure/unistd.h
 	install -Dm644 "$STUFF"/libssp/include/sys/socket.h "$PKG"/usr/include/secure/sys/socket.h
 	install -Dm644 "$STUFF"/libssp/include/sys/stat.h "$PKG"/usr/include/secure/sys/stat.h
+
+	pushd "$SRC"
+		${CXX:-clang++} -I"$STUFF/libssp" -std=c++17 -Wall -Wextra -nostdlib -c -o fortify.o "$STUFF"/libssp/fortify.cpp
+		${AR:-llvm-ar} r libssp.a fortify.o
+
+		install -Dm644 libssp.a "$PKG"/usr/lib/libssp.a
+	popd
 }

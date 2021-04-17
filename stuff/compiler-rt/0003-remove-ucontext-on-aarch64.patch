@@ -1,0 +1,35 @@
+From e50887985b29086c08f58401a308cf4acd9c44b3 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 17 Apr 2021 13:35:02 -0700
+Subject: [PATCH 3/3] remove ucontext on aarch64
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/sanitizer_common/sanitizer_linux.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/lib/sanitizer_common/sanitizer_linux.cpp b/lib/sanitizer_common/sanitizer_linux.cpp
+index d3a35eb..96bf8e0 100644
+--- a/lib/sanitizer_common/sanitizer_linux.cpp
++++ b/lib/sanitizer_common/sanitizer_linux.cpp
+@@ -1804,6 +1804,7 @@ struct __sanitizer_esr_context {
+ };
+ 
+ static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
++#if SANITIZER_GLIBC
+   static const u32 kEsrMagic = 0x45535201;
+   u8 *aux = ucontext->uc_mcontext.__reserved;
+   while (true) {
+@@ -1816,6 +1817,9 @@ static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
+     aux += ctx->size;
+   }
+   return false;
++#else
++  return true;
++#endif
+ }
+ #endif
+ 
+-- 
+2.31.0
+

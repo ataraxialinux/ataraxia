@@ -112,3 +112,31 @@ static inline void __check_buffer_access(const char* fn, const char* action,
     __fortify_fatal("%s: prevented %zu-byte %s %zu-byte buffer", fn, claim, action, actual);
   }
 }
+
+#ifndef __GLIBC__
+#define	__NBBY	8				/* number of bits in a byte */
+typedef uint32_t __fd_mask;
+#define __NFDBITS ((unsigned)(sizeof(__fd_mask) * __NBBY)) /* bits per mask */
+
+static __inline void
+__fd_set(int fd, fd_set *p)
+{
+	p->fds_bits[fd / __NFDBITS] |= (1U << (fd % __NFDBITS));
+}
+#define __FD_SET(n, p)	__fd_set((n), (p))
+
+static __inline void
+__fd_clr(int fd, fd_set *p)
+{
+	p->fds_bits[fd / __NFDBITS] &= ~(1U << (fd % __NFDBITS));
+}
+#define __FD_CLR(n, p)	__fd_clr((n), (p))
+
+static __inline int
+__fd_isset(int fd, const fd_set *p)
+{
+	return (p->fds_bits[fd / __NFDBITS] & (1U << (fd % __NFDBITS)));
+}
+#define __FD_ISSET(n, p)	__fd_isset((n), (p))
+
+#endif

@@ -1,0 +1,36 @@
+From 39b5e8b1326cc9344955fb0e9cc91fc32bd8dd55 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sat, 17 Apr 2021 13:33:59 -0700
+Subject: [PATCH 2/3] adjust syscalls for i386
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/sanitizer_common/sanitizer_linux.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/lib/sanitizer_common/sanitizer_linux.cpp b/lib/sanitizer_common/sanitizer_linux.cpp
+index 552939e..d3a35eb 100644
+--- a/lib/sanitizer_common/sanitizer_linux.cpp
++++ b/lib/sanitizer_common/sanitizer_linux.cpp
+@@ -501,12 +501,18 @@ u64 NanoTime() {
+   kernel_timeval tv;
+ #endif
+   internal_memset(&tv, 0, sizeof(tv));
++#if __NR_gettimeofday
+   internal_syscall(SYSCALL(gettimeofday), &tv, 0);
++#endif
+   return (u64)tv.tv_sec * 1000*1000*1000 + tv.tv_usec * 1000;
+ }
+ 
+ uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp) {
++#if __NR_clock_gettime
+   return internal_syscall(SYSCALL(clock_gettime), clk_id, tp);
++#else
++  return NULL;
++#endif
+ }
+ #endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
+ 
+-- 
+2.31.0
+

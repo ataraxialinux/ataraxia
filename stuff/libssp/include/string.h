@@ -43,6 +43,9 @@ char* __stpncpy_chk2(char*, const char*, size_t, size_t, size_t);
 char* __strncpy_chk2(char*, const char*, size_t, size_t, size_t);
 size_t __strlcpy_chk(char*, const char*, size_t, size_t);
 size_t __strlcat_chk(char*, const char*, size_t, size_t);
+char* __strchr_chk(const char* __s, int __ch, size_t __n);
+char* __strrchr_chk(const char* __s, int __ch, size_t __n);
+size_t __strlen_chk(const char* __s, size_t __n);
 
 #if defined(__BIONIC_FORTIFY)
 extern void* __memrchr_real(const void*, int, size_t) __RENAME(memrchr);
