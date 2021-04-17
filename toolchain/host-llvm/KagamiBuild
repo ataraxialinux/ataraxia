@@ -47,6 +47,10 @@ build() {
 		patch -Np1 -i "$STUFF"/lld/0001-ELF-use-SHA1-by-default.patch
 		patch -Np1 -i "$STUFF"/lld/0002-PATCH-lld-Import-compact_unwind_encoding.h-from-libu.patch
 	popd
+	pushd "$SRC/compiler-rt-$version.src"
+		msg "Patching Compiler-RT"
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-adjust-musl-syscalls.patch
+	popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"
 		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch

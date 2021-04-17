@@ -51,6 +51,10 @@ build() {
 		patch -Np1 -i "$STUFF"/lld/0001-ELF-use-SHA1-by-default.patch
 		patch -Np1 -i "$STUFF"/lld/0002-PATCH-lld-Import-compact_unwind_encoding.h-from-libu.patch
 	popd
+	pushd "$SRC/compiler-rt-$version.src"
+		msg "Patching Compiler-RT"
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-adjust-musl-syscalls.patch
+	popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"
 		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
@@ -61,6 +65,35 @@ build() {
 		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
 		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
 	popd
+
+	msg "Compiling LLVM sanitizers for $BARCH"
+	cd "$SRC"
+	mkdir -p compiler-rt-sanitizers
+	cd compiler-rt-sanitizers
+
+	CFLAGS="" \
+	CXXFLAGS="" \
+	LDFLAGS="" \
+	cmake "$SRC"/compiler-rt-$version.src \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
+		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
+		-DCOMPILER_RT_STANDALONE_BUILD=ON \
+		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+		-Wno-dev -G Ninja
+	samu
+
+	for i in lib/linux/*; do
+		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
+	done
 
 	cd "$SRC"/llvm-$version.src
 	cp -a "$SRC"/clang-$version.src tools/clang
@@ -104,7 +137,7 @@ build() {
 		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
 		-Wno-dev -G Ninja
 
-	sed -i 's/-latomic//g' build.ninja
+#	sed -i 's/-latomic//g' build.ninja
 
 	samu unwind cxxabi cxx
 	DESTDIR="$ROOTFS" samu install-unwind install-cxxabi install-cxx
