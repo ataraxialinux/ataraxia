@@ -166,4 +166,70 @@ build() {
 
 	samu
 	DESTDIR="$ROOTFS" samu install
+
+	msg "Building LLVM sanitizers"
+	cd "$SRC"
+	mkdir -p compiler-rt-sanitizers
+	cd compiler-rt-sanitizers
+
+	CFLAGS="" \
+	CXXFLAGS="" \
+	LDFLAGS="" \
+	cmake "$SRC"/compiler-rt-$version.src \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
+		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
+		-DCOMPILER_RT_HAS_VERSION_SCRIPT=OFF \
+		-DCOMPILER_RT_STANDALONE_BUILD=ON \
+		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+		-DCOMPILER_RT_USE_LIBCXX=ON \
+		-DSANITIZER_CXX_ABI="libc++" \
+		-Wno-dev -G Ninja
+	samu
+
+	for i in lib/linux/*; do
+		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
+	done
+
+	msg "Building optimized LLVM runtime"
+	cd "$SRC"
+	mkdir -p build-final
+	cd build-final
+
+	cmake "$SRC/llvm-$version.src" \
+		-DCMAKE_CROSSCOMPILING=ON \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_HAS_MUSL_LIBC=ON \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
+		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
+		-DLLVM_ENABLE_PROJECTS="libunwind;libcxx;libcxxabi" \
+		-DLLVM_TARGETS_TO_BUILD=$LTARGET \
+		-Wno-dev -G Ninja
+
+	sed -i 's/-latomic//g' build.ninja
+	sed -i 's/LINK_LIBRARIES = -lc/LINK_LIBRARIES = -lc -lssp/g' build.ninja
+
+	samu unwind cxxabi cxx
+	DESTDIR="$ROOTFS" samu install-unwind install-cxxabi install-cxx
 }
