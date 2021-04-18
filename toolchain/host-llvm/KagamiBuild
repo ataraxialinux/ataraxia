@@ -7,10 +7,7 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/lld-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libunwind-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxx-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz")
 
 build() {
 	local clang LARCH LTARGET i
@@ -55,16 +52,6 @@ build() {
 		patch -Np1 -i "$STUFF"/compiler-rt/0002-adjust-syscalls-for-i386.patch
 		patch -Np1 -i "$STUFF"/compiler-rt/0003-remove-ucontext-on-aarch64.patch
 	popd
-	pushd "$SRC/libcxxabi-$version.src"
-		msg "Patching libc++abi"
-		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
-		patch -Np1 -i "$STUFF"/libcxxabi/0002-force-link-against-compiler-rt-builtins.patch
-	popd
-	pushd "$SRC/libcxx-$version.src"
-		msg "Patching libc++"
-		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
-		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
-	popd
 
 	msg "Compiling LLVM cross compiler for $BARCH"
 	cd "$SRC/llvm-$version.src"
@@ -72,9 +59,6 @@ build() {
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
 	cp -a "$SRC"/lld-$version.src tools/lld
 	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
-	cp -a "$SRC"/libunwind-$version.src projects/libunwind
-	cp -a "$SRC"/libcxx-$version.src projects/libcxx
-	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
 
 	mkdir -p build
 	cd build
@@ -97,11 +81,6 @@ build() {
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="$XHOST" \
 		-DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR="$SRC/clang-tools-extra-$version.src" \
-		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_USE_COMPILER_RT=ON \
-		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-		-DLIBCXXABI_USE_COMPILER_RT=ON \
-		-DLIBUNWIND_USE_COMPILER_RT=ON \
 		-DENABLE_LINKER_BUILD_ID=ON \
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \

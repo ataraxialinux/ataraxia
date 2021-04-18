@@ -70,6 +70,18 @@ export_variables() {
 	export HOSTCXX="clang++"
 	export ORIGMAKE="$(command -v make)"
 
+	if [ "$CCACHE" == "1" ]; then
+		if [ -e "/usr/lib/ccache" ]; then
+			export PATH="/usr/lib/ccache:$PATH"
+		elif [ -e "/usr/lib/ccache/bin" ]; then
+			export PATH="/usr/lib/ccache/bin:$PATH"
+		elif [ -e "/usr/lib/ccache" ]; then
+			export PATH="/usr/lib64/ccache:$PATH"
+		elif [ -e "/usr/lib/ccache/bin" ]; then
+			export PATH="/usr/lib64/ccache/bin:$PATH"
+		fi
+	fi
+
 	if [ -z "$JOBS" ]; then
 		export MKOPTS="-j$(expr $(nproc) + 1)"
 	fi

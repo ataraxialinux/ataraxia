@@ -37,6 +37,7 @@ Sub-arguments supported by "build script":
  -a <Architecture>		- Select architecture for build
  -k <Kernel>			- Select kernel for target OS
  -b <Board>			- Build OS for specific board
+ -C				- Enable ccache
 ```
 We have seperated the build process into seperate "targets":
 ```
