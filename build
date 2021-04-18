@@ -148,6 +148,8 @@ build_system() {
 	emerge_target cmake
 	emerge_target binutils
 	emerge_target elftoolchain
+	emerge_target libuargp
+	emerge_target libelf
 	if ! check_stamp llvm; then
 		force="-f" \
 			emerge_target llvm
@@ -262,7 +264,6 @@ build_system() {
 	case $BARCH in
 		x86_64|x86)
 			emerge_target amd-microcode
-			emerge_target libuargp
 			emerge_target iucode-tool
 			emerge_target intel-microcode
 			;;
@@ -377,6 +378,8 @@ install_os() {
 	emerge_target cmake "$targetfs"
 	emerge_target binutils "$targetfs"
 	emerge_target elftoolchain "$targetfs"
+	emerge_target libuargp "$targetfs"
+	emerge_target libelf "$targetfs"
 	emerge_target llvm "$targetfs"
 	emerge_target ccache "$targetfs"
 	emerge_target pkgconf "$targetfs"
@@ -453,7 +456,6 @@ install_os() {
 	case $BARCH in
 		x86_64|x86)
 			emerge_target amd-microcode "$targetfs"
-			emerge_target libuargp "$targetfs"
 			emerge_target iucode-tool "$targetfs"
 			emerge_target intel-microcode "$targetfs"
 			;;
@@ -804,7 +806,7 @@ build_initramfs() {
 	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware"
 
 	for i in base-files iana-etc musl musl-tools tzdb \
-		zlib bzip2 xz lz4 zstd lzo file ncurses readline libedit \
+		zlib bzip2 xz lz4 zstd lzo libuargp libelf file ncurses readline libedit \
 		gmp attr acl libressl nettle ca-certificates expat libffi \
 		libxml2 libarchive libssh2 nghttp2 c-ares libunistring libidn2 brotli \
 		krb5 curl cracklib libtirpc libcap-ng audit pam libcap libpwquality \

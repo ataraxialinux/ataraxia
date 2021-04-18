@@ -1,7 +1,7 @@
 # Description: Utilities to handle ELF object files and DWARF debugging information
 # URL:         https://sourceware.org/elfutils/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib bzip2 xz libuargp
+# Depends on:  zlib bzip2 xz zstd libuargp
 # Priority:    required
 # Section:     devel
 
@@ -12,14 +12,19 @@ options=('bootstrap')
 source=("http://sourceware.org/pub/elfutils/$version/elfutils-$version.tar.bz2")
 
 build() {
+	set -x
+	export ac_cv_c99=yes
+
 	cd "$SRC"/elfutils-$version
-	patch -Np1 -i "$STUFF"/libelf/0006-Fix-build-on-aarch64-musl.patch
-	patch -Np1 -i "$STUFF"/libelf/musl-libs.patch
-	patch -Np1 -i "$STUFF"/libelf/musl-tests.patch
-	patch -Np1 -i "$STUFF"/libelf/musl-utils.patch
-	patch -Np1 -i "$STUFF"/libelf/fts.patch
-	patch -Np1 -i "$STUFF"/libelf/no-werror.patch
-	patch -Np1 -i "$STUFF"/libelf/musl-asm-ptrace-h.patch
+	patch -Np1 -i "$STUFF"/libelf/0001-fix-build-on-aarch64-musl.patch
+	patch -Np1 -i "$STUFF"/libelf/0002-adjust-musl-libraries.patch
+	patch -Np1 -i "$STUFF"/libelf/0003-fix-musl-tests.patch
+	patch -Np1 -i "$STUFF"/libelf/0004-fix-musl-utils.patch
+	patch -Np1 -i "$STUFF"/libelf/0005-add-internal-fts.patch
+	patch -Np1 -i "$STUFF"/libelf/0006-musl-asm-ptrace-fix-for-ppc.patch
+	patch -Np1 -i "$STUFF"/libelf/0007-add-disable-werror.patch
+	patch -Np1 -i "$STUFF"/libelf/0008-don-t-seek-for-fts-and-obstack.patch
+	patch -Np1 -i "$STUFF"/libelf/0009-options.patch
 
 	autoreconf -fiv
 
