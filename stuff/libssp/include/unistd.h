@@ -39,6 +39,10 @@ extern "C" {
 
 #include <limits.h>
 
+#ifndef SSIZE_MAX
+#define SSIZE_MAX LONG_MAX
+#endif
+
 char* __getcwd_chk(char*, size_t, size_t);
 
 ssize_t __pread_chk(int, void*, size_t, off_t, size_t);

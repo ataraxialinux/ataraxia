@@ -159,6 +159,9 @@ build() {
 		-DLLVM_HOST_TRIPLE=$XTARGET \
 		-DLLVM_TARGET_ARCH=$LARCH \
 		-Wno-dev -G Ninja
+
+	sed -i 's/LINK_LIBRARIES = -lc/LINK_LIBRARIES = -lc -lssp/g' build.ninja
+
 	samu
 	DESTDIR="$PKG" samu install
 
