@@ -22,7 +22,7 @@ build() {
 	install -Dm644 "$STUFF"/libssp/include/sys/stat.h "$PKG"/usr/include/secure/sys/stat.h
 
 	pushd "$SRC"
-		${CXX:-clang++} -I"$STUFF/libssp" -std=c++17 -Wall -Wextra -nostdlib -c -o fortify.o "$STUFF"/libssp/fortify.cpp
+		${CXX:-clang++} -I"$STUFF/libssp" -std=c++17 -U_FORTIFY_SOURCE -Wall -Wextra -nostdlib -c -o fortify.o "$STUFF"/libssp/fortify.cpp
 		${AR:-llvm-ar} rcs libssp.a fortify.o
 		${RANLIB:-llvm-ranlib} libssp.a
 
