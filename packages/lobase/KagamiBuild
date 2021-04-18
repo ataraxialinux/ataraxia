@@ -10,6 +10,10 @@ release=1
 source=("https://github.com/ataraxialinux/lobase/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
+	filter-flags -D_FORTIFY_SOURCE=2
+	filter-flags -D_FORTIFY_SOURCE=3
+	append-cflags -U_FORTIFY_SOURCE
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/lobase/0001-doas-remove-afterinstall.patch
 	patch -Np1 -i "$STUFF"/lobase/0002-add-cat.patch

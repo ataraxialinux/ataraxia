@@ -13,6 +13,10 @@ backup=('etc/ethertypes'
 source=("https://www.netfilter.org/projects/$name/files/$name-$version.tar.bz2")
 
 build() {
+	filter-flags -D_FORTIFY_SOURCE=2
+	filter-flags -D_FORTIFY_SOURCE=3
+	append-cflags -U_FORTIFY_SOURCE
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/iptables/musl.patch
 	rm include/linux/types.h
