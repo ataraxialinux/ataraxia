@@ -72,7 +72,6 @@ inline void __fortify_fatal(const char* fmt, ...) {
   va_start(args, fmt);
   syslog(LOG_CRIT, "FORTIFY: %s", fmt);
   va_end(args);
-  abort();
 }
 
 //

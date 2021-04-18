@@ -57,7 +57,7 @@ int poll(struct pollfd* const fds __pass_object_size, nfds_t fd_count, int timeo
     return __poll_chk(fds, fd_count, timeout, bos_fds);
   }
 #endif
-  return __call_bypassing_fortify(poll)(fds, fd_count, timeout);
+  return poll(fds, fd_count, timeout);
 }
 
 __BIONIC_FORTIFY_INLINE
@@ -71,7 +71,7 @@ int ppoll(struct pollfd* const fds __pass_object_size, nfds_t fd_count, const st
     return __ppoll_chk(fds, fd_count, timeout, mask, bos_fds);
   }
 #endif
-  return __call_bypassing_fortify(ppoll)(fds, fd_count, timeout, mask);
+  return ppoll(fds, fd_count, timeout, mask);
 }
 
 #undef __bos_fd_count_trivially_safe
