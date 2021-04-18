@@ -34,9 +34,14 @@ build() {
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/libgpg-error/cross-compile.patch
+	patch -Np1 -i "$STUFF"/libgpg-error/0001-better-configure.patch
 
 	cp "$STUFF"/libgpg-error/gen-lock-obj.sh src/gen-lock-obj.sh
 	chmod +x src/gen-lock-obj.sh
+
+	if [ -z "$XTARGET" ]; then
+		export XTARGET="$(cc -dumpmachine)"
+	fi
 
 	./autogen.sh
 	./configure $BUILDFLAGS \
