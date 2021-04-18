@@ -6,11 +6,17 @@
 
 name=libssh2
 version=1.9.0
-release=1
+release=2
 source=("https://www.libssh2.org/download/$name-$version.tar.gz")
 
 build() {
+	filter-flags -D_FORTIFY_SOURCE=2
+	filter-flags -D_FORTIFY_SOURCE=3
+	append-cflags -U_FORTIFY_SOURCE
+
 	cd "$SRC"/$name-$version
+	patch -Np1 -i "$STUFF"/libssh2/1c6fa92b77e34d089493fe6d3e2c6c8775858b94.patch
+
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--with-libssl-prefix="$ROOTFS"/usr
