@@ -5,13 +5,13 @@
 # Section:     utils
 
 name=grub
-version=2.05
+version=2.04
 unifontver=13.0.02
 dejavuver=2.37
-release=3
+release=1
 backup=('etc/default/grub'
 	'etc/grub.d/40_custom')
-source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
+source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz"
 	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
 	"https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_${dejavuver/./_}/dejavu-fonts-ttf-$dejavuver.tar.bz2")
 noextract=("unifont-$unifontver.pcf.gz")
@@ -62,7 +62,7 @@ build() {
 	export TARGET_OBJCOPY=llvm-objcopy
 	export TARGET_RANLIB=llvm-ranlib
 	export TARGET_STRIP=llvm-strip
-	export TARGET_LDFLAGS="-fuse-ld=$linker"
+	export TARGET_LDFLAGS="--ld-path=$linker"
 
 	case $BARCH in
 		x86_64|x86)
@@ -87,6 +87,7 @@ build() {
 	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
 	patch -Np1 -i "$STUFF"/grub/0005-fix-runtime-if-built-on-LLD.patch
 	patch -Np1 -i "$STUFF"/grub/0006-find-kernel-and-initrd-image.patch
+	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
 
 	sed 's|/usr/share/fonts/dejavu|/usr/share/fonts/dejavu /usr/share/fonts/TTF|g' -i "configure.ac"
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in
