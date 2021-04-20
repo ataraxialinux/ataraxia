@@ -35,9 +35,13 @@ build() {
 			KARCH="arm"
 			IMAGELOC="arch/arm/boot/zImage"
 			;;
-		powerpc64le|powerpc64)
+		powerpc64le|powerpc64|powerpc)
 			KARCH="powerpc"
 			IMAGELOC="vmlinux"
+			;;
+		powerpcspe)
+			KARCH="powerpc"
+			IMAGELOC="arch/powerpc/boot/uImage"
 			;;
 		riscv64)
 			KARCH="riscv"
@@ -75,7 +79,7 @@ build() {
 	openssl pkey -in certs/signing_key.pem -out certs/signing_prv.key
 	openssl x509 -outform der -in certs/signing_key.pem -out certs/signing_crt.crt
 
-	"$STUFF"/configure-kernel -a $BARCH
+	"$STUFF"/configure-kernel.experimental -a $BARCH
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		yes '' | make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang
