@@ -5,7 +5,7 @@
 
 name=ca-certificates
 version=3.64
-release=2
+release=3
 source=("https://ftp.mozilla.org/pub/security/nss/releases/NSS_${version//./_}_RTM/src/nss-${version}.tar.gz")
 
 build() {
@@ -32,6 +32,8 @@ build() {
 		cat lib/ckfw/builtins/nssckbi.h |grep -w NSS_BUILTINS_LIBRARY_VERSION | awk '{print "# " $2 " " $3}';
 		echo '#';
 	) > ca-bundle.trust.p11-kit
+
+	install -Dm644 ca-bundle.trust.p11-kit "$PKG"/usr/share/ca-certificates/trust-source/mozilla.trust.p11-kit
 
 	touch ca-bundle.legacy.default.crt
 	NUM_LEGACY_DEFAULT=`find certs/legacy-default -type f | wc -l`
