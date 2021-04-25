@@ -44,16 +44,6 @@ build_flavor() {
 build() {
 	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
 
-	local linker
-
-	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		linker="-fuse-ld=$TOOLS/bin/${CROSS_COMPILE}ld.bfd"
-	else
-		linker="/usr/bin/ld.bfd"
-	fi
-
-	append-cppflags "-I$STUFF/include"
-
 	export NM=llvm-nm
 	export OBJCOPY=llvm-objcopy
 	export RANLIB=llvm-ranlib
@@ -62,7 +52,7 @@ build() {
 	export TARGET_OBJCOPY=llvm-objcopy
 	export TARGET_RANLIB=llvm-ranlib
 	export TARGET_STRIP=llvm-strip
-	export TARGET_LDFLAGS="--ld-path=$linker"
+	export TARGET_LDFLAGS="--ld-path=${LDBFD:-/usr/bin/ld.bfd}"
 
 	case $BARCH in
 		x86_64|x86)

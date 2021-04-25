@@ -70,8 +70,10 @@ int __size_mul_overflow(__SIZE_TYPE__ a, __SIZE_TYPE__ b, __SIZE_TYPE__ *result)
 inline void __fortify_fatal(const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  syslog(LOG_CRIT, "FORTIFY: %s", fmt);
+  //syslog(LOG_CRIT, "FORTIFY: %s", fmt);
+  fprintf(stderr, "FORTIFY: %s", fmt);
   va_end(args);
+  abort();
 }
 
 //
