@@ -801,6 +801,8 @@ build_docker() {
 	systemd-nspawn -D $PWD /usr/bin/systemd-sysusers
 	systemd-nspawn -D $PWD /usr/bin/systemd-tmpfiles --create --boot
 
+	install -m644 "$STUFF"/container-tools/build-packages "$dockerfs"/usr/bin/build-packages
+
 	pushd "$dockerfs"
 		bsdtar -czvf "$BUILD/ataraxialinux-docker-$BARCH.tar.gz" .
 	popd
@@ -855,15 +857,7 @@ build_initramfs() {
 	pushd "$initramfs"
 		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
 		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
-		rm -rf usr/lib/modules/*/kernel/drivers/gpu usr/lib/modules/*/kernel/drivers/gpu
-		rm -rf usr/lib/modules/*/kernel/drivers/input usr/lib/modules/*/kernel/drivers/hid
-		rm -rf usr/lib/modules/*/kernel/drivers/hwmon usr/lib/modules/*/kernel/drivers/nfs
-		rm -rf usr/lib/modules/*/kernel/drivers/isdn usr/lib/modules/*/kernel/drivers/bluetooth
-		rm -rf usr/lib/modules/*/kernel/drivers/leds usr/lib/modules/*/kernel/drivers/gpio
-		rm -rf usr/lib/modules/*/kernel/drivers/misc usr/lib/modules/*/kernel/drivers/video
-		rm -rf usr/lib/modules/*/kernel/net/netfilter usr/lib/modules/*/kernel/net/sched
-		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/drivers/mfd
-		rm -rf usr/lib/modules/*/kernel/drivers/edac usr/lib/modules/*/kernel/infiniband
+		rm -rf usr/lib/modules/*/kernel/drivers/gpu
 
 		cp -a "$rootfs"/usr/lib/firmware/ath10k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath11k "$firmwarefs"/usr/lib/firmware/
