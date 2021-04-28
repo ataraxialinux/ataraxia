@@ -18,8 +18,9 @@ tsukuri emerge libisoburn mtools freetype
 Ataraxia GNU/Linux uses `tsukuri` as its package manager. You should do this commands to install `tsukuri` (**AS ROOT**):
 ```
 cd /tmp
-git clone https://github.com/ataraxialinux/tsukuri.git --depth 1
-cd tsukuri
+curl -OL https://github.com/ataraxialinux/tsukuri/archive/refs/tags/0.2.5.1.tar.gz
+tar xpf 0.2.5.1.tar.gz
+cd tsukuri-0.2.5.1
 mkdir build
 cd build
 meson --prefix=/usr -Dsystemd=false ..
