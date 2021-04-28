@@ -784,6 +784,30 @@ build_stage() {
 	msg "Stage archive has been built successfuly!"
 }
 
+build_docker() {
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	msg "Building target docker docker for '${BARCH}' architecture"
+
+	local dockerfs="$BUILD/docker"
+
+	rm -rf "$dockerfs"
+	mkdir -p "$dockerfs"
+
+	install_os "$dockerfs"
+
+	systemd-nspawn -D $PWD /usr/bin/systemd-sysusers
+	systemd-nspawn -D $PWD /usr/bin/systemd-tmpfiles --create --boot
+
+	pushd "$dockerfs"
+		bsdtar -czvf "$BUILD/ataraxialinux-docker-$BARCH.tar.gz" .
+	popd
+
+	msg "docker archive has been built successfuly!"
+}
+
 build_initramfs() {
 	local initramfs="$BUILD/initramfs"
 	local firmwarefs="$BUILD/firmwarefs"
@@ -1041,6 +1065,7 @@ main() {
 		esac
 
 		case "$1" in
+			docker) build_docker ;;
 			image) build_board_image ;;
 			image-secure) build_secure_image ;;
 			installer) build_live_installer ;;

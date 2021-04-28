@@ -1,0 +1,24 @@
+#!/usr/bin/bash
+
+set -ex
+
+main() {
+	local pkgs
+
+	if [ ! -d "/usr/ports" ]; then
+		git clone https://github.com/ataraxialinux/ataraxia /usr/ports
+	fi
+
+	cd /usr/ports
+
+	pkgs="$(git log -1 --name-only --oneline | tail -n +2 | grep -w 'packages' | tr '/' ' ' | awk '{print $2}' | tr '\n' ' ' | sed 's/repo//')"
+
+	if [ -n "$pkgs" ]; then
+		tsukuri em $pkgs
+	fi
+}
+
+main
+
+exit 0
+
