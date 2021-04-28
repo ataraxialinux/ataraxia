@@ -158,4 +158,47 @@ build() {
 		Name=Open the Profile Manager
 		Exec=firefox --ProfileManager
 	EOF
+
+	mkdir -p "$PKG"/usr/share/appdata
+	cat > "$PKG"/usr/share/appdata/firefox.appdata.xml <<-EOF
+		<?xml version="1.0" encoding="UTF-8"?>
+		<!-- Copyright 2019 Firefox contributors -->
+		<component type="desktop">
+		  <id>firefox.desktop</id>
+		  <metadata_license>CC0-1.0</metadata_license>
+		  <name>Firefox</name>
+		  <summary>Web Browser</summary>
+		  <description>
+		    <p>
+		      Bringing together all kinds of awesomeness to make browsing better for you.
+		      Get to your favorite sites quickly – even if you don’t remember the URLs.
+		      Type your term into the location bar (aka the Awesome Bar) and the autocomplete
+		      function will include possible matches from your browsing history, bookmarked
+		      sites and open tabs.
+		    </p>
+		  </description>
+		  <url type="homepage">https://www.mozilla.org</url>
+		  <update_contact>stransky@redhat.com</update_contact>
+		  <kudos>
+		    <kudo>ModernToolkit</kudo>
+		    <kudo>SearchProvider</kudo>
+		  </kudos>
+		  <project_group>Mozilla</project_group>
+		  <project_license>GPL-3.0+</project_license>
+		  <developer_name>Mozilla Corporation</developer_name>
+		  <url type="bugtracker">https://bugzilla.mozilla.org/</url>
+		  <url type="help">https://support.mozilla.org/</url>
+		  <provides>
+		    <id>firefox.desktop</id>
+		  </provides>
+		  <screenshots>
+		    <screenshot type="default">https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/firefox/a.png</screenshot>
+		    <screenshot>https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/firefox/b.png</screenshot>
+		    <screenshot>https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/firefox/c.png</screenshot>
+		  </screenshots>
+		  <releases>
+		    <release version="$version" date="$(date '+%F')"/>
+		  </releases>
+		</component>
+	EOF
 }
