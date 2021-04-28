@@ -9,6 +9,8 @@ release=1
 source=("https://sortix.org/libz/release/$name-$version.tar.gz")
 
 build() {
+	filter-flags -flto -fvisibility=hidden -fsanitize=cfi -fsanitize-cfi-cross-dso
+
 	cd "$SRC"/$name-$version
 	./configure $BUILDFLAGS \
 		--prefix=/usr
