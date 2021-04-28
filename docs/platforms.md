@@ -2,7 +2,7 @@
 Ataraxia GNU/Linux has been ported to following CPU architectures:
 ```
  * x86_64        - for 64-bit x86 CPUs
- * x86           - for 32-bit x86 CPUs beginning with Intel Pentium Pro
+ * i386          - for 32-bit x86 CPUs beginning with Intel Pentium Pro
  * arm64         - for 64-bit ARM CPUs
  * arm           - for 32-bit ARM CPUs beginning at ARMv7-a
  * powerpc64le   - for 64-bit PowerPC CPUs (little-endian)

@@ -59,11 +59,11 @@ build_toolchain() {
 	emerge_host pkgconf
 
 	case $BARCH in
-		x86_64|x86|powerpc64le|powerpc64|powerpc) emerge_host grub ;;
+		x86_64|i386|powerpc64le|powerpc64|powerpc) emerge_host grub ;;
 	esac
 
 	case $BARCH in
-		x86_64|x86) emerge_host iucode-tool ;;
+		x86_64|i386) emerge_host iucode-tool ;;
 	esac
 
 	msg "Cleaning up"
@@ -264,7 +264,7 @@ build_system() {
 	emerge_target $linux
 
 	case $BARCH in
-		x86_64|x86)
+		x86_64|i386)
 			emerge_target amd-microcode
 			emerge_target iucode-tool
 			emerge_target intel-microcode
@@ -458,7 +458,7 @@ install_os() {
 	emerge_target $linux "$targetfs"
 
 	case $BARCH in
-		x86_64|x86)
+		x86_64|i386)
 			emerge_target amd-microcode "$targetfs"
 			emerge_target iucode-tool "$targetfs"
 			emerge_target intel-microcode "$targetfs"
@@ -635,7 +635,7 @@ build_secure_image() {
 
 	case "$BARCH" in
 		x86_64) rootarch="23"; usrarch="34"; verityarch="44" ;;
-		x86) rootarch="22"; usrarch="33"; verityarch="43" ;;
+		i386) rootarch="22"; usrarch="33"; verityarch="43" ;;
 		arm64) rootarch="25"; usrarch="36"; verityarch="46" ;;
 		arm) rootarch="24"; usrarch="35"; verityarch="45" ;;
 		*) die "Secure images are not supported on your architecture" ;;
@@ -916,7 +916,7 @@ build_iso_image() {
 	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
 
 	case "$BARCH" in
-		x86_64|x86)
+		x86_64|i386)
 			grub_mods="$grub_mods multiboot2"
 			initrd="/seiba/amd-microcode.img /seiba/intel-microcode.img $initrd"
 
@@ -1020,7 +1020,7 @@ main() {
 		export_cflags "$BARCH"
 
 		case $BARCH in
-			x86_64|x86|powerpc64le|powerpc64|powerpc)
+			x86_64|i386|powerpc64le|powerpc64|powerpc)
 				export INSTALLER=1
 				;;
 			*)
