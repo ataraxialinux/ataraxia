@@ -10,6 +10,10 @@ release=1
 source=("https://www.kernel.org/pub/linux/network/wireless/$name-$version.tar.xz")
 
 build() {
+	filter-flags -D_FORTIFY_SOURCE=2
+	filter-flags -D_FORTIFY_SOURCE=3
+	append-cflags -U_FORTIFY_SOURCE
+
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/iwd/fix-rawmemchr.patch
 	patch -Np1 -i "$STUFF"/iwd/dbus-netdev-group.patch
