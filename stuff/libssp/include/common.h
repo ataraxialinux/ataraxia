@@ -76,6 +76,7 @@
 #endif
 
 #if defined(__BIONIC_FORTIFY)
+#  define __USE_FORTIFY_LEVEL _FORTIFY_SOURCE
 #  define __bos0(s) __bosn((s), 0)
 #  define __pass_object_size_n(n) __attribute__((pass_object_size(n)))
 /*
