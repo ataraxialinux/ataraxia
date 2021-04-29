@@ -10,6 +10,10 @@ release=1
 source=("https://curl.se/download/$name-$version.tar.gz")
 
 build() {
+	filter-flags -D_FORTIFY_SOURCE=2
+	filter-flags -D_FORTIFY_SOURCE=3
+	append-cflags -U_FORTIFY_SOURCE
+
 	if [ "$USEBOOTSTRAP" != "yes" ]; then
 		unset ROOTFS
 	fi

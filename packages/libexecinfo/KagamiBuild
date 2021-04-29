@@ -15,9 +15,9 @@ build() {
 	patch -Np1 -i "$STUFF"/libexecinfo/misc.patch
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make CC="$CC" static
+		make CC="$CC" CFLAGS="-fno-omit-frame-pointer" static
 	else
-		make static
+		make CFLAGS="-fno-omit-frame-pointer" static
 	fi
 
 	install -Dm644  execinfo.h  "$PKG"/usr/include/execinfo.h
