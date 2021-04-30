@@ -41,7 +41,7 @@ build() {
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-GNU-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC-use-ELFv2-ABI.patch
 		patch -Np1 -i "$STUFF"/clang/0003-RISCV-disable-relaxations.patch
-		patch -Np1 -i "$STUFF"/clang/0004-add-support-for-external-libssp-and-libexecinfo.patch
+		patch -Np1 -i "$STUFF"/clang/0004-Link-against-libexecinfo.patch
 		patch -Np1 -i "$STUFF"/clang/0005-move-dynamic-linker-in-usr-lib.patch
 	popd
 	pushd "$SRC/clang-tools-extra-$version.src"
@@ -228,7 +228,6 @@ build() {
 		-Wno-dev -G Ninja
 
 	sed -i 's/-latomic//g' build.ninja
-	sed -i 's/LINK_LIBRARIES = -lc/LINK_LIBRARIES = -lc -lssp/g' build.ninja
 
 	samu unwind cxxabi cxx
 	DESTDIR="$ROOTFS" samu install-unwind install-cxxabi install-cxx

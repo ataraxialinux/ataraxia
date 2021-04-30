@@ -1,7 +1,7 @@
 # Description: Collection of modular and reusable compiler and toolchain technologies
 # URL:         https://llvm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai python-setuptools perl libexecinfo libssp libz libelf ncurses libedit libxml2 libffi
+# Depends on:  cmake samurai python-setuptools perl libmexecinfo libssp libz libelf ncurses libedit libxml2 libffi
 # Section:     devel
 
 name=llvm
@@ -46,7 +46,7 @@ build() {
 		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-GNU-Linux.patch
 		patch -Np1 -i "$STUFF"/clang/0002-PowerPC-use-ELFv2-ABI.patch
 		patch -Np1 -i "$STUFF"/clang/0003-RISCV-disable-relaxations.patch
-		patch -Np1 -i "$STUFF"/clang/0004-add-support-for-external-libssp-and-libexecinfo.patch
+		patch -Np1 -i "$STUFF"/clang/0004-Link-against-libexecinfo.patch
 		patch -Np1 -i "$STUFF"/clang/0005-move-dynamic-linker-in-usr-lib.patch
 	popd
 	pushd "$SRC/clang-tools-extra-$version.src"
@@ -159,9 +159,6 @@ build() {
 		-DLLVM_HOST_TRIPLE=$XTARGET \
 		-DLLVM_TARGET_ARCH=$LARCH \
 		-Wno-dev -G Ninja
-
-	sed -i 's/LINK_LIBRARIES = -lc/LINK_LIBRARIES = -lc -lssp/g' build.ninja
-
 	samu
 	DESTDIR="$PKG" samu install
 

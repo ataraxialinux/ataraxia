@@ -1,0 +1,22 @@
+# Description: libexecinfo extracted from FreeBSD and NetBSD
+# URL:         https://github.com/ataraxialinux/libmexecinfo
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Section:     libs
+
+name=libmexecinfo
+version=0.0
+release=1
+source=("https://github.com/ataraxialinux/libmexecinfo/archive/refs/tags/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	unset CFLAGS CXXFLAGS LDFLAGS
+
+	cd "$SRC"/$name-$version
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CROSS_COMPILE=${CROSS_COMPILE} PREFIX=/usr
+		make CROSS_COMPILE=${CROSS_COMPILE} PREFIX=/usr DESTDIR="$PKG" install
+	else
+		make PREFIX=/usr
+		make PREFIX=/usr DESTDIR="$PKG" install
+	fi
+}
