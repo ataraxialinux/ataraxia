@@ -16,6 +16,10 @@ build() {
 
 	cp "$STUFF"/meson/script "$PKG"/usr/bin/ataraxia-meson
 
+	case "$BARCH" in
+		riscv64) sed -i 's/-Db_lto=true/-Db_lto=false/g' "$PKG"/usr/bin/ataraxia-meson ;;
+	esac
+
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		local py="$(which python3)"
 		sed -i "s|$py|/usr/bin/python3|" "$PKG"/usr/bin/meson

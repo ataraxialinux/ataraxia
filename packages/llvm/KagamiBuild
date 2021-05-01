@@ -18,7 +18,7 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
 
 build() {
-	local LARCH CROSSOPTS
+	local LARCH CROSSOPTS LTO
 
 	if [ -z "$XTARGET" ]; then
 		XTARGET="$(clang -dumpmachine)"
@@ -35,6 +35,11 @@ build() {
 		powerpcspe) LARCH="powerpcspe" ;;
 		riscv64) LARCH="riscv64" ;;
 		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia GNU/Linux' ;;
+	esac
+
+	case "$BARCH" in
+		riscv64) LTO="" ;;
+		*)       LTO="-DLLVM_ENABLE_LTO=Thin -DLLVM_PARALLEL_LINK_JOBS=1" ;;
 	esac
 
 	pushd "$SRC/llvm-$version.src"
@@ -120,7 +125,7 @@ build() {
 	mkdir -p build
 	cd build
 
-	cmake "$SRC/llvm-$version.src" $CROSSOPTS \
+	cmake "$SRC/llvm-$version.src" $CROSSOPTS $LTO \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCLANG_BUILD_EXAMPLES=OFF \
@@ -150,11 +155,9 @@ build() {
 		-DLLVM_BUILD_LLVM_DYLIB=ON \
 		-DLLVM_LINK_LLVM_DYLIB=ON \
 		-DLLVM_ENABLE_DOXYGEN=OFF \
-		-DLLVM_ENABLE_LTO=Thin \
 		-DLLVM_ENABLE_SPHINX=OFF \
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_ENABLE_EH=ON \
-		-DLLVM_PARALLEL_LINK_JOBS=1 \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
 		-DLLVM_HOST_TRIPLE=$XTARGET \
 		-DLLVM_TARGET_ARCH=$LARCH \
