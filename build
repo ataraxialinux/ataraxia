@@ -855,15 +855,18 @@ build_initramfs() {
 	pushd "$initramfs"
 		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
 		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
-		rm -rf usr/lib/modules/*/kernel/drivers/gpu
 
+		cp -a "$rootfs"/usr/lib/firmware/amdgpu "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath10k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath11k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath6k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath9k_htc "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/brcm "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/3com "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/i915 "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/mellanox "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/nvidia "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/radeon "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/rtl_bt "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/rtl_nic "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/rtlwifi "$firmwarefs"/usr/lib/firmware/
@@ -961,7 +964,7 @@ build_iso_image() {
 		background_image /boot/grub/ataraxia.png
 
 		menuentry "Ataraxia GNU/Linux" {
-			linux	/seiba/seiba rw quiet
+			linux	/seiba/seiba rw quiet nomodeset
 			initrd	$initrd
 		}
 
@@ -971,7 +974,7 @@ build_iso_image() {
 		}
 
 		menuentry "Ataraxia GNU/Linux (serial console)" {
-			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
+			linux	/seiba/seiba rw quiet nomodeset console=ttyS0 console=ttyUSB0
 			initrd	$initrd
 		}
 
