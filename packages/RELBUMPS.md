@@ -91,6 +91,7 @@ python-urllib3
 python-webencodings
 python-xapp
 ranger
+rpm
 samba
 satyr
 scour
