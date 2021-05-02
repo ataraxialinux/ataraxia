@@ -11,17 +11,11 @@ source=("https://github.com/FreeRDP/FreeRDP/archive/${version/r/-r}.tar.gz::arch
 
 build() {
 	case $BARCH in
-		amd64|x86)
+		x86_64|i386)
 			archconf="-DWITH_SSE2=ON"
 			;;
-		armv7l)
-			archconf="-DARM_FP_ABI=hard"
-			;;
-	esac
-
-	case $BARCH in
-		armv7l)
-			archconf="$archconf -DWITH_NEON=ON"
+		arm)
+			archconf="-DARM_FP_ABI=hard -DWITH_NEON=ON"
 			;;
 	esac
 

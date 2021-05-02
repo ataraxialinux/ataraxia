@@ -1,0 +1,30 @@
+From d80bfc3d0235e4ea0fa96e9461e3b5ea3da25f46 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 30 Apr 2021 02:48:42 -0700
+Subject: [PATCH 3/5] [RISCV] disable relaxations
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Arch/RISCV.cpp | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/lib/Driver/ToolChains/Arch/RISCV.cpp b/lib/Driver/ToolChains/Arch/RISCV.cpp
+index c7f2a3ea..a24c4e75 100644
+--- a/lib/Driver/ToolChains/Arch/RISCV.cpp
++++ b/lib/Driver/ToolChains/Arch/RISCV.cpp
+@@ -554,11 +554,7 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
+   if (Args.hasArg(options::OPT_ffixed_x31))
+     Features.push_back("+reserve-x31");
+ 
+-  // -mrelax is default, unless -mno-relax is specified.
+-  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
+-    Features.push_back("+relax");
+-  else
+-    Features.push_back("-relax");
++  Features.push_back("-relax");
+ 
+   // GCC Compatibility: -mno-save-restore is default, unless -msave-restore is
+   // specified.
+-- 
+2.31.1
+

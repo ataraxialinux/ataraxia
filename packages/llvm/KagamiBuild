@@ -1,12 +1,12 @@
 # Description: Collection of modular and reusable compiler and toolchain technologies
 # URL:         https://llvm.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai python-setuptools perl libexecinfo zlib elftoolchain ncurses libedit libxml2 libffi
+# Depends on:  cmake samurai python-setuptools perl libmexecinfo libz libelf ncurses libedit libxml2 libffi
 # Section:     devel
 
 name=llvm
-version=11.1.0
-release=2
+version=12.0.0
+release=1
 source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/llvm-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
@@ -18,45 +18,56 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
 
 build() {
-	local LARCH CROSSOPTS
+	local LARCH CROSSOPTS LTO
 
 	if [ -z "$XTARGET" ]; then
 		XTARGET="$(clang -dumpmachine)"
 	fi
 
 	case "$BARCH" in
-		amd64) LARCH="x86_64" ;;
-		x86) LARCH="i686" ;;
+		x86_64) LARCH="x86_64" ;;
+		i386) LARCH="i686" ;;
 		arm64) LARCH="aarch64" ;;
-		armv7l) LARCH="armv7" ;;
-		mips64) LARCH="mips64" ;;
-		mips64el) LARCH="mips64el" ;;
-		mips) LARCH="mips" ;;
-		mipsel) LARCH="mipsel" ;;
-		ppc64le) LARCH="powerpc64le" ;;
-		ppc64) LARCH="powerpc64" ;;
+		arm) LARCH="armv7" ;;
+		powerpc64le) LARCH="powerpc64le" ;;
+		powerpc64) LARCH="powerpc64" ;;
+		powerpc) LARCH="powerpc" ;;
+		powerpcspe) LARCH="powerpcspe" ;;
 		riscv64) LARCH="riscv64" ;;
 		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia GNU/Linux' ;;
 	esac
 
+	case "$BARCH" in
+		riscv64) LTO="" ;;
+		*)       LTO="-DLLVM_ENABLE_LTO=Thin -DLLVM_PARALLEL_LINK_JOBS=1" ;;
+	esac
+
 	pushd "$SRC/llvm-$version.src"
 		msg "Patching LLVM"
-		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
-		patch -Np1 -i "$STUFF"/llvm/0002-Use-pc-relative-relocations-in-.eh_frame-on-MIPS.patch
-		patch -Np1 -i "$STUFF"/llvm/0003-RISC-V-enable-LTO-ThinLTO.patch
+		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC-use-ELFv2-ABI.patch
 	popd
 	pushd "$SRC/clang-$version.src"
-		msg "Patching clang"
-		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
-		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
-		patch -Np1 -i "$STUFF"/clang/0003-soft-float-fixes-for-MIPS.patch
-		patch -Np1 -i "$STUFF"/clang/0004-RISC-V-disable-relaxations-and-enable-LTO-ThinLTO.patch
+		msg "Patching Clang"
+		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-GNU-Linux.patch
+		patch -Np1 -i "$STUFF"/clang/0002-PowerPC-use-ELFv2-ABI.patch
+		patch -Np1 -i "$STUFF"/clang/0003-RISCV-disable-relaxations.patch
+		patch -Np1 -i "$STUFF"/clang/0004-Link-against-libexecinfo.patch
 		patch -Np1 -i "$STUFF"/clang/0005-move-dynamic-linker-in-usr-lib.patch
+	popd
+	pushd "$SRC/clang-tools-extra-$version.src"
+		msg "Patching Clang Tools Extra"
+		patch -Np1 -i "$STUFF"/clang-tools-extra/0001-PATCH-clang-tools-extra-Make-clangd-CompletionModel-.patch
+	popd
+	pushd "$SRC/lld-$version.src"
+		msg "Patching LLD"
+		patch -Np1 -i "$STUFF"/lld/0001-ELF-use-SHA1-by-default.patch
+		patch -Np1 -i "$STUFF"/lld/0002-PATCH-lld-Import-compact_unwind_encoding.h-from-libu.patch
 	popd
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
-		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-adjust-musl-syscalls.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-adjust-syscalls-for-i386.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-remove-ucontext-on-aarch64.patch
 	popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"
@@ -105,7 +116,7 @@ build() {
 			install -m755 bin/clang-tblgen "$SRC"/clang-tblgen
 		)
 
-		CROSSOPTS="$CMAKEFLAGS -DLLVM_TABLEGEN=$SRC/llvm-tblgen -DCLANG_TABLEGEN=$SRC/clang-tblgen"
+		CROSSOPTS="-DCMAKE_CROSSCOMPILING=ON -DLLVM_TABLEGEN=$SRC/llvm-tblgen -DCLANG_TABLEGEN=$SRC/clang-tblgen"
 	fi
 
 	msg "Building LLVM"
@@ -114,7 +125,7 @@ build() {
 	mkdir -p build
 	cd build
 
-	cmake "$SRC/llvm-$version.src" $CROSSOPTS \
+	cmake "$SRC/llvm-$version.src" $CROSSOPTS $LTO \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCLANG_BUILD_EXAMPLES=OFF \
@@ -129,9 +140,9 @@ build() {
 		-DCLANG_VENDOR=Ataraxia \
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
 		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+		-DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR="$SRC/clang-tools-extra-$version.src" \
 		-DLIBCLANG_BUILD_STATIC=ON \
 		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
 		-DLIBCXX_HAS_MUSL_LIBC=ON \
 		-DLIBCXX_USE_COMPILER_RT=ON \
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
@@ -144,11 +155,9 @@ build() {
 		-DLLVM_BUILD_LLVM_DYLIB=ON \
 		-DLLVM_LINK_LLVM_DYLIB=ON \
 		-DLLVM_ENABLE_DOXYGEN=OFF \
-		-DLLVM_ENABLE_LTO=Thin \
 		-DLLVM_ENABLE_SPHINX=OFF \
 		-DLLVM_ENABLE_RTTI=ON \
 		-DLLVM_ENABLE_EH=ON \
-		-DLLVM_PARALLEL_LINK_JOBS=1 \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$XTARGET \
 		-DLLVM_HOST_TRIPLE=$XTARGET \
 		-DLLVM_TARGET_ARCH=$LARCH \

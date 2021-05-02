@@ -7,24 +7,22 @@ source=("https://github.com/mesonbuild/meson/releases/download/$version/meson-$v
 
 build() {
 	case $BARCH in
-		amd64)    cpu="x86_64" ;;
-		x86)      cpu="x86" cpuextra="i686" ;;
-		arm64)    cpu="aarch64" ;;
-		armv7l)   cpu="arm" cpuextra="armv7l" ;;
-		mips64)   cpu="mips64" ;;
-		mips64el) cpu="mips64el" ;;
-		mips)     cpu="mips" ;;
-		mipsel)   cpu="mipsel" ;;
-		ppc64le)  cpu="ppc64" cpuextra="ppc64le" ;;
-		ppc64)    cpu="ppc64" ;;
-		riscv64)  cpu="riscv64" ;;
+		x86_64)       cpu="x86_64" ;;
+		i386)         cpu="x86" cpuextra="i686" ;;
+		arm64)        cpu="aarch64" ;;
+		arm)          cpu="arm" cpuextra="arm" ;;
+		powerpc64le)  cpu="ppc64" cpuextra="ppc64le" ;;
+		powerpc64)    cpu="ppc64" ;;
+		powerpc)      cpu="ppc" ;;
+		powerpcspe)   cpu="ppc" ;;
+		riscv64)      cpu="riscv64" ;;
 	esac
 
 	[ -z "$cpuextra" ] && cpuextra="$cpu"
 
 	case $BARCH in
-		amd64|x86|arm64|armv7l|mips64el|mipsel|ppc64le|riscv64) endian="little" ;;
-		mips64|mips|ppc64) endian="big" ;;
+		x86_64|i386|arm64|arm|powerpc64le|riscv64) endian="little" ;;
+		powerpc64|powerpc|powerpcspe) endian="big" ;;
 	esac
 
 	cd "$SRC"/meson-$version
@@ -51,4 +49,8 @@ build() {
 
 	cp "$STUFF"/meson/cross-script "$TOOLS"/bin/ataraxia-meson
 	sed -i "s|crossfile|$TOOLS/share/meson/meson.config|" "$TOOLS"/bin/ataraxia-meson
+
+	case "$BARCH" in
+		riscv64) sed -i 's/-Db_lto=true/-Db_lto=false/g' "$TOOLS"/bin/ataraxia-meson ;;
+	esac
 }

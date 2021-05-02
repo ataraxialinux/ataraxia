@@ -6,7 +6,7 @@
 
 name=iputils
 version=20210202
-release=1
+release=2
 source=("https://github.com/iputils/iputils/archive/$version.tar.gz::archive=$name-$version.tar.gz")
 
 build() {
@@ -22,6 +22,8 @@ build() {
 		-DUSE_GETTEXT=false
 	samu
 	DESTDIR="$PKG" samu install
+
+	setcap cap_net_raw=ep "$PKG"/usr/bin/ping
 
 	rm -rf "$PKG"/etc
 }

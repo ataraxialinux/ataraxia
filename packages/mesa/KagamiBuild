@@ -1,17 +1,17 @@
 # Description: An open-source implementation of the OpenGL specification
 # URL:         https://www.mesa3d.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  meson cmake zstd elftoolchain llvm python-mako xorgproto wayland-protocols libx11 libxdamage libxrandr libxshmfence libxvmc libxxf86vm libdrm libva libvdpau libglvnd lm_sensors vulkan-loader
+# Depends on:  meson cmake zstd libelf llvm python-mako xorgproto wayland-protocols libx11 libxdamage libxrandr libxshmfence libxvmc libxxf86vm libdrm libva libvdpau libglvnd lm_sensors vulkan-loader
 # Section:     x11
 
 name=mesa
 version=21.0.3
-release=1
+release=2
 source=("https://mesa.freedesktop.org/archive/$name-$version.tar.xz")
 
 build() {
 	case $BARCH in
-		amd64|x86)
+		x86_64|i386)
 			gallium="r300,r600,radeonsi,svga,swrast,nouveau,virgl,etnaviv,iris,zink"
 			dri="i915,i965,r100,r200,nouveau"
 			vulkan="intel,amd,swrast"
@@ -23,13 +23,13 @@ build() {
 			vulkan="amd,freedreno,broadcom,swrast"
 			opts="-Ddri3=enabled -Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
-		armv7l)
+		arm)
 			gallium="swrast,nouveau,virgl,vc4,tegra,etnaviv,freedreno,panfrost,lima,kmsro,v3dv,zink"
 			dri="nouveau"
 			vulkan="freedreno,broadcom,swrast"
 			opts="-Dgallium-nine=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgallium-xa=enabled -Dgallium-xvmc=enabled"
 			;;
-		ppc64le|ppc64|riscv64)
+		powerpc64le|powerpc64|powerpc|powerpcspe|riscv64)
 			gallium="r300,r600,radeonsi,swrast,nouveau,virgl,etnaviv,zink"
 			dri="r100,r200,nouveau"
 			vulkan="amd,swrast"

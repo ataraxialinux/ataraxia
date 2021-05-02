@@ -1,19 +1,16 @@
 name=host-pkgconf
-realpath="$REPO/${name/host-}"
-version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
+version=1.6.3
 release=1
 options=('bootstrap')
 source=("http://distfiles.dereferenced.org/pkgconf/pkgconf-$version.tar.xz")
 
 build() {
 	cd "$SRC"/pkgconf-$version
+	patch -Np1 -i "$STUFF"/pkgconf/0001-Only-prefix-with-the-sysroot-a-subset-of-variables.patch
+
 	LDFLAGS="-static" \
 	./configure \
-		--prefix="$TOOLS" \
-		--with-sysroot="$ROOTFS" \
-		--with-pkg-config-dir="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig" \
-		--with-system-libdir="$ROOTFS/usr/lib" \
-		--with-system-includedir="$ROOTFS/usr/include"
+		--prefix="$TOOLS"
 	make
 	make install
 

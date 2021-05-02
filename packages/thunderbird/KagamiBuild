@@ -2,13 +2,13 @@
 # URL:         https://www.mozilla.org/thunderbird/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  python autoconf2.13 llvm cbindgen node unzip zip dbus-glib gtk3 gtk2 libnotify nss libpulse startup-notification icu libevent libwebp dav1d aom libvpx ffmpeg
-# Dep amd64:   nasm yasm
-# Dep x86:     nasm yasm
+# Dep x86_64:  nasm yasm
+# Dep i386:    nasm yasm
 # Section:     web
 
 name=thunderbird
 version=78.10.0
-release=1
+release=2
 source=("https://archive.mozilla.org/pub/$name/releases/$version/source/$name-$version.source.tar.xz")
 
 clear_vendor_checksums() {
@@ -16,6 +16,8 @@ clear_vendor_checksums() {
 }
 
 build() {
+	filter-flags -fsanitize=cfi -fsanitize-cfi-cross-dso
+
 	export LDFLAGS="-Wl,-rpath,/usr/lib/thunderbird"
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
@@ -23,16 +25,16 @@ build() {
 	export CXXSTDLIB=c++
 
 	case "$BARCH" in
-		amd64)
+		x86_64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			;;
-		x86)
+		i386)
 			export RTARGET="i686-unknown-linux-musl"
 			;;
 		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
 			;;
-		armv7l)
+		arm)
 			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
 		*)
@@ -142,5 +144,49 @@ build() {
 		MimeType=message/rfc822;x-scheme-handler/mailto;
 		StartupNotify=true
 		Categories=Network;Email;
+	EOF
+
+	mkdir -p "$PKG"/usr/share/appdata
+	cat > "$PKG"/usr/share/appdata/thunderbird.appdata.xml <<-EOF
+		<?xml version="1.0" encoding="UTF-8"?>
+		<!-- Copyright 2014 Richard Hughes <richard@hughsie.com> -->
+		<!--
+		BugReportURL: https://bugzilla.mozilla.org/show_bug.cgi?id=1071065
+		SentUpstream: 2014-09-22
+		-->
+		<application>
+		  <id type="desktop">mozilla-thunderbird.desktop</id>
+		  <metadata_license>CC0-1.0</metadata_license>
+		  <description>
+		    <p>
+		      Thunderbird is an email client that allows you to read, write and organise all
+		      of your email messages. It is compatible with most email accounts, including the
+		      most popular webmail services.
+		    </p>
+		    <p>
+		      Thunderbird is designed by Mozilla, a global community working together to make
+		      the Internet better. Mozilla believe that the Internet should be open, public,
+		      and accessible to everyone without any restrictions.
+		    </p>
+		    <ul>
+		      <li>Easier than ever to set up a new e-mail account</li>
+		      <li>Awesome search allows you to find your messages fast</li>
+		      <li>Thousands of add-ons give you the freedom to make Thunderbird your own</li>
+		    </ul>
+		  </description>
+		  <url type="homepage">http://www.mozilla.org/thunderbird/</url>
+		  <provides>
+		    <id>thunderbird.desktop</id>
+		  </provides>
+		  <screenshots>
+		    <screenshot type="default">https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/mozilla-thunderbird/a.png</screenshot>
+		  </screenshots>
+		  <releases>
+		    <release version="$version" date="$(date '+%F')"/>
+		  </releases>
+		  <!-- FIXME: change this to an upstream email address for spec updates
+		  <updatecontact>someone_who_cares@upstream_project.org</updatecontact>
+		   -->
+		</application>
 	EOF
 }

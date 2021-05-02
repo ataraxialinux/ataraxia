@@ -1,12 +1,12 @@
 # Description: JavaScript interpreter and libraries
 # URL:         https://www.mozilla.org/js/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  rust autoconf2.13 python zlib readline libffi nspr icu
+# Depends on:  rust autoconf2.13 python libz readline libffi nspr icu
 # Section:     interpreters
 
 name=spidermonkey
 version=78.10.0
-release=1
+release=2
 source=("https://archive.mozilla.org/pub/firefox/releases/${version}esr/source/firefox-${version}esr.source.tar.xz")
 
 clear_vendor_checksums() {
@@ -14,17 +14,19 @@ clear_vendor_checksums() {
 }
 
 build() {
+	filter-flags -fsanitize=cfi -fsanitize-cfi-cross-dso
+
 	case "$BARCH" in
-		amd64)
+		x86_64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			;;
-		x86)
+		i386)
 			export RTARGET="i686-unknown-linux-musl"
 			;;
 		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
 			;;
-		armv7l)
+		arm)
 			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
 		*)

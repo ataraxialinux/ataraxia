@@ -47,7 +47,7 @@ build_toolchain() {
 	emerge_host binutils
 	emerge_host elftoolchain
 	emerge_host llvm
-	emerge_target libexecinfo
+	emerge_target libmexecinfo
 	emerge_host compiler-rt
 	force="-f" \
 		emerge_target musl
@@ -58,11 +58,11 @@ build_toolchain() {
 	emerge_host pkgconf
 
 	case $BARCH in
-		amd64|x86|ppc64le|ppc64) emerge_host grub ;;
+		x86_64|i386|powerpc64le|powerpc64|powerpc) emerge_host grub ;;
 	esac
 
 	case $BARCH in
-		amd64|x86) emerge_host iucode-tool ;;
+		x86_64|i386) emerge_host iucode-tool ;;
 	esac
 
 	msg "Cleaning up"
@@ -103,7 +103,7 @@ build_system() {
 	emerge_target bison
 	emerge_target flex
 	emerge_target bc
-	emerge_target zlib
+	emerge_target libz
 	emerge_target bzip2
 	emerge_target xz
 	emerge_target lz4
@@ -147,6 +147,8 @@ build_system() {
 	emerge_target cmake
 	emerge_target binutils
 	emerge_target elftoolchain
+	emerge_target libuargp
+	emerge_target libelf
 	if ! check_stamp llvm; then
 		force="-f" \
 			emerge_target llvm
@@ -167,6 +169,7 @@ build_system() {
 	emerge_target psmisc
 	emerge_target pcre
 	emerge_target grep
+	emerge_target mksh
 	emerge_target bash
 	emerge_target slibtool
 	emerge_target gperf
@@ -187,11 +190,13 @@ build_system() {
 	emerge_target iptables
 	emerge_target iproute2
 	emerge_target kbd
-	emerge_target vim
+	emerge_target nano
 	emerge_target libgpg-error
 	emerge_target libgcrypt
 	emerge_target libseccomp
 	emerge_target hwids
+	emerge_target popt
+	emerge_target rsync
 	if ! check_stamp util-linux-pass1; then
 		emerge_target util-linux-runtime
 		rm -rf "$PACKAGES"/util-linux-runtime-*.czst
@@ -218,7 +223,6 @@ build_system() {
 	emerge_target libfido2
 	emerge_target libaio
 	emerge_target lvm2
-	emerge_target popt
 	emerge_target json-c
 	emerge_target argon2
 	emerge_target cryptsetup
@@ -259,9 +263,8 @@ build_system() {
 	emerge_target $linux
 
 	case $BARCH in
-		amd64|x86)
+		x86_64|i386)
 			emerge_target amd-microcode
-			emerge_target libuargp
 			emerge_target iucode-tool
 			emerge_target intel-microcode
 			;;
@@ -323,7 +326,7 @@ install_os() {
 	emerge_target man-pages "$targetfs"
 	emerge_target linux-headers "$targetfs"
 	emerge_target musl "$targetfs"
-	emerge_target libexecinfo "$targetfs"
+	emerge_target libmexecinfo "$targetfs"
 	emerge_target musl-tools "$targetfs"
 	emerge_target gettext-tiny "$targetfs"
 	emerge_target tzdb "$targetfs"
@@ -331,7 +334,7 @@ install_os() {
 	emerge_target bison "$targetfs"
 	emerge_target flex "$targetfs"
 	emerge_target bc "$targetfs"
-	emerge_target zlib "$targetfs"
+	emerge_target libz "$targetfs"
 	emerge_target bzip2 "$targetfs"
 	emerge_target xz "$targetfs"
 	emerge_target lz4 "$targetfs"
@@ -375,6 +378,8 @@ install_os() {
 	emerge_target cmake "$targetfs"
 	emerge_target binutils "$targetfs"
 	emerge_target elftoolchain "$targetfs"
+	emerge_target libuargp "$targetfs"
+	emerge_target libelf "$targetfs"
 	emerge_target llvm "$targetfs"
 	emerge_target ccache "$targetfs"
 	emerge_target pkgconf "$targetfs"
@@ -389,6 +394,7 @@ install_os() {
 	emerge_target psmisc "$targetfs"
 	emerge_target pcre "$targetfs"
 	emerge_target grep "$targetfs"
+	emerge_target mksh "$targetfs"
 	emerge_target bash "$targetfs"
 	emerge_target slibtool "$targetfs"
 	emerge_target gperf "$targetfs"
@@ -409,15 +415,16 @@ install_os() {
 	emerge_target iptables "$targetfs"
 	emerge_target iproute2 "$targetfs"
 	emerge_target kbd "$targetfs"
-	emerge_target vim "$targetfs"
+	emerge_target nano "$targetfs"
 	emerge_target libgpg-error "$targetfs"
 	emerge_target libgcrypt "$targetfs"
 	emerge_target libseccomp "$targetfs"
 	emerge_target hwids "$targetfs"
+	emerge_target popt "$targetfs"
+	emerge_target rsync "$targetfs"
 	emerge_target util-linux "$targetfs"
 	emerge_target libaio "$targetfs"
 	emerge_target lvm2 "$targetfs"
-	emerge_target popt "$targetfs"
 	emerge_target json-c "$targetfs"
 	emerge_target argon2 "$targetfs"
 	emerge_target libcbor "$targetfs"
@@ -449,9 +456,8 @@ install_os() {
 	emerge_target $linux "$targetfs"
 
 	case $BARCH in
-		amd64|x86)
+		x86_64|i386)
 			emerge_target amd-microcode "$targetfs"
-			emerge_target libuargp "$targetfs"
 			emerge_target iucode-tool "$targetfs"
 			emerge_target intel-microcode "$targetfs"
 			;;
@@ -626,10 +632,10 @@ build_secure_image() {
 	fi
 
 	case "$BARCH" in
-		amd64) rootarch="23"; usrarch="34"; verityarch="44" ;;
-		x86) rootarch="22"; usrarch="33"; verityarch="43" ;;
+		x86_64) rootarch="23"; usrarch="34"; verityarch="44" ;;
+		i386) rootarch="22"; usrarch="33"; verityarch="43" ;;
 		arm64) rootarch="25"; usrarch="36"; verityarch="46" ;;
-		armv7l) rootarch="24"; usrarch="35"; verityarch="45" ;;
+		arm) rootarch="24"; usrarch="35"; verityarch="45" ;;
 		*) die "Secure images are not supported on your architecture" ;;
 	esac
 
@@ -776,6 +782,32 @@ build_stage() {
 	msg "Stage archive has been built successfuly!"
 }
 
+build_docker() {
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	msg "Building target docker docker for '${BARCH}' architecture"
+
+	local dockerfs="$BUILD/docker"
+
+	rm -rf "$dockerfs"
+	mkdir -p "$dockerfs"
+
+	install_os "$dockerfs"
+
+	systemd-nspawn -D $PWD /usr/bin/systemd-sysusers
+	systemd-nspawn -D $PWD /usr/bin/systemd-tmpfiles --create --boot
+
+	install -m644 "$STUFF"/container-tools/build-packages "$dockerfs"/usr/bin/build-packages
+
+	pushd "$dockerfs"
+		bsdtar -czvf "$BUILD/ataraxialinux-docker-$BARCH.tar.gz" .
+	popd
+
+	msg "docker archive has been built successfuly!"
+}
+
 build_initramfs() {
 	local initramfs="$BUILD/initramfs"
 	local firmwarefs="$BUILD/firmwarefs"
@@ -802,13 +834,13 @@ build_initramfs() {
 	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware"
 
 	for i in base-files iana-etc musl musl-tools tzdb \
-		zlib bzip2 xz lz4 zstd lzo file ncurses readline libedit \
+		libz bzip2 xz lz4 zstd lzo libuargp libelf file ncurses readline libedit \
 		gmp attr acl libressl nettle ca-certificates expat libffi \
 		libxml2 libarchive libssh2 nghttp2 c-ares libunistring libidn2 brotli \
 		krb5 curl cracklib libtirpc libcap-ng audit pam libcap libpwquality \
-		shadow psmisc pcre grep bash kmod toybox lobase one-true-awk \
+		shadow psmisc pcre grep mksh bash kmod toybox lobase one-true-awk \
 		libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap \
-		iptables iproute2 kbd vim libgpg-error libgcrypt libseccomp \
+		iptables iproute2 kbd nano libgpg-error libgcrypt libseccomp \
 		hwids util-linux libaio lvm2 popt json-c argon2 libcbor libfido2 cryptsetup \
 		libtasn1 p11-kit gnutls libmicrohttpd systemd dbus-broker dbus \
 		net-tools iputils procps-ng btrfs-progs e2fsprogs btrfs-progs dosfstools \
@@ -823,23 +855,18 @@ build_initramfs() {
 	pushd "$initramfs"
 		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
 		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
-		rm -rf usr/lib/modules/*/kernel/drivers/gpu usr/lib/modules/*/kernel/drivers/gpu
-		rm -rf usr/lib/modules/*/kernel/drivers/input usr/lib/modules/*/kernel/drivers/hid
-		rm -rf usr/lib/modules/*/kernel/drivers/hwmon usr/lib/modules/*/kernel/drivers/nfs
-		rm -rf usr/lib/modules/*/kernel/drivers/isdn usr/lib/modules/*/kernel/drivers/bluetooth
-		rm -rf usr/lib/modules/*/kernel/drivers/leds usr/lib/modules/*/kernel/drivers/gpio
-		rm -rf usr/lib/modules/*/kernel/drivers/misc usr/lib/modules/*/kernel/drivers/video
-		rm -rf usr/lib/modules/*/kernel/net/netfilter usr/lib/modules/*/kernel/net/sched
-		rm -rf usr/lib/modules/*/kernel/sound usr/lib/modules/*/kernel/fs usr/lib/modules/*/kernel/drivers/mfd
-		rm -rf usr/lib/modules/*/kernel/drivers/edac usr/lib/modules/*/kernel/infiniband
 
+		cp -a "$rootfs"/usr/lib/firmware/amdgpu "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath10k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath11k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath6k "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/ath9k_htc "$firmwarefs"/usr/lib/firmware/
 		cp -a "$rootfs"/usr/lib/firmware/brcm "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/3com "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/i915 "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/mellanox "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/nvidia "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/radeon "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/rtl_bt "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/rtl_nic "$firmwarefs"/usr/lib/firmware/
     		cp -a "$rootfs"/usr/lib/firmware/rtlwifi "$firmwarefs"/usr/lib/firmware/
@@ -882,11 +909,11 @@ build_initramfs() {
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 
-		find . | cpio -H newc -o | zstd -19 > "$BUILD"/seiba.zst
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/seiba.zst
 	popd
 
 	pushd "$firmwarefs"
-		find . | cpio -H newc -o | zstd -19 > "$BUILD"/firmware.zst
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/firmware.zst
 	popd
 
 	msg "Initramfs has been built successfuly!"
@@ -908,7 +935,7 @@ build_iso_image() {
 	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
 
 	case "$BARCH" in
-		amd64|x86)
+		x86_64|i386)
 			grub_mods="$grub_mods multiboot2"
 			initrd="/seiba/amd-microcode.img /seiba/intel-microcode.img $initrd"
 
@@ -937,7 +964,7 @@ build_iso_image() {
 		background_image /boot/grub/ataraxia.png
 
 		menuentry "Ataraxia GNU/Linux" {
-			linux	/seiba/seiba rw quiet
+			linux	/seiba/seiba rw quiet nomodeset
 			initrd	$initrd
 		}
 
@@ -947,7 +974,7 @@ build_iso_image() {
 		}
 
 		menuentry "Ataraxia GNU/Linux (serial console)" {
-			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
+			linux	/seiba/seiba rw quiet nomodeset console=ttyS0 console=ttyUSB0
 			initrd	$initrd
 		}
 
@@ -982,7 +1009,7 @@ main() {
 		target) shift; mode="build_target" ;;
 	esac
 
-	while getopts a:k:b:d:uct opts; do
+	while getopts a:k:b:d:uctC opts; do
 		case $opts in
 			a) BARCH="$OPTARG" ;;
 			k) KERNEL="$OPTARG" ;;
@@ -991,6 +1018,7 @@ main() {
 			u) AUTOBUMB="yes" ;;
 			c) AUTOCOMMIT="yes" ;;
 			t) export TORSOCKS="true" ;;
+			C) export CCACHE="1" ;;
 		esac
 	done
 	shift $((OPTIND -1))
@@ -1011,7 +1039,7 @@ main() {
 		export_cflags "$BARCH"
 
 		case $BARCH in
-			amd64|x86|ppc64le|ppc64)
+			x86_64|i386|powerpc64le|powerpc64|powerpc)
 				export INSTALLER=1
 				;;
 			*)
@@ -1032,6 +1060,7 @@ main() {
 		esac
 
 		case "$1" in
+			docker) build_docker ;;
 			image) build_board_image ;;
 			image-secure) build_secure_image ;;
 			installer) build_live_installer ;;
@@ -1064,8 +1093,8 @@ main() {
 		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
 		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
 
-		check_for_arch "amd64"
-		NOSECHECK=1 export_variables "amd64"
+		check_for_arch "x86_64"
+		NOSECHECK=1 export_variables "x86_64"
 
 		msg "Checking for updates"
 		for packages in $(ls "$REPO/" | sort); do
@@ -1076,26 +1105,28 @@ main() {
 					elif [ "$packages" = "systemd-runtime" ]; then
 						true
 					elif [ "$packages" = "linux" ]; then
-						"$CWD/check-updates" linux
+						"$UTILS/check-updates" linux
 					elif [ "$packages" = "linux-headers" ]; then
-						"$CWD/check-updates" linux-headers
-					elif [ "$packages" = "libclc" ]; then
-						"$CWD/check-updates" libclc
-					elif [ "$packages" = "lldb" ]; then
-						"$CWD/check-updates" lldb
-					elif [ "$packages" = "llvm" ]; then
-						"$CWD/check-updates" llvm
+						"$UTILS/check-updates" linux-headers
+#					elif [ "$packages" = "libclc" ]; then
+#						"$UTILS/check-updates" libclc
+#					elif [ "$packages" = "lldb" ]; then
+#						"$UTILS/check-updates" lldb
+#					elif [ "$packages" = "llvm" ]; then
+#						"$UTILS/check-updates" llvm
 #					elif [ "$packages" = "systemd" ]; then
-#						"$CWD/check-updates" systemd
+#						"$UTILS/check-updates" systemd
+#					elif [ "$packages" = "polly" ]; then
+#						"$UTILS/check-updates" polly
 					else
-						"$CWD/check-updates" $cuopt $cuopttwo $packages
+						"$UTILS/check-updates" $cuopt $cuopttwo $packages
 					fi
 				)
 			popd
 		done
 	elif [ "$mode" == "generate_repo" ]; then
-		check_for_arch "amd64"
-		NOSECHECK=1 export_variables "amd64"
+		check_for_arch "x86_64"
+		NOSECHECK=1 export_variables "x86_64"
 
 		msg "Generating repository file"
 		[ -f "$REPO/repo" ] && rm "$REPO/repo"

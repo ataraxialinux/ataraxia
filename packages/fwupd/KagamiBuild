@@ -20,7 +20,7 @@ source=("https://people.freedesktop.org/~hughsient/releases/$name-$version.tar.x
 
 build() {
 	case $BARCH in
-		amd64|x86)
+		x86_64|i386)
 			true
 			;;
 		*)
@@ -29,7 +29,7 @@ build() {
 	esac
 
 	
-	filter-flags -flto
+	filter-flags -flto -fsanitize=cfi -fsanitize-cfi-cross-dso
 
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$STUFF"/fwupd/lib64.patch

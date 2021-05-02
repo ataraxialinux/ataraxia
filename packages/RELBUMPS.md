@@ -30,7 +30,6 @@ libblockdev
 libbytesize
 libguestfs
 libproxy
-libreoffice
 libreport
 libsolv
 libteam
@@ -92,6 +91,7 @@ python-urllib3
 python-webencodings
 python-xapp
 ranger
+rpm
 samba
 satyr
 scour
@@ -127,7 +127,6 @@ evolution-data-server
 firefox
 harfbuzz
 libical
-libreoffice
 mpd
 node
 php
@@ -215,7 +214,6 @@ firefox
 gnome-builder
 gst-plugins-bad
 libclc
-libreoffice
 lldb
 mesa
 polly

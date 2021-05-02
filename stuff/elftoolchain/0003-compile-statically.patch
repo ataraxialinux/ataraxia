@@ -1,0 +1,146 @@
+From d84d6846f9254495a9548181a788ab4f8eb2cf05 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 18 Apr 2021 08:59:32 -0700
+Subject: [PATCH 3/6] compile statically
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ addr2line/Makefile   | 2 +-
+ ar/Makefile          | 2 +-
+ brandelf/Makefile    | 1 +
+ cxxfilt/Makefile     | 2 +-
+ elfcopy/Makefile     | 2 +-
+ elfdump/Makefile     | 1 +
+ findtextrel/Makefile | 1 +
+ nm/Makefile          | 2 +-
+ size/Makefile        | 2 +-
+ strings/Makefile     | 2 +-
+ 10 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/addr2line/Makefile b/addr2line/Makefile
+index 67e2323..2a2a901 100644
+--- a/addr2line/Makefile
++++ b/addr2line/Makefile
+@@ -9,7 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELF} ${LIBELFTC} ${LIBDWARF}
+ LDADD=	-lelftc -ldwarf -lelf
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ MAN1=	addr2line.1
+ 
+diff --git a/ar/Makefile b/ar/Makefile
+index 8cd884e..95e583a 100644
+--- a/ar/Makefile
++++ b/ar/Makefile
+@@ -13,7 +13,7 @@ DPADD=	${LIBARCHIVE} ${LIBELFTC} ${LIBELF} ${LIBZ}
+ LDADD=	-larchive -lelftc -lelf -lz
+ 
+ CFLAGS+=-I. -I${.CURDIR}
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ LINKS=	${BINDIR}/ar ${BINDIR}/ranlib
+ 
+diff --git a/brandelf/Makefile b/brandelf/Makefile
+index 28ba3e0..dc7277b 100644
+--- a/brandelf/Makefile
++++ b/brandelf/Makefile
+@@ -5,5 +5,6 @@ TOP=	..
+ PROG=	brandelf
+ WARNS?=	6
+ LDADD=	-lelftc -lelf
++LDFLAGS+=-static-pie
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/cxxfilt/Makefile b/cxxfilt/Makefile
+index 0acc5a0..04ebc3a 100644
+--- a/cxxfilt/Makefile
++++ b/cxxfilt/Makefile
+@@ -9,7 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=	-lelftc -lelf
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ MAN1=	c++filt.1
+ 
+diff --git a/elfcopy/Makefile b/elfcopy/Makefile
+index bc727aa..b934035 100644
+--- a/elfcopy/Makefile
++++ b/elfcopy/Makefile
+@@ -13,7 +13,7 @@ WARNS?=	5
+ 
+ DPADD=	${LIBELF} ${LIBELFTC}
+ LDADD=	-lelf -lelftc
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ .if !defined(LIBELF_AR)
+ LDADD+= -larchive
+diff --git a/elfdump/Makefile b/elfdump/Makefile
+index b78d465..948c737 100644
+--- a/elfdump/Makefile
++++ b/elfdump/Makefile
+@@ -7,5 +7,6 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=	-lelftc -lelf
++LDFLAGS+=-static-pie
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/findtextrel/Makefile b/findtextrel/Makefile
+index 4c316eb..5d129d2 100644
+--- a/findtextrel/Makefile
++++ b/findtextrel/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBDWARF} ${LIBELF} 
+ LDADD=	-lelftc -ldwarf -lelf
++LDFLAGS+=-static-pie
+ 
+ MAN1=	findtextrel.1
+ 
+diff --git a/nm/Makefile b/nm/Makefile
+index bdac4ff..d3b9831 100644
+--- a/nm/Makefile
++++ b/nm/Makefile
+@@ -9,6 +9,6 @@ SRCS=	nm.c
+ WARNS?=	6
+ 
+ LDADD=	-ldwarf -lelftc -lelf
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/size/Makefile b/size/Makefile
+index a8c7176..95a4831 100644
+--- a/size/Makefile
++++ b/size/Makefile
+@@ -6,7 +6,7 @@ PROG=   size
+ WARNS?= 6
+ LDADD=  -lelftc -lelf
+ DPADD=	${LIBELFTC} ${LIBELF}
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+ 
+diff --git a/strings/Makefile b/strings/Makefile
+index ac09af4..6b333f2 100644
+--- a/strings/Makefile
++++ b/strings/Makefile
+@@ -6,7 +6,7 @@ PROG=   strings
+ WARNS?= 6
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=  -lelftc -lelf
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static-pie
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+ 
+-- 
+2.31.0
+

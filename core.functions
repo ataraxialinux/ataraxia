@@ -36,16 +36,14 @@ parse_architecture() {
 	check_for_arch "$1"
 
 	case "$1" in
-		amd64) export XTARGET="x86_64-linux-musl" ;;
-		x86) export XTARGET="i386-linux-musl" ;;
+		x86_64) export XTARGET="x86_64-linux-musl" ;;
+		i386) export XTARGET="i386-linux-musl" ;;
 		arm64) export XTARGET="aarch64-linux-musl" ;;
-		armv7l) export XTARGET="armv7l-linux-musleabihf" ;;
-		mips64) export XTARGET="mips64-linux-musl" ;;
-		mips64el) export XTARGET="mips64el-linux-musl" ;;
-		mips) export XTARGET="mips-linux-musl" ;;
-		mipsel) export XTARGET="mipsel-linux-musl" ;;
-		ppc64le) export XTARGET="powerpc64le-linux-musl" ;;
-		ppc64) export XTARGET="powerpc64-linux-musl" ;;
+		arm) export XTARGET="armv7l-linux-musleabihf" ;;
+		powerpc64le) export XTARGET="powerpc64le-linux-musl" ;;
+		powerpc64) export XTARGET="powerpc64-linux-musl" ;;
+		powerpc) export XTARGET="powerpc-linux-musl" ;;
+		powerpcspe) export XTARGET="powerpc-linux-muslspe" ;;
 		riscv64) export XTARGET="riscv64-linux-musl" ;;
 		*) die 'Architecture called `'${1}'` is not supported by Ataraxia GNU/Linux' ;;
 	esac
@@ -66,11 +64,24 @@ export_variables() {
 	export STUFF="$CWD/stuff"
 	export REPO="$CWD/packages"
 	export TCREPO="$CWD/toolchain"
+	export UTILS="$CWD/utils"
 
 	export PATH="$TOOLS/bin:$PATH"
 	export HOSTCC="clang"
 	export HOSTCXX="clang++"
 	export ORIGMAKE="$(command -v make)"
+
+	if [ "$CCACHE" == "1" ]; then
+		if [ -e "/usr/lib/ccache" ]; then
+			export PATH="/usr/lib/ccache:$PATH"
+		elif [ -e "/usr/lib/ccache/bin" ]; then
+			export PATH="/usr/lib/ccache/bin:$PATH"
+		elif [ -e "/usr/lib/ccache" ]; then
+			export PATH="/usr/lib64/ccache:$PATH"
+		elif [ -e "/usr/lib/ccache/bin" ]; then
+			export PATH="/usr/lib64/ccache/bin:$PATH"
+		fi
+	fi
 
 	if [ -z "$JOBS" ]; then
 		export MKOPTS="-j$(expr $(nproc) + 1)"
@@ -85,16 +96,24 @@ export_cflags() {
 	check_for_arch "$1"
 
 	case "$1" in
-		amd64|x86)
-			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -fcf-protection=full -mretpoline --param=ssp-buffer-size=4 -pipe"
+		x86_64|i386)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection -mretpoline --param=ssp-buffer-size=4 -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
-		arm64|armv7l)
+		arm64)
 			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong --param=ssp-buffer-size=4 -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
-		ppc64le|ppc64)
+		arm)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fsanitize=cfi --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		powerpc64le|powerpc64|powerpc|powerpcspe)
 			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -flto -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong -fstack-clash-protection --param=ssp-buffer-size=4 -pipe"
+			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
+			;;
+		riscv64)
+			export xcflags="-D_FORTIFY_SOURCE=2 -g0 -Os -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -fstack-protector-strong --param=ssp-buffer-size=4 -pipe"
 			export xldflags="-Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--gc-sections -Wl,-z,noexecstack -s"
 			;;
 		*)
@@ -133,6 +152,7 @@ generate_config() {
 			export AS="$XTARGET-as"
 			export RANLIB="$XTARGET-ranlib"
 			export LD="$XTARGET-ld"
+			export LDBFD="$(command -v $XTARGET-ld.bfd)"
 			export STRIP="$XTARGET-strip"
 			export OBJCOPY="$XTARGET-objcopy"
 			export OBJDUMP="$XTARGET-objdump"
@@ -157,8 +177,11 @@ generate_config() {
 
 			# pkg-config configuration
 			export PKG_CONFIG="$XTARGET-pkgconf"
-			export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
 			export PKG_CONFIG_LIBDIR="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+			export PKG_CONFIG_PATH="$ROOTFS/usr/lib/pkgconfig:$ROOTFS/usr/share/pkgconfig"
+			export PKG_CONFIG_SYSROOT_DIR="$ROOTFS"
+			export PKG_CONFIG_SYSTEM_INCLUDE_PATH="$ROOTFS/usr/include"
+			export PKG_CONFIG_SYSTEM_LIBRARY_PATH="$ROOTFS/usr/lib"
 
 			# Package manager configuration
 			export mkopts="$MKOPTS"
@@ -337,11 +360,11 @@ get_desktop_packages() {
 	esac
 
 	case $BARCH in
-		amd64|x86|arm64|armv7l) packages="$packages firefox" ;;
+		x86_64|i386|arm64|arm) packages="$packages firefox" ;;
 	esac
 
 	case $BARCH in
-		amd64|x86) packages="$packages xf86-video-intel xf86-video-vmware grub" ;;
+		x86_64|i386) packages="$packages xf86-video-intel xf86-video-vmware grub" ;;
 	esac
 
 	echo "$packages"
