@@ -1,0 +1,20 @@
+# Description: Advanced packaging tool fro RPM
+# URL:         https://github.com/ataraxialinux/apt
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libz bzip2 readline libxml2 rpm
+# Section:     admin
+
+name=apt
+version=a5dc2f9e90b763440f90795277d987ac90add33c
+release=1
+source=("https://github.com/ataraxialinux/apt/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+
+build() {
+	cd "$SRC"/$name-$version
+	autoreconf -vif
+	./configure $BUILDFLAGS \
+		--prefix=/usr \
+		--disable-scripts
+	make
+	make DESTDIR="$PKG" install
+}
