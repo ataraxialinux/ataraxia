@@ -909,11 +909,11 @@ build_initramfs() {
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 
-		find . | cpio -H newc -o | zstd -19 > "$BUILD"/seiba.zst
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/seiba.zst
 	popd
 
 	pushd "$firmwarefs"
-		find . | cpio -H newc -o | zstd -19 > "$BUILD"/firmware.zst
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/firmware.zst
 	popd
 
 	msg "Initramfs has been built successfuly!"
