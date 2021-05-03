@@ -321,7 +321,7 @@ generate_initramfs() {
 
 	rm -rf "$initramfs" "$firmwarefs"
 
-	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware"
+	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware" "$isodir/seiba"
 
 	for i in base-files iana-etc musl musl-tools tzdb \
 		libz bzip2 xz lz4 zstd lzo libuargp libelf file ncurses readline libedit \
@@ -339,11 +339,12 @@ generate_initramfs() {
 		emerge_target $i "$initramfs"
 	done
 
-	cp -a "$rootfs"/usr/lib/libc++.so* "$rootfs"/usr/lib/libunwind.so* \
+	cp -a "$rootfs"/usr/lib/libc++.so* "$rootfs"/usr/lib/libc++abi.so* \
+		"$rootfs"/usr/lib/libunwind.so* \
 		"$initramfs"/usr/lib/
 
 	pushd "$initramfs"
-		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
+		rm -rf usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
 		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
 
 		cp -a "$rootfs"/usr/lib/firmware/amdgpu "$firmwarefs"/usr/lib/firmware/
@@ -399,11 +400,14 @@ generate_initramfs() {
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 
-		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/seiba.zst
+		mv boot/vmlinuz "$isodir"/seiba/seiba
+		rm -rf boot
+
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$isodir"/seiba/seiba.zst
 	popd
 
 	pushd "$firmwarefs"
-		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/firmware.zst
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$isodir"/seiba/firmware.zst
 	popd
 
 	msg "Initramfs has been built successfuly!"
@@ -432,13 +436,7 @@ make_iso_x86() {
 	EOF
 
 	cat > "$isodir"/boot/grub/grub.cfg <<- EOF
-		set timeout=5
-
-		insmod font
-		insmod all_video
-		insmod gfxterm
-		insmod gfxmenu
-		insmod png
+		set timeout=10
 
 		menuentry "Ataraxia GNU/Linux" {
 			linux	/seiba/seiba quiet rw nomodeset
@@ -532,8 +530,7 @@ build_installer() {
 		"$initramfs" \
 		"$firmwarefs" \
 		"$isodir" \
-		"$grub_config" \
-		"$BUILD"/*.zst
+		"$grub_config"
 
 	generate_initramfs
 
