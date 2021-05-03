@@ -1,0 +1,664 @@
+#!/usr/bin/env bash
+#
+# The 'Marisa' build system
+#
+# Copyright (c) 2016-2021 Ataraxia GNU/Linux <ataraxialinux@protonmail.com>
+
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, pronanoded that the above
+# copyright notice and this permission notice appear in all copies.
+
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+set -e
+
+source core.functions
+
+build_toolchain() {
+	if check_stamp toolchain; then
+		return 0
+	fi
+
+	msg "Preparing ennanoronment for build"
+	make_environment
+
+	msg "Building cross-toolchain for '${BARCH}' architecture"
+	emerge_host gettext-tiny
+	emerge_host ncurses
+	emerge_host m4
+	emerge_host bison
+	emerge_host flex
+	emerge_host bc
+	emerge_host kmod
+	emerge_host gperf
+	emerge_host python
+	emerge_host samurai
+	emerge_host meson
+	emerge_host bmake
+	emerge_host cmake
+	emerge_ht linux-headers
+	emerge_host musl-headers
+	emerge_host binutils
+	emerge_host elftoolchain
+	emerge_host llvm
+	emerge_target libmexecinfo
+	emerge_host compiler-rt
+	force="-f" \
+		emerge_target musl
+	emerge_host llvm-runtime
+	emerge_host slibtool
+	emerge_host autoconf
+	emerge_host automake
+	emerge_host pkgconf
+
+	case $BARCH in
+		x86_64|i386|powerpc64le|powerpc64|powerpc) emerge_host grub ;;
+	esac
+
+	case $BARCH in
+		x86_64|i386) emerge_host iucode-tool ;;
+	esac
+
+	msg "Cleaning up"
+	find "$TOOLS" -name "*.la" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name "*.pod" -print0 | xargs -0 rm -rf
+	find "$TOOLS" -name ".packlist" -print0 | xargs -0 rm -rf
+
+	msg "Adding fake make"
+	install -m755 "$STUFF"/fakemake "$TOOLS"/bin/make
+	sed -i "s|uncom|$ORIGMAKE|" "$TOOLS"/bin/make
+
+	stamp toolchain
+
+	msg "Toolchain has been built successfuly."
+}
+
+build_system() {
+	local linux
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	if ! check_stamp toolchain; then
+		die "Build toolchain first."
+	fi
+
+	msg "Building target system for '${BARCH}' architecture"
+	emerge_target base-files
+	emerge_target iana-etc
+	emerge_target man-pages
+	emerge_target musl-tools
+	emerge_target gettext-tiny
+	emerge_target tzdb
+	emerge_target m4
+	emerge_target bison
+	emerge_target flex
+	emerge_target bc
+	emerge_target libz
+	emerge_target bzip2
+	emerge_target xz
+	emerge_target lz4
+	emerge_target zstd
+	emerge_target lzo
+	emerge_target file
+	emerge_target ncurses
+	emerge_target readline
+	emerge_target libedit
+	emerge_target gmp
+	emerge_target attr
+	emerge_target acl
+	emerge_target libressl
+	emerge_target nettle
+	emerge_target ca-certificates
+	emerge_target expat
+	emerge_target gdbm
+	emerge_target db53
+	emerge_target sqlite
+	emerge_target libffi
+	emerge_target python
+	emerge_target python-setuptools
+	emerge_target perl
+	emerge_target libxml2
+	emerge_target libarchive
+	emerge_target libssh2
+	emerge_target nghttp2
+	emerge_target c-ares
+	emerge_target libunistring
+	emerge_target libidn2
+	emerge_target brotli
+	emerge_target krb5
+	emerge_target curl
+	emerge_target make
+	emerge_target bmake
+	emerge_target samurai
+	emerge_target meson
+	emerge_target jsoncpp
+	emerge_target rhash
+	emerge_target libuv
+	emerge_target cmake
+	emerge_target binutils
+	emerge_target elftoolchain
+	emerge_target libuargp
+	emerge_target libelf
+	if ! check_stamp llvm; then
+		force="-f" \
+			emerge_target llvm
+		stamp llvm
+	else
+		emerge_target llvm
+	fi
+	emerge_target ccache
+	emerge_target pkgconf
+	emerge_target cracklib
+	emerge_target libtirpc
+	emerge_target libcap-ng
+	emerge_target audit
+	emerge_target pam
+	emerge_target libcap
+	emerge_target libpwquality
+	emerge_target shadow
+	emerge_target psmisc
+	emerge_target pcre
+	emerge_target grep
+	emerge_target mksh
+	emerge_target bash
+	emerge_target slibtool
+	emerge_target gperf
+	emerge_target autoconf
+	emerge_target automake
+	emerge_target kmod
+	emerge_target toybox
+	emerge_target lobase
+	emerge_target check
+	emerge_target one-true-awk
+	emerge_target mandoc
+	emerge_target libmnl
+	emerge_target libnftnl
+	emerge_target libnfnetlink
+	emerge_target libnetfilter_conntrack
+	emerge_target libnl
+	emerge_target libpcap
+	emerge_target iptables
+	emerge_target iproute2
+	emerge_target kbd
+	emerge_target nano
+	emerge_target libgpg-error
+	emerge_target libgcrypt
+	emerge_target libseccomp
+	emerge_target hwids
+	emerge_target popt
+	emerge_target rsync
+	if ! check_stamp util-linux-pass1; then
+		emerge_target util-linux-runtime
+		rm -rf "$PACKAGES"/util-linux-runtime-*.czst
+		stamp util-linux-pass1
+	fi
+	if ! check_stamp systemd-pass1; then
+		emerge_target systemd-runtime
+		rm -rf "$PACKAGES"/systemd-runtime-*.czst
+		stamp systemd-pass1
+	fi
+	if ! check_stamp util-linux-final; then
+		pushd "$REPO/util-linux"
+			tsukuri bi -c "$BUILD/target.config" -w
+		popd
+
+		tsukuri rm -c "$BUILD/target.config" -r "$ROOTFS" util-linux-runtime
+		emerge_target util-linux
+
+		stamp util-linux-final
+	else
+		emerge_target util-linux
+	fi
+	emerge_target libcbor
+	emerge_target libfido2
+	emerge_target libaio
+	emerge_target lvm2
+	emerge_target json-c
+	emerge_target argon2
+	emerge_target cryptsetup
+	emerge_target libtasn1
+	emerge_target p11-kit
+	emerge_target gnutls
+	emerge_target libmicrohttpd
+	if ! check_stamp systemd-final; then
+		pushd "$REPO/systemd"
+			tsukuri bi -c "$BUILD/target.config" -w
+		popd
+
+		tsukuri rm -c "$BUILD/target.config" -r "$ROOTFS" systemd-runtime
+		emerge_target systemd
+
+		stamp systemd-final
+	else
+		emerge_target systemd
+	fi
+	emerge_target dbus-broker
+	emerge_target dbus
+	emerge_target net-tools
+	emerge_target iputils
+	emerge_target procps-ng
+	emerge_target e2fsprogs
+	emerge_target btrfs-progs
+	emerge_target dosfstools
+	emerge_target run-parts
+	emerge_target pciutils
+	emerge_target libusb
+	emerge_target usbutils
+	emerge_target plocate
+	emerge_target openssh
+	emerge_target git
+	emerge_target oniguruma
+	emerge_target jq
+	emerge_target tsukuri
+	emerge_target $linux
+
+	case $BARCH in
+		x86_64|i386)
+			emerge_target amd-microcode
+			emerge_target iucode-tool
+			emerge_target intel-microcode
+			;;
+	esac
+
+	stamp system
+
+	msg "System has been built successfuly."
+
+	# Building installer packages
+	if [ "$INSTALLER" == "1" ]; then
+		msg "Building installer packages"
+		emerge_target linux-firmware
+		emerge_target gptfdisk
+		emerge_target wget
+		emerge_target iwd
+		emerge_target wireless_tools
+		emerge_target wpa_supplicant
+		emerge_target libevent
+		emerge_target links
+
+		stamp installer-packages
+		msg "Installer packages have been built successfuly!"
+	elif [ "$TARGET_BOARD" == "1" ]; then
+		[ -n "$EXTRA_PACKAGES" ] && {
+			msg "Building board specific pacakges"
+			for i in $EXTRA_PACKAGES; do
+				emerge_target $i
+			done
+
+			stamp board-$BOARD
+			msg "Board specific packages have been built successfuly!"
+		}
+	fi
+}
+
+generate_initramfs() {
+	local initramfs="$BUILD/initramfs"
+	local firmwarefs="$BUILD/firmwarefs"
+	local rootfs="$BUILD/rootfs"
+	local i
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+	if ! check_stamp installer-packages; then
+		die "Build installer packages first."
+	fi
+
+	msg "Building initramfs for '${BARCH}' architecture"
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	rm -rf "$initramfs" "$firmwarefs"
+
+	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware"
+
+	for i in base-files iana-etc musl musl-tools tzdb \
+		libz bzip2 xz lz4 zstd lzo libuargp libelf file ncurses readline libedit \
+		gmp attr acl libressl nettle ca-certificates expat libffi \
+		libxml2 libarchive libssh2 nghttp2 c-ares libunistring libidn2 brotli \
+		krb5 curl cracklib libtirpc libcap-ng audit pam libcap libpwquality \
+		shadow psmisc pcre grep mksh bash kmod toybox lobase one-true-awk \
+		libmnl libnftnl libnfnetlink libnetfilter_conntrack libnl libpcap \
+		iptables iproute2 kbd nano libgpg-error libgcrypt libseccomp \
+		hwids util-linux libaio lvm2 popt json-c argon2 libcbor libfido2 cryptsetup \
+		libtasn1 p11-kit gnutls libmicrohttpd systemd dbus-broker dbus \
+		net-tools iputils procps-ng btrfs-progs e2fsprogs btrfs-progs dosfstools \
+		run-parts openssh oniguruma jq tsukuri $linux  gptfdisk wget \
+		iwd wireless_tools wpa_supplicant libevent links; do
+		emerge_target $i "$initramfs"
+	done
+
+	cp -a "$rootfs"/usr/lib/libc++.so* "$rootfs"/usr/lib/libunwind.so* \
+		"$initramfs"/usr/lib/
+
+	pushd "$initramfs"
+		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
+		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
+
+		cp -a "$rootfs"/usr/lib/firmware/amdgpu "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath10k "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath11k "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath6k "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/ath9k_htc "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/brcm "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/3com "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/i915 "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/mellanox "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/nvidia "$firmwarefs"/usr/lib/firmware/
+		cp -a "$rootfs"/usr/lib/firmware/radeon "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl_bt "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtl_nic "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtlwifi "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtw88 "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/rtw89 "$firmwarefs"/usr/lib/firmware/
+    		cp -a "$rootfs"/usr/lib/firmware/iwlwifi-*.ucode "$firmwarefs"/usr/lib/firmware/
+
+		for bins in lz4 lz4c lz4cat unlz4 pzstd unzstd zstd zstdcat zstdgrep zstdless zstdmt \
+				bunzip2 bzcat bzdiff bzgrep bzip2 bzip2recover bzmore lzcat lzcmp lzdiff \
+				lzegrep lzfgrep lzgrep lzless lzma lzmadec lzmainfo lzmore unlzma xzcat xzcmp \
+				xzdec xzdiff xzegrep xzfgrep xzgrep xzless xzmore bzless bzfgrep bzegrep \
+				bzcmp openssl nl* file; do
+			rm -rf usr/bin/$bins
+		done
+
+		sed -zi 's|\nConditionFirstBoot=yes||' usr/lib/systemd/system/update-ca-trust.service
+
+		echo 'Root password is `anon` if autologin did not work' >> usr/share/factory/etc/issue
+		echo '' >> usr/share/factory/etc/issue
+
+		mkdir -p etc/systemd/system/getty@tty1.service.d/
+		cat > etc/systemd/system/getty@tty1.service.d/override.conf <<-EOF
+			[Service]
+			ExecStart=
+			ExecStart=-/usr/bin/agetty --autologin root %I $TERM
+		EOF
+
+		systemctl -q --root "$initramfs" enable sshd.service
+
+		ln -sf /usr/share/zoneinfo/UTC etc/localtime
+
+		echo 'live' >> etc/hostname
+		echo 'root:x:0:0:Super User:/root:/bin/sh' >> etc/passwd
+		echo 'root:$6$KojQw0u76G/mcA/T$4XWEqkv5VJhl3On6tWtjBYKPDIatFdJ1CMy8eXLiiNYE2Jy5K1TN7m8NIqbsYTZAvZSJN7gcRR6brr1bTgCCQ1:18720::::::' >> etc/shadow
+		echo 'KEYMAP=us' >> etc/vconsole.conf
+
+		chmod 600 etc/shadow
+
+		ln -sf usr/lib/systemd/systemd init
+
+		find . -name "*.a" -print0 | xargs -0 rm -rf
+
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/seiba.zst
+	popd
+
+	pushd "$firmwarefs"
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/firmware.zst
+	popd
+
+	msg "Initramfs has been built successfuly!"
+}
+
+make_iso_x86() {
+	isodir="$BUILD/rootcd"
+	grub_config="$BUILD/efi.cfg"
+
+	msg "Generating installer image"
+	mkdir -p "$isodir"/boot/grub "$isodir"/boot/isolinux "$isodir"/efi/boot
+
+	grub_mod="all_video disk part_gpt part_msdos linux normal configfile search search_label efi_gop fat iso9660 cat echo ls test true help gzio multiboot2 efi_uga"
+
+	case $BARCH in
+		x86_64)
+			format="x86_64-efi"
+			efi="bootx64.efi"
+			;;
+		i386)
+			format="i386-efi"
+			efi="bootia32.efi"
+			;;
+	esac
+
+	cat > "$grub_config" <<- EOF
+		search --no-floppy --set=root --label "ataraxialinux"
+		set prefix=(\$root)/boot/grub
+	EOF
+
+	cat > "$isodir"/boot/grub/grub.cfg <<- EOF
+		set timeout=5
+		insmod font
+		insmod all_video
+		insmod gfxterm
+		insmod gfxmenu
+		insmod png
+
+		loadfont /boot/grub/fonts/unicode.pf2
+		terminal_output gfxterm
+		background_image /boot/background.png
+
+		menuentry "Ataraxia GNU/Linux" {
+			linux	/seiba/seiba quiet rw nomodeset
+			initrd	/seiba/seiba.zst
+		}
+
+		menuentry "Ataraxia GNU/Linux (firmware)" {
+			linux	/seiba/seiba quiet rw
+			initrd	/seiba/seiba.zst /seiba/firmware.zst
+		}
+	EOF
+
+	"$BUILD"/tools/bin/grub-mkimage \
+		--config="$grub_config" \
+		--prefix="/boot/grub" \
+		--output="$isodir"/efi/boot/$efi \
+		--format="$format" \
+		--compress="xz" \
+		$grub_mod
+
+	mformat -i "$isodir"/boot/grub/efi.img -C -f 1440 ::
+	mcopy -i "$isodir"/boot/grub/efi.img -s "$isodir"/efi ::
+
+	cp -a "$STUFF"/mklive/isolinux.bin "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/ldlinux.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/libcom32.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/vesamenu.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/libutil.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/chain.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/background.png "$isodir"/boot/background.png
+
+	cat > "$isodir"/boot/isolinux/isolinux.cfg <<- EOF
+		UI vesamenu.c32
+		PROMPT 0
+		TIMEOUT 100
+		ONTIMEOUT standard
+		MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+		MENU AUTOBOOT BIOS default device boot in # second{,s}...
+		MENU BACKGROUND /boot/background.png
+		MENU WIDTH 78
+		MENU MARGIN 1
+		MENU ROWS 4
+		MENU VSHIFT 2
+		MENU TIMEOUTROW 8
+		MENU TABMSGROW 2
+		MENU CMDLINEROW 11
+		MENU HELPMSGROW 16
+		MENU HELPMSGENDROW 29
+		MENU COLOR title        * #9000FF *
+		MENU COLOR border       * #00000000 #00000000 none
+		MENU COLOR sel          * #ffffffff #9000FF *
+
+		LABEL standard
+			MENU LABEL Ataraxia GNU/Linux
+			KERNEL /seiba/seiba quiet rw nomodeset
+			APPEND initrd=/seiba/seiba.zst
+
+		LABEL firmware
+			MENU LABEL Ataraxia GNU/Linux (firmware)
+			KERNEL /seiba/seiba quiet rw
+			APPEND initrd=/seiba/seiba.zst initrd=/seiba/firmware.zst
+	EOF
+
+	xorriso -as mkisofs \
+		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
+		-iso-level 2 \
+		-c boot/isolinux/boot.cat \
+		-b boot/isolinux/isolinux.bin \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		-eltorito-alt-boot \
+		-e boot/grub/efi.img \
+		-no-emul-boot \
+		-isohybrid-gpt-basdat \
+		-A 'ataraxialinux' -V 'ataraxialinux' \
+		-o "$BUILD"/ataraxialinux-$BARCH.iso \
+		"$isodir"/
+
+	msg "Installer has been generated successfuly!"
+}
+
+build_installer() {
+	generate_initramfs
+
+	case "$BARCH" in
+		x86_64|i386)
+			make_iso_x86
+			;;
+	esac
+}
+
+main() {
+	case "$1" in
+		check-updates) shift; mode="upgrade_packages" ;;
+		chroot) shift; mode="enter_chroot" ;;
+		generate-repo) shift; mode="generate_repo" ;;
+		target) shift; mode="build_target" ;;
+	esac
+
+
+	while getopts a:k:b:d:uctC opts; do
+		case $opts in
+			a) BARCH="$OPTARG" ;;
+			k) KERNEL="$OPTARG" ;;
+			b) BOARD="$OPTARG" ;;
+			d) DESKTOP="$OPTARG" ;;
+			u) AUTOBUMB="yes" ;;
+			c) AUTOCOMMIT="yes" ;;
+			t) export TORSOCKS="true" ;;
+			C) export CCACHE="1" ;;
+		esac
+	done
+	shift $((OPTIND -1))
+
+	msg 'Invoking `Tomoko` on '"${date}"''
+
+	if [ "$mode" == "build_target" ]; then
+		check_for_root
+
+		if [ -z "$1" ]; then
+			die "Target is not specified."
+		fi
+
+		check_for_arch "$BARCH"
+
+		msg "Exporting variables"
+		export_variables "$BARCH"
+		export_cflags "$BARCH"
+
+		case $BARCH in
+			x86_64|i386) export INSTALLER=1 ;;
+			*) export INSTALLER=0 ;;
+		esac
+
+		case $BARCH in
+			arm64)
+				export TARGET_BOARD=1
+				case $BOARD in
+					rpi3|rpi4)
+						export KERNEL="linux-rpi64"
+						export EXTRA_PACKAGES="raspberrypi-firmware iwd"
+						;;
+				esac
+				;;
+		esac
+
+		case "$1" in
+			iso) build_installer ;;
+			system) build_toolchain; build_system ;;
+			toolchain) build_toolchain ;;
+			*) die "Unknown target" ;;
+		esac
+	elif [ "$mode" == "upgrade_packages" ]; then
+		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
+		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
+
+		export CWD="$(pwd)"
+		export STUFF="$CWD/stuff"
+		export REPO="$CWD/packages"
+		export TCREPO="$CWD/toolchain"
+		export UTILS="$CWD/utils"
+
+		msg "Checking for updates"
+		for packages in $(ls "$REPO/" | sort); do
+			pushd "$REPO"
+				(
+					if [ -f "$REPO/$packages/.completeignore" ]; then
+						return 0
+					fi
+
+					if [ -f "$REPO/$packages/.ignore" ]; then
+						"$UTILS/check-updates" $packages
+					else
+						"$UTILS/check-updates" $cuopt $cuopttwo $packages
+					fi
+				)
+			popd
+		done
+	elif [ "$mode" == "generate_repo" ]; then
+		export CWD="$(pwd)"
+		export STUFF="$CWD/stuff"
+		export REPO="$CWD/packages"
+		export TCREPO="$CWD/toolchain"
+		export UTILS="$CWD/utils"
+
+		msg "Generating repository file"
+		[ -f "$REPO/repo" ] && rm "$REPO/repo"
+		echo "[" >> "$REPO/repo"
+		for packages in $(ls "$REPO/" | sort); do
+			pushd "$REPO"
+				(
+					if [ "$packages" = "repo" ]; then
+						true
+					else
+						genrepo $packages $REPO/repo
+					fi
+				)
+			popd
+		done
+		echo "]" >> "$REPO/repo"
+		index="$(expr $(cat $REPO/repo | wc -l) - 1)"
+		sed -i "${index}s/},/}/" "$REPO/repo"
+		git add "$REPO/repo"
+		git commit -m "repo" -S
+	else
+		die "Target is not specified."
+	fi
+}
+
+main "$@"
+
+exit 0
+
