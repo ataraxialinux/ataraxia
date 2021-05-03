@@ -302,9 +302,6 @@ build_system() {
 }
 
 generate_initramfs() {
-	local initramfs="$BUILD/initramfs"
-	local firmwarefs="$BUILD/firmwarefs"
-	local rootfs="$BUILD/rootfs"
 	local i
 
 	if ! check_stamp system; then
@@ -413,9 +410,6 @@ generate_initramfs() {
 }
 
 make_iso_x86() {
-	isodir="$BUILD/rootcd"
-	grub_config="$BUILD/efi.cfg"
-
 	msg "Generating installer image"
 	mkdir -p "$isodir"/boot/grub "$isodir"/boot/isolinux "$isodir"/efi/boot
 
@@ -439,15 +433,12 @@ make_iso_x86() {
 
 	cat > "$isodir"/boot/grub/grub.cfg <<- EOF
 		set timeout=5
+
 		insmod font
 		insmod all_video
 		insmod gfxterm
 		insmod gfxmenu
 		insmod png
-
-		loadfont /boot/grub/fonts/unicode.pf2
-		terminal_output gfxterm
-		background_image /boot/background.png
 
 		menuentry "Ataraxia GNU/Linux" {
 			linux	/seiba/seiba quiet rw nomodeset
@@ -531,6 +522,19 @@ make_iso_x86() {
 }
 
 build_installer() {
+	initramfs="$BUILD/initramfs"
+	firmwarefs="$BUILD/firmwarefs"
+	rootfs="$BUILD/rootfs"
+	isodir="$BUILD/rootcd"
+	grub_config="$BUILD/efi.cfg"
+
+	rm -rf \
+		"$initramfs" \
+		"$firmwarefs" \
+		"$isodir" \
+		"$grub_config" \
+		"$BUILD"/*.zst
+
 	generate_initramfs
 
 	case "$BARCH" in
