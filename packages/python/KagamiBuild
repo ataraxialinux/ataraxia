@@ -11,6 +11,7 @@ release=2
 source=("https://www.python.org/ftp/python/${version%rc*}/Python-${version}.tar.xz")
 
 build() {
+
 	filter-flags -flto -fsanitize=cfi -fsanitize-cfi-cross-dso
 
 	export ac_cv_have_long_long_format=yes
@@ -18,6 +19,11 @@ build() {
 	export ac_cv_file__dev_ptc=yes
 	export ac_cv_working_tzset=yes
 	export ac_cv_prog_HAS_HG=/usr/bin/false
+
+	case "$BARCH" in
+		riscv64) true ;;
+		*) BUILDFLAGS="$BUILDFLAGS --with-lto" ;;
+	esac
 
 	cd "$SRC"/Python-${version}
 	patch -Np1 -i "$STUFF"/python/0007-Abort-on-failed-module-build.patch
@@ -37,7 +43,6 @@ build() {
 		--prefix=/usr \
 		--with-computed-gotos \
 		--with-dbmliborder=gdbm:ndbm \
-		--with-lto \
 		--with-system-expat \
 		--with-system-ffi \
 		--without-ensurepip \
