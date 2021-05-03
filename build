@@ -464,287 +464,6 @@ install_os() {
 	esac
 }
 
-build_board_image() {
-	local imagefs img lodev bootpart rootpart bootuuid rootuuid fs
-
-	if ! check_stamp system; then
-		die "Build target system first."
-	fi
-
-	if [ "$TARGET_BOARD" == "1" ]; then
-		if ! check_stamp board-$BOARD; then
-			die "Build board specific packages first."
-		fi
-
-		msg "Building target system for '${BOARD}' board"
-
-		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
-	else
-		msg "Building target image for '${BARCH}' architecture"
-
-		if [ -n "$DESKTOP" ]; then
-			img="$BUILD/ataraxialinux-$DESKTOP-$BARCH.img"
-		else
-			img="$BUILD/ataraxialinux-$BARCH.img"
-		fi
-	fi
-
-	if [ -n "$KERNEL" ]; then
-		linux="$KERNEL"
-	else
-		linux="linux"
-	fi
-
-	imagefs="$BUILD/image"
-
-	rm -rf "$imagefs"
-	mkdir -p "$imagefs"
-
-	losetup -D
-	qemu-img create -f raw "$img" 5G
-
-	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
-		g
-		w
-	EOF
-
-	case $BOARD in
-		rpi4)
-			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
-				n
-				1
-				
-				+256M
-				t
-				11
-				w
-			EOF
-			;;
-		*)
-			sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
-				n
-				1
-				
-				+256M
-				t
-				1
-				w
-			EOF
-			;;
-	esac
-
-	sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' <<-EOF | fdisk "$img"
-		n
-		2
-		
-		
-		t
-		2
-		20
-		w
-	EOF
-
-	losetup -fP "$img"
-	lodev=$(losetup -a | grep "$img" | cut -d: -f1)
-
-	bootpart="${lodev}p1"
-	rootpart="${lodev}p2"
-
-	case $BOARD in
-		rpi4)
-			fs="vfat"
-			mkfs.vfat "$bootpart"
-			;;
-		*)
-			fs="ext4"
-			mkfs.ext4 "$bootpart"
-			;;
-	esac
-
-	mkfs.ext4 "$rootpart"
-
-	bootuuid="$(blkid -s UUID -o value $bootpart)"
-	rootuuid="$(blkid -s UUID -o value $rootpart)"
-
-	mount "$rootpart" "$imagefs"
-
-	mkdir -p "$imagefs/boot" "$imagefs/home"
-
-	mount "$bootpart" "$imagefs/boot"
-
-	install_os "$imagefs"
-
-	if [ "$TARGET_BOARD" == "1" ]; then
-		[ -n "$EXTRA_PACKAGES" ] && {
-			for i in $EXTRA_PACKAGES; do
-				emerge_target $i "$imagefs"
-			done
-		}
-	fi
-
-	if [ -n "$DESKTOP" ]; then
-		tsukuri em -c "$BUILD/target.config" -r "$imagefs" $(get_desktop_packages $DESKTOP)
-	fi
-
-	cat > "$imagefs/usr/lib/systemd/system/-.mount" <<- EOF
-		[Mount]
-		Where=/
-		What=/dev/disk/by-uuid/$rootuuid
-		Type=ext4
-
-		[Install]
-		WantedBy=local-fs.target
-	EOF
-	cat > "$imagefs/usr/lib/systemd/system/boot.mount" <<- EOF
-		[Mount]
-		Where=/boot
-		What=/dev/disk/by-uuid/$bootuuid
-		Type=$fs
-
-		[Install]
-		WantedBy=local-fs.target
-	EOF
-
-	systemctl -q --root "$imagefs" enable -- -.mount boot.mount
-
-	case $BOARD in
-		rpi4|rpi3)
-			mkdir -p "$imagefs"/usr/lib/repart.d
-			cat > "$imagefs/usr/lib/repart.d/50-root.conf" <<- EOF
-				[Partition]
-				Type=root
-			EOF
-			;;
-	esac
-
-	umount -lf "$bootpart" "$rootpart"
-
-	losetup -D
-
-	msg "Filesystem image has been successfuly built!"
-}
-
-build_secure_image() {
-	local imagefs img lodev bootpart usrpart veritypart rootpart verityarch usrarch rootarch
-
-	if ! check_stamp system; then
-		die "Build target system first."
-	fi
-
-	case "$BARCH" in
-		x86_64) rootarch="23"; usrarch="34"; verityarch="44" ;;
-		i386) rootarch="22"; usrarch="33"; verityarch="43" ;;
-		arm64) rootarch="25"; usrarch="36"; verityarch="46" ;;
-		arm) rootarch="24"; usrarch="35"; verityarch="45" ;;
-		*) die "Secure images are not supported on your architecture" ;;
-	esac
-
-	if [ "$TARGET_BOARD" == "1" ]; then
-		if ! check_stamp board-$BOARD; then
-			die "Build board specific packages first."
-		fi
-
-		msg "Building target system for '${BOARD}' board"
-
-		img="$BUILD/ataraxialinux-$BARCH-$BOARD.img"
-	else
-		msg "Building target image for '${BARCH}' architecture"
-
-		if [ -n "$DESKTOP" ]; then
-			img="$BUILD/ataraxialinux-$DESKTOP-$BARCH.img"
-		else
-			img="$BUILD/ataraxialinux-$BARCH.img"
-		fi
-	fi
-
-	if [ -n "$KERNEL" ]; then
-		linux="$KERNEL"
-	else
-		linux="linux"
-	fi
-
-	imagefs="$BUILD/image"
-
-	rm -rf "$imagefs"
-	mkdir -p "$imagefs"
-
-	losetup -D
-	qemu-img create -f raw "$img" 8G
-
-	fdisk "$img" <<-EOF
-		g
-		n
-		1
-		
-		+256M
-		t
-		1
-		n
-		2
-		
-		+5G
-		t
-		2
-		$usrarch
-		n
-		3
-		
-		+192M
-		t
-		3
-		$verityarch
-		n
-		4
-		
-		
-		t
-		4
-		$rootarch
-		w
-	EOF
-
-	losetup -fP "$img"
-	lodev=$(losetup -a | grep "$img" | cut -d: -f1)
-
-	bootpart="${lodev}p1"
-	usrpart="${lodev}p2"
-	veritypart="${lodev}p3"
-	rootpart="${lodev}p4"
-
-	mkfs.ext4 "$usrpart"
-	mkfs.vfat "$bootpart"
-	mkfs.ext4 "$rootpart"
-
-	mount "$rootpart" "$imagefs"
-
-	mkdir -p "$imagefs/boot" "$imagefs/home" "$imagefs/usr"
-
-	mount "$usrpart" "$imagefs/usr"
-	mount "$bootpart" "$imagefs/boot"
-
-	install_os "$imagefs"
-
-	if [ "$TARGET_BOARD" == "1" ]; then
-		[ -n "$EXTRA_PACKAGES" ] && {
-			for i in $EXTRA_PACKAGES; do
-				emerge_target $i "$imagefs"
-			done
-		}
-	fi
-
-	if [ -n "$DESKTOP" ]; then
-		tsukuri em -c "$BUILD/target.config" -r "$imagefs" $(get_desktop_packages $DESKTOP)
-	fi
-
-	umount -lf "$usrpart" "$bootpart" "$rootpart"
-
-	veritysetup format "$usrpart" "$veritypart"
-
-	losetup -D
-
-	msg "Filesystem image has been successfuly built!"
-}
-
 build_stage() {
 	local output_name
 
@@ -782,36 +501,7 @@ build_stage() {
 	msg "Stage archive has been built successfuly!"
 }
 
-build_docker() {
-	if ! check_stamp system; then
-		die "Build target system first."
-	fi
-
-	msg "Building target docker docker for '${BARCH}' architecture"
-
-	local dockerfs="$BUILD/docker"
-
-	rm -rf "$dockerfs"
-	mkdir -p "$dockerfs"
-
-	install_os "$dockerfs"
-
-	systemd-nspawn -D $PWD /usr/bin/systemd-sysusers
-	systemd-nspawn -D $PWD /usr/bin/systemd-tmpfiles --create --boot
-
-	install -m644 "$STUFF"/container-tools/build-packages "$dockerfs"/usr/bin/build-packages
-
-	pushd "$dockerfs"
-		bsdtar -czvf "$BUILD/ataraxialinux-docker-$BARCH.tar.gz" .
-	popd
-
-	msg "docker archive has been built successfuly!"
-}
-
-build_initramfs() {
-	local initramfs="$BUILD/initramfs"
-	local firmwarefs="$BUILD/firmwarefs"
-	local rootfs="$BUILD/rootfs"
+generate_initramfs() {
 	local i
 
 	if ! check_stamp system; then
@@ -831,7 +521,7 @@ build_initramfs() {
 
 	rm -rf "$initramfs" "$firmwarefs"
 
-	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware"
+	mkdir -p "$initramfs/usr/lib/tsukuri/db" "$firmwarefs/usr/lib/firmware" "$isodir/seiba"
 
 	for i in base-files iana-etc musl musl-tools tzdb \
 		libz bzip2 xz lz4 zstd lzo libuargp libelf file ncurses readline libedit \
@@ -849,11 +539,12 @@ build_initramfs() {
 		emerge_target $i "$initramfs"
 	done
 
-	cp -a "$rootfs"/usr/lib/libc++.so* "$rootfs"/usr/lib/libunwind.so* \
+	cp -a "$rootfs"/usr/lib/libc++.so* "$rootfs"/usr/lib/libc++abi.so* \
+		"$rootfs"/usr/lib/libunwind.so* \
 		"$initramfs"/usr/lib/
 
 	pushd "$initramfs"
-		rm -rf boot usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
+		rm -rf usr/lib/pkgconfig usr/include usr/share/cracklib usr/share/dict usr/share/misc
 		rm -rf usr/share/man usr/share/zsh usr/share/nano etc/nanorc usr/share/aclocal usr/share/bash-completion
 
 		cp -a "$rootfs"/usr/lib/firmware/amdgpu "$firmwarefs"/usr/lib/firmware/
@@ -909,105 +600,155 @@ build_initramfs() {
 
 		find . -name "*.a" -print0 | xargs -0 rm -rf
 
-		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/seiba.zst
+		mv boot/vmlinuz "$isodir"/seiba/seiba
+		rm -rf boot
+
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$isodir"/seiba/seiba.zst
 	popd
 
 	pushd "$firmwarefs"
-		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$BUILD"/firmware.zst
+		find . | cpio -H newc -o | zstd -T$(nproc) -19 > "$isodir"/seiba/firmware.zst
 	popd
 
 	msg "Initramfs has been built successfuly!"
 }
 
-build_iso_image() {
-	local initrd="/seiba/seiba.zst"
-	local isodir="$BUILD/rootcd"
-	local rootfs="$BUILD/rootfs"
-	local grub_mods="all_video disk part_gpt part_msdos linux normal configfile search search_label fat iso9660 cat echo ls test true help gzio gfxmenu gfxterm"
+make_iso_x86() {
+	msg "Generating installer image"
+	mkdir -p "$isodir"/boot/grub "$isodir"/boot/isolinux "$isodir"/efi/boot
 
-	if ! check_stamp system; then
-		die "Build target system first."
-	fi
+	grub_mod="all_video disk part_gpt part_msdos linux normal configfile search search_label efi_gop fat iso9660 cat echo ls test true help gzio multiboot2 efi_uga"
 
-	msg "Building installer image for '${BARCH}' architecture"
-
-	rm -rf "$isodir"
-	mkdir -p "$isodir"/boot/grub "$isodir"/seiba
-
-	case "$BARCH" in
-		x86_64|i386)
-			grub_mods="$grub_mods multiboot2"
-			initrd="/seiba/amd-microcode.img /seiba/intel-microcode.img $initrd"
-
-			cp "$rootfs"/boot/amd-microcode.img "$isodir"/seiba/amd-microcode.img
-			cp "$rootfs"/boot/intel-microcode.img "$isodir"/seiba/intel-microcode.img
+	case $BARCH in
+		x86_64)
+			format="x86_64-efi"
+			efi="bootx64.efi"
+			;;
+		i386)
+			format="i386-efi"
+			efi="bootia32.efi"
 			;;
 	esac
 
-	cp "$rootfs"/boot/vmlinuz "$isodir"/seiba/seiba
-	mv "$BUILD"/seiba.zst "$isodir"/seiba/seiba.zst
-	mv "$BUILD"/firmware.zst "$isodir"/seiba/firmware.zst
-
-	cp "$STUFF"/mklive/background.png "$isodir"/boot/grub/ataraxia.png
+	cat > "$grub_config" <<- EOF
+		search --no-floppy --set=root --label "ataraxialinux"
+		set prefix=(\$root)/boot/grub
+	EOF
 
 	cat > "$isodir"/boot/grub/grub.cfg <<- EOF
-		set timeout=5
-
-		insmod font
-		insmod all_video
-		insmod gfxterm
-		insmod gfxmenu
-		insmod png
-
-		loadfont /boot/grub/fonts/unicode.pf2
-		terminal_output gfxterm
-		background_image /boot/grub/ataraxia.png
+		set timeout=10
 
 		menuentry "Ataraxia GNU/Linux" {
-			linux	/seiba/seiba rw quiet nomodeset
-			initrd	$initrd
+			linux	/seiba/seiba quiet rw nomodeset
+			initrd	/seiba/seiba.zst
 		}
 
 		menuentry "Ataraxia GNU/Linux (firmware)" {
-			linux	/seiba/seiba rw quiet
-			initrd	$initrd /seiba/firmware.zst
-		}
-
-		menuentry "Ataraxia GNU/Linux (serial console)" {
-			linux	/seiba/seiba rw quiet nomodeset console=ttyS0 console=ttyUSB0
-			initrd	$initrd
-		}
-
-		menuentry "Ataraxia GNU/Linux (firmware) (serial console)" {
-			linux	/seiba/seiba rw quiet console=ttyS0 console=ttyUSB0
-			initrd	$initrd /seiba/firmware.zst
+			linux	/seiba/seiba quiet rw
+			initrd	/seiba/seiba.zst /seiba/firmware.zst
 		}
 	EOF
 
-	"$BUILD"/tools/bin/grub-mkrescue \
-		--modules "$grub_mods" \
-		--output "$BUILD"/ataraxialinux-$BARCH.iso \
+	"$BUILD"/tools/bin/grub-mkimage \
+		--config="$grub_config" \
+		--prefix="/boot/grub" \
+		--output="$isodir"/efi/boot/$efi \
+		--format="$format" \
+		--compress="xz" \
+		$grub_mod
+
+	mformat -i "$isodir"/boot/grub/efi.img -C -f 1440 ::
+	mcopy -i "$isodir"/boot/grub/efi.img -s "$isodir"/efi ::
+
+	cp -a "$STUFF"/mklive/isolinux.bin "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/ldlinux.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/libcom32.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/vesamenu.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/libutil.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/chain.c32 "$isodir"/boot/isolinux
+	cp -a "$STUFF"/mklive/background.png "$isodir"/boot/background.png
+
+	cat > "$isodir"/boot/isolinux/isolinux.cfg <<- EOF
+		UI vesamenu.c32
+		PROMPT 0
+		TIMEOUT 100
+		ONTIMEOUT standard
+		MENU TABMSG Press ENTER to boot or TAB to edit a menu entry
+		MENU AUTOBOOT BIOS default device boot in # second{,s}...
+		MENU BACKGROUND /boot/background.png
+		MENU WIDTH 78
+		MENU MARGIN 1
+		MENU ROWS 4
+		MENU VSHIFT 2
+		MENU TIMEOUTROW 8
+		MENU TABMSGROW 2
+		MENU CMDLINEROW 11
+		MENU HELPMSGROW 16
+		MENU HELPMSGENDROW 29
+		MENU COLOR title        * #9000FF *
+		MENU COLOR border       * #00000000 #00000000 none
+		MENU COLOR sel          * #ffffffff #9000FF *
+
+		LABEL standard
+			MENU LABEL Ataraxia GNU/Linux
+			KERNEL /seiba/seiba quiet rw nomodeset
+			APPEND initrd=/seiba/seiba.zst
+
+		LABEL firmware
+			MENU LABEL Ataraxia GNU/Linux (firmware)
+			KERNEL /seiba/seiba quiet rw
+			APPEND initrd=/seiba/seiba.zst initrd=/seiba/firmware.zst
+	EOF
+
+	xorriso -as mkisofs \
+		-isohybrid-mbr "$STUFF"/mklive/isohdpfx.bin \
+		-iso-level 2 \
+		-c boot/isolinux/boot.cat \
+		-b boot/isolinux/isolinux.bin \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		-eltorito-alt-boot \
+		-e boot/grub/efi.img \
+		-no-emul-boot \
+		-isohybrid-gpt-basdat \
 		-A 'ataraxialinux' -V 'ataraxialinux' \
+		-o "$BUILD"/ataraxialinux-$BARCH.iso \
 		"$isodir"/
 
-	msg "Installer image has been built successfuly!"
+	msg "Installer has been generated successfuly!"
 }
 
-build_live_installer() {
-	build_initramfs
-	build_iso_image
+build_installer() {
+	initramfs="$BUILD/initramfs"
+	firmwarefs="$BUILD/firmwarefs"
+	rootfs="$BUILD/rootfs"
+	isodir="$BUILD/rootcd"
+	grub_config="$BUILD/efi.cfg"
+
+	rm -rf \
+		"$initramfs" \
+		"$firmwarefs" \
+		"$isodir" \
+		"$grub_config"
+
+	generate_initramfs
+
+	case "$BARCH" in
+		x86_64|i386)
+			make_iso_x86
+			;;
+	esac
 }
 
 main() {
-	local mode opts
-	local date="$(date)"
-
 	case "$1" in
 		check-updates) shift; mode="upgrade_packages" ;;
 		chroot) shift; mode="enter_chroot" ;;
 		generate-repo) shift; mode="generate_repo" ;;
 		target) shift; mode="build_target" ;;
 	esac
+
 
 	while getopts a:k:b:d:uctC opts; do
 		case $opts in
@@ -1039,12 +780,8 @@ main() {
 		export_cflags "$BARCH"
 
 		case $BARCH in
-			x86_64|i386|powerpc64le|powerpc64|powerpc)
-				export INSTALLER=1
-				;;
-			*)
-				export INSTALLER=0
-				;;
+			x86_64|i386) export INSTALLER=1 ;;
+			*) export INSTALLER=0 ;;
 		esac
 
 		case $BARCH in
@@ -1060,12 +797,8 @@ main() {
 		esac
 
 		case "$1" in
-			docker) build_docker ;;
-			image) build_board_image ;;
-			image-secure) build_secure_image ;;
-			installer) build_live_installer ;;
-			live) build_live_image ;;
-			stage) build_stage ;;
+			installer) build_installer ;;
+			stage) build_installer ;;
 			system) build_toolchain; build_system ;;
 			toolchain) build_toolchain ;;
 			*) die "Unknown target" ;;
@@ -1093,31 +826,22 @@ main() {
 		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
 		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
 
-		check_for_arch "x86_64"
-		NOSECHECK=1 export_variables "x86_64"
+		export CWD="$(pwd)"
+		export STUFF="$CWD/stuff"
+		export REPO="$CWD/packages"
+		export TCREPO="$CWD/toolchain"
+		export UTILS="$CWD/utils"
 
 		msg "Checking for updates"
 		for packages in $(ls "$REPO/" | sort); do
 			pushd "$REPO"
 				(
-					if [ "$packages" = "util-linux-runtime" ]; then
-						true
-					elif [ "$packages" = "systemd-runtime" ]; then
-						true
-					elif [ "$packages" = "linux" ]; then
-						"$UTILS/check-updates" linux
-					elif [ "$packages" = "linux-headers" ]; then
-						"$UTILS/check-updates" linux-headers
-#					elif [ "$packages" = "libclc" ]; then
-#						"$UTILS/check-updates" libclc
-#					elif [ "$packages" = "lldb" ]; then
-#						"$UTILS/check-updates" lldb
-#					elif [ "$packages" = "llvm" ]; then
-#						"$UTILS/check-updates" llvm
-#					elif [ "$packages" = "systemd" ]; then
-#						"$UTILS/check-updates" systemd
-#					elif [ "$packages" = "polly" ]; then
-#						"$UTILS/check-updates" polly
+					if [ -f "$REPO/$packages/.completeignore" ]; then
+						return 0
+					fi
+
+					if [ -f "$REPO/$packages/.ignore" ]; then
+						"$UTILS/check-updates" $packages
 					else
 						"$UTILS/check-updates" $cuopt $cuopttwo $packages
 					fi
@@ -1125,8 +849,11 @@ main() {
 			popd
 		done
 	elif [ "$mode" == "generate_repo" ]; then
-		check_for_arch "x86_64"
-		NOSECHECK=1 export_variables "x86_64"
+		export CWD="$(pwd)"
+		export STUFF="$CWD/stuff"
+		export REPO="$CWD/packages"
+		export TCREPO="$CWD/toolchain"
+		export UTILS="$CWD/utils"
 
 		msg "Generating repository file"
 		[ -f "$REPO/repo" ] && rm "$REPO/repo"
@@ -1147,9 +874,12 @@ main() {
 		sed -i "${index}s/},/}/" "$REPO/repo"
 		git add "$REPO/repo"
 		git commit -m "repo" -S
+	else
+		die "Target is not specified."
 	fi
 }
 
 main "$@"
 
 exit 0
+
