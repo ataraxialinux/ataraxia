@@ -301,6 +301,206 @@ build_system() {
 	fi
 }
 
+install_os() {
+	local linux
+	local targetfs="$1"
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	if [ -z "$targetfs" ]; then
+		die "Path is not specified."
+	fi
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	mkdir -p "$targetfs/usr/lib/tsukuri/db"
+
+	emerge_target base-files "$targetfs"
+	emerge_target iana-etc "$targetfs"
+	emerge_target man-pages "$targetfs"
+	emerge_target linux-headers "$targetfs"
+	emerge_target musl "$targetfs"
+	emerge_target libmexecinfo "$targetfs"
+	emerge_target musl-tools "$targetfs"
+	emerge_target gettext-tiny "$targetfs"
+	emerge_target tzdb "$targetfs"
+	emerge_target m4 "$targetfs"
+	emerge_target bison "$targetfs"
+	emerge_target flex "$targetfs"
+	emerge_target bc "$targetfs"
+	emerge_target libz "$targetfs"
+	emerge_target bzip2 "$targetfs"
+	emerge_target xz "$targetfs"
+	emerge_target lz4 "$targetfs"
+	emerge_target zstd "$targetfs"
+	emerge_target lzo "$targetfs"
+	emerge_target file "$targetfs"
+	emerge_target ncurses "$targetfs"
+	emerge_target readline "$targetfs"
+	emerge_target libedit "$targetfs"
+	emerge_target gmp "$targetfs"
+	emerge_target attr "$targetfs"
+	emerge_target acl "$targetfs"
+	emerge_target libressl "$targetfs"
+	emerge_target nettle "$targetfs"
+	emerge_target ca-certificates "$targetfs"
+	emerge_target expat "$targetfs"
+	emerge_target gdbm "$targetfs"
+	emerge_target db53 "$targetfs"
+	emerge_target sqlite "$targetfs"
+	emerge_target libffi "$targetfs"
+	emerge_target python "$targetfs"
+	emerge_target python-setuptools "$targetfs"
+	emerge_target perl "$targetfs"
+	emerge_target libxml2 "$targetfs"
+	emerge_target libarchive "$targetfs"
+	emerge_target libssh2 "$targetfs"
+	emerge_target nghttp2 "$targetfs"
+	emerge_target c-ares "$targetfs"
+	emerge_target libunistring "$targetfs"
+	emerge_target libidn2 "$targetfs"
+	emerge_target brotli "$targetfs"
+	emerge_target krb5 "$targetfs"
+	emerge_target curl "$targetfs"
+	emerge_target make "$targetfs"
+	emerge_target bmake "$targetfs"
+	emerge_target samurai "$targetfs"
+	emerge_target meson "$targetfs"
+	emerge_target jsoncpp "$targetfs"
+	emerge_target rhash "$targetfs"
+	emerge_target libuv "$targetfs"
+	emerge_target cmake "$targetfs"
+	emerge_target binutils "$targetfs"
+	emerge_target elftoolchain "$targetfs"
+	emerge_target libuargp "$targetfs"
+	emerge_target libelf "$targetfs"
+	emerge_target llvm "$targetfs"
+	emerge_target ccache "$targetfs"
+	emerge_target pkgconf "$targetfs"
+	emerge_target cracklib "$targetfs"
+	emerge_target libtirpc "$targetfs"
+	emerge_target libcap-ng "$targetfs"
+	emerge_target audit "$targetfs"
+	emerge_target pam "$targetfs"
+	emerge_target libcap "$targetfs"
+	emerge_target libpwquality "$targetfs"
+	emerge_target shadow "$targetfs"
+	emerge_target psmisc "$targetfs"
+	emerge_target pcre "$targetfs"
+	emerge_target grep "$targetfs"
+	emerge_target mksh "$targetfs"
+	emerge_target bash "$targetfs"
+	emerge_target slibtool "$targetfs"
+	emerge_target gperf "$targetfs"
+	emerge_target autoconf "$targetfs"
+	emerge_target automake "$targetfs"
+	emerge_target kmod "$targetfs"
+	emerge_target toybox "$targetfs"
+	emerge_target lobase "$targetfs"
+	emerge_target check "$targetfs"
+	emerge_target one-true-awk "$targetfs"
+	emerge_target mandoc "$targetfs"
+	emerge_target libmnl "$targetfs"
+	emerge_target libnftnl "$targetfs"
+	emerge_target libnfnetlink "$targetfs"
+	emerge_target libnetfilter_conntrack "$targetfs"
+	emerge_target libnl "$targetfs"
+	emerge_target libpcap "$targetfs"
+	emerge_target iptables "$targetfs"
+	emerge_target iproute2 "$targetfs"
+	emerge_target kbd "$targetfs"
+	emerge_target nano "$targetfs"
+	emerge_target libgpg-error "$targetfs"
+	emerge_target libgcrypt "$targetfs"
+	emerge_target libseccomp "$targetfs"
+	emerge_target hwids "$targetfs"
+	emerge_target popt "$targetfs"
+	emerge_target rsync "$targetfs"
+	emerge_target util-linux "$targetfs"
+	emerge_target libaio "$targetfs"
+	emerge_target lvm2 "$targetfs"
+	emerge_target json-c "$targetfs"
+	emerge_target argon2 "$targetfs"
+	emerge_target libcbor "$targetfs"
+	emerge_target libfido2 "$targetfs"
+	emerge_target cryptsetup "$targetfs"
+	emerge_target libtasn1 "$targetfs"
+	emerge_target p11-kit "$targetfs"
+	emerge_target gnutls "$targetfs"
+	emerge_target libmicrohttpd "$targetfs"
+	emerge_target systemd "$targetfs"
+	emerge_target dbus-broker "$targetfs"
+	emerge_target dbus "$targetfs"
+	emerge_target net-tools "$targetfs"
+	emerge_target iputils "$targetfs"
+	emerge_target procps-ng "$targetfs"
+	emerge_target e2fsprogs "$targetfs"
+	emerge_target btrfs-progs "$targetfs"
+	emerge_target dosfstools "$targetfs"
+	emerge_target run-parts "$targetfs"
+	emerge_target pciutils "$targetfs"
+	emerge_target libusb "$targetfs"
+	emerge_target usbutils "$targetfs"
+	emerge_target plocate "$targetfs"
+	emerge_target openssh "$targetfs"
+	emerge_target git "$targetfs"
+	emerge_target oniguruma "$targetfs"
+	emerge_target jq "$targetfs"
+	emerge_target tsukuri "$targetfs"
+	emerge_target $linux "$targetfs"
+
+	case $BARCH in
+		x86_64|i386)
+			emerge_target amd-microcode "$targetfs"
+			emerge_target iucode-tool "$targetfs"
+			emerge_target intel-microcode "$targetfs"
+			;;
+	esac
+}
+
+build_stage() {
+	local output_name
+
+	if ! check_stamp system; then
+		die "Build target system first."
+	fi
+
+	msg "Building target stage for '${BARCH}' architecture"
+
+	if [ -n "$KERNEL" ]; then
+		linux="$KERNEL"
+	else
+		linux="linux"
+	fi
+
+	local stagefs="$BUILD/stage"
+
+	rm -rf "$stagefs"
+	mkdir -p "$stagefs"
+
+	install_os "$stagefs"
+
+	if [ -n "$DESKTOP" ]; then
+		output_name="ataraxialinux-$DESKTOP-$BARCH.tar.zst"
+
+		tsukuri em -c "$BUILD/target.config" -r "$stagefs" $(get_desktop_packages $DESKTOP)
+	else
+		output_name="ataraxialinux-$BARCH.tar.zst"
+	fi
+
+	pushd "$stagefs"
+		bsdtar -c --zstd -v -f "$BUILD/$output_name" --options zstd:compression-level=19 .
+	popd
+
+	msg "Stage archive has been built successfuly!"
+}
+
 generate_initramfs() {
 	local i
 
@@ -597,11 +797,31 @@ main() {
 		esac
 
 		case "$1" in
-			iso) build_installer ;;
+			installer) build_installer ;;
+			stage) build_installer ;;
 			system) build_toolchain; build_system ;;
 			toolchain) build_toolchain ;;
 			*) die "Unknown target" ;;
 		esac
+	elif [ "$mode" == "enter_chroot" ]; then
+		check_for_root
+		check_for_arch "$BARCH"
+
+		msg "Exporting variables"
+		export_variables "$BARCH"
+
+		msg "Preparing system to boot"
+		sed -zi 's|\nC! /etc/securetty||' "$ROOTFS"/usr/lib/tmpfiles.d/00-default.conf
+
+		mkdir -p "$ROOTFS"/usr/ports/packages "$ROOTFS"/usr/ports/stuff
+
+		msg "Booting using systemd-nspawn"
+		systemd-nspawn \
+			-b -D "$ROOTFS" \
+			--bind="$REPO":/usr/ports/packages \
+			--bind="$STUFF":/usr/ports/stuff \
+			--bind="$PACKAGES":/var/cache/packages \
+			--bind="$SOURCES":/var/cache/sources
 	elif [ "$mode" == "upgrade_packages" ]; then
 		[ "$AUTOBUMB" = "yes" ] && cuopt="-a"
 		[ "$AUTOCOMMIT" = "yes" ] && cuopttwo="-c"
