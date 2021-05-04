@@ -16,7 +16,7 @@ source=("https://cdn.kernel.org/pub/linux/kernel/v5.x/$name-$version.tar.xz"
 	"https://github.com/anthraxx/linux-hardened/releases/download/$hardenedver/linux-hardened-$hardenedver.patch")
 
 build() {
-	local KARCH IMAGELOC XCC XLD
+	local KARCH IMAGELOC
 
 	case $BARCH in
 		x86_64)
@@ -52,11 +52,6 @@ build() {
 			exit 1
 	esac
 
-	case "$BARCH" in
-		riscv64) XCC="${CROSS_COMPILE}clang --ld-path=$(command -v ${CROSS_COMPILE}ld.bfd)"; XLD="${CROSS_COMPILE}ld.bfd" ;;
-		*) XCC="${CROSS_COMPILE}clang"; XLD="${CROSS_COMPILE}ld" ;;
-	esac
-
 	cd "$SRC"/$name-$version
 	patch -Np1 -i "$SRC"/linux-hardened-$hardenedver.patch
 	patch -Np1 -i "$STUFF"/linux/324aac90c651c1bac699a4918eb9327d6afa2776.patch
@@ -68,7 +63,11 @@ build() {
 	sed -zi 's|\nEXTRAVERSION = -hardened1||' Makefile
 
 	unset LDFLAGS HOSTCFLAGS HOSTCXXFLAGS HOSTLDFLAGS
-	make CC="$XCC" LD="$XLD" mrproper
+	if [ "$USEBOOTSTRAP" = "yes" ]; then
+		make CC=${CROSS_COMPILE}clang mrproper
+	else
+		make mrproper
+	fi
 
 	cp "$STUFF"/linux/x509.genkey certs/
 
@@ -83,15 +82,15 @@ build() {
 	"$STUFF"/configure-kernel -a $BARCH
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		yes '' | make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC="$XCC" LD="$XLD"
+		yes '' | make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang
 	else
-		yes '' | make ARCH=$KARCH CC="$XCC" LD="$XLD"
+		yes '' | make ARCH=$KARCH
 	fi
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
-		make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC="$XCC" LD="$XLD" INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	else
-		make ARCH=$KARCH CC="$XCC" LD="$XLD" INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
+		make ARCH=$KARCH INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH="$PKG"/usr modules_install
 	fi
 
 	depmod -a -b "$PKG"/usr ${kver}-ataraxia
@@ -99,9 +98,9 @@ build() {
 	case $BARCH in
 		arm64|arm)
 			if [ "$USEBOOTSTRAP" = "yes" ]; then
-				make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC="$XCC" LD="$XLD" INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$KARCH CROSS_COMPILE=${CROSS_COMPILE} CC=${CROSS_COMPILE}clang INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			else
-				make ARCH=$KARCH CC="$XCC" LD="$XLD" INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
+				make ARCH=$KARCH INSTALL_DTBS_PATH="$PKG"/boot/dtbs dtbs_install
 			fi
 			;;
 	esac
