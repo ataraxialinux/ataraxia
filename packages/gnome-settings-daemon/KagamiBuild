@@ -6,8 +6,13 @@
 
 name=gnome-settings-daemon
 version=40.0.1
+case $version in
+	*.*.*) _v=${version%.*}
+		_v=${_v%.*};;
+	*.*) _v=${version%.*};;
+esac
 release=1
-source=("https://download.gnome.org/sources/$name/${version%.*}/$name-$version.tar.xz")
+source=("https://download.gnome.org/sources/$name/${_v}/$name-$version.tar.xz")
 
 build() {
 	filter-flags -Os
