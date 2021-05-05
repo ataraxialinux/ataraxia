@@ -1,11 +1,11 @@
 # Description: A port of various original Plan 9 tools to Unix, based on plan9port.
 # URL:         http://tools.suckless.org/9base
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Section:     utils
+# Section:     base
 
 name=9base
 version=6
-release=5
+release=6
 backup=('etc/rcmain')
 source=("http://dl.suckless.org/tools/$name-$version.tar.gz")
 
@@ -16,7 +16,7 @@ build() {
 	patch -Np1 -i "$STUFF"/9base/0001-fix.patch
 
 	sed -i "s/@strip/@${CROSS_COMPILE}strip/g" std.mk sam/Makefile
-	sed -i 's|PREFIX      = /usr/local/plan9|PREFIX      = /|' config.mk
+	sed -i 's|PREFIX      = /usr/local/plan9|PREFIX      = /usr|' config.mk
 
 	if [ "$USEBOOTSTRAP" = "yes" ]; then
 		make CC="$CC"
@@ -24,10 +24,10 @@ build() {
 		make
 	fi
 
-	for i in ascii cleanname fortune freq mk pbd primes sam unutf rc; do
-		install -Dm755 $i/$i "$PKG"/usr/bin/$i
-		install -Dm644 $i/$i.1 "$PKG"/usr/share/man/man1/$i.1
-	done
+	make DESTDIR="$PKG" install
+
+	ln -sf troff "$PKG"/usr/bin/nroff
+	ln -sf troff.1 "$PKG"/usr/share/man/man1/nroff.1
 
 	install -Dm644 rc/rcmain "$PKG"/etc/rcmain
 }
