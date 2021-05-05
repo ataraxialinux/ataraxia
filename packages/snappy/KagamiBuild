@@ -1,19 +1,21 @@
 # Description: A fast compressor/decompressor library
 # URL:         https://google.github.io/snappy/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  cmake samurai libz lzo
+# Depends on:  git cmake samurai libz lzo
 # Section:     utils
 
 name=snappy
 version=1.1.9
 release=1
-source=("https://github.com/google/snappy/archive/$version.tar.gz::archive=$name-$version.tar.gz")
+source=("git://github.com/google/snappy.git::checkout=v$version")
 
 build() {
-	cd "$SRC"/$name-$version
+	cd "$SRC"/$name.git
+	git submodule update --init
+
 	mkdir -p build
 	cd build
-	cmake "$SRC"/$name-$version $CMAKEFLAGS \
+	cmake "$SRC"/$name.git $CMAKEFLAGS \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_INSTALL_LIBDIR=/usr/lib \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
