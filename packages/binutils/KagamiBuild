@@ -6,7 +6,7 @@
 
 name=binutils
 version=2.36.1
-release=5
+release=4
 source=("https://ftp.gnu.org/gnu/$name/$name-$version.tar.xz")
 
 build() {
@@ -40,8 +40,12 @@ build() {
 		--disable-nls \
 		--disable-multilib \
 		--disable-werror
-	make MAKEINFO="true" tooldir=/usr all-gas all-binutils
-	make MAKEINFO="true" tooldir=/usr DESTDIR="$PKG" install-gas
+	make MAKEINFO="true" tooldir=/usr all-ld all-gas all-binutils
+	make MAKEINFO="true" tooldir=/usr DESTDIR="$PKG" install-ld install-gas
 
 	install -Dm755 binutils/elfedit "$PKG"/usr/bin/elfedit
+
+	rm \
+		"$PKG"/usr/bin/ld \
+		"$PKG"/usr/share/man/man1/ld.1
 }
