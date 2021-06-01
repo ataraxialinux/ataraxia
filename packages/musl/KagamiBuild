@@ -10,7 +10,10 @@ options=('bootstrap')
 source=("http://www.musl-libc.org/releases/$name-$version.tar.gz")
 
 build() {
-	filter-flags -flto -fvisibility=default
+	filter-flags -flto -fvisibility=hidden -fsanitize=cfi -fsanitize-cfi-cross-dso -fsanitize=safe-stack -fsanitize=shadow-call-stack -fsanitize=scudo
+	filter-flags -D_FORTIFY_SOURCE=2
+	filter-flags -D_FORTIFY_SOURCE=3
+	append-cflags -U_FORTIFY_SOURCE
 
 	cd "$SRC"/$name-$version
 	./configure $TOOLFLAGS \

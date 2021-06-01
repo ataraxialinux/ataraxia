@@ -20,38 +20,44 @@ build() {
 	export LDFLAGS="$TARGET_LDFLAGS"
 
 	case "$BARCH" in
-		amd64) LARCH="x86_64"; LTARGET="X86" ;;
-		x86) LARCH="i686"; LTARGET="X86" ;;
+		x86_64) LARCH="x86_64"; LTARGET="X86" ;;
+		i386) LARCH="i686"; LTARGET="X86" ;;
 		arm64) LARCH="aarch64"; LTARGET="AArch64" ;;
-		armv7l) LARCH="armv7"; LTARGET="ARM" ;;
-		mips64) LARCH="mips64"; LTARGET="Mips" ;;
-		mips64el) LARCH="mips64el"; LTARGET="Mips" ;;
-		mips) LARCH="mips"; LTARGET="Mips" ;;
-		mipsel) LARCH="mipsel"; LTARGET="Mips" ;;
-		ppc64le) LARCH="powerpc64le"; LTARGET="PowerPC" ;;
-		ppc64) LARCH="powerpc64"; LTARGET="PowerPC" ;;
+		arm) LARCH="armv7"; LTARGET="ARM" ;;
+		powerpc64le) LARCH="powerpc64le"; LTARGET="PowerPC" ;;
+		powerpc64) LARCH="powerpc64"; LTARGET="PowerPC" ;;
+		powerpc) LARCH="powerpc"; LTARGET="PowerPC" ;;
+		powerpcspe) LARCH="powerpcspe"; LTARGET="PowerPC" ;;
 		riscv64) LARCH="riscv64"; LTARGET="RISCV" ;;
 		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia GNU/Linux' ;;
 	esac
 
 	pushd "$SRC/llvm-$version.src"
 		msg "Patching LLVM"
-		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
-		patch -Np1 -i "$STUFF"/llvm/0002-Use-pc-relative-relocations-in-.eh_frame-on-MIPS.patch
-		patch -Np1 -i "$STUFF"/llvm/0003-RISC-V-enable-LTO-ThinLTO.patch
+		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC-use-ELFv2-ABI.patch
 	popd
 	pushd "$SRC/clang-$version.src"
-		msg "Patching clang"
-		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
-		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
-		patch -Np1 -i "$STUFF"/clang/0003-soft-float-fixes-for-MIPS.patch
-		patch -Np1 -i "$STUFF"/clang/0004-RISC-V-disable-relaxations-and-enable-LTO-ThinLTO.patch
+		msg "Patching Clang"
+		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-GNU-Linux.patch
+		patch -Np1 -i "$STUFF"/clang/0002-PowerPC-use-ELFv2-ABI.patch
+		patch -Np1 -i "$STUFF"/clang/0003-RISCV-disable-relaxations.patch
+		patch -Np1 -i "$STUFF"/clang/0004-Link-against-libexecinfo.patch
 		patch -Np1 -i "$STUFF"/clang/0005-move-dynamic-linker-in-usr-lib.patch
+	popd
+	pushd "$SRC/clang-tools-extra-$version.src"
+		msg "Patching Clang Tools Extra"
+		patch -Np1 -i "$STUFF"/clang-tools-extra/0001-PATCH-clang-tools-extra-Make-clangd-CompletionModel-.patch
+	popd
+	pushd "$SRC/lld-$version.src"
+		msg "Patching LLD"
+		patch -Np1 -i "$STUFF"/lld/0001-ELF-use-SHA1-by-default.patch
+		patch -Np1 -i "$STUFF"/lld/0002-PATCH-lld-Import-compact_unwind_encoding.h-from-libu.patch
 	popd
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
-		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-adjust-musl-syscalls.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-adjust-syscalls-for-i386.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-remove-ucontext-on-aarch64.patch
 	popd
 	pushd "$SRC/libcxxabi-$version.src"
 		msg "Patching libc++abi"
@@ -64,6 +70,7 @@ build() {
 		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
 	popd
 
+	msg "Preparing LLVM runtime for build"
 	cd "$SRC"/llvm-$version.src
 	cp -a "$SRC"/clang-$version.src tools/clang
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
@@ -79,9 +86,123 @@ build() {
 		done
 	popd
 
-	msg "Compiling LLVM runtime libraries for $BARCH"
-	mkdir -p build
-	cd build
+	msg "Building 1 stage libunwind"
+	mkdir -p build-libunwind
+	cd build-libunwind
+
+	CFLAGS="" \
+	CXXFLAGS="" \
+	LDFLAGS="" \
+	cmake "$SRC/libunwind-$version.src" \
+		-DCMAKE_CROSSCOMPILING=ON \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_PATH="$SRC/llvm-$version.src" \
+		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$ROOTFS" samu install
+
+	cd ..
+
+	msg "Building 1 stage libc++abi"
+	mkdir -p build-libcxxabi
+	cd build-libcxxabi
+
+	CFLAGS="" \
+	CXXFLAGS="" \
+	LDFLAGS="" \
+	cmake "$SRC/libcxxabi-$version.src" \
+		-DCMAKE_CROSSCOMPILING=ON \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_PATH="$SRC/llvm-$version.src" \
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
+		-Wno-dev -G Ninja
+	samu
+	DESTDIR="$ROOTFS" samu install
+
+	cd ..
+
+	msg "Building 1 stage libc++"
+	mkdir -p build-libcxx
+	cd build-libcxx
+
+	CFLAGS="" \
+	CXXFLAGS="" \
+	LDFLAGS="" \
+	cmake "$SRC/libcxx-$version.src" \
+		-DCMAKE_CROSSCOMPILING=ON \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_PATH="$SRC/llvm-$version.src" \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_CXX_ABI_INCLUDE_PATHS="$SRC/libcxxabi-$version.src/include" \
+		-DLIBCXX_HAS_MUSL_LIBC=ON \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-Wno-dev -G Ninja
+
+	sed -i 's/-latomic//g' build.ninja
+
+	samu
+	DESTDIR="$ROOTFS" samu install
+
+	msg "Building LLVM sanitizers"
+	cd "$SRC"
+	mkdir -p compiler-rt-sanitizers
+	cd compiler-rt-sanitizers
+
+	CFLAGS="" \
+	CXXFLAGS="" \
+	LDFLAGS="" \
+	cmake "$SRC"/compiler-rt-$version.src \
+		-DCMAKE_C_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_ASM_COMPILER_TARGET="$XTARGET" \
+		-DCMAKE_C_COMPILER="$TOOLS/bin/$XTARGET-clang" \
+		-DCMAKE_CXX_COMPILER="$TOOLS/bin/$XTARGET-clang++" \
+		-DCMAKE_AR="$TOOLS/bin/$XTARGET-ar" \
+		-DCMAKE_NM="$TOOLS/bin/$XTARGET-nm" \
+		-DCMAKE_RANLIB="$TOOLS/bin/$XTARGET-ranlib" \
+		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
+		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
+		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
+		-DCOMPILER_RT_HAS_VERSION_SCRIPT=OFF \
+		-DCOMPILER_RT_STANDALONE_BUILD=ON \
+		-DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON \
+		-DCOMPILER_RT_USE_LIBCXX=ON \
+		-DSANITIZER_CXX_ABI="libc++" \
+		-Wno-dev -G Ninja
+	samu
+
+	for i in lib/linux/*; do
+		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)
+	done
+
+	msg "Building optimized LLVM runtime"
+	cd "$SRC"
+	mkdir -p build-final
+	cd build-final
 
 	cmake "$SRC/llvm-$version.src" \
 		-DCMAKE_CROSSCOMPILING=ON \
@@ -96,7 +217,6 @@ build() {
 		-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
 		-DLLVM_CONFIG_PATH="$TOOLS/bin/llvm-config" \
 		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
 		-DLIBCXX_HAS_MUSL_LIBC=ON \
 		-DLIBCXX_USE_COMPILER_RT=ON \
 		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \

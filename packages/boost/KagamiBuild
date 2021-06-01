@@ -1,13 +1,13 @@
 # Description: Free peer-reviewed portable C++ source libraries - development headers
 # URL:         http://www.boost.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  zlib bzip2 xz zstd python icu
+# Depends on:  libz bzip2 xz zstd python icu
 # Section:     libs
 
 name=boost
 version=1.76.0
 boostver=${version//./_}
-release=1
+release=2
 source=("https://dl.bintray.com/boostorg/release/$version/source/${name}_${boostver}.tar.bz2")
 
 build() {
@@ -18,12 +18,12 @@ build() {
 		--prefix="$PKG"/usr \
 		--with-icu \
 		--with-python=python3 \
-		--with-toolset=gcc
+		--with-toolset=clang
 
 	./b2 stage \
 		variant=release \
 		debug-symbols=off \
-		toolset=gcc \
+		toolset=clang \
 		threading=multi \
 		link=shared,static \
 		runtime-link=shared \
@@ -35,7 +35,7 @@ build() {
 	./b2 install \
 		variant=release \
 		debug-symbols=off \
-		toolset=gcc \
+		toolset=clang \
 		threading=multi \
 		link=shared,static \
 		runtime-link=shared \

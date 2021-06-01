@@ -2,8 +2,8 @@
 # URL:         https://www.videolan.org/developers/x264.html
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  bash
-# Dep amd64:   nasm
-# Dep x86:     nasm
+# Dep x86_64:  nasm
+# Dep i386:    nasm
 # Section:     video
 
 name=x264
@@ -12,10 +12,10 @@ release=2
 source=("https://download.videolan.org/x264/snapshots/x264-snapshot-${version/+/-}-stable.tar.bz2")
 
 build() {
-	filter-flags -flto
+	filter-flags -flto -fsanitize=cfi -fsanitize-cfi-cross-dso
 
 	case $BARCH in
-		x86|armv7l)
+		i386|arm)
 			export BUILDFLAGS="--disable-asm"
 			;;
 	esac

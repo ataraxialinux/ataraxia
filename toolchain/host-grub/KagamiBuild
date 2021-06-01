@@ -1,11 +1,10 @@
 name=host-grub
-realpath="$REPO/${name/host-}"
-version="$(grep ^version $realpath/KagamiBuild | sed -e 's/version=//g')"
-unifontver="$(grep ^unifontver $realpath/KagamiBuild | sed -e 's/unifontver=//g')"
-dejavuver="$(grep ^dejavuver $realpath/KagamiBuild | sed -e 's/dejavuver=//g')"
+version=2.04
+unifontver=13.0.02
+dejavuver=2.37
 release=1
 options=('bootstrap')
-source=("https://github.com/ataraxialinux/storage/raw/master/grub-$version.tar.gz"
+source=("https://ftp.gnu.org/gnu/grub/grub-$version.tar.xz"
 	"https://ftp.gnu.org/gnu/unifont/unifont-$unifontver/unifont-$unifontver.pcf.gz"
 	"https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_${dejavuver/./_}/dejavu-fonts-ttf-$dejavuver.tar.bz2")
 noextract=("unifont-$unifontver.pcf.gz")
@@ -32,7 +31,7 @@ build_flavor() {
 		TARGET_OBJCOPY=llvm-objcopy \
 		TARGET_RANLIB=llvm-ranlib \
 		TARGET_STRIP=llvm-strip \
-		TARGET_LDFLAGS="-fuse-ld=$TOOLS/bin/$XTARGET-ld.bfd"
+		TARGET_LDFLAGS="--ld-path=$TOOLS/bin/$XTARGET-ld.bfd"
 	make
 	make install
 	cd ..
@@ -42,10 +41,10 @@ build() {
 	unset CFLAGS CXXFLAGS LDFLAGS TARGET_CFLAGS TARGET_CXXFLAGS TARGET_LDFLAGS
 
 	case $BARCH in
-		amd64|x86)
+		x86_64|i386)
 			FLAVOR="efi pc"
 			;;
-		ppc64le|ppc64)
+		powerpc64le|powerpc64|powerpc)
 			FLAVOR="ieee1275"
 			;;
 		*)
@@ -64,6 +63,7 @@ build() {
 	patch -Np1 -i "$STUFF"/grub/0004-fix-GCC-Clang-PIE-specs.patch
 	patch -Np1 -i "$STUFF"/grub/0005-fix-runtime-if-built-on-LLD.patch
 	patch -Np1 -i "$STUFF"/grub/0006-find-kernel-and-initrd-image.patch
+	patch -Np1 -i "$STUFF"/grub/0006-BootHole.patch
 
 	sed -i "s|/usr/share/fonts/dejavu|$TOOLS/share/fonts/dejavu $TOOLS/share/fonts/TTF|g" configure.ac
 	sed 's| ro | rw |g' -i util/grub.d/10_linux.in

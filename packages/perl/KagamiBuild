@@ -5,14 +5,14 @@
 # Section:     interpreters
 
 name=perl
-version=5.32.1
+version=5.34.0
 crossver=be0a368b16054feee517b4b104e93d2d6eb1bf6e
-release=3
+release=1
 source=("https://www.cpan.org/src/5.0/$name-$version.tar.xz"
 	"https://github.com/arsv/perl-cross/archive/$crossver.tar.gz")
 
 build() {
-	filter-flags -flto -fdata-sections -ffunction-sections
+	filter-flags -flto -fsanitize=cfi -fsanitize-cfi-cross-dso -fdata-sections -ffunction-sections
 
 	cd "$SRC"
 	cp -f -r perl-cross-$crossver/* $name-$version/

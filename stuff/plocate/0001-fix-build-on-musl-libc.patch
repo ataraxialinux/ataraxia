@@ -1,6 +1,6 @@
-From 3a6bbef8cca47d631562506eb84c14e340af3cea Mon Sep 17 00:00:00 2001
+From d6314507360de6dd74fa5c45e1d5710805002545 Mon Sep 17 00:00:00 2001
 From: Ishimoto Shinobu <nagakamira@gmail.com>
-Date: Sun, 10 Jan 2021 02:06:40 +0900
+Date: Thu, 29 Apr 2021 13:28:51 -0700
 Subject: [PATCH] fix build on musl libc
 
 Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
@@ -11,7 +11,8 @@ Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
  database-builder.h |  2 ++
  lib.cpp            |  2 +-
  meson.build        |  2 +-
- 6 files changed, 106 insertions(+), 3 deletions(-)
+ plocate-build.cpp  |  1 +
+ 7 files changed, 107 insertions(+), 3 deletions(-)
  create mode 100644 compat.cpp
  create mode 100644 compat.h
 
@@ -110,7 +111,7 @@ index 0000000..97d766c
 +#endif
 diff --git a/compat.h b/compat.h
 new file mode 100644
-index 0000000..8a26a49
+index 0000000..120b601
 --- /dev/null
 +++ b/compat.h
 @@ -0,0 +1,14 @@
@@ -142,7 +143,7 @@ index abea68a..0b7ccb2 100644
  
  #include <algorithm>
 diff --git a/database-builder.h b/database-builder.h
-index 2a56e11..e8af73d 100644
+index 89fbc7c..e464b19 100644
 --- a/database-builder.h
 +++ b/database-builder.h
 @@ -3,6 +3,8 @@
@@ -168,7 +169,7 @@ index 83a9692..74307e7 100644
  #include <algorithm>
  #include <arpa/inet.h>
 diff --git a/meson.build b/meson.build
-index b59c52b..96b4822 100644
+index 161a57c..4205270 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -40,7 +40,7 @@ executable('plocate-build', ['plocate-build.cpp', 'database-builder.cpp'],
@@ -180,6 +181,18 @@ index b59c52b..96b4822 100644
  	dependencies: [zstddep, threaddep],
  	install: true,
  	install_dir: get_option('sbindir'))
+diff --git a/plocate-build.cpp b/plocate-build.cpp
+index 028a1ee..625e328 100644
+--- a/plocate-build.cpp
++++ b/plocate-build.cpp
+@@ -17,6 +17,7 @@
+ #include <string.h>
+ #include <string>
+ #include <sys/stat.h>
++#include <locale.h>
+ #include <utility>
+ #include <vector>
+ 
 -- 
-2.30.0
+2.31.1
 

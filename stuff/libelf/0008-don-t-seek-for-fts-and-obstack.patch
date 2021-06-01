@@ -1,0 +1,44 @@
+From 66a35780cf45ccbd092acef7c7ec62b0687e2fe0 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Sun, 18 Apr 2021 09:29:38 -0700
+Subject: [PATCH 8/9] don't seek for fts and obstack
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ configure.ac | 18 ++----------------
+ 1 file changed, 2 insertions(+), 16 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 289eb7c..43a221e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -543,24 +543,10 @@ case "$ac_cv_search_argp_parse" in
+ esac
+ AC_SUBST([argp_LDADD])
+ 
+-saved_LIBS="$LIBS"
+-AC_SEARCH_LIBS([fts_close], [fts])
+-LIBS="$saved_LIBS"
+-case "$ac_cv_search_fts_close" in
+-        no) AC_MSG_FAILURE([failed to find fts_close]) ;;
+-        -l*) fts_LIBS="$ac_cv_search_fts_close" ;;
+-        *) fts_LIBS= ;;
+-esac
++fts_LIBS=""
+ AC_SUBST([fts_LIBS])
+ 
+-saved_LIBS="$LIBS"
+-AC_SEARCH_LIBS([_obstack_free], [obstack])
+-LIBS="$saved_LIBS"
+-case "$ac_cv_search__obstack_free" in
+-        no) AC_MSG_FAILURE([failed to find _obstack_free]) ;;
+-        -l*) obstack_LIBS="$ac_cv_search__obstack_free" ;;
+-        *) obstack_LIBS= ;;
+-esac
++obstack_LIBS=""
+ AC_SUBST([obstack_LIBS])
+ 
+ dnl The directories with content.
+-- 
+2.31.0
+

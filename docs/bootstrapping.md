@@ -3,11 +3,11 @@ We need specific packages to build this Linux distribution. Without them you can
 #### Fedora
 ```
 dnf groupinstall "Development Tools" "C Development Tools and Libraries"
-dnf install clang lld glibc-static jq zstd bsdcpio bsdtar curl mtools libisoburn which python3 texinfo meson freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel readline-devel libffi-devel sqlite-devel
+dnf install clang lld glibc-static jq zstd bsdcpio bsdtar curl mtools libisoburn which python3 texinfo meson rsync freetype-devel zlib-devel xz-devel libzstd-devel libarchive-devel elfutils-libelf-devel openssl-devel readline-devel libffi-devel sqlite-devel
 ```
 ### Debian/Ubuntu:
 ```
-apt install build-essential clang lld autoconf automake autopoint libtool jq zstd libarchive-tools attr curl mtools xorriso python3 meson libtasn1-bin libfreetype-dev zlib1g-dev liblzma-dev libzstd-dev libarchive-dev libelf-dev libssl-dev libreadline-dev libffi-dev libsqlite-dev
+apt install build-essential clang lld autoconf automake autopoint libtool jq zstd libarchive-tools attr curl mtools xorriso python3 meson rsync libtasn1-bin libfreetype-dev zlib1g-dev liblzma-dev libzstd-dev libarchive-dev libelf-dev libssl-dev libreadline-dev libffi-dev libsqlite-dev
 ```
 #### Ataraxia GNU/Linux:
 ```
@@ -38,14 +38,13 @@ Sub-arguments supported by "build script":
  -a <Architecture>		- Select architecture for build
  -k <Kernel>			- Select kernel for target OS
  -b <Board>			- Build OS for specific board
+ -C				- Enable ccache
 ```
 We have seperated the build process into seperate "targets":
 ```
  * toolchain              - This stage intended to compile cross-toolchain
  * system                 - This stage intended to compile basic target system with cross-compiler (You don't need to compile stage 0)
- * image                  - This stage intended to generate virtual disk image
  * installer              - This stage intended to generate installer .iso image
- * live                   - This stage intended to generate live .iso image
  * stage                  - This stage intended to generate archive with pre-compiled OS
 ```
 To begin the bootstrap process, **as root**:

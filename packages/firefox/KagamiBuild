@@ -2,12 +2,12 @@
 # URL:         https://www.mozilla.org/firefox/
 # Maintainer:  protonesso, nagakamira at gmail dot com
 # Depends on:  python autoconf2.13 llvm cbindgen node unzip zip dbus-glib gtk3 gtk2 libnotify nss libpulse startup-notification icu libevent libwebp dav1d aom libvpx ffmpeg
-# Dep amd64:   nasm yasm
-# Dep x86:     nasm yasm
+# Dep x86_64:  nasm yasm
+# Dep i386:    nasm yasm
 # Section:     web
 
 name=firefox
-version=78.10.0
+version=78.10.1
 release=1
 source=("https://archive.mozilla.org/pub/$name/releases/${version}esr/source/$name-${version}esr.source.tar.xz")
 
@@ -16,6 +16,8 @@ clear_vendor_checksums() {
 }
 
 build() {
+	filter-flags -flto -fsanitize=cfi -fsanitize-cfi-cross-dso
+
 	export LDFLAGS="-Wl,-rpath,/usr/lib/firefox"
 	export SHELL=/usr/bin/bash
 	export PYTHON=/usr/bin/python3
@@ -23,16 +25,16 @@ build() {
 	export CXXSTDLIB=c++
 
 	case "$BARCH" in
-		amd64)
+		x86_64)
 			export RTARGET="x86_64-unknown-linux-musl"
 			;;
-		x86)
+		i386)
 			export RTARGET="i686-unknown-linux-musl"
 			;;
 		arm64)
 			export RTARGET="aarch64-unknown-linux-musl"
 			;;
-		armv7l)
+		arm)
 			export RTARGET="armv7-unknown-linux-musleabihf"
 			;;
 		*)
@@ -88,7 +90,6 @@ build() {
 		--enable-default-toolkit=cairo-gtk3-wayland \
 		--enable-hardening \
 		--enable-linker=lld \
-		--enable-lto \
 		--enable-official-branding \
 		--enable-optimize \
 		--enable-proxy-bypass-protection \
@@ -155,5 +156,48 @@ build() {
 		[Desktop Action profile-manager-window]
 		Name=Open the Profile Manager
 		Exec=firefox --ProfileManager
+	EOF
+
+	mkdir -p "$PKG"/usr/share/appdata
+	cat > "$PKG"/usr/share/appdata/firefox.appdata.xml <<-EOF
+		<?xml version="1.0" encoding="UTF-8"?>
+		<!-- Copyright 2019 Firefox contributors -->
+		<component type="desktop">
+		  <id>firefox.desktop</id>
+		  <metadata_license>CC0-1.0</metadata_license>
+		  <name>Firefox</name>
+		  <summary>Web Browser</summary>
+		  <description>
+		    <p>
+		      Bringing together all kinds of awesomeness to make browsing better for you.
+		      Get to your favorite sites quickly – even if you don’t remember the URLs.
+		      Type your term into the location bar (aka the Awesome Bar) and the autocomplete
+		      function will include possible matches from your browsing history, bookmarked
+		      sites and open tabs.
+		    </p>
+		  </description>
+		  <url type="homepage">https://www.mozilla.org</url>
+		  <update_contact>stransky@redhat.com</update_contact>
+		  <kudos>
+		    <kudo>ModernToolkit</kudo>
+		    <kudo>SearchProvider</kudo>
+		  </kudos>
+		  <project_group>Mozilla</project_group>
+		  <project_license>GPL-3.0+</project_license>
+		  <developer_name>Mozilla Corporation</developer_name>
+		  <url type="bugtracker">https://bugzilla.mozilla.org/</url>
+		  <url type="help">https://support.mozilla.org/</url>
+		  <provides>
+		    <id>firefox.desktop</id>
+		  </provides>
+		  <screenshots>
+		    <screenshot type="default">https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/firefox/a.png</screenshot>
+		    <screenshot>https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/firefox/b.png</screenshot>
+		    <screenshot>https://raw.githubusercontent.com/hughsie/fedora-appstream/master/screenshots-extra/firefox/c.png</screenshot>
+		  </screenshots>
+		  <releases>
+		    <release version="$version" date="$(date '+%F')"/>
+		  </releases>
+		</component>
 	EOF
 }

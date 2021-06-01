@@ -4,9 +4,9 @@
 # Section:     base
 
 name=libressl
-version=3.3.2
+version=3.3.3
 release=1
-source=("https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/$name-$version.tar.gz")
+source=("https://cloudflare.cdn.openbsd.org/pub/OpenBSD/LibreSSL/$name-$version.tar.gz")
 
 build() {
 	filter-flags -fsanitize=cfi -fsanitize-cfi-cross-dso
@@ -23,7 +23,5 @@ build() {
 	make
 	make DESTDIR="$PKG" install
 
-	rm -rf \
-		"$PKG"/etc/ssl/cert.pem \
-		"$PKG"/etc/ssl/openssl.cnf
+	rm -rf "$PKG"/etc/ssl/cert.pem
 }

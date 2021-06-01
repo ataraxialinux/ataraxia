@@ -7,57 +7,50 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/clang-tools-extra-$version.src.tar.xz"
 	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/lld-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libunwind-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxx-$version.src.tar.xz"
-	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/libcxxabi-$version.src.tar.xz")
+	"https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/compiler-rt-$version.src.tar.xz")
 
 build() {
 	local clang LARCH LTARGET i
 
 	case "$BARCH" in
-		amd64) LARCH="x86_64"; LTARGET="X86" ;;
-		x86) LARCH="i686"; LTARGET="X86" ;;
+		x86_64) LARCH="x86_64"; LTARGET="X86" ;;
+		i386) LARCH="i686"; LTARGET="X86" ;;
 		arm64) LARCH="aarch64"; LTARGET="AArch64" ;;
-		armv7l) LARCH="armv7"; LTARGET="ARM" ;;
-		mips64) LARCH="mips64"; LTARGET="Mips" ;;
-		mips64el) LARCH="mips64el"; LTARGET="Mips" ;;
-		mips) LARCH="mips"; LTARGET="Mips" ;;
-		mipsel) LARCH="mipsel"; LTARGET="Mips" ;;
-		ppc64le) LARCH="powerpc64le"; LTARGET="PowerPC" ;;
-		ppc64) LARCH="powerpc64"; LTARGET="PowerPC" ;;
+		arm) LARCH="armv7"; LTARGET="ARM" ;;
+		powerpc64le) LARCH="powerpc64le"; LTARGET="PowerPC" ;;
+		powerpc64) LARCH="powerpc64"; LTARGET="PowerPC" ;;
+		powerpc) LARCH="powerpc"; LTARGET="PowerPC" ;;
+		powerpcspe) LARCH="powerpcspe"; LTARGET="PowerPC" ;;
 		riscv64) LARCH="riscv64"; LTARGET="RISCV" ;;
 		*) die 'Architecture called `'${BARCH}'` is not supported by Ataraxia GNU/Linux' ;;
 	esac
 
 	pushd "$SRC/llvm-$version.src"
 		msg "Patching LLVM"
-		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC64-ELFv2-fixes.patch
-		patch -Np1 -i "$STUFF"/llvm/0002-Use-pc-relative-relocations-in-.eh_frame-on-MIPS.patch
-		patch -Np1 -i "$STUFF"/llvm/0003-RISC-V-enable-LTO-ThinLTO.patch
+		patch -Np1 -i "$STUFF"/llvm/0001-PowerPC-use-ELFv2-ABI.patch
 	popd
 	pushd "$SRC/clang-$version.src"
-		msg "Patching clang"
-		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-Linux.patch
-		patch -Np1 -i "$STUFF"/clang/0002-PowerPC64-ELFv2-fixes.patch
-		patch -Np1 -i "$STUFF"/clang/0003-soft-float-fixes-for-MIPS.patch
-		patch -Np1 -i "$STUFF"/clang/0004-RISC-V-disable-relaxations-and-enable-LTO-ThinLTO.patch
+		msg "Patching Clang"
+		patch -Np1 -i "$STUFF"/clang/0001-add-support-for-Ataraxia-GNU-Linux.patch
+		patch -Np1 -i "$STUFF"/clang/0002-PowerPC-use-ELFv2-ABI.patch
+		patch -Np1 -i "$STUFF"/clang/0003-RISCV-disable-relaxations.patch
+		patch -Np1 -i "$STUFF"/clang/0004-Link-against-libexecinfo.patch
 		patch -Np1 -i "$STUFF"/clang/0005-move-dynamic-linker-in-usr-lib.patch
+	popd
+	pushd "$SRC/clang-tools-extra-$version.src"
+		msg "Patching Clang Tools Extra"
+		patch -Np1 -i "$STUFF"/clang-tools-extra/0001-PATCH-clang-tools-extra-Make-clangd-CompletionModel-.patch
+	popd
+	pushd "$SRC/lld-$version.src"
+		msg "Patching LLD"
+		patch -Np1 -i "$STUFF"/lld/0001-ELF-use-SHA1-by-default.patch
+		patch -Np1 -i "$STUFF"/lld/0002-PATCH-lld-Import-compact_unwind_encoding.h-from-libu.patch
 	popd
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
-		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
-	popd
-	pushd "$SRC/libcxxabi-$version.src"
-		msg "Patching libc++abi"
-		patch -Np1 -i "$STUFF"/libcxxabi/0001-don-t-link-against-__cxa_thread_atexit_impl.patch
-		patch -Np1 -i "$STUFF"/libcxxabi/0002-force-link-against-compiler-rt-builtins.patch
-	popd
-	pushd "$SRC/libcxx-$version.src"
-		msg "Patching libc++"
-		patch -Np1 -i "$STUFF"/libcxx/0001-fix-musl-locale.patch
-		patch -Np1 -i "$STUFF"/libcxx/0002-force-link-against-compiler-rt-builtins.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-adjust-musl-syscalls.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-adjust-syscalls-for-i386.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-remove-ucontext-on-aarch64.patch
 	popd
 
 	msg "Compiling LLVM cross compiler for $BARCH"
@@ -66,9 +59,6 @@ build() {
 	cp -a "$SRC"/clang-tools-extra-$version.src tools/clang/tools/extra
 	cp -a "$SRC"/lld-$version.src tools/lld
 	cp -a "$SRC"/compiler-rt-$version.src projects/compiler-rt
-	cp -a "$SRC"/libunwind-$version.src projects/libunwind
-	cp -a "$SRC"/libcxx-$version.src projects/libcxx
-	cp -a "$SRC"/libcxxabi-$version.src projects/libcxxabi
 
 	mkdir -p build
 	cd build
@@ -90,12 +80,7 @@ build() {
 		-DCLANG_VENDOR=Ataraxia \
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="$XHOST" \
-		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON \
-		-DLIBCXX_USE_COMPILER_RT=ON \
-		-DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-		-DLIBCXXABI_USE_COMPILER_RT=ON \
-		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_SOURCE_DIR="$SRC/clang-tools-extra-$version.src" \
 		-DENABLE_LINKER_BUILD_ID=ON \
 		-DLLVM_BUILD_EXAMPLES=OFF \
 		-DLLVM_BUILD_DOCS=OFF \
@@ -129,6 +114,6 @@ build() {
 		cp llvm-objdump $XTARGET-objdump
 		cp llvm-ar $XTARGET-ranlib
 
-		rm -f $clang clang clang++ clang-cl clang-cpp lld-link ld.lld ld64.lld wasm-ld lld
+		rm -f $clang clang clang++ clang-cl clang-cpp lld-link ld.lld ld64.lld ld64.lld.darwinnew wasm-ld lld
 	popd
 }

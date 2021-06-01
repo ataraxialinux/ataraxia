@@ -1,0 +1,29 @@
+From a1e47837a53748e228ed44087ac1645828407d23 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Fri, 30 Apr 2021 02:49:49 -0700
+Subject: [PATCH 4/5] Link against libexecinfo
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ lib/Driver/ToolChains/Gnu.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
+index 1d8a3cdc..71963b18 100644
+--- a/lib/Driver/ToolChains/Gnu.cpp
++++ b/lib/Driver/ToolChains/Gnu.cpp
+@@ -621,8 +621,10 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+       if (Args.hasArg(options::OPT_fsplit_stack))
+         CmdArgs.push_back("--wrap=pthread_create");
+ 
+-      if (!Args.hasArg(options::OPT_nolibc))
++      if (!Args.hasArg(options::OPT_nolibc)) {
+         CmdArgs.push_back("-lc");
++        CmdArgs.push_back("-lexecinfo");
++      }
+ 
+       // Add IAMCU specific libs, if needed.
+       if (IsIAMCU)
+-- 
+2.31.1
+

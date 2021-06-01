@@ -1,7 +1,7 @@
 # Description: A file transfer program to keep remote files in sync
 # URL:         https://rsync.samba.org/
 # Maintainer:  protonesso, nagakamira at gmail dot com
-# Depends on:  acl perl popt zstd lz4
+# Depends on:  acl perl popt zstd lz4 libressl
 # Section:     utils
 
 name=rsync
@@ -12,19 +12,12 @@ source=("https://rsync.samba.org/ftp/rsync/src/$name-$version.tar.gz")
 
 build() {
 	cd "$SRC"/$name-$version
-	for a in $(find . -name config.sub); do
-		cp "$STUFF"/config.sub $a
-	done
-
-	for a in $(find . -name config.guess); do
-		cp "$STUFF"/config.guess $a
-	done
-
 	./configure $BUILDFLAGS \
 		--prefix=/usr \
 		--without-included-popt \
 		--with-included-zlib \
 		--disable-debug \
+		--disable-simd \
 		--disable-xxhash
 	make
 	make DESTDIR="$PKG" install

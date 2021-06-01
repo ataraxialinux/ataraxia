@@ -1,0 +1,24 @@
+# Description: Provides a standard for creating app stores across distributions
+# URL:         https://distributions.freedesktop.org/wiki/AppStream
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  meson gobject-introspection vala itstool gperf libxml2 lmdb libsoup yaml snowball
+# Section:     libs
+
+name=appstream
+version=0.14.3
+release=1
+source=("https://www.freedesktop.org/software/appstream/releases/AppStream-$version.tar.xz")
+
+build() {
+	cd "$SRC"/AppStream-$version
+	mkdir -p build
+	cd build
+	ataraxia-meson "$SRC"/AppStream-$version \
+		-Dapidocs=false \
+		-Dcompose=true \
+		-Ddocs=false \
+		-Dqt=false \
+		-Dvapi=true
+	samu
+	DESTDIR="$PKG" samu install
+}

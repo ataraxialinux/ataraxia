@@ -8,10 +8,17 @@ source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$version
 build() {
 	unset CFLAGS CXXFLAGS LDFLAGS
 
+	local i="crt builtins"
+
+	case "$BARCH" in
+		x86_64|i386|arm64|arm) i="$i cfi safestack" ;;
+	esac
+
 	pushd "$SRC/compiler-rt-$version.src"
 		msg "Patching Compiler-RT"
-		patch -Np1 -i "$STUFF"/compiler-rt/0001-Make-sanitizers-work-on-musl-libc.patch
-		patch -Np1 -i "$STUFF"/compiler-rt/0002-port-crt-on-MIPS-build-on-PowerPC.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0001-adjust-musl-syscalls.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0002-adjust-syscalls-for-i386.patch
+		patch -Np1 -i "$STUFF"/compiler-rt/0003-remove-ucontext-on-aarch64.patch
 	popd
 
 	msg "Cross-compiling Compiler-RT"
@@ -31,7 +38,7 @@ build() {
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
 		-DCOMPILER_RT_STANDALONE_BUILD=ON \
 		-Wno-dev -G Ninja
-	samu crt builtins
+	samu $i
 
 	for i in lib/linux/*; do
 		install -Dm644 "$i" "$TOOLS"/lib/clang/$version/lib/linux/$(basename $i)

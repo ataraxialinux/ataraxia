@@ -1,0 +1,50 @@
+# Description: Utilities to handle ELF object files and DWARF debugging information
+# URL:         https://sourceware.org/elfutils/
+# Maintainer:  protonesso, nagakamira at gmail dot com
+# Depends on:  libz bzip2 xz zstd libuargp
+# Priority:    required
+# Section:     devel
+
+name=libelf
+version=0.185
+release=1
+options=('bootstrap')
+source=("http://sourceware.org/pub/elfutils/$version/elfutils-$version.tar.bz2")
+
+build() {
+	export ac_cv_c99=yes
+
+	cd "$SRC"/elfutils-$version
+	patch -Np1 -i "$STUFF"/libelf/0001-fix-build-on-aarch64-musl.patch
+	patch -Np1 -i "$STUFF"/libelf/0002-adjust-musl-libraries.patch
+	patch -Np1 -i "$STUFF"/libelf/0003-fix-musl-tests.patch
+	patch -Np1 -i "$STUFF"/libelf/0004-fix-musl-utils.patch
+	patch -Np1 -i "$STUFF"/libelf/0005-add-internal-fts.patch
+	patch -Np1 -i "$STUFF"/libelf/0006-musl-asm-ptrace-fix-for-ppc.patch
+	patch -Np1 -i "$STUFF"/libelf/0007-add-disable-werror.patch
+	patch -Np1 -i "$STUFF"/libelf/0008-don-t-seek-for-fts-and-obstack.patch
+
+	autoreconf -fiv
+
+	./configure $TOOLFLAGS \
+		--prefix=/usr \
+		--enable-deterministic-archives \
+		--disable-debuginfod \
+		--disable-libdebuginfod \
+		--disable-nls \
+		--disable-werror
+
+	for lib in lib libelf libdwfl libdwelf libebl libcpu backends libdw; do
+		make -C $lib
+	done
+
+	make -C libelf DESTDIR="$PKG" install
+	make -C libdw DESTDIR="$PKG" install
+	make -C libdwelf DESTDIR="$PKG" install
+	make -C libdwfl DESTDIR="$PKG" install
+
+	mkdir -p "$PKG"/usr/lib/pkgconfig
+	cp config/libelf.pc "$PKG"/usr/lib/pkgconfig
+	cp config/libdw.pc "$PKG"/usr/lib/pkgconfig
+	cp version.h "$PKG"/usr/include/elfutils
+}

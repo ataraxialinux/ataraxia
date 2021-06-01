@@ -1,0 +1,269 @@
+From 224f6a810f52184984d3aa33fdf8d4952d801930 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 3 May 2021 07:26:33 -0700
+Subject: [PATCH] Ataraxia GNU/Linux
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ Makefile                | 3 ---
+ addr2line/Makefile      | 1 +
+ ar/Makefile             | 1 +
+ ar/os.Linux.mk          | 9 ---------
+ brandelf/Makefile       | 1 +
+ common/elfdefinitions.h | 2 ++
+ cxxfilt/Makefile        | 1 +
+ elfcopy/Makefile        | 1 +
+ elfdump/Makefile        | 1 +
+ findtextrel/Makefile    | 1 +
+ libelf/os.Linux.mk      | 1 -
+ mk/os.Linux.mk          | 8 --------
+ nm/Makefile             | 1 +
+ readelf/Makefile        | 1 +
+ size/Makefile           | 1 +
+ strings/Makefile        | 1 +
+ 16 files changed, 13 insertions(+), 21 deletions(-)
+ delete mode 100644 ar/os.Linux.mk
+
+diff --git a/Makefile b/Makefile
+index 3dee852..1c54cbc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -25,14 +25,11 @@ SUBDIR += isa  # ('isa' does not build on all platforms yet).
+ 
+ # Build tools after the libraries.
+ SUBDIR += addr2line
+-SUBDIR += ar
+ SUBDIR += brandelf
+ SUBDIR += cxxfilt
+ SUBDIR += elfcopy
+ SUBDIR += elfdump
+ SUBDIR += findtextrel
+-SUBDIR += ld
+-SUBDIR += nm
+ SUBDIR += readelf
+ SUBDIR += size
+ SUBDIR += strings
+diff --git a/addr2line/Makefile b/addr2line/Makefile
+index e388bc0..2a2a901 100644
+--- a/addr2line/Makefile
++++ b/addr2line/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELF} ${LIBELFTC} ${LIBDWARF}
+ LDADD=	-lelftc -ldwarf -lelf
++LDFLAGS+=-static
+ 
+ MAN1=	addr2line.1
+ 
+diff --git a/ar/Makefile b/ar/Makefile
+index cc41ce6..95e583a 100644
+--- a/ar/Makefile
++++ b/ar/Makefile
+@@ -13,6 +13,7 @@ DPADD=	${LIBARCHIVE} ${LIBELFTC} ${LIBELF} ${LIBZ}
+ LDADD=	-larchive -lelftc -lelf -lz
+ 
+ CFLAGS+=-I. -I${.CURDIR}
++LDFLAGS+=-static
+ 
+ LINKS=	${BINDIR}/ar ${BINDIR}/ranlib
+ 
+diff --git a/ar/os.Linux.mk b/ar/os.Linux.mk
+deleted file mode 100644
+index daed864..0000000
+--- a/ar/os.Linux.mk
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.if ${OS_DISTRIBUTION} == "Ubuntu"
+-.if ${OS_DISTRIBUTION_VERSION} >= 14
+-# Ubuntu Trusty Tahr and later.
+-
+-# Use the --nounput option to flex(1), to prevent unused functions from
+-# being generated.
+-LFLAGS += --nounput
+-.endif
+-.endif
+diff --git a/brandelf/Makefile b/brandelf/Makefile
+index 28ba3e0..dc7277b 100644
+--- a/brandelf/Makefile
++++ b/brandelf/Makefile
+@@ -5,5 +5,6 @@ TOP=	..
+ PROG=	brandelf
+ WARNS?=	6
+ LDADD=	-lelftc -lelf
++LDFLAGS+=-static
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/common/elfdefinitions.h b/common/elfdefinitions.h
+index 19b2943..7a34b87 100644
+--- a/common/elfdefinitions.h
++++ b/common/elfdefinitions.h
+@@ -39,6 +39,7 @@
+ 
+ #ifndef _ELFDEFINITIONS_H_
+ #define _ELFDEFINITIONS_H_
++#define _ELF_H
+ 
+ #include <stdint.h>
+ 
+@@ -1110,6 +1111,7 @@ enum {
+  */
+ #define _ELF_DEFINE_SECTION_INDICES()					\
+ _ELF_DEFINE_SHN(SHN_UNDEF, 	0, 	 "undefined section")		\
++_ELF_DEFINE_SHN(STN_UNDEF, 	0, 	 "undefined section")		\
+ _ELF_DEFINE_SHN(SHN_LORESERVE, 	0xFF00U, "start of reserved area")	\
+ _ELF_DEFINE_SHN(SHN_LOPROC, 	0xFF00U,				\
+ 	"start of processor-specific range")				\
+diff --git a/cxxfilt/Makefile b/cxxfilt/Makefile
+index ca50f91..04ebc3a 100644
+--- a/cxxfilt/Makefile
++++ b/cxxfilt/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=	-lelftc -lelf
++LDFLAGS+=-static
+ 
+ MAN1=	c++filt.1
+ 
+diff --git a/elfcopy/Makefile b/elfcopy/Makefile
+index dff967e..b934035 100644
+--- a/elfcopy/Makefile
++++ b/elfcopy/Makefile
+@@ -13,6 +13,7 @@ WARNS?=	5
+ 
+ DPADD=	${LIBELF} ${LIBELFTC}
+ LDADD=	-lelf -lelftc
++LDFLAGS+=-static
+ 
+ .if !defined(LIBELF_AR)
+ LDADD+= -larchive
+diff --git a/elfdump/Makefile b/elfdump/Makefile
+index b78d465..948c737 100644
+--- a/elfdump/Makefile
++++ b/elfdump/Makefile
+@@ -7,5 +7,6 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=	-lelftc -lelf
++LDFLAGS+=-static
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/findtextrel/Makefile b/findtextrel/Makefile
+index 4c316eb..5d129d2 100644
+--- a/findtextrel/Makefile
++++ b/findtextrel/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBELFTC} ${LIBDWARF} ${LIBELF} 
+ LDADD=	-lelftc -ldwarf -lelf
++LDFLAGS+=-static
+ 
+ MAN1=	findtextrel.1
+ 
+diff --git a/libelf/os.Linux.mk b/libelf/os.Linux.mk
+index 2292b6e..89c23e7 100644
+--- a/libelf/os.Linux.mk
++++ b/libelf/os.Linux.mk
+@@ -5,7 +5,6 @@ CFLAGS+=	-Wcast-align
+ CFLAGS+=	-Wcast-qual
+ CFLAGS+=	-Wchar-subscripts
+ CFLAGS+=	-Wconversion
+-CFLAGS+=	-Werror
+ CFLAGS+=	-Wextra
+ CFLAGS+=	-Wformat=2
+ CFLAGS+=	-Winline
+diff --git a/mk/os.Linux.mk b/mk/os.Linux.mk
+index 81c22ec..249f68a 100644
+--- a/mk/os.Linux.mk
++++ b/mk/os.Linux.mk
+@@ -2,14 +2,6 @@
+ #
+ # Build recipes for GNU/Linux based operating systems.
+ 
+-OS_DISTRIBUTION         != lsb_release -s -i || echo unknown
+-OS_DISTRIBUTION_VERSION != lsb_release -s -r || echo unknown
+-
+-.if ${OS_DISTRIBUTION} == "unknown" || \
+-    ${OS_DISTRIBUTION_VERSION} == "unknown"
+-.error ERROR: Unknown host OS distribution.
+-.endif
+-
+ MKDOC?=		yes	# Build documentation.
+ MKLINT?=	no
+ MKPIC?=		no
+diff --git a/nm/Makefile b/nm/Makefile
+index 6177c61..d3b9831 100644
+--- a/nm/Makefile
++++ b/nm/Makefile
+@@ -9,5 +9,6 @@ SRCS=	nm.c
+ WARNS?=	6
+ 
+ LDADD=	-ldwarf -lelftc -lelf
++LDFLAGS+=-static
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+diff --git a/readelf/Makefile b/readelf/Makefile
+index 09c8650..b0f2be4 100644
+--- a/readelf/Makefile
++++ b/readelf/Makefile
+@@ -9,6 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBDWARF} ${LIBELF}
+ LDADD=	-ldwarf -lelftc -lelf
++LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
+ 
+ MAN1=	readelf.1
+ 
+diff --git a/size/Makefile b/size/Makefile
+index 6d46d63..95a4831 100644
+--- a/size/Makefile
++++ b/size/Makefile
+@@ -6,6 +6,7 @@ PROG=   size
+ WARNS?= 6
+ LDADD=  -lelftc -lelf
+ DPADD=	${LIBELFTC} ${LIBELF}
++LDFLAGS+=-static
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+ 
+diff --git a/strings/Makefile b/strings/Makefile
+index 0bc4cd5..6b333f2 100644
+--- a/strings/Makefile
++++ b/strings/Makefile
+@@ -6,6 +6,7 @@ PROG=   strings
+ WARNS?= 6
+ DPADD=	${LIBELFTC} ${LIBELF}
+ LDADD=  -lelftc -lelf
++LDFLAGS+=-static
+ 
+ .include "${TOP}/mk/elftoolchain.prog.mk"
+ 
+-- 
+2.31.1
+
+From 63a5d7d25a416d3b59d8f9aa454ea9baec7a3b76 Mon Sep 17 00:00:00 2001
+From: Ishimoto Shinobu <nagakamira@gmail.com>
+Date: Mon, 3 May 2021 08:33:03 -0700
+Subject: [PATCH] static readelf
+
+Signed-off-by: Ishimoto Shinobu <nagakamira@gmail.com>
+---
+ readelf/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/readelf/Makefile b/readelf/Makefile
+index b0f2be4..46fd09b 100644
+--- a/readelf/Makefile
++++ b/readelf/Makefile
+@@ -9,7 +9,7 @@ WARNS?=	6
+ 
+ DPADD=	${LIBDWARF} ${LIBELF}
+ LDADD=	-ldwarf -lelftc -lelf
+-LDFLAGS+=-Wl,-rpath,${TOOLS}/lib
++LDFLAGS+=-static
+ 
+ MAN1=	readelf.1
+ 
+-- 
+2.31.1
+
