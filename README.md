@@ -1,3 +1,8 @@
+# NOTICE: We've moved to Gitlab, and Github will no longer be used. Go here for more up to date info:
+
+https://gitlab.com/ataraxialinux/ataraxia
+
+
 # Welcome to Ataraxia GNU/Linux
 Ataraxia GNU/Linux is an independent [Linux-based OS](https://www.kernel.org/) focusing on simplicity, security and privacy.
 
